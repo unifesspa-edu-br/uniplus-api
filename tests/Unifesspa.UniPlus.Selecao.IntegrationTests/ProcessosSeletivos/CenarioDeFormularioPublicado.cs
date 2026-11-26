@@ -99,11 +99,11 @@ internal sealed class CenarioDeFormularioPublicado
     }
 
     public async Task<FormularioApresentadoDoProcessoDto> LerPublicadoAsync(
-        Guid processoId, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+        Guid processoId, string formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao)
     {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioApresentadoDoProcessoDto> lido = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
+            new ObterFormularioApresentadoQuery(processoId, formularioCodigo), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
             new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
@@ -116,7 +116,7 @@ internal sealed class CenarioDeFormularioPublicado
         leitor.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogoVivo);
         await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioApresentadoDoProcessoDto> rascunho = await ObterFormularioApresentadoDoRascunhoQueryHandler.Handle(
-            new ObterFormularioApresentadoDoRascunhoQuery(processoId, FinalidadeFormulario.Inscricao.Codigo()),
+            new ObterFormularioApresentadoDoRascunhoQuery(processoId, FormulariosDoProcessoDeTeste.Inscricao),
             ProcessoSeletivoRepositoryDeTeste.Criar(rascunhoContext), leitor, FusoInstitucionalDeTeste(), CancellationToken.None);
 
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);

@@ -56,7 +56,6 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
         .ComRotulo("Você declara renda?")
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .NaSecao(FormularioDeTeste.Secao)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static ProcessoSeletivo ProcessoComDocumentos()
@@ -136,7 +135,7 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipo.ToLowerInvariant()).Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, $"Documento {tipo}", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(fase, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(gatilho.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, [.. gatilho.Select(static g => CondicaoGatilho.Criar(0, g.Fato, Operador.Igual, g.Valor).Value!)]),
                 new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

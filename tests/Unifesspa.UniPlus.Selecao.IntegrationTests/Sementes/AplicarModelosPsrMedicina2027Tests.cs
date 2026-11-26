@@ -22,13 +22,13 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -50,8 +50,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     {
         ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoComProva);
 
-        processo.Formularios.Select(static f => f.Finalidade)
-            .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
+        processo.Formularios.Select(static f => f.Codigo.Valor)
+            .Should().BeEquivalentTo([FormulariosDoProcessoDeTeste.Inscricao, FormulariosDoProcessoDeTeste.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
         AfirmarDocumentosDoAtendimento(processo);
         AfirmarCamposDoFadaEDoAtendimento(processo);
@@ -73,8 +73,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     {
         ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva);
 
-        processo.Formularios.Select(static f => f.Finalidade)
-            .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
+        processo.Formularios.Select(static f => f.Codigo.Valor)
+            .Should().BeEquivalentTo([FormulariosDoProcessoDeTeste.Inscricao, FormulariosDoProcessoDeTeste.Habilitacao]);
         processo.DocumentosExigidos.Should().BeEmpty();
         processo.Campos.Select(static c => c.FatoCodigo).Should().NotContain(
             ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
@@ -127,7 +127,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             ("LAUDO_MEDICO", "VISAO_MONOCULAR"),
             ("CERTIDAO_NASCIMENTO", "LACTANTE"),
         ]);
-        processo.DocumentosExigidos.Should().OnlyContain(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao);
+        processo.DocumentosExigidos.Should().OnlyContain(static d => d.Obrigatorio && d.FormularioCodigo!.Valor == FormulariosDoProcessoDeTeste.Inscricao);
         processo.DocumentosExigidos.SelectMany(static d => d.Condicoes).Where(static c => c.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO")
             .Should().HaveCount(3, "sem pedir atendimento não há exigência");
     }
@@ -194,15 +194,15 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Guid processoId = await SemearProcessoPsrAsync(ofertarAtendimento);
 
         // A habilitação pressupõe a forma de conclusão do ensino médio, que a inscrição coleta.
-        await AplicarModeloEAfirmarSucessoAsync(processoId, modeloDeInscricao);
-        await AplicarModeloEAfirmarSucessoAsync(processoId, SementePsrMedicina2027.ModeloDeHabilitacao);
+        await AplicarModeloEAfirmarSucessoAsync(processoId, modeloDeInscricao, FormulariosDoProcessoDeTeste.Inscricao);
+        await AplicarModeloEAfirmarSucessoAsync(processoId, SementePsrMedicina2027.ModeloDeHabilitacao, FormulariosDoProcessoDeTeste.Habilitacao);
 
         return await CarregarProcessoComFormulariosAsync(processoId);
     }
 
-    private async Task AplicarModeloEAfirmarSucessoAsync(Guid processoId, string codigoDoModelo)
+    private async Task AplicarModeloEAfirmarSucessoAsync(Guid processoId, string codigoDoModelo, string formularioCodigo)
     {
-        HttpResponseMessage resposta = await AplicarAsync(processoId, await ModeloAsync(codigoDoModelo));
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await ModeloAsync(codigoDoModelo), formularioCodigo);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
     }
 
@@ -228,10 +228,14 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         return processo.Id;
     }
 
-    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+    private static FaseCronograma FaseDeInscricao() => FaseSemPublicacao("fase", "INSCRICAO", ordem: 2, coletaInscricao: true);
+
+    private static FaseCronograma FaseDeHabilitacao() => FaseSemPublicacao("fase_habilitacao", "HABILITACAO", ordem: 3, coletaInscricao: false);
+
+    private static FaseCronograma FaseSemPublicacao(string chave, string codigo, int ordem, bool coletaInscricao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(chave).Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
-        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: false)),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
@@ -329,12 +333,15 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
     }
 
-    // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
+    // O modelo exige os documentos do atendimento na fase de inscrição do cronograma, e o modelo de habilitação se
+    // aplica ao formulário de habilitação, que o processo declara na fase de habilitação, fora da inscrição.
     private static void DefinirFaseDeInscricaoNoCronograma(ProcessoSeletivo processo)
     {
-        FaseCronograma inscricao = FaseDeInscricao();
-        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], []);
+        FaseCronograma habilitacao = FaseDeHabilitacao();
+        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, FaseDeInscricao(), habilitacao], []);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
+        processo.DefinirFormularioSemConjuntoBasico(
+            FormulariosDoProcessoDeTeste.Habilitacao, processo.CronogramaFases.Single(f => f.Codigo == "HABILITACAO").Id, obrigatorio: true);
     }
 
     /// <summary>A condição de atendimento cuja declaração torna o documento exigido.</summary>
@@ -351,13 +358,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         return await db.ModelosFormulario.Where(m => m.Codigo == codigo).Select(static m => m.Id).SingleAsync();
     }
 
-    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId)
+    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId, string formularioCodigo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/aplicacoes-de-modelo", UriKind.Relative))
         {
-            Content = JsonContent.Create(new { modeloId }),
+            Content = JsonContent.Create(new { modeloId, formularioCodigo }),
         };
         Autenticar(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));

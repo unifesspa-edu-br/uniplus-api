@@ -24,15 +24,18 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A aplicação do modelo de formulário ao processo pelo HTTP, contra o Postgres (UNI-REQ-0144): a
-/// cópia grava o formulário com a origem e é por valor — editar o modelo depois não muda o processo
-/// — e o fato que passa de outra finalidade para a inscrição respeita os índices únicos da coleta.
+/// A aplicação do modelo de formulário a um formulário do processo, citado pelo código, pelo HTTP, contra o
+/// Postgres (UNI-REQ-0144): a cópia grava o formulário com a origem e é por valor — editar o modelo depois não
+/// muda o processo —, o fato que passa de um formulário para outro respeita os índices únicos da coleta, e o
+/// formulário que o processo não tem é recusado.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
 public sealed class AplicarModeloFormularioEndpointTests
 {
+    private const string FormularioComplementar = "DADOS_COMPLEMENTARES";
+
     private readonly CascadingFixture _fixture;
 
     public AplicarModeloFormularioEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -43,30 +46,47 @@ public sealed class AplicarModeloFormularioEndpointTests
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda));
         Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
 
-        HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId);
+        HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        (await FinalidadeDoRelatorioAsync(resposta)).Should().Be("INSCRICAO");
         await EditarModeloAsync(modeloId, Conteudo("QUILOMBOLA", "PCD"));
 
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
-        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloDeOrigem!.Id.Should().Be(modeloId);
+        processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.Inscricao)!.ModeloDeOrigem!.Id.Should().Be(modeloId);
         ExigirItensLigadosAoFormularioDaInscricao(processo);
     }
 
-    [Fact(DisplayName = "O fato da habilitação passa para a inscrição na mesma gravação, sem colidir nos índices únicos")]
-    public async Task AplicarModelo_FatoDeOutraFinalidade_MudaDeFormularioNaMesmaGravacao()
+    [Fact(DisplayName = "O fato de um formulário passa para o formulário da inscrição na mesma gravação, sem colidir nos índices únicos")]
+    public async Task AplicarModelo_FatoDeOutroFormulario_MudaDeFormularioNaMesmaGravacao()
     {
-        Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FatoDeOutraFinalidade_MudaDeFormularioNaMesmaGravacao));
-        (await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Habilitacao, "QUILOMBOLA"))).StatusCode.Should().Be(HttpStatusCode.OK);
+        Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FatoDeOutroFormulario_MudaDeFormularioNaMesmaGravacao), comFormularioComplementar: true);
+        (await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Habilitacao, "QUILOMBOLA"), FormularioComplementar)).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA"));
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA"), FormulariosDoProcessoDeTeste.Inscricao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
-        processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().NotBeNull("o formulário de habilitação continua, só sem o fato");
+        Guid formularioDaInscricao = processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.Inscricao)!.Id;
+        processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FormularioId.Should().Be(formularioDaInscricao);
+        processo.FormularioDoCodigo(FormularioComplementar).Should().NotBeNull("o outro formulário continua, só sem o fato");
+        processo.CamposDoFormulario(FormularioComplementar).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Aplicar o modelo a um formulário que o processo não tem é recusado com 422 e nada é criado")]
+    public async Task AplicarModelo_FormularioInexistente_422()
+    {
+        Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FormularioInexistente_422));
+        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
+
+        HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId, "FORMULARIO_QUE_NAO_EXISTE");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.formulario_inexistente");
+        problema.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("field").GetString().Should().Be("formularioCodigo");
+        (await LerProcessoAsync(processoId)).FormularioDoCodigo("FORMULARIO_QUE_NAO_EXISTE").Should().BeNull();
     }
 
     [Fact(DisplayName = "O grupo repetível do modelo é gravado no processo, e reaplicar o modelo o substitui na mesma gravação")]
@@ -75,8 +95,8 @@ public sealed class AplicarModeloFormularioEndpointTests
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ComGrupo_GravaESubstitui));
         Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, ConteudoComGrupoDaComposicaoFamiliar());
 
-        (await AplicarAsync(processoId, modeloId)).StatusCode.Should().Be(HttpStatusCode.OK);
-        HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId);
+        (await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao)).StatusCode.Should().Be(HttpStatusCode.OK);
+        HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao);
 
         reaplicado.StatusCode.Should().Be(HttpStatusCode.OK, await reaplicado.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
@@ -87,16 +107,10 @@ public sealed class AplicarModeloFormularioEndpointTests
 
     private static void ExigirItensLigadosAoFormularioDaInscricao(ProcessoSeletivo processo)
     {
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
-        processo.Campos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Should().NotBeEmpty()
-            .And.OnlyContain(f => f.FormularioId == formularioId);
+        Guid formularioId = processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.Inscricao)!.Id;
+        processo.CamposDoFormulario(FormulariosDoProcessoDeTeste.Inscricao).Should().NotBeEmpty();
+        processo.Campos.Should().OnlyContain(f => f.FormularioId == formularioId);
         processo.GruposColetados.Should().OnlyContain(g => g.FormularioId == formularioId);
-    }
-
-    private static async Task<string?> FinalidadeDoRelatorioAsync(HttpResponseMessage resposta)
-    {
-        using JsonDocument relatorio = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        return relatorio.RootElement.GetProperty("finalidade").GetProperty("codigo").GetString();
     }
 
     private async Task EditarModeloAsync(Guid modeloId, ConteudoDoModelo conteudo)
@@ -109,11 +123,17 @@ public sealed class AplicarModeloFormularioEndpointTests
         await configuracao.SaveChangesAsync();
     }
 
-    private async Task<Guid> SemearProcessoAsync(string nome)
+    private async Task<Guid> SemearProcessoAsync(string nome, bool comFormularioComplementar = false)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"{nome} {Guid.CreateVersion7()}" });
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel
+        {
+            Nome = $"{nome} {Guid.CreateVersion7()}",
+            Complementar = comFormularioComplementar
+                ? static p => p.DefinirFormularioSemConjuntoBasico(FormularioComplementar, p.CronogramaFases.Single().Id, obrigatorio: false)
+                : null,
+        });
         return processo.Id;
     }
 
@@ -168,13 +188,13 @@ public sealed class AplicarModeloFormularioEndpointTests
             .SingleAsync(p => p.Id == processoId);
     }
 
-    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId)
+    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId, string formularioCodigo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/aplicacoes-de-modelo", UriKind.Relative))
         {
-            Content = JsonContent.Create(new { modeloId }),
+            Content = JsonContent.Create(new { modeloId, formularioCodigo }),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");

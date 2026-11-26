@@ -95,7 +95,7 @@ public sealed class ChavesDasExigenciasPeloEndpointTests(CascadingFixture ambien
             ["documento"] = new JsonObject
             {
                 ["tipoDocumento"] = new JsonObject { ["id"] = tipo.ToString() },
-                ["momento"] = new JsonObject { ["faseId"] = fase.ToString(), ["finalidade"] = "INSCRICAO" },
+                ["momento"] = new JsonObject { ["faseId"] = fase.ToString(), ["formularioCodigo"] = "INSCRICAO" },
                 ["aplicabilidade"] = new JsonObject { ["tipo"] = "GERAL" },
                 ["indeferimento"] = new JsonObject { ["obrigatorio"] = true },
                 ["requisitos"] = new JsonObject { ["formatosPermitidos"] = "QUALQUER" },

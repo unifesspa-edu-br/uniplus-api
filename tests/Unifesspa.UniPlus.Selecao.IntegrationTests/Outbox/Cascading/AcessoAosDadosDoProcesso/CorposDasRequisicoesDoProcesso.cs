@@ -27,7 +27,7 @@ internal static class CorposDasRequisicoesDoProcesso
         documento = new
         {
             tipoDocumento = new { id = tipoDocumentoId },
-            momento = new { faseId, finalidade = "INSCRICAO" },
+            momento = new { faseId, formularioCodigo = "INSCRICAO" },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
             indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
             requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,

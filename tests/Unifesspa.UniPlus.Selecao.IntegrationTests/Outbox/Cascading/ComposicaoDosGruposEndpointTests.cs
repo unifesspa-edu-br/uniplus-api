@@ -29,8 +29,8 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
     public async Task DefinirDocumentos_GruposComFasesEFormulariosDiferentes_AcumulaRecusas()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object primeiro = RegraDeDocumento(tipo, fase, "INSCRICAO");
-        object segundo = RegraDeDocumento(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA");
+        object primeiro = RegraDeDocumento(tipo, fase, FormulariosDoProcessoDeTeste.Inscricao);
+        object segundo = RegraDeDocumento(tipo, Guid.CreateVersion7(), FormulariosDoProcessoDeTeste.PedidoDeIsencao);
         object grupo = new { forma = "TODOS_OS_ITENS", itens = new[] { primeiro, segundo } };
         using JsonDocument problema = await EnviarAsync(processo, [grupo, grupo]);
 
@@ -45,7 +45,7 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
     public async Task DefinirDocumentos_ItemRecusadoEGrupoIncoerente_AcumulaCausasIndependentes()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object grupo = new { forma = "TODOS_OS_ITENS", itens = new[] { RegraDeDocumento(tipo, fase, "INSCRICAO"), RegraDeDocumento(tipo, Guid.CreateVersion7(), "ISENCAO_TAXA") } };
+        object grupo = new { forma = "TODOS_OS_ITENS", itens = new[] { RegraDeDocumento(tipo, fase, FormulariosDoProcessoDeTeste.Inscricao), RegraDeDocumento(tipo, Guid.CreateVersion7(), FormulariosDoProcessoDeTeste.PedidoDeIsencao) } };
         using JsonDocument problema = await EnviarAsync(processo, [CasosDeRecusaDaRegra.RegraSemDocumento(), grupo]);
 
         JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
@@ -59,7 +59,7 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
     public async Task DefinirDocumentos_RepeticaoDentroDeRepeticao_ApontaOGrupo()
     {
         (Guid processo, Guid tipo, Guid fase) = await PrepararAsync();
-        object interno = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { RegraDeDocumento(tipo, fase, "INSCRICAO") } };
+        object interno = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { RegraDeDocumento(tipo, fase, FormulariosDoProcessoDeTeste.Inscricao) } };
         object externo = new { forma = "TODOS_OS_ITENS", grupoDoFormularioParaRepeticao = "PESSOAS", itens = new[] { interno } };
         using JsonDocument problema = await EnviarAsync(processo, [externo]);
 
@@ -104,13 +104,13 @@ public sealed class ComposicaoDosGruposEndpointTests(CascadingFixture fixture)
         processo.DefinirItens([], grupos: [grupo]).IsSuccess.Should().BeTrue();
     }
 
-    private static object RegraDeDocumento(Guid tipo, Guid fase, string finalidade) => new
+    private static object RegraDeDocumento(Guid tipo, Guid fase, string formularioCodigo) => new
     {
         forma = "DOCUMENTO",
         documento = new
         {
             tipoDocumento = new { id = tipo },
-            momento = new { faseId = fase, finalidade },
+            momento = new { faseId = fase, formularioCodigo },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
             indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
             requisitos = new { formatosPermitidos = "QUALQUER" },

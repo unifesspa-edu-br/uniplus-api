@@ -54,10 +54,21 @@ internal static class ProcessoSeletivoPublicavelSeeder
             RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(opcoes.ProdutosDaFase is { Count: > 0 } ? opcoes.ProdutosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
         bancasRequeridas: BancasDaFaseDeResultado(opcoes)).Value!;
 
-    private static IReadOnlyList<BancaRequerida> BancasDaFaseDeResultado(OpcoesDoProcessoSeletivoPublicavel opcoes) =>
-        opcoes.ComBancaDeImportacaoDasNotas
-            ? [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDasNotasDoInep)]
-            : [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()];
+    private static List<BancaRequerida> BancasDaFaseDeResultado(OpcoesDoProcessoSeletivoPublicavel opcoes)
+    {
+        List<BancaRequerida> bancas = [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()];
+        if (opcoes.ComBancaDeImportacaoDasNotas)
+        {
+            bancas.Add(BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDasNotasDoInep));
+        }
+
+        if (opcoes.ComBancaDeImportacaoDeCandidatos)
+        {
+            bancas.Add(BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos));
+        }
+
+        return bancas;
+    }
 
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
@@ -108,7 +119,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
     private static ProcessoSeletivo CriarProcesso(UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(opcoes.Nome, opcoes.Tipo ?? TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, opcoes.UnidadeAdministradoraOrigemId ?? Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(opcoes.Nome, opcoes.Tipo ?? TiposDeProcessoDeTeste.Sisu, opcoes.Origem, opcoes.UnidadeAdministradoraOrigemId ?? Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         if (opcoes.ProcessoSeletivoId.HasValue)
         {
@@ -199,6 +210,12 @@ internal sealed record OpcoesDoProcessoSeletivoPublicavel
 
     /// <summary>Acrescenta à fase de resultado a banca de importação das notas do INEP, que o processo com nota do ENEM exige.</summary>
     public bool ComBancaDeImportacaoDasNotas { get; init; }
+
+    /// <summary>Acrescenta à fase de resultado a banca de importação dos candidatos, que o processo de resultado importado exige.</summary>
+    public bool ComBancaDeImportacaoDeCandidatos { get; init; }
+
+    /// <summary>De onde vêm os candidatos: ausente, o processo tem inscrição pelo sistema.</summary>
+    public OrigemCandidatos Origem { get; init; } = OrigemCandidatos.InscricaoPropria;
     public Action<ProcessoSeletivo>? Complementar { get; init; }
     public TipoProcessoSnapshot? Tipo { get; init; }
     public IReadOnlyList<ProdutoDaFase>? ProdutosDaFase { get; init; }

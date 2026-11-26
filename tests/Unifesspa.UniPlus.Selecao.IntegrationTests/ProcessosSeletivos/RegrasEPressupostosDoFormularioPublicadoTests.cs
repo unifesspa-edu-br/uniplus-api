@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -62,7 +63,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         EnvelopeReidratado vivo = EnvelopeVivo(processo, entrada);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
         return RecorteDaFinalidade.De(
-            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
+            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao), null), daConfiguracao.Ofertas);
     }
 
     private static EnvelopeReidratado EnvelopeVivo(ProcessoSeletivo processo, EntradaCanonicalizacao entrada) =>
@@ -171,7 +172,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, ExemploDeEnvelope.Ator);
 
-        FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id, FinalidadeFormulario.Habilitacao);
+        FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id, FormulariosDoProcessoDeTeste.Habilitacao);
 
         ConferirPressupostosDaHabilitacao(lido);
     }
@@ -194,7 +195,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     {
         FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], []).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Paginas())
+        processo.DefinirFormulario(FormulariosDoProcessoDeTeste.Declarado(FormulariosDoProcessoDeTeste.Habilitacao, habilitacao.Id, obrigatorio: true), "Habilitação", FormulariosDoProcessoDeTeste.PaginasSemConjuntoBasico())
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)
@@ -204,21 +205,22 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
     private static void DefinirItensDaHabilitacao(ProcessoSeletivo processo)
     {
-        Result itens = processo.DefinirItens(
-        [
-            FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
-                .ComRotulo("Certificado emitido")
-                .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
-                .Construir(),
-            FatoColetadoDeTeste.Coletando("DECLARACAO_MAIORIDADE", 1)
-                .ComRotulo("Declaração de maioridade")
-                .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .ExibidoQuando(ExibicaoDeTeste.Quando("FAIXA_ETARIA", Operador.MaiorIgual, 18))
-                .Construir(),
-        ], finalidade: FinalidadeFormulario.Habilitacao);
+        Result itens = processo.DefinirFatosColetados(
+            FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Habilitacao),
+            [
+                ItemDaHabilitacao("CERTIFICADO_EMITIDO", 0, "Certificado emitido", ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA")),
+                ItemDaHabilitacao("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", ExibicaoDeTeste.Quando("FAIXA_ETARIA", Operador.MaiorIgual, 18)),
+            ]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
+
+    private static FatoColetado ItemDaHabilitacao(string fato, int ordem, string rotulo, PredicadoDnf exibicao) =>
+        FatoColetadoDeTeste.Coletando(fato, ordem)
+            .ComRotulo(rotulo)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ExibidoQuando(exibicao)
+            .NaSecao(FormularioDeTeste.Secao)
+            .Construir();
 
     private static FatoPressuposto Municipio(FormularioApresentadoDoProcessoDto formulario) =>
         formulario.Formulario.Pressupostos.Fatos.Single(static p => p.FatoCodigo == "MUNICIPIO_RESIDENCIA");

@@ -25,6 +25,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Exemp
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEntrada;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 internal static class ExemploDeEnvelopeProcessoRico
 {
@@ -273,9 +274,9 @@ internal static class ExemploDeEnvelopeProcessoRico
     // a exibição da seção junto das demais páginas.
     internal static void DefinirPaginasDoFormulario(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
-        FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
+        FormularioProcesso inscricao = processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.Inscricao)!;
         processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
+            inscricao.Declarado, inscricao.Titulo,
             [
                 FormularioDeTeste.Paginas()[0],
                 PaginaDoFormulario.Criar(new PaginaEstrutura(FormularioDeTeste.Secao, 1, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,

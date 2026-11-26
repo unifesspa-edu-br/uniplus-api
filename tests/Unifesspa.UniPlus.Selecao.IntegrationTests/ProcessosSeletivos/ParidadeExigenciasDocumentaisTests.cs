@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Paridade bidirecional entre <see cref="DocumentoExigido"/> viva e o item congelado no
@@ -105,7 +106,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipoDocumentoCodigo.ToLowerInvariant()).Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoCodigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+            new MomentoDaExigencia(exigidoNaFaseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(false, null, []),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

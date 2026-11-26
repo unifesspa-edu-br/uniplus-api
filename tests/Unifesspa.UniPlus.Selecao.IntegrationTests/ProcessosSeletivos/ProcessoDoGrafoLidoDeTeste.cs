@@ -3,10 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 internal static class ProcessoDoGrafoLidoDeTeste
 {
@@ -51,11 +51,11 @@ internal static class ProcessoDoGrafoLidoDeTeste
 
     private static void DefinirFormularios(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)
     {
-        foreach (FormularioProcesso formulario in grafo.Coleta.Formularios.OrderBy(f => f.Finalidade))
+        foreach (FormularioProcesso formulario in grafo.Coleta.Formularios.OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal))
         {
-            Aceita(processo.DefinirFormulario(formulario.Finalidade, formulario.FaseId, formulario.Titulo,
-                [.. formulario.Paginas], [.. grafo.Coleta.Itens.Where(f => f.Finalidade == formulario.Finalidade)]));
-            DefinirColeta(processo, grafo, formulario.Finalidade);
+            Aceita(processo.DefinirFormulario(formulario.Declarado, formulario.Titulo,
+                [.. formulario.Paginas], [.. grafo.Coleta.Itens.Where(f => f.FormularioId == formulario.Id)], formulario.ConsequenciaDaFaltaDeEnvio));
+            DefinirColeta(processo, grafo, formulario);
         }
 
         foreach (IGrouping<string, OpcaoDeclaradaFato> opcoes in grafo.Coleta.OpcoesDeclaradas.GroupBy(o => o.FatoCodigo))
@@ -64,12 +64,12 @@ internal static class ProcessoDoGrafoLidoDeTeste
         }
     }
 
-    private static void DefinirColeta(ProcessoSeletivo processo, ConfiguracaoPublicada grafo, FinalidadeFormulario finalidade)
+    private static void DefinirColeta(ProcessoSeletivo processo, ConfiguracaoPublicada grafo, FormularioProcesso formulario)
     {
-        Aceita(processo.DefinirFatosColetados(finalidade,
-            [.. grafo.Coleta.Itens.Where(f => f.Finalidade == finalidade)],
-            [.. grafo.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade)]));
-        Aceita(processo.DefinirTermosDoFormulario(finalidade, [.. grafo.Coleta.TermosExigidos.Where(t => t.Finalidade == finalidade)]));
+        Aceita(processo.DefinirFatosColetados(formulario.Codigo,
+            [.. grafo.Coleta.Itens.Where(f => f.FormularioId == formulario.Id)],
+            [.. grafo.Coleta.GruposColetados.Where(g => g.FormularioId == formulario.Id)]));
+        Aceita(processo.DefinirTermosDoFormulario(formulario.Codigo, [.. grafo.Coleta.TermosExigidos.Where(t => t.FormularioId == formulario.Id)]));
     }
 
     private static void DefinirExigenciasEIdentificacao(ProcessoSeletivo processo, ConfiguracaoPublicada grafo)

@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Os processos de inscrição que os testes publicam: o conjunto básico, os campos próprios e a modalidade que deriva de resposta.</summary>
@@ -68,7 +69,6 @@ internal static class ProcessosDeInscricaoDeTeste
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")
             .NaSecao(FormularioDeTeste.Secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, RegraDeAplicabilidade = Clausulas([("CONCORRER_PCD", true)]), BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
         return NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd], modalidades: [ampla]);
@@ -80,7 +80,6 @@ internal static class ProcessosDeInscricaoDeTeste
             .ComRotulo("Você solicita o Fator de Atenuação?")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .NaSecao(FormularioDeTeste.Secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
         return NovoProcessoDeInscricao(nome, camposAdicionais: [pedeOFator], fatoDoFator: "PEDE_O_FATOR", comIsencao: comIsencao);
     }
@@ -96,7 +95,6 @@ internal static class ProcessosDeInscricaoDeTeste
                 .DeTexto("LIVRE")
                 .ComObrigatoriedade(obrigatoriedade)
                 .NaSecao(FormularioDeTeste.Secao)
-                .DaFinalidade(FinalidadeFormulario.Inscricao)
                 .Construir(),
         ]);
 
@@ -112,14 +110,12 @@ internal static class ProcessosDeInscricaoDeTeste
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComClassificacao("SENSIVEL")
         .NaSecao(FormularioDeTeste.Secao)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static FatoColetado CampoTextualObrigatorio(string fato, int ordem) => FatoColetadoDeTeste.Coletando(fato, ordem)
         .DeTexto("LIVRE")
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .NaSecao(FormularioDeTeste.Secao)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static ModalidadeSelecionada AmplaAplicavelSoQuemConcorrePcd() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { RegraRemanejamento = null, RegraDeAplicabilidade = Clausulas([("CONCORRER_PCD", true)]), BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
@@ -187,7 +183,6 @@ internal static class ProcessosDeInscricaoDeTeste
             .ComCampos(
                 CampoTextual("RG_NUMERO_MEMBRO", 0, "RG do membro", "IDENTIFICADOR"),
                 CampoTextual("PARENTESCO", 1, "Parentesco", "PESSOAL"))
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
         return composicaoFamiliar;
     }
@@ -219,12 +214,10 @@ internal static class ProcessosDeInscricaoDeTeste
 
     private static void DefinirFormularioEFatosDaIsencao(ProcessoSeletivo processo)
     {
-        processo.DefinirFormulario(
-                FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single(f => f.ColetaSolicitacaoIsencao).Id, null,
-                FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
-            .IsSuccess.Should().BeTrue();
+        processo.DefinirFormularioSemConjuntoBasico(
+            FormulariosDoProcessoDeTeste.PedidoDeIsencao, processo.CronogramaFases.Single(f => f.ColetaSolicitacaoIsencao).Id, obrigatorio: false);
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.IsencaoTaxa,
+                FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.PedidoDeIsencao),
                 [FatoColetadoDeTeste.Coletando("BOLSISTA", 0)
                     .ComRotulo("Bolsista")
                     .ComObrigatoriedade(Obrigatoriedade.Sempre)

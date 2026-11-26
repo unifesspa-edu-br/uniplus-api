@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Os sete arrays do envelope que são <b>conjuntos</b> (sem precedência entre os
@@ -161,7 +162,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         DocumentoExigido documento = DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_rg").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(false, null, []),
                 RequisitosDoDocumentoDeTeste.Com(formatosAceitos),

@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// <c>dataReferenciaFatos</c> — a <see cref="DateOnly"/> resolvida e congelada no
@@ -117,7 +118,7 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_declaracao_maioridade").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
                 new IndeferimentoDoDocumento(true, null, [baseLegal]),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

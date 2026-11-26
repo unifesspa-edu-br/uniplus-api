@@ -23,11 +23,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O modelo de solicitação de isenção da taxa, semeado pela migration da Configuração, é aplicado a
-/// um processo em rascunho que cobra taxa, de um tipo qualquer, cuja inscrição coleta a origem escolar.
+/// O modelo de solicitação de isenção da taxa, semeado pela migration da Configuração, é aplicado ao
+/// formulário facultativo de pedido de isenção de um processo em rascunho que cobra taxa, de um tipo qualquer,
+/// cuja inscrição coleta a origem escolar.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -43,18 +45,25 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
     {
         Guid processoId = await SemearProcessoQueCobraTaxaAsync();
 
-        HttpResponseMessage resposta = await AplicarAsync(processoId, await ModeloAsync());
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await ModeloAsync(), FormulariosDoProcessoDeTeste.PedidoDeIsencao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        ProcessoSeletivo processo = await LerComFormulariosECamposAsync(processoId);
+        FormularioProcesso pedido = processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.PedidoDeIsencao)!;
+        pedido.Obrigatorio.Should().BeFalse("o pedido de isenção é facultativo");
+        pedido.ModeloDeOrigem.Should().NotBeNull();
+        processo.Campos.Should().ContainSingle(c =>
+            c.FatoCodigo == IsencaoPorCarenciaSocioeconomica.FatoRenda && c.FormularioId == pedido.Id);
+    }
+
+    private async Task<ProcessoSeletivo> LerComFormulariosECamposAsync(Guid processoId)
+    {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking()
+        return await db.ProcessosSeletivos.AsNoTracking()
             .Include(static p => p.Formularios)
             .Include(static p => p.Campos)
             .SingleAsync(p => p.Id == processoId);
-        processo.Formularios.Should().Contain(static f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa);
-        processo.Campos.Should().ContainSingle(static c =>
-            c.FatoCodigo == IsencaoPorCarenciaSocioeconomica.FatoRenda && c.Finalidade == FinalidadeFormulario.IsencaoTaxa);
     }
 
     /// <summary>
@@ -76,10 +85,9 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
 
     private static void CobrarTaxaEColetarAOrigemEscolar(ProcessoSeletivo processo)
     {
-        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 100m, fundamentosCodigos: ["CARENCIA_SOCIOECONOMICA"]).Value!;
-        Result taxaDefinida = processo.DefinirTaxaInscricao(taxa);
-        taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
+        CobrarTaxa(processo);
+        processo.DefinirFormularioSemConjuntoBasico(
+            FormulariosDoProcessoDeTeste.PedidoDeIsencao, processo.CronogramaFases.Single().Id, obrigatorio: false);
 
         int ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao;
         Result itens = processo.DefinirItens(
@@ -88,6 +96,14 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
             PerguntaDeEscolhaUnica(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?"),
         ]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+    }
+
+    private static void CobrarTaxa(ProcessoSeletivo processo)
+    {
+        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: 100m, fundamentosCodigos: ["CARENCIA_SOCIOECONOMICA"]).Value!;
+        Result taxaDefinida = processo.DefinirTaxaInscricao(taxa);
+        taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
     }
 
     private static FatoColetado PerguntaDeEscolhaUnica(string fatoCodigo, int ordem, string rotulo) =>
@@ -104,13 +120,13 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
         return await db.ModelosFormulario.Where(m => m.Codigo == SementeIsencaoDaTaxa.ModeloDeIsencao).Select(static m => m.Id).SingleAsync();
     }
 
-    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId)
+    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId, string formularioCodigo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post, new Uri($"/api/selecao/admin/processos-seletivos/{processoId}/formularios/aplicacoes-de-modelo", UriKind.Relative))
         {
-            Content = JsonContent.Create(new { modeloId }),
+            Content = JsonContent.Create(new { modeloId, formularioCodigo }),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");

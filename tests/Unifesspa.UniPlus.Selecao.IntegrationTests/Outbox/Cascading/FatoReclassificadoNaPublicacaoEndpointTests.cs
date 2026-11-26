@@ -134,8 +134,9 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Guid formularioId = await FormulariosDoProcessoDeTeste.IdentificadorDoFormularioAsync(db, processoId, FormulariosDoProcessoDeTeste.Inscricao);
         string[] itensEmOrdem = await db.Set<FatoColetado>().AsNoTracking()
-            .Where(f => f.ProcessoSeletivoId == processoId && f.GrupoColetadoId == null && f.Finalidade == Regras.Formularios.FinalidadeFormulario.Inscricao)
+            .Where(f => f.ProcessoSeletivoId == processoId && f.GrupoColetadoId == null && f.FormularioId == formularioId)
             .OrderBy(f => f.Ordem).Select(f => f.FatoCodigo).ToArrayAsync();
 
         return Array.IndexOf(itensEmOrdem, item);

@@ -96,15 +96,16 @@ public sealed class EnvelopeCodecRecusaExigenciasDocumentaisTests
 
     /// <summary>
     /// O formulário a que o documento pertence é parte da forma da exigência: ausente ou fora do
-    /// vocabulário, o bloco de comprovação não saberia em que formulário mostrá-lo.
+    /// formato do código, o bloco de comprovação não saberia em que formulário mostrá-lo.
     /// </summary>
-    [Theory(DisplayName = "Exigência sem o formulário a que pertence, ou com formulário fora do vocabulário, é recusada na reidratação")]
+    [Theory(DisplayName = "Exigência sem o código do formulário a que pertence, ou com código fora do formato, é recusada na reidratação")]
     [InlineData(null)]
-    [InlineData("MATRICULA")]
-    public void ExigenciaComFinalidadeAusenteOuDesconhecida_Recusa(string? token)
+    [InlineData("matricula")]
+    [InlineData("FORMULARIO COM ESPACO")]
+    public void ExigenciaComFormularioAusenteOuForaDoFormato_Recusa(string? token)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
-            DefinirFinalidadeDaPrimeiraExigencia(envelope, token));
+            DefinirFormularioDaPrimeiraExigencia(envelope, token));
 
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
@@ -116,15 +117,15 @@ public sealed class EnvelopeCodecRecusaExigenciasDocumentaisTests
         exigencias[1]!["exigenciaId"] = exigencias[0]!["exigenciaId"]!.DeepClone();
     }
 
-    private static void DefinirFinalidadeDaPrimeiraExigencia(JsonObject envelope, string? token)
+    private static void DefinirFormularioDaPrimeiraExigencia(JsonObject envelope, string? token)
     {
         if (token is null)
         {
-            PrimeiraExigencia(envelope).Remove("finalidade");
+            PrimeiraExigencia(envelope).Remove("formularioCodigo");
         }
         else
         {
-            PrimeiraExigencia(envelope)["finalidade"] = token;
+            PrimeiraExigencia(envelope)["formularioCodigo"] = token;
         }
     }
 

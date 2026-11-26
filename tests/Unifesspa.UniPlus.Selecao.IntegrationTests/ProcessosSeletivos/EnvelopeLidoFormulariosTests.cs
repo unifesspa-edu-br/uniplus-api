@@ -14,11 +14,13 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 public sealed class EnvelopeLidoFormulariosTests
 {
@@ -31,7 +33,7 @@ public sealed class EnvelopeLidoFormulariosTests
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
-        Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["finalidade"]!.GetValue<string>())
+        Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["codigo"]!.GetValue<string>())
             .Should().Equal("INSCRICAO", "HABILITACAO");
     }
 
@@ -116,18 +118,20 @@ public sealed class EnvelopeLidoFormulariosTests
         FaseCronograma habilitacao = FaseDeHabilitacao(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Paginas())
+        CodigoDoFormulario codigo = FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Habilitacao);
+        processo.DefinirFormulario(FormulariosDoProcessoDeTeste.Declarado(FormulariosDoProcessoDeTeste.Habilitacao, habilitacao.Id, obrigatorio: true), "Habilitação", FormulariosDoProcessoDeTeste.PaginasSemConjuntoBasico())
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
-                .ComRotulo("Certificado emitido")
-                .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
-                .Construir()],
-            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirFatosColetados(codigo, [CertificadoEmitidoSeCorOuRacaPreta()]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(codigo, [ExemploDeEnvelopeEntrada.Termo("VERACIDADE", 0)])
             .IsSuccess.Should().BeTrue();
     }
+
+    private static FatoColetado CertificadoEmitidoSeCorOuRacaPreta() => FatoColetadoDeTeste.Coletando("CERTIFICADO_EMITIDO", 0)
+        .ComRotulo("Certificado emitido")
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, "PRETA"))
+        .NaSecao(FormularioDeTeste.Secao)
+        .Construir();
 
     private static void DefinirItensComBolsa(ProcessoSeletivo processo) =>
         processo.DefinirItens(
@@ -187,7 +191,7 @@ public sealed class EnvelopeLidoFormulariosTests
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);
         RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, null));
+            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao), null));
         recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo)
             .Should().Contain([OpcaoPelasCotasDaLei.Fato, OrigemEscolar.FatoEgresso]);
         recorte.Pressupostos.Should().NotContain(OpcaoPelasCotasDaLei.Fato);

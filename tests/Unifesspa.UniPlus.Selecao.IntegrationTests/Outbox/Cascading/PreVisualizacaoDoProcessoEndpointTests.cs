@@ -51,7 +51,7 @@ public sealed class PreVisualizacaoDoProcessoEndpointTests
 
     private static JsonElement ItemDoRegistroGeralNoFormularioDeInscricao(JsonElement corpo) =>
         corpo.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetProperty("codigo").GetString() == "INSCRICAO")
+            .Single(static f => f.GetProperty("codigo").GetString() == "INSCRICAO")
             .GetProperty("itens").EnumerateArray()
             .Single(static i => i.GetProperty("fatoCodigo").GetString() == "RG_NUMERO");
 
