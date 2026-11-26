@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,10 +10,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Configuração EF Core do registro de avisos emitidos. A gravação é o <c>INSERT ... ON CONFLICT DO NOTHING</c> do
 /// <see cref="RegistroDeAvisos"/>; o mapeamento existe para a tabela e a classificação entrarem no modelo.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class AvisoEmitidoConfiguration : IEntityTypeConfiguration<AvisoEmitido>
 {
     private const int TipoMaxLength = 60;

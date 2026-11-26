@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Domain.Entities;
 
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +23,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <c>ux_snapshot_publicacao_edital_id</c>, porque impede também que um mesmo
 /// ato crie duas versões.
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration<VersaoConfiguracao>
 {
     private const int HashLength = 64;

@@ -174,7 +174,11 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1861.severity = none
 
-# Mapeamento do EF é lista declarativa de propriedades: dividi-la só para caber em tamanho de
-# método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
+# Configurações de mapeamento do EF Core:
+# - MA0051: mapeamento é lista declarativa de propriedades; dividi-lo só para caber em tamanho
+#   de método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
+# - CA1812: classes internas (IEntityTypeConfiguration<T>) são instanciadas via reflexão pelo
+#   EF Core (ModelBuilder.ApplyConfigurationsFromAssembly), o que o analisador não detecta.
 [src/**/Persistence/Configurations/**.cs]
 dotnet_diagnostic.MA0051.severity = none
+dotnet_diagnostic.CA1812.severity = none

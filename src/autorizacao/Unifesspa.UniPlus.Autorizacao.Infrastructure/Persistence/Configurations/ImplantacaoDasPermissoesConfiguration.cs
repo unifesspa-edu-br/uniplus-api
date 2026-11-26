@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -14,10 +12,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core das implantações do catálogo de permissões e das permissões de cada uma, só acrescentadas.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfiguration<ImplantacaoDasPermissoes>, IEntityTypeConfiguration<PermissaoImplantada>
 {
     private const int CodigoMaxLength = 120;

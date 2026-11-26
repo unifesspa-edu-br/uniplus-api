@@ -8,10 +8,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration<VinculoAtoEntidade>
 {
     private const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,10 +20,6 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// via <c>HasData</c>, e o CRUD admin continua disponível para
 /// acrescentar novas arestas.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<PrecedenciaFase>
 {
     private const int CodigoMaxLength = 60;

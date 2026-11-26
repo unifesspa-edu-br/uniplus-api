@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,10 +8,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>Configuração EF Core do registro de geração do arquivo de envio ao INEP. Nem o arquivo nem os CPFs são guardados.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class GeracaoDeEnvioAoInepConfiguration : IEntityTypeConfiguration<GeracaoDeEnvioAoInep>
 {
     private const int HashHexLength = 64;

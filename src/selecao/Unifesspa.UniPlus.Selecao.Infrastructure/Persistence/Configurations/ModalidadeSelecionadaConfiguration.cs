@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,10 +14,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// entidade filha de <see cref="ConfiguracaoDistribuicaoVagas"/>, snapshot-copy
 /// por valor da <c>Modalidade</c> viva do módulo Configuração.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ModalidadeSelecionadaConfiguration : IEntityTypeConfiguration<ModalidadeSelecionada>
 {
     private const int CodigoMaxLength = 60;

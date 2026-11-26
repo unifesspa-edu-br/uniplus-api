@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// #773) — entidade filha do agregado <see cref="ProcessoSeletivo"/>, uma por
 /// oferta de curso.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeConfiguration<ConfiguracaoDistribuicaoVagas>
 {
 

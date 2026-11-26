@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -16,10 +14,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Configuração EF Core das reclassificações das permissões nos perfis, registro só acrescentado. O banco recusa a linha
 /// em que nenhum eixo mudou e a repetição do fato no mesmo catálogo.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ReclassificacaoDaPermissaoConfiguration : IEntityTypeConfiguration<ReclassificacaoDaPermissao>
 {
     private const int CodigoMaxLength = 120;

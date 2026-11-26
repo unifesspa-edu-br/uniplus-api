@@ -10,10 +10,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfiguration<EnderecoDaInscricaoRecord>
 {
     public void Configure(EntityTypeBuilder<EnderecoDaInscricaoRecord> builder)

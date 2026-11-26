@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,10 +10,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core da revisão periódica dos acessos e dos itens dela.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<RevisaoDeAcessos>, IEntityTypeConfiguration<ItemDaRevisao>
 {
     private const int IdentidadeMaxLength = 255;

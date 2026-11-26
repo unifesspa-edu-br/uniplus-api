@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,10 +14,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Configuração EF Core dos lançamentos de nota: uma linha por área do ENEM de cada inscrito do
 /// lote. Sem cifra, sem nome, sem CPF e sem data (ADR-0149).
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<LancamentoDeNota>
 {
     private const int ItemMaxLength = 40;

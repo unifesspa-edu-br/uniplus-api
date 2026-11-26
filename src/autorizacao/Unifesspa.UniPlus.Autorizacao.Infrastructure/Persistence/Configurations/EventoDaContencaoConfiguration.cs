@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,10 +14,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Configuração EF Core da trilha da contenção do perfil, registro só acrescentado. Os checks dão um ramo a cada tipo de
 /// evento e, na retomada, um a cada origem, de modo que o banco recusa a referência de um ramo no registro de outro.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<EventoDaContencao>
 {
     private const int IdentidadeMaxLength = 255;
