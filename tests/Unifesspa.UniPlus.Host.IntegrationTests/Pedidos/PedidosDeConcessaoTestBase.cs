@@ -196,7 +196,7 @@ public abstract class PedidosDeConcessaoTestBase
     internal static async Task<string[]> TiposDaTrilhaAsync(HttpClient client, Guid id)
     {
         JsonElement eventos = await LerAsync(client, $"{Rota}/{id}/trilha");
-        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
+        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()!)];
     }
 
     private protected async Task<Concessao[]> ConcessoesAsync(Persona beneficiario, Guid perfilId)

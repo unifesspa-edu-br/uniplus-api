@@ -206,7 +206,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await CancelarSoPeloSolicitanteAsync(betina, cancelado);
 
         (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(cancelado);
-        (await TiposDaTrilhaAsync(betina, cancelado)).Should().Equal("pedido_criado", "termo_aceito", "cancelado");
+        (await TiposDaTrilhaAsync(betina, cancelado)).Should().Equal("PEDIDO_CRIADO", "TERMO_ACEITO", "PEDIDO_CANCELADO");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{cancelado}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
 
         Guid decidido = await DecididoPeloGestorAsync(diogo, perfil, unidade);
@@ -243,14 +243,14 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
 
     private async Task ConferirTrilhasAsync(HttpClient diogo, Guid pedidoId, Guid concessaoId)
     {
-        (await TiposDaTrilhaAsync(diogo, pedidoId)).Should().Equal("pedido_criado", "beneficiario_aceitou", "APROVADO");
+        (await TiposDaTrilhaAsync(diogo, pedidoId)).Should().Equal("PEDIDO_CRIADO", "BENEFICIARIO_ACEITOU", "PEDIDO_APROVADO_NA_ETAPA");
         JsonElement trilhaDoPedido = await LerAsync(diogo, $"{Rota}/{pedidoId}/trilha");
         trilhaDoPedido.EnumerateArray().Select(e => e.GetProperty("autor").GetProperty("nome").GetString()).Should()
             .Equal(Betina.Nome, Leandro.Nome, Diogo.Nome);
         using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
         JsonElement daConcessao = await LerAsync(administrador, $"/api/autorizacao/concessoes/{concessaoId}/trilha");
-        daConcessao.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should()
-            .Contain(["concedida", "pedido_criado", "beneficiario_aceitou", "APROVADO"]);
+        daConcessao.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should()
+            .Contain(["CONCEDIDA", "PEDIDO_CRIADO", "BENEFICIARIO_ACEITOU", "PEDIDO_APROVADO_NA_ETAPA"]);
     }
 
     private async Task<Guid> CriarComSugestaoAsync(Guid perfil, Guid unidade, DateTimeOffset sugerida)
@@ -296,7 +296,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
     private static async Task ConferirRecusaNaTrilhaENasFilasAsync(HttpClient betina, HttpClient diogo, Guid id)
     {
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
-        JsonElement evento = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "RECUSADO");
+        JsonElement evento = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "PEDIDO_RECUSADO_NA_ETAPA");
         evento.GetProperty("detalhe").GetString().Should().Contain("função não exige acesso a laudos");
         (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
         (await ListarFilaAsync(diogo, "todos")).Should().Contain(id);

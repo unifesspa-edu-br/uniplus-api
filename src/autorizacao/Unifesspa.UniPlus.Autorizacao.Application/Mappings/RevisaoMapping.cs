@@ -48,8 +48,8 @@ public static class RevisaoMapping
 
         bool revogada = item.Resultado == ResultadoDoItemDaRevisao.Revogada;
 
-        return new EventoDaTrilhaDto(
-            revogada ? "revisao_revogada" : "revisao_confirmada",
+        return EventoDaTrilhaDto.DaPessoa(
+            revogada ? TipoDoEventoDoHistoricoDaConcessao.RevogadaNaRevisao : TipoDoEventoDoHistoricoDaConcessao.ConfirmadaNaRevisao,
             item.DecididoEm!.Value,
             new IdentidadeDto(item.DecididoPorEmissor!, item.DecididoPorContaId!, item.DecididoPorNome),
             revogada ? $"Revisão {item.RevisaoId}: acesso revogado." : $"Revisão {item.RevisaoId}: acesso mantido.");

@@ -24,7 +24,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 {
     private const string SituacaoAprovado = "APROVADO";
     private const string SituacaoNaSegundaEtapa = "AGUARDANDO_PROTECAO_DE_DADOS";
-    private const string TipoDaDispensaNaTrilha = "segunda_aprovacao_dispensada";
+    private const string TipoDaDispensaNaTrilha = "SEGUNDA_APROVACAO_DISPENSADA";
     private const string TravaDaGravacaoDeConcessoes = "LOCK TABLE autorizacao.concessoes IN SHARE ROW EXCLUSIVE MODE";
 
     private static readonly Guid Representante = PerfisDeSistema.RepresentanteDoControladorId;
@@ -62,7 +62,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         (await EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await ConcessoesAsync(Leandro, Representante)).Should().ContainSingle();
-        (await TiposDaTrilhaAsync(diogo, id)).Should().NotContain("segunda_aprovacao_dispensada");
+        (await TiposDaTrilhaAsync(diogo, id)).Should().NotContain("SEGUNDA_APROVACAO_DISPENSADA");
     }
 
     [Fact(DisplayName = "O pedido sensível de quem é Representante vai à segunda etapa, que ele não decide e outro Representante decide")]
@@ -121,7 +121,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         foreach (Guid id in pedidos)
         {
             dispensas += (await LerAsync(client, $"{Rota}/{id}/trilha")).EnumerateArray()
-                .Count(static e => e.GetProperty("tipo").GetString() == TipoDaDispensaNaTrilha);
+                .Count(static e => e.GetProperty("tipo").GetProperty("codigo").GetString() == TipoDaDispensaNaTrilha);
         }
 
         return dispensas;
@@ -141,6 +141,6 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 
     private static async Task<string?> DetalheDaDispensaAsync(HttpClient client, Guid id) =>
         (await LerAsync(client, $"{Rota}/{id}/trilha")).EnumerateArray()
-            .Single(static e => e.GetProperty("tipo").GetString() == TipoDaDispensaNaTrilha)
+            .Single(static e => e.GetProperty("tipo").GetProperty("codigo").GetString() == TipoDaDispensaNaTrilha)
             .GetProperty("detalhe").GetString();
 }

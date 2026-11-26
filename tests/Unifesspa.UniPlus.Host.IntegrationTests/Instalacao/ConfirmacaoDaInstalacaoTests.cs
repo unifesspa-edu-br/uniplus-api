@@ -80,8 +80,8 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         novo.Should().NotBe(antigo);
         (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("AGUARDANDO_CODIGO");
         Dictionary<string, DateTimeOffset> trilha = await InstantesDaTrilhaDaInstalacaoAsync(id);
-        trilha.Should().ContainKeys("codigo_enviado", "codigo_reenviado");
-        trilha["codigo_enviado"].Should().BeBefore(trilha["codigo_reenviado"].AddHours(-2), "o envio original mantém o instante dele");
+        trilha.Should().ContainKeys("CODIGO_DE_CONFIRMACAO_ENVIADO", "CODIGO_DE_CONFIRMACAO_REENVIADO");
+        trilha["CODIGO_DE_CONFIRMACAO_ENVIADO"].Should().BeBefore(trilha["CODIGO_DE_CONFIRMACAO_REENVIADO"].AddHours(-2), "o envio original mantém o instante dele");
     }
 
     [Fact(DisplayName = "Depois do reenvio, o código anterior é recusado e o novo confirma a instalação")]
@@ -132,7 +132,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         await ConferirRecusaAsync(resposta, "codigo_invalido");
         (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("EXPIRADA");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("instalacao_expirada");
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("INSTALACAO_EXPIRADA");
     }
 
     [Fact(DisplayName = "Iniciar de novo cancela a pendência anterior e o código dela deixa de valer")]
@@ -150,7 +150,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = codigoDaPrimeira });
         await ConferirRecusaAsync(resposta, "codigo_invalido");
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
-        (await TiposDaTrilhaDaInstalacaoAsync(primeira)).Should().Contain("instalacao_cancelada", "a trilha vale também para a instalação cancelada");
+        (await TiposDaTrilhaDaInstalacaoAsync(primeira)).Should().Contain("INSTALACAO_CANCELADA", "a trilha vale também para a instalação cancelada");
     }
 
     [Fact(DisplayName = "A quinta tentativa com código errado cancela a instalação, inclusive para o código certo")]

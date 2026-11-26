@@ -89,7 +89,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (await EnviarAsync(marlene, HttpMethod.Post, $"{rota}/revogacao", new { motivo = Motivo })).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement trilha = await LerAsync(Cliente(Isabella), $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha");
-        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!).Should().Contain(["revogada", "revisao_revogada"]);
+        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()!).Should().Contain(["REVOGADA", "REVOGADA_NA_REVISAO"]);
         await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{rota}/confirmacao"), HttpStatusCode.Conflict, "revisao.item_ja_decidido");
     }
 
@@ -126,7 +126,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (await EnviarAsync(diogo, HttpMethod.Post, rota)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha");
-        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should().Contain("revisao_confirmada").And.NotContain("revogada");
+        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should().Contain("CONFIRMADA_NA_REVISAO").And.NotContain("REVOGADA");
     }
 
     [Fact(DisplayName = "O gestor de acessos não decide o item que cabe ao Representante do controlador, e a concessão segue ativa")]
@@ -145,7 +145,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         JsonElement item = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Leandro);
         item.GetProperty("situacao").GetString().Should().Be("PENDENTE");
         (await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha")).EnumerateArray()
-            .Select(e => e.GetProperty("tipo").GetString()).Should().NotContain("revogada");
+            .Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should().NotContain("REVOGADA");
     }
 
     [Fact(DisplayName = "Abrir a revisão sem conduzir registra a negativa de conduzir, e não a permissão de rever")]

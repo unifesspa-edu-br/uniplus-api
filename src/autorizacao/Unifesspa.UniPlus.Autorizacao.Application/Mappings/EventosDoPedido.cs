@@ -63,7 +63,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
         return
         [
-            new("pedido_criado", pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Declaracao.Justificativa}"),
+            EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.PedidoCriado, pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Declaracao.Justificativa}"),
             .. pedido.Anexos.SelectMany(a => DoAnexo(a, solicitante)),
             .. DoCancelamento(pedido, solicitante),
         ];
@@ -73,13 +73,12 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     {
         if (pedido.Beneficiario.AceitouEm is { } aceitouEm && pedido.Beneficiario.Identidade is { } beneficiario)
         {
-            yield return new("beneficiario_aceitou", aceitouEm, Dto(beneficiario.Emissor, beneficiario.ContaId, beneficiario.Nome), null);
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.BeneficiarioAceitou, aceitouEm, Dto(beneficiario.Emissor, beneficiario.ContaId, beneficiario.Nome), null);
         }
 
         if (pedido.AceiteDoTermo is { } aceite)
         {
-            yield return new(
-                "termo_aceito", aceite.AceitoEm, Dto(aceite.PessoaEmissor, aceite.PessoaContaId, aceite.PessoaNome), $"Versão {aceite.Numero}, resumo {aceite.Resumo}.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.TermoAceito, aceite.AceitoEm, Dto(aceite.PessoaEmissor, aceite.PessoaContaId, aceite.PessoaNome), $"Versão {aceite.Numero}, resumo {aceite.Resumo}.");
         }
     }
 
@@ -87,49 +86,60 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     {
         if (anexo.EnviadoEm is { } enviadoEm)
         {
-            yield return new("anexo_enviado", enviadoEm, solicitante, $"Anexo {anexo.Id}.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.AnexoEnviado, enviadoEm, solicitante, $"Anexo {anexo.Id}.");
         }
 
         if (anexo.VerificadoEm is { } verificadoEm)
         {
-            yield return new("anexo_verificado", verificadoEm, Verificador, $"Anexo {anexo.Id}. SHA-256 do PDF: {anexo.Sha256}.");
+            yield return EventoDaTrilhaDto.DoSistema(TipoDoEventoDoHistoricoDaConcessao.AnexoVerificado, verificadoEm, Verificador, $"Anexo {anexo.Id}. SHA-256 do PDF: {anexo.Sha256}.");
         }
 
         if (anexo.RecusadoEm is { } recusadoEm)
         {
-            yield return new("anexo_recusado", recusadoEm, Verificador, $"Anexo {anexo.Id}. O verificador recusou o documento ou pediu o reenvio.");
+            yield return EventoDaTrilhaDto.DoSistema(TipoDoEventoDoHistoricoDaConcessao.AnexoRecusado, recusadoEm, Verificador, $"Anexo {anexo.Id}. O verificador recusou o documento ou pediu o reenvio.");
         }
     }
 
     private static EventoDaTrilhaDto DaLeitura(LeituraDoAnexoDoPedido l) =>
-        new("anexo_lido", l.Instante, Dto(l.LeitorEmissor, l.LeitorContaId, l.LeitorNome), $"Anexo {l.AnexoId}.");
+        EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.AnexoLido, l.Instante, Dto(l.LeitorEmissor, l.LeitorContaId, l.LeitorNome), $"Anexo {l.AnexoId}.");
 
     private static EventoDaTrilhaDto[] DaDecisao(DecisaoDoPedido decisao)
     {
         IdentidadeDto decisor = Dto(decisao.DecisorEmissor, decisao.DecisorContaId, decisao.DecisorNome);
         string etapa = $"Etapa: {decisao.Etapa.Codigo()}.";
-        if (SemDecisao(decisao.Resultado) is { } semDecisao)
-        {
-            return [new(semDecisao.Tipo, decisao.Instante, decisor, $"{etapa} {semDecisao.Detalhe}")];
-        }
 
+        return DetalheSemDecisao(decisao.Resultado) is { } detalhe
+            ? [EventoDaTrilhaDto.DaPessoa(DoTipo(decisao.Resultado), decisao.Instante, decisor, $"{etapa} {detalhe}")]
+            : DaDecisaoTomada(decisao, decisor, etapa);
+    }
+
+    private static EventoDaTrilhaDto[] DaDecisaoTomada(DecisaoDoPedido decisao, IdentidadeDto decisor, string etapa)
+    {
         string motivo = decisao.Motivo is null ? string.Empty : $" Motivo: {decisao.Motivo}";
-        EventoDaTrilhaDto decidida = new(decisao.Resultado.Codigo(), decisao.Instante, decisor, $"{etapa} Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}.{motivo}");
+        EventoDaTrilhaDto decidida = EventoDaTrilhaDto.DaPessoa(
+            DoTipo(decisao.Resultado), decisao.Instante, decisor, $"{etapa} Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}.{motivo}");
 
         return decisao.Dispensa is { } dispensa
-            ? [decidida, new("segunda_aprovacao_dispensada", decisao.Instante, decisor, $"Motivo: {dispensa}.")]
+            ? [decidida, EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.SegundaAprovacaoDispensada, decisao.Instante, decisor, $"Motivo: {dispensa}.")]
             : [decidida];
     }
 
-    // A tentativa que não decidiu: o pedido voltou ao gestor ou foi devolvido ao solicitante.
-    private static (string Tipo, string Detalhe)? SemDecisao(ResultadoDaDecisao resultado) => resultado switch
+    private static TipoDoEventoDoHistoricoDaConcessao DoTipo(ResultadoDaDecisao resultado) => resultado switch
     {
-        ResultadoDaDecisao.PerfilAlterado =>
-            ("perfil_alterado_entre_etapas", "O perfil mudou depois da aprovação do gestor, e o pedido voltou a aguardá-lo."),
-        ResultadoDaDecisao.PrazoVencido =>
-            ("prazo_vencido_entre_etapas", "O prazo definido pelo gestor venceu antes desta aprovação, e o pedido voltou a aguardá-lo."),
-        ResultadoDaDecisao.TermoExigido =>
-            ("termo_exigido", "O perfil passou a exigir o termo de responsabilidade depois da criação, e o pedido foi devolvido."),
+        ResultadoDaDecisao.Aprovado => TipoDoEventoDoHistoricoDaConcessao.PedidoAprovadoNaEtapa,
+        ResultadoDaDecisao.Recusado => TipoDoEventoDoHistoricoDaConcessao.PedidoRecusadoNaEtapa,
+        ResultadoDaDecisao.PerfilAlterado => TipoDoEventoDoHistoricoDaConcessao.PerfilAlteradoEntreEtapas,
+        ResultadoDaDecisao.PrazoVencido => TipoDoEventoDoHistoricoDaConcessao.PrazoVencidoEntreEtapas,
+        ResultadoDaDecisao.TermoExigido => TipoDoEventoDoHistoricoDaConcessao.PedidoDevolvidoPorTermoExigido,
+        _ => throw new ArgumentOutOfRangeException(nameof(resultado), resultado, null),
+    };
+
+    // A tentativa que não decidiu: o pedido voltou ao gestor ou foi devolvido ao solicitante.
+    private static string? DetalheSemDecisao(ResultadoDaDecisao resultado) => resultado switch
+    {
+        ResultadoDaDecisao.PerfilAlterado => "O perfil mudou depois da aprovação do gestor, e o pedido voltou a aguardá-lo.",
+        ResultadoDaDecisao.PrazoVencido => "O prazo definido pelo gestor venceu antes desta aprovação, e o pedido voltou a aguardá-lo.",
+        ResultadoDaDecisao.TermoExigido => "O perfil passou a exigir o termo de responsabilidade depois da criação, e o pedido foi devolvido.",
         _ => null,
     };
 
@@ -137,7 +147,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     {
         if (pedido.Andamento.Situacao == SituacaoDoPedido.Cancelado && pedido.Andamento.EncerradoEm is { } canceladoEm)
         {
-            yield return new("cancelado", canceladoEm, solicitante, null);
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.PedidoCancelado, canceladoEm, solicitante, null);
         }
     }
 

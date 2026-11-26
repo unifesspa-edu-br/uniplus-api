@@ -41,8 +41,8 @@ public static class ConcessaoMapping
     {
         ArgumentNullException.ThrowIfNull(c);
 
-        yield return new EventoDaTrilhaDto(
-            "concedida",
+        yield return EventoDaTrilhaDto.DaPessoa(
+            TipoDoEventoDoHistoricoDaConcessao.Concedida,
             c.ConcedidaEm,
             new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorContaId, c.ConcedidaPorNome),
             $"Origem: {c.OrigemTipo.Codigo()} {c.OrigemId}.");
@@ -57,14 +57,14 @@ public static class ConcessaoMapping
     {
         if (EncerramentoDaConcessao.VencimentoDe(c, agora) is { } vencidaEm)
         {
-            yield return new("vencida", vencidaEm, null, "Fim da vigência.", "sistema");
+            yield return EventoDaTrilhaDto.DoSistema(TipoDoEventoDoHistoricoDaConcessao.Vencida, vencidaEm, null, "Fim da vigência.");
         }
 
         if (c.RevogadaEm is { } revogadaEm)
         {
-            yield return c.RevogadaPelaRevisaoId is null
-                ? new EventoDaTrilhaDto("revogada", revogadaEm, RevogadaPorPessoa(c), c.MotivoRevogacao)
-                : new EventoDaTrilhaDto("revogada_pela_migracao", revogadaEm, null, c.MotivoRevogacao, "sistema");
+            yield return RevogadaPorPessoa(c) is { } pessoa
+                ? EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.Revogada, revogadaEm, pessoa, c.MotivoRevogacao)
+                : EventoDaTrilhaDto.DoSistema(TipoDoEventoDoHistoricoDaConcessao.RevogadaPelaMigracao, revogadaEm, null, c.MotivoRevogacao);
         }
     }
 

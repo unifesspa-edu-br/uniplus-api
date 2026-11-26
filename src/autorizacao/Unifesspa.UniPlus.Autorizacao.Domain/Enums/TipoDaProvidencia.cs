@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum TipoDaProvidencia
 {
     /// <summary>A retirada do acesso.</summary>
-    [CodigoDeContrato("RETIRADA", "Retirada")]
+    [CodigoDeContrato("RETIRADA", "Retirada do acesso")]
     Retirada = 1,
 
     /// <summary>A revisão do acesso.</summary>
-    [CodigoDeContrato("REVISAO", "Revisão")]
+    [CodigoDeContrato("REVISAO", "Revisão do acesso")]
     Revisao = 2,
 }

@@ -38,7 +38,7 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : RevisaoDasConcessoes
 
         JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{concessao}/trilha");
 
-        trilha.EnumerateArray().Where(static e => e.GetProperty("tipo").GetString() == "migracao_migrar")
+        trilha.EnumerateArray().Where(static e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "MIGRACAO_APROVADA")
             .Select(static e => e.GetProperty("autor").GetProperty("contaId").GetString())
             .Should().Equal(Isabella.ContaId.ToString(), Marlene.ContaId.ToString());
     }

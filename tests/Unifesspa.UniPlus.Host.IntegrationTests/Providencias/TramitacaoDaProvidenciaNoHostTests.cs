@@ -80,9 +80,9 @@ public sealed class TramitacaoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
 
         JsonElement[] eventos = [.. (await LerAsync(g.Isabella, $"/api/autorizacao/concessoes/{concessao}/trilha")).EnumerateArray()];
 
-        JsonElement solicitada = eventos.Single(static e => e.GetProperty("tipo").GetString() == "providencia_solicitada");
+        JsonElement solicitada = eventos.Single(static e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "PROVIDENCIA_SOLICITADA");
         (solicitada.GetProperty("autor").GetProperty("contaId").GetString(), solicitada.GetProperty("detalhe").GetString()).Should().Be((Cecilia.ContaId.ToString(), $"Retirada do acesso. Fundamento: {Fundamento}"));
-        eventos.Single(static e => e.GetProperty("tipo").GetString() == "providencia_respondida").GetProperty("autor").GetProperty("contaId").GetString().Should().Be(Diogo.ContaId.ToString());
+        eventos.Single(static e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "PROVIDENCIA_RESPONDIDA").GetProperty("autor").GetProperty("contaId").GetString().Should().Be(Diogo.ContaId.ToString());
     }
 
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();

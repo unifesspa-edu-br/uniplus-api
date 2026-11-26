@@ -204,8 +204,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await cenario.ExecutarAsync();
         cenario.Registros.Select(r => r.Ordem).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
         cenario.Registros.Select(r => r.Tipo).Should().Equal(
-            "SUSPENSAO", "decisao_da_retomada", "RETOMADA", "DESATIVACAO", "REATIVACAO");
-        cenario.Trilha.EnumerateArray().Select(r => r.GetProperty("tipo").GetString())
+            "SUSPENSAO", "DECISAO_DA_RETOMADA", "RETOMADA", "DESATIVACAO", "REATIVACAO");
+        cenario.Trilha.EnumerateArray().Select(r => r.GetProperty("tipo").GetProperty("codigo").GetString())
             .Should().Equal(cenario.Registros.Select(r => r.Tipo));
     }
 
@@ -247,7 +247,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         List<RegistroDaOrdem> linhas = await db.Database.SqlQuery<RegistroDaOrdem>($"""
             SELECT tipo AS "Tipo", ordem_no_historico AS "Ordem" FROM autorizacao.eventos_de_bloqueio_do_perfil WHERE perfil_id = {perfilId}
             UNION ALL
-            SELECT 'decisao_da_retomada', d.ordem_no_historico FROM autorizacao.decisoes_da_retomada d
+            SELECT 'DECISAO_DA_RETOMADA', d.ordem_no_historico FROM autorizacao.decisoes_da_retomada d
               JOIN autorizacao.suspensoes_do_perfil s ON s.id = d.suspensao_id WHERE s.perfil_id = {perfilId}
             ORDER BY 2
             """).ToListAsync();

@@ -104,7 +104,7 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
         LerAsync(cliente, $"{RotaPerfis}/{perfilId}/contencao");
 
     private protected static async Task<string[]> TiposDaContencaoAsync(HttpClient cliente, Guid perfilId) =>
-        [.. (await TrilhaAsync(cliente, perfilId)).EnumerateArray().Select(static r => r.GetProperty("tipo").GetString()!)];
+        [.. (await TrilhaAsync(cliente, perfilId)).EnumerateArray().Select(static r => r.GetProperty("tipo").GetProperty("codigo").GetString()!)];
 
     /// <summary>O status que o endpoint de consulta do catálogo devolve a quem o pede: 200 com a permissão vigente, 403 sem ela.</summary>
     private protected static async Task<HttpStatusCode> ConsultarCatalogoAsync(HttpClient cliente)

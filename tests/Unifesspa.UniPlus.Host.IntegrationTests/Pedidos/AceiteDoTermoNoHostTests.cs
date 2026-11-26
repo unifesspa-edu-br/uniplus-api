@@ -33,7 +33,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         aceite.GetProperty("versaoId").GetGuid().Should().Be(Vigente.Id);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);
         aceite.GetProperty("pessoa").GetProperty("contaId").GetString().Should().Be(Betina.ContaId.ToString());
-        (await TiposDaTrilhaAsync(betina, pedido.GetProperty("id").GetGuid())).Should().Contain("termo_aceito");
+        (await TiposDaTrilhaAsync(betina, pedido.GetProperty("id").GetGuid())).Should().Contain("TERMO_ACEITO");
     }
 
     [Fact(DisplayName = "Pedido próprio com documento: aceite e aprovação esperam a verificação, que leva a aguardar o beneficiário")]
@@ -109,7 +109,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         Guid concessao = await AprovarNasDuasEtapasAsync(id);
 
         JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{concessao}/trilha");
-        trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "termo_aceito")
+        trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "TERMO_ACEITO")
             .GetProperty("detalhe").GetString().Should().Be($"Versão 1, resumo {Vigente.Resumo}.");
     }
 

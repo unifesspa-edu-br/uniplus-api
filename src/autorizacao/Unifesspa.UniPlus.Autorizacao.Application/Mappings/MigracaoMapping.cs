@@ -12,16 +12,22 @@ public static class MigracaoMapping
     {
         ArgumentNullException.ThrowIfNull(decisao);
 
-        bool humano = decisao.Ator == AtorDaMigracao.Humano;
-        IdentidadeDto? autor = humano ? new IdentidadeDto(decisao.DecisorEmissor!, decisao.DecisorContaId!, decisao.DecisorNome) : null;
+        TipoDoEventoDoHistoricoDaConcessao tipo = DoTipo(decisao.Resultado);
 
-        return new EventoDaTrilhaDto(
-            $"migracao_{decisao.Resultado.Codigo().ToLowerInvariant()}",
-            decisao.Instante,
-            autor,
-            Detalhe(decisao),
-            decisao.Ator.Codigo());
+        return decisao.Ator == AtorDaMigracao.Humano
+            ? EventoDaTrilhaDto.DaPessoa(tipo, decisao.Instante, new IdentidadeDto(decisao.DecisorEmissor!, decisao.DecisorContaId!, decisao.DecisorNome), Detalhe(decisao))
+            : EventoDaTrilhaDto.DoSistema(tipo, decisao.Instante, null, Detalhe(decisao));
     }
+
+    private static TipoDoEventoDoHistoricoDaConcessao DoTipo(ResultadoDaMigracao resultado) => resultado switch
+    {
+        ResultadoDaMigracao.Migrar => TipoDoEventoDoHistoricoDaConcessao.MigracaoAprovada,
+        ResultadoDaMigracao.Recusar => TipoDoEventoDoHistoricoDaConcessao.MigracaoRecusada,
+        ResultadoDaMigracao.Reter => TipoDoEventoDoHistoricoDaConcessao.RetidaNaMigracao,
+        ResultadoDaMigracao.NaoMigrada => TipoDoEventoDoHistoricoDaConcessao.NaoMigrada,
+        ResultadoDaMigracao.ForaDaLista => TipoDoEventoDoHistoricoDaConcessao.ForaDaListaDaMigracao,
+        _ => throw new ArgumentOutOfRangeException(nameof(resultado), resultado, null),
+    };
 
     private static string Detalhe(DecisaoDaMigracao decisao) =>
         $"Etapa: {decisao.Etapa.Codigo()}. Revisão: {decisao.RevisaoId}.";

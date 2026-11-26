@@ -27,8 +27,8 @@ public sealed class TermoNaInstalacaoNoHostTests : InstalacaoTestBase, IAsyncLif
     {
         Guid id = await ConfirmarAsync();
 
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("termo_excecao_da_instalacao");
-        (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain("termo_excecao_da_instalacao");
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("INSTALACAO_SEM_ACEITE_DO_TERMO");
+        (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain("INSTALACAO_SEM_ACEITE_DO_TERMO");
     }
 
     [Fact(DisplayName = "A instalação com termo já vigente, estado anômalo, segue e registra a exceção com a versão lida")]
@@ -38,7 +38,7 @@ public sealed class TermoNaInstalacaoNoHostTests : InstalacaoTestBase, IAsyncLif
 
         Guid id = await ConfirmarAsync();
 
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("termo_excecao_da_instalacao");
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Contain("INSTALACAO_SEM_ACEITE_DO_TERMO");
         (await ListarGestoresAtivosAsync()).Should().HaveCount(2);
     }
 

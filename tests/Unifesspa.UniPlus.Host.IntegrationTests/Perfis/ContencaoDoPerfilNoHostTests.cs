@@ -125,11 +125,11 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
 
         JsonElement[] trilha = [.. (await TrilhaAsync(diogo, perfilId)).EnumerateArray()];
 
-        trilha.Select(r => r.GetProperty("tipo").GetString()).Should().Equal("SUSPENSAO", "decisao_da_retomada", "decisao_da_retomada", "RETOMADA");
+        trilha.Select(r => r.GetProperty("tipo").GetProperty("codigo").GetString()).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "DECISAO_DA_RETOMADA", "RETOMADA");
         trilha.Select(r => r.GetProperty("ordem").GetInt64()).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
         (trilha[0].GetProperty("pessoa").GetProperty("nome").GetString(), trilha[0].GetProperty("pessoa").GetProperty("contaId").GetString()).Should().Be((Diogo.Nome, Diogo.ContaId.ToString()));
-        trilha[1].GetProperty("etapa").GetString().Should().Be(EtapaProtecao);
-        (trilha[3].GetProperty("ator").GetString(), trilha[3].GetProperty("origem").GetString(), trilha[3].GetProperty("pessoa").ValueKind).Should().Be(("SISTEMA", "DECISAO_DA_ETAPA", JsonValueKind.Null));
+        trilha[1].GetProperty("etapa").GetProperty("codigo").GetString().Should().Be(EtapaProtecao);
+        (trilha[3].GetProperty("ator").GetProperty("codigo").GetString(), trilha[3].GetProperty("origem").GetProperty("codigo").GetString(), trilha[3].GetProperty("pessoa").ValueKind).Should().Be(("SISTEMA", "DECISAO_DA_ETAPA", JsonValueKind.Null));
         trilha.Select(r => r.GetProperty("referenciaId").GetGuid()).Distinct().Should().ContainSingle();
     }
 
