@@ -11,6 +11,7 @@ using System.Globalization;
 /// <param name="AtoDoProcessoGravado">O registro do ato do processo, na Seleção, existe.</param>
 /// <param name="AtoNormativoGravado">O ato no registro central de Publicações existe.</param>
 /// <param name="NumeroDaVersaoDivulgada">O número da versão que a divulgação do certame já mostra.</param>
+/// <param name="TransacoesDasLinhasGravadas">O número de transações distintas que gravaram as quatro linhas da retificação; zero quando falta alguma das quatro.</param>
 /// <param name="MensagensPendentesDeEnvio">As mensagens pendentes de envio (nas filas duráveis de entrada e de saída) que citam o ato da versão 2.</param>
 /// <param name="PidDaConexao">O processo do banco que atende a conexão da transação: é quem segura a trava do processo seletivo.</param>
 internal sealed record ConteudoDaTransacaoDaRetificacao(
@@ -19,6 +20,7 @@ internal sealed record ConteudoDaTransacaoDaRetificacao(
     bool AtoDoProcessoGravado,
     bool AtoNormativoGravado,
     int NumeroDaVersaoDivulgada,
+    int TransacoesDasLinhasGravadas,
     int MensagensPendentesDeEnvio,
     int PidDaConexao);
 
@@ -33,6 +35,14 @@ internal static class LeituraDaTransacaoDaRetificacao
     private const string AtoNormativo = "SELECT count(*) FROM publicacoes.atos_normativos WHERE id = @valor";
     private const string NumeroDivulgado = "SELECT numero_versao FROM selecao.certames_divulgados WHERE id = @valor";
     private const string PidDaConexaoNoBanco = "SELECT pg_backend_pid()";
+    private const string TransacoesDasLinhas = """
+        SELECT CASE WHEN count(*) = 4 THEN count(DISTINCT transacao) ELSE 0 END FROM (
+            SELECT xmin::text AS transacao FROM selecao.versoes_configuracao WHERE ato_criador_id = @valor
+            UNION ALL SELECT xmin::text FROM selecao.atos_do_processo WHERE id = @valor
+            UNION ALL SELECT xmin::text FROM publicacoes.atos_normativos WHERE id = @valor
+            UNION ALL SELECT xmin::text FROM selecao.certames_divulgados WHERE id = @processoId
+        ) AS linhas
+        """;
     private const string MensagensPendentes = """
         SELECT (SELECT count(*) FROM wolverine.wolverine_outgoing_envelopes WHERE position(convert_to(@valor, 'UTF8') in body) > 0)
              + (SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE position(convert_to(@valor, 'UTF8') in body) > 0)
@@ -54,6 +64,7 @@ internal static class LeituraDaTransacaoDaRetificacao
             await ContarAsync(transacao, AtoDoProcesso, versao.Ato, cancellationToken) == 1,
             await ContarAsync(transacao, AtoNormativo, versao.Ato, cancellationToken) == 1,
             await ContarAsync(transacao, NumeroDivulgado, processoId, cancellationToken),
+            await ContarAsync(transacao, TransacoesDasLinhas, versao.Ato, cancellationToken, processoId),
             await ContarAsync(transacao, MensagensPendentes, versao.Ato.ToString("D"), cancellationToken),
             await ContarAsync(transacao, PidDaConexaoNoBanco, processoId, cancellationToken));
 
@@ -68,23 +79,32 @@ internal static class LeituraDaTransacaoDaRetificacao
             : null;
     }
 
-    private static async Task<int> ContarAsync(DbTransaction transacao, string consulta, object valor, CancellationToken cancellationToken)
+    private static async Task<int> ContarAsync(DbTransaction transacao, string consulta, object valor, CancellationToken cancellationToken, Guid? processoId = null)
     {
-        await using DbCommand comando = Comando(transacao, consulta, valor);
+        await using DbCommand comando = Comando(transacao, consulta, valor, processoId);
 
         return Convert.ToInt32(await comando.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
     }
 
-    private static DbCommand Comando(DbTransaction transacao, string consulta, object valor)
+    private static DbCommand Comando(DbTransaction transacao, string consulta, object valor, Guid? processoId = null)
     {
         DbCommand comando = transacao.Connection!.CreateCommand();
         comando.Transaction = transacao;
         comando.CommandText = consulta;
-        DbParameter parametro = comando.CreateParameter();
-        parametro.ParameterName = "valor";
-        parametro.Value = valor;
-        comando.Parameters.Add(parametro);
+        AdicionarParametro(comando, "valor", valor);
+        if (processoId is not null)
+        {
+            AdicionarParametro(comando, "processoId", processoId.Value);
+        }
 
         return comando;
+    }
+
+    private static void AdicionarParametro(DbCommand comando, string nome, object valor)
+    {
+        DbParameter parametro = comando.CreateParameter();
+        parametro.ParameterName = nome;
+        parametro.Value = valor;
+        comando.Parameters.Add(parametro);
     }
 }

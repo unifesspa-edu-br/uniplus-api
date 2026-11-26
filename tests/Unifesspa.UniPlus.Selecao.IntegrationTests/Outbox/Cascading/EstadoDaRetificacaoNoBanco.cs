@@ -38,15 +38,6 @@ internal static class EstadoDaRetificacaoNoBanco
     public static Task<int> RetificacoesNoRegistroCentralAsync(IServiceProvider servicos, Guid atoRetificadoId) =>
         ConsultarAsync(servicos, db => db.Set<AtoNormativo>().AsNoTracking().CountAsync(a => a.AtoRetificadoId == atoRetificadoId));
 
-    /// <summary>A transação (xmin) que gravou cada uma das quatro linhas da retificação: a versão, o ato do processo, o ato central e a divulgação.</summary>
-    public static async Task<IReadOnlyList<long>> TransacoesDaRetificacaoAsync(IServiceProvider servicos, Guid processoId, Guid atoId) =>
-    [
-        await TransacaoAsync(servicos, db => db.Database.SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM selecao.versoes_configuracao WHERE ato_criador_id = {atoId}")),
-        await TransacaoAsync(servicos, db => db.Database.SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM selecao.atos_do_processo WHERE id = {atoId}")),
-        await TransacaoAsync(servicos, db => db.Database.SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.atos_normativos WHERE id = {atoId}")),
-        await TransacaoAsync(servicos, db => db.Database.SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM selecao.certames_divulgados WHERE id = {processoId}")),
-    ];
-
     /// <summary>As mensagens pendentes de envio (nas filas duráveis de entrada e de saída) que citam o identificador.</summary>
     public static Task<int> MensagensPendentesQueCitamAsync(IServiceProvider servicos, Guid identificador) =>
         ConsultarAsync(servicos, db => db.Database.SqlQuery<int>($"""
@@ -128,9 +119,6 @@ internal static class EstadoDaRetificacaoNoBanco
               AND {pidDaQuemSegura} = ANY(pg_blocking_pids(pid))
               AND query LIKE '%selecao.processos_seletivos%FOR UPDATE%'
             """).SingleAsync(cancellationToken));
-
-    private static Task<long> TransacaoAsync(IServiceProvider servicos, Func<UniPlusDbContext, IQueryable<long>> consulta) =>
-        ConsultarAsync(servicos, db => consulta(db).SingleAsync());
 
     private static async Task<T> ConsultarAsync<T>(IServiceProvider servicos, Func<UniPlusDbContext, Task<T>> consulta)
     {

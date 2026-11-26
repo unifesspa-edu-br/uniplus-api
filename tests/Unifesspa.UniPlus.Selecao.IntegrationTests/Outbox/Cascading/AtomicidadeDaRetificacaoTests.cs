@@ -30,7 +30,10 @@ public sealed class AtomicidadeDaRetificacaoTests
         Result resultado = await cenario.RetificarAsync(await cenario.SemearDocumentoAsync());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        (await cenario.Controle.AguardarObservadoAsync()).MensagensPendentesDeEnvio.Should().BePositive("as mensagens de evento já estavam gravadas, pendentes de envio, antes da confirmação");
+        ConteudoDaTransacaoDaRetificacao observado = await cenario.Controle.AguardarObservadoAsync();
+        observado.MensagensPendentesDeEnvio.Should().BePositive("as mensagens de evento já estavam gravadas, pendentes de envio, antes da confirmação");
+        // A cópia dos documentos ao acervo regrava a divulgação depois, em outra transação.
+        observado.TransacoesDasLinhasGravadas.Should().Be(1, "a versão, o ato do processo, o ato central e a divulgação foram gravados pela mesma transação");
         await ConferirMesmaTransacaoEMesmoInstanteAsync(cenario);
     }
 
@@ -116,8 +119,6 @@ public sealed class AtomicidadeDaRetificacaoTests
         divulgado.NumeroVersao.Should().Be(2);
         divulgado.AtoCriadorId.Should().Be(versao.AtoCriadorId);
         divulgado.DivulgadoEm.Should().Be(versao.VigenteAPartirDe).And.Be(ato.PublicadoEm);
-        (await EstadoDaRetificacaoNoBanco.TransacoesDaRetificacaoAsync(cenario.Servicos, cenario.ProcessoId, versao.AtoCriadorId))
-            .Distinct().Should().ContainSingle("a versão, o ato do processo, o ato central e a divulgação foram gravados pela mesma transação");
     }
 
     private static void ConferirTudoGravadoDentroDaTransacao(ConteudoDaTransacaoDaRetificacao naTransacao)
@@ -132,12 +133,13 @@ public sealed class AtomicidadeDaRetificacaoTests
     {
         IServiceProvider servicos = cenario.Servicos;
 
-        (await EstadoDaRetificacaoNoBanco.VersoesAsync(servicos, cenario.ProcessoId)).Should().ContainSingle().Which.NumeroVersao.Should().Be(1);
+        VersaoConfiguracao versao = (await EstadoDaRetificacaoNoBanco.VersoesAsync(servicos, cenario.ProcessoId)).Should().ContainSingle().Which;
+        versao.NumeroVersao.Should().Be(1);
         (await EstadoDaRetificacaoNoBanco.AtoDoProcessoExisteAsync(servicos, naTransacao.AtoDaVersaoDois)).Should().BeFalse("não restou o ato do processo da versão 2");
         (await EstadoDaRetificacaoNoBanco.AtoNormativoExisteAsync(servicos, naTransacao.AtoDaVersaoDois)).Should().BeFalse("não restou o ato central da versão 2");
         (await EstadoDaRetificacaoNoBanco.MensagensPendentesQueCitamAsync(servicos, naTransacao.AtoDaVersaoDois)).Should().Be(0, "nenhuma mensagem da versão 2 ficou pendente depois da falha");
         (await EstadoDaRetificacaoNoBanco.DivulgacaoAsync(servicos, cenario.ProcessoId)).AtoCriadorId.Should().Be(cenario.AtoDaAbertura);
-        (await LeiturasDoCertameNaRetificacao.NumeroDaVersaoVigenteAsync(servicos, cenario.ProcessoId, DateTimeOffset.UtcNow)).Should().Be(1);
+        (await LeiturasDoCertameNaRetificacao.NumeroDaVersaoVigenteAsync(servicos, cenario.ProcessoId, versao.VigenteAPartirDe)).Should().Be(1);
     }
 
     private static async Task ConferirCadeiaLinearAsync(CenarioDaRetificacaoAtomica cenario)
