@@ -75,7 +75,7 @@ public static class FatoCandidatoSeed
         "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.";
 
     internal const string FinalidadeResidencia =
-        "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.";
+        "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.";
 
     internal const string FinalidadeComposicaoFamiliar =
         "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.";
