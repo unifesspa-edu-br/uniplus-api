@@ -10,8 +10,12 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.ApoioDoVeredictoDeSubmissao;
 
 /// <summary>
 /// O resultado da submissão considera: a ausência de resposta a um item obrigatório, um
@@ -23,19 +27,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class VeredictoDeSubmissaoTests
 {
-    private static readonly IReadOnlyList<TermoExigidoFormulario> SemTermos = [];
-    private static readonly IReadOnlyList<AceiteDeTermo> SemAceites = [];
-    private static readonly DateOnly DiaDoEnvio = new(2026, 10, 10);
-
     private static AvaliacaoItem ItemVisivelObrigatorio(string fato, IReadOnlyList<RestricaoValor>? restricoesVioladas = null, Ternario impedido = Ternario.Falso) =>
         new(fato, "DADOS", Ternario.Verdadeiro, Ternario.Verdadeiro, restricoesVioladas ?? [], impedido);
-
-    private static AvaliacaoFormulario AvaliacaoCom(
-        IReadOnlyDictionary<string, FatoResolvido> fatos,
-        IReadOnlyList<AvaliacaoItem>? itens = null,
-        IReadOnlyList<AvaliacaoTermo>? termos = null,
-        IReadOnlyList<AvaliacaoGrupo>? grupos = null) =>
-        new(fatos, itens ?? [], termos ?? [], grupos ?? [], []);
 
     [Fact(DisplayName = "Avaliação sem item, grupo ou termo pendente não recusa nada")]
     public void Avaliar_SemPendencia_NaoRecusaNada()
@@ -160,26 +153,13 @@ public sealed class VeredictoDeSubmissaoTests
         recusas.Should().ContainSingle(r => r.Field == "COMPOSICAO_FAMILIAR.membro-1.RG_NUMERO_MEMBRO" && r.Error.Code == "Inscricao.ItemObrigatorioAusente");
     }
 
-    private static TermoExigidoFormulario NovoTermo(string codigo, Guid versaoId, string hash) =>
-        TermoExigidoFormulario.Criar(
-            codigo, 0,
-            new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "TERMO_DE_TESTE", 1, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", FormaAceite.RegistroSemEnderecoIp, hash),
-            exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
-
-    /// <summary>
-    /// avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
-    /// termosExigidos e aceites usam o código nu que o candidato conhece e envia, e é nele que a
-    /// recusa sai.
-    /// </summary>
-    private static readonly string CodigoPrefixado = DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "DECLARACAO_VERACIDADE");
-
     [Fact(DisplayName = "As recusas seguem a ordem dos itens, de cada grupo e suas ocorrências e dos termos")]
     public void Avaliar_ItensGruposEOcorrenciasETermos_RecusaNaOrdemDaAvaliacao()
     {
         AvaliacaoFormulario avaliacao = AvaliacaoComRecusasEmTodasAsPartes();
-        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+        IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> exigido = TermoExigido("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites, DiaDoEnvio);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, exigido, SemAceites, DiaDoEnvio);
 
         recusas.Select(static r => (r.Field, r.Error.Code)).Should().Equal(
             ("APELIDO", "Inscricao.ItemObrigatorioAusente"),
@@ -187,17 +167,17 @@ public sealed class VeredictoDeSubmissaoTests
             ("GRUPO_1.membro-1.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente"),
             ("GRUPO_2", "Inscricao.GrupoContagemInvalida"),
             ("GRUPO_2.membro-2.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente"),
-            ("DECLARACAO_VERACIDADE", "Inscricao.TermoNaoAceito"));
+            (CodigoPrefixado, "Inscricao.TermoNaoAceito"));
     }
 
     [Fact(DisplayName = "Contagem abaixo do mínimo em grupo de obrigatoriedade indeterminada depende do Geo; as demais recusas não")]
     public void AvaliarDistinguindoOGeo_GrupoAbaixoDoMinimoComObrigatoriedadeIndeterminada_DistingueRecusaDependente()
     {
         AvaliacaoFormulario avaliacao = AvaliacaoComRecusasEmTodasAsPartes(Ternario.Indeterminado);
-        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+        IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> exigido = TermoExigido("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
 
         IReadOnlyList<RecusaDaSubmissao> recusas = VeredictoDeSubmissao.AvaliarDistinguindoOGeo(
-            avaliacao, [exigido], SemAceites, DiaDoEnvio, GeoComGrupoCondicional());
+            avaliacao, exigido, SemAceites, DiaDoEnvio, GeoComGrupoCondicional());
 
         recusas.Select(static r => (r.Recusa.Field, r.Recusa.Error.Code, r.DependeDoGeo)).Should().Equal(
             ("APELIDO", "Inscricao.ItemObrigatorioAusente", false),
@@ -205,7 +185,7 @@ public sealed class VeredictoDeSubmissaoTests
             ("GRUPO_1.membro-1.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente", false),
             ("GRUPO_2", "Inscricao.GrupoContagemInvalida", false),
             ("GRUPO_2.membro-2.NOME_MEMBRO", "Inscricao.ItemObrigatorioAusente", false),
-            ("DECLARACAO_VERACIDADE", "Inscricao.TermoNaoAceito", false));
+            (CodigoPrefixado, "Inscricao.TermoNaoAceito", false));
     }
 
     private static AvaliacaoFormulario AvaliacaoComRecusasEmTodasAsPartes(Ternario obrigatoriedadeDoPrimeiroGrupo = Ternario.Falso) =>
@@ -233,57 +213,6 @@ public sealed class VeredictoDeSubmissaoTests
         DefinicaoGrupo grupo = new("GRUPO_1", null, Obrigatoriedade.Quando(predicado), 2, null, [], false);
         DefinicaoFormulario definicao = new([new DefinicaoPagina("DADOS", null, [], [grupo])], [], []);
         return new(definicao, new HashSet<string>([derivado], StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
-    }
-
-    [Fact(DisplayName = "Termo obrigatório não aceito recusa a submissão")]
-    public void Avaliar_TermoObrigatorioNaoAceito_Recusa()
-    {
-        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
-        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
-        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites, DiaDoEnvio);
-
-        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
-    }
-
-    [Fact(DisplayName = "Termo aceito com hash diferente do da versão fixada recusa a submissão")]
-    public void Avaliar_TermoAceitoComHashDiferente_Recusa()
-    {
-        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
-        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
-        Guid versaoId = Guid.NewGuid();
-        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
-        AceiteDeTermo aceite = new(FormularioDeTeste.CodigoDaInscricao, "DECLARACAO_VERACIDADE", versaoId, new string('b', 64));
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
-
-        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
-    }
-
-    [Fact(DisplayName = "Termo aceito com a mesma versão e o mesmo hash da versão fixada não recusa")]
-    public void Avaliar_TermoAceitoNaVersaoFixada_NaoRecusa()
-    {
-        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
-        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
-        Guid versaoId = Guid.NewGuid();
-        TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
-        AceiteDeTermo aceite = new(FormularioDeTeste.CodigoDaInscricao, "DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
-
-        recusas.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Termo opcional não aceito não recusa")]
-    public void Avaliar_TermoOpcionalNaoAceito_NaoRecusa()
-    {
-        AvaliacaoTermo termo = new("TERMO_OPCIONAL", Ternario.Verdadeiro, Ternario.Falso);
-        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
-
-        recusas.Should().BeEmpty();
     }
 
     private static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> OfertaDeEstadoCivil =

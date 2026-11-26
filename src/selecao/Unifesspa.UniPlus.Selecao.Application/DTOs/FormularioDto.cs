@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
@@ -29,12 +28,14 @@ public sealed record ModeloDeOrigemDto(Guid Id, string Codigo);
 public sealed record ColetaDoFormularioDto(IReadOnlyList<FatoColetadoDto> Itens, IReadOnlyList<GrupoColetadoDto> Grupos);
 
 /// <summary>
-/// O formulário de uma finalidade (UNI-REQ-0144): a fase, o título, o modelo de origem — nulo quando o formulário não
-/// partiu de um modelo —, as páginas, o que ele coleta e os termos exigidos.
+/// O formulário do processo (UNI-REQ-0144): o código que o identifica, a fase, se é obrigatório, o título, o
+/// modelo de origem — nulo quando o formulário não partiu de um modelo —, as páginas, o que ele coleta e os
+/// termos exigidos.
 /// </summary>
 public sealed record FormularioDto(
-    CodigoComRotulo<FinalidadeFormulario> Finalidade,
+    string Codigo,
     Guid? FaseId,
+    bool Obrigatorio,
     string? Titulo,
     ModeloDeOrigemDto? ModeloOrigem,
     IReadOnlyList<PaginaDoFormularioDto> Paginas,

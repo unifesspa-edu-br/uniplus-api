@@ -26,8 +26,8 @@ internal static class ProjecaoDeFormularios
             origem["faseChave"] = chaves.Fase(fase.ToString());
         }
         TransferirParaOsNomesDoEsquema(origem, formulario);
-        origem["itens"] = DaFinalidade(congelado["dadosDosFormularios"] as JsonArray, formulario);
-        origem["grupos"] = DaFinalidade(congelado["gruposDosFormularios"] as JsonArray, formulario);
+        origem["itens"] = DoFormulario(congelado["dadosDosFormularios"] as JsonArray, formulario);
+        origem["grupos"] = DoFormulario(congelado["gruposDosFormularios"] as JsonArray, formulario);
         PrepararItens(origem["itens"] as JsonArray);
         foreach (JsonObject grupo in (origem["grupos"] as JsonArray ?? []).OfType<JsonObject>())
         {
@@ -41,8 +41,8 @@ internal static class ProjecaoDeFormularios
         ProjecaoDeParte.Transferir(origem, "modeloOrigemNome", formulario["modeloOrigem"]?["nome"]);
         ProjecaoDeParte.Transferir(origem, "consequenciaDaFaltaDeEnvioRotulo", formulario["contexto"]?["consequenciaDaFaltaDeEnvioRotulo"]);
     }
-    private static JsonArray DaFinalidade(JsonArray? itens, JsonObject formulario) => new([.. (itens ?? []).OfType<JsonObject>()
-        .Where(item => item["finalidade"]?.ToString() == formulario["finalidade"]?.ToString())
+    private static JsonArray DoFormulario(JsonArray? itens, JsonObject formulario) => new([.. (itens ?? []).OfType<JsonObject>()
+        .Where(item => item["formularioCodigo"]?.ToString() == formulario["codigo"]?.ToString())
         .OrderBy(item => item["ordem"]?.GetValue<int>()).Select(item => item.DeepClone())]);
     private static void PrepararItens(JsonArray? itens)
     {

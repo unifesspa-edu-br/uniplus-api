@@ -116,14 +116,10 @@
           "description": "Chave local da etapa em que o documento é exigido, quando a exigência é de uma etapa.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
-        "finalidade": {
-          "title": "Finalidade do formulário",
-          "description": "Finalidade do formulário a que a exigência pertence, quando houver.",
-          "enum": [
-            "INSCRICAO",
-            "ISENCAO_TAXA",
-            "HABILITACAO"
-          ]
+        "formularioCodigo": {
+          "title": "Formulário da exigência",
+          "description": "Código do formulário do processo em que o candidato apresenta o documento. Toda exigência o informa: o formulário precisa existir no processo e ser o da fase da exigência.",
+          "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
         },
         "finalidadeRotulo": {
           "title": "Rótulo da finalidade",

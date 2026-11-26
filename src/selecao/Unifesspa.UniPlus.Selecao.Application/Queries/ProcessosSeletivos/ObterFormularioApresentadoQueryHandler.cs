@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -11,11 +12,10 @@ using DTOs;
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioApresentadoQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, UNI-REQ-0072): projeta o
-/// formulário apresentado da finalidade a partir da versão que o certame <b>divulgado</b> serve —
+/// formulário apresentado do código a partir da versão que o certame <b>divulgado</b> serve —
 /// a apresentação e as regras saem do grafo reidratado, pela mesma projeção do rascunho
 /// (<see cref="ProjecaoDoFormularioApresentado"/>).
 /// </summary>
@@ -73,8 +73,8 @@ public static class ObterFormularioApresentadoQueryHandler
         EnderecosDosDocumentosDoAto enderecos,
         CancellationToken cancellationToken)
     {
-        // Provisório até a retirada da finalidade: o código desconhecido é o mesmo não encontrado do formulário ausente.
-        if (EstruturaFormulario.FinalidadeDoCodigo(query.FormularioCodigo) is not { } finalidade)
+        // Código fora do formato não designa formulário nenhum: é o mesmo não encontrado do formulário ausente.
+        if (CodigoDoFormulario.Criar(query.FormularioCodigo) is not { IsSuccess: true } codigo)
         {
             return NaoEncontrado(query.ProcessoSeletivoId);
         }
@@ -83,10 +83,10 @@ public static class ObterFormularioApresentadoQueryHandler
             .DoAtoAsync(query.ProcessoSeletivoId, divulgada.AtoDaDivulgacao, cancellationToken)
             .ConfigureAwait(false);
         return ComoLeituraPublica(
-            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, finalidade, registroCodecs, acervo), query.ProcessoSeletivoId);
+            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, codigo.Value!, registroCodecs, acervo), query.ProcessoSeletivoId);
     }
 
-    // A ausência de formulário da finalidade colapsa no mesmo não encontrado dos demais casos sem
+    // A ausência do formulário do código colapsa no mesmo não encontrado dos demais casos sem
     // linha (ver remarks).
     private static Result<FormularioApresentadoDoProcessoDto> ComoLeituraPublica(
         Result<FormularioApresentadoDoProcessoDto?> projetado, Guid processoSeletivoId)

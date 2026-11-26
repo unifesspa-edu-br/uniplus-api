@@ -16,7 +16,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
 
     private const string ExigenciaCompleta = """
         { "chave": "exigencia_comprovante_renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
-          "faseChave": "inscricao", "etapaChave": "etapa_prova_objetiva", "finalidade": "ISENCAO_TAXA",
+          "faseChave": "inscricao", "etapaChave": "etapa_prova_objetiva", "formularioCodigo": "INSCRICAO",
           "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "consequenciaDoDescumprimento": "RETIRA_O_ACRESCIMO",
           "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
@@ -40,7 +40,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     [Theory(DisplayName = "O valor fora do vocabulário fechado da exigência é recusado com o caminho")]
     [InlineData("aplicabilidade", "\"Qualquer\"")]
     [InlineData("consequenciaDoDescumprimento", "\"ANULA\"")]
-    [InlineData("finalidade", "\"OUTRA\"")]
+    [InlineData("formularioCodigo", "\"outro formulário\"")]
     [InlineData("classificacaoProtecao", "\"SECRETO\"")]
     [InlineData("tamanhoMaximoBytes", "0")]
     public void Exigencia_ValorForaDoVocabulario_Recusa(string propriedade, string valor)

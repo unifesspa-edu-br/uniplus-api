@@ -78,16 +78,17 @@ public sealed class InscricaoRequestMapperTests
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteMalFormado);
     }
 
-    [Fact(DisplayName = "ParaAceites recusa o aceite sem código ou sem hash no caminho do campo, porque a gravação exige os dois")]
-    public void ParaAceites_AceiteSemCodigoOuSemHash_RecusaNoCaminhoDoCampo()
+    [Fact(DisplayName = "ParaAceites recusa o aceite sem o código do formulário, sem o código do termo ou sem hash no caminho do campo, porque a gravação exige os três")]
+    public void ParaAceites_AceiteSemFormularioCodigoOuSemHash_RecusaNoCaminhoDoCampo()
     {
         Result<List<AceiteDeTermo>> resultado = InscricaoRequestMapper.ParaAceites(
         [
+            new AceiteDeTermoInput(null!, "LGPD", Guid.NewGuid(), "hash"),
             new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, null!, Guid.NewGuid(), "hash"),
             new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "LGPD", Guid.NewGuid(), null!),
         ]);
 
-        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].codigo", "aceites[1].hashVersao");
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].formularioCodigo", "aceites[1].codigo", "aceites[2].hashVersao");
         resultado.Errors.Should().OnlyContain(static e => e.Error.Code == InscricaoErrorCodes.AceiteMalFormado);
     }
 

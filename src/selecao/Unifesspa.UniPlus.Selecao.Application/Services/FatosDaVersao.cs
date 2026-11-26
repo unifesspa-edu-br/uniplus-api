@@ -27,7 +27,7 @@ internal sealed record FatosDaVersao(
     IReadOnlyDictionary<string, FatoDoProcesso> Derivados,
     IReadOnlyDictionary<string, string> TitulosDasSecoes)
 {
-    /// <summary>Extrai os fatos da finalidade Inscrição do envelope reidratado.</summary>
+    /// <summary>Extrai os fatos dos formulários que a inscrição responde do envelope reidratado.</summary>
     public static FatosDaVersao De(EnvelopeReidratado envelope)
     {
         ArgumentNullException.ThrowIfNull(envelope);
@@ -36,8 +36,9 @@ internal sealed record FatosDaVersao(
         Dictionary<string, FatoDoProcesso> derivados = envelope.DadosDeCatalogo.FatosDerivadosCongelados!.ToDictionary(
             static d => d.Key, d => Derivado(d.Value, envelope), StringComparer.Ordinal);
 
+        IReadOnlyList<FormularioProcesso> formularios = FormulariosDaInscricaoNaVersao.De(envelope.Configuracao);
         return new FatosDaVersao(
-            ColetadosForaDeGrupo(envelope, declaradas), GruposDaInscricao(envelope, declaradas), derivados, TitulosDasPaginas(envelope));
+            ColetadosForaDeGrupo(envelope, formularios, declaradas), GruposDaInscricao(envelope, formularios, declaradas), derivados, TitulosDasPaginas(formularios));
     }
 
     private static Dictionary<string, Dictionary<string, string>> OpcoesDeclaradasPorFato(EnvelopeReidratado envelope)
@@ -71,17 +72,17 @@ internal sealed record FatosDaVersao(
         EhCpf(fato.FatoCodigo, fato.Formato));
 
     private static Dictionary<string, FatoDoProcesso> ColetadosForaDeGrupo(
-        EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
+        EnvelopeReidratado envelope, IReadOnlyList<FormularioProcesso> formularios, Dictionary<string, Dictionary<string, string>> declaradas) =>
         envelope.Configuracao.Coleta.Itens
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao && f.GrupoColetadoId is null)
+            .Where(f => formularios.Any(formulario => formulario.Id == f.FormularioId))
             .GroupBy(static f => f.FatoCodigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.Key, g => Coletado(g.First(), declaradas, envelope), StringComparer.Ordinal);
 
     private static List<GrupoDoProcesso> GruposDaInscricao(
-        EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
+        EnvelopeReidratado envelope, IReadOnlyList<FormularioProcesso> formularios, Dictionary<string, Dictionary<string, string>> declaradas) =>
     [
         .. envelope.Configuracao.Coleta.GruposColetados
-            .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+            .Where(g => formularios.Any(formulario => formulario.Id == g.FormularioId))
             .Select(g => new GrupoDoProcesso(
                 g.Codigo, g.Rotulo, g.PaginaCodigo, g.Ordem,
                 g.Subitens.GroupBy(static s => s.FatoCodigo, StringComparer.Ordinal)
@@ -89,11 +90,12 @@ internal sealed record FatosDaVersao(
                 g.IncluiCandidato)),
     ];
 
-    private static Dictionary<string, string> TitulosDasPaginas(EnvelopeReidratado envelope) =>
-        envelope.Configuracao.Coleta.Formularios
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+    // O código da seção só é único dentro do formulário: o título da seção de mesmo código vem do primeiro formulário, em ordem de código.
+    private static Dictionary<string, string> TitulosDasPaginas(IReadOnlyList<FormularioProcesso> formularios) =>
+        formularios
             .SelectMany(static f => f.Paginas)
-            .ToDictionary(static pagina => pagina.Codigo, static pagina => pagina.Titulo, StringComparer.Ordinal);
+            .GroupBy(static pagina => pagina.Codigo, StringComparer.Ordinal)
+            .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Titulo, StringComparer.Ordinal);
 
     /// <summary>
     /// Os campos identificadores de código <paramref name="fatoCodigo"/>: com <paramref name="emGrupo"/>, um por grupo

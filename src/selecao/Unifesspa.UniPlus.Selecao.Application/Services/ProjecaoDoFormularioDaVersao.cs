@@ -8,6 +8,8 @@ using System.Text.Json.Nodes;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.Cronograma;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -18,9 +20,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Projeta o formulário apresentado de uma finalidade a partir de uma <see cref="VersaoConfiguracao"/>
+/// Projeta o formulário apresentado de um código a partir de uma <see cref="VersaoConfiguracao"/>
 /// JÁ RESOLVIDA (ADR-0139), para ser usado por
-/// <c>ObterFormularioDaInscricaoQueryHandler</c> e <c>ObterFormularioApresentadoQueryHandler</c>:
+/// <c>ObterFormulariosDaInscricaoQueryHandler</c> e <c>ObterFormularioApresentadoQueryHandler</c>:
 /// as duas leituras projetam os mesmos bytes congelados do mesmo jeito — a única diferença entre
 /// elas é COMO a versão é resolvida (pela divulgação atual, ou pela versão em que está a inscrição:
 /// a divulgada no rascunho, a congelada no primeiro envio depois dele), nunca o que se faz com ela depois de resolvida.
@@ -33,22 +35,63 @@ public static class ProjecaoDoFormularioDaVersao
     /// que se aplicam a ele vêm da avaliação da inscrição, sobre as respostas dele (ADR-0143).
     /// </param>
     /// <returns>
-    /// Sucesso com o formulário; sucesso com <see langword="null"/> quando a versão não tem formulário para a
-    /// <paramref name="finalidade"/> (ausência, e não falha de leitura); falha quando o congelado não se deixa ler.
+    /// Sucesso com o formulário; sucesso com <see langword="null"/> quando a versão não tem o formulário do
+    /// <paramref name="formulario"/> (ausência, e não falha de leitura); falha quando o congelado não se deixa ler.
     /// </returns>
     public static Result<FormularioApresentadoDoProcessoDto?> Projetar(
         VersaoConfiguracao versao,
-        FinalidadeFormulario finalidade,
+        CodigoDoFormulario formulario,
         IRegistroCodecsEnvelope registroCodecs,
         DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+        ArgumentNullException.ThrowIfNull(formulario);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+
+        Result<ConfiguracaoLida> lida = LerConfiguracao(versao, registroCodecs);
+        return lida.IsFailure
+            ? Result<FormularioApresentadoDoProcessoDto?>.Failure(lida.Error!)
+            : ProjetarFormulario(lida.Value!, formulario, acervoDaComprovacao);
+    }
+
+    /// <summary>
+    /// Os formulários que o candidato responde para se inscrever na versão: os obrigatórios ligados a uma fase que
+    /// coleta inscrição, em ordem de código, lidos do congelado uma só vez. O certame público e os formulários da
+    /// inscrição do candidato não trazem a comprovação documental, que vem da avaliação das respostas dele (ADR-0143).
+    /// </summary>
+    /// <returns>
+    /// Sucesso com a lista, vazia quando a versão não tem formulário de inscrição; falha quando o congelado não se
+    /// deixa ler ou quando algum dos formulários não se projeta, sem lista parcial.
+    /// </returns>
+    public static Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> ProjetarDaInscricao(
+        VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
         Result<ConfiguracaoLida> lida = LerConfiguracao(versao, registroCodecs);
         return lida.IsFailure
-            ? Result<FormularioApresentadoDoProcessoDto?>.Failure(lida.Error!)
-            : ProjetarFormulario(lida.Value!, finalidade, acervoDaComprovacao);
+            ? Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>>.Failure(lida.Error!)
+            : ProjetarFormulariosDaInscricao(versao, lida.Value!);
+    }
+
+    private static Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> ProjetarFormulariosDaInscricao(
+        VersaoConfiguracao versao, ConfiguracaoLida lida)
+    {
+        List<FormularioApresentadoDoProcessoDto> projetados = [];
+        foreach (FormularioProcesso formulario in FormulariosDaInscricaoNaVersao.De(lida.Configuracao))
+        {
+            Result<FormularioApresentadoDoProcessoDto?> projetado = ProjetarFormulario(lida, formulario.Codigo, acervoDaComprovacao: null);
+            if (projetado.IsFailure)
+            {
+                return Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>>.Failure(projetado.Error!);
+            }
+
+            projetados.Add(projetado.Value ?? throw new InvalidOperationException(
+                $"O formulário '{formulario.Codigo.Valor}' da inscrição do processo {versao.ProcessoSeletivoId} está na versão fixada e não tem apresentação."));
+        }
+
+        return Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>>.Success(projetados);
     }
 
     private sealed record ConfiguracaoLida(JsonObject Envelope, ConfiguracaoPublicada Configuracao, DefinicaoAvaliavel Avaliavel, string FusoHorario);
@@ -104,7 +147,7 @@ public static class ProjecaoDoFormularioDaVersao
         $"A configuração congelada do processo {versao.ProcessoSeletivoId} não é um documento legível.");
 
     private static Result<FormularioApresentadoDoProcessoDto?> ProjetarFormulario(
-        ConfiguracaoLida lida, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+        ConfiguracaoLida lida, CodigoDoFormulario codigo, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
         if (!TentarDataReferenciaFatos(lida.Envelope, out DateOnly? dataReferenciaFatos))
         {
@@ -113,32 +156,32 @@ public static class ProjecaoDoFormularioDaVersao
 
         ConfiguracaoPublicada configuracaoPublicada = lida.Configuracao;
         return ProjecaoDoFormularioApresentado.Projetar(
-                finalidade, lida.Avaliavel, configuracaoPublicada.Coleta.Formularios, [.. configuracaoPublicada.Coleta.Itens], configuracaoPublicada.Coleta.GruposColetados, configuracaoPublicada.Coleta.TermosExigidos,
-                dataReferenciaFatos) is { } formulario
-            ? ComporFormulario(lida, finalidade, formulario, acervoDaComprovacao)
+                codigo, lida.Avaliavel, configuracaoPublicada.Coleta, CronogramaDoProcesso.Do(configuracaoPublicada.Cronograma.CronogramaFases), dataReferenciaFatos) is { } formulario
+            ? ComporFormulario(lida, codigo, formulario, acervoDaComprovacao)
             : Result<FormularioApresentadoDoProcessoDto?>.Success(null);
     }
 
     private static Result<FormularioApresentadoDoProcessoDto?> ComporFormulario(
-        ConfiguracaoLida lida, FinalidadeFormulario finalidade, FormularioApresentado formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+        ConfiguracaoLida lida, CodigoDoFormulario codigo, FormularioApresentado formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
-        FormularioProcesso doFormulario = lida.Configuracao.Coleta.Formularios.First(f => f.Finalidade == finalidade);
+        FormularioProcesso doFormulario = lida.Configuracao.Coleta.FormularioDe(codigo)!;
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
         if (acervoDaComprovacao is not null
-            && !TentarComprovacaoDocumental(lida, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
+            && !TentarComprovacaoDocumental(lida, doFormulario, acervoDaComprovacao, out comprovacao))
         {
             return ProjecaoDoCertamePublicado.Recusar<FormularioApresentadoDoProcessoDto?>("comprovacaoDocumental");
         }
 
-        (DependenciasDaAvaliacaoDto? dependencias, DependenciasDaAvaliacaoDto? dependenciasDoFator) = DependenciasDaInscricao(lida, finalidade);
+        (DependenciasDaAvaliacaoDto? dependencias, DependenciasDaAvaliacaoDto? dependenciasDoFator) = DependenciasDaInscricao(lida, doFormulario);
         return Result<FormularioApresentadoDoProcessoDto?>.Success(
-            new FormularioApresentadoDoProcessoDto(formulario, doFormulario.FaseId, comprovacao, dependencias, dependenciasDoFator));
+            new FormularioApresentadoDoProcessoDto(formulario, doFormulario.Codigo.Valor, doFormulario.FaseId, doFormulario.Obrigatorio, comprovacao, dependencias, dependenciasDoFator));
     }
 
+    // As dependências são as da avaliação da inscrição: cada formulário que a inscrição responde as carrega.
     private static (DependenciasDaAvaliacaoDto? Fatos, DependenciasDaAvaliacaoDto? Fator) DependenciasDaInscricao(
-        ConfiguracaoLida lida, FinalidadeFormulario finalidade)
+        ConfiguracaoLida lida, FormularioProcesso formulario)
     {
-        if (finalidade != FinalidadeFormulario.Inscricao)
+        if (!FormulariosDaInscricaoNaVersao.De(lida.Configuracao).Any(f => f.Codigo == formulario.Codigo))
         {
             return (null, null);
         }
@@ -235,8 +278,8 @@ public static class ProjecaoDoFormularioDaVersao
     }
 
     /// <summary>
-    /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e da finalidade do
-    /// formulário, na forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade, formatos, prazo de emissão e validade. A condição
+    /// As exigências do bloco de comprovação documental (UNI-REQ-0144): as da fase e do código do formulário, na
+    /// forma que o certame publica — rótulo, aplicabilidade, obrigatoriedade, formatos, prazo de emissão e validade. A condição
     /// de cada uma e as regras de comprovação não atravessam este endereço anônimo
     /// (<see cref="ClassificacaoDosBlocosDoCertame"/>): quais documentos cabem a um candidato é
     /// resposta da execução, sobre as respostas dele. Só é lida quando o formulário tem o bloco.
@@ -244,13 +287,12 @@ public static class ProjecaoDoFormularioDaVersao
     private static bool TentarComprovacaoDocumental(
         ConfiguracaoLida lida,
         FormularioProcesso formulario,
-        string finalidade,
         DocumentosDoAtoNoAcervo acervo,
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
         return !formulario.Paginas.Any(static e => e.Bloco == BlocoSistema.ComprovacaoDocumental)
-            || TentarExigenciasDaFase(lida, formulario.FaseId, finalidade, acervo, out comprovacao);
+            || TentarExigenciasDaFase(lida, formulario, acervo, out comprovacao);
     }
 
     /// <summary>
@@ -260,37 +302,36 @@ public static class ProjecaoDoFormularioDaVersao
     /// </summary>
     private static bool TentarExigenciasDaFase(
         ConfiguracaoLida lida,
-        Guid? faseDoFormulario,
-        string finalidade,
+        FormularioProcesso formulario,
         DocumentosDoAtoNoAcervo acervo,
         out List<ExigenciaDocumentalCertameDto>? comprovacao)
     {
         comprovacao = null;
-        return faseDoFormulario is { } fase
+        return formulario.FaseId is { } fase
             && CronogramaCongelado.Reidratado(lida.Configuracao.Cronograma.CronogramaFases, lida.FusoHorario) is { } cronograma
             && LeituraDoCertameDocumentos.TentarExigencias(
                 lida.Envelope,
-                exigencia => DoFormulario(exigencia, fase, finalidade),
+                exigencia => DoFormulario(exigencia, fase, formulario.Codigo),
                 acervo,
                 cronograma,
                 out comprovacao);
     }
 
     /// <summary>
-    /// A exigência é coletada neste formulário: na fase dele e declarada para a finalidade dele, porque
-    /// inscrição e isenção podem dividir a fase. A exigência fora de formulário não entra em bloco
-    /// nenhum. Sem a fase, sem a chave da finalidade ou com finalidade fora do vocabulário, a forma é
+    /// A exigência é coletada neste formulário: na fase dele e declarada com o código dele, porque dois
+    /// formulários podem dividir a fase. A exigência fora de formulário não entra em bloco
+    /// nenhum. Sem a fase, sem a chave do código ou com código fora do formato, a forma é
     /// inesperada: nulo, que recusa a leitura em vez de omitir o documento.
     /// </summary>
-    private static bool? DoFormulario(JsonObject exigencia, Guid faseDoFormulario, string finalidadeDoFormulario)
+    private static bool? DoFormulario(JsonObject exigencia, Guid faseDoFormulario, CodigoDoFormulario formulario)
     {
         if (!TentarGuid(exigencia, "exigidoNaFaseId", out Guid fase)
-            || !TentarStringOpcional(exigencia, "finalidade", out string? finalidade)
-            || (finalidade is not null && EstruturaFormulario.FinalidadeDoCodigo(finalidade) is null))
+            || !TentarStringOpcional(exigencia, "formularioCodigo", out string? codigo)
+            || (codigo is not null && !CodigoDoFormulario.Criar(codigo).IsSuccess))
         {
             return null;
         }
 
-        return fase == faseDoFormulario && string.Equals(finalidade, finalidadeDoFormulario, StringComparison.Ordinal);
+        return fase == faseDoFormulario && string.Equals(codigo, formulario.Valor, StringComparison.Ordinal);
     }
 }

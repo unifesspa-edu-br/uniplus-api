@@ -78,8 +78,8 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
         Result<ReciboDaInscricaoDto> resultado = await cenario.SubmeterAsync(request);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle(e => e.Field == "TERMO_VERACIDADE" && e.Error.Code == "Inscricao.TermoNaoAceito",
-            "a recusa sai no código do aceite que o candidato envia");
+        resultado.Errors.Should().ContainSingle(e => e.Field == "INSCRICAO:TERMO_VERACIDADE" && e.Error.Code == "Inscricao.TermoNaoAceito",
+            "a recusa sai no código do termo na avaliação, prefixado pelo formulário");
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

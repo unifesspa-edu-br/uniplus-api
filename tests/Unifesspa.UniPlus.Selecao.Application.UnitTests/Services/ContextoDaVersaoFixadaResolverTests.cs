@@ -119,6 +119,34 @@ public sealed class ContextoDaVersaoFixadaResolverTests
         contexto.Value.ConfiguracaoDaPrimeiraOpcao.ModalidadesOfertadas.Select(static m => m.Codigo).Should().Equal("AC");
     }
 
+    [Fact(DisplayName = "Os termos admitidos unem os dos formulários da inscrição, cada um pelo formulário e pelo código, e deixam de fora os do formulário facultativo")]
+    public void Admitidas_VariosFormulariosDaInscricao_ChaveiaOTermoPeloFormulario()
+    {
+        ConfiguracaoPublicada configuracao = FormularioDaInscricaoDeTeste.ConfiguracaoCom(
+            new("INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]),
+            new("SOLICITACAO_DE_ISENCAO", Obrigatorio: false, [], ["LGPD_DA_ISENCAO"]));
+
+        RespostasAdmitidas admitidas = ContextoDaVersaoFixadaResolver.Admitidas(configuracao);
+
+        admitidas.Termos.Keys.Should().BeEquivalentTo(
+            [new TermoNoFormulario("INSCRICAO", "VERACIDADE"), new TermoNoFormulario("COMPLEMENTO_DA_INSCRICAO", "VERACIDADE")]);
+    }
+
+    [Fact(DisplayName = "As respostas admitidas unem os itens dos formulários da inscrição e deixam de fora os do formulário facultativo")]
+    public void Admitidas_VariosFormulariosDaInscricao_UneOsItens()
+    {
+        ConfiguracaoPublicada configuracao = FormularioDaInscricaoDeTeste.ConfiguracaoCom(
+            new("INSCRICAO", Obrigatorio: true, ["NOME"], []),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, ["ESCOLA"], []),
+            new("SOLICITACAO_DE_ISENCAO", Obrigatorio: false, ["RENDA"], []));
+
+        RespostasAdmitidas admitidas = ContextoDaVersaoFixadaResolver.Admitidas(configuracao);
+
+        admitidas.Definicoes.Keys.Should().BeEquivalentTo("NOME", "ESCOLA");
+        admitidas.DoNivelSuperior.Should().BeEquivalentTo("NOME", "ESCOLA");
+    }
+
     private static string[] CodigosDasModalidades(ResultadoDaAvaliacaoDaInscricao avaliacao) =>
         [.. avaliacao.Modalidades.Itens.Select(static m => m.Codigo)];
 

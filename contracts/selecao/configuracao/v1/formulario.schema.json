@@ -2,21 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/formulario.schema.json",
   "title": "Formulário do processo",
-  "description": "O formulário de uma finalidade: as páginas, os itens e grupos coletados e os termos de consentimento exigidos. Cada finalidade tem no máximo um formulário no processo. Um formulário comporta no máximo 200 itens, contando itens, grupos e subitens.",
+  "description": "O formulário do processo: as páginas, os itens e grupos coletados e os termos de consentimento exigidos. Cada código tem no máximo um formulário no processo. Um formulário comporta no máximo 200 itens, contando itens, grupos e subitens.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "finalidade"
+    "codigo"
   ],
   "properties": {
-    "finalidade": {
-      "title": "Finalidade",
-      "description": "Para que serve o formulário. É a chave dele no documento.",
-      "enum": [
-        "INSCRICAO",
-        "ISENCAO_TAXA",
-        "HABILITACAO"
-      ]
+    "codigo": {
+      "title": "Código",
+      "description": "O código que identifica o formulário no processo, de até 60 caracteres. É a chave dele no documento: as exigências de documento o citam em formularioCodigo, e o código não muda depois de criado.",
+      "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
+    },
+    "obrigatorio": {
+      "title": "Obrigatório",
+      "description": "Se o formulário é obrigatório para o candidato. O formulário obrigatório ligado a uma fase que coleta inscrição é o que a inscrição responde.",
+      "type": "boolean"
     },
     "finalidadeRotulo": {
       "title": "Rótulo da finalidade",

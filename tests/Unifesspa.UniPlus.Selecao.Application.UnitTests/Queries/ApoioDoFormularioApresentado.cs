@@ -7,7 +7,6 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -19,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -62,11 +63,11 @@ internal static class ApoioDoFormularioApresentado
         IProcessoSeletivoRepository repository,
         Guid processoId,
         ICertameDivulgadoRepository? divulgadoRepository = null,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+        string formularioCodigo = FormularioDeTeste.CodigoDaInscricao)
     {
         ICertameDivulgadoRepository divulgacao = divulgadoRepository ?? RepositorioComDivulgacao(processoId);
         return ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()),
+            new ObterFormularioApresentadoQuery(processoId, formularioCodigo),
             repository,
             divulgacao,
             RegistroReconhecendoVersaoCorrente,
@@ -123,7 +124,7 @@ internal static class ApoioDoFormularioApresentado
 
     /// <summary>
     /// A reidratação de um processo com os formulários dados, sobre a estrutura de um processo
-    /// conforme. Sem formulários, nenhuma finalidade tem o que servir.
+    /// conforme. Sem formulários, nenhum código tem o que servir.
     /// </summary>
     internal static EnvelopeReidratado EnvelopeCom(params FormularioProcesso[] formularios)
     {
@@ -144,9 +145,9 @@ internal static class ApoioDoFormularioApresentado
     }
 
     /// <summary>Um formulário só com blocos: o de comprovação documental, quando pedido, e o de revisão e aceite.</summary>
-    internal static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid? faseId, bool comComprovacao) =>
+    internal static FormularioProcesso Formulario(string codigo, Guid? faseId, bool comComprovacao) =>
         FormularioProcesso.Criar(
-            finalidade, faseId, null,
+            new FormularioDeclarado(CodigoDoFormulario.Criar(codigo).Value!, faseId, Obrigatorio: true), CronogramaDoProcesso.Do([]), null,
             [
                 .. comComprovacao
                     ? [PaginaDoFormulario.Criar(new PaginaEstrutura("DOCUMENTOS", 0, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental), "Documentos", null, null).Value!]
@@ -155,12 +156,12 @@ internal static class ApoioDoFormularioApresentado
             ]).Value!;
 
     internal static Task<Result<FormularioApresentadoDoProcessoDto>> HandleAsync(
-        Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, FinalidadeFormulario finalidade,
+        Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, string formularioCodigo,
         ICertameDivulgadoRepository? divulgacao = null)
     {
         ICertameDivulgadoRepository lida = divulgacao ?? RepositorioComDivulgacao(processoId);
         return ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()),
+            new ObterFormularioApresentadoQuery(processoId, formularioCodigo),
             MockComVersaoVigente(processoId, envelopeJson),
             lida,
             RegistroReidratando(reidratado),

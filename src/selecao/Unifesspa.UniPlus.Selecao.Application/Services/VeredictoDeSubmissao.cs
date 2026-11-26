@@ -5,6 +5,7 @@ using System.Text.Json;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.Services;
 using Domain.ValueObjects;
 
@@ -23,9 +24,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 /// <remarks>
 /// Recebe a avaliação já pronta: a da definição inteira da versão fixada, feita pela
-/// <see cref="AvaliacaoDaInscricao"/> com as páginas da inscrição concluídas, e restrita à finalidade
-/// Inscrição por <see cref="AvaliacaoDaInscricao.DaInscricao"/>. Quem chama passa só essa parte: um
-/// item ou termo obrigatório de outra finalidade, como a isenção, não é pendência da inscrição. Com as
+/// <see cref="AvaliacaoDaInscricao"/> com as páginas da inscrição concluídas, e restrita aos formulários
+/// da inscrição por <see cref="AvaliacaoDaInscricao.DaInscricao"/>. Quem chama passa só essa parte: um
+/// item ou termo obrigatório de outro formulário, como o da isenção, não é pendência da inscrição. Com as
 /// páginas concluídas, a submissão é o candidato declarando que terminou: um campo opcional sem
 /// resposta deixa de ser pendência (<see cref="EstadoFato.Indeterminado"/>) e passa a
 /// <see cref="EstadoFato.NaoInformado"/>, que não pesa; só o obrigatório sem resposta permanece
@@ -36,7 +37,7 @@ public static class VeredictoDeSubmissao
     /// <param name="diaDoEnvio">O dia do envio com que a avaliação foi feita, de que a recusa da faixa de data diz os limites.</param>
     public static IReadOnlyList<FieldError> Avaliar(
         AvaliacaoFormulario avaliacao,
-        IReadOnlyList<TermoExigidoFormulario> termosExigidos,
+        IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termosExigidos,
         IReadOnlyList<AceiteDeTermo> aceites,
         DateOnly diaDoEnvio) =>
         [.. AvaliarDistinguindoOGeo(avaliacao, termosExigidos, aceites, diaDoEnvio, geo: null).Select(static r => r.Recusa)];
@@ -48,7 +49,7 @@ public static class VeredictoDeSubmissao
     /// <param name="geo">O que o Geo deixou indeterminado; nulo quando o Geo respondeu, e então nenhuma recusa depende dele.</param>
     public static IReadOnlyList<RecusaDaSubmissao> AvaliarDistinguindoOGeo(
         AvaliacaoFormulario avaliacao,
-        IReadOnlyList<TermoExigidoFormulario> termosExigidos,
+        IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termosExigidos,
         IReadOnlyList<AceiteDeTermo> aceites,
         DateOnly diaDoEnvio,
         DependenciaDoGeo? geo)
@@ -108,36 +109,48 @@ public static class VeredictoDeSubmissao
         }
     }
 
-    /// <summary>A recusa é sobre o aceite e, por isso, usa o código sem prefixo do termo exigido.</summary>
     private static IEnumerable<RecusaDaSubmissao> RecusasDosTermos(
-        IReadOnlyList<AvaliacaoTermo> termos, IReadOnlyList<TermoExigidoFormulario> termosExigidos, IReadOnlyList<AceiteDeTermo> aceites)
+        IReadOnlyList<AvaliacaoTermo> termos, IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termosExigidos, IReadOnlyList<AceiteDeTermo> aceites)
     {
         foreach (AvaliacaoTermo termo in termos)
         {
             if (termo.Visivel != Ternario.Verdadeiro || termo.Obrigatorio != Ternario.Verdadeiro)
                 continue;
-            TermoExigidoFormulario? exigido = TermoExigidoDaAvaliacao(termo, termosExigidos);
-            if (exigido is null || !AceitoNaVersaoFixada(exigido, aceites))
+            TermoNoFormulario? exigido = TermoExigidoDaAvaliacao(termo, termosExigidos.Keys);
+            if (exigido is null || !AceitoNaVersaoFixada(exigido, termosExigidos[exigido], aceites))
             {
-                string campo = exigido?.Codigo ?? termo.Codigo;
-                yield return Independente(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição."));
+                yield return Independente(RecusaDoTermo(termo, exigido));
             }
         }
     }
 
     /// <summary>
-    /// A avaliação usa o código prefixado pela finalidade (<see cref="DefinicaoDoProcesso.CodigoDoTermo"/>),
-    /// o mesmo que a apresentação do formulário expõe; os termos exigidos e os aceites usam o código
-    /// sem prefixo, que é o que o candidato conhece e envia.
+    /// O campo é o código da avaliação, prefixado pelo formulário: o mesmo código de termo pode ser exigido em mais
+    /// de um formulário, e cada um é uma recusa própria.
     /// </summary>
-    private static TermoExigidoFormulario? TermoExigidoDaAvaliacao(AvaliacaoTermo termo, IReadOnlyList<TermoExigidoFormulario> termosExigidos) =>
-        termosExigidos.FirstOrDefault(t =>
-            string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), termo.Codigo, StringComparison.Ordinal));
-
-    private static bool AceitoNaVersaoFixada(TermoExigidoFormulario exigido, IReadOnlyList<AceiteDeTermo> aceites)
+    private static FieldError RecusaDoTermo(AvaliacaoTermo termo, TermoNoFormulario? exigido)
     {
-        AceiteDeTermo? aceite = aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
-        return aceite is not null && aceite.ValeParaAVersao(exigido.ParaAceite());
+        string descricao = exigido is null
+            ? $"O termo '{termo.Codigo}'"
+            : $"O termo '{exigido.Codigo}' do formulário '{exigido.FormularioCodigo}'";
+        return Recusa(termo.Codigo, InscricaoErrorCodes.TermoNaoAceito, $"{descricao} é obrigatório e não foi aceito na versão fixada da inscrição.");
+    }
+
+    /// <summary>
+    /// A avaliação usa o código prefixado pelo formulário (<see cref="DefinicaoDoProcesso.CodigoDoTermo"/>),
+    /// o mesmo que a apresentação do formulário expõe; os termos exigidos e os aceites citam o formulário e o
+    /// código sem prefixo, que é o que o candidato conhece e envia.
+    /// </summary>
+    private static TermoNoFormulario? TermoExigidoDaAvaliacao(AvaliacaoTermo termo, IEnumerable<TermoNoFormulario> termosExigidos) =>
+        termosExigidos.FirstOrDefault(t =>
+            CodigoDoFormulario.Criar(t.FormularioCodigo) is { IsSuccess: true } formulario
+            && string.Equals(DefinicaoDoProcesso.CodigoDoTermo(formulario.Value!, t.Codigo), termo.Codigo, StringComparison.Ordinal));
+
+    private static bool AceitoNaVersaoFixada(TermoNoFormulario exigido, TermoAdmitido admitido, IReadOnlyList<AceiteDeTermo> aceites)
+    {
+        AceiteDeTermo? aceite = aceites.FirstOrDefault(a =>
+            string.Equals(a.FormularioCodigo, exigido.FormularioCodigo, StringComparison.Ordinal) && string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
+        return aceite is not null && aceite.ValeParaAVersao(admitido);
     }
 
     /// <summary>

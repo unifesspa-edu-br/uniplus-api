@@ -9,6 +9,7 @@ using Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.Services;
 using Domain.ValueObjects;
 
@@ -88,10 +89,14 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> ocorrencias) =>
         EntradaDaAvaliacaoDaInscricao.Montar(DefinicoesDasRespostas(processo), new EntradaDaAvaliacaoDaInscricao(
             simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ocorrencias, RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
-            new HashSet<string>((simulacao.PaginasConcluidas ?? []).Where(static e => e is not null)
-                .Select(static e => EstruturaFormulario.FinalidadeDoCodigo(e.Finalidade) is { } finalidade ? DefinicaoDoProcesso.CodigoDaPagina(finalidade, e.Pagina) : null)
-                .OfType<string>(), StringComparer.Ordinal),
+            new HashSet<string>((simulacao.PaginasConcluidas ?? []).Where(static e => e is not null).Select(PaginaConcluida).OfType<string>(), StringComparer.Ordinal),
             Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
+
+    /// <summary>O código da página na definição do processo; nulo quando o código do formulário não tem o formato válido.</summary>
+    private static string? PaginaConcluida(PaginaConcluidaInput pagina) =>
+        CodigoDoFormulario.Criar(pagina.FormularioCodigo) is { IsSuccess: true } codigo
+            ? DefinicaoDoProcesso.CodigoDaPagina(codigo.Value!, pagina.Pagina)
+            : null;
 
     /// <summary>A definição da resposta de cada fato e subitem que o processo coleta, em qualquer formulário, e a dos derivados do sistema.</summary>
     private static IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas(ProcessoSeletivo processo)
@@ -109,17 +114,22 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
     {
         Dictionary<string, FatoColetado> itemPorFato = processo.FatosColetados.ToDictionary(static f => f.FatoCodigo, StringComparer.Ordinal);
         Dictionary<string, GrupoColetado> grupoPorCodigo = processo.GruposColetados.ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
-        Dictionary<string, TermoExigidoFormulario> termoPorCodigo = processo.TermosExigidos
-            .ToDictionary(static t => DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade!.Value, t.Codigo), StringComparer.Ordinal);
+        Dictionary<string, TermoExigidoFormulario> termoPorCodigo = TermosPeloCodigoNaDefinicao(processo);
 
-        return [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(formulario => new FormularioSimuladoDto(
-            CodigoComRotulo<FinalidadeFormulario>.De(formulario.Finalidade),
-            [.. avaliacao.Itens.Where(i => itemPorFato[i.FatoCodigo].Finalidade == formulario.Finalidade).Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
-            [.. avaliacao.Grupos.Where(g => grupoPorCodigo[g.Codigo].Finalidade == formulario.Finalidade).Select(g => Grupo(g, grupoPorCodigo[g.Codigo]))],
-            [.. avaliacao.Termos.Where(t => termoPorCodigo[t.Codigo].Finalidade == formulario.Finalidade)
+        return [.. processo.Formularios.OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal).Select(formulario => new FormularioSimuladoDto(
+            formulario.Codigo.Valor,
+            [.. avaliacao.Itens.Where(i => itemPorFato[i.FatoCodigo].FormularioId == formulario.Id).Select(i => Item(i, itemPorFato[i.FatoCodigo]))],
+            [.. avaliacao.Grupos.Where(g => grupoPorCodigo[g.Codigo].FormularioId == formulario.Id).Select(g => Grupo(g, grupoPorCodigo[g.Codigo]))],
+            [.. avaliacao.Termos.Where(t => termoPorCodigo[t.Codigo].FormularioId == formulario.Id)
                 .Select(t => new TermoSimuladoDto(termoPorCodigo[t.Codigo].Codigo, CodigoComRotulo<Ternario>.De(t.Visivel), CodigoComRotulo<Ternario>.De(t.Obrigatorio)))],
             Secoes(formulario, avaliacao)))];
     }
+
+    /// <summary>Os termos do processo pelo código que têm na definição, que leva o do formulário: o código do termo só é único dentro dele.</summary>
+    private static Dictionary<string, TermoExigidoFormulario> TermosPeloCodigoNaDefinicao(ProcessoSeletivo processo) =>
+        processo.TermosExigidos.ToDictionary(
+            t => DefinicaoDoProcesso.CodigoDoTermo(processo.Formularios.Single(f => f.Id == t.FormularioId).Codigo, t.Codigo),
+            StringComparer.Ordinal);
 
     private static GrupoSimuladoDto Grupo(AvaliacaoGrupo grupo, GrupoColetado coletado) => new(
         grupo.Codigo, coletado.PaginaCodigo, CodigoComRotulo<Ternario>.De(grupo.Visivel), CodigoComRotulo<Ternario>.De(grupo.Obrigatorio), grupo.ContagemValida, grupo.OcorrenciaDoCandidatoValida,
@@ -129,7 +139,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
     private static List<SecaoSimuladaDto> Secoes(FormularioProcesso formulario, AvaliacaoFormulario avaliacao) =>
         [.. formulario.Paginas.Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem)
             .Select(e => new SecaoSimuladaDto(e.Codigo,
-                CodigoComRotulo<Ternario>.De(avaliacao.Paginas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaPagina(formulario.Finalidade, e.Codigo)).Visivel)))];
+                CodigoComRotulo<Ternario>.De(avaliacao.Paginas.Single(a => a.Codigo == DefinicaoDoProcesso.CodigoDaPagina(formulario.Codigo, e.Codigo)).Visivel)))];
 
     /// <summary>O item avaliado; o campo de grupo segue a seção do grupo.</summary>
     private static ItemSimuladoDto Item(AvaliacaoItem item, FatoColetado campo, string? paginaDoGrupo = null) => new(
@@ -143,7 +153,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         DocumentoExigido documento = avaliado.Documento;
         return new(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
-            documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null,
+            documento.ExigidoNaFaseId, documento.FormularioCodigo?.Valor,
             documento.ExigidoNaEtapaId, Situacao(avaliado.Situacao), avaliado.OcorrenciaId,
             [.. avaliado.Grupos
                 .Where(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens)

@@ -66,19 +66,19 @@ public sealed class InscricoesController : ControllerBase
         return Ok(resultado.Value);
     }
 
-    /// <summary>O formulário apresentado da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
-    [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
-    [EndpointName("ObterFormularioDaInscricao")]
-    [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(FormularioApresentadoDoProcessoDto), StatusCodes.Status200OK)]
+    /// <summary>Os formulários apresentados da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
+    [HttpGet("processos-seletivos/{id:guid}/inscricao/formularios")]
+    [EndpointName("ObterFormulariosDaInscricao")]
+    [VendorMediaType(Resource = "formularios-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<FormularioApresentadoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ObterFormulario(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterFormularios(Guid id, CancellationToken cancellationToken)
     {
-        Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
-            .Send(new ObterFormularioDaInscricaoQuery(id), cancellationToken)
+        Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> resultado = await _queryBus
+            .Send(new ObterFormulariosDaInscricaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

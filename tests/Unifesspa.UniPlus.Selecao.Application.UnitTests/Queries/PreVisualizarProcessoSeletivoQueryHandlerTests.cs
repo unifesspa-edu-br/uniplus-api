@@ -77,7 +77,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         previa.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_GUARDA")
             .Should().ContainSingle("a composição familiar não aparece a quem se declarou branco").Which.Situacao.Should().Be("NAO_EXIGIDO");
         ConferirQueORgEOPassaporteSaoAlternativas(previa);
-        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO");
+        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Codigo == "INSCRICAO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "RG_NUMERO").Visivel.Codigo.Should().Be("FALSO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "NATURALIDADE_UF").Visivel.Codigo.Should().Be("FALSO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Codigo.Should().Be("VERDADEIRO");
@@ -164,7 +164,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
             new(new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["VINCULO_PARFOR"] = Json(vinculo) }, null, null, null), processo);
 
-        resultado.Value!.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
+        resultado.Value!.Formularios.Single(static f => f.Codigo == "INSCRICAO").Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR")
             .Should().BeEquivalentTo(new { Impedido = new { Codigo = impedido }, MensagemDoImpedimento = Mensagem });
     }
 
@@ -182,7 +182,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
             nacionalidade: "NATO", corRaca: "INDIGENA", convocacao: "AC", membros: [Membro("CANDIDATO", "URBANO", menorSobGuarda: false)]));
 
-        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade.Codigo == "INSCRICAO");
+        FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Codigo == "INSCRICAO");
         inscricao.Secoes.Should().NotBeEmpty();
         inscricao.Secoes.Should().OnlyContain(static s => s.Visivel.Codigo == "VERDADEIRO", "nenhuma seção do formulário de teste tem exibição condicional");
     }

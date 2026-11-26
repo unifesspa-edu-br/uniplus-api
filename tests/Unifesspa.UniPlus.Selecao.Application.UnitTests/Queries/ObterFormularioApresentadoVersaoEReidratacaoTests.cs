@@ -4,15 +4,14 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
@@ -28,7 +27,7 @@ public sealed class ObterFormularioApresentadoVersaoEReidratacaoTests
 
     private const string EnvelopeFormaCorrente = """
             {
-              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "paginas": [
+              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"codigo": "INSCRICAO", "obrigatorio": true, "faseId": null, "titulo": "Formulário de Inscrição", "modeloOrigem": null, "paginas": [
                   {"codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "bloco": null, "titulo": "Dados", "descricao": null, "aviso": null},
                   {"codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE", "titulo": "Revisão e aceite", "descricao": null, "aviso": null}
                 ], "termos": []}],
@@ -38,7 +37,7 @@ public sealed class ObterFormularioApresentadoVersaoEReidratacaoTests
 
     private const string EnvelopeComReidratacaoRecusada = """
             {
-              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"finalidade": "INSCRICAO", "faseId": null, "titulo": null, "modeloOrigem": null, "paginas": [], "termos": []}],
+              "documentosExigidos": {"dataDeReferenciaDosDados": null}, "formularios": [{"codigo": "INSCRICAO", "obrigatorio": true, "faseId": null, "titulo": null, "modeloOrigem": null, "paginas": [], "termos": []}],
               "gruposDosFormularios": [], "dadosDosFormularios": []
             }
             """;
@@ -74,7 +73,7 @@ public sealed class ObterFormularioApresentadoVersaoEReidratacaoTests
 
         ICertameDivulgadoRepository divulgacao = RepositorioComDivulgacao(processoId);
         Result<FormularioApresentadoDoProcessoDto> resultado = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.Inscricao.Codigo()),
+            new ObterFormularioApresentadoQuery(processoId, FormularioDeTeste.CodigoDaInscricao),
             MockComVersaoVigente(processoId, EnvelopeComReidratacaoRecusada),
             divulgacao,
             registro,

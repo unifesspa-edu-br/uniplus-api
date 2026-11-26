@@ -7,7 +7,6 @@ using Domain.Errors;
 
 using DTOs;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -18,8 +17,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public static class InscricaoRequestMapper
 {
-    // Provisório até o aceite citar o formulário que exige o termo: todo aceite é do formulário de inscrição.
-    private static readonly string CodigoDoFormularioDaInscricao = FinalidadeFormulario.Inscricao.Codigo();
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> SemGrupos =
+        new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>();
 
     public static Dictionary<string, JsonElement> ParaRespostas(IReadOnlyDictionary<string, JsonElement>? respostas) =>
         respostas is { } r ? new(r, StringComparer.Ordinal) : new(StringComparer.Ordinal);
@@ -35,39 +34,10 @@ public static class InscricaoRequestMapper
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? grupos)
     {
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> resultado = new(StringComparer.Ordinal);
-        if (grupos is null)
-        {
-            return Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>.Success(resultado);
-        }
-
         List<FieldError> recusas = [];
-        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>? ocorrencias) in grupos)
+        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>? ocorrencias) in grupos ?? SemGrupos)
         {
-            if (ocorrencias is null)
-            {
-                recusas.Add(new FieldError(codigo, new DomainError(
-                    InscricaoErrorCodes.GrupoMalFormado,
-                    $"O grupo '{codigo}' veio sem a lista de ocorrências. Envie a lista, vazia se não houver nenhuma, ou remova o grupo do corpo.")));
-                continue;
-            }
-
-            List<OcorrenciaDeGrupoInscricao> lidas = new(ocorrencias.Count);
-            for (int i = 0; i < ocorrencias.Count; i++)
-            {
-                if (ocorrencias[i] is not { } ocorrencia)
-                {
-                    recusas.Add(new FieldError($"{codigo}[{i}]", new DomainError(
-                        InscricaoErrorCodes.GrupoMalFormado,
-                        $"A ocorrência {i + 1} do grupo '{codigo}' veio nula. Envie a ocorrência com id e respostas, ou remova-a da lista.")));
-                    continue;
-                }
-
-                lidas.Add(new OcorrenciaDeGrupoInscricao(
-                    ocorrencia.Id,
-                    ocorrencia.Respostas is { } respostas ? new Dictionary<string, JsonElement>(respostas, StringComparer.Ordinal) : new(StringComparer.Ordinal)));
-            }
-
-            resultado[codigo] = lidas;
+            LerGrupo(codigo, ocorrencias, resultado, recusas);
         }
 
         return recusas.Count > 0
@@ -75,57 +45,111 @@ public static class InscricaoRequestMapper
             : Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>.Success(resultado);
     }
 
+    private static void LerGrupo(
+        string codigo,
+        IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>? ocorrencias,
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> resultado,
+        List<FieldError> recusas)
+    {
+        if (ocorrencias is null)
+        {
+            recusas.Add(new FieldError(codigo, new DomainError(
+                InscricaoErrorCodes.GrupoMalFormado,
+                $"O grupo '{codigo}' veio sem a lista de ocorrências. Envie a lista, vazia se não houver nenhuma, ou remova o grupo do corpo.")));
+            return;
+        }
+
+        resultado[codigo] = LerOcorrencias(codigo, ocorrencias, recusas);
+    }
+
+    private static List<OcorrenciaDeGrupoInscricao> LerOcorrencias(
+        string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput> ocorrencias, List<FieldError> recusas)
+    {
+        List<OcorrenciaDeGrupoInscricao> lidas = new(ocorrencias.Count);
+        for (int i = 0; i < ocorrencias.Count; i++)
+        {
+            if (ocorrencias[i] is { } ocorrencia)
+            {
+                lidas.Add(new OcorrenciaDeGrupoInscricao(ocorrencia.Id, ParaRespostas(ocorrencia.Respostas)));
+            }
+            else
+            {
+                recusas.Add(OcorrenciaNula(codigo, i));
+            }
+        }
+
+        return lidas;
+    }
+
+    private static FieldError OcorrenciaNula(string codigo, int posicao) => new(
+        $"{codigo}[{posicao}]",
+        new DomainError(
+            InscricaoErrorCodes.GrupoMalFormado,
+            $"A ocorrência {posicao + 1} do grupo '{codigo}' veio nula. Envie a ocorrência com id e respostas, ou remova-a da lista."));
+
     /// <summary>
     /// Os aceites do corpo na forma do domínio. A anotação de nulidade não alcança os elementos de uma
     /// coleção genérica, nem os campos de texto de um registro desserializado: um corpo sintaticamente
-    /// válido pode trazer um aceite nulo, ou um aceite sem código ou sem hash. Cada um é recusado no
-    /// caminho do aceite (<c>aceites[i]</c>) ou do campo (<c>aceites[i].codigo</c>,
-    /// <c>aceites[i].hashVersao</c>), antes de qualquer outro uso do corpo — um texto nulo chegaria à
-    /// gravação, cujas colunas o exigem. Conferir se o termo é exigido e se a versão é a fixada cabe ao
-    /// veredito da submissão.
+    /// válido pode trazer um aceite nulo, ou um aceite sem o código do formulário, sem o código do termo ou
+    /// sem hash. Cada um é recusado no caminho do aceite (<c>aceites[i]</c>) ou do campo
+    /// (<c>aceites[i].formularioCodigo</c>, <c>aceites[i].codigo</c>, <c>aceites[i].hashVersao</c>), antes de
+    /// qualquer outro uso do corpo — um texto nulo chegaria à gravação, cujas colunas o exigem. Conferir se o
+    /// termo é exigido pelo formulário e se a versão é a fixada cabe ao veredito da submissão.
     /// </summary>
     public static Result<List<AceiteDeTermo>> ParaAceites(IReadOnlyList<AceiteDeTermoInput>? aceites)
     {
         List<AceiteDeTermo> lidos = new(aceites?.Count ?? 0);
-        if (aceites is null)
-        {
-            return Result<List<AceiteDeTermo>>.Success(lidos);
-        }
-
         List<FieldError> recusas = [];
-        for (int i = 0; i < aceites.Count; i++)
+        for (int i = 0; i < (aceites?.Count ?? 0); i++)
         {
-            if (aceites[i] is not { } aceite)
-            {
-                recusas.Add(RecusaDoAceite(
-                    $"aceites[{i}]",
-                    $"O aceite {i + 1} veio nulo. Envie o aceite com código do termo, id da versão e hash da versão, ou remova-o da lista."));
-                continue;
-            }
-
-            if (aceite.Codigo is null)
-            {
-                recusas.Add(RecusaDoAceite(
-                    $"aceites[{i}].codigo",
-                    $"O aceite {i + 1} veio sem o código do termo. Envie o código do termo aceito, ou remova o aceite da lista."));
-            }
-
-            if (aceite.HashVersao is null)
-            {
-                recusas.Add(RecusaDoAceite(
-                    $"aceites[{i}].hashVersao",
-                    $"O aceite {i + 1} veio sem o hash da versão do termo. Envie o hash da versão que o formulário apresentou, ou remova o aceite da lista."));
-            }
-
-            if (aceite.Codigo is not null && aceite.HashVersao is not null)
-            {
-                lidos.Add(new AceiteDeTermo(CodigoDoFormularioDaInscricao, aceite.Codigo, aceite.VersaoId, aceite.HashVersao));
-            }
+            LerAceite(aceites![i], i, lidos, recusas);
         }
 
         return recusas.Count > 0
             ? Result<List<AceiteDeTermo>>.ValidationFailure(recusas)
             : Result<List<AceiteDeTermo>>.Success(lidos);
+    }
+
+    private static void LerAceite(AceiteDeTermoInput? aceite, int posicao, List<AceiteDeTermo> lidos, List<FieldError> recusas)
+    {
+        FieldError[] doAceite = [.. RecusasDoAceite(aceite, posicao)];
+        recusas.AddRange(doAceite);
+        if (doAceite.Length == 0)
+        {
+            lidos.Add(new AceiteDeTermo(aceite!.FormularioCodigo, aceite.Codigo, aceite.VersaoId, aceite.HashVersao));
+        }
+    }
+
+    private static IEnumerable<FieldError> RecusasDoAceite(AceiteDeTermoInput? aceite, int posicao)
+    {
+        if (aceite is null)
+        {
+            return [RecusaDoAceite(
+                $"aceites[{posicao}]",
+                $"O aceite {posicao + 1} veio nulo. Envie o aceite com código do formulário, código do termo, id da versão e hash da versão, ou remova-o da lista.")];
+        }
+
+        return CamposAusentesDoAceite(aceite).Select(ausente => RecusaDoAceite(
+            $"aceites[{posicao}].{ausente.Campo}",
+            $"O aceite {posicao + 1} veio sem {ausente.Descricao}. Envie {ausente.Orientacao}, ou remova o aceite da lista."));
+    }
+
+    private static IEnumerable<(string Campo, string Descricao, string Orientacao)> CamposAusentesDoAceite(AceiteDeTermoInput aceite)
+    {
+        if (aceite.FormularioCodigo is null)
+        {
+            yield return ("formularioCodigo", "o código do formulário", "o código do formulário que exige o termo");
+        }
+
+        if (aceite.Codigo is null)
+        {
+            yield return ("codigo", "o código do termo", "o código do termo aceito");
+        }
+
+        if (aceite.HashVersao is null)
+        {
+            yield return ("hashVersao", "o hash da versão do termo", "o hash da versão que o formulário apresentou");
+        }
     }
 
     private static FieldError RecusaDoAceite(string campo, string mensagem) =>

@@ -123,7 +123,7 @@ internal static class ExcecoesDeAcessoDasAcoes
     internal static readonly HashSet<string> DoTitular = new(StringComparer.Ordinal)
     {
         Acao(typeof(InscricoesController), nameof(InscricoesController.Obter)),
-        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterFormulario)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterFormularios)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.Avaliar)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.Iniciar)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.SalvarRascunho)),
