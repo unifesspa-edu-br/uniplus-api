@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -16,6 +17,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirIdentificadorLegivelCommandHandlerTests
 {
+    private const string IndiceDoIdentificadorLegivel = "ux_processos_seletivos_identificador_legivel";
+
     private sealed record Mocks(IProcessoSeletivoRepository Repository, IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
@@ -92,6 +95,38 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
         mocks.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "Conflito do índice único na gravação descarta o rastreamento e recusa como identificador em uso")]
+    public async Task Handle_ConflitoDoIndiceUnicoNaGravacao_DescartaERecusaEmUso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade(IndiceDoIdentificadorLegivel));
+
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026"),
+            mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
+        mocks.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Violação de outro índice único na gravação não é traduzida e propaga sem descartar")]
+    public async Task Handle_ViolacaoDeOutroIndice_Propaga()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_outro_indice"));
+
+        Func<Task> chamada = () => DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026"),
+            mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
+
+        await chamada.Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateException>();
+        mocks.UnitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Processo publicado recusa antes de consultar a unicidade")]

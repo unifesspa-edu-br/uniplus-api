@@ -5,8 +5,6 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-using Services;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -26,37 +24,45 @@ public static class DefinirOpcoesDeCursoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
-        }
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(command, obtido.Value!, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        // Fora do rascunho a recusa vem antes de consultar cadastros.
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
+    private static async Task<Result> DefinirEGravarAsync(
+        DefinirOpcoesDeCursoCommand command,
+        ProcessoSeletivo processo,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = processo.DefinirOpcoesDeCurso(command.Numero);
+        return definido.IsFailure
+            ? RecusaDaDefinicao(definido)
+            : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result result = processo.DefinirOpcoesDeCurso(command.Numero);
-        if (result.IsFailure)
-        {
-            // Só a recusa de regra tem campo; o que vem sem campo é do agregado (precondição).
-            return result.Errors[0].Field is null
-                ? Result.Failure(result.Error!)
-                : Result.ValidationFailure(result.Errors);
-        }
+    /// <summary>
+    /// Só a recusa de regra tem campo; o que vem sem campo é do agregado (precondição).
+    /// </summary>
+    private static Result RecusaDaDefinicao(Result definido) =>
+        definido.Errors[0].Field is null
+            ? Result.Failure(definido.Error!)
+            : Result.ValidationFailure(definido.Errors);
 
+    /// <summary>
+    /// O endpoint tem Idempotency-Key (ADR-0119): a concorrência otimista é capturada aqui e o rastreamento é
+    /// descartado, para o <c>SaveChangesAsync</c> do outbox não reencontrar o agregado modificado.
+    /// </summary>
+    private static async Task<Result> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
-            // O endpoint tem Idempotency-Key (ADR-0119): captura local e descarte, para o
-            // SaveChangesAsync do outbox não reencontrar o agregado modificado.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.ConflitoDeConcorrencia,
