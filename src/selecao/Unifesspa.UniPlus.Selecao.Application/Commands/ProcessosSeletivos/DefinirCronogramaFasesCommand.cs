@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 using Domain.Enums;
@@ -106,26 +107,38 @@ public sealed record BancaRequeridaInput(
 /// congelamento da versão recusa até que sejam retirados ou o tipo volte a ser declarado.
 /// </param>
 /// <param name="RegraDeHomologacao">
-/// A regra com que a fase homologa as inscrições. Ausente: a fase não homologa, e a substituição do cronograma remove a regra
-/// que a fase tinha; o cliente devolve a regra que leu.
+/// A regra com que a fase homologa as inscrições. O efeito da gravação sobre ela está na descrição do campo no contrato.
 /// </param>
 public sealed record FaseCronogramaInput(
+    [property: Description("Posição da fase no cronograma, na ordem em que as fases acontecem.")]
     int Ordem,
+    [property: Description("Identificador da fase no cadastro de fases da Configuração. O sistema copia os dados vigentes da fase, e o cliente não os declara.")]
     Guid FaseCanonicaId,
+    [property: Description("Início do período da fase.")]
     DateTimeOffset? Inicio,
+    [property: Description("Fim do período da fase.")]
     DateTimeOffset? Fim,
+    [property: Description("Tudo o que a fase publica, com o papel de cada publicação.")]
     IReadOnlyList<ProdutoDaFaseInput> Produtos,
+    [property: Description("Se a fase promete parecer individual por candidato. É só a promessa: o parecer é produzido na execução da fase.")]
     bool EmiteParecerIndividual,
+    [property: Description("As bancas que a fase exige.")]
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
+    [property: Description("Como o recurso da fase funciona: instâncias, prazos, efeito suspensivo, guarda da vaga e procedimentos.")]
     RegraRecursoFaseInput? RegraRecurso,
+    [property: Description("Identificador da unidade da Unifesspa que responde pela fase. Opcional no rascunho; a publicação e a retificação o exigem.")]
     Guid? UnidadeResponsavelId = null,
-    [property: AceitaCodigosDe<TipoMotivoDeDecisao>] IReadOnlyList<string?>? TiposDeDecisao = null,
+    [property: AceitaCodigosDe<TipoMotivoDeDecisao>]
+    [property: Description("Os tipos de decisão que a fase declara produzir. Ausente ou vazio: nenhum. A ordem não importa, e a leitura os devolve em ordem canônica. Tirar um tipo mantém os motivos escolhidos daquele tipo, e o congelamento da versão recusa até que sejam retirados ou o tipo volte a ser declarado.")]
+    IReadOnlyList<string?>? TiposDeDecisao = null,
+    [property: Description("Como a fase homologa as inscrições. A gravação substitui a fase inteira: se este campo vier ausente ou nulo, a fase deixa de homologar e a regra que ela tinha é apagada. Quem grava devolve a regra lida na consulta, mesmo quando não a altera.")]
     RegraDeHomologacaoInput? RegraDeHomologacao = null)
 {
     /// <summary>
-    /// A fase acontece no mesmo momento da fase que a antecede na lista, e não depois dela. Vale a partir da segunda fase. É
+    /// A fase acontece no mesmo momento da fase de ordem imediatamente anterior, e não depois dela. Vale a partir da segunda fase. É
     /// substituição integral: omitir a marca equivale a <c>false</c>, e quem quer conservá-la a devolve.
     /// </summary>
+    [Description("A fase acontece no mesmo momento da fase de ordem imediatamente anterior, e não depois dela. Vale a partir da segunda fase. A gravação substitui a fase inteira: omitida, a marca vale falso, e quem quer conservá-la a devolve.")]
     public bool NoMesmoMomentoDaAnterior { get; init; }
 }
 

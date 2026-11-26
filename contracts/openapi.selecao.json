@@ -22772,10 +22772,12 @@
         "properties": {
           "ordem": {
             "type": "integer",
+            "description": "Posi\u00E7\u00E3o da fase no cronograma, na ordem em que as fases acontecem.",
             "format": "int32"
           },
           "faseCanonicaId": {
             "type": "string",
+            "description": "Identificador da fase no cadastro de fases da Configura\u00E7\u00E3o. O sistema copia os dados vigentes da fase, e o cliente n\u00E3o os declara.",
             "format": "uuid"
           },
           "inicio": {
@@ -22783,6 +22785,7 @@
               "null",
               "string"
             ],
+            "description": "In\u00EDcio do per\u00EDodo da fase.",
             "format": "date-time"
           },
           "fim": {
@@ -22790,22 +22793,26 @@
               "null",
               "string"
             ],
+            "description": "Fim do per\u00EDodo da fase.",
             "format": "date-time"
           },
           "produtos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProdutoDaFaseInput"
-            }
+            },
+            "description": "Tudo o que a fase publica, com o papel de cada publica\u00E7\u00E3o."
           },
           "emiteParecerIndividual": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se a fase promete parecer individual por candidato. \u00C9 s\u00F3 a promessa: o parecer \u00E9 produzido na execu\u00E7\u00E3o da fase."
           },
           "bancasRequeridas": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BancaRequeridaInput"
-            }
+            },
+            "description": "As bancas que a fase exige."
           },
           "regraRecurso": {
             "oneOf": [
@@ -22813,6 +22820,7 @@
                 "type": "null"
               },
               {
+                "description": "Como o recurso da fase funciona: inst\u00E2ncias, prazos, efeito suspensivo, guarda da vaga e procedimentos.",
                 "$ref": "#/components/schemas/RegraRecursoFaseInput"
               }
             ]
@@ -22822,6 +22830,7 @@
               "null",
               "string"
             ],
+            "description": "Identificador da unidade da Unifesspa que responde pela fase. Opcional no rascunho; a publica\u00E7\u00E3o e a retifica\u00E7\u00E3o o exigem.",
             "format": "uuid"
           },
           "tiposDeDecisao": {
@@ -22831,7 +22840,8 @@
             ],
             "items": {
               "$ref": "#/components/schemas/TipoMotivoDeDecisaoCodigo"
-            }
+            },
+            "description": "Os tipos de decis\u00E3o que a fase declara produzir. Ausente ou vazio: nenhum. A ordem n\u00E3o importa, e a leitura os devolve em ordem can\u00F4nica. Tirar um tipo mant\u00E9m os motivos escolhidos daquele tipo, e o congelamento da vers\u00E3o recusa at\u00E9 que sejam retirados ou o tipo volte a ser declarado."
           },
           "regraDeHomologacao": {
             "oneOf": [
@@ -22839,12 +22849,14 @@
                 "type": "null"
               },
               {
+                "description": "Como a fase homologa as inscri\u00E7\u00F5es. A grava\u00E7\u00E3o substitui a fase inteira: se este campo vier ausente ou nulo, a fase deixa de homologar e a regra que ela tinha \u00E9 apagada. Quem grava devolve a regra lida na consulta, mesmo quando n\u00E3o a altera.",
                 "$ref": "#/components/schemas/RegraDeHomologacaoInput"
               }
             ]
           },
           "noMesmoMomentoDaAnterior": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "A fase acontece no mesmo momento da fase que a antecede na lista, e n\u00E3o depois dela. Vale a partir da segunda fase. A grava\u00E7\u00E3o substitui a fase inteira: omitida, a marca vale falso, e quem quer conserv\u00E1-la a devolve."
           }
         }
       },

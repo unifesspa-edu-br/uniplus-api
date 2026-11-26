@@ -278,6 +278,23 @@ public sealed class OpenApiEndpointTests
         return alternativa;
     }
 
+    [Fact(DisplayName = "A fase do cronograma explica que a gravação a substitui inteira e que a regra de homologação ausente é apagada")]
+    public async Task FaseDoCronograma_DescreveASubstituicaoDaRegraDeHomologacao()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement regra = spec.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("FaseCronogramaInput")
+            .GetProperty("properties").GetProperty("regraDeHomologacao");
+
+        regra.GetProperty("oneOf").EnumerateArray().Select(static alternativa => alternativa.TryGetProperty("description", out JsonElement texto) ? texto.GetString() : null)
+            .Should().ContainSingle(static texto => texto != null)
+            .Which.Should()
+            .Contain("A gravação substitui a fase inteira")
+            .And.Contain("ausente ou nulo")
+            .And.Contain("a regra que ela tinha é apagada")
+            .And.Contain("Quem grava devolve a regra lida");
+    }
+
     private async Task<JsonDocument> LerSpecAsync()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
