@@ -11,7 +11,7 @@ internal static class RotuloDaRegra
         TipoRegra.RegraCalculo => Obter<RegraDeCalculoDaNota>(regra.Codigo),
         TipoRegra.RegraArredondamento => Obter<RegraDeArredondamentoDaNota>(regra.Codigo),
         TipoRegra.RegraEliminacao => Obter<RegraDeEliminacaoPorCalculo>(regra.Codigo),
-        TipoRegra.RegraBonus => Obter<RegraDeBonus>(regra.Codigo),
+        TipoRegra.RegraFada => Obter<RegraDoFada>(regra.Codigo),
         TipoRegra.CriterioDesempate => Obter<RegraDeDesempate>(regra.Codigo),
         TipoRegra.CriterioRemanejamento => Obter<CriterioDeRemanejamento>(regra.Codigo),
         TipoRegra.RegraOrdemAlocacao => Obter<RegraDeOrdemDeAlocacao>(regra.Codigo),

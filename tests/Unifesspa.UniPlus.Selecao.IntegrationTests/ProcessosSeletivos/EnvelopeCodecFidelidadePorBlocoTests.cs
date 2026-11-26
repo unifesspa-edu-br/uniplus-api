@@ -16,7 +16,7 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
     private static readonly string[] MetadadosInternos =
     [
         "Id", "CreatedAt", "UpdatedAt", "DomainEvents", "ProcessoSeletivoId", "EtapaProcessoId", "FaseCronogramaId",
-        "AtendimentoEspecializadoId", "ConfiguracaoDistribuicaoVagasId", "ConfiguracaoBonusRegionalId", "ConfiguracaoClassificacaoId",
+        "AtendimentoEspecializadoId", "ConfiguracaoDistribuicaoVagasId", "ConfiguracaoDoFadaId", "ConfiguracaoClassificacaoId",
         "ConfiguracaoCascataRemanejamentoId", "GrupoPesoAreaEnemCongeladoId", "BancaRequeridaId", "RegraDeComprovacaoId",
         "GrupoColetadoId", "FormularioProcessoId", "FatoColetadoId", "ConfiguracaoDerivacaoFatoId", "RegraDerivacaoConfiguradaId",
     ];
@@ -45,8 +45,8 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
     {
         (ConfiguracaoDeclarada d, ConfiguracaoPublicada g) = Ler();
 
-        Conferir(new { d.Vagas.DistribuicaoVagas, d.Vagas.NumeroDeOpcoesDeCurso, d.Vagas.BonusRegional, d.Vagas.Cascata, d.Vagas.AtendimentoEspecializado },
-            new { g.Vagas.DistribuicaoVagas, g.Vagas.NumeroDeOpcoesDeCurso, g.Vagas.BonusRegional, Cascata = g.Vagas.Cascata, g.Vagas.AtendimentoEspecializado });
+        Conferir(new { d.Vagas.DistribuicaoVagas, d.Vagas.NumeroDeOpcoesDeCurso, d.Vagas.Fada, d.Vagas.Cascata, d.Vagas.AtendimentoEspecializado },
+            new { g.Vagas.DistribuicaoVagas, g.Vagas.NumeroDeOpcoesDeCurso, g.Vagas.Fada, Cascata = g.Vagas.Cascata, g.Vagas.AtendimentoEspecializado });
     }
 
     [Fact]

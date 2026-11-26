@@ -847,67 +847,67 @@
       "titulo": "O operador da condição não é reconhecido"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_formato_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_formato_invalido",
       "status": 422,
-      "titulo": "Código da base legal de bônus regional fora do formato"
+      "titulo": "Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) fora do formato"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_ja_existe",
       "status": 409,
-      "titulo": "Já existe uma base legal de bônus regional com este código"
+      "titulo": "Já existe uma base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) com este código"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_tamanho",
       "status": 422,
-      "titulo": "Código da base legal de bônus regional passa do tamanho máximo"
+      "titulo": "Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) passa do tamanho máximo"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_caractere_invalido",
       "status": 422,
-      "titulo": "A descrição da base legal de bônus regional contém o caractere nulo, de controle ou de formatação"
+      "titulo": "A descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) contém o caractere nulo, de controle ou de formatação"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_obrigatoria",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_obrigatoria",
       "status": 422,
-      "titulo": "Descrição da base legal de bônus regional é obrigatória"
+      "titulo": "Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) é obrigatória"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_tamanho",
       "status": 422,
-      "titulo": "Tamanho da descrição da base legal de bônus regional inválido"
+      "titulo": "Tamanho da descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) inválido"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_caractere_invalido",
       "status": 422,
-      "titulo": "A identificação da base legal de bônus regional contém o caractere nulo ou caractere que não é texto"
+      "titulo": "A identificação da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) contém o caractere nulo ou caractere que não é texto"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_obrigatoria",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_obrigatoria",
       "status": 422,
-      "titulo": "Identificação da base legal de bônus regional é obrigatória"
+      "titulo": "Identificação da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) é obrigatória"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_tamanho",
       "status": 422,
-      "titulo": "Tamanho da identificação da base legal de bônus regional inválido"
+      "titulo": "Tamanho da identificação da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) inválido"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.municipio_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.municipio_invalido",
       "status": 422,
       "titulo": "Município informado é inválido"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.nao_encontrado",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.nao_encontrado",
       "status": 404,
-      "titulo": "Base legal de bônus regional não encontrada"
+      "titulo": "Base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) não encontrada"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.sem_municipios",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.sem_municipios",
       "status": 422,
-      "titulo": "A base legal de bônus regional deve abranger pelo menos um município"
+      "titulo": "A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve abranger pelo menos um município"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.tipo_instrumento_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.tipo_instrumento_invalido",
       "status": 422,
       "titulo": "Tipo de instrumento normativo inválido ou não informado"
     },
@@ -4587,51 +4587,6 @@
       "titulo": "O município informado não existe no Geo"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada",
-      "status": 422,
-      "titulo": "Base legal de bônus regional não encontrada ou desativada"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.campos_obrigatorios",
-      "status": 422,
-      "titulo": "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.fato_elegibilidade_invalido",
-      "status": 422,
-      "titulo": "O código do fato de elegibilidade do acréscimo é inválido"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.fator_invalido",
-      "status": 422,
-      "titulo": "O fator do bônus deve ser maior que zero"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_invalida",
-      "status": 422,
-      "titulo": "A regra referenciada não é do código FADA_MULTIPLICATIVO"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada",
-      "status": 422,
-      "titulo": "Regra de bônus não encontrada no catálogo de regras"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido",
-      "status": 422,
-      "titulo": "A regra referenciada não é do tipo regra_fada"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.sem_municipios",
-      "status": 422,
-      "titulo": "A base legal do bônus regional deve abranger pelo menos um município"
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.teto_invalido",
-      "status": 422,
-      "titulo": "O teto do bônus, quando informado, deve ser maior que zero"
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios",
       "status": 422,
       "titulo": "RegraCodigo, RegraVersao, FallbackCodigo e Destinos precisam estar todos presentes ou todos ausentes"
@@ -5055,6 +5010,51 @@
       "codigo": "uniplus.selecao.configuracao_divulgacao.numero_inscricao_obrigatorio",
       "status": 422,
       "titulo": "O número de inscrição é o piso da divulgação pública e não pode ser removido"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.base_legal_nao_encontrada",
+      "status": 422,
+      "titulo": "Base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) não encontrada ou desativada"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.campos_obrigatorios",
+      "status": 422,
+      "titulo": "regra.versao, fator e baseLegal.id são obrigatórios quando regra.codigo é informado"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.fato_elegibilidade_invalido",
+      "status": 422,
+      "titulo": "O código do fato de elegibilidade do acréscimo é inválido"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.fator_invalido",
+      "status": 422,
+      "titulo": "O multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA) deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_invalida",
+      "status": 422,
+      "titulo": "A regra referenciada não é do código FADA_MULTIPLICATIVO"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_nao_encontrada",
+      "status": 422,
+      "titulo": "Regra do Fator de Atenuação das Desigualdades de Acesso (FADA) não encontrada no catálogo de regras"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_tipo_invalido",
+      "status": 422,
+      "titulo": "A regra referenciada não é do tipo `REGRA_FADA`"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.sem_municipios",
+      "status": 422,
+      "titulo": "A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve abranger pelo menos um município"
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.teto_invalido",
+      "status": 422,
+      "titulo": "O teto do Fator de Atenuação das Desigualdades de Acesso (FADA), quando informado, deve ser maior que zero"
     },
     {
       "codigo": "uniplus.selecao.configuracao_do_recurso_da_etapa.efeito_suspensivo_nao_declarado",
@@ -7002,16 +7002,6 @@
       "titulo": "Fase que agrupa etapas sem nenhuma etapa que aconteça nela"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao",
-      "status": 422,
-      "titulo": "O processo que aplica o bônus regional precisa da configuração do bônus"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao",
-      "status": 422,
-      "titulo": "O processo que não aplica o bônus regional não pode ter a configuração do bônus"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.calendario_vigente_ausente",
       "status": 422,
       "titulo": "Não há calendário de dias úteis vigente cadastrado"
@@ -7210,6 +7200,16 @@
       "codigo": "uniplus.selecao.processo_seletivo.exigencia_menos_protegida_que_fato_comprovado",
       "status": 422,
       "titulo": "O tipo de documento da exigência é menos protegido que um fato que ela comprova"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.fada_aplica_sem_configuracao",
+      "status": 422,
+      "titulo": "O processo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) precisa da configuração do FADA"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.fada_nao_aplica_com_configuracao",
+      "status": 422,
+      "titulo": "O processo que não aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) não pode ter a configuração do FADA"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.fase_canonica_duplicada",
@@ -7442,9 +7442,9 @@
       "titulo": "O motivo da retificação é obrigatório"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.municipio_do_bonus_referenciado_por_condicao_viva",
+      "codigo": "uniplus.selecao.processo_seletivo.municipio_do_fada_referenciado_por_condicao_viva",
       "status": 422,
-      "titulo": "Existe condição citando um município que deixaria a área do bônus regional"
+      "titulo": "Existe condição citando um município que deixaria a área do Fator de Atenuação das Desigualdades de Acesso (FADA)"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.mutacao_fora_de_estado_editavel",

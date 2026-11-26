@@ -41,7 +41,7 @@ public sealed class HashCanonicalComputerRegraCatalogoTests
         RegraCatalogo alterada = Criar(
             codigo: campo == "codigo" ? "OUTRA" : "REGRA",
             versao: campo == "versao" ? "v2" : "v1",
-            tipo: campo == "tipo" ? TipoRegra.RegraArredondamento : TipoRegra.RegraBonus,
+            tipo: campo == "tipo" ? TipoRegra.RegraArredondamento : TipoRegra.RegraFada,
             declaracao: campo == "declaracao" ? """{"a":2}""" : """{"a":1}""",
             invariantes: campo == "invariantes" ? """["outra"]""" : """["condição"]""",
             baseLegal: campo == "baseLegal" ? "Outra base" : "Base legal");
@@ -52,7 +52,7 @@ public sealed class HashCanonicalComputerRegraCatalogoTests
     private static RegraCatalogo Criar(
         string codigo = "REGRA",
         string versao = "v1",
-        TipoRegra tipo = TipoRegra.RegraBonus,
+        TipoRegra tipo = TipoRegra.RegraFada,
         string declaracao = """{"a":1}""",
         string invariantes = """["condição"]""",
         string baseLegal = "Base legal") =>

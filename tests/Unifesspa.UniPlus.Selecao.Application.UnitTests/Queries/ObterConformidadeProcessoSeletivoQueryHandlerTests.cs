@@ -328,8 +328,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         new(new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
             new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], ClassificacaoImportada()),
-            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
-                processo.BonusRegional, null, AtendimentoEspecializado.Criar([], [], []).Value!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.Fada is not null,
+                processo.Fada, null, AtendimentoEspecializado.Criar([], [], []).Value!),
             new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
             new ColetaDeclarada([], [], [], [],
                 [], [], null),

@@ -24,7 +24,7 @@ internal static class VocabularioDeFatos
     /// <summary>
     /// O tipo de domínio do fato: estático quando os valores estão no catálogo, inclusive os tipos de
     /// deficiência, que o catálogo entrega como valores do fato; dinâmico quando vêm
-    /// do processo (opções declaradas, modalidades ofertadas ou municípios do bônus regional) ou do
+    /// do processo (opções declaradas, modalidades ofertadas ou municípios do FADA) ou do
     /// Geo (UF e município de residência); <see langword="null"/> para fato fora do vocabulário
     /// avaliável, como texto, data e endereço.
     /// </summary>
@@ -224,7 +224,7 @@ internal static class VocabularioDeFatos
 
     /// <summary>
     /// O domínio de cada fato categórico dinâmico do catálogo neste processo: as opções que o
-    /// processo declara, as modalidades que ele oferta, os municípios do bônus regional e da prova presencial ou, nos
+    /// processo declara, as modalidades que ele oferta, os municípios do FADA e da prova presencial ou, nos
     /// derivados de residência, as UFs e os municípios do Geo. Uma condição que cite o fato é
     /// validada contra esse conjunto, nunca contra um catálogo global. O agregado sobre grupo
     /// repetível não tem opções próprias: as do processo são as do fato de membro.
@@ -259,7 +259,7 @@ internal static class VocabularioDeFatos
 
     private static DominioDeValores DominioDosMunicipios(ProcessoSeletivo processo, FonteValoresFato? fonte) =>
         DominioDeValores.OfertadoPeloProcesso(fonte == FonteValoresFato.MunicipiosDoFada
-            ? MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge)
+            ? MunicipiosDoFada(processo).Select(static m => m.CodigoIbge)
             : (processo.ProvaPresencial?.Municipios ?? []).Select(static m => m.CodigoIbge));
 
     private static DominioDeValores OpcoesDeclaradasPeloProcesso(ProcessoSeletivo processo, FatoCandidatoView fato) =>
@@ -267,14 +267,14 @@ internal static class VocabularioDeFatos
             processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, MecanismoDoVinculo.ResumoDeGrupo) ?? fato.Codigo).Select(static o => o.Codigo));
 
     /// <summary>
-    /// Os municípios da área do bônus regional que o processo configurou, em ordem alfabética de
+    /// Os municípios da área do FADA que o processo configurou, em ordem alfabética de
     /// nome (sem distinguir acento nem caixa, para "Água Azul do Norte" vir antes de "Marabá");
-    /// vazio quando o processo não tem bônus.
+    /// vazio quando o processo não tem FADA.
     /// </summary>
-    public static IReadOnlyList<ConfiguracaoBonusRegionalMunicipio> MunicipiosDoBonus(ProcessoSeletivo processo)
+    public static IReadOnlyList<MunicipioDoFada> MunicipiosDoFada(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        return [.. (processo.BonusRegional?.Municipios ?? [])
+        return [.. (processo.Fada?.Municipios ?? [])
             .OrderBy(static m => OrdemAlfabetica.Chave(m.Nome), StringComparer.Ordinal)
             .ThenBy(static m => m.Nome, StringComparer.Ordinal)
             .ThenBy(static m => m.CodigoIbge, StringComparer.Ordinal)];

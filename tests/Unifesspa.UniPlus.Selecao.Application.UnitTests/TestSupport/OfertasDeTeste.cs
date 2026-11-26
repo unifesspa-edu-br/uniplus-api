@@ -45,7 +45,7 @@ internal static class OfertasDeTeste
     private static ConfiguracaoPublicada Reconstruir(
         ConfiguracaoPublicada configuracao, ConfiguracaoDistribuicaoVagas[] distribuicao, int? numeroDeOpcoesDeCurso) =>
         ConfiguracaoPublicadaDeTeste.ComVagas(configuracao, new VagasDeclaradas(distribuicao, numeroDeOpcoesDeCurso,
-            configuracao.Vagas.AplicaBonusRegional, configuracao.Vagas.BonusRegional, configuracao.Vagas.Cascata, configuracao.Vagas.AtendimentoEspecializado));
+            configuracao.Vagas.AplicaFada, configuracao.Vagas.Fada, configuracao.Vagas.Cascata, configuracao.Vagas.AtendimentoEspecializado));
 
     private static ModalidadeSelecionada Modalidade(string codigo) =>
         ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, codigo == ModalidadeDaAmpla ? NaturezaLegalModalidade.Ampla : NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with

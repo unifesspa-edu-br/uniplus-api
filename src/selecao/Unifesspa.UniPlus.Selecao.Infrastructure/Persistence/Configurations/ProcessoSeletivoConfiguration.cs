@@ -80,7 +80,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
         // Declaração de que o processo aplica ou não o Fator de Atenuação das Desigualdades de Acesso (FADA): nula = ainda não declarado,
         // o que bloqueia a publicação.
-        builder.Property(p => p.AplicaBonusRegional)
+        builder.Property(p => p.AplicaFada)
             .HasColumnName("aplica_fada")
             .HasComment("Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado.");
         // Quantos cursos o candidato escolhe na inscrição: nulo = ainda não declarado, o que bloqueia
@@ -221,13 +221,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_configuracoes_de_vagas_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(p => p.BonusRegional)
+        builder.HasOne(p => p.Fada)
             .WithOne()
-            .HasForeignKey<ConfiguracaoBonusRegional>(b => b.ProcessoSeletivoId)
+            .HasForeignKey<ConfiguracaoDoFada>(b => b.ProcessoSeletivoId)
             .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Divulgação pública (UNI-REQ-0050) — 1:1, mesmo padrão de BonusRegional
+        // Divulgação pública (UNI-REQ-0050) — 1:1, mesmo padrão de Fada
         // acima. Ausência = default minimizado, não escolha administrativa pendente.
         builder.HasOne(p => p.ConfiguracaoDivulgacao)
             .WithOne()
@@ -235,9 +235,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Taxa de inscrição e isenção — 1:1, mesmo padrão de BonusRegional/
+        // Taxa de inscrição e isenção — 1:1, mesmo padrão de Fada/
         // Divulgacao acima. Diferente da divulgação, ausência aqui NÃO é estado publicável
-        // (CA-01), como a ausência da declaração do bônus — é dimensão do agregado do mesmo jeito,
+        // (CA-01), como a ausência da declaração do FADA — é dimensão do agregado do mesmo jeito,
         // só o significado semântico da ausência muda.
         builder.HasOne(p => p.ConfiguracaoTaxaInscricao)
             .WithOne()

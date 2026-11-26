@@ -123,7 +123,7 @@ public sealed class ModeloFormularioInscricaoSemeadaEndpointTests
 
     private static Dictionary<string, object> RespostasDoFatorPeloEnsinoMedio(string formaDeConclusao) => new()
     {
-        // Belém, fora da área do bônus: o Fator não confere o endereço atual.
+        // Belém, fora da área do FADA: o Fator não confere o endereço atual.
         ["ENDERECO_RESIDENCIAL"] = new { cep = (string?)null, cidade = new { codigoIbge = "1501402", uf = "PA" } },
         ["FORMA_CONCLUSAO_EM"] = formaDeConclusao,
         ["ONDE_CURSOU_EM"] = "SOMENTE_PUBLICA",

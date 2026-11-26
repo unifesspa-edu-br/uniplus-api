@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <summary>
 /// Categorias de <c>ObrigatoriedadeLegal</c> per ADR-0058 §"Forma de
 /// ObrigatoriedadeLegal" — agrupam as regras pela dimensão do edital que
-/// avaliam (etapa, modalidade, documento, bônus, atendimento, desempate)
+/// avaliam (etapa, modalidade, documento, FADA, atendimento, desempate)
 /// para suportar filtros admin e dashboards de conformidade.
 /// </summary>
 /// <remarks>
@@ -28,7 +28,7 @@ public enum CategoriaObrigatoriedade
     Documento = 4,
 
     [CodigoDeContrato("FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)", Descricao = "Regra sobre o Fator de Atenuação das Desigualdades de Acesso (FADA).")]
-    Bonus = 5,
+    Fada = 5,
 
     [CodigoDeContrato("ATENDIMENTO", "Atendimento", Descricao = "Regra sobre o atendimento especializado.")]
     Atendimento = 6,

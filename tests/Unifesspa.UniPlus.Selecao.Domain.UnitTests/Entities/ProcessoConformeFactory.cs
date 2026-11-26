@@ -52,12 +52,12 @@ internal static class ProcessoConformeFactory
     /// <param name="declararTaxa">
     /// Falso deixa a taxa por declarar, único jeito de exercitar a recusa correspondente.
     /// </param>
-    /// <param name="declararBonus">Falso deixa o bônus regional por declarar.</param>
+    /// <param name="declararFada">Falso deixa o FADA por declarar.</param>
     /// <param name="comDesempate">Falso deixa a inscrição própria sem critério de desempate.</param>
     /// <param name="declararOpcoesDeCurso">Falso deixa o número de opções de curso por declarar.</param>
     /// <param name="fase">Fase do cronograma; a omissão usa a mínima e conforme, sem recurso.</param>
     internal static ProcessoSeletivo Criar(
-        bool declararTaxa = true, FaseCronograma? fase = null, bool declararBonus = true, bool comDesempate = true,
+        bool declararTaxa = true, FaseCronograma? fase = null, bool declararFada = true, bool comDesempate = true,
         bool declararOpcoesDeCurso = true, PredicadoDnf? regraDeAplicabilidade = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
@@ -68,7 +68,7 @@ internal static class ProcessoConformeFactory
         processo.DefinirDistribuicaoVagas([Oferta(regraDeAplicabilidade: regraDeAplicabilidade)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportada(processo);
         DefinirTaxa(processo, declararTaxa);
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo, declararFada, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;

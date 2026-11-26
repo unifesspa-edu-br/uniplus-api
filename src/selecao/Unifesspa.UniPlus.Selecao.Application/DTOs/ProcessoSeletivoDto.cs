@@ -28,8 +28,8 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<EtapaProcessoDto> Etapas,
     AtendimentoEspecializadoDto? AtendimentoEspecializado,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
-    ConfiguracaoBonusRegionalDto? BonusRegional,
-    bool? AplicaBonusRegional,
+    ConfiguracaoDoFadaDto? Fada,
+    bool? AplicaFada,
     // Quantos cursos o candidato escolhe na inscrição: read-back administrativo. null = ainda não
     // declarado, o que bloqueia a publicação.
     OpcoesDeCursoDto? OpcoesDeCurso,

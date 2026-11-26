@@ -19,7 +19,7 @@ internal static class LeituraDoFada
     /// <c>{"presente":false,"fator":"1.2000",…}</c> lido como “sem FADA”
     /// <b>descartaria o Fator de Atenuação das Desigualdades de Acesso do certame</b> (UNI-REQ-0015) sem deixar rastro.
     /// </summary>
-    internal static ConfiguracaoBonusRegional? LerFada(LeitorEnvelope leitor, JsonObject payload)
+    internal static ConfiguracaoDoFada? LerFada(LeitorEnvelope leitor, JsonObject payload)
     {
         if (leitor.ObjetoSePresente(payload, "fada") is not { } bloco)
         {
@@ -30,20 +30,20 @@ internal static class LeituraDoFada
         return LerParametrosDaFada(leitor, bloco);
     }
 
-    private static ConfiguracaoBonusRegional? LerParametrosDaFada(LeitorEnvelope leitor, JsonObject bloco)
+    private static ConfiguracaoDoFada? LerParametrosDaFada(LeitorEnvelope leitor, JsonObject bloco)
     {
-        ReferenciaRegra regra = leitor.Regra<RegraDeBonus>(bloco, "regra", "fada");
-        decimal fator = leitor.Decimal(bloco, "fator", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoBonus);
-        decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoBonus);
-        string? fatoElegibilidade = leitor.TextoOpcional(bloco, "codigoDoDadoDeElegibilidade", "fada", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);
+        ReferenciaRegra regra = leitor.Regra<RegraDoFada>(bloco, "regra", "fada");
+        decimal fator = leitor.Decimal(bloco, "fator", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoDoFada);
+        decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscritaCanonica.EscalaPadrao, "fada", LimitesDoEnvelope.PrecisaoDoFada);
+        string? fatoElegibilidade = leitor.TextoOpcional(bloco, "codigoDoDadoDeElegibilidade", "fada", LimitesDoEnvelope.CodigoDoDadoDeElegibilidadeDoFada);
         BaseLegalCongelada? baseLegal = LerBaseLegalCongelada(leitor, bloco);
         if (baseLegal is null)
         {
             return null;
         }
 
-        Result<ConfiguracaoBonusRegional> fada = ConfiguracaoBonusRegional.Criar(regra, fator, teto, fatoElegibilidade, baseLegal);
-        return fada.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(CausasDaFadaNoDocumento(fada.Errors), "fada") : fada.Value;
+        Result<ConfiguracaoDoFada> fada = ConfiguracaoDoFada.Criar(regra, fator, teto, fatoElegibilidade, baseLegal);
+        return fada.IsFailure ? leitor.Propagar<ConfiguracaoDoFada>(CausasDaFadaNoDocumento(fada.Errors), "fada") : fada.Value;
     }
 
     private static IReadOnlyList<FieldError> CausasDaFadaNoDocumento(IReadOnlyList<FieldError> causas) =>
@@ -52,7 +52,7 @@ internal static class LeituraDoFada
 
     private static string LerCodigoDaBaseLegal(LeitorEnvelope leitor, JsonObject bloco)
     {
-        string codigo = leitor.TextoNaoVazio(bloco, "baseLegalCodigo", "fada", LimitesDoEnvelope.CodigoBaseLegalBonusRegional);
+        string codigo = leitor.TextoNaoVazio(bloco, "baseLegalCodigo", "fada", LimitesDoEnvelope.CodigoDaBaseLegalDoFada);
         if (!leitor.Falhou && !FormatoDoCodigo.TemFormatoValido(codigo))
         {
             leitor.Recusar<object>("'fada.baseLegalCodigo' tem de ter até 80 caracteres, começar por letra maiúscula e ter só maiúsculas, dígitos e '_'.");
@@ -71,8 +71,8 @@ internal static class LeituraDoFada
         Guid id = leitor.Identificador(bloco, "baseLegalId", "fada");
         string codigo = LerCodigoDaBaseLegal(leitor, bloco);
         string tipoInstrumento = leitor.TextoNaoVazio(bloco, "tipoInstrumento", "fada", LimitesDoEnvelope.TipoInstrumentoNormativo);
-        string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "fada", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional);
-        string descricao = leitor.TextoNaoVazio(bloco, "descricao", "fada", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional);
+        string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "fada", LimitesDoEnvelope.IdentificacaoDaBaseLegalDoFada);
+        string descricao = leitor.TextoNaoVazio(bloco, "descricao", "fada", LimitesDoEnvelope.DescricaoDaBaseLegalDoFada);
         List<(string CodigoIbge, string Nome, string Uf)>? municipios = LerMunicipios(leitor, leitor.Array(bloco, "municipios", "fada"));
         return municipios is null ? null : new BaseLegalCongelada(id, codigo, tipoInstrumento, identificacao, descricao, municipios);
     }
@@ -101,9 +101,9 @@ internal static class LeituraDoFada
         string path = $"fada.municipios[{indice}]";
         JsonObject item = leitor.ItemObjeto(array, indice, "fada.municipios");
         leitor.ExigirChaves(item, path, "codigoIbge", "nome", "uf");
-        string codigo = leitor.TextoNaoVazio(item, "codigoIbge", path, LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge);
-        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.MunicipioBonusRegionalNome);
-        string uf = leitor.TextoNaoVazio(item, "uf", path, LimitesDoEnvelope.MunicipioBonusRegionalUf);
+        string codigo = leitor.TextoNaoVazio(item, "codigoIbge", path, LimitesDoEnvelope.MunicipioDoFadaCodigoIbge);
+        string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.MunicipioDoFadaNome);
+        string uf = leitor.TextoNaoVazio(item, "uf", path, LimitesDoEnvelope.MunicipioDoFadaUf);
         return leitor.Falhou ? null : (codigo, nome, uf);
     }
 }

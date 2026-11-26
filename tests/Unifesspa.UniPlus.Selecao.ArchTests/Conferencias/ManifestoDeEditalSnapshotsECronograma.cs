@@ -193,8 +193,8 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // As 7 variantes de PredicadoObrigatoriedade (ADR-0058, ADR-0114) — união discriminada
         // pelo campo `tipo` no envelope (o próprio predicado já é a forma que o domínio
         // serializa, ao contrário de ParametrosCriterioDesempate/ParametrosRegraEliminacao, cuja variante
-        // vem do código da regra externa). BonusObrigatorio, oitava variante original, foi
-        // descartada (ADR-0114): ConfiguracaoBonusRegional é global ao
+        // vem do código da regra externa). FadaObrigatorio, oitava variante original, foi
+        // descartada (ADR-0114): ConfiguracaoDoFada é global ao
         // processo, sem lista de modalidades.
         [typeof(EtapaObrigatoria)] = (["TipoEtapaCodigo"], []),
         [typeof(ModalidadesMinimas)] = (["Codigos"], []),

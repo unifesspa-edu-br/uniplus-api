@@ -8,11 +8,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class CodigosDeContratoDoCatalogoDeRegrasTests
 {
     [Fact]
-    public void RegraDeBonus_Valores_CodigosERotulosDeclarados()
+    public void RegraDoFada_Valores_CodigosERotulosDeclarados()
     {
-        Enum.GetValues<RegraDeBonus>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
+        Enum.GetValues<RegraDoFada>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
             .Should().Equal(
-                (RegraDeBonus.Multiplicativo, "FADA_MULTIPLICATIVO", "Multiplica a nota final pelo Fator de Atenuação das Desigualdades de Acesso (FADA)"));
+                (RegraDoFada.Multiplicativo, "FADA_MULTIPLICATIVO", "Multiplica a nota final pelo Fator de Atenuação das Desigualdades de Acesso (FADA)"));
     }
 
     [Fact]

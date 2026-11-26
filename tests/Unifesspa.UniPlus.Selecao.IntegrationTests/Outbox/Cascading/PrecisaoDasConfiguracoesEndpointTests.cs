@@ -19,12 +19,12 @@ using static PassosDoEnvelopeFechado;
 public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixture)
 {
     [Fact]
-    public async Task Bonus_CasasExcedidas_AcumulaAsRecusas()
+    public async Task Fada_CasasExcedidas_AcumulaAsRecusas()
     {
         Cenario c = await PrepararCenarioAsync();
         Guid baseLegal = await SemearBaseLegalAsync(c.Api);
-        HttpResponseMessage resposta = await c.Ctx.EnviarAsync(HttpMethod.Put, Rota(c, "bonus-regional"),
-            Bonus(baseLegal, 1.23456m, 2.34567m));
+        HttpResponseMessage resposta = await c.Ctx.EnviarAsync(HttpMethod.Put, Rota(c, "fada"),
+            Fada(baseLegal, 1.23456m, 2.34567m));
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         string corpo = await resposta.Content.ReadAsStringAsync();
         corpo.Should().Contain("fator").And.Contain("teto");
@@ -32,15 +32,15 @@ public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixtu
     }
 
     [Fact]
-    public async Task Bonus_ValoresValidos_VoltaComOsMesmosNumeros()
+    public async Task Fada_ValoresValidos_VoltaComOsMesmosNumeros()
     {
         Cenario c = await PrepararCenarioAsync();
         Guid baseLegal = await SemearBaseLegalAsync(c.Api);
-        HttpResponseMessage resposta = await c.Ctx.EnviarAsync(HttpMethod.Put, Rota(c, "bonus-regional"), Bonus(baseLegal, 1.25m, 95.5m));
+        HttpResponseMessage resposta = await c.Ctx.EnviarAsync(HttpMethod.Put, Rota(c, "fada"), Fada(baseLegal, 1.25m, 95.5m));
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        ConfiguracaoBonusRegionalDto bonus = (await c.Ctx.ObterProcessoAsync()).BonusRegional!;
-        bonus.Fator.Should().Be(1.25m);
-        bonus.Teto.Should().Be(95.5m);
+        ConfiguracaoDoFadaDto fada = (await c.Ctx.ObterProcessoAsync()).Fada!;
+        fada.Fator.Should().Be(1.25m);
+        fada.Teto.Should().Be(95.5m);
     }
 
     [Fact]
@@ -70,9 +70,9 @@ public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixtu
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
+        BaseLegalDoFada baseLegal = BaseLegalDoFada.Criar(
             "PORTARIA", $"Portaria {Guid.CreateVersion7():N}", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
-        db.Set<BaseLegalBonusRegional>().Add(baseLegal);
+        db.Set<BaseLegalDoFada>().Add(baseLegal);
         await db.SaveChangesAsync();
         return baseLegal.Id;
     }
@@ -86,10 +86,10 @@ public sealed class PrecisaoDasConfiguracoesEndpointTests(CascadingFixture fixtu
 
     private static string Rota(Cenario c, string parte) => $"{ContextoDoEnvelopeFechado.Rota}/{c.Ctx.ProcessoId}/{parte}";
 
-    private static object Bonus(Guid baseLegal, decimal fator, decimal teto) => new
+    private static object Fada(Guid baseLegal, decimal fator, decimal teto) => new
     {
         aplica = true,
-        regra = new { codigo = RegraDeBonus.Multiplicativo.Codigo(), versao = "v1" },
+        regra = new { codigo = RegraDoFada.Multiplicativo.Codigo(), versao = "v1" },
         fator,
         teto,
         baseLegal = new { id = baseLegal },

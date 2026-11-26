@@ -2702,7 +2702,7 @@
         "Se a recusa se repetir em tentativas feitas com alguns minutos de intervalo, avise a equipe técnica do Uni+, informando o horário e o processo seletivo envolvido."
       ],
       "ondeAparece": [
-        "Definição das configurações do processo seletivo (etapas, opções declaradas, atendimento especializado, distribuição de vagas, cronograma das fases, documentos exigidos, identificador legível, localidade, algoritmo de contagem de prazo, referência temporal dos fatos, regras de derivação, critérios de desempate, bônus regional, opções de curso, taxa de inscrição, divulgação, cascata de remanejamento e classificação)",
+        "Definição das configurações do processo seletivo (etapas, opções declaradas, atendimento especializado, distribuição de vagas, cronograma das fases, documentos exigidos, identificador legível, localidade, algoritmo de contagem de prazo, referência temporal dos fatos, regras de derivação, critérios de desempate, Fator de Atenuação das Desigualdades de Acesso (FADA), opções de curso, taxa de inscrição, divulgação, cascata de remanejamento e classificação)",
         "Publicação do processo seletivo",
         "Retificação em ato único",
         "Publicação de ato do processo e publicação de produto previsto",
@@ -2795,7 +2795,7 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_formato_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
         "A identificação do instrumento, após a normalização usada para formar o código da base legal, não contém letras de A a Z nem dígitos. O código é formado pelo tipo do instrumento e pela identificação."
@@ -2804,11 +2804,11 @@
         "Informe uma identificação que, após a normalização, contenha ao menos uma letra de A a Z ou um dígito."
       ],
       "ondeAparece": [
-        "POST /api/configuracao/admin/base-legal-bonus-regional"
+        "POST /api/configuracao/admin/bases-legais-fada"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_ja_existe",
       "requisitos": [],
       "oQueAconteceu": [
         "O código formado pelo tipo do instrumento e pela identificação já pertence a uma base legal não removida."
@@ -2817,11 +2817,11 @@
         "Se for o mesmo ato, use a base legal já cadastrada. Caso contrário, ajuste o tipo ou a identificação para formar outro código."
       ],
       "ondeAparece": [
-        "POST /api/configuracao/admin/base-legal-bonus-regional"
+        "POST /api/configuracao/admin/bases-legais-fada"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.codigo_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
         "O código formado pelo tipo do instrumento e pela identificação ultrapassa 80 caracteres."
@@ -2830,14 +2830,14 @@
         "Abrevie a identificação do instrumento."
       ],
       "ondeAparece": [
-        "POST /api/configuracao/admin/base-legal-bonus-regional"
+        "POST /api/configuracao/admin/bases-legais-fada"
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_caractere_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) trouxe, em `descricao`, o caractere nulo (U+0000), um caractere de controle (fora a quebra de linha, o retorno de carro e a tabulação) ou de formatação, ou texto que não é Unicode válido. Esses caracteres não são texto digitável: costumam vir de uma cópia de documento ou de uma integração que não tratou o conteúdo. A recusa vale antes da gravação, e nada foi gravado."
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) trouxe, em `descricao`, o caractere nulo (U+0000), um caractere de controle (fora a quebra de linha, o retorno de carro e a tabulação) ou de formatação, ou texto que não é Unicode válido. Esses caracteres não são texto digitável: costumam vir de uma cópia de documento ou de uma integração que não tratou o conteúdo. A recusa vale antes da gravação, e nada foi gravado."
       ],
       "comoResolver": [
         "Remova o caractere inválido do texto de `descricao` e envie de novo. Se o texto foi copiado de outro documento, cole-o primeiro em um editor de texto simples para descartar os caracteres de controle e de formatação."
@@ -2848,10 +2848,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_obrigatoria",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) chegou sem descrição: o campo `descricao` veio ausente, vazio ou só com espaços.",
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) chegou sem descrição: o campo `descricao` veio ausente, vazio ou só com espaços.",
         "A descrição explica o que o instrumento normativo estabelece para o Fator de Atenuação das Desigualdades de Acesso. Nada foi gravado."
       ],
       "comoResolver": [
@@ -2863,10 +2863,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.descricao_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) trouxe uma descrição com tamanho fora do permitido. A descrição precisa ter de **3 a 2000 caracteres**, contados depois de removidos os espaços do começo e do fim. Nada foi gravado."
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) trouxe uma descrição com tamanho fora do permitido. A descrição precisa ter de **3 a 2000 caracteres**, contados depois de removidos os espaços do começo e do fim. Nada foi gravado."
       ],
       "comoResolver": [
         "Reescreva `descricao` com 3 a 2000 caracteres. Se o texto passou do limite, resuma o que o instrumento estabelece e deixe o texto integral no próprio instrumento."
@@ -2877,10 +2877,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_caractere_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) trouxe, em `identificacao`, o caractere nulo (U+0000), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou texto que não é Unicode válido. Esses caracteres não são texto digitável: costumam vir de uma cópia de documento ou de uma integração que não tratou o conteúdo. A recusa vale antes da gravação, e nada foi gravado."
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) trouxe, em `identificacao`, o caractere nulo (U+0000), um caractere de controle (como a quebra de linha ou a tabulação) ou de formatação, ou texto que não é Unicode válido. Esses caracteres não são texto digitável: costumam vir de uma cópia de documento ou de uma integração que não tratou o conteúdo. A recusa vale antes da gravação, e nada foi gravado."
       ],
       "comoResolver": [
         "Remova o caractere inválido do texto de `identificacao` e envie de novo. Se o texto foi copiado de outro documento, cole-o primeiro em um editor de texto simples para descartar os caracteres de controle e de formatação."
@@ -2891,10 +2891,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_obrigatoria",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) chegou sem identificação: o campo `identificacao` veio ausente, vazio ou só com espaços.",
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) chegou sem identificação: o campo `identificacao` veio ausente, vazio ou só com espaços.",
         "A identificação é o que torna a base legal reconhecível, como o número e o ano do instrumento. Nada foi gravado."
       ],
       "comoResolver": [
@@ -2906,10 +2906,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.identificacao_tamanho",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.identificacao_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) trouxe uma identificação com tamanho fora do permitido. A identificação precisa ter de **3 a 500 caracteres**, contados depois de removidos os espaços do começo e do fim. Nada foi gravado."
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) trouxe uma identificação com tamanho fora do permitido. A identificação precisa ter de **3 a 500 caracteres**, contados depois de removidos os espaços do começo e do fim. Nada foi gravado."
       ],
       "comoResolver": [
         "Reescreva `identificacao` com 3 a 500 caracteres. Se o texto for longo, deixe na identificação só o número e o ano do instrumento e use a descrição para o restante."
@@ -2920,14 +2920,14 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.municipio_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.municipio_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) trouxe um município fora do formato esperado. A resposta indica, em `errors[]`, a posição do item (por exemplo `municipios[2]`), com uma entrada por problema encontrado. Cada município é conferido por:",
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) trouxe um município fora do formato esperado. A resposta indica, em `errors[]`, a posição do item (por exemplo `municipios[2]`), com uma entrada por problema encontrado. Cada município é conferido por:",
         "- **código IBGE**: obrigatório (ausente, vazio ou só com espaços é recusado), com 7 dígitos e com os dois primeiros correspondendo a uma UF existente;\n- **nome**: obrigatório (ausente, vazio ou só com espaços também produz o erro), com até 150 caracteres e sem o caractere nulo (U+0000);\n- **UF**: obrigatória e coerente com a UF do código IBGE, sem distinguir maiúsculas e minúsculas.",
         "Os espaços do começo e do fim do código, do nome e da UF são removidos antes da conferência; por isso o limite de 150 caracteres do nome vale depois dessa remoção. Um item nulo na lista (por exemplo `\"municipios\": [null]`) é tratado como município sem nenhum campo e produz os erros de ausência.",
         "A conferência é só de formato: o Uni+ não consulta o serviço de geografia para saber se o município existe de fato. Nada foi gravado.",
-        "Na atualização, a base legal é procurada antes: com um identificador inexistente a resposta é [base legal não encontrada](/erros/uniplus.configuracao.base_legal_bonus_regional.nao_encontrado)."
+        "Na atualização, a base legal é procurada antes: com um identificador inexistente a resposta é [base legal não encontrada](/erros/uniplus.configuracao.base_legal_do_fada.nao_encontrado)."
       ],
       "comoResolver": [
         "Corrija o item apontado na resposta: preencha o código IBGE (7 dígitos), o nome e a UF que o código indica, respeitando o limite de tamanho do nome. Se houver mais de um município inválido, a resposta lista cada um em `errors[]`."
@@ -2938,10 +2938,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.nao_encontrado",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
-        "Não existe base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) com o identificador informado na atualização ou na remoção. O identificador pode estar errado, ou a base legal já ter sido removida.",
+        "Não existe base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) com o identificador informado na atualização ou na remoção. O identificador pode estar errado, ou a base legal já ter sido removida.",
         "Na atualização, a base legal é procurada antes de os campos serem conferidos: com um identificador inexistente, a resposta é esta, mesmo que o conteúdo enviado também tivesse problemas."
       ],
       "comoResolver": [
@@ -2953,10 +2953,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.sem_municipios",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.sem_municipios",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) chegou sem nenhum município: o campo `municipios` veio ausente, nulo ou com a lista vazia.",
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) chegou sem nenhum município: o campo `municipios` veio ausente, nulo ou com a lista vazia.",
         "A base legal existe para dizer a quais municípios o instrumento se aplica. Uma base sem município não alcança ninguém, e por isso é recusada. Nada foi gravado."
       ],
       "comoResolver": [
@@ -2968,10 +2968,10 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.tipo_instrumento_invalido",
+      "codigo": "uniplus.configuracao.base_legal_do_fada.tipo_instrumento_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (cadastrada como base legal de bônus regional) recusou o tipo do instrumento normativo: o campo `tipoInstrumento` veio ausente, em branco ou com um valor que não é um dos tipos admitidos.",
+        "O cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) recusou o tipo do instrumento normativo: o campo `tipoInstrumento` veio ausente, em branco ou com um valor que não é um dos tipos admitidos.",
         "Os tipos admitidos são `LEI`, `DECRETO`, `PORTARIA`, `RESOLUCAO`, `INSTRUCAO_NORMATIVA`, `PARECER` e `EDITAL`. A comparação é exata: o valor não passa por remoção de espaços nem por troca de maiúsculas e minúsculas, então `Lei` e `lei` também são recusados. Nada foi gravado."
       ],
       "comoResolver": [
@@ -12356,7 +12356,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma condição cita um fato que não está no vocabulário de fatos que podem entrar em regra. A mensagem é `O fato '{fato}' não pertence ao vocabulário fechado.`, com o código enviado no lugar de `{fato}`. Isso ocorre em dois casos: o código não existe no catálogo de fatos do candidato; ou o fato existe, mas é de um tipo que não entra em regra (texto, data e endereço, além do categórico sem lista de valores). Na criação e na atualização de uma modalidade e na definição das regras padrão de um fato derivado, o fato que existe mas não pode ser citado recebe outra recusa ([fato não citável na regra da modalidade](/erros/uniplus.configuracao.modalidade.regra_cita_fato_nao_citavel) e [fato não citável na regra padrão](/erros/uniplus.configuracao.fato_candidato.regra_cita_fato_nao_citavel)), e só o código que não existe chega a esta.",
-        "No critério de desempate, o vocabulário não tem o fato categórico cujas opções não estão no catálogo (as opções do processo, as modalidades ofertadas, os municípios do bônus e as UFs e os municípios do Geo): citá-lo também devolve esta recusa.",
+        "No critério de desempate, o vocabulário não tem o fato categórico cujas opções não estão no catálogo (as opções do processo, as modalidades ofertadas, os municípios da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) e as UFs e os municípios do Geo): citá-lo também devolve esta recusa.",
         "A recusa vem na lista `errors` da resposta, com `field` apontando o predicado ou, no critério de desempate, o campo `fato` do critério:",
         "- Nos modelos de formulário (criação e atualização): `paginas[i].exibicao`, `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando`, `itens[i].restricoes[j].entradas[k].quando` (a condição de um grupo de opções), `grupos[g].exibicao`, `grupos[g].predicadoObrigatoriedade`, `termos[i].exibicao`, `termos[i].predicadoObrigatoriedade` e `documentosExigidos[i].quando`, mais os mesmos caminhos do item sob `grupos[g].subitens[j]`.\n- Na gravação dos termos do formulário: `termos[i].exibicao` e `termos[i].predicadoObrigatoriedade`.\n- Na gravação das páginas do formulário: `paginas[i].exibicao`.\n- Na gravação dos itens do formulário: `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando` e, nas opções, `itens[i].restricoes[j].entradas[k].quando`, os campos `grupos[g].exibicao` e `grupos[g].predicadoObrigatoriedade` dos grupos e os mesmos caminhos sob `grupos[g].subitens[j]` nos campos de grupo.\n- Na definição de regras de derivação de fatos do processo seletivo: `configuracoes[i].regras[j].quando[c][k]`, seguido de `.fato`, `.operador` ou `.valor`, conforme a recusa.\n- Na definição de documentos exigidos do processo seletivo, na condição do gatilho da exigência: a resposta traz o código e a mensagem, sem apontar um campo.\n- Na definição dos critérios de desempate, no critério que testa um fato (regra de predicado sobre fato): `criterios[i].fato`.\n- Na criação e na atualização de uma modalidade de concorrência: `regraDeAplicabilidade[c][i].fato`.\n- Na definição das regras padrão de um fato derivado por regra: `regras[i]`.\n- Na publicação inicial e na retificação em ato único do processo seletivo: antes de congelar a configuração, a API confere de novo as regras dos itens e dos grupos dos formulários contra o catálogo de fatos de hoje, porque o catálogo pode ter mudado depois que o item foi gravado. O `field` é `formularios[{finalidade}].itens[i].…` ou `formularios[{finalidade}].grupos[g].…`, em que `{finalidade}` identifica o formulário, com os caminhos da gravação (`precondicao`, `predicadoObrigatoriedade`, `impedimento.quando`, `restricoes[j].entradas[k].quando` e, no grupo, `exibicao` e `predicadoObrigatoriedade`) e, nos campos de grupo, `grupos[g].subitens[c].…`. A mensagem acrescenta o item ou o grupo e a orientação para regravá-lo. O item cujo fato alguma versão publicada já coletou não tem as regras conferidas de novo. Aqui a recusa vale para o fato citado que não está no vocabulário do catálogo de hoje; no item, o fato que o catálogo não tem recebe outra recusa, mais adiante.",
         "Na conferência semântica, cada predicado é percorrido cláusula a cláusula e condição a condição, na ordem em que foram enviadas, e o validador devolve a primeira recusa dele. Dentro da condição a ordem é: fato conhecido, fato coletado pelo processo (onde essa conferência existe), operador contra o tipo do fato, valor contra o tipo do fato. Quando o pedido traz mais de um predicado, a criação e a atualização de modelo de formulário, a gravação dos termos, das páginas e dos itens do formulário, a definição dos critérios de desempate, a definição das regras padrão de um fato derivado e a conferência que antecede o congelamento do processo conferem todos e devolvem as recusas juntas em `errors`. A definição de regras de derivação reúne as recusas das regras; a definição de documentos exigidos pode parar na primeira recusa semântica. Nos modelos de formulário, o `field` começa por `conteudo.`, e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). A parte do modelo com recusa de forma (como a de [condição nula](/erros/uniplus.predicado_dnf.condicao_nula)) não segue para esta conferência. Nada é gravado."
@@ -12451,7 +12451,7 @@
       ],
       "oQueAconteceu": [
         "O valor da condição é um texto que não está entre os valores que o fato categórico admite (UNI-REQ-0064). A mensagem cita o valor enviado e o fato, e termina de um destes três modos, conforme a origem dos valores do fato:",
-        "- `O valor '{valor}' da condição sobre '{fato}' não pertence ao domínio declarado.`, para o fato cujos valores estão no catálogo;\n- `O valor '{valor}' da condição sobre '{fato}' não é um valor admitido para o fato.`, para o fato de UF ou de município do Geo (a UF fora da lista de UFs, ou o código de município fora do formato);\n- `O valor '{valor}' da condição sobre '{fato}' não está entre os valores que o processo oferece para o fato; oferte o valor no processo ou ajuste a condição.`, para o fato cujas opções o processo define (as opções do processo, as modalidades ofertadas e os municípios do bônus). Esta forma só ocorre onde a condição é conferida contra um processo, e não nos modelos de formulário nem nas regras do catálogo.",
+        "- `O valor '{valor}' da condição sobre '{fato}' não pertence ao domínio declarado.`, para o fato cujos valores estão no catálogo;\n- `O valor '{valor}' da condição sobre '{fato}' não é um valor admitido para o fato.`, para o fato de UF ou de município do Geo (a UF fora da lista de UFs, ou o código de município fora do formato);\n- `O valor '{valor}' da condição sobre '{fato}' não está entre os valores que o processo oferece para o fato; oferte o valor no processo ou ajuste a condição.`, para o fato cujas opções o processo define (as opções do processo, as modalidades ofertadas e os municípios da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)). Esta forma só ocorre onde a condição é conferida contra um processo, e não nos modelos de formulário nem nas regras do catálogo.",
         "Com `ALGUM_DE` ou `NENHUM_DE`, a mensagem diz `da condição ALGUM_DE` no lugar de `da condição` e cita o primeiro item da lista que está fora dos valores. O tipo errado do valor (número onde se espera texto, por exemplo) recebe antes a recusa de [valor incompatível com o tipo do fato](/erros/uniplus.predicado_dnf.valor_incompativel_com_tipo).",
         "A recusa vem na lista `errors` da resposta, com `field` apontando o predicado ou, no critério de desempate, o campo `valor` do critério:",
         "- Nos modelos de formulário (criação e atualização): `paginas[i].exibicao`, `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando`, `itens[i].restricoes[j].entradas[k].quando` (a condição de um grupo de opções), `grupos[g].exibicao`, `grupos[g].predicadoObrigatoriedade`, `termos[i].exibicao`, `termos[i].predicadoObrigatoriedade` e `documentosExigidos[i].quando`, mais os mesmos caminhos do item sob `grupos[g].subitens[j]`.\n- Na gravação dos termos do formulário: `termos[i].exibicao` e `termos[i].predicadoObrigatoriedade`.\n- Na gravação das páginas do formulário: `paginas[i].exibicao`.\n- Na gravação dos itens do formulário: `itens[i].precondicao`, `itens[i].predicadoObrigatoriedade`, `itens[i].impedimento.quando` e, nas opções, `itens[i].restricoes[j].entradas[k].quando`, os campos `grupos[g].exibicao` e `grupos[g].predicadoObrigatoriedade` dos grupos e os mesmos caminhos sob `grupos[g].subitens[j]` nos campos de grupo.\n- Na definição de regras de derivação de fatos do processo seletivo: `configuracoes[i].regras[j].quando[c][k]`, seguido de `.fato`, `.operador` ou `.valor`, conforme a recusa.\n- Na definição de documentos exigidos do processo seletivo, na condição do gatilho da exigência: a resposta traz o código e a mensagem, sem apontar um campo.\n- Na definição dos critérios de desempate, no critério que testa um fato (regra de predicado sobre fato): `criterios[i].valor`.\n- Na criação e na atualização de uma modalidade de concorrência: `regraDeAplicabilidade[c][i].valor`.\n- Na definição das regras padrão de um fato derivado por regra: `regras[i]`.\n- Na publicação inicial e na retificação em ato único do processo seletivo: antes de congelar a configuração, a API confere de novo as regras dos itens e dos grupos dos formulários contra o catálogo de fatos de hoje, porque o catálogo pode ter mudado depois que o item foi gravado. O `field` é `formularios[{finalidade}].itens[i].…` ou `formularios[{finalidade}].grupos[g].…`, em que `{finalidade}` identifica o formulário, com os caminhos da gravação (`precondicao`, `predicadoObrigatoriedade`, `impedimento.quando`, `restricoes[j].entradas[k].quando`, `restricoes[j].entradas[k].valores` e, no grupo, `exibicao` e `predicadoObrigatoriedade`) e, nos campos de grupo, `grupos[g].subitens[c].…`. A mensagem acrescenta o item ou o grupo e a orientação para regravá-lo. O item cujo fato alguma versão publicada já coletou não tem as regras conferidas de novo.\n- Nos itens e nos modelos de formulário, também a lista de valores de um grupo de opções do campo: `itens[i].restricoes[j].entradas[k].valores` (nos modelos, com o prefixo `conteudo.`), em que cada valor precisa ser um valor do próprio fato do campo; a mensagem é a de `ALGUM_DE` acima.",
@@ -12958,7 +12958,7 @@
         "Uma regra de derivação contribui para o fato derivado um código que não está entre os valores dele, ou contribui um código num fato derivado booleano, que não recebe código (UNI-REQ-0075). Há dois casos, e a mensagem diz qual ocorreu, com o código do fato no lugar de `{fato}` e o código enviado no lugar de `{codigo}`:",
         "- fato derivado categórico: `A regra que contribui '{codigo}' cita um código fora do domínio de '{fato}'.` Vale também para a regra sem `contribui`, caso em que a mensagem traz as aspas vazias;\n- fato derivado booleano: `A derivação booleana de '{fato}' não contribui código: a regra ativa torna o derivado verdadeiro.`",
         "As operações que a emitem são:",
-        "- Definição das regras padrão de um fato derivado por regra: a API confere todas as regras e devolve as recusas juntas em `errors`, cada uma com `field` igual a `regras[i]`. A mesma regra pode ter, na mesma resposta, recusas das suas condições (fato, operador ou valor) e esta, de contribuição. A conferência da estrutura de cada regra vem depois das conferências das condições e para na primeira recusa da regra: a contribuição fora dos valores do fato vem antes da de [derivação que cita o próprio fato](/erros/uniplus.regras_derivacao_fato.derivacao_autorreferente), e por isso uma regra que tem os dois problemas só mostra este até ser corrigida. O fato categórico é conferido contra os valores declarados dele.\n- Alteração da definição de um fato do catálogo: ao trocar o domínio de um fato derivado por regra de booleano para categórico, as regras padrão que ele já tem não contribuem código e deixam de valer. Só entra a recusa que a alteração causa, e o `field` é `dominio`.\n- Definição de regras de derivação de fatos do processo seletivo: vale para o fato derivado categórico, conferido contra os valores que o fato tem no processo, conforme a origem deles (as modalidades ofertadas, as opções declaradas, os municípios do bônus ou os valores do catálogo); a origem que o servidor não enumera (UFs e municípios do Geo) não é conferida. A API para na primeira configuração ou regra que falhar, e a resposta traz o código e a mensagem, sem apontar um campo. Dentro de uma configuração, esta conferência vem depois das conferências das condições de todas as suas regras. O fato derivado booleano que recebe regra com código é recusado antes, por outro código da própria configuração de derivação do processo.\n- Publicação inicial e retificação em ato único: antes de congelar a configuração, a API confere de novo cada derivação do processo contra os valores que o fato tem naquele momento, porque eles podem ter mudado depois que a regra foi definida (por exemplo, uma modalidade que saiu da oferta). O código que deixou de pertencer aos valores do fato é recusado, a resposta traz o código e a mensagem, sem apontar um campo, e nada é congelado. Esta é a última conferência da configuração, e só aparece depois que as anteriores passam.\n- Pré-visualização do processo seletivo e formulário apresentado do rascunho: montam a definição do formulário com a mesma conferência das derivações e devolvem a mesma recusa, com o código e a mensagem, sem apontar um campo.",
+        "- Definição das regras padrão de um fato derivado por regra: a API confere todas as regras e devolve as recusas juntas em `errors`, cada uma com `field` igual a `regras[i]`. A mesma regra pode ter, na mesma resposta, recusas das suas condições (fato, operador ou valor) e esta, de contribuição. A conferência da estrutura de cada regra vem depois das conferências das condições e para na primeira recusa da regra: a contribuição fora dos valores do fato vem antes da de [derivação que cita o próprio fato](/erros/uniplus.regras_derivacao_fato.derivacao_autorreferente), e por isso uma regra que tem os dois problemas só mostra este até ser corrigida. O fato categórico é conferido contra os valores declarados dele.\n- Alteração da definição de um fato do catálogo: ao trocar o domínio de um fato derivado por regra de booleano para categórico, as regras padrão que ele já tem não contribuem código e deixam de valer. Só entra a recusa que a alteração causa, e o `field` é `dominio`.\n- Definição de regras de derivação de fatos do processo seletivo: vale para o fato derivado categórico, conferido contra os valores que o fato tem no processo, conforme a origem deles (as modalidades ofertadas, as opções declaradas, os municípios da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) ou os valores do catálogo); a origem que o servidor não enumera (UFs e municípios do Geo) não é conferida. A API para na primeira configuração ou regra que falhar, e a resposta traz o código e a mensagem, sem apontar um campo. Dentro de uma configuração, esta conferência vem depois das conferências das condições de todas as suas regras. O fato derivado booleano que recebe regra com código é recusado antes, por outro código da própria configuração de derivação do processo.\n- Publicação inicial e retificação em ato único: antes de congelar a configuração, a API confere de novo cada derivação do processo contra os valores que o fato tem naquele momento, porque eles podem ter mudado depois que a regra foi definida (por exemplo, uma modalidade que saiu da oferta). O código que deixou de pertencer aos valores do fato é recusado, a resposta traz o código e a mensagem, sem apontar um campo, e nada é congelado. Esta é a última conferência da configuração, e só aparece depois que as anteriores passam.\n- Pré-visualização do processo seletivo e formulário apresentado do rascunho: montam a definição do formulário com a mesma conferência das derivações e devolvem a mesma recusa, com o código e a mensagem, sem apontar um campo.",
         "Nada é gravado."
       ],
       "comoResolver": [
@@ -14982,149 +14982,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe um\n`baseLegalBonusRegionalId` que não corresponde a nenhuma base legal ativa no cadastro de\nbases legais do fator, mantido no módulo Configuração. O identificador não existe ou a base\nlegal foi desativada; o sistema responde da mesma forma nos dois casos e não diz qual deles\nocorreu.",
-        "A base legal é o que traz o instrumento normativo e os municípios abrangidos pelo fator. A\ndeclaração copia esses dados do cadastro no momento em que é gravada.",
-        "A conferência vem depois da regra\n([`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada)\ne\n[`regra_tipo_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido))\ne antes dos valores do fator, do teto e do fato de elegibilidade. A primeira recusa\ninterrompe a declaração e nada é gravado."
-      ],
-      "comoResolver": [
-        "Confira, no cadastro de bases legais do Fator de Atenuação (Configuração), o identificador\nda base legal que o edital cita e se ela continua ativa. Se não houver base legal ativa para\no edital, cadastre uma antes de declarar o fator. Em seguida, reenvie a declaração com o\nidentificador correto.",
-        "Alterar depois a base legal no cadastro não muda o que o processo já declarou: para que o\nprocesso passe a usar a alteração, é preciso declarar o fator de novo."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.campos_obrigatorios",
-      "requisitos": [
-        "UNI-REQ-0015"
-      ],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso informou a regra do fator\n(`regraCodigo`), mas faltou ao menos um dos três campos que a acompanham: a versão da regra\n(`regraVersao`), o multiplicador da nota (`fator`) ou a base legal do fator\n(`baseLegalBonusRegionalId`). Os três são obrigatórios sempre que a regra é informada, porque\né deles que o sistema monta o fator congelado do processo: a regra e a versão dizem como o\nacréscimo é calculado, o multiplicador diz quanto vale, e a base legal fixa os municípios\na que ele se aplica.",
-        "A mensagem de detalhe da resposta lista os três campos, sem dizer qual deles faltou; confira\nos três no corpo enviado. A recusa vem como uma violação única, sem a lista `errors[]`, e\nnada é gravado.",
-        "A conferência vem depois da que recusa a declaração de que o fator não se aplica, mas traz\ncampos do fator\n([`bonus_regional_nao_aplica_com_configuracao`](/erros/uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao)),\ne da que exige a regra quando o processo declara aplicar o fator\n([`bonus_regional_aplica_sem_configuracao`](/erros/uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao)).\nEla vem antes de qualquer consulta ao catálogo de regras\n([`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada)),\nao cadastro de bases legais\n([`base_legal_nao_encontrada`](/erros/uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada))\ne à conferência dos valores do fator, do teto e do fato de elegibilidade. Antes de todas elas\nsaem a recusa de acesso, a conferência do formato dos números (o `fator` e o `teto` aceitam\naté quatro casas decimais) e a recusa de edição de processo já publicado fora de uma\nretificação ([`mutacao_pos_publicacao_bloqueada`](/erros/uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada))."
-      ],
-      "comoResolver": [
-        "Envie a declaração com `aplica: true` e os quatro campos do fator juntos:",
-        "- `regraCodigo` e `regraVersao`: a regra e a versão do catálogo de regras. Hoje o catálogo\n  tem uma única regra do tipo regra de bônus, `FADA_MULTIPLICATIVO`, na versão `v1`;\n- `fator`: o multiplicador aplicado à nota, maior que zero, com até quatro casas decimais e no máximo seis dígitos no total, contados os zeros finais;\n- `baseLegalBonusRegionalId`: o identificador da base legal do fator, do cadastro de bases\n  legais do fator no módulo Configuração.",
-        "O `teto` e o código do fato que decide quem recebe o acréscimo (`fatoElegibilidadeCodigo`)\nseguem opcionais nesta conferência. Se o fator não se aplica ao processo, declare\n`aplica: false` e não envie nenhum outro campo do fator."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.fato_elegibilidade_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso citou, em\n`fatoElegibilidadeCodigo`, um código de fato em branco ou com mais de 60 caracteres (limite\nde hoje; os espaços nas pontas não contam). O fato de elegibilidade é o fato do processo que\ndecide quem recebe o acréscimo; a citação é opcional neste ponto, mas, quando feita, o código\nprecisa ter de 1 a 60 caracteres.",
-        "Esta recusa confere só a forma do código. Se o fato é do processo e se é do tipo verdadeiro ou\nfalso são conferências separadas, com outros códigos de erro.",
-        "A recusa vem no campo `fatoElegibilidadeCodigo` e acumula, na mesma resposta, com as demais\nviolações dos valores do fator, em\n[`fator_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.fator_invalido) e\n[`teto_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.teto_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
-        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na declaração, informe o código exato do fato do processo que decide quem recebe o acréscimo,\ncom 1 a 60 caracteres, ou omita o campo.",
-        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.fator_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O `fator` informado na declaração do Fator de Atenuação das Desigualdades de Acesso é zero\nou negativo. O fator é o multiplicador aplicado à nota final, depois dos pesos (por exemplo,\n`1,2000`); só vale um número maior que zero.",
-        "A recusa vem no campo `fator` e acumula, na mesma resposta, com as demais violações dos\nvalores do fator, em\n[`teto_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.teto_invalido) e\n[`fato_elegibilidade_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.fato_elegibilidade_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
-        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na declaração, informe um `fator` maior que zero, com o valor que o edital fixa para o\nmultiplicador.",
-        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_invalida",
-      "requisitos": [
-        "UNI-REQ-0015"
-      ],
-      "oQueAconteceu": [
-        "A regra selecionada para a bonificação regional não é do tipo multiplicativo que essa configuração exige."
-      ],
-      "comoResolver": [
-        "Escolha no catálogo a regra de bônus multiplicativo e confira os parâmetros da bonificação."
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe\n`regraCodigo` e `regraVersao`, mas o catálogo de regras do módulo Seleção não tem essa\ncombinação de código e versão. Um código que existe, acompanhado de uma versão que o\ncatálogo não tem, é recusado do mesmo jeito.",
-        "A conferência vem depois da que exige a regra quando o processo declara aplicar o fator\n([`bonus_regional_aplica_sem_configuracao`](/erros/uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao))\ne antes da que confere o tipo da regra\n([`regra_tipo_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido)).\nA primeira recusa interrompe a declaração e nada é gravado."
-      ],
-      "comoResolver": [
-        "Informe um código e uma versão que existam no catálogo de regras e que sejam do tipo regra de\nbônus. Hoje o catálogo tem uma única regra desse tipo, `FADA_MULTIPLICATIVO`, na versão\n`v1`. Confira se o código e a versão foram digitados exatamente como constam no catálogo e\nreenvie a declaração."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O código e a versão informados em `regraCodigo` e `regraVersao` existem no catálogo de\nregras, mas a regra cadastrada ali não é do tipo regra de bônus (`REGRA_FADA`). O catálogo\nreúne regras de vários tipos — por exemplo, de desempate, de eliminação e de distribuição de\nvagas —, e o código sozinho não garante que a regra serve ao Fator de Atenuação das\nDesigualdades de Acesso.",
-        "A conferência vem logo depois de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_bonus_regional.regra_nao_encontrada)\ne antes da conferência da base legal\n([`base_legal_nao_encontrada`](/erros/uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada)).\nA primeira recusa interrompe a declaração e nada é gravado."
-      ],
-      "comoResolver": [
-        "Informe uma regra do tipo regra de bônus. Hoje o catálogo tem uma única regra desse tipo,\n`FADA_MULTIPLICATIVO`, na versão `v1`. Se a intenção era usar outra regra, confira em qual\ncampo cada referência de regra do processo deve ser informada: o catálogo não aceita uma\nregra de outro tipo no lugar da regra de bônus."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.sem_municipios",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A configuração do Fator de Atenuação das Desigualdades de Acesso chegou à conferência com a\nbase legal sem nenhum município abrangido. O fator só vale para os municípios que a base\nlegal cita, e uma base legal sem município não alcança ninguém.",
-        "O cadastro de bases legais do fator, em Configuração, não aceita base legal sem pelo menos um\nmunicípio, e a declaração copia os municípios desse cadastro. Por isso, na declaração, esta\nrecusa não é esperada: a conferência existe para que a mesma regra valha também quando o\nsistema relê a configuração congelada da versão publicada, na retificação em ato único. Nesse caso a recusa sai como\numa violação única (sem a lista `errors[]`) e se refere à versão congelada."
-      ],
-      "comoResolver": [
-        "Se o erro apareceu na declaração, confira no cadastro de bases legais do Fator de Atenuação\n(Configuração) se a base legal informada tem municípios e acione a equipe técnica do Uni+,\nporque o cadastro não deveria permitir essa situação.",
-        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.configuracao_bonus_regional.teto_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O `teto` informado na declaração do Fator de Atenuação das Desigualdades de Acesso é zero ou\nnegativo. O teto é opcional: quando o processo não o declara, não há teto. Informado, só vale\num número maior que zero.",
-        "A recusa vem no campo `teto` e acumula, na mesma resposta, com as demais violações dos\nvalores do fator, em\n[`fator_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.fator_invalido) e\n[`fato_elegibilidade_invalido`](/erros/uniplus.selecao.configuracao_bonus_regional.fato_elegibilidade_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
-        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na declaração, omita o `teto` se o edital não fixa teto, ou informe um valor maior que zero.",
-        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios",
       "requisitos": [
         "UNI-REQ-0056"
@@ -16619,6 +16476,149 @@
         "Consulta administrativa da inscrição e dos documentos dela",
         "Publicação de produto do edital e listagem de produtos previstos do processo",
         "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.base_legal_nao_encontrada",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe um\n`baseLegal.id` que não corresponde a nenhuma base legal ativa no cadastro de\nbases legais do fator, mantido no módulo Configuração. O identificador não existe ou a base\nlegal foi desativada; o sistema responde da mesma forma nos dois casos e não diz qual deles\nocorreu.",
+        "A base legal é o que traz o instrumento normativo e os municípios abrangidos pelo fator. A\ndeclaração copia esses dados do cadastro no momento em que é gravada.",
+        "A conferência vem depois da regra\n([`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.regra_nao_encontrada)\ne\n[`regra_tipo_invalido`](/erros/uniplus.selecao.configuracao_do_fada.regra_tipo_invalido))\ne antes dos valores do fator, do teto e do fato de elegibilidade. A primeira recusa\ninterrompe a declaração e nada é gravado."
+      ],
+      "comoResolver": [
+        "Confira, no cadastro de bases legais do Fator de Atenuação (Configuração), o identificador\nda base legal que o edital cita e se ela continua ativa. Se não houver base legal ativa para\no edital, cadastre uma antes de declarar o fator. Em seguida, reenvie a declaração com o\nidentificador correto.",
+        "Alterar depois a base legal no cadastro não muda o que o processo já declarou: para que o\nprocesso passe a usar a alteração, é preciso declarar o fator de novo."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.campos_obrigatorios",
+      "requisitos": [
+        "UNI-REQ-0015"
+      ],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso informou a regra do fator\n(`regra.codigo`), mas faltou ao menos um dos três campos que a acompanham: a versão da regra\n(`regra.versao`), o multiplicador da nota (`fator`) ou a base legal do fator\n(`baseLegal.id`). Os três são obrigatórios sempre que a regra é informada, porque\né deles que o sistema monta o fator congelado do processo: a regra e a versão dizem como o\nacréscimo é calculado, o multiplicador diz quanto vale, e a base legal fixa os municípios\na que ele se aplica.",
+        "A mensagem de detalhe da resposta lista os três campos, sem dizer qual deles faltou; confira\nos três no corpo enviado. A recusa vem como uma violação única, sem a lista `errors[]`, e\nnada é gravado.",
+        "A conferência vem depois da que recusa a declaração de que o fator não se aplica, mas traz\ncampos do fator\n([`fada_nao_aplica_com_configuracao`](/erros/uniplus.selecao.processo_seletivo.fada_nao_aplica_com_configuracao)),\ne da que exige a regra quando o processo declara aplicar o fator\n([`fada_aplica_sem_configuracao`](/erros/uniplus.selecao.processo_seletivo.fada_aplica_sem_configuracao)).\nEla vem antes de qualquer consulta ao catálogo de regras\n([`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.regra_nao_encontrada)),\nao cadastro de bases legais\n([`base_legal_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.base_legal_nao_encontrada))\ne à conferência dos valores do fator, do teto e do fato de elegibilidade. Antes de todas elas\nsaem a recusa de acesso, a conferência do formato dos números (o `fator` e o `teto` aceitam\naté quatro casas decimais) e a recusa de edição de processo já publicado fora de uma\nretificação ([`mutacao_pos_publicacao_bloqueada`](/erros/uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada))."
+      ],
+      "comoResolver": [
+        "Envie a declaração com `aplica: true` e os quatro campos do fator juntos:",
+        "- `regra.codigo` e `regra.versao`: a regra e a versão do catálogo de regras. Hoje o catálogo\n  tem uma única regra do tipo regra do Fator de Atenuação das Desigualdades de Acesso (FADA), `FADA_MULTIPLICATIVO`, na versão `v1`;\n- `fator`: o multiplicador aplicado à nota, maior que zero, com até quatro casas decimais e no máximo seis dígitos no total, contados os zeros finais;\n- `baseLegal.id`: o identificador da base legal do fator, do cadastro de bases\n  legais do fator no módulo Configuração.",
+        "O `teto` e o código do fato que decide quem recebe o acréscimo (`fatoElegibilidadeCodigo`)\nseguem opcionais nesta conferência. Se o fator não se aplica ao processo, declare\n`aplica: false` e não envie nenhum outro campo do fator."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.fato_elegibilidade_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso citou, em\n`fatoElegibilidadeCodigo`, um código de fato em branco ou com mais de 60 caracteres (limite\nde hoje; os espaços nas pontas não contam). O fato de elegibilidade é o fato do processo que\ndecide quem recebe o acréscimo; a citação é opcional neste ponto, mas, quando feita, o código\nprecisa ter de 1 a 60 caracteres.",
+        "Esta recusa confere só a forma do código. Se o fato é do processo e se é do tipo verdadeiro ou\nfalso são conferências separadas, com outros códigos de erro.",
+        "A recusa vem no campo `fatoElegibilidadeCodigo` e acumula, na mesma resposta, com as demais\nviolações dos valores do fator, em\n[`fator_invalido`](/erros/uniplus.selecao.configuracao_do_fada.fator_invalido) e\n[`teto_invalido`](/erros/uniplus.selecao.configuracao_do_fada.teto_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
+        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
+      ],
+      "comoResolver": [
+        "Na declaração, informe o código exato do fato do processo que decide quem recebe o acréscimo,\ncom 1 a 60 caracteres, ou omita o campo.",
+        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.fator_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O `fator` informado na declaração do Fator de Atenuação das Desigualdades de Acesso é zero\nou negativo. O fator é o multiplicador aplicado à nota final, depois dos pesos (por exemplo,\n`1,2000`); só vale um número maior que zero.",
+        "A recusa vem no campo `fator` e acumula, na mesma resposta, com as demais violações dos\nvalores do fator, em\n[`teto_invalido`](/erros/uniplus.selecao.configuracao_do_fada.teto_invalido) e\n[`fato_elegibilidade_invalido`](/erros/uniplus.selecao.configuracao_do_fada.fato_elegibilidade_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
+        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
+      ],
+      "comoResolver": [
+        "Na declaração, informe um `fator` maior que zero, com o valor que o edital fixa para o\nmultiplicador.",
+        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_invalida",
+      "requisitos": [
+        "UNI-REQ-0015"
+      ],
+      "oQueAconteceu": [
+        "A regra selecionada para o Fator de Atenuação das Desigualdades de Acesso (FADA) não é do tipo multiplicativo que essa configuração exige."
+      ],
+      "comoResolver": [
+        "Escolha no catálogo a regra multiplicativa do Fator de Atenuação das Desigualdades de Acesso (FADA) e confira os parâmetros do fator."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_nao_encontrada",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe\n`regra.codigo` e `regra.versao`, mas o catálogo de regras do módulo Seleção não tem essa\ncombinação de código e versão. Um código que existe, acompanhado de uma versão que o\ncatálogo não tem, é recusado do mesmo jeito.",
+        "A conferência vem depois da que exige a regra quando o processo declara aplicar o fator\n([`fada_aplica_sem_configuracao`](/erros/uniplus.selecao.processo_seletivo.fada_aplica_sem_configuracao))\ne antes da que confere o tipo da regra\n([`regra_tipo_invalido`](/erros/uniplus.selecao.configuracao_do_fada.regra_tipo_invalido)).\nA primeira recusa interrompe a declaração e nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe um código e uma versão que existam no catálogo de regras e que sejam do tipo regra do Fator de Atenuação das Desigualdades de Acesso (FADA). Hoje o catálogo tem uma única regra desse tipo, `FADA_MULTIPLICATIVO`, na versão\n`v1`. Confira se o código e a versão foram digitados exatamente como constam no catálogo e\nreenvie a declaração."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.regra_tipo_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O código e a versão informados em `regra.codigo` e `regra.versao` existem no catálogo de\nregras, mas a regra cadastrada ali não é do tipo `REGRA_FADA`, a regra do Fator de Atenuação das Desigualdades de Acesso (FADA). O catálogo\nreúne regras de vários tipos — por exemplo, de desempate, de eliminação e de distribuição de\nvagas —, e o código sozinho não garante que a regra serve ao Fator de Atenuação das\nDesigualdades de Acesso.",
+        "A conferência vem logo depois de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.regra_nao_encontrada)\ne antes da conferência da base legal\n([`base_legal_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.base_legal_nao_encontrada)).\nA primeira recusa interrompe a declaração e nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe uma regra do tipo regra do Fator de Atenuação das Desigualdades de Acesso (FADA). Hoje o catálogo tem uma única regra desse tipo,\n`FADA_MULTIPLICATIVO`, na versão `v1`. Se a intenção era usar outra regra, confira em qual\ncampo cada referência de regra do processo deve ser informada: o catálogo não aceita uma\nregra de outro tipo no lugar da regra do Fator de Atenuação das Desigualdades de Acesso (FADA)."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.sem_municipios",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A configuração do Fator de Atenuação das Desigualdades de Acesso chegou à conferência com a\nbase legal sem nenhum município abrangido. O fator só vale para os municípios que a base\nlegal cita, e uma base legal sem município não alcança ninguém.",
+        "O cadastro de bases legais do fator, em Configuração, não aceita base legal sem pelo menos um\nmunicípio, e a declaração copia os municípios desse cadastro. Por isso, na declaração, esta\nrecusa não é esperada: a conferência existe para que a mesma regra valha também quando o\nsistema relê a configuração congelada da versão publicada, na retificação em ato único. Nesse caso a recusa sai como\numa violação única (sem a lista `errors[]`) e se refere à versão congelada."
+      ],
+      "comoResolver": [
+        "Se o erro apareceu na declaração, confira no cadastro de bases legais do Fator de Atenuação\n(Configuração) se a base legal informada tem municípios e acione a equipe técnica do Uni+,\nporque o cadastro não deveria permitir essa situação.",
+        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_do_fada.teto_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O `teto` informado na declaração do Fator de Atenuação das Desigualdades de Acesso é zero ou\nnegativo. O teto é opcional: quando o processo não o declara, não há teto. Informado, só vale\num número maior que zero.",
+        "A recusa vem no campo `teto` e acumula, na mesma resposta, com as demais violações dos\nvalores do fator, em\n[`fator_invalido`](/erros/uniplus.selecao.configuracao_do_fada.fator_invalido) e\n[`fato_elegibilidade_invalido`](/erros/uniplus.selecao.configuracao_do_fada.fato_elegibilidade_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
+        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
+      ],
+      "comoResolver": [
+        "Na declaração, omita o `teto` se o edital não fixa teto, ou informe um valor maior que zero.",
+        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo",
+        "Retificação em ato único"
       ]
     },
     {
@@ -18439,12 +18439,12 @@
       "oQueAconteceu": [
         "O catálogo de fatos situa cada fato numa fase em que ele passa a ser conhecido (o ponto de\nresolução). Há um fato cuja fase não está no cronograma deste\nprocesso, e o sistema não consegue dizer quando o fato é conhecido nem se ele já o é na fase\ndo documento.",
         "O erro aparece em dois grupos de operações:",
-        "- na definição dos documentos exigidos e na aplicação de um modelo de formulário, a conferência\n  das condições de cada exigência lê o catálogo de fatos;\n- na publicação e na retificação em ato único, a\n  conferência dos fatos das condições repete essa leitura com o catálogo. Nelas, o mesmo erro\n  também aparece quando o fato que decide quem recebe o bônus regional é conhecido numa fase\n  que o cronograma não tem.",
+        "- na definição dos documentos exigidos e na aplicação de um modelo de formulário, a conferência\n  das condições de cada exigência lê o catálogo de fatos;\n- na publicação e na retificação em ato único, a\n  conferência dos fatos das condições repete essa leitura com o catálogo. Nelas, o mesmo erro\n  também aparece quando o fato que decide quem recebe o acréscimo do Fator de Atenuação das Desigualdades de Acesso (FADA) é conhecido numa fase\n  que o cronograma não tem.",
         "Quando a fase do fato está no cronograma, a conferência segue para os erros\n[`fato_resolvido_em_fase_posterior`](/erros/uniplus.selecao.documento_exigido.fato_resolvido_em_fase_posterior)\ne\n[`fato_da_isencao_em_outra_finalidade`](/erros/uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade)."
       ],
       "comoResolver": [
         "A mensagem de detalhe diz: \"O fato '*código do fato*' resolve na fase '*código da fase*', que não\npertence ao cronograma deste processo.\" Ela nomeia o fato e a fase em que o catálogo o situa. Em qualquer caso, incluir\nessa fase no cronograma do processo resolve. A outra saída depende da causa:",
-        "- fato citado na condição de um documento exigido: troque a condição por um fato conhecido numa\n  fase que o processo tem;\n- fato que decide quem recebe o bônus regional (só nos congelamentos): trocar a condição de\n  qualquer exigência não resolve; troque o fato de elegibilidade na configuração do bônus\n  regional do processo.",
+        "- fato citado na condição de um documento exigido: troque a condição por um fato conhecido numa\n  fase que o processo tem;\n- fato que decide quem recebe o acréscimo do Fator de Atenuação das Desigualdades de Acesso (FADA) (só nos congelamentos): trocar a condição de\n  qualquer exigência não resolve; troque o fato de elegibilidade na configuração do Fator de Atenuação das Desigualdades de Acesso (FADA) do processo.",
         "Depois, repita a operação."
       ],
       "ondeAparece": [
@@ -22905,7 +22905,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O fato informado no endereço do pedido não aceita opções declaradas pelo\nprocesso. Isso acontece em dois casos:",
-        "- o fato não é categórico com valores definidos no processo, como as edições do ENEM aceitas. Os valores dos demais fatos vêm de outra origem, como o catálogo, as modalidades ofertadas, os municípios do bônus regional ou as unidades federativas, e o processo não os redefine por aqui. O mesmo vale para um código de fato que o catálogo não conhece;\n- o fato resume respostas de um grupo repetível. As opções são as do fato de cada membro do grupo, onde são declaradas.",
+        "- o fato não é categórico com valores definidos no processo, como as edições do ENEM aceitas. Os valores dos demais fatos vêm de outra origem, como o catálogo, as modalidades ofertadas, os municípios da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) ou as unidades federativas, e o processo não os redefine por aqui. O mesmo vale para um código de fato que o catálogo não conhece;\n- o fato resume respostas de um grupo repetível. As opções são as do fato de cada membro do grupo, onde são declaradas.",
         "A mensagem informa qual dos casos ocorreu e, no segundo, qual é o fato de membro usado pelo resumo de grupo. Nada foi gravado."
       ],
       "comoResolver": [
@@ -23207,36 +23207,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao",
-      "requisitos": [
-        "UNI-REQ-0015"
-      ],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso diz que o processo **aplica** o fator, mas chegou sem a regra do fator (`regraCodigo`). O processo declara se aplica ou não o Fator de Atenuação, como declara a cobrança da taxa de inscrição; ausência de configuração não significa \"sem Fator de Atenuação\"."
-      ],
-      "comoResolver": [
-        "- **Se o Fator de Atenuação se aplica:** envie junto da declaração a regra (`regraCodigo` e `regraVersao`), o multiplicador da nota (`fator`), a base legal (`baseLegalBonusRegionalId`, de onde vêm os municípios) e, se houver, o `teto`.\n- **Se o Fator de Atenuação não se aplica:** declare `aplica: false` e não envie nenhum outro campo do fator."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao",
-      "requisitos": [
-        "UNI-REQ-0015"
-      ],
-      "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso diz que o processo **não aplica** o fator, mas chegou com algum campo de configuração (`regraCodigo`, `regraVersao`, `fator`, `teto` ou `baseLegalBonusRegionalId`). A declaração e a configuração não podem divergir: a recusa evita que um corpo mal formado seja descartado em silêncio."
-      ],
-      "comoResolver": [
-        "- **Se o Fator de Atenuação não se aplica:** envie só `aplica: false`, sem nenhum outro campo do fator.\n- **Se o Fator de Atenuação se aplica:** declare `aplica: true` e envie a regra, o multiplicador da nota, a base legal e, se houver, o teto."
-      ],
-      "ondeAparece": [
-        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.calendario_vigente_ausente",
       "requisitos": [
         "UNI-REQ-0116"
@@ -23386,7 +23356,7 @@
       "oQueAconteceu": [
         "O processo tentou congelar uma nova versão de configuração — publicar\nou retificar em ato único —, mas ao\nmenos um item do checklist estrutural de conformidade reprovou. Esta é a\ncausa **agregadora**: a mensagem lista, por nome, cada item reprovado, para\nque a resposta sozinha já diga o que falta, sem obrigar o cliente a\ninspecionar a configuração inteira em busca do problema. O mesmo checklist\nvale para as duas transições, não só para a publicação.",
         "O checklist estrutural reúne os itens abaixo. Cada um tem um **código** estável,\nque identifica o que reprovou, e uma **dimensão**, que diz em qual seção da\nconfiguração corrigir. A mensagem lista, por nome, os itens reprovados, e os\nitens acumulam: uma tentativa devolve de uma vez tudo o que falta.",
-        "| Código | Dimensão | O que confere |\n|---|---|---|\n| `atendimento_especializado_ausente` | `atendimento_especializado` | Atendimento especializado |\n| `distribuicao_vagas_ausente` | `distribuicao_vagas` | Distribuição de vagas |\n| `distribuicao_vagas_oferta_sem_nome` | `distribuicao_vagas` | Nome de cada oferta congelado na distribuição de vagas |\n| `opcoes_de_curso_nao_declaradas` | `distribuicao_vagas` | Número de opções de curso |\n| `opcoes_de_curso_acima_das_ofertas` | `distribuicao_vagas` | A distribuição de vagas tem ao menos tantos cursos quanto o número de opções |\n| `classificacao_ausente` | `classificacao` | Classificação |\n| `cronograma_fases_ausente` | `cronograma` | Cronograma de fases |\n| `taxa_inscricao_nao_declarada` | `taxa_inscricao` | Taxa de inscrição e isenção |\n| `taxa_inscricao_sem_fundamento_de_isencao` | `taxa_inscricao` | Fundamentos de isenção do processo que cobra taxa |\n| `exigencias_base_legal_nao_resolvida` | `exigencias_documentais` | Base legal das exigências documentais |\n| `bonus_regional_nao_declarado` | `bonus_regional` | Bônus regional: aplica ou não aplica |\n| `bonus_regional_fato_de_elegibilidade` | `bonus_regional` | Com inscrição própria, o fato booleano que decide quem recebe o acréscimo |\n| `criterios_desempate_ausentes` | `desempate` | Critérios de desempate (inscrição própria) |\n| `etapa_com_nota_sem_nota_maxima` | `etapas` | Nota máxima de cada etapa com nota que não é do ENEM |\n| `etapa_sem_nota_com_escala` | `etapas` | Nota máxima e passo só em etapa com nota |\n| `etapa_do_enem_com_escala` | `etapas` | Etapa de nota do ENEM sem nota máxima nem passo |\n| `nota_minima_da_regra_acima_da_nota_maxima` | `etapas` | Nota mínima da regra de eliminação até a nota máxima da etapa |\n| `etapa_com_nota_sem_forma_de_avaliacao` | `etapas` | Forma de avaliação de cada etapa com nota que não é do ENEM |\n| `etapa_sem_nota_com_forma_de_avaliacao` | `etapas` | Forma de avaliação e regra de consolidação só em etapa com nota |\n| `etapa_sem_nota_com_itens_de_avaliacao` | `etapas` | Itens de avaliação e escala de atendimento só em etapa com nota |\n| `etapa_com_itens_fora_da_nota_maxima` | `etapas` | Soma das pontuações dos itens igual à nota máxima de cada etapa com itens |\n| `etapa_humana_sem_regra_de_consolidacao` | `etapas` | Regra de consolidação de cada etapa de avaliação humana |\n| `etapa_humana_sem_passo_do_lancamento` | `etapas` | Passo do lançamento de cada etapa de avaliação humana sem escala de atendimento |\n| `etapa_humana_sem_banca` | `etapas` | Ao menos uma banca em cada etapa de avaliação humana |",
+        "| Código | Dimensão | O que confere |\n|---|---|---|\n| `atendimento_especializado_ausente` | `atendimento_especializado` | Atendimento especializado |\n| `distribuicao_vagas_ausente` | `distribuicao_vagas` | Distribuição de vagas |\n| `distribuicao_vagas_oferta_sem_nome` | `distribuicao_vagas` | Nome de cada oferta congelado na distribuição de vagas |\n| `opcoes_de_curso_nao_declaradas` | `distribuicao_vagas` | Número de opções de curso |\n| `opcoes_de_curso_acima_das_ofertas` | `distribuicao_vagas` | A distribuição de vagas tem ao menos tantos cursos quanto o número de opções |\n| `classificacao_ausente` | `classificacao` | Classificação |\n| `cronograma_fases_ausente` | `cronograma` | Cronograma de fases |\n| `taxa_inscricao_nao_declarada` | `taxa_inscricao` | Taxa de inscrição e isenção |\n| `taxa_inscricao_sem_fundamento_de_isencao` | `taxa_inscricao` | Fundamentos de isenção do processo que cobra taxa |\n| `exigencias_base_legal_nao_resolvida` | `exigencias_documentais` | Base legal das exigências documentais |\n| `fada_nao_declarado` | `fada` | Fator de Atenuação das Desigualdades de Acesso (FADA): aplica ou não aplica |\n| `fada_fato_de_elegibilidade` | `fada` | Com inscrição própria, o fato booleano que decide quem recebe o acréscimo |\n| `criterios_desempate_ausentes` | `desempate` | Critérios de desempate (inscrição própria) |\n| `etapa_com_nota_sem_nota_maxima` | `etapas` | Nota máxima de cada etapa com nota que não é do ENEM |\n| `etapa_sem_nota_com_escala` | `etapas` | Nota máxima e passo só em etapa com nota |\n| `etapa_do_enem_com_escala` | `etapas` | Etapa de nota do ENEM sem nota máxima nem passo |\n| `nota_minima_da_regra_acima_da_nota_maxima` | `etapas` | Nota mínima da regra de eliminação até a nota máxima da etapa |\n| `etapa_com_nota_sem_forma_de_avaliacao` | `etapas` | Forma de avaliação de cada etapa com nota que não é do ENEM |\n| `etapa_sem_nota_com_forma_de_avaliacao` | `etapas` | Forma de avaliação e regra de consolidação só em etapa com nota |\n| `etapa_sem_nota_com_itens_de_avaliacao` | `etapas` | Itens de avaliação e escala de atendimento só em etapa com nota |\n| `etapa_com_itens_fora_da_nota_maxima` | `etapas` | Soma das pontuações dos itens igual à nota máxima de cada etapa com itens |\n| `etapa_humana_sem_regra_de_consolidacao` | `etapas` | Regra de consolidação de cada etapa de avaliação humana |\n| `etapa_humana_sem_passo_do_lancamento` | `etapas` | Passo do lançamento de cada etapa de avaliação humana sem escala de atendimento |\n| `etapa_humana_sem_banca` | `etapas` | Ao menos uma banca em cada etapa de avaliação humana |",
         "Alguns itens só entram quando a exigência existe:",
         "| Código | Dimensão | Quando entra |\n|---|---|---|\n| `classificacao_divisor_media_invalido` | `classificacao` | A classificação usa fórmula de média ponderada local (o divisor da média tem de ser maior que zero) |\n| `classificacao_resolucao_peso_area_enem_ausente` | `classificacao` | A média usa os pesos por área do ENEM: resolução com o quadro de pesos congelado |\n| `distribuicao_vagas_oferta_sem_grupo_area_enem` | `distribuicao_vagas` | A média usa os pesos por área do ENEM: grupo de área congelado em toda oferta |\n| `classificacao_grupo_area_enem_da_oferta_fora_do_quadro` | `classificacao` | A média usa os pesos por área do ENEM: o grupo de cada oferta consta no quadro |\n| `classificacao_edicao_enem_nao_declarada` | `classificacao` | Inscrição própria com classificação baseada em ENEM: edições do ENEM admitidas |",
         "A dimensão `etapas` é a seção estrutural sobre o que a etapa declara de si mesma,\ncomo a escala em que a nota dela é lançada. Ela é distinta do `cronograma`, que\ndiz quando a etapa acontece. Cada item lista as etapas que reprovam na forma\n`(etapas: \"A\"; \"B\")`, e os itens acumulam entre si e com os demais.",
@@ -23924,6 +23894,36 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.fada_aplica_sem_configuracao",
+      "requisitos": [
+        "UNI-REQ-0015"
+      ],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso diz que o processo **aplica** o fator, mas chegou sem a regra do fator (`regra.codigo`). O processo declara se aplica ou não o Fator de Atenuação, como declara a cobrança da taxa de inscrição; ausência de configuração não significa \"sem Fator de Atenuação\"."
+      ],
+      "comoResolver": [
+        "- **Se o Fator de Atenuação se aplica:** envie junto da declaração a regra (`regra.codigo` e `regra.versao`), o multiplicador da nota (`fator`), a base legal (`baseLegal.id`, de onde vêm os municípios) e, se houver, o `teto`.\n- **Se o Fator de Atenuação não se aplica:** declare `aplica: false` e não envie nenhum outro campo do fator."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.fada_nao_aplica_com_configuracao",
+      "requisitos": [
+        "UNI-REQ-0015"
+      ],
+      "oQueAconteceu": [
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso diz que o processo **não aplica** o fator, mas chegou com algum campo de configuração (`regra.codigo`, `regra.versao`, `fator`, `teto` ou `baseLegal.id`). A declaração e a configuração não podem divergir: a recusa evita que um corpo mal formado seja descartado em silêncio."
+      ],
+      "comoResolver": [
+        "- **Se o Fator de Atenuação não se aplica:** envie só `aplica: false`, sem nenhum outro campo do fator.\n- **Se o Fator de Atenuação se aplica:** declare `aplica: true` e envie a regra, o multiplicador da nota, a base legal e, se houver, o teto."
+      ],
+      "ondeAparece": [
+        "Declaração do Fator de Atenuação das Desigualdades de Acesso do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.fase_canonica_duplicada",
       "requisitos": [],
       "oQueAconteceu": [
@@ -24069,12 +24069,12 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um campo de escolha (única ou múltipla) do formulário publicaria sem nenhuma opção a\noferecer, obrigatório ou opcional: a pessoa candidata teria um seletor vazio. O rascunho\naceita o vínculo incompleto; quem barra é a operação que gera versão. A mensagem de\ndetalhe cita o código do fato e diz qual é a falta, que pode ser:",
-        "- o campo tem as opções do próprio processo, e o processo não declara nenhuma para ele\n  (é o caso da condição de atendimento, do recurso de acessibilidade e de fatos cujas\n  opções o processo declara);\n- o campo oferece os municípios do bônus regional, e o processo não tem bônus regional;\n- o campo oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem\n  nenhum tipo ativo;\n- o conjunto de opções do campo ficou vazio quando a versão foi montada.",
+        "- o campo tem as opções do próprio processo, e o processo não declara nenhuma para ele\n  (é o caso da condição de atendimento, do recurso de acessibilidade e de fatos cujas\n  opções o processo declara);\n- o campo oferece os municípios da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), e o processo não o aplica;\n- o campo oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem\n  nenhum tipo ativo;\n- o conjunto de opções do campo ficou vazio quando a versão foi montada.",
         "A recusa sai com **422**, antes de gerar a versão."
       ],
       "comoResolver": [
         "Corrija a falta que a mensagem aponta e repita a operação:",
-        "- para opções do processo, declare ao menos uma\n  (`PUT /api/selecao/processos-seletivos/{id}/fatos/{fatoCodigo}/opcoes`); para a\n  condição de atendimento e o recurso de acessibilidade, as opções vêm do atendimento\n  especializado\n  (`PUT /api/selecao/processos-seletivos/{id}/atendimento-especializado`);\n- para os municípios do bônus regional, declare o bônus regional\n  (`PUT /api/selecao/processos-seletivos/{id}/bonus-regional`) ou retire o campo do\n  formulário;\n- para os tipos de deficiência, a gestão do cadastro deve ativar ao menos um tipo.",
+        "- para opções do processo, declare ao menos uma\n  (`PUT /api/selecao/processos-seletivos/{id}/fatos/{fatoCodigo}/opcoes`); para a\n  condição de atendimento e o recurso de acessibilidade, as opções vêm do atendimento\n  especializado\n  (`PUT /api/selecao/processos-seletivos/{id}/atendimento-especializado`);\n- para os municípios da base legal, declare o Fator de Atenuação das Desigualdades de Acesso (FADA)\n  (`PUT /api/selecao/processos-seletivos/{id}/fada`) ou retire o campo do\n  formulário;\n- para os tipos de deficiência, a gestão do cadastro deve ativar ao menos um tipo.",
         "Se o campo não é necessário, retire-o do formulário."
       ],
       "ondeAparece": [
@@ -24117,7 +24117,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.fato_de_selecao_sem_origem_de_valores",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um campo do formulário está vinculado como escolha (única ou múltipla), mas não há de\nonde tirar as opções que a pessoa candidata poderia escolher: o catálogo de fatos do\ncandidato não declara valores para o fato, e a fonte das opções do campo não é o\nprocesso nem o bônus regional. A mensagem de detalhe cita o código do fato. A recusa\nsai com **422**, antes de gerar a versão."
+        "Um campo do formulário está vinculado como escolha (única ou múltipla), mas não há de\nonde tirar as opções que a pessoa candidata poderia escolher: o catálogo de fatos do\ncandidato não declara valores para o fato, e a fonte das opções do campo não é o\nprocesso nem o Fator de Atenuação das Desigualdades de Acesso (FADA). A mensagem de detalhe cita o código do fato. A recusa\nsai com **422**, antes de gerar a versão."
       ],
       "comoResolver": [
         "Retire o campo do formulário ou troque-o por um fato cujas opções existam\n(`PUT /api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}/itens`). Se\no fato deveria oferecer opções, a correção é no catálogo de fatos do candidato, da\ngestão do cadastro. Repita a operação depois do ajuste."
@@ -24145,12 +24145,12 @@
       "codigo": "uniplus.selecao.processo_seletivo.fato_elegibilidade_conhecido_depois_da_inscricao",
       "requisitos": [],
       "oQueAconteceu": [
-        "O bônus regional cita um fato que decide quem recebe o acréscimo, mas esse fato só é\nconhecido em uma fase posterior à da inscrição. O acréscimo é decidido a partir do que a\npessoa candidata informa ao se inscrever; um fato que só passa a existir depois não\nserve a isso. A mensagem de detalhe cita o código do fato e a fase em que ele passa a ser\nconhecido. A recusa sai com **422**, antes de gerar a versão.",
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (FADA) cita um fato que decide quem recebe o acréscimo, mas esse fato só é\nconhecido em uma fase posterior à da inscrição. O acréscimo é decidido a partir do que a\npessoa candidata informa ao se inscrever; um fato que só passa a existir depois não\nserve a isso. A mensagem de detalhe cita o código do fato e a fase em que ele passa a ser\nconhecido. A recusa sai com **422**, antes de gerar a versão.",
         "A fase em que o fato é conhecido vem do catálogo de fatos do candidato; para um fato\nderivado, ela depende da fase dos fatos de que ele depende. Por isso a recusa pode\naparecer na hora de gerar a versão mesmo que a consulta de conformidade do processo, que\nnão usa o catálogo nessa conferência, não a tenha apontado."
       ],
       "comoResolver": [
         "Escolha o ajuste que reflete o edital:",
-        "- cite no bônus regional um fato booleano conhecido já na inscrição\n  (`PUT /api/selecao/processos-seletivos/{id}/bonus-regional`); ou\n- se o fato é derivado, ajuste o formulário e as derivações para que ele dependa só de\n  fatos coletados na inscrição.",
+        "- cite, na declaração do Fator de Atenuação das Desigualdades de Acesso (FADA), um fato booleano conhecido já na inscrição\n  (`PUT /api/selecao/processos-seletivos/{id}/fada`); ou\n- se o fato é derivado, ajuste o formulário e as derivações para que ele dependa só de\n  fatos coletados na inscrição.",
         "Repita então a operação recusada."
       ],
       "ondeAparece": [
@@ -24701,14 +24701,14 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.municipio_do_bonus_referenciado_por_condicao_viva",
+      "codigo": "uniplus.selecao.processo_seletivo.municipio_do_fada_referenciado_por_condicao_viva",
       "requisitos": [],
       "oQueAconteceu": [
-        "Alguma condição do processo — regra de item de formulário, grupo, derivação de\nfato, critério de desempate por fato ou exibição condicional — cita um município\nque não pertence à área do bônus regional. A área é formada pelos municípios da\nbase legal do processo; processo sem bônus regional tem área vazia, e qualquer\nmunicípio citado fica fora dela.",
+        "Alguma condição do processo — regra de item de formulário, grupo, derivação de\nfato, critério de desempate por fato ou exibição condicional — cita um município\nque não pertence à área do Fator de Atenuação das Desigualdades de Acesso (FADA). A área é formada pelos municípios da\nbase legal do processo; processo sem o Fator de Atenuação das Desigualdades de Acesso (FADA) tem área vazia, e qualquer\nmunicípio citado fica fora dela.",
         "A recusa aparece em dois momentos: ao declarar o Fator de Atenuação, quando a\nnova área retiraria um município que a condição ainda cita, e ao congelar uma\nversão (publicação ou retificação em ato único), quando a conferência final\nencontra a condição fora da área. Em ambos os casos nada é gravado ou congelado. A mensagem indica o município."
       ],
       "comoResolver": [
-        "Ajuste a condição que cita o município — removendo-a ou trocando o município\npor um da área — ou mantenha o município na área do bônus regional do processo.",
+        "Ajuste a condição que cita o município — removendo-a ou trocando o município\npor um da área — ou mantenha o município na área do Fator de Atenuação das Desigualdades de Acesso (FADA) do processo.",
         "Em processo já publicado, as alterações são feitas numa retificação. Depois,\nrepita a operação recusada."
       ],
       "ondeAparece": [
@@ -24732,7 +24732,7 @@
         "PUT /api/selecao/processos-seletivos/`{id}`/atendimento-especializado",
         "PUT /api/selecao/processos-seletivos/`{id}`/distribuicao-vagas",
         "PUT /api/selecao/processos-seletivos/`{id}`/criterios-desempate",
-        "PUT /api/selecao/processos-seletivos/`{id}`/bonus-regional",
+        "PUT /api/selecao/processos-seletivos/`{id}`/fada",
         "PUT /api/selecao/processos-seletivos/`{id}`/opcoes-de-curso",
         "PUT /api/selecao/processos-seletivos/`{id}`/taxa-inscricao",
         "PUT /api/selecao/processos-seletivos/`{id}`/divulgacao",

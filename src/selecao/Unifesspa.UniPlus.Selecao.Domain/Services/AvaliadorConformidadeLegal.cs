@@ -22,9 +22,9 @@ using Desfecho = (bool Aprovada, string? Motivo, string? Aviso);
 /// </summary>
 /// <remarks>
 /// O switch cobre as 7 variantes de <see cref="PredicadoObrigatoriedade"/>
-/// explicitamente por tipo — <c>BonusObrigatorio</c>, oitava variante
-/// original, foi descartada (ADR-0114, executado por esta story):
-/// <c>ConfiguracaoBonusRegional</c> é global ao processo, sem lista de
+/// explicitamente por tipo — <c>FadaObrigatorio</c>, oitava variante
+/// original, foi descartada (ADR-0114):
+/// <c>ConfiguracaoDoFada</c> é global ao processo, sem lista de
 /// modalidades, tornando a variante incompatível com o agregado real.
 /// <b>Correção sobre o xmldoc de <see cref="PredicadoObrigatoriedade"/></b>:
 /// o padrão "CS8509 sem catch-all" que o projeto usa para <c>enum</c>

@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Tipo de instrumento normativo aceito na Base Legal de Bônus Regional.
-/// Vocabulário fechado dos documentos formais que instituem ou modificam o bônus em
+/// Tipo de instrumento normativo aceito na Base Legal do Fator de Atenuação das Desigualdades de Acesso (FADA).
+/// Vocabulário fechado dos documentos formais que instituem ou modificam o FADA em
 /// processo seletivo de IFES — os atos normativos e o próprio edital do processo.
 /// </summary>
 /// <remarks>
@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// <c>GET /api/configuracao/vocabularios/tipos-instrumento-normativo</c>: lei primeiro,
 /// parecer e edital por último — hierarquia de força normativa.
 /// </remarks>
-[DescricaoDoContrato("Tipo do ato normativo que institui ou modifica o bônus regional de um processo seletivo.")]
+[DescricaoDoContrato("Tipo do ato normativo que institui ou modifica o Fator de Atenuação das Desigualdades de Acesso (FADA) de um processo seletivo.")]
 public enum TipoInstrumentoNormativo
 {
     [CodigoDeContrato(
@@ -55,6 +55,6 @@ public enum TipoInstrumentoNormativo
     [CodigoDeContrato(
         "EDITAL",
         "Edital",
-        Descricao = "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o bônus que ele institui.")]
+        Descricao = "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o Fator de Atenuação das Desigualdades de Acesso (FADA) que ele institui.")]
     Edital = 7,
 }

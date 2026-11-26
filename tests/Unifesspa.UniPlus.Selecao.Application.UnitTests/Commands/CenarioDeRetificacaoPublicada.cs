@@ -148,8 +148,8 @@ internal sealed class CenarioDeRetificacaoPublicada
         ConfiguracaoPublicada configuracao = new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [fase]),
             new AvaliacaoDeclarada([.. Processo.Etapas], [.. Processo.CriteriosDesempate], Processo.Classificacao!),
-            new VagasDeclaradas([.. Processo.DistribuicaoVagas], 1, Processo.BonusRegional is not null,
-                Processo.BonusRegional, null, Processo.AtendimentoEspecializado!),
+            new VagasDeclaradas([.. Processo.DistribuicaoVagas], 1, Processo.Fada is not null,
+                Processo.Fada, null, Processo.AtendimentoEspecializado!),
             new ExigenciasDeclaradas([.. Processo.DocumentosExigidos], []),
             new ColetaDeclarada([], [], [], [],
                 [], [], null),

@@ -28,7 +28,7 @@ public sealed class HashDeEntidadeImutavelTests
 {
     [Theory]
     [InlineData(CategoriaObrigatoriedade.Etapa, "a841824e76f413d391f840a922d2dc58c9fdc68f5a5b475289623426008819bc")]
-    [InlineData(CategoriaObrigatoriedade.Bonus, "a7f82467902eb2d935931af38eabb08900c144e3764f584411510d6bf4218fa7")]
+    [InlineData(CategoriaObrigatoriedade.Fada, "a7f82467902eb2d935931af38eabb08900c144e3764f584411510d6bf4218fa7")]
     public void HashDeObrigatoriedadeLegal_CategoriaConhecida_PreservaHash(CategoriaObrigatoriedade categoria, string esperado)
     {
         Result<ObrigatoriedadeLegal> regra = ObrigatoriedadeLegal.Criar(

@@ -26,8 +26,8 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
 
     /// <summary>
     /// O caso crítico é o <c>fada</c>: um leitor que só olhasse <c>presente</c>
-    /// leria <c>{"presente":false,"fator":"1.2000",…}</c> como “sem bônus” e
-    /// <b>descartaria o bônus regional do certame</b> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) sem deixar rastro. É o modo
+    /// leria <c>{"presente":false,"fator":"1.2000",…}</c> como “sem FADA” e
+    /// <b>descartaria o Fator de Atenuação das Desigualdades de Acesso (FADA) do certame</b> (UNI-REQ-0015) sem deixar rastro. É o modo
     /// de falha exato que esta story existe para tornar impossível.
     /// </summary>
     [Theory(DisplayName = "Chave desconhecida em QUALQUER nível é recusada — um leitor tolerante perde configuração em silêncio")]
@@ -86,19 +86,19 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Fact(DisplayName = "O caso crítico: {presente:false} com parâmetros de bônus é RECUSADO, não lido como 'sem bônus'")]
-    public void BonusPresenteFalsoComParametros_Recusa()
+    [Fact(DisplayName = "O caso crítico: {presente:false} com parâmetros do FADA é RECUSADO, não lido como 'sem FADA'")]
+    public void FadaPresenteFalsoComParametros_Recusa()
     {
-        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(DeclararBonusAusenteMantendoOFator);
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(DeclararFadaAusenteMantendoOFator);
 
         resultado.IsFailure.Should().BeTrue(
-            "um bônus 'ausente' que ainda carrega parâmetros é envelope contraditório. Lê-lo como 'sem bônus' descartaria " +
-            "o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) de um certame publicado, e ninguém veria.");
+            "um FADA 'ausente' que ainda carrega parâmetros é envelope contraditório. Lê-lo como 'sem FADA' descartaria " +
+            "o Fator de Atenuação das Desigualdades de Acesso (FADA) (UNI-REQ-0015) de um certame publicado, e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     /// <summary>
-    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComParametros_Recusa"/>, para a
+    /// Mesmo raciocínio de <see cref="FadaPresenteFalsoComParametros_Recusa"/>, para a
     /// cascata: um leitor que só olhasse <c>presente</c> leria
     /// <c>{"presente":false,"regra":{...},...}</c> como "sem cascata" e descartaria a
     /// sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, sem
@@ -207,14 +207,14 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.Error!.Code.Should().Be(codigoEsperado);
     }
 
-    [Theory(DisplayName = "O código estável da base legal do bônus fora da gramática do cadastro é recusado no envelope")]
+    [Theory(DisplayName = "O código estável da base legal do FADA fora da gramática do cadastro é recusado no envelope")]
     [InlineData("minuscula")]
     [InlineData("COM PONTUACAO!")]
     [InlineData("1COMECA_POR_DIGITO")]
     [InlineData("COM-HIFEN")]
     [InlineData("A_")]
     [InlineData("TERMINA_EM_QUEBRA\n")]
-    public void Bonus_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
+    public void Fada_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
             envelope["fada"]!["baseLegalCodigo"] = codigo);
@@ -222,25 +222,25 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.IsFailure.Should().BeTrue("o código congelado tem de obedecer à gramática que o cadastro impõe");
     }
 
-    [Theory(DisplayName = "O código estável da base legal do bônus é obrigatório e não vazio no envelope")]
+    [Theory(DisplayName = "O código estável da base legal do FADA é obrigatório e não vazio no envelope")]
     [InlineData(true)]
     [InlineData(false)]
-    public void Bonus_CodigoDaBaseLegalAusenteOuVazio_RecusaOEnvelope(bool removerChave)
+    public void Fada_CodigoDaBaseLegalAusenteOuVazio_RecusaOEnvelope(bool removerChave)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject bonus = envelope["fada"]!.AsObject();
+            JsonObject fada = envelope["fada"]!.AsObject();
             if (removerChave)
             {
-                bonus.Remove("baseLegalCodigo");
+                fada.Remove("baseLegalCodigo");
             }
             else
             {
-                bonus["baseLegalCodigo"] = string.Empty;
+                fada["baseLegalCodigo"] = string.Empty;
             }
         });
 
-        resultado.IsFailure.Should().BeTrue("o snapshot do bônus sem código estável deixaria o certame sem a referência que o documento resolve");
+        resultado.IsFailure.Should().BeTrue("o snapshot do FADA sem código estável deixaria o certame sem a referência que o documento resolve");
     }
 
     [Theory(DisplayName = "O código do termo e o número da versão ausentes, vazios ou fora do limite são recusados no envelope")]
@@ -269,19 +269,19 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.IsFailure.Should().BeTrue("o termo congelado sem código estável ou com número inválido não é citável pelo documento");
     }
 
-    private static readonly string[] ParametrosDoBonusAlemDoFator =
+    private static readonly string[] ParametrosDoFadaAlemDoFator =
     [
         "regra", "teto", "baseLegalId", "baseLegalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",
     ];
 
     /// <summary>Sobra `fator` — a forma "ausente" só admite `presente`.</summary>
-    private static void DeclararBonusAusenteMantendoOFator(JsonObject envelope)
+    private static void DeclararFadaAusenteMantendoOFator(JsonObject envelope)
     {
-        JsonObject bonus = envelope["fada"]!.AsObject();
-        bonus["presente"] = false;
-        foreach (string chave in ParametrosDoBonusAlemDoFator)
+        JsonObject fada = envelope["fada"]!.AsObject();
+        fada["presente"] = false;
+        foreach (string chave in ParametrosDoFadaAlemDoFator)
         {
-            bonus.Remove(chave);
+            fada.Remove(chave);
         }
     }
 }

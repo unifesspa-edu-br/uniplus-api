@@ -119,7 +119,7 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     // numeric(18,4) — 19 dígitos não cabem.
     [InlineData("etapas.0.peso", "123456789012345.6789")]
     [InlineData("etapas.0.notaMinima", "123456789012345.6789")]
-    // numeric(6,4) — o bônus comporta no máximo 99.9999.
+    // numeric(6,4) — o multiplicador comporta no máximo 99.9999.
     [InlineData("fada.fator", "100.0000")]
     [InlineData("fada.teto", "12345.6789")]
     public void DecimalAlemDaPrecisaoDaColuna_Recusa(string caminho, string valor)

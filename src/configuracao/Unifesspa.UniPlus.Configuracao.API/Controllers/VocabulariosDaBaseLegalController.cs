@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 /// <summary>
-/// Vocabulário fechado de <c>TipoInstrumentoNormativo</c>, usado pela Base Legal de Bônus Regional.
+/// Vocabulário fechado de <c>TipoInstrumentoNormativo</c>, usado pela Base Legal do Fator de Atenuação das Desigualdades de Acesso (FADA).
 /// Somente leitura: o conjunto é governado por código e muda por versão da API, não por cadastro
 /// administrativo. Sem paginação, sem <c>_links</c> e sem cache.
 /// </summary>
@@ -28,7 +28,7 @@ public sealed class VocabulariosDaBaseLegalController : ControllerBase
         _queryBus = queryBus;
     }
 
-    /// <summary>Lista os tipos de instrumento normativo da Base Legal de Bônus Regional, com código, rótulo e descrição.</summary>
+    /// <summary>Lista os tipos de instrumento normativo da Base Legal do Fator de Atenuação das Desigualdades de Acesso (FADA), com código, rótulo e descrição.</summary>
     [HttpGet("vocabularios/tipos-instrumento-normativo")]
     [EndpointName("ListarTiposDeInstrumentoNormativo")]
     [AllowAnonymous]

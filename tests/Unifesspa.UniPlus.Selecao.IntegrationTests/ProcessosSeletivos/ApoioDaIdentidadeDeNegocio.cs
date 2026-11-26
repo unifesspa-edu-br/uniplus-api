@@ -180,9 +180,9 @@ internal static class ApoioDaIdentidadeDeNegocio
                 "efetiva da origem (B_FATO antes de A_FATO), o oposto da ordem alfabética da pré-condição");
 
     /// <summary>Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco): um canonicalizador que preservasse a ordem de entrada reproduziria a sequência errada.</summary>
-    internal static ConfiguracaoBonusRegional BonusComMunicipiosDeMesmoCodigoIbgeForaDeOrdem() =>
-        ConfiguracaoBonusRegional.Criar(
-            Regra(RegraDeBonus.Multiplicativo.Codigo(), 'd'), 1.20m, null, null,
+    internal static ConfiguracaoDoFada FadaComMunicipiosDeMesmoCodigoIbgeForaDeOrdem() =>
+        ConfiguracaoDoFada.Criar(
+            Regra(RegraDoFada.Multiplicativo.Codigo(), 'd'), 1.20m, null, null,
             new BaseLegalCongelada(
                 Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Teste 1/2026", "Descrição de teste",
                 [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")])).Value!;

@@ -30,7 +30,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
     public void ConferenciasIndependentes_AcumulamAsCausasNaOrdem()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoBonus()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoFada()]).IsSuccess.Should().BeTrue();
         processo.DefinirTermos([TermoSemForma()]).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<FieldError> causas = CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo));
@@ -44,7 +44,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
     public void CausaDeUmaRegra_NaoEscondeAsOutras()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoBonus()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoFada()]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Select(static causa => causa.Error.Code).Should().Equal(FatoSemValoresOfertados);
@@ -55,7 +55,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
         new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", FormaAceite.ADefinir, new string('a', 64)),
         exibicao: null, Obrigatoriedade.Sempre).Value!;
 
-    private static FatoColetado FatoDosMunicipiosDoBonus() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
+    private static FatoColetado FatoDosMunicipiosDoFada() => FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_FADA", 0)
         .ComRotulo("Município")
         .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)

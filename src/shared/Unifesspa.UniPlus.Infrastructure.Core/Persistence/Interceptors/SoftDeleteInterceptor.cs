@@ -102,7 +102,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
             }
         }
 
-        // Owned COLLECTIONS (OwnsMany — ex.: BaseLegalBonusRegional.Municipios) cascateiam
+        // Owned COLLECTIONS (OwnsMany — ex.: BaseLegalDoFada.Municipios) cascateiam
         // para EntityState.Deleted do mesmo jeito que owned references, mas cada item vive
         // na própria tabela filha (FK, não table splitting): sem este passo, o soft-delete do
         // principal preservaria a linha pai e apagaria fisicamente cada linha filha — perdendo

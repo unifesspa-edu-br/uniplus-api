@@ -162,13 +162,13 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
         configuracao.Origem.PartesRecusadas.Any(parte => parte.Caminho == caminho || caminho.StartsWith(parte.Caminho + ".", StringComparison.Ordinal) || caminho.StartsWith(parte.Caminho + "[", StringComparison.Ordinal) || parte.Caminho.StartsWith(caminho + ".", StringComparison.Ordinal) || parte.Caminho.StartsWith(caminho + "[", StringComparison.Ordinal));
 
     internal static bool PodeAvaliarAcrescimo(ConfiguracaoDeclarada configuracao, string lista) =>
-        !Recusada(configuracao, lista) && !Recusada(configuracao, "bonusRegional");
+        !Recusada(configuracao, lista) && !Recusada(configuracao, "fada");
 
     internal static bool PodeAvaliarCoerencia(ConfiguracaoDeclarada configuracao, string lista) =>
         !Recusada(configuracao, lista) && !Recusada(configuracao, "distribuicaoVagas");
 
     internal static bool AcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao, ConsequenciaDoDescumprimento? consequencia) =>
-        !Recusada(configuracao, "bonusRegional") && consequencia == ConsequenciaDoDescumprimento.RetiraOAcrescimo && configuracao.Vagas.BonusRegional is null;
+        !Recusada(configuracao, "fada") && consequencia == ConsequenciaDoDescumprimento.RetiraOAcrescimo && configuracao.Vagas.Fada is null;
 
     private static IEnumerable<ModalidadeSelecionada> Modalidades(ConfiguracaoDeclarada configuracao) =>
         configuracao.Vagas.DistribuicaoVagas.SelectMany(static distribuicao => distribuicao.Modalidades);

@@ -79,14 +79,14 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
-    [Fact(DisplayName = "CA-05 (4/5 — RETIRA_O_ACRESCIMO sem acréscimo oferecido): recusado quando o processo não tem bônus regional configurado")]
+    [Fact(DisplayName = "CA-05 (4/5 — RETIRA_O_ACRESCIMO sem acréscimo oferecido): recusado quando o processo não tem o FADA configurado")]
     public void Publicar_AcrescimoNaoOferecido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
-        // O processo declara que não aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015): sem configuração do bônus
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "FADA", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
+        // O processo declara que não aplica o Fator de Atenuação das Desigualdades de Acesso (FADA, UNI-REQ-0015): sem configuração do FADA
         // não há "acréscimo oferecido" para a consequência RETIRA_O_ACRESCIMO remover.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -95,15 +95,15 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         resultado.Error!.Code.Should().Be("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
-    [Fact(DisplayName = "CA-05: RETIRA_O_ACRESCIMO com bônus regional configurado é aceito (contraprova)")]
+    [Fact(DisplayName = "CA-05: RETIRA_O_ACRESCIMO com o FADA configurado é aceito (contraprova)")]
     public void Publicar_AcrescimoOferecido_Aceita()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirBonusRegional(
-            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirFada(
+            aplica: true, configuracao: ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", HashFixo), fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "FADA", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 

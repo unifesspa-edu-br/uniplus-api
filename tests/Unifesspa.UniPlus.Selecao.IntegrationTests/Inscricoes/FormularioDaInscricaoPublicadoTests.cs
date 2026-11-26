@@ -57,13 +57,13 @@ public sealed class FormularioDaInscricaoPublicadoTests
         return formulario.Value!;
     }
 
-    [Fact(DisplayName = "O formulário da inscrição publicado traz, só pelo código, o fato que o bônus regional cita como dependência do Fator")]
-    public async Task FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita()
+    [Fact(DisplayName = "O formulário da inscrição publicado traz, só pelo código, o dado do candidato que o FADA cita como dependência do Fator")]
+    public async Task FormularioDaInscricao_TrazAsDependenciasDoFatorPeloDadoQueOFadaCita()
     {
         await using UniPlusDbContext db = _cenario.CriarDbContext();
 
         FormularioApresentadoDoProcessoDto formulario = await FormularioDaInscricaoDeFernandaAsync(
-            db, ProcessoComFator(nameof(FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita)));
+            db, ProcessoComFator(nameof(FormularioDaInscricao_TrazAsDependenciasDoFatorPeloDadoQueOFadaCita)));
 
         formulario.DependenciasDoFator.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["PEDE_O_FATOR"], []));
     }

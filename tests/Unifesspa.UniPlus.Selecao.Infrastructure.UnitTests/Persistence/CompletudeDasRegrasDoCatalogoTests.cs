@@ -15,8 +15,8 @@ public sealed class CompletudeDasRegrasDoCatalogoTests
             .Should().BeEquivalentTo(CatalogoDe<TipoRegra>.Valores());
 
     [Fact]
-    public void RegraDeBonus_SementeV1_ContemExatamenteOsCodigosDoEnum() =>
-        Conferir<RegraDeBonus>(TipoRegra.RegraBonus);
+    public void RegraDoFada_SementeV1_ContemExatamenteOsCodigosDoEnum() =>
+        Conferir<RegraDoFada>(TipoRegra.RegraFada);
 
     [Fact]
     public void RegraDeArredondamentoDaNota_SementeV1_ContemExatamenteOsCodigosDoEnum() =>

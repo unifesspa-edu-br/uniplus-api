@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 public sealed class LimitesDoEsquemaDaConfiguracaoTests
 {
     private const string Atendimento = "atendimento.schema.json";
-    private const string Bonus = "fada.schema.json";
+    private const string Fada = "fada.schema.json";
     private const string Comuns = "comuns.schema.json";
     private const string Etapas = "etapas.schema.json";
     private const string Distribuicao = "distribuicao-de-vagas.schema.json";
@@ -53,11 +53,11 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(ValidacaoDoMotivo.DescricaoMaxLength), ValidacaoDoMotivo.DescricaoMaxLength, "motivo.schema.json", "/properties/descricao", true),
         (nameof(ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength), ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength, "motivo.schema.json", "/properties/justificativaDaInclusao", true),
         (nameof(LimitesDoEnvelope.Justificativa), LimitesDoEnvelope.Justificativa, "divulgacao.schema.json", "/properties/justificativa", true),
-        (nameof(LimitesDoEnvelope.TipoInstrumentoNormativo), LimitesDoEnvelope.TipoInstrumentoNormativo, Bonus, "/properties/tipoInstrumento", true),
-        (nameof(LimitesDoEnvelope.FatoElegibilidadeBonusRegional), LimitesDoEnvelope.FatoElegibilidadeBonusRegional, Bonus, "/properties/codigoDoDadoDeElegibilidade", true),
-        (nameof(LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional), LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional, Bonus, "/properties/identificacao", true),
-        (nameof(LimitesDoEnvelope.DescricaoBaseLegalBonusRegional), LimitesDoEnvelope.DescricaoBaseLegalBonusRegional, Bonus, "/properties/descricao", true),
-        (nameof(LimitesDoEnvelope.MunicipioBonusRegionalNome), LimitesDoEnvelope.MunicipioBonusRegionalNome, Bonus, "/$defs/municipio/properties/nome", true),
+        (nameof(LimitesDoEnvelope.TipoInstrumentoNormativo), LimitesDoEnvelope.TipoInstrumentoNormativo, Fada, "/properties/tipoInstrumento", true),
+        (nameof(LimitesDoEnvelope.CodigoDoDadoDeElegibilidadeDoFada), LimitesDoEnvelope.CodigoDoDadoDeElegibilidadeDoFada, Fada, "/properties/codigoDoDadoDeElegibilidade", true),
+        (nameof(LimitesDoEnvelope.IdentificacaoDaBaseLegalDoFada), LimitesDoEnvelope.IdentificacaoDaBaseLegalDoFada, Fada, "/properties/identificacao", true),
+        (nameof(LimitesDoEnvelope.DescricaoDaBaseLegalDoFada), LimitesDoEnvelope.DescricaoDaBaseLegalDoFada, Fada, "/properties/descricao", true),
+        (nameof(LimitesDoEnvelope.MunicipioDoFadaNome), LimitesDoEnvelope.MunicipioDoFadaNome, Fada, "/$defs/municipio/properties/nome", true),
         (nameof(LimitesDoEnvelope.UnidadeAdministradoraSigla), LimitesDoEnvelope.UnidadeAdministradoraSigla, "identificacao.schema.json", "/properties/unidadeAdministradoraSigla", true),
         (nameof(LimitesDoEnvelope.UnidadeAdministradoraNome), LimitesDoEnvelope.UnidadeAdministradoraNome, "identificacao.schema.json", "/properties/unidadeAdministradoraNome", true),
         (nameof(LimitesDoEnvelope.UnidadeAdministradoraCidadeNome), LimitesDoEnvelope.UnidadeAdministradoraCidadeNome, "identificacao.schema.json", "/properties/localidadeNome", true),

@@ -14,7 +14,7 @@ public enum TipoRegra
     RegraEliminacao = 3,
 
     [CodigoDeContrato("REGRA_FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)", Descricao = "Regra do Fator de Atenuação das Desigualdades de Acesso (FADA).")]
-    RegraBonus = 4,
+    RegraFada = 4,
 
     [CodigoDeContrato("CRITERIO_DESEMPATE", "Critério de desempate", Descricao = "Critério de desempate.")]
     CriterioDesempate = 5,

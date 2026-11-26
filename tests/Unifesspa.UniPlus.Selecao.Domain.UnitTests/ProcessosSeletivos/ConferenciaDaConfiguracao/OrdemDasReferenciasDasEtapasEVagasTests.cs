@@ -19,21 +19,21 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class OrdemDasReferenciasDasEtapasEVagasTests
 {
     [Fact]
-    public void De_VagasCascataEBonus_DevolveCamposNaOrdemDosBlocos()
+    public void De_VagasCascataEFada_DevolveCamposNaOrdemDosBlocos()
     {
         ConfiguracaoDeclarada configuracao = ConfiguracaoComVagas();
         ConfiguracaoDistribuicaoVagas oferta = configuracao.Vagas.DistribuicaoVagas[0];
         ConfiguracaoCascataRemanejamento cascata = configuracao.Vagas.Cascata!;
-        ConfiguracaoBonusRegional bonus = configuracao.Vagas.BonusRegional!;
+        ConfiguracaoDoFada fada = configuracao.Vagas.Fada!;
         (string Campo, ReferenciaRegra Regra)[] referencias = [.. ReferenciasDeRegraDaConfiguracao.De(configuracao)];
 
         referencias.Select(static item => item.Campo).Should().Equal(
             "distribuicaoVagas[0].regraDistribuicao", "distribuicaoVagas[0].regraAjuste", "ordemDeRemanejamento.regra",
-            "classificacao.regraCalculo", "classificacao.regraOrdemAlocacao", "classificacao.criteriosDeDesempate[0].regra", "bonusRegional.regra");
+            "classificacao.regraCalculo", "classificacao.regraOrdemAlocacao", "classificacao.criteriosDeDesempate[0].regra", "fada.regra");
         referencias[0].Regra.Should().Be(oferta.RegraDistribuicao);
         referencias[1].Regra.Should().Be(oferta.RegraAjuste);
         referencias[2].Regra.Should().Be(cascata.Regra);
-        referencias[^1].Regra.Should().Be(bonus.Regra);
+        referencias[^1].Regra.Should().Be(fada.Regra);
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         "etapas[0].recursos[0].procedimentosDeRecurso[0].regra", "etapas[0].recursos[0].procedimentosDeRecurso[1].regra",
         "classificacao.regraCalculo", "classificacao.regraArredondamento", "classificacao.regraOrdemAlocacao",
         "classificacao.regrasEliminacao[1].regra", "classificacao.regrasEliminacao[0].regra",
-        "classificacao.criteriosDeDesempate[0].regra", "bonusRegional.regra",
+        "classificacao.criteriosDeDesempate[0].regra", "fada.regra",
     ];
 
     private static ConfiguracaoDeclarada ConfiguracaoComTodosOsBlocos()
@@ -230,7 +230,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
             "etapas[1].recursos[0].procedimentosDeRecurso[0].regra", "etapas[1].recursos[0].procedimentosDeRecurso[1].regra",
             "classificacao.regraCalculo", "classificacao.regraArredondamento", "classificacao.regraOrdemAlocacao",
             "classificacao.regrasEliminacao[0].regra", "classificacao.regrasEliminacao[1].regra",
-            "classificacao.criteriosDeDesempate[0].regra", "bonusRegional.regra");
+            "classificacao.criteriosDeDesempate[0].regra", "fada.regra");
 
     private static ConfiguracaoDeclarada ConfiguracaoComVagas()
     {
@@ -239,10 +239,10 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
             ProcessoConformeFactory.Regra(CriterioDeRemanejamento.OrdemDaLei12711.Codigo(), "a"), "AC",
             [DestinoRemanejamento.Criar("LB_PPI", 1, "LB_Q").Value!]).Value!;
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ProcessoConformeFactory.Regra(RegraDeBonus.Multiplicativo.Codigo(), "b"), 1.2m, null, null,
+        ConfiguracaoDoFada fada = ConfiguracaoDoFada.Criar(
+            ProcessoConformeFactory.Regra(RegraDoFada.Multiplicativo.Codigo(), "b"), 1.2m, null, null,
             new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA", "PORTARIA", "Portaria", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        VagasDeclaradas vagas = new([oferta], null, true, bonus, cascata, null);
+        VagasDeclaradas vagas = new([oferta], null, true, fada, cascata, null);
         return new ConfiguracaoDeclarada(original.Identidade, original.Cronograma, original.Avaliacao, vagas,
             original.Exigencias, original.Coleta, original.DivulgacaoETaxa);
     }

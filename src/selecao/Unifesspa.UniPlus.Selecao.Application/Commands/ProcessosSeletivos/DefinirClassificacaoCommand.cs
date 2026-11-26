@@ -29,7 +29,7 @@ public sealed record RegraEliminacaoInput(
 /// <summary>
 /// Define (ou substitui) a configuração de classificação do processo — o 15º bloco canônico, que compõe por
 /// referência a fórmula da nota, a precisão, a lista de eliminação e a ordem
-/// de alocação. Bônus e desempate não são parâmetros aqui: já são dimensões
+/// de alocação. O FADA e o desempate não são parâmetros aqui: já são dimensões
 /// do próprio agregado.
 /// </summary>
 /// <param name="ResolucaoPesoAreaEnem">

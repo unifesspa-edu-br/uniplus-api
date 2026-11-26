@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento
 /// e o recurso de acessibilidade são os que o atendimento especializado dele declara, e os
-/// municípios do bônus, os da base legal que ele adota; no modelo, a simulação oferece o cadastro
+/// municípios do FADA, os da base legal que ele adota; no modelo, a simulação oferece o cadastro
 /// institucional vivo — os municípios de todas as bases legais, sem repetir —, na mesma ordem que o
 /// processo usa. O tipo de deficiência é o cadastro vivo também no processo.
 /// </summary>
@@ -18,14 +18,14 @@ public sealed class OpcoesDoCadastroInstitucional(
     ICondicaoAtendimentoRepository condicaoRepository,
     IRecursoAcessibilidadeRepository recursoRepository,
     ITipoDeficienciaRepository tipoDeficienciaRepository,
-    IBaseLegalBonusRegionalRepository baseLegalBonusRepository)
+    IBaseLegalDoFadaRepository baseLegalDoFadaRepository)
 {
     private const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
     private const string FatoRecursoAcessibilidade = "RECURSO_ACESSIBILIDADE";
 
     /// <summary>
     /// Preenche as opções que o catálogo deixou nulas e que o cadastro institucional supre: condição de
-    /// atendimento, recurso de acessibilidade, tipo de deficiência e municípios do bônus.
+    /// atendimento, recurso de acessibilidade, tipo de deficiência e municípios do FADA.
     /// </summary>
     public async Task CompletarAsync(
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes,
@@ -35,13 +35,13 @@ public sealed class OpcoesDoCadastroInstitucional(
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(fatos);
 
-        await CompletarMunicipiosDoBonusAsync(opcoes, fatos, cancellationToken).ConfigureAwait(false);
+        await CompletarMunicipiosDoFadaAsync(opcoes, fatos, cancellationToken).ConfigureAwait(false);
         await CompletarCondicaoDeAtendimentoAsync(opcoes, cancellationToken).ConfigureAwait(false);
         await CompletarRecursoDeAcessibilidadeAsync(opcoes, cancellationToken).ConfigureAwait(false);
         await CompletarTiposDeDeficienciaAsync(opcoes, fatos, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task CompletarMunicipiosDoBonusAsync(
+    private async Task CompletarMunicipiosDoFadaAsync(
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes, IReadOnlyList<FatoCandidato> fatos, CancellationToken cancellationToken)
     {
         string[] campos = CamposDaFonte(opcoes, fatos, FonteValoresFato.MunicipiosDoFada);
@@ -50,8 +50,8 @@ public sealed class OpcoesDoCadastroInstitucional(
             return;
         }
 
-        IReadOnlyList<BaseLegalBonusRegional> bases =
-            await baseLegalBonusRepository.ListarVivasParaLeituraAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<BaseLegalDoFada> bases =
+            await baseLegalDoFadaRepository.ListarVivasParaLeituraAsync(cancellationToken).ConfigureAwait(false);
         Preencher(opcoes, campos, MunicipiosDasBases(bases));
     }
 
@@ -101,7 +101,7 @@ public sealed class OpcoesDoCadastroInstitucional(
             .Select(static (t, ordem) => new ValorSelecionavel(t.Codigo.Valor, t.Nome, ordem))]);
     }
 
-    private static ValorSelecionavel[] MunicipiosDasBases(IReadOnlyList<BaseLegalBonusRegional> bases) =>
+    private static ValorSelecionavel[] MunicipiosDasBases(IReadOnlyList<BaseLegalDoFada> bases) =>
         [.. bases
             .SelectMany(static b => b.Municipios)
             .DistinctBy(static m => m.CodigoIbge, StringComparer.Ordinal)

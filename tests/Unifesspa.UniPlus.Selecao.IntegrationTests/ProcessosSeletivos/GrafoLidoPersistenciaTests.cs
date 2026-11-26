@@ -55,7 +55,7 @@ public sealed class GrafoLidoPersistenciaTests(ProcessoSeletivoDbFixture fixture
     {
         processo.CriteriosDesempate.Should().OnlyContain(c => c.ProcessoSeletivoId == processo.Id);
         processo.AtendimentoEspecializado!.ProcessoSeletivoId.Should().Be(processo.Id);
-        processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
+        processo.Fada!.ProcessoSeletivoId.Should().Be(processo.Id);
         processo.Classificacao!.ProcessoSeletivoId.Should().Be(processo.Id);
         processo.Classificacao.RegrasEliminacao.Should().OnlyContain(r => r.ConfiguracaoClassificacaoId == processo.Classificacao.Id);
         processo.AtendimentoEspecializado.Condicoes.Should().OnlyContain(c => c.AtendimentoEspecializadoId == processo.AtendimentoEspecializado.Id);
@@ -69,7 +69,7 @@ public sealed class GrafoLidoPersistenciaTests(ProcessoSeletivoDbFixture fixture
         processo.Classificacao!.RegrasEliminacao.Should().HaveCount(origem.Classificacao!.RegrasEliminacao.Count).And.NotBeEmpty();
         processo.AtendimentoEspecializado!.Condicoes.Should().HaveCount(2);
         processo.AtendimentoEspecializado.TiposDeficiencia.Should().HaveCount(2);
-        processo.BonusRegional!.Fator.Should().Be(1.2000m);
+        processo.Fada!.Fator.Should().Be(1.2000m);
     }
 
     private static void ConferirFilhasPresentes(EtapaProcesso etapa)

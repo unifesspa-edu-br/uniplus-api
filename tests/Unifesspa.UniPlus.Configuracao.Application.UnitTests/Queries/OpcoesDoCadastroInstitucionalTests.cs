@@ -16,14 +16,14 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// As opções que o cadastro institucional supre quando o catálogo as deixa nulas: a condição de
-/// atendimento, o recurso de acessibilidade, o tipo de deficiência e os municípios do bônus.
+/// atendimento, o recurso de acessibilidade, o tipo de deficiência e os municípios do FADA.
 /// </summary>
 public sealed class OpcoesDoCadastroInstitucionalTests
 {
     private readonly ICondicaoAtendimentoRepository _condicoes = Substitute.For<ICondicaoAtendimentoRepository>();
     private readonly IRecursoAcessibilidadeRepository _recursos = Substitute.For<IRecursoAcessibilidadeRepository>();
     private readonly ITipoDeficienciaRepository _tiposDeficiencia = Substitute.For<ITipoDeficienciaRepository>();
-    private readonly IBaseLegalBonusRegionalRepository _basesDoBonus = Substitute.For<IBaseLegalBonusRegionalRepository>();
+    private readonly IBaseLegalDoFadaRepository _basesDoFada = Substitute.For<IBaseLegalDoFadaRepository>();
 
     [Fact(DisplayName = "A condição de atendimento sem opções recebe o cadastro vivo, por código")]
     public async Task Completar_CondicaoSemOpcoes_RecebeOCadastroPorCodigo()
@@ -63,18 +63,18 @@ public sealed class OpcoesDoCadastroInstitucionalTests
         opcoes["TIPO_B"].Should().Equal(esperado);
     }
 
-    [Fact(DisplayName = "Os municípios do bônus saem sem repetição, em ordem alfabética sem acento, com a UF no rótulo")]
-    public async Task Completar_CamposDoBonus_RecebemOsMunicipiosDeTodasAsBases()
+    [Fact(DisplayName = "Os municípios do FADA saem sem repetição, em ordem alfabética sem acento, com a UF no rótulo")]
+    public async Task Completar_CamposDoFada_RecebemOsMunicipiosDeTodasAsBases()
     {
-        _basesDoBonus.ListarVivasParaLeituraAsync(Arg.Any<CancellationToken>()).Returns(
+        _basesDoFada.ListarVivasParaLeituraAsync(Arg.Any<CancellationToken>()).Returns(
             [Base("Portaria A", ("1504208", "Marabá", "PA"), ("1500404", "Água Azul do Norte", "PA")), Base("Portaria B", ("1504208", "Marabá", "PA"))]);
-        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new() { ["BONUS_A"] = null, ["BONUS_B"] = null };
+        Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = new() { ["FADA_A"] = null, ["FADA_B"] = null };
 
-        await CompletarAsync(opcoes, [Fato("BONUS_A", FonteValoresFato.MunicipiosDoFada), Fato("BONUS_B", FonteValoresFato.MunicipiosDoFada)]);
+        await CompletarAsync(opcoes, [Fato("FADA_A", FonteValoresFato.MunicipiosDoFada), Fato("FADA_B", FonteValoresFato.MunicipiosDoFada)]);
 
         ValorSelecionavel[] esperado = [new("1500404", "Água Azul do Norte/PA", 0), new("1504208", "Marabá/PA", 1)];
-        opcoes["BONUS_A"].Should().Equal(esperado);
-        opcoes["BONUS_B"].Should().Equal(esperado);
+        opcoes["FADA_A"].Should().Equal(esperado);
+        opcoes["FADA_B"].Should().Equal(esperado);
     }
 
     [Fact(DisplayName = "A opção que o catálogo já definiu não é substituída nem consulta o cadastro")]
@@ -86,10 +86,10 @@ public sealed class OpcoesDoCadastroInstitucionalTests
             ["CONDICAO_ATENDIMENTO"] = doCatalogo,
             ["RECURSO_ACESSIBILIDADE"] = doCatalogo,
             ["TIPO"] = doCatalogo,
-            ["BONUS"] = doCatalogo,
+            ["FADA"] = doCatalogo,
         };
 
-        await CompletarAsync(opcoes, [Fato("TIPO", FonteValoresFato.TiposDeDeficiencia), Fato("BONUS", FonteValoresFato.MunicipiosDoFada)]);
+        await CompletarAsync(opcoes, [Fato("TIPO", FonteValoresFato.TiposDeDeficiencia), Fato("FADA", FonteValoresFato.MunicipiosDoFada)]);
 
         opcoes.Values.Should().OnlyContain(valores => ReferenceEquals(valores, doCatalogo));
         await NenhumCadastroConsultadoAsync();
@@ -108,14 +108,14 @@ public sealed class OpcoesDoCadastroInstitucionalTests
     }
 
     private Task CompletarAsync(Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes, IReadOnlyList<FatoCandidato> fatos) =>
-        new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoBonus).CompletarAsync(opcoes, fatos, CancellationToken.None);
+        new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoFada).CompletarAsync(opcoes, fatos, CancellationToken.None);
 
     private async Task NenhumCadastroConsultadoAsync()
     {
         await _condicoes.DidNotReceiveWithAnyArgs().ListarVivosParaLeituraAsync(default);
         await _recursos.DidNotReceiveWithAnyArgs().ListarVivosParaLeituraAsync(default);
         await _tiposDeficiencia.DidNotReceiveWithAnyArgs().ListarVivosParaLeituraAsync(default);
-        await _basesDoBonus.DidNotReceiveWithAnyArgs().ListarVivasParaLeituraAsync(default);
+        await _basesDoFada.DidNotReceiveWithAnyArgs().ListarVivasParaLeituraAsync(default);
     }
 
     private static CondicaoAtendimentoEspecializado Condicao(string codigo, string nome) => CondicaoAtendimentoEspecializado.Criar(codigo, nome, null).Value!;
@@ -124,8 +124,8 @@ public sealed class OpcoesDoCadastroInstitucionalTests
 
     private static TipoDeficiencia Tipo(string codigo, string nome) => TipoDeficiencia.Criar(codigo, nome, "Tipo de deficiência").Value!;
 
-    private static BaseLegalBonusRegional Base(string identificacao, params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
-        BaseLegalBonusRegional.Criar("PORTARIA", identificacao, "Institui inclusão regional", municipios.Select(static m => ((string?)m.CodigoIbge, (string?)m.Nome, (string?)m.Uf))).Value!;
+    private static BaseLegalDoFada Base(string identificacao, params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
+        BaseLegalDoFada.Criar("PORTARIA", identificacao, "Institui inclusão regional", municipios.Select(static m => ((string?)m.CodigoIbge, (string?)m.Nome, (string?)m.Uf))).Value!;
 
     private static FatoCandidato Fato(string codigo, FonteValoresFato fonte) =>
         CriacaoDoFato.CriarDoAdministrador(

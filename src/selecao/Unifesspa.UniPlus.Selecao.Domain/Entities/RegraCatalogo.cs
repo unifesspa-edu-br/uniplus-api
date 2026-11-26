@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// que a configuração do Processo Seletivo referencia e o snapshot de
 /// publicação congela por <c>(codigo, versao, hash)</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). Materializa a
 /// tese "configurável, não programável": o comportamento (fórmula da nota,
-/// distribuição de vagas, bônus, desempate, …) é conteúdo versionado de uma
-/// regra, não constante do motor — lei muda → nova versão, não deploy.
+/// distribuição de vagas, FADA, desempate, …) é conteúdo versionado de uma
+/// regra, não constante do código — lei muda → nova versão, não deploy.
 /// </summary>
 /// <remarks>
 /// <para>

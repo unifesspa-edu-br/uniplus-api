@@ -116,7 +116,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
         ConferirAsArestasDoGrafo(grafoJson);
     }
 
-    // ── camada 1 — Bônus regional (Story #1466) ──
+    // ── camada 1 — FADA ──
 
     /// <summary>
     /// Dois municípios com o MESMO código IBGE (dataset de origem corrompido ou desatualizado)
@@ -124,10 +124,10 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
     /// para linhas empatadas — Nome/UF desempatam.
     /// </summary>
     [Fact(DisplayName = "fada.municipios: mesmo código IBGE desempata por Nome e UF — não pela ordem física de entrada")]
-    public void BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
+    public void Fada_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
     {
         ProcessoSeletivo processo = Montar();
-        processo.DefinirBonusRegional(aplica: true, bonus: BonusComMunicipiosDeMesmoCodigoIbgeForaDeOrdem()).IsSuccess.Should().BeTrue();
+        processo.DefinirFada(aplica: true, configuracao: FadaComMunicipiosDeMesmoCodigoIbgeForaDeOrdem()).IsSuccess.Should().BeTrue();
 
         JsonArray municipiosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["fada"]!["municipios"]!.AsArray();

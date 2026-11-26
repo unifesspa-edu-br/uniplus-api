@@ -24,7 +24,7 @@ internal static class ErrosDoProcessoSeletivo
         .. CatalogosDeApoio(),
         .. ErrosDaEtapaDoProcesso.Mapeamentos(),
         .. IdentificacaoDoCertame(),
-        .. BonusRegionalDoProcesso(),
+        .. FadaDoProcesso(),
         .. ErrosDosFormulariosDoProcesso.Mapeamentos(),
         .. AtendimentoEspecializado(),
     ];
@@ -107,10 +107,10 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas", "Com 2 opções de curso, cadastre pelo menos dois cursos")),
     ];
 
-    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> BonusRegionalDoProcesso() =>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> FadaDoProcesso() =>
     [
-        new(ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao", "O processo que aplica o bônus regional precisa da configuração do bônus")),
-        new(ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao", "O processo que não aplica o bônus regional não pode ter a configuração do bônus")),
+        new(ProcessoSeletivoErrorCodes.FadaAplicaSemConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fada_aplica_sem_configuracao", "O processo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) precisa da configuração do FADA")),
+        new(ProcessoSeletivoErrorCodes.FadaNaoAplicaComConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fada_nao_aplica_com_configuracao", "O processo que não aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) não pode ter a configuração do FADA")),
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_ausente", "O processo com inscrição própria que aplica o acréscimo precisa citar o fato que decide quem o recebe")),
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_fora_do_processo", "O fato que decide quem recebe o acréscimo não é coletado na inscrição nem derivado pelo processo")),
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_de_membro_de_grupo", "O fato que decide quem recebe o acréscimo é campo de membro de grupo, e o acréscimo é decidido por um fato do candidato")),

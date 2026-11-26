@@ -70,8 +70,8 @@ internal static class FasesDoCronogramaDeTeste
     public static RegraCatalogo RegraDoProcedimentoDeRecalculo() =>
         RegraDoCatalogo(RegraDeProcedimentoDoRecurso.Recalculo.Codigo(), TipoRegra.RegraProcedimentoRecurso, "base legal");
 
-    public static RegraCatalogo RegraDeBonus() =>
-        RegraDoCatalogo("FADA_MULTIPLICATIVO", TipoRegra.RegraBonus, "base legal");
+    public static RegraCatalogo RegraDoFadaDeTeste() =>
+        RegraDoCatalogo("FADA_MULTIPLICATIVO", TipoRegra.RegraFada, "base legal");
 
     private static FaseCanonicaView FaseCanonica(string codigo, string nome) => new(
         Guid.CreateVersion7(), codigo, nome, null,

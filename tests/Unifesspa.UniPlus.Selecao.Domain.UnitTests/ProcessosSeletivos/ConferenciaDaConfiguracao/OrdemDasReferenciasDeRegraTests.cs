@@ -64,7 +64,7 @@ public sealed class OrdemDasReferenciasDeRegraTests
         campos.Should().NotContain("distribuicaoVagas[0].regraAjuste");
         campos.Should().NotContain("ordemDeRemanejamento.regra");
         campos.Should().NotContain("classificacao.regraArredondamento");
-        campos.Should().NotContain("bonusRegional.regra");
+        campos.Should().NotContain("fada.regra");
     }
 
     [Fact]

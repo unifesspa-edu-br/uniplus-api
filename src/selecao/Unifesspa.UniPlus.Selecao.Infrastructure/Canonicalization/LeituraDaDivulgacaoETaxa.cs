@@ -130,7 +130,7 @@ internal static class LeituraDaDivulgacaoETaxa
     }
 
     /// <summary>
-    /// Taxa de inscrição e isenção. Como o bloco de bônus regional, declara <c>presente</c>, mas
+    /// Taxa de inscrição e isenção. Como o bloco do FADA, declara <c>presente</c>, mas
     /// <c>presente:false</c> nunca é um estado válido aqui: a publicação recusa a configuração sem taxa
     /// declarada, então nenhum envelope que passou por ela congela essa forma. Decodificá-la como "sem taxa
     /// declarada" repetiria, na leitura, o default silencioso que a escrita existe para banir.

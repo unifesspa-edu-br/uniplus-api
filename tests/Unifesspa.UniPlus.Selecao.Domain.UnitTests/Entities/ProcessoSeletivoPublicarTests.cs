@@ -134,7 +134,7 @@ public sealed class ProcessoSeletivoPublicarTests
     [InlineData("etapas")]
     [InlineData("atendimentoEspecializado")]
     [InlineData("distribuicaoVagas")]
-    [InlineData("bonusRegional")]
+    [InlineData("fada")]
     [InlineData("criteriosDesempate")]
     [InlineData("classificacao")]
     [InlineData("cronogramaFases")]
@@ -163,7 +163,7 @@ public sealed class ProcessoSeletivoPublicarTests
             "etapas" => processo.DefinirEtapas([EtapaDaProvaObjetiva("Nova Etapa", CaraterEtapa.Classificatoria, 1m)]),
             "atendimentoEspecializado" => processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!),
             "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo),
-            "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null),
+            "fada" => processo.DefinirFada(aplica: false, configuracao: null),
             "criteriosDesempate" => processo.DefinirCriteriosDesempate([]),
             "classificacao" => processo.DefinirClassificacao(ClassificacaoImportada()),
             "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], []),

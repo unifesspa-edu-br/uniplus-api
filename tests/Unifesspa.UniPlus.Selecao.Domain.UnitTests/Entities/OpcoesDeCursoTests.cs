@@ -192,8 +192,8 @@ public sealed class OpcoesDeCursoTests
         ConfiguracaoDeclarada original = processo.Declaracao();
         VagasDeclaradas vagas = original.Vagas;
         VagasDeclaradas inconsistentes = new(
-            [vagas.DistribuicaoVagas[0]], 2, vagas.AplicaBonusRegional,
-            vagas.BonusRegional, vagas.Cascata, vagas.AtendimentoEspecializado);
+            [vagas.DistribuicaoVagas[0]], 2, vagas.AplicaFada,
+            vagas.Fada, vagas.Cascata, vagas.AtendimentoEspecializado);
         return new ConfiguracaoDeclarada(original.Identidade, original.Cronograma, original.Avaliacao,
             inconsistentes, original.Exigencias, original.Coleta, original.DivulgacaoETaxa)
         {

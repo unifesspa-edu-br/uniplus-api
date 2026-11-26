@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// Projeta para o contrato REST a distribuição de vagas e o que a acompanha: o atendimento
-/// especializado, o bônus regional e a cascata de remanejamento.
+/// especializado, o FADA e a cascata de remanejamento.
 /// </summary>
 internal static class ProjecaoDasVagas
 {
@@ -81,21 +81,21 @@ internal static class ProjecaoDasVagas
                 [.. atendimento.Recursos.Select(r => new RecursoOfertadoDto(r.Id, r.RecursoOrigemId, r.RecursoCodigo, r.RecursoNome))],
                 [.. atendimento.TiposDeficiencia.Select(t => new DeficienciaAtendidaDto(t.Id, t.TipoDeficienciaOrigemId, t.TipoDeficienciaNome))]);
 
-    internal static ConfiguracaoBonusRegionalDto? ProjetarBonusRegional(ConfiguracaoBonusRegional? bonus) =>
-        bonus is null
+    internal static ConfiguracaoDoFadaDto? ProjetarFada(ConfiguracaoDoFada? fada) =>
+        fada is null
             ? null
-            : new ConfiguracaoBonusRegionalDto(
-                bonus.Id,
-                ProjecaoDoProcessoSeletivo.Referencia(bonus.Regra),
-                bonus.Fator,
-                bonus.Teto,
-                bonus.FatoElegibilidadeCodigo,
+            : new ConfiguracaoDoFadaDto(
+                fada.Id,
+                ProjecaoDoProcessoSeletivo.Referencia(fada.Regra),
+                fada.Fator,
+                fada.Teto,
+                fada.FatoElegibilidadeCodigo,
                 new BaseLegalCongeladaDto(
-                    bonus.BaseLegalBonusRegionalId,
-                    bonus.TipoInstrumento,
-                    bonus.Identificacao,
-                    bonus.Descricao,
-                    [.. bonus.Municipios.Select(static m => new ConfiguracaoBonusRegionalMunicipioDto(m.CodigoIbge, m.Nome, m.Uf))]));
+                    fada.BaseLegalId,
+                    fada.TipoInstrumento,
+                    fada.Identificacao,
+                    fada.Descricao,
+                    [.. fada.Municipios.Select(static m => new MunicipioDoFadaDto(m.CodigoIbge, m.Nome, m.Uf))]));
 
     internal static ConfiguracaoCascataRemanejamentoDto? ProjetarCascata(ConfiguracaoCascataRemanejamento? cascata) =>
         cascata is null

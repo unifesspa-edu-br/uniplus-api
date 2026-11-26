@@ -28,7 +28,7 @@ public static class ConfiguracaoInfrastructureRegistration
         return services;
     }
 
-    // Os cadastros da oferta de vagas: campi, locais, cursos, ofertas e modalidades, e as bases da reserva e do bônus.
+    // Os cadastros da oferta de vagas: campi, locais, cursos, ofertas e modalidades, e as bases da reserva e do FADA.
     private static void AdicionarRepositoriosDaOferta(IServiceCollection services)
     {
         services.AddScoped<ICampusRepository, CampusRepository>();
@@ -38,7 +38,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
         services.AddScoped<IReferenciaReservaDemograficaRepository, ReferenciaReservaDemograficaRepository>();
         services.AddScoped<IPesoAreaEnemRepository, PesoAreaEnemRepository>();
-        services.AddScoped<IBaseLegalBonusRegionalRepository, BaseLegalBonusRegionalRepository>();
+        services.AddScoped<IBaseLegalDoFadaRepository, BaseLegalDoFadaRepository>();
     }
 
     private static void AdicionarRepositoriosDosDocumentosEDoAtendimento(IServiceCollection services)
@@ -78,7 +78,7 @@ public static class ConfiguracaoInfrastructureRegistration
     {
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
         services.AddScoped<IPesoAreaEnemReader, PesoAreaEnemReader>();
-        services.AddScoped<IBaseLegalBonusRegionalReader, BaseLegalBonusRegionalReader>();
+        services.AddScoped<IBaseLegalDoFadaReader, BaseLegalDoFadaReader>();
         services.AddScoped<IModalidadeReader, ModalidadeReader>();
         services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
         services.AddScoped<ITipoDocumentoReader, TipoDocumentoReader>();

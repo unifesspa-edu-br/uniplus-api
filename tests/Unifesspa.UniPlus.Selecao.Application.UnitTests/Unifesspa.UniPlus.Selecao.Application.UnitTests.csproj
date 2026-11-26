@@ -54,7 +54,7 @@
     <Compile Include="../Shared/ItemDocumentoExigidoDeTeste.cs" Link="ItemDocumentoExigidoDeTeste.cs" />
     <Compile Include="../Shared/RegraDeComprovacaoDeTeste.cs" Link="RegraDeComprovacaoDeTeste.cs" />
     <Compile Include="../Shared/TipoEtapaViewDeTeste.cs" Link="TipoEtapaViewDeTeste.cs" />
-    <Compile Include="../Shared/BonusRegionalDeTeste.cs" Link="BonusRegionalDeTeste.cs" />
+    <Compile Include="../Shared/FadaDeTeste.cs" Link="FadaDeTeste.cs" />
     <Compile Include="../Shared/ExibicaoDeTeste.cs" Link="ExibicaoDeTeste.cs" />
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />

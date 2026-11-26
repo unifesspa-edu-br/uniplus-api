@@ -19,13 +19,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <para>
 /// <strong>Não é uma "regra guarda-chuva".</strong> <see cref="RegraCalculo"/>
-/// é só a fórmula da nota; eliminação, ordem de alocação, bônus e desempate
+/// é só a fórmula da nota; eliminação, ordem de alocação, FADA e desempate
 /// são regras tipadas próprias. Este bloco é a composição dessas referências
 /// — não um tipo de regra, não um blob, não um saco de escalares.
 /// </para>
 /// <para>
-/// <strong>Bônus e desempate não são campos deste bloco.</strong> Já são
-/// entidades do MESMO agregado (<c>ProcessoSeletivo.BonusRegional</c>,
+/// <strong>FADA e desempate não são campos deste bloco.</strong> Já são
+/// entidades do MESMO agregado (<c>ProcessoSeletivo.Fada</c>,
 /// <c>ProcessoSeletivo.CriteriosDesempate</c>) —
 /// referenciá-los aqui de novo duplicaria fonte de verdade. A composição por
 /// referência, no nível do agregado, já é a co-localização das duas

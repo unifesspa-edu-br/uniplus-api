@@ -30,9 +30,9 @@ public sealed record GrupoPesoAreaEnemCongeladoDto(
     IReadOnlyList<AreaPesoAreaEnemCongeladaDto> Areas);
 
 /// <summary>
-/// Projeção de leitura de <c>ConfiguracaoClassificacao</c> (Story #775, 15º
-/// bloco canônico). Bônus e desempate não aparecem aqui — já são dimensões
-/// próprias do agregado (Story #774).
+/// Projeção de leitura de <c>ConfiguracaoClassificacao</c> (15º
+/// bloco canônico). O FADA e o desempate não aparecem aqui — já são dimensões
+/// próprias do agregado.
 /// </summary>
 /// <param name="ResolucaoPesoAreaEnem">Resolução de Pesos por Área declarada; nula fora da classificação baseada em ENEM com cálculo local.</param>
 /// <param name="EscalaNotaFinal">Escala em que a nota final é publicada; nula enquanto o rascunho não a declara e na classificação importada.</param>

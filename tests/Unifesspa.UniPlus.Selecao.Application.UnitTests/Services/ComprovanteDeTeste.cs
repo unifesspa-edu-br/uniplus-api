@@ -53,8 +53,8 @@ internal static class ComprovanteDeTeste
         int numeroDeOpcoes, IdentificadorLegivel? identificador) => new(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
             new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
-            new VagasDeclaradas([.. ofertas ?? [.. processo.DistribuicaoVagas]], numeroDeOpcoes, processo.BonusRegional is not null,
-                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new VagasDeclaradas([.. ofertas ?? [.. processo.DistribuicaoVagas]], numeroDeOpcoes, processo.Fada is not null,
+                processo.Fada, null, processo.AtendimentoEspecializado!),
             new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
             new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processo.FatosColetados], [.. processo.GruposColetados]), [.. processo.GruposColetados], [.. processo.Formularios], [],
                 [], [], null),

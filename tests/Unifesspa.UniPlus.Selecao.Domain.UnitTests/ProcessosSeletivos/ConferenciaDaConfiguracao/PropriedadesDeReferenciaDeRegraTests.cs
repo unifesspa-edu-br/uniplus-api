@@ -9,13 +9,13 @@ public sealed class PropriedadesDeReferenciaDeRegraTests
 {
     private static readonly string[] PropriedadesConhecidas =
         [
-            "ConfiguracaoBonusRegional.Regra",
             "ConfiguracaoCascataRemanejamento.Regra",
             "ConfiguracaoClassificacao.RegraArredondamento",
             "ConfiguracaoClassificacao.RegraCalculo",
             "ConfiguracaoClassificacao.RegraOrdemAlocacao",
             "ConfiguracaoDistribuicaoVagas.RegraAjuste",
             "ConfiguracaoDistribuicaoVagas.RegraDistribuicao",
+            "ConfiguracaoDoFada.Regra",
             "CriterioDesempate.Regra",
             "CronogramaDeclarado.AlgoritmoContagemPrazo",
             "DeclaracaoDaAvaliacaoDaEtapa.RegraConsolidacao",

@@ -21,10 +21,10 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
     [Fact(DisplayName = "CA-02/D9: referenciar uma regra de OUTRO TipoRegra em RegraRecurso é recusado com RegraRecursoFase.RegraCatalogoInvalida")]
     public async Task Handle_RegraRecursoDeTipoIncompativel_Recusa()
     {
-        CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao()).ComRegraNoCatalogo(RegraDeBonus());
+        CenarioDoCronogramaDeFases cenario = CenarioComTipoDaClassificacao(TipoAtoDaClassificacao()).ComRegraNoCatalogo(RegraDoFadaDeTeste());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with
         {
-            RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = RegraDeBonus().Codigo },
+            RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = RegraDoFadaDeTeste().Codigo },
         };
 
         Result resultado = await cenario.DefinirFasesAsync(fase);

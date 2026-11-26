@@ -50,7 +50,7 @@ internal static class RegrasDeConsolidacaoDeTeste
             RegraComHash(RegraDeDesempate.MaiorIdade.Codigo(), new string('f', 64)),
             RegraComHash(ConvencaoDeContagemDoPrazo.AvancaDataUtil.Codigo(), ProcessoSeletivoConformeBuilder.HashFixo),
             RegraComHash(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), ProcessoSeletivoConformeBuilder.HashFixo),
-            RegraComHash(RegraDeBonus.Multiplicativo.Codigo(), ProcessoSeletivoConformeBuilder.HashFixo));
+            RegraComHash(RegraDoFada.Multiplicativo.Codigo(), ProcessoSeletivoConformeBuilder.HashFixo));
 
     private static RegraCatalogo RegraComHash(string codigo, string hash)
     {

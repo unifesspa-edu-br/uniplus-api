@@ -21,7 +21,7 @@ public enum PermissaoConfiguracao
         "Manter cadastro da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA)",
         "Cria, altera e remove a base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).",
         ClassificacaoDeProtecao.Interno)]
-    BaseLegalBonusRegionalManter = 1,
+    BaseLegalDoFadaManter = 1,
 
     /// <summary>Manter cadastro dos calendários de dias úteis.</summary>
     [Permissao(

@@ -62,12 +62,12 @@
         ]
       }
     },
-    "/api/configuracao/base-legal-bonus-regional": {
+    "/api/configuracao/bases-legais-fada": {
       "get": {
         "tags": [
-          "BaseLegalBonusRegional"
+          "BaseLegalDoFada"
         ],
-        "operationId": "ListarBasesLegaisDaFada",
+        "operationId": "ListarBasesLegaisDoFada",
         "parameters": [
           {
             "name": "cursor",
@@ -119,11 +119,11 @@
               }
             },
             "content": {
-              "application/vnd.uniplus.base-legal-bonus-regional.v1\u002Bjson": {
+              "application/vnd.uniplus.base-legal-do-fada.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/BaseLegalBonusRegionalDto"
+                    "$ref": "#/components/schemas/BaseLegalDoFadaDto"
                   }
                 }
               }
@@ -173,12 +173,12 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/configuracao/base-legal-bonus-regional/{id}": {
+    "/api/configuracao/bases-legais-fada/{id}": {
       "get": {
         "tags": [
-          "BaseLegalBonusRegional"
+          "BaseLegalDoFada"
         ],
-        "operationId": "ObterBaseLegalDaFada",
+        "operationId": "ObterBaseLegalDoFada",
         "parameters": [
           {
             "name": "id",
@@ -194,9 +194,9 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.base-legal-bonus-regional.v1\u002Bjson": {
+              "application/vnd.uniplus.base-legal-do-fada.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseLegalBonusRegionalDto"
+                  "$ref": "#/components/schemas/BaseLegalDoFadaDto"
                 }
               }
             }
@@ -224,12 +224,12 @@
         }
       }
     },
-    "/api/configuracao/admin/base-legal-bonus-regional": {
+    "/api/configuracao/admin/bases-legais-fada": {
       "post": {
         "tags": [
-          "BaseLegalBonusRegional"
+          "BaseLegalDoFada"
         ],
-        "operationId": "CadastrarBaseLegalDaFada",
+        "operationId": "CadastrarBaseLegalDoFada",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -248,17 +248,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CriarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/CriarBaseLegalDoFadaCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CriarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/CriarBaseLegalDoFadaCommand"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/CriarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/CriarBaseLegalDoFadaCommand"
               }
             }
           },
@@ -357,12 +357,12 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/configuracao/admin/base-legal-bonus-regional/{id}": {
+    "/api/configuracao/admin/bases-legais-fada/{id}": {
       "put": {
         "tags": [
-          "BaseLegalBonusRegional"
+          "BaseLegalDoFada"
         ],
-        "operationId": "AlterarBaseLegalDaFada",
+        "operationId": "AlterarBaseLegalDoFada",
         "parameters": [
           {
             "name": "id",
@@ -390,17 +390,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AtualizarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/AtualizarBaseLegalDoFadaCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/AtualizarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/AtualizarBaseLegalDoFadaCommand"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/AtualizarBaseLegalBonusRegionalCommand"
+                "$ref": "#/components/schemas/AtualizarBaseLegalDoFadaCommand"
               }
             }
           },
@@ -490,9 +490,9 @@
       },
       "delete": {
         "tags": [
-          "BaseLegalBonusRegional"
+          "BaseLegalDoFada"
         ],
-        "operationId": "ExcluirBaseLegalDaFada",
+        "operationId": "ExcluirBaseLegalDoFada",
         "parameters": [
           {
             "name": "id",
@@ -16631,7 +16631,7 @@
           }
         }
       },
-      "AtualizarBaseLegalBonusRegionalCommand": {
+      "AtualizarBaseLegalDoFadaCommand": {
         "required": [
           "id",
           "tipoInstrumento",
@@ -16673,7 +16673,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/CriarBaseLegalBonusRegionalMunicipioCommand"
+              "$ref": "#/components/schemas/CriarMunicipioDaBaseLegalDoFadaCommand"
             }
           }
         }
@@ -17721,7 +17721,7 @@
           }
         }
       },
-      "BaseLegalBonusRegionalDto": {
+      "BaseLegalDoFadaDto": {
         "required": [
           "id",
           "codigo",
@@ -17752,7 +17752,7 @@
           "municipios": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BaseLegalBonusRegionalMunicipioDto"
+              "$ref": "#/components/schemas/MunicipioDaBaseLegalDoFadaDto"
             }
           },
           "criadoEm": {
@@ -17767,25 +17767,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          }
-        }
-      },
-      "BaseLegalBonusRegionalMunicipioDto": {
-        "required": [
-          "codigoIbge",
-          "nome",
-          "uf"
-        ],
-        "type": "object",
-        "properties": {
-          "codigoIbge": {
-            "type": "string"
-          },
-          "nome": {
-            "type": "string"
-          },
-          "uf": {
-            "type": "string"
           }
         }
       },
@@ -18642,7 +18623,7 @@
           }
         }
       },
-      "CriarBaseLegalBonusRegionalCommand": {
+      "CriarBaseLegalDoFadaCommand": {
         "required": [
           "tipoInstrumento",
           "identificacao",
@@ -18679,36 +18660,8 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/CriarBaseLegalBonusRegionalMunicipioCommand"
+              "$ref": "#/components/schemas/CriarMunicipioDaBaseLegalDoFadaCommand"
             }
-          }
-        }
-      },
-      "CriarBaseLegalBonusRegionalMunicipioCommand": {
-        "required": [
-          "codigoIbge",
-          "nome",
-          "uf"
-        ],
-        "type": "object",
-        "properties": {
-          "codigoIbge": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "nome": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "uf": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -19335,6 +19288,34 @@
               {
                 "$ref": "#/components/schemas/ConteudoDoModeloInput"
               }
+            ]
+          }
+        }
+      },
+      "CriarMunicipioDaBaseLegalDoFadaCommand": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "uf": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -23124,6 +23105,25 @@
           }
         }
       },
+      "MunicipioDaBaseLegalDoFadaDto": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          }
+        }
+      },
       "NaturezaLegal": {
         "required": [
           "codigo",
@@ -25912,7 +25912,7 @@
           "EDITAL"
         ],
         "type": "string",
-        "description": "Tipo do ato normativo que institui ou modifica o b\u00F4nus regional de um processo seletivo.\n\n- \u0060LEI\u0060: Lei \u2014 Ato normativo de maior hierarquia no ordenamento infraconstitucional, emanado do Poder Legislativo.\n- \u0060DECRETO\u0060: Decreto \u2014 Ato normativo do Poder Executivo que regulamenta leis ou disp\u00F5e sobre mat\u00E9ria de sua compet\u00EAncia.\n- \u0060PORTARIA\u0060: Portaria \u2014 Ato administrativo de autoridade p\u00FAblica que disciplina procedimentos internos ou mat\u00E9ria de compet\u00EAncia espec\u00EDfica.\n- \u0060RESOLUCAO\u0060: Resolu\u00E7\u00E3o \u2014 Ato normativo de \u00F3rg\u00E3o colegiado (conselho, c\u00E2mara, comit\u00EA) com efeitos internos ou externos conforme a norma instituidora.\n- \u0060INSTRUCAO_NORMATIVA\u0060: Instru\u00E7\u00E3o Normativa \u2014 Ato administrativo de car\u00E1ter t\u00E9cnico-operacional que detalha a execu\u00E7\u00E3o de normas superiores.\n- \u0060PARECER\u0060: Parecer \u2014 Manifesta\u00E7\u00E3o t\u00E9cnica ou jur\u00EDdica de \u00F3rg\u00E3o competente que orienta a aplica\u00E7\u00E3o de normas \u2014 vinculante quando aprovado pela autoridade competente.\n- \u0060EDITAL\u0060: Edital \u2014 Ato de convoca\u00E7\u00E3o do processo seletivo que fixa as regras do certame, inclusive o b\u00F4nus que ele institui."
+        "description": "Tipo do ato normativo que institui ou modifica o Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) de um processo seletivo.\n\n- \u0060LEI\u0060: Lei \u2014 Ato normativo de maior hierarquia no ordenamento infraconstitucional, emanado do Poder Legislativo.\n- \u0060DECRETO\u0060: Decreto \u2014 Ato normativo do Poder Executivo que regulamenta leis ou disp\u00F5e sobre mat\u00E9ria de sua compet\u00EAncia.\n- \u0060PORTARIA\u0060: Portaria \u2014 Ato administrativo de autoridade p\u00FAblica que disciplina procedimentos internos ou mat\u00E9ria de compet\u00EAncia espec\u00EDfica.\n- \u0060RESOLUCAO\u0060: Resolu\u00E7\u00E3o \u2014 Ato normativo de \u00F3rg\u00E3o colegiado (conselho, c\u00E2mara, comit\u00EA) com efeitos internos ou externos conforme a norma instituidora.\n- \u0060INSTRUCAO_NORMATIVA\u0060: Instru\u00E7\u00E3o Normativa \u2014 Ato administrativo de car\u00E1ter t\u00E9cnico-operacional que detalha a execu\u00E7\u00E3o de normas superiores.\n- \u0060PARECER\u0060: Parecer \u2014 Manifesta\u00E7\u00E3o t\u00E9cnica ou jur\u00EDdica de \u00F3rg\u00E3o competente que orienta a aplica\u00E7\u00E3o de normas \u2014 vinculante quando aprovado pela autoridade competente.\n- \u0060EDITAL\u0060: Edital \u2014 Ato de convoca\u00E7\u00E3o do processo seletivo que fixa as regras do certame, inclusive o Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso (FADA) que ele institui."
       },
       "TipoInstrumentoNormativoComDescricao": {
         "required": [
@@ -26464,7 +26464,7 @@
       "name": "Profile"
     },
     {
-      "name": "BaseLegalBonusRegional"
+      "name": "BaseLegalDoFada"
     },
     {
       "name": "CalendariosDiasUteis"

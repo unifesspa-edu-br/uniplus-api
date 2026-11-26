@@ -16,7 +16,7 @@ public static class RegrasDosFatos
     /// O fato que decide quem recebe o acréscimo (ADR-0142). Com inscrição própria, a citação é
     /// obrigatória; citado, o fato é booleano, campo do formulário de inscrição fora de grupo ou
     /// derivado por regra do processo, e conhecido até a fase da inscrição sem depender do que só a
-    /// isenção coleta — o motor o resolve para todo candidato. O ponto de resolução que o catálogo dá
+    /// isenção coleta — o sistema o resolve para todo candidato. O ponto de resolução que o catálogo dá
     /// a cada fato entra no congelamento, por quem o lê.
     /// </summary>
     public static DomainError? ConferirFatoDeElegibilidade(
@@ -28,12 +28,12 @@ public static class RegrasDosFatos
         ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
         ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
-        if (configuracao.Vagas.BonusRegional is not { } bonus)
+        if (configuracao.Vagas.Fada is not { } fada)
         {
             return null;
         }
 
-        return bonus.FatoElegibilidadeCodigo is not { } fato
+        return fada.FatoElegibilidadeCodigo is not { } fato
             ? ConferirCitacaoObrigatoria(configuracao)
             : ConferirFatoCitado(configuracao, fato) ?? ConferirMomentoEmQueOFatoEConhecido(configuracao, fato, pontoResolucaoPorFato, membroPorAgregado);
     }

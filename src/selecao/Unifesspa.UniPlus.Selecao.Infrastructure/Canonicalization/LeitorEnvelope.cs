@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// não conhece degrada em silêncio — e silêncio, aqui, é configuração perdida. O caso
 /// concreto: <c>fada</c> tem duas formas, <c>{"presente":false}</c> e a
 /// completa. Um leitor que só olhasse <c>presente</c> leria
-/// <c>{"presente":false,"fator":"1.2000",…}</c> como “sem bônus” e <b>descartaria o
-/// bônus do certame</b> sem uma linha de log. Por isso: chave a mais é erro, chave a
+/// <c>{"presente":false,"fator":"1.2000",…}</c> como “sem FADA” e <b>descartaria o
+/// FADA do certame</b> sem uma linha de log. Por isso: chave a mais é erro, chave a
 /// menos é erro, e um objeto sem parâmetros tem de ser exatamente <c>{}</c>.
 /// </para>
 /// <para>

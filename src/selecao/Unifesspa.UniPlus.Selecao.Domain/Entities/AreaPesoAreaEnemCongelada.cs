@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// </summary>
 /// <remarks>
 /// <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de
-/// <see cref="ConfiguracaoBonusRegionalMunicipio"/>: filho substituível por inteiro junto
+/// <see cref="MunicipioDoFada"/>: filho substituível por inteiro junto
 /// com a classificação que o congelou. A validação é do grupo, que conhece as áreas irmãs.
 /// </remarks>
 public sealed class AreaPesoAreaEnemCongelada : EntityBase

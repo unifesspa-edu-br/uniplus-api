@@ -258,21 +258,21 @@ internal static class CatalogosDoEnvelopeFechado
         };
 
     /// <summary>
-    /// Semeia uma Base Legal de Bônus Regional (Configuração) direto no
+    /// Semeia uma Base Legal do FADA (Configuração) direto no
     /// contexto de persistência — o E2E cascateado testa a drenagem de eventos de Seleção, não o
     /// cadastro de Configuração, então seguir o mesmo atalho de <see cref="SemearDocumentoConfirmadoAsync"/>
     /// evita um HTTP round-trip extra sem cobertura adicional.
     /// </summary>
-    internal static async Task<Guid> SemearBaseLegalBonusRegionalAsync(CascadingApiFactory api)
+    internal static async Task<Guid> SemearBaseLegalDoFadaAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        Result<BaseLegalBonusRegional> resultado = BaseLegalBonusRegional.Criar(
+        Result<BaseLegalDoFada> resultado = BaseLegalDoFada.Criar(
             "PORTARIA", $"Portaria do ciclo {Guid.CreateVersion7():N}", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        BaseLegalBonusRegional baseLegal = resultado.Value!;
-        await db.BaseLegaisBonus.AddAsync(baseLegal).ConfigureAwait(false);
+        BaseLegalDoFada baseLegal = resultado.Value!;
+        await db.BasesLegaisDoFada.AddAsync(baseLegal).ConfigureAwait(false);
         await db.SaveChangesAsync().ConfigureAwait(false);
         return baseLegal.Id;
     }

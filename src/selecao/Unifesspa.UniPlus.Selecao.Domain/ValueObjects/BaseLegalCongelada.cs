@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A base legal do bônus regional como o processo a congela: o identificador e o código do cadastro de Configuração, mais
+/// A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) como o processo a congela: o identificador e o código do cadastro de Configuração, mais
 /// tipo, identificação, descrição e municípios do momento da gravação. Chega já resolvida e validada pela leitura do cadastro
 /// (ou lida do envelope publicado), e por isso não é revalidada aqui.
 /// </summary>

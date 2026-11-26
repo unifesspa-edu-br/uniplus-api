@@ -20,14 +20,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ItensEstruturaisDeConformidade
 {
-    /// <summary>A declaração do bônus existe e concorda com a configuração.</summary>
-    internal static bool BonusRegionalDeclarado(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Vagas.AplicaBonusRegional is { } aplica && aplica == (configuracao.Vagas.BonusRegional is not null);
+    /// <summary>A declaração do FADA existe e concorda com a configuração.</summary>
+    internal static bool FadaDeclarado(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Vagas.AplicaFada is { } aplica && aplica == (configuracao.Vagas.Fada is not null);
 
     /// <summary>
     /// As dimensões estruturalmente obrigatórias do agregado, que <see cref="ChecklistDeConformidade.CausasDeConformidade"/>
     /// projeta numa causa por item pendente: atendimento especializado, distribuição de vagas, classificação, taxa, base
-    /// legal das exigências e as declarações do bônus regional e dos critérios de desempate (obrigatórios só com
+    /// legal das exigências e as declarações do FADA e dos critérios de desempate (obrigatórios só com
     /// inscrição própria; com resultado importado a lista já vem classificada).
     /// </summary>
     /// <remarks>
@@ -45,7 +45,7 @@ internal static class ItensEstruturaisDeConformidade
         .. ItensDaClassificacao(configuracao),
         .. ItensDaTaxaDeInscricao(configuracao),
         .. ItensDasExigenciasDocumentais(configuracao),
-        .. ItensDoBonusRegional(configuracao),
+        .. ItensDoFada(configuracao),
         .. ItensDoDesempate(configuracao),
         .. ItensDasEtapas(configuracao),
         .. ItensDaFormulaDaClassificacao(configuracao),
@@ -97,12 +97,12 @@ internal static class ItensEstruturaisDeConformidade
                 && GruposComConsequenciaTemBaseLegalResolvida(configuracao)),
     ];
 
-    // O processo declara se aplica o bônus regional; a ausência da configuração não significa mais "sem bônus".
-    // Declaração e configuração também precisam concordar: o EF hidrata a linha sem passar por DefinirBonusRegional.
-    private static List<ItemConformidade> ItensDoBonusRegional(ConfiguracaoDeclarada configuracao) =>
+    // O processo declara se aplica o FADA; a ausência da configuração não significa mais "sem FADA".
+    // Declaração e configuração também precisam concordar: o EF hidrata a linha sem passar por DefinirFada.
+    private static List<ItemConformidade> ItensDoFada(ConfiguracaoDeclarada configuracao) =>
     [
-        new ItemConformidade("bonus_regional_nao_declarado", DimensaoConformidade.BonusRegional, "Bônus regional: aplica ou não aplica", BonusRegionalDeclarado(configuracao)),
-        new ItemConformidade("bonus_regional_fato_de_elegibilidade", DimensaoConformidade.BonusRegional, "Bônus regional: com inscrição própria, cita o fato booleano que decide quem recebe o acréscimo, conhecido na inscrição", PendenciasDosFatos.PendenciaDoFatoDeElegibilidade(configuracao) is null),
+        new ItemConformidade("fada_nao_declarado", DimensaoConformidade.Fada, "Fator de Atenuação das Desigualdades de Acesso (FADA): aplica ou não aplica", FadaDeclarado(configuracao)),
+        new ItemConformidade("fada_fato_de_elegibilidade", DimensaoConformidade.Fada, "Fator de Atenuação das Desigualdades de Acesso (FADA): com inscrição própria, cita o dado booleano que decide quem recebe o acréscimo, conhecido na inscrição", PendenciasDosFatos.PendenciaDoFatoDeElegibilidade(configuracao) is null),
     ];
 
     // Com inscrição própria o desempate é obrigatório; com resultado importado a lista já vem classificada e o desempate

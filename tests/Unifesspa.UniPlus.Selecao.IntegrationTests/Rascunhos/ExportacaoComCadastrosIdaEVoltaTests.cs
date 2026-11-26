@@ -81,7 +81,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
     private async Task<CodigosSemeados> SemearCadastrosDosDescritivosAsync()
     {
         string sufixo = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
-        BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
+        BaseLegalDoFada baseLegal = BaseLegalDoFada.Criar(
             "PORTARIA", $"Portaria fictícia {sufixo}", "Atenua as desigualdades de acesso.", [("1504208", "Marabá", "PA")]).Value!;
         CodigosSemeados codigos = new($"COND_{sufixo}", $"REC_{sufixo}", $"DEF_{sufixo}", baseLegal.Codigo.Valor);
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
@@ -112,7 +112,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
         IFaseCanonicaReader fases = escopo.ServiceProvider.GetRequiredService<IFaseCanonicaReader>();
-        IBaseLegalBonusRegionalReader bases = escopo.ServiceProvider.GetRequiredService<IBaseLegalBonusRegionalReader>();
+        IBaseLegalDoFadaReader bases = escopo.ServiceProvider.GetRequiredService<IBaseLegalDoFadaReader>();
         FaseCanonicaView inscricao = (await fases.ListarVivasPorCodigosAsync(["INSCRICAO"])).Single();
         documento["cronograma"]!["fases"]![0]!["tipoFaseNome"]!.GetValue<string>().Should().Be(inscricao.Nome);
         ConferirNomesDoAtendimento(documento["atendimento"]!, codigos);
@@ -126,7 +126,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         atendimento["tiposDeficiencia"]![0]!["tipoDeficienciaNome"]!.GetValue<string>().Should().Be(NomeDe(codigos.TipoDeficiencia));
     }
 
-    private static void ConferirFada(JsonNode fada, BaseLegalBonusRegionalView baseLegal)
+    private static void ConferirFada(JsonNode fada, BaseLegalDoFadaView baseLegal)
     {
         fada["tipoInstrumento"]!.GetValue<string>().Should().Be(baseLegal.TipoInstrumento);
         fada["identificacao"]!.GetValue<string>().Should().Be(baseLegal.Identificacao);

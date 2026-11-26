@@ -51,7 +51,7 @@ internal sealed record VinculosDoModelo(VinculosDeFatos Fatos, IReadOnlySet<(Gui
 /// desativado. O item de forma inválida não é conferido: a recusa dele é a de forma, do modelo.
 /// </summary>
 /// <remarks>
-/// Os valores das fontes do processo — opções declaradas, modalidades e municípios do bônus — só
+/// Os valores das fontes do processo — opções declaradas, modalidades e municípios do FADA — só
 /// existem no processo. Aqui são aceitos pela forma, e a cópia do modelo no processo os confere de
 /// novo.
 /// </remarks>

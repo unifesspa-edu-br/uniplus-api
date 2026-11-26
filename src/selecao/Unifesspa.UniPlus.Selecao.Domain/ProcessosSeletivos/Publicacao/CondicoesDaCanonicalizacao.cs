@@ -31,7 +31,7 @@ internal static class CondicoesDaCanonicalizacao
         new("documentosExigidos", static (configuracao, _) => PendenciasDasExigencias.PendenciaDaRepeticaoPorGrupo(configuracao)),
         new("formularios", static (configuracao, _) => PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(configuracao.Coleta.Campos, configuracao.Avaliacao.Classificacao)),
         new("formularios", static (configuracao, _) => PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(configuracao)),
-        new("bonusRegional", static (configuracao, _) => PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(configuracao)),
+        new("fada", static (configuracao, _) => PendenciasDosFatos.PendenciaDeMunicipioDoFadaForaDaArea(configuracao)),
         new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(configuracao)),
         new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDoFormularioDeInscricao(configuracao)),
         new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDoConjuntoBasico(configuracao)),

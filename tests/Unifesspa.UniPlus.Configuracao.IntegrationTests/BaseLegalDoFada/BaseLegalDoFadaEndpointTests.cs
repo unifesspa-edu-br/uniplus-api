@@ -1,0 +1,345 @@
+namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.BaseLegalDoFada;
+
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+
+/// <summary>
+/// Contrato HTTP dos 5 endpoints de <c>BaseLegalDoFada</c>: routing,
+/// autenticação/autorização por permissão de manutenção, idempotência, forma dos campos
+/// (município mínimo, código IBGE) e soft-delete — com Wolverine contra Postgres efêmero.
+/// </summary>
+[Collection(ConfiguracaoEndpointCollection.Name)]
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "xUnit collection fixture exige tipo de teste público.")]
+public sealed class BaseLegalDoFadaEndpointTests
+{
+    private readonly ConfiguracaoEndpointFixture _fixture;
+
+    public BaseLegalDoFadaEndpointTests(ConfiguracaoEndpointFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    [Fact(DisplayName = "GET /api/configuracao/bases-legais-fada retorna 200 com vendor MIME, sem autenticação")]
+    public async Task Listar_Retorna200ComVendorMime()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/configuracao/bases-legais-fada", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType
+            .Should().Be("application/vnd.uniplus.base-legal-do-fada.v1+json");
+    }
+
+    [Fact(DisplayName = "GET /api/configuracao/bases-legais-fada/{id} retorna 404 quando inexistente")]
+    public async Task ObterPorId_NaoExiste_Retorna404()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/configuracao/bases-legais-fada/{Guid.NewGuid()}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "POST admin sem autenticação retorna 401")]
+    public async Task Criar_SemAuth_Retorna401()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Post, new Uri("/api/configuracao/admin/bases-legais-fada", UriKind.Relative));
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "POST sem Idempotency-Key retorna 400")]
+    public async Task Criar_SemIdempotencyKey_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Post, new Uri("/api/configuracao/admin/bases-legais-fada", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Content = JsonContent.Create(MunicipioCorpo());
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "POST do mesmo ato duas vezes: o segundo é recusado com 409 e o código de erro do código já existente")]
+    public async Task Criar_MesmoAto_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: IdentificacaoUnica());
+        (await EnviarPostAdmin(client, body)).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, body);
+
+        segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await segundo.Content.ReadAsStringAsync()).Should().Contain("uniplus.configuracao.base_legal_do_fada.codigo_ja_existe");
+    }
+
+    [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos e os municípios")]
+    public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string identificacao = IdentificacaoUnica();
+
+        HttpResponseMessage criar = await EnviarPostAdmin(client, MunicipioCorpo(identificacao: identificacao));
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/bases-legais-fada/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        ConferirBaseLegalCriada(doc.RootElement, identificacao);
+    }
+
+    private static void ConferirBaseLegalCriada(JsonElement root, string identificacao)
+    {
+        root.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("PORTARIA");
+        root.GetProperty("tipoInstrumento").GetProperty("rotulo").GetString().Should().Be("Portaria");
+        root.GetProperty("identificacao").GetString().Should().Be(identificacao);
+        root.GetProperty("codigo").GetString().Should().StartWith("PORTARIA_TESTE_");
+        root.GetProperty("municipios").GetArrayLength().Should().Be(1);
+        root.GetProperty("municipios")[0].GetProperty("codigoIbge").GetString().Should().Be("1504208");
+        root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    [Fact(DisplayName = "POST com o edital como instrumento cria (201) e grava o tipo")]
+    public async Task Criar_ComEdital_Retorna201EPersiste()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: "Edital nº 1/2026", tipoInstrumento: "EDITAL");
+
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/bases-legais-fada/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("tipoInstrumento").GetProperty("codigo").GetString().Should().Be("EDITAL");
+    }
+
+    [Fact(DisplayName = "POST sem nenhum município retorna 422 sem gravar")]
+    public async Task Criar_SemMunicipio_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(municipios: []);
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.base_legal_do_fada.sem_municipios");
+    }
+
+    [Fact(DisplayName = "POST com código IBGE fora do formato de 7 dígitos retorna 422 sem gravar")]
+    public async Task Criar_ComCodigoIbgeInvalido_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(municipios: [new { codigoIbge = "123", nome = "Marabá", uf = "PA" }]);
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.base_legal_do_fada.municipio_invalido");
+    }
+
+    [Fact(DisplayName = "POST com item nulo na lista de municípios retorna 422, não 500")]
+    public async Task Criar_ComMunicipioNulo_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(municipios: [null!]);
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "POST com caractere nulo na identificação retorna 422, não 500 (rejeição do Postgres)")]
+    public async Task Criar_ComCaractereNuloNaIdentificacao_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: "Portaria\0Inválida");
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.base_legal_do_fada.identificacao_caractere_invalido");
+    }
+
+    [Fact(DisplayName = "PUT com Id na URL divergente do corpo retorna 400")]
+    public async Task Atualizar_IdDivergente_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, idNaUrl: Guid.NewGuid(), CorpoDaAtualizacao(id: Guid.NewGuid()));
+
+        await RecusaDoIdDivergente.ConferirAsync(response);
+    }
+
+    [Fact(DisplayName = "PUT sem Idempotency-Key retorna 400")]
+    public async Task Atualizar_SemIdempotencyKey_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = Guid.NewGuid();
+
+        HttpResponseMessage response = await EnviarPutAdminSemChave(client, id, CorpoDaAtualizacao(id));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "PUT em Id inexistente retorna 404")]
+    public async Task Atualizar_IdInexistente_Retorna404()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = Guid.NewGuid();
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, CorpoDaAtualizacao(id));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "PUT válido atualiza os campos e substitui a lista de municípios")]
+    public async Task Atualizar_ComAuthEIdempotency_Retorna204EPersiste()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarEObterIdAsync(client);
+        object atualizacao = CorpoDaAtualizacao(
+            id, "Portaria Unifesspa nº 2514/2023 (revisada)", "Descricao revisada", [new { codigoIbge = "1501402", nome = "Belém", uf = "PA" }]);
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, atualizacao);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using JsonDocument doc = JsonDocument.Parse(await (await ObterPorId(client, id)).Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("identificacao").GetString().Should().Be("Portaria Unifesspa nº 2514/2023 (revisada)");
+        root.GetProperty("municipios").GetArrayLength().Should().Be(1);
+        root.GetProperty("municipios")[0].GetProperty("codigoIbge").GetString().Should().Be("1501402");
+    }
+
+    [Fact(DisplayName = "DELETE inexistente retorna 404")]
+    public async Task Remover_Inexistente_Retorna404()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/bases-legais-fada/{Guid.NewGuid()}", UriKind.Relative));
+        AutenticarComoAdmin(request);
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "DELETE desativa (soft-delete): some do GET por id e não é mais recuperável")]
+    public async Task Remover_ComAuth_FazSoftDelete()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarEObterIdAsync(client);
+        using HttpRequestMessage remover = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/bases-legais-fada/{id}", UriKind.Relative));
+        AutenticarComoAdmin(remover);
+
+        HttpResponseMessage response = await client.SendAsync(remover);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await ObterPorId(client, id)).StatusCode.Should().Be(HttpStatusCode.NotFound,
+            "soft-delete tira o registro de circulação — o filtro global !IsDeleted esconde a linha");
+    }
+
+    private static async Task<Guid> CriarEObterIdAsync(HttpClient client) =>
+        await (await EnviarPostAdmin(client, MunicipioCorpo())).Content.ReadFromJsonAsync<Guid>();
+
+    private static Task<HttpResponseMessage> ObterPorId(HttpClient client, Guid id) =>
+        client.GetAsync(new Uri($"/api/configuracao/bases-legais-fada/{id}", UriKind.Relative));
+
+    private static object CorpoDaAtualizacao(
+        Guid id, string identificacao = "Portaria X", string descricao = "Descricao", object[]? municipios = null) => new
+        {
+            id,
+            tipoInstrumento = "PORTARIA",
+            identificacao,
+            descricao,
+            municipios = municipios ?? [new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }],
+        };
+
+    // O código da base legal é único entre as vivas e o banco do teste é compartilhado: cada criação usa um ato próprio.
+    private static string IdentificacaoUnica() => $"Portaria Teste {Guid.NewGuid():N}";
+
+    private static object MunicipioCorpo(
+        string? identificacao = null,
+        object[]? municipios = null,
+        string tipoInstrumento = "PORTARIA") => new
+        {
+            tipoInstrumento,
+            identificacao = identificacao ?? IdentificacaoUnica(),
+            descricao = "Institui inclusão regional",
+            municipios = municipios ?? [new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }],
+        };
+
+    private static void AutenticarComoAdmin(HttpRequestMessage request)
+    {
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid idNaUrl, object body)
+    {
+        using HttpRequestMessage request = RequisicaoPutAdmin(idNaUrl, body);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdminSemChave(HttpClient client, Guid idNaUrl, object body)
+    {
+        using HttpRequestMessage request = RequisicaoPutAdmin(idNaUrl, body);
+        return await client.SendAsync(request);
+    }
+
+    private static HttpRequestMessage RequisicaoPutAdmin(Guid idNaUrl, object body)
+    {
+        HttpRequestMessage request = new(
+            HttpMethod.Put, new Uri($"/api/configuracao/admin/bases-legais-fada/{idNaUrl}", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Content = JsonContent.Create(body);
+        return request;
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Post, new Uri("/api/configuracao/admin/bases-legais-fada", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+        return await client.SendAsync(request);
+    }
+}

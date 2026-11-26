@@ -141,7 +141,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     {
         ProcessoSeletivo processo = ProcessoConforme();
         ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "RETIRA_O_ACRESCIMO", [BaseLegalResolvida()]));
-        // Sem DefinirBonusRegional — nenhuma acréscimo oferecido para remover.
+        // Sem DefinirFada — nenhum acréscimo oferecido para retirar.
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_acrescimo_nao_oferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }

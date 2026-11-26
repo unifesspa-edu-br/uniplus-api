@@ -17,7 +17,7 @@ public sealed class TipoRegraCodigoTests
                 (TipoRegra.RegraCalculo, "REGRA_CALCULO", "Cálculo da nota"),
                 (TipoRegra.RegraArredondamento, "REGRA_ARREDONDAMENTO", "Arredondamento da nota"),
                 (TipoRegra.RegraEliminacao, "REGRA_ELIMINACAO", "Eliminação"),
-                (TipoRegra.RegraBonus, "REGRA_FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)"),
+                (TipoRegra.RegraFada, "REGRA_FADA", "Fator de Atenuação das Desigualdades de Acesso (FADA)"),
                 (TipoRegra.CriterioDesempate, "CRITERIO_DESEMPATE", "Critério de desempate"),
                 (TipoRegra.CriterioRemanejamento, "CRITERIO_REMANEJAMENTO", "Critério de remanejamento"),
                 (TipoRegra.RegraOrdemAlocacao, "REGRA_ORDEM_ALOCACAO", "Ordem de alocação"),

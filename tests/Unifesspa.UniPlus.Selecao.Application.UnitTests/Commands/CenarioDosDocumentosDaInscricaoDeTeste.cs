@@ -146,8 +146,8 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
         return new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [faseDaInscricao, outraFase]),
             new AvaliacaoDeclarada(conforme.Avaliacao.Etapas, conforme.Avaliacao.CriteriosDesempate, conforme.Avaliacao.Classificacao),
-            new VagasDeclaradas(conforme.Vagas.DistribuicaoVagas, 1, conforme.Vagas.BonusRegional is not null,
-                conforme.Vagas.BonusRegional, null, conforme.Vagas.AtendimentoEspecializado),
+            new VagasDeclaradas(conforme.Vagas.DistribuicaoVagas, 1, conforme.Vagas.Fada is not null,
+                conforme.Vagas.Fada, null, conforme.Vagas.AtendimentoEspecializado),
             new ExigenciasDeclaradas([Laudo, Certidao, DeOutraFase], [regraDeLaudo, regraDeCertidao, regraDeOutraFase]),
             new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(conforme.Coleta.Itens, conforme.Coleta.GruposColetados), conforme.Coleta.GruposColetados, conforme.Coleta.Formularios, [],
                 [], [], null),

@@ -17,7 +17,7 @@ internal static class ModeloFormularioHttp
 {
     internal const string Base = "/api/configuracao/admin/modelos-formulario";
 
-    /// <summary>Marabá, município da área do bônus regional.</summary>
+    /// <summary>Marabá, município da área do FADA.</summary>
     internal const string Maraba = "1504208";
 
     internal static async Task<HttpResponseMessage> EnviarAsync(
@@ -51,13 +51,13 @@ internal static class ModeloFormularioHttp
         criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
     }
 
-    /// <summary>Uma base legal do bônus com os municípios dados, de onde vêm as opções de município do Fator.</summary>
+    /// <summary>Uma base legal do FADA com os municípios dados, de onde vêm as opções de município do Fator.</summary>
     internal static async Task CadastrarBaseLegalAsync(HttpClient client, object[] municipios) =>
-        await CadastrarAsync(client, "/api/configuracao/admin/base-legal-bonus-regional", new
+        await CadastrarAsync(client, "/api/configuracao/admin/bases-legais-fada", new
         {
             tipoInstrumento = "PORTARIA",
             identificacao = $"Portaria {Guid.NewGuid().ToString("N")[..8]}",
-            descricao = "Área do bônus regional",
+            descricao = "Área do FADA",
             municipios,
         });
 

@@ -83,7 +83,7 @@ public static class VocabularioDoCatalogo
     /// <summary>
     /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência
     /// vêm do Geo e são conferidos como em qualquer processo; as opções do processo, as modalidades
-    /// e os municípios do bônus só existem no processo, que confere a regra de novo quando a copia.
+    /// e os municípios do FADA só existem no processo, que confere a regra de novo quando a copia.
     /// Os tipos de deficiência vivem em outro cadastro, e a Seleção confere contra ele o código que a
     /// regra cita quando aplica o modelo.
     /// </summary>
@@ -197,7 +197,7 @@ public static class VocabularioDoCatalogo
     /// <summary>
     /// As opções que o catálogo oferece a cada campo de seleção do modelo, na ordem de apresentação: os
     /// valores ativos do fato — os do fato de membro, no agregado — ou as UFs. Nulas quando as opções
-    /// só existem no processo (as que ele declara, as modalidades, os municípios do bônus) ou vêm do
+    /// só existem no processo (as que ele declara, as modalidades, os municípios do FADA) ou vêm do
     /// Geo pela UF, e nos campos que não são categóricos.
     /// </summary>
     public static Dictionary<string, IReadOnlyList<ValorSelecionavel>?> OpcoesDoModelo(IEnumerable<FatoCandidato> fatos, ConteudoDoModelo conteudo)

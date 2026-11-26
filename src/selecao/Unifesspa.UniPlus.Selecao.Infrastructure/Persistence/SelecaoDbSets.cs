@@ -24,7 +24,7 @@ public static class SelecaoDbSets
 
         public DbSet<VagaOfertada> VagasOfertadas => contexto.Set<VagaOfertada>();
 
-        public DbSet<ConfiguracaoBonusRegional> ConfiguracoesBonusRegional => contexto.Set<ConfiguracaoBonusRegional>();
+        public DbSet<ConfiguracaoDoFada> ConfiguracoesDoFada => contexto.Set<ConfiguracaoDoFada>();
 
         public DbSet<CriterioDesempate> CriteriosDesempate => contexto.Set<CriterioDesempate>();
 

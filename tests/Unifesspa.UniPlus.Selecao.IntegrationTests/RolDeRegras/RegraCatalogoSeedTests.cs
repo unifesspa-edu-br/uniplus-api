@@ -94,14 +94,14 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
 
-        RegraCatalogo bonus = await context.RolDeRegras
+        RegraCatalogo fada = await context.RolDeRegras
             .AsNoTracking()
             .SingleAsync(r => r.Codigo == "FADA_MULTIPLICATIVO", CancellationToken.None);
 
-        bonus.DeclaracaoDaRegra.ValueKind.Should().Be(JsonValueKind.Object);
-        bonus.DeclaracaoDaRegra.EnumerateObject().Should().BeEmpty();
-        bonus.Invariantes.ValueKind.Should().Be(JsonValueKind.Array);
-        bonus.Invariantes.GetArrayLength().Should().BeGreaterThan(0);
+        fada.DeclaracaoDaRegra.ValueKind.Should().Be(JsonValueKind.Object);
+        fada.DeclaracaoDaRegra.EnumerateObject().Should().BeEmpty();
+        fada.Invariantes.ValueKind.Should().Be(JsonValueKind.Array);
+        fada.Invariantes.GetArrayLength().Should().BeGreaterThan(0);
     }
 
     [Fact(DisplayName = "v1 e v2 de um mesmo código coexistem (UNIQUE por codigo+versao)")]
