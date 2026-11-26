@@ -131,11 +131,13 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
     public void LerModalidade_AcaoAoIndeferirInvalida_RecusaVocabulario()
     {
         JsonObject modalidade = Modalidade();
-        modalidade["acaoQuandoIndeferido"] = "INVALIDA";
+        modalidade["acaoQuandoIndeferido"] = "ACAO_EXEMPLO_INVALIDA";
         LeitorEnvelope leitor = new();
         LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
         FieldError causa = leitor.Falha<object>().Errors.Single();
         causa.Field.Should().Be("modalidades[0].acaoQuandoIndeferido");
+        causa.Error.Message.Should().NotContain("ACAO_EXEMPLO_INVALIDA");
+        causa.Field.Should().NotContain("ACAO_EXEMPLO_INVALIDA");
         causa.Error.Should().Be(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
             "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro " +
             "(RETIRA_A_MODALIDADE) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
