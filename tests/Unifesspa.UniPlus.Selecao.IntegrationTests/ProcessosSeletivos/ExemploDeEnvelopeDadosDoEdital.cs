@@ -86,11 +86,18 @@ internal static class ExemploDeEnvelopeDadosDoEdital
             [CandidatoComoMembro.FatoParentesco] = NaOrdemDeInsercao(ValoresDeParentesco(), permutarValores),
             ["NATURALIDADE_UF"] = NaOrdemDeInsercao(ValoresDeUf(), permutarValores),
             // As opções do processo vêm das edições declaradas, que o processo rico admite.
-            [EdicaoDoEnem.Fato] = [new ValorDominioDeclaradoCongelado("2026", "2026", 0)],
+            [EdicaoDoEnem.Fato] = EdicoesDoEnemDoExemplo(),
         };
 
         return CatalogoDoConjuntoBasico.ComValoresCongelados(valores);
     }
+
+    private static List<ValorDominioDeclaradoCongelado> EdicoesDoEnemDoExemplo() =>
+    [
+        new("2024", "2024", 0),
+        new("2025", "2025", 1),
+        new("2026", "2026", 2),
+    ];
 
     private static List<ValorDominioDeclaradoCongelado> NaOrdemDeInsercao(List<ValorDominioDeclaradoCongelado> valores, bool permutar)
     {

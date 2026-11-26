@@ -10,6 +10,7 @@ public static class HomologacaoDasInscricoesErrorCodes
     public const string ResultadoNaoDeclarado = "HomologacaoDasInscricoes.ResultadoNaoDeclarado";
     public const string CondicaoNaoDisponivel = "HomologacaoDasInscricoes.CondicaoNaoDisponivel";
     public const string EdicaoDoExameInvalida = "HomologacaoDasInscricoes.EdicaoDoExameInvalida";
+    public const string EdicaoDoExameNaoDeclarada = "HomologacaoDasInscricoes.EdicaoDoExameNaoDeclarada";
     public const string AlternativaSemCondicao = "HomologacaoDasInscricoes.AlternativaSemCondicao";
     public const string ConfirmacaoDoInepAusente = "HomologacaoDasInscricoes.ConfirmacaoDoInepAusente";
 }

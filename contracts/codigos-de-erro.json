@@ -6107,6 +6107,11 @@
       "titulo": "A edição do exame da condição é inválida (de 1998 a 2100)"
     },
     {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.edicao_do_exame_nao_declarada",
+      "status": 422,
+      "titulo": "A edição do exame da condição não está entre as edições do ENEM que o processo declara"
+    },
+    {
       "codigo": "uniplus.selecao.homologacao_das_inscricoes.resultado_nao_declarado",
       "status": 422,
       "titulo": "A regra de homologação das inscrições não aponta um resultado da fase"

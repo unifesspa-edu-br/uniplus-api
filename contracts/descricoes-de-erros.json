@@ -20312,6 +20312,23 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.edicao_do_exame_nao_declarada",
+      "requisitos": [
+        "UNI-REQ-0265",
+        "UNI-REQ-0439"
+      ],
+      "oQueAconteceu": [
+        "A confirmação do INEP de uma regra de homologação consulta uma edição do exame que não está entre as edições do ENEM que o processo declara. Nenhum candidato pode informar essa edição na inscrição, e a condição nunca seria cumprida."
+      ],
+      "comoResolver": [
+        "Na condição indicada no campo do erro, informe uma das edições do ENEM que o processo declara, com o ano de quatro algarismos, ou inclua a edição entre as edições declaradas do processo. Depois envie novamente a operação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.homologacao_das_inscricoes.resultado_nao_declarado",
       "requisitos": [
         "UNI-REQ-0265"
