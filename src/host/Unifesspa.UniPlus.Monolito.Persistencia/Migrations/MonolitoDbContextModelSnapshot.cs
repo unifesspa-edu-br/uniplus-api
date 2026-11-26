@@ -3088,7 +3088,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalBonusRegional", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalDoFada", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4650,7 +4650,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Endereço em que o candidato reside, usado para verificar os requisitos regionais do processo.",
                             Dominio = "ENDERECO",
                             Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
+                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Endereço residencial",
                             Origem = "DECLARADO",
@@ -4692,7 +4692,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Unidade da Federação em que o candidato reside, derivada do endereço residencial.",
                             Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
+                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.",
                             FonteValores = "UNIDADES_FEDERATIVAS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "UF de residência",
@@ -4714,7 +4714,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Município em que o candidato reside, derivado do endereço residencial.",
                             Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
+                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.",
                             FonteValores = "MUNICIPIOS",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Município de residência",
@@ -5303,7 +5303,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Tipo de localidade em que o candidato reside, perguntado antes do endereço.",
                             Dominio = "OPCAO",
                             Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
+                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.",
                             FonteValores = "CATALOGO",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Tipo de localidade",
@@ -5325,7 +5325,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.",
                             Dominio = "TEXTO",
                             Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.",
+                            FinalidadeTratamento = "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.",
                             Formato = "LIVRE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Nome da aldeia, comunidade ou quilombo",
@@ -6651,7 +6651,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("acao_quando_indeferido")
-                        .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL.");
+                        .HasComment("Ação aplicada quando a candidatura é indeferida, quando definida. Código: RETIRA_A_MODALIDADE.");
 
                     b.Property<string>("BaseLegal")
                         .HasMaxLength(500)
@@ -6753,7 +6753,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Modalidades de concorrência e suas regras de composição e remanejamento de vagas.");
 
-                            t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICA_AC', 'RECLASSIFICA_CONFORME_EDITAL')");
+                            t.HasCheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RETIRA_A_MODALIDADE')");
 
                             t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
@@ -6973,19 +6973,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("descricao")
                         .HasComment("Descrição do modelo de formulário.");
 
-                    b.Property<string>("Finalidade")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
-
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome")
                         .HasComment("Nome do modelo de formulário.");
+
+                    b.Property<bool>("Obrigatorio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("obrigatorio")
+                        .HasComment("Indica se o modelo é obrigatório no processo em que for aplicado.");
+
+                    b.Property<bool>("ServeAFaseDeInscricao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("serve_a_fase_de_inscricao")
+                        .HasComment("Indica se o modelo serve à fase que coleta a inscrição e traz o conjunto básico de dados do candidato.");
 
                     b.Property<string>("TipoProcessoCodigo")
                         .HasMaxLength(80)
@@ -7018,16 +7021,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_modelos_formulario_codigo");
 
-                    b.HasIndex("TipoProcessoCodigo", "Finalidade", "Ativo")
-                        .HasDatabaseName("ix_modelos_formulario_tipo_finalidade_ativo");
+                    b.HasIndex("TipoProcessoCodigo", "ServeAFaseDeInscricao", "Ativo")
+                        .HasDatabaseName("ix_modelos_formulario_tipo_serve_inscricao_ativo");
 
                     b.ToTable("modelos_formulario", "configuracao", t =>
                         {
                             t.HasComment("Modelos de formulário e seu conteúdo para processos seletivos.");
 
                             t.HasCheckConstraint("ck_modelos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-
-                            t.HasCheckConstraint("ck_modelos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
 
                             t.HasCheckConstraint("ck_modelos_formulario_tipo_processo_codigo_formato", "tipo_processo_codigo IS NULL OR tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
@@ -11436,6 +11437,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("chave_local")
                         .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
 
+                    b.Property<string>("ConsequenciaDaAusencia")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("consequencia_da_ausencia")
+                        .HasComment("Consequência própria da ausência do candidato à banca. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO.");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
@@ -11471,7 +11478,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_bancas_da_etapa_processo_chave_local");
 
-                    b.ToTable("bancas_da_etapa", "selecao");
+                    b.ToTable("bancas_da_etapa", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_bancas_da_etapa_consequencia_da_ausencia", "consequencia_da_ausencia IS NULL OR consequencia_da_ausencia IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
@@ -11487,6 +11497,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("chave_local")
                         .HasComment("Identificador que a parte guarda dentro da configuração publicada; único no processo.");
+
+                    b.Property<string>("ConsequenciaDaAusencia")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("consequencia_da_ausencia")
+                        .HasComment("Consequência própria da ausência do candidato à banca. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -11523,7 +11539,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_bancas_requeridas_processo_chave_local");
 
-                    b.ToTable("bancas_requeridas", "selecao");
+                    b.ToTable("bancas_requeridas", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_bancas_requeridas_consequencia_da_ausencia", "consequencia_da_ausencia IS NULL OR consequencia_da_ausencia IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BaseLegalDaComprovacao", b =>
@@ -12073,147 +12092,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<string>("BaseLegalBonusRegionalCodigo")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("base_legal_codigo")
-                        .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
-
-                    b.Property<Guid>("BaseLegalBonusRegionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("base_legal_id")
-                        .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasComment("Data e hora de criação do registro.");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("descricao")
-                        .HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração.");
-
-                    b.Property<string>("FatoElegibilidadeCodigo")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("codigo_do_dado_de_elegibilidade")
-                        .HasComment("Código do dado do candidato que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
-
-                    b.Property<decimal>("Fator")
-                        .HasPrecision(6, 4)
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("fator")
-                        .HasComment("Multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<string>("Identificacao")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("identificacao")
-                        .HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada da base legal.");
-
-                    b.Property<Guid>("ProcessoSeletivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id")
-                        .HasComment("Identificador do processo seletivo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<decimal?>("Teto")
-                        .HasPrecision(6, 4)
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("teto")
-                        .HasComment("Limite da nota após o Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
-
-                    b.Property<string>("TipoInstrumento")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("tipo_instrumento")
-                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA); copiado da base legal.");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasComment("Data e hora da última alteração, quando houver.");
-
-                    b.HasKey("Id")
-                        .HasName("pk_configuracoes_do_fada");
-
-                    b.HasIndex("ProcessoSeletivoId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_configuracoes_do_fada_processo_seletivo_id");
-
-                    b.ToTable("configuracoes_do_fada", "selecao", t =>
-                        {
-                            t.HasComment("Configurações do Fator de Atenuação das Desigualdades de Acesso (FADA) nos processos seletivos.");
-                        });
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegionalMunicipio", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasComment("Identificador do município na configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<string>("CodigoIbge")
-                        .IsRequired()
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)")
-                        .HasColumnName("codigo_ibge")
-                        .HasComment("Código IBGE do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<Guid>("ConfiguracaoBonusRegionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("configuracao_do_fada_id")
-                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasComment("Data e hora de criação do registro.");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("nome")
-                        .HasComment("Nome do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<string>("Uf")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)")
-                        .HasColumnName("uf")
-                        .HasComment("Sigla da unidade federativa do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasComment("Data e hora da última alteração, quando houver.");
-
-                    b.HasKey("Id")
-                        .HasName("pk_municipios_do_fada");
-
-                    b.HasIndex("ConfiguracaoBonusRegionalId")
-                        .HasDatabaseName("ix_municipios_do_fada_configuracao_do_fada_id");
-
-                    b.ToTable("municipios_do_fada", "selecao", t =>
-                        {
-                            t.HasComment("Municípios da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA), copiados da base legal.");
-                        });
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12482,6 +12360,92 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_configuracoes_divulgacao_processo_seletivo_id");
 
                     b.ToTable("configuracoes_divulgacao", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDoFada", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<string>("BaseLegalCodigo")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("base_legal_codigo")
+                        .HasComment("Código da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
+
+                    b.Property<Guid>("BaseLegalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("base_legal_id")
+                        .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) copiado na configuração.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada na configuração.");
+
+                    b.Property<string>("FatoElegibilidadeCodigo")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo_do_dado_de_elegibilidade")
+                        .HasComment("Código do dado do candidato que decide a elegibilidade ao Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
+
+                    b.Property<decimal>("Fator")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("fator")
+                        .HasComment("Multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<string>("Identificacao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("identificacao")
+                        .HasComment("Identificação do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA), copiada da base legal.");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Identificador do processo seletivo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<decimal?>("Teto")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("teto")
+                        .HasComment("Limite da nota após o Fator de Atenuação das Desigualdades de Acesso (FADA), quando definido.");
+
+                    b.Property<string>("TipoInstrumento")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo_instrumento")
+                        .HasComment("Tipo do instrumento do Fator de Atenuação das Desigualdades de Acesso (FADA); copiado da base legal.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_configuracoes_do_fada");
+
+                    b.HasIndex("ProcessoSeletivoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_configuracoes_do_fada_processo_seletivo_id");
+
+                    b.ToTable("configuracoes_do_fada", "selecao", t =>
+                        {
+                            t.HasComment("Configurações do Fator de Atenuação das Desigualdades de Acesso (FADA) nos processos seletivos.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoTaxaInscricao", b =>
@@ -12793,6 +12757,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("id")
                         .HasComment("Identificador da exigência de documento.");
 
+                    b.Property<bool>("AbrePrazoParaReenvio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("abre_prazo_para_reenvio")
+                        .HasComment("Indica se a exigência abre prazo para reenvio do documento.");
+
                     b.Property<string>("Aplicabilidade")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -12814,11 +12783,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("classificacao_protecao")
                         .HasComment("Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
 
-                    b.Property<string>("ConsequenciaIndeferimento")
+                    b.Property<string>("ConsequenciaDoDescumprimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("consequencia_indeferimento")
-                        .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
+                        .HasColumnName("consequencia_do_descumprimento")
+                        .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12841,18 +12810,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("dados_comprovados")
                         .HasComment("Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados.");
 
-                    b.Property<string>("Finalidade")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Formulário a que o documento pertence; vazio quando a fase não responde formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
-
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("finalidade_tratamento")
                         .HasComment("Finalidade do tratamento dos dados do documento, copiada do tipo de documento.");
+
+                    b.Property<string>("FormularioCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("formulario_codigo")
+                        .HasComment("Código do formulário a que o documento pertence, entre os do processo.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
@@ -12915,15 +12885,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_documentos_exigidos_processo_chave_local");
 
+                    b.HasIndex("ProcessoSeletivoId", "FormularioCodigo")
+                        .HasDatabaseName("ix_documentos_exigidos_formulario");
+
                     b.ToTable("documentos_exigidos", "selecao", t =>
                         {
                             t.HasComment("Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
 
                             t.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
 
-                            t.HasCheckConstraint("ck_documentos_exigidos_consequencia_indeferimento", "consequencia_indeferimento IS NULL OR consequencia_indeferimento IN ('ELIMINA', 'RECLASSIFICA_AC', 'REMOVE_VANTAGEM', 'ABRE_PRAZO_PARA_REENVIO')");
-
-                            t.HasCheckConstraint("ck_documentos_exigidos_finalidade", "finalidade IS NULL OR finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                            t.HasCheckConstraint("ck_documentos_exigidos_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
 
                             t.HasCheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
 
@@ -13343,13 +13314,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("codigo_do_dado")
                         .HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
 
-                    b.Property<string>("Finalidade")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
-
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -13362,6 +13326,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("formato")
                         .HasComment("Formato esperado da resposta, quando especificado.");
+
+                    b.Property<Guid>("FormularioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formulario_id")
+                        .HasComment("Identificador do formulário em que o dado é solicitado.");
 
                     b.Property<Guid?>("GrupoColetadoId")
                         .HasColumnType("uuid")
@@ -13442,6 +13411,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_dados_dos_formularios");
 
+                    b.HasIndex("FormularioId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_dados_dos_formularios_formulario_ordem")
+                        .HasFilter("grupo_coletado_id IS NULL");
+
                     b.HasIndex("GrupoColetadoId", "Ordem")
                         .IsUnique()
                         .HasDatabaseName("ux_dados_dos_formularios_grupo_ordem");
@@ -13450,16 +13424,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_dados_dos_formularios_processo_dado");
 
-                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Ordem")
-                        .IsUnique()
-                        .HasDatabaseName("ux_dados_dos_formularios_processo_finalidade_ordem")
-                        .HasFilter("grupo_coletado_id IS NULL");
-
                     b.ToTable("dados_dos_formularios", "selecao", t =>
                         {
                             t.HasComment("Dados solicitados nos formulários de um processo seletivo.");
-
-                            t.HasCheckConstraint("ck_dados_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
 
                             t.HasCheckConstraint("ck_dados_dos_formularios_origem_valores", "origem_valores IN ('CATALOGO', 'OPCOES_DO_PROCESSO', 'MUNICIPIOS_DO_FADA', 'UNIDADES_FEDERATIVAS', 'MUNICIPIOS_DA_PROVA_PRESENCIAL')");
 
@@ -13473,6 +13440,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("codigo")
+                        .HasComment("Código que identifica o formulário no processo; único no processo.");
+
+                    b.Property<string>("ConsequenciaDaFaltaDeEnvio")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("consequencia_da_falta_de_envio")
+                        .HasComment("Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO.");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
@@ -13482,27 +13462,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("fase_id");
 
-                    b.Property<string>("Finalidade")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
-
-                    b.Property<string>("ModeloOrigemCodigo")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("modelo_origem_codigo");
-
-                    b.Property<Guid?>("ModeloOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("modelo_origem_id");
-
-                    b.Property<string>("ModeloOrigemNome")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("modelo_origem_nome")
-                        .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
+                    b.Property<bool>("Obrigatorio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("obrigatorio")
+                        .HasComment("Indica se o candidato é obrigado a enviar o formulário.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -13521,13 +13484,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_formularios_processo");
 
-                    b.HasIndex("ProcessoSeletivoId", "Finalidade")
-                        .IsUnique()
-                        .HasDatabaseName("ux_formularios_processo_processo_finalidade");
+                    b.HasAlternateKey("ProcessoSeletivoId", "Codigo")
+                        .HasName("ux_formularios_processo_processo_codigo");
 
                     b.ToTable("formularios_processo", "selecao", t =>
                         {
-                            t.HasCheckConstraint("ck_formularios_processo_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                            t.HasCheckConstraint("ck_formularios_processo_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
+                            t.HasCheckConstraint("ck_formularios_processo_consequencia_da_falta_de_envio", "consequencia_da_falta_de_envio IS NULL OR consequencia_da_falta_de_envio IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+
+                            t.HasCheckConstraint("ck_formularios_processo_modelo_origem_completo", "(modelo_origem_id IS NULL AND modelo_origem_codigo IS NULL AND modelo_origem_nome IS NULL) OR (modelo_origem_id IS NOT NULL AND modelo_origem_codigo IS NOT NULL AND modelo_origem_nome IS NOT NULL)");
                         });
                 });
 
@@ -13631,12 +13597,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("exibicao")
                         .HasComment("Condições para exibir o grupo, em JSON, quando houver.");
 
-                    b.Property<string>("Finalidade")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
+                    b.Property<Guid>("FormularioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formulario_id")
+                        .HasComment("Identificador do formulário em que o grupo é solicitado.");
 
                     b.Property<bool>("IncluiCandidato")
                         .HasColumnType("boolean")
@@ -13690,6 +13654,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_grupos_dos_formularios");
 
+                    b.HasIndex("FormularioId")
+                        .HasDatabaseName("ix_grupos_dos_formularios_formulario_id");
+
                     b.HasIndex("ProcessoSeletivoId", "Codigo")
                         .IsUnique()
                         .HasDatabaseName("ux_grupos_dos_formularios_processo_codigo");
@@ -13699,8 +13666,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
 
                             t.HasCheckConstraint("ck_grupos_dos_formularios_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-
-                            t.HasCheckConstraint("ck_grupos_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
 
                             t.HasCheckConstraint("ck_grupos_dos_formularios_pagina_codigo_formato", "pagina_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
@@ -14468,6 +14433,61 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MunicipioDoFada", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasComment("Identificador do município na configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<string>("CodigoIbge")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("codigo_ibge")
+                        .HasComment("Código IBGE do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<Guid>("ConfiguracaoDoFadaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configuracao_do_fada_id")
+                        .HasComment("Identificador da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Data e hora de criação do registro.");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("nome")
+                        .HasComment("Nome do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<string>("Uf")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("uf")
+                        .HasComment("Sigla da unidade federativa do município do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Data e hora da última alteração, quando houver.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_municipios_do_fada");
+
+                    b.HasIndex("ConfiguracaoDoFadaId")
+                        .HasDatabaseName("ix_municipios_do_fada_configuracao_do_fada_id");
+
+                    b.ToTable("municipios_do_fada", "selecao", t =>
+                        {
+                            t.HasComment("Municípios da configuração do Fator de Atenuação das Desigualdades de Acesso (FADA), copiados da base legal.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14867,7 +14887,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("id")
                         .HasComment("Identificador do processo seletivo.");
 
-                    b.Property<bool?>("AplicaBonusRegional")
+                    b.Property<bool?>("AplicaFada")
                         .HasColumnType("boolean")
                         .HasColumnName("aplica_fada")
                         .HasComment("Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado.");
@@ -14897,6 +14917,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted")
                         .HasComment("Indica se o registro foi excluído logicamente.");
+
+                    b.Property<string>("ManifestacaoDeInteresse")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("manifestacao_de_interesse")
+                        .HasComment("Manifestação de interesse declarada pelo edital. Nulo = não prevista. Códigos: UMA_VEZ, CONFIRMA_A_CADA_CHAMADA.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -14945,6 +14971,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("processos_seletivos", "selecao", t =>
                         {
                             t.HasComment("Processos seletivos e suas configurações declaradas para a seleção de candidatos.");
+
+                            t.HasCheckConstraint("ck_processos_seletivos_manifestacao_de_interesse", "manifestacao_de_interesse IS NULL OR manifestacao_de_interesse IN ('UMA_VEZ', 'CONFIRMA_A_CADA_CHAMADA')");
 
                             t.HasCheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
 
@@ -15164,7 +15192,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("Configurações dos recursos de uma etapa de avaliação.");
 
+                            t.HasCheckConstraint("ck_recursos_configurados_da_etapa_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')");
+
                             t.HasCheckConstraint("ck_recursos_configurados_da_etapa_evento_inicial_do_prazo", "evento_inicial_do_prazo IN ('PUBLICACAO_DO_ATO', 'CIENCIA_INDIVIDUAL')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_etapa_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_etapa_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_etapa_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
                         });
                 });
 
@@ -15511,8 +15547,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Codigo = "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DeclaracaoDaRegra = "{}",
-                            Hash = "cffb7c530a7664cfd44d4750daa2974a1800cf0b73ff084039f701e2b453b2dc",
-                            Invariantes = "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de uma publicação prevista preliminar da própria fase, identificada por ela e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
+                            Hash = "17872c0f3bd0fd3a1cf35702c17b45149479f386a125e30a42d82d98691435ae",
+                            Invariantes = "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara uma das três opções (efeito suspensivo para todos os recursos, sem efeito suspensivo, ou a unidade decide em cada recurso), e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de uma publicação prevista preliminar da própria fase, identificada por ela e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]",
                             Tipo = "REGRA_PRAZO_RECURSO",
                             Versao = "v1"
                         },
@@ -15740,10 +15776,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Consequencia")
+                    b.Property<bool>("AbrePrazoParaReenvio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("abre_prazo_para_reenvio")
+                        .HasComment("Indica se o grupo abre prazo para reenvio dos documentos.");
+
+                    b.Property<string>("ConsequenciaDoDescumprimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
-                        .HasColumnName("consequencia");
+                        .HasColumnName("consequencia_do_descumprimento")
+                        .HasComment("Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -15802,9 +15844,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("regras_de_comprovacao", "selecao", t =>
                         {
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+
                             t.HasCheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
 
-                            t.HasCheckConstraint("ck_regras_de_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+                            t.HasCheckConstraint("ck_regras_de_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia_do_descumprimento IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia_do_descumprimento IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
 
                             t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
 
@@ -15938,6 +15982,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("recursos_configurados_da_fase", "selecao", t =>
                         {
                             t.HasComment("Configuração dos recursos de uma fase do cronograma.");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_fase_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_fase_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_fase_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
+
+                            t.HasCheckConstraint("ck_recursos_configurados_da_fase_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
                         });
                 });
 
@@ -15968,19 +16020,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("exibicao");
 
-                    b.Property<string>("Finalidade")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("finalidade")
-                        .HasComment("Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO.");
-
                     b.Property<string>("FormaAceite")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("forma_aceite")
                         .HasComment("Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP.");
+
+                    b.Property<Guid>("FormularioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formulario_id")
+                        .HasComment("Identificador do formulário em que o termo é exigido.");
 
                     b.Property<string>("HashVersao")
                         .IsRequired()
@@ -16039,19 +16089,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_termos_exigidos_formulario");
 
-                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Codigo")
-                        .IsUnique()
-                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_codigo");
+                    b.HasIndex("ProcessoSeletivoId")
+                        .HasDatabaseName("ix_termos_exigidos_formulario_processo_seletivo_id");
 
-                    b.HasIndex("ProcessoSeletivoId", "Finalidade", "Ordem")
+                    b.HasIndex("FormularioId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_termos_exigidos_formulario_processo_finalidade_ordem");
+                        .HasDatabaseName("ux_termos_exigidos_formulario_formulario_codigo");
+
+                    b.HasIndex("FormularioId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_termos_exigidos_formulario_formulario_ordem");
 
                     b.ToTable("termos_exigidos_formulario", "selecao", t =>
                         {
                             t.HasCheckConstraint("ck_termos_exigidos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-
-                            t.HasCheckConstraint("ck_termos_exigidos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
                         });
                 });
 
@@ -16220,6 +16271,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("FormularioCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("formulario_codigo");
+
                     b.Property<string>("HashVersao")
                         .IsRequired()
                         .HasColumnType("text")
@@ -16252,6 +16309,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("aceites_da_inscricao", "selecao", t =>
                         {
                             t.HasComment("O aceite de um termo na inscrição, com a versão e o hash da versão fixada.");
+
+                            t.HasCheckConstraint("ck_aceites_da_inscricao_formulario_codigo_formato", "formulario_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                         });
                 });
 
@@ -16567,11 +16626,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("tipo")
                         .HasComment("Tipo do valor da resposta. O tipo ENDERECO não é gravado aqui, porque o endereço tem registro próprio. Códigos: SIM_OU_NAO, NUMERO, OPCAO, TEXTO, DATA, ENDERECO, MUNICIPIO.");
 
-                    b.Property<bool?>("ValorBooleano")
-                        .HasColumnType("boolean")
-                        .HasColumnName("valor_sim_ou_nao")
-                        .HasComment("Resposta de sim ou não, quando aplicável.");
-
                     b.Property<byte[]>("ValorCifrado")
                         .HasColumnType("bytea")
                         .HasColumnName("valor_cifrado")
@@ -16598,6 +16652,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("valor_rotulo")
                         .HasComment("O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada.");
 
+                    b.Property<bool?>("ValorSimOuNao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("valor_sim_ou_nao")
+                        .HasComment("Resposta de sim ou não, quando aplicável.");
+
                     b.Property<string>("ValorTexto")
                         .HasColumnType("text")
                         .HasColumnName("valor_texto")
@@ -16608,10 +16667,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("OcorrenciaId")
                         .HasDatabaseName("ix_respostas_da_inscricao_ocorrencia_id");
-
-                    b.HasIndex("FatoCodigo", "ValorBooleano")
-                        .HasDatabaseName("ix_respostas_da_inscricao_dado_sim_ou_nao")
-                        .HasFilter("valor_sim_ou_nao IS NOT NULL");
 
                     b.HasIndex("FatoCodigo", "ValorCodigo")
                         .HasDatabaseName("ix_respostas_da_inscricao_dado_codigo")
@@ -16624,6 +16679,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("FatoCodigo", "ValorNumero")
                         .HasDatabaseName("ix_respostas_da_inscricao_dado_numero")
                         .HasFilter("valor_numero IS NOT NULL");
+
+                    b.HasIndex("FatoCodigo", "ValorSimOuNao")
+                        .HasDatabaseName("ix_respostas_da_inscricao_dado_sim_ou_nao")
+                        .HasFilter("valor_sim_ou_nao IS NOT NULL");
 
                     b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo", "Posicao")
                         .IsUnique()
@@ -17555,11 +17614,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_vigencias_do_perfil_versoes_do_perfil_perfil_id_versao_id");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalBonusRegional", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalDoFada", b =>
                 {
-                    b.OwnsMany("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalBonusRegionalMunicipio", "Municipios", b1 =>
+                    b.OwnsMany("Unifesspa.UniPlus.Configuracao.Domain.Entities.MunicipioDaBaseLegalDoFada", "Municipios", b1 =>
                         {
-                            b1.Property<Guid>("BaseLegalBonusRegionalId")
+                            b1.Property<Guid>("BaseLegalDoFadaId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("base_legal_id")
                                 .HasComment("Identificador da base legal do Fator de Atenuação das Desigualdades de Acesso (FADA).");
@@ -17593,7 +17652,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("uf")
                                 .HasComment("Sigla da unidade federativa do município abrangido pelo Fator de Atenuação das Desigualdades de Acesso (FADA).");
 
-                            b1.HasKey("BaseLegalBonusRegionalId", "Id")
+                            b1.HasKey("BaseLegalDoFadaId", "Id")
                                 .HasName("pk_municipios_da_base_legal_fada");
 
                             b1.ToTable("municipios_da_base_legal_fada", "configuracao", t =>
@@ -17604,7 +17663,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 });
 
                             b1.WithOwner()
-                                .HasForeignKey("BaseLegalBonusRegionalId")
+                                .HasForeignKey("BaseLegalDoFadaId")
                                 .HasConstraintName("fk_municipios_da_base_legal_fada_base_legal_id");
                         });
 
@@ -20500,66 +20559,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_condicoes_do_calculo_dos_dados_regra_de_calculo");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithOne("BonusRegional")
-                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", "ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id");
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
-                        {
-                            b1.Property<Guid>("ConfiguracaoBonusRegionalId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Codigo")
-                                .IsRequired()
-                                .HasMaxLength(128)
-                                .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_codigo")
-                                .HasComment("Código da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                            b1.Property<string>("Hash")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character(64)")
-                                .HasColumnName("regra_hash")
-                                .IsFixedLength()
-                                .HasComment("Resumo que identifica o conteúdo da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                            b1.Property<string>("Versao")
-                                .IsRequired()
-                                .HasMaxLength(16)
-                                .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_versao")
-                                .HasComment("Versão da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-                            b1.HasKey("ConfiguracaoBonusRegionalId");
-
-                            b1.ToTable("configuracoes_do_fada", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ConfiguracaoBonusRegionalId")
-                                .HasConstraintName("fk_configuracoes_do_fada_configuracoes_do_fada_id");
-                        });
-
-                    b.Navigation("Regra")
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegionalMunicipio", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", null)
-                        .WithMany("Municipios")
-                        .HasForeignKey("ConfiguracaoBonusRegionalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_municipios_do_fada_configuracao_do_fada_id");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -20975,6 +20974,56 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDoFada", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithOne("Fada")
+                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDoFada", "ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_configuracoes_do_fada_processo_seletivo_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoDoFadaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_codigo")
+                                .HasComment("Código da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_hash")
+                                .IsFixedLength()
+                                .HasComment("Resumo que identifica o conteúdo da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_versao")
+                                .HasComment("Versão da regra do Fator de Atenuação das Desigualdades de Acesso (FADA).");
+
+                            b1.HasKey("ConfiguracaoDoFadaId");
+
+                            b1.ToTable("configuracoes_do_fada", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoDoFadaId")
+                                .HasConstraintName("fk_configuracoes_do_fada_configuracoes_do_fada_id");
+                        });
+
+                    b.Navigation("Regra")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoTaxaInscricao", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -21073,6 +21122,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_documentos_exigidos_processo_seletivo_processo_seletivo_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessoSeletivoId", "FormularioCodigo")
+                        .HasPrincipalKey("ProcessoSeletivoId", "Codigo")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_documentos_exigidos_formulario");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.Entities.RequisitosDoDocumento", "Requisitos", b1 =>
                         {
@@ -21542,6 +21599,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FatoColetado", b =>
                 {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany()
+                        .HasForeignKey("FormularioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dados_dos_formularios_formulario_processo");
+
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", null)
                         .WithMany("Subitens")
                         .HasForeignKey("GrupoColetadoId")
@@ -21564,6 +21628,42 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_formularios_processo_processo_seletivo");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ModeloDeOrigem", "ModeloDeOrigem", b1 =>
+                        {
+                            b1.Property<Guid>("FormularioProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("modelo_origem_codigo")
+                                .HasComment("Código copiado do modelo de formulário de origem, nulo quando não há modelo.");
+
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("modelo_origem_id")
+                                .HasComment("Identificador do modelo de formulário de origem, nulo quando não há modelo.");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("modelo_origem_nome")
+                                .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
+
+                            b1.HasKey("FormularioProcessoId");
+
+                            b1.ToTable("formularios_processo", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FormularioProcessoId")
+                                .HasConstraintName("fk_formularios_processo_formularios_processo_id");
+                        });
+
+                    b.Navigation("ModeloDeOrigem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GeracaoDeEnvioAoInep", b =>
@@ -21578,6 +21678,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", b =>
                 {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany()
+                        .HasForeignKey("FormularioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_grupos_dos_formularios_formulario_processo");
+
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany("GruposColetados")
                         .HasForeignKey("ProcessoSeletivoId")
@@ -21760,6 +21867,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MunicipioDoFada", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDoFada", null)
+                        .WithMany("Municipios")
+                        .HasForeignKey("ConfiguracaoDoFadaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_municipios_do_fada_configuracao_do_fada_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", null)
@@ -21843,6 +21960,62 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ProcessoSeletivoId")
                                 .HasConstraintName("fk_processos_seletivos_processos_seletivos_id");
+                        });
+
+                    b.OwnsMany("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva.CadastroDeReservaDaChamada", "_cadastroDeReserva", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasColumnName("id")
+                                .HasComment("Identificador técnico da linha, substituída com a declaração.");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<int>("Chamada")
+                                .HasColumnType("integer")
+                                .HasColumnName("numero_da_chamada")
+                                .HasComment("Número da chamada do processo, a partir de 1.");
+
+                            b1.Property<string>("Participacao")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("participacao_da_reserva")
+                                .HasComment("O que a reserva faz quando a chamada a convoca; vazio na chamada sem reserva. Códigos: ANTECIPA_A_HABILITACAO, ASSUME_NA_MESMA_CHAMADA.");
+
+                            b1.Property<int>("PessoasDaReservaPorVaga")
+                                .HasColumnType("integer")
+                                .HasColumnName("pessoas_da_reserva_por_vaga")
+                                .HasComment("Quantas pessoas da reserva a chamada convoca por vaga, além de quem ocupa a vaga; zero é a chamada sem reserva.");
+
+                            b1.Property<Guid>("ProcessoSeletivoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("processo_seletivo_id")
+                                .HasComment("Processo seletivo que declara o cadastro de reserva.");
+
+                            b1.HasKey("Id")
+                                .HasName("pk_cadastros_de_reserva");
+
+                            b1.HasIndex("ProcessoSeletivoId", "Chamada")
+                                .IsUnique()
+                                .HasDatabaseName("ux_cadastros_de_reserva_processo_chamada");
+
+                            b1.ToTable("cadastros_de_reserva", "selecao", t =>
+                                {
+                                    t.HasComment("Cadastro de reserva por chamada declarado pelo processo seletivo: quantas pessoas da reserva cada chamada convoca por vaga e o que a reserva faz na chamada.");
+
+                                    t.HasCheckConstraint("ck_cadastros_de_reserva_numero_da_chamada", "numero_da_chamada >= 1");
+
+                                    t.HasCheckConstraint("ck_cadastros_de_reserva_participacao_da_reserva", "participacao_da_reserva IS NULL OR participacao_da_reserva IN ('ANTECIPA_A_HABILITACAO', 'ASSUME_NA_MESMA_CHAMADA')");
+
+                                    t.HasCheckConstraint("ck_cadastros_de_reserva_participacao_e_quantidade", "(pessoas_da_reserva_por_vaga = 0) = (participacao_da_reserva IS NULL)");
+
+                                    t.HasCheckConstraint("ck_cadastros_de_reserva_pessoas_da_reserva_por_vaga", "pessoas_da_reserva_por_vaga >= 0");
+                                });
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProcessoSeletivoId")
+                                .HasConstraintName("fk_cadastros_de_reserva_processo_seletivo");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.DeclaracaoDaProvaPresencial", "ProvaPresencial", b1 =>
@@ -22122,6 +22295,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Navigation("UnidadeAdministradora")
                         .IsRequired();
+
+                    b.Navigation("_cadastroDeReserva");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProdutoDaEtapa", b =>
@@ -22166,13 +22341,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("EfeitoSuspensivo")
                                 .IsRequired()
-                                .HasColumnType("text")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
                                 .HasColumnName("efeito_suspensivo")
-                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO.");
+                                .HasComment("Efeito suspensivo do recurso na 1ª instância. Códigos: PARA_TODOS_OS_RECURSOS, SEM_EFEITO_SUSPENSIVO, UNIDADE_DECIDE_EM_CADA_RECURSO.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
-                                .HasColumnType("text")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
                                 .HasColumnName("guarda_da_vaga")
                                 .HasComment("Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA.");
 
@@ -22192,7 +22369,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
-                                        .HasColumnType("text")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
                                         .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
@@ -22219,7 +22397,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
-                                        .HasColumnType("text")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_unidade")
                                         .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
@@ -22432,13 +22611,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.Property<string>("EfeitoSuspensivo")
                                 .IsRequired()
-                                .HasColumnType("text")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
                                 .HasColumnName("efeito_suspensivo")
-                                .HasComment("Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO.");
+                                .HasComment("Efeito suspensivo do recurso na 1ª instância. Códigos: PARA_TODOS_OS_RECURSOS, SEM_EFEITO_SUSPENSIVO, UNIDADE_DECIDE_EM_CADA_RECURSO.");
 
                             b1.Property<string>("GuardaDaVaga")
                                 .IsRequired()
-                                .HasColumnType("text")
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
                                 .HasColumnName("guarda_da_vaga")
                                 .HasComment("Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA.");
 
@@ -22458,7 +22639,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
-                                        .HasColumnType("text")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_segunda_instancia_unidade")
                                         .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
@@ -22485,7 +22667,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                                     b2.Property<string>("Unidade")
                                         .IsRequired()
-                                        .HasColumnType("text")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("character varying(30)")
                                         .HasColumnName("prazo_unidade")
                                         .HasComment("Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS.");
 
@@ -22556,6 +22739,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.TermoExigidoFormulario", b =>
                 {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
+                        .WithMany()
+                        .HasForeignKey("FormularioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_termos_exigidos_formulario_formulario_processo");
+
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany("TermosExigidos")
                         .HasForeignKey("ProcessoSeletivoId")
@@ -22771,11 +22961,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("CandidatosAtendidos");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
-                {
-                    b.Navigation("Municipios");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>
                 {
                     b.Navigation("Destinos");
@@ -22798,6 +22983,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("Modalidades");
 
                     b.Navigation("VagasOfertadas");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDoFada", b =>
+                {
+                    b.Navigation("Municipios");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
@@ -22862,8 +23052,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Navigation("AtendimentoEspecializado");
 
-                    b.Navigation("BonusRegional");
-
                     b.Navigation("Campos");
 
                     b.Navigation("Cascata");
@@ -22883,6 +23071,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("DocumentosExigidos");
 
                     b.Navigation("Etapas");
+
+                    b.Navigation("Fada");
 
                     b.Navigation("Formularios");
 
