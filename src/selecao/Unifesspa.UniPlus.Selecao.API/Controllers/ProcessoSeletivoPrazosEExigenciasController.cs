@@ -58,7 +58,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
     [EndpointName("DefinirCronogramaDeFases")]
-    [EndpointDescription("Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
+    [EndpointDescription("Devolva consequenciaDaAusencia em cada banca para preservá-la; se omitida, ela é apagada. Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

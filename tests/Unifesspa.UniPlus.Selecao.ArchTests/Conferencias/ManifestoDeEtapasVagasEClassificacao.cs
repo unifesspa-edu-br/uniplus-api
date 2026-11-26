@@ -18,7 +18,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
              ("HaVagasOfertadas", "Derivada das quantidades de vagas declaradas nas ofertas.")]),
 
         [typeof(BancaDaEtapa)] = (
-            ["Chave", "Tipo", "PosicaoNoTipo", "RegraDeDeliberacao"],
+            ["Chave", "Tipo", "PosicaoNoTipo", "ConsequenciaDaAusencia", "RegraDeDeliberacao"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(RecursoDaEtapa)] = (

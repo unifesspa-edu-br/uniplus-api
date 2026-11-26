@@ -4322,6 +4322,16 @@
       "titulo": "A banca que julga recurso não define candidatos atendidos"
     },
     {
+      "codigo": "uniplus.selecao.banca.consequencia_da_ausencia_invalida",
+      "status": 422,
+      "titulo": "A consequência da ausência não é uma opção conhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.banca.consequencia_da_ausencia_so_em_banca_que_avalia_o_merito",
+      "status": 422,
+      "titulo": "A consequência da ausência só pode ser declarada em banca que avalia o mérito"
+    },
+    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "status": 422,
       "titulo": "A deliberação colegiada declara o critério de votação"

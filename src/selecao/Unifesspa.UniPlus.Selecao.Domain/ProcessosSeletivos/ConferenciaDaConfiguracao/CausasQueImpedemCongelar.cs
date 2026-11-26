@@ -43,7 +43,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
         new(NomeDoAssunto.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
         new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "ordemDeRemanejamento")),
-        new(NomeDoAssunto.ConsequenciasDoDescumprimento, static c => CoerenciaDaConsequenciaDoDescumprimento.Causas(c.Configuracao, c.Cadastros.FatosDeModalidade)),
+        new(NomeDoAssunto.ConsequenciasDoDescumprimento, static c => CoerenciaDaConsequenciaDoDescumprimento.Causas(c.Configuracao, c.Cadastros.FatosDeModalidade, c.Cronograma, c.Etapas)),
         new(NomeDoAssunto.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
         new(NomeDoAssunto.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
         new(NomeDoAssunto.ProvaPresencial, static c =>

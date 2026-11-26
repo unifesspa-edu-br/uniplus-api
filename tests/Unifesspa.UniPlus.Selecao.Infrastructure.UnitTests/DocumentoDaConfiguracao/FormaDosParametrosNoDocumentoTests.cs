@@ -5,12 +5,22 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 public sealed class FormaDosParametrosNoDocumentoTests
 {
+    [Fact]
+    public void Consequencias_DoEsquemaEDoEnum_SaoIguais()
+    {
+        JsonNode esquema = ArquivosDoEsquema.DoAssembly().PorNome["comuns.schema.json"];
+        string[] codigos = [.. esquema["$defs"]!["consequenciaDoDescumprimento"]!["enum"]!.AsArray().Select(static item => item!.GetValue<string>())];
+        codigos.Should().BeEquivalentTo(CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(static valor => valor.Codigo()));
+    }
+
     [Theory]
     [InlineData("eliminacao.schema.json", TipoRegra.RegraEliminacao)]
     [InlineData("desempate.schema.json", TipoRegra.CriterioDesempate)]

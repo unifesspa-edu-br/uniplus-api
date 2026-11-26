@@ -41,6 +41,21 @@ public sealed class ReconciliacaoDasBancasTests
         gravada.PosicaoNoTipo.Should().Be(1);
     }
 
+    [Fact]
+    public void Reconciliar_ConsequenciaDaBancaDaFase_CopiaEApagaQuandoAusente()
+    {
+        ChaveLocal chave = ChaveLocal.Criar("banca").Value;
+        TipoDeBancaCopiado tipo = TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista);
+        BancaRequerida viva = BancaRequerida.Criar(chave, tipo, []);
+        BancaRequerida declarada = BancaRequerida.Criar(chave, tipo, [], idDaBancaQueSubstitui: viva.Id,
+            consequenciaDaAusencia: ConsequenciaDoDescumprimento.EliminaDoProcesso);
+
+        ReconciliacaoDasBancas.Reconciliar([viva], [declarada]);
+        viva.ConsequenciaDaAusencia.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        ReconciliacaoDasBancas.Reconciliar([viva], [BancaRequerida.Criar(chave, tipo, [], idDaBancaQueSubstitui: viva.Id)]);
+        viva.ConsequenciaDaAusencia.Should().BeNull();
+    }
+
     [Fact(DisplayName = "A banca declarada sem id é banca nova, ainda que haja banca gravada do mesmo tipo")]
     public void Reconciliar_SemId_CriaABancaNova()
     {

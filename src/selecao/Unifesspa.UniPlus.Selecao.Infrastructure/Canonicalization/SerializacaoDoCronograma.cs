@@ -125,6 +125,8 @@ internal static class SerializacaoDoCronograma
             ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
             ["candidatosAtendidos"] = SerializarCandidatosAtendidos(banca),
         };
+        item["consequenciaDaAusencia"] = banca.ConsequenciaDaAusencia?.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "consequenciaDaAusencia", banca.ConsequenciaDaAusencia);
         TipoDeBancaNoEnvelope.Serializar(item, banca.Tipo);
 
         return item;

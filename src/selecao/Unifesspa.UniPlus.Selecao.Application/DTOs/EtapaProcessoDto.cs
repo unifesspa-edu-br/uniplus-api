@@ -122,7 +122,7 @@ public sealed record BancaDaEtapaDto(
     bool ExigeDuasOuMaisBancas,
     bool EncerraRecursoNaPrimeiraInstancia,
     IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisaoJulgados,
-    RegraDeDeliberacaoDto? RegraDeDeliberacao);
+    RegraDeDeliberacaoDto? RegraDeDeliberacao, CodigoComRotulo<ConsequenciaDoDescumprimento>? ConsequenciaDaAusencia = null);
 
 /// <summary>Projeção de leitura de <c>RecursoDaEtapa</c>.</summary>
 public sealed record RecursoDaEtapaDto(

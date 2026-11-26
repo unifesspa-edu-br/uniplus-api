@@ -59,6 +59,21 @@ public sealed class BancaDaEtapaTests
         viva.RegraDeDeliberacao.Should().BeNull();
     }
 
+    [Fact]
+    public void AssumirDeclaracao_ConsequenciaDeclarada_CopiaEApagaQuandoAusente()
+    {
+        TipoDeBancaCopiado tipo = TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.Entrevista);
+        ChaveLocal chave = ChaveLocal.Criar("banca").Value;
+        BancaDaEtapa viva = BancaDaEtapa.Criar(chave, tipo);
+        BancaDaEtapa declarada = BancaDaEtapa.Criar(chave, tipo, idDaBancaQueSubstitui: viva.Id,
+            consequenciaDaAusencia: ConsequenciaDoDescumprimento.EliminaDoProcesso);
+
+        Substituir(viva, declarada);
+        viva.ConsequenciaDaAusencia.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        Substituir(viva, BancaDaEtapa.Criar(chave, tipo, idDaBancaQueSubstitui: viva.Id));
+        viva.ConsequenciaDaAusencia.Should().BeNull();
+    }
+
     [Fact(DisplayName = "A banca reconstruída dos dados salvos guarda o Id congelado e a cópia do tipo")]
     public void ReconstruirDosDadosSalvos_GuardaOIdCongeladoEACopia()
     {

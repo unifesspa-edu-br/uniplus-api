@@ -52,7 +52,7 @@ public static class CandidatosAtendidosPelasBancas
     {
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
-        IReadOnlyList<BancaDeclarada> declaradas = BancaDeclarada.De([.. bancasRequeridas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao))]);
+        IReadOnlyList<BancaDeclarada> declaradas = BancaDeclarada.De([.. bancasRequeridas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao, banca.ConsequenciaDaAusencia))]);
 
         return
         [

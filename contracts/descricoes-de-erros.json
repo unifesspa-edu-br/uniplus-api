@@ -14064,6 +14064,32 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.banca.consequencia_da_ausencia_invalida",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A consequência informada não corresponde a uma das opções disponíveis."
+      ],
+      "comoResolver": [
+        "Informe um código do vocabulário de consequências do descumprimento ou remova o campo."
+      ],
+      "ondeAparece": [
+        "Ao declarar bancas no cronograma ou nas etapas do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.banca.consequencia_da_ausencia_so_em_banca_que_avalia_o_merito",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A banca informada não avalia o mérito e não pode declarar consequência para a ausência."
+      ],
+      "comoResolver": [
+        "Remova a consequência da ausência ou escolha uma banca que avalie o mérito."
+      ],
+      "ondeAparece": [
+        "Ao declarar bancas no cronograma ou nas etapas do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.banca.criterio_obrigatorio",
       "requisitos": [
         "UNI-REQ-0275"

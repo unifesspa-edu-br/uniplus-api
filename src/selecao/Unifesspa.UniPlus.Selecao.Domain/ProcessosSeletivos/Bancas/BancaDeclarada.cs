@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -11,8 +12,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="PosicaoNoTipo">A posição da banca entre as do mesmo tipo, a partir de 1.</param>
 /// <param name="Tipo">A cópia do tipo de banca que a banca guarda.</param>
 /// <param name="Regra">Nula enquanto o rascunho não a declara.</param>
-public sealed record BancaDeclarada(int Posicao, int PosicaoNoTipo, TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra)
+public sealed record BancaDeclarada(int Posicao, int PosicaoNoTipo, TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra, ConsequenciaDoDescumprimento? ConsequenciaDaAusencia = null)
 {
+    /// <summary>Os códigos das categorias de candidatos atendidos; uma lista vazia atende todas.</summary>
+    public IReadOnlyList<string> CandidatosAtendidos { get; init; } = [];
+
     /// <summary>Como as mensagens citam a banca: o rótulo fixo do tipo e a posição entre as do mesmo tipo.</summary>
     public string Citacao => $"{Tipo.Codigo.Rotulo()} {PosicaoNoTipo}";
 
@@ -22,10 +26,13 @@ public sealed record BancaDeclarada(int Posicao, int PosicaoNoTipo, TipoDeBancaC
     /// <summary>Se a banca decide por ato individual e julga recurso, pelo papel, sem declarar a votação dele.</summary>
     public bool JulgaRecursoSemVotacao => Tipo.JulgaRecurso && SemVotacaoDoRecurso;
 
-    internal static IReadOnlyList<BancaDeclarada> De(IReadOnlyList<(TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra)> bancas)
+    internal static IReadOnlyList<BancaDeclarada> De(IReadOnlyList<(TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra)> bancas) =>
+        De([.. bancas.Select(static banca => (banca.Tipo, banca.Regra, (ConsequenciaDoDescumprimento?)null))]);
+
+    internal static IReadOnlyList<BancaDeclarada> De(IReadOnlyList<(TipoDeBancaCopiado Tipo, RegraDeDeliberacao? Regra, ConsequenciaDoDescumprimento? Consequencia)> bancas)
     {
         IReadOnlyList<int> posicoes = PosicaoDasBancasNoTipo.Calcular(bancas.Select(static banca => banca.Tipo.Codigo));
 
-        return [.. bancas.Select((banca, posicao) => new BancaDeclarada(posicao, posicoes[posicao], banca.Tipo, banca.Regra))];
+        return [.. bancas.Select((banca, posicao) => new BancaDeclarada(posicao, posicoes[posicao], banca.Tipo, banca.Regra, banca.Consequencia))];
     }
 }

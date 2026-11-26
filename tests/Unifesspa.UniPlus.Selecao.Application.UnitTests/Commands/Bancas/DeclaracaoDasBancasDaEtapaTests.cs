@@ -164,6 +164,18 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         etapa.Bancas.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O tipo ausente do cadastro não esconde a regra inválida nem a consequência desconhecida da mesma banca")]
+    public async Task Declarar_ComTipoAusenteERecusasIndependentesNaMesmaBanca_AcumulaTodas()
+    {
+        BancaDaEtapaInput desconhecida = new(Guid.CreateVersion7(), RegrasDeDeliberacaoDeTeste.ComTresViolacoes(), ConsequenciaDaAusencia: "INVALIDA");
+
+        Result resultado = await Declaracao().DeclararAsync(NovaEtapa(), Entrada(desconhecida), CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+            "bancas[0].tipoBancaId", "bancas[0].regraDeDeliberacao.integrantes", "bancas[0].regraDeDeliberacao.criterio",
+            "bancas[0].regraDeDeliberacao.encerramento", "bancas[0].consequenciaDaAusencia");
+    }
+
     [Fact(DisplayName = "Redeclarar a banca com o id lido reaproveita a linha e atualiza a regra")]
     public async Task Declarar_ReaproveitandoABanca_AtualizaARegraSemTrocarALinha()
     {
@@ -276,6 +288,35 @@ public sealed class DeclaracaoDasBancasDaEtapaTests
         Result resultado = await DeclaracaoSemOCadastro().DeclararAsync(etapa, Entrada(Banca(TipoDeEntrevista, null)), CancellationToken.None);
 
         resultado.Error!.Message.Should().Be("O tipo de banca indicado não existe ou está desativado no cadastro.");
+    }
+
+    [Fact]
+    public async Task Declarar_ConsequenciaDevolvidaEOmitida_PreservaEApaga()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        await Declaracao().DeclararAsync(etapa, Entrada(new BancaDaEtapaInput(TipoDeEntrevista.Id, ConsequenciaDaAusencia: "ELIMINA_DO_PROCESSO")), CancellationToken.None);
+        Guid id = etapa.Bancas.Single().Id;
+        await Declaracao().DeclararAsync(etapa, Entrada(new BancaDaEtapaInput(TipoDeEntrevista.Id, Id: id, ConsequenciaDaAusencia: "ELIMINA_DO_PROCESSO")), CancellationToken.None);
+        etapa.Bancas.Single().ConsequenciaDaAusencia.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        await Declaracao().DeclararAsync(etapa, Entrada(new BancaDaEtapaInput(TipoDeEntrevista.Id, Id: id)), CancellationToken.None);
+        etapa.Bancas.Single().ConsequenciaDaAusencia.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Declarar_BancaQueNaoAvaliaComRegraInvalida_AcumulaRecusas()
+    {
+        EtapaProcesso etapa = NovaEtapa();
+        BancaDaEtapaInput banca = new(TipoDeRecursos.Id, RegrasDeDeliberacaoDeTeste.ComTresViolacoes(), ConsequenciaDaAusencia: "ELIMINA_DO_PROCESSO");
+        Result resultado = await Declaracao().DeclararAsync(etapa, Entrada(banca), CancellationToken.None);
+        resultado.Errors.Select(static erro => erro.Error.Code).Should().Contain(BancaErrorCodes.ConsequenciaDaAusenciaSoEmBancaQueAvaliaOMerito);
+        resultado.Errors.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public async Task Declarar_ConsequenciaDesconhecida_RecusaNoCampo()
+    {
+        Result resultado = await Declaracao().DeclararAsync(NovaEtapa(), Entrada(new BancaDaEtapaInput(TipoDeEntrevista.Id, ConsequenciaDaAusencia: "INVALIDA")), CancellationToken.None);
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("bancas[0].consequenciaDaAusencia");
     }
 
     private static DeclaracaoDasBancasDaEtapa DeclaracaoSemOCadastro() => new(new LeituraMemoizada<Guid, TipoBancaView>(

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -56,6 +57,9 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
     /// </summary>
     public IReadOnlyCollection<CategoriaJulgada> CandidatosAtendidos => _candidatosAtendidos.AsReadOnly();
 
+    /// <summary>Consequência própria da ausência do candidato, quando declarada.</summary>
+    public ConsequenciaDoDescumprimento? ConsequenciaDaAusencia { get; private set; }
+
     private BancaRequerida() { }
 
     public static BancaRequerida Criar(
@@ -63,8 +67,9 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao = null,
-        Guid? idDaBancaQueSubstitui = null) =>
-        Montar(chave, Guid.CreateVersion7(), tipo, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui);
+        Guid? idDaBancaQueSubstitui = null,
+        ConsequenciaDoDescumprimento? consequenciaDaAusencia = null) =>
+        Montar(chave, Guid.CreateVersion7(), tipo, candidatosAtendidos, regraDeDeliberacao, idDaBancaQueSubstitui, consequenciaDaAusencia);
 
     /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
     public static BancaRequerida ReconstruirDosDadosSalvos(
@@ -72,14 +77,15 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
         Guid id,
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
-        RegraDeDeliberacao? regraDeDeliberacao = null)
+        RegraDeDeliberacao? regraDeDeliberacao = null,
+        ConsequenciaDoDescumprimento? consequenciaDaAusencia = null)
     {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return Montar(chave, id, tipo, candidatosAtendidos, regraDeDeliberacao, id);
+        return Montar(chave, id, tipo, candidatosAtendidos, regraDeDeliberacao, id, consequenciaDaAusencia);
     }
 
     private static BancaRequerida Montar(
@@ -88,7 +94,8 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
         TipoDeBancaCopiado tipo,
         IReadOnlyList<CategoriaJulgada> candidatosAtendidos,
         RegraDeDeliberacao? regraDeDeliberacao,
-        Guid? idDaBancaQueSubstitui)
+        Guid? idDaBancaQueSubstitui,
+        ConsequenciaDoDescumprimento? consequenciaDaAusencia)
     {
         ArgumentNullException.ThrowIfNull(tipo);
         ArgumentNullException.ThrowIfNull(candidatosAtendidos);
@@ -99,6 +106,7 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
             Chave = chave,
             Tipo = tipo,
             RegraDeDeliberacao = regraDeDeliberacao,
+            ConsequenciaDaAusencia = consequenciaDaAusencia,
             IdDaBancaQueSubstitui = idDaBancaQueSubstitui,
         };
         banca.AdotarCandidatosAtendidos(candidatosAtendidos);
@@ -129,6 +137,7 @@ public sealed class BancaRequerida : EntityBase, IBancaDoLugar<BancaRequerida>
 
         Tipo = Tipo.OrigemId == declarada.Tipo.OrigemId ? Tipo : declarada.Tipo;
         RegraDeDeliberacao = declarada.RegraDeDeliberacao;
+        ConsequenciaDaAusencia = declarada.ConsequenciaDaAusencia;
         PosicaoNoTipo = declarada.PosicaoNoTipo;
         ReconciliarCandidatosAtendidos(declarada._candidatosAtendidos);
     }

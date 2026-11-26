@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 public sealed record BancasDaEtapa
 {
     internal BancasDaEtapa(IReadOnlyList<BancaDaEtapa> bancas) =>
-        Declaradas = BancaDeclarada.De([.. bancas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao))]);
+        Declaradas = BancaDeclarada.De([.. bancas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao, banca.ConsequenciaDaAusencia))]);
 
     public bool TemBancas => Declaradas.Count > 0;
 

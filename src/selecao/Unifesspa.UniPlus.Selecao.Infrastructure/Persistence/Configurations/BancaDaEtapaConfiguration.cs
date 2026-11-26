@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
@@ -18,7 +20,11 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("bancas_da_etapa");
+        builder.ToTable("bancas_da_etapa", tabela => tabela.HasCheckConstraint("ck_bancas_da_etapa_consequencia_da_ausencia",
+            $"consequencia_da_ausencia IS NULL OR consequencia_da_ausencia IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})"));
+        builder.Property(b => b.ConsequenciaDaAusencia).HasMaxLength(30)
+            .ClassificaComo(ClassificacaoDeProtecao.Publico)
+            .HasComment("Consequência própria da ausência do candidato à banca.");
         builder.HasKey(b => b.Id);
         builder.Property<Guid>("ProcessoSeletivoId").HasComment("Processo seletivo ao qual a banca pertence.");
         builder.Property(b => b.Chave)

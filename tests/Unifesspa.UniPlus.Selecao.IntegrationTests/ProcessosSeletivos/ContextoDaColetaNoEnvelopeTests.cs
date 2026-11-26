@@ -174,6 +174,19 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     }
 
     [Fact]
+    public void SerializarRegrasDeComprovacao_Consequencia_EscreveRotuloDeclarado()
+    {
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        RegraDeComprovacao original = ExemploDeEnvelopeDocumentos.RegrasDeComprovacaoRicas(0, false)[1];
+        BaseLegalDaComprovacao baseLegal = BaseLegalDaComprovacao.Criar("Norma institucional", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.ReidratarGrupo(original.Id, 0,
+            new CombinacaoDoGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), [baseLegal], [.. original.Itens], null);
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+
+        Conferir<ConsequenciaDoDescumprimento>(SerializacaoDasExigencias.SerializarRegrasDeComprovacao(processo)[0]!, "consequencia");
+    }
+
+    [Fact]
     public void SerializarRegrasDeComprovacao_Distincao_EscreveRotuloDeclarado()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();

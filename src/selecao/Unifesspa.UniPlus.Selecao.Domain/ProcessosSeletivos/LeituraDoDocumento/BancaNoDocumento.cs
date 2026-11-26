@@ -11,4 +11,5 @@ public sealed record BancaNoDocumento(
     string Chave,
     string TipoBancaCodigo,
     IReadOnlyList<string> CategoriasDocumentoCodigos,
-    DeclaracaoDaDeliberacao? RegraDeDeliberacao);
+    DeclaracaoDaDeliberacao? RegraDeDeliberacao,
+    string? ConsequenciaDaAusencia = null);

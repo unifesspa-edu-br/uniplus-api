@@ -37,6 +37,17 @@
       "maxLength": 200,
       "readOnly": true
     },
+    "consequenciaDaAusencia": {
+      "title": "Consequência da ausência",
+      "description": "Consequência quando a pessoa não comparece à banca.",
+      "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
+    },
+    "consequenciaDaAusenciaRotulo": {
+      "title": "Rótulo da consequência da ausência",
+      "description": "Rótulo registrado na publicação, só de leitura e ignorado na importação.",
+      "type": "string",
+      "readOnly": true
+    },
     "categoriasDocumentoCodigos": {
       "title": "Candidatos atendidos",
       "description": "Códigos das categorias de documento que a banca analisa. Lista vazia quando a banca não define candidatos atendidos por categoria.",

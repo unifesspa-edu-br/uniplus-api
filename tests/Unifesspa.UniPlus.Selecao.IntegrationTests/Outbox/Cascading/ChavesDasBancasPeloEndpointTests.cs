@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -48,6 +49,34 @@ public sealed class ChavesDasBancasPeloEndpointTests(CascadingFixture ambienteDe
         await GravarFasesAsync(cliente, processoId, fases);
 
         (await LerChavesAsync(processoId)).Should().Be((fase, etapa));
+    }
+
+    [Fact]
+    public async Task Gravar_ConsequenciaDaAusencia_DevolveEPreservaOuApaga()
+    {
+        (Guid processoId, JsonArray fases, JsonArray etapas) = await PrepararAsync();
+        using HttpClient cliente = ambienteDeTeste.Factory.CreateClient();
+        fases[1]!["bancasRequeridas"]![0]!["consequenciaDaAusencia"] = "ELIMINA_DO_PROCESSO";
+        etapas[0]!["bancas"]![0]!["consequenciaDaAusencia"] = "ELIMINA_DO_PROCESSO";
+        await GravarOsBlocosAsync(cliente, processoId, fases, etapas, true);
+        JsonNode processo = await LerProcessoComoJsonAsync(cliente, processoId);
+        DevolverIdentificadores(fases, etapas, processo);
+        await GravarOsBlocosAsync(cliente, processoId, fases, etapas, true);
+        ConferirConsequencias(await LerProcessoComoJsonAsync(cliente, processoId), "ELIMINA_DO_PROCESSO");
+        fases[1]!["bancasRequeridas"]![0]!.AsObject().Remove("consequenciaDaAusencia");
+        etapas[0]!["bancas"]![0]!.AsObject().Remove("consequenciaDaAusencia");
+        await GravarOsBlocosAsync(cliente, processoId, fases, etapas, true);
+        ConferirConsequencias(await LerProcessoComoJsonAsync(cliente, processoId), null);
+    }
+
+    private static void ConferirConsequencias(JsonNode processo, string? codigo)
+    {
+        JsonNode? fase = processo["cronogramaFases"]![1]!["bancasRequeridas"]!.AsArray()
+            .Single(item => item!["codigo"]!["codigo"]!.ToString() == TipoDeBanca.AnaliseDocumental.Codigo());
+        string? consequenciaDaFase = fase!["consequenciaDaAusencia"]?["codigo"]?.ToString();
+        string? consequenciaDaEtapa = processo["etapas"]![0]!["bancas"]![0]!["consequenciaDaAusencia"]?["codigo"]?.ToString();
+        consequenciaDaFase.Should().Be(codigo);
+        consequenciaDaEtapa.Should().Be(codigo);
     }
 
     private static void DevolverIdentificadores(JsonArray fases, JsonArray etapas, JsonNode processo)

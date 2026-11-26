@@ -10,6 +10,7 @@ using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Monta as bancas requeridas de uma fase. A banca nova ou que troca de tipo copia o tipo de banca do cadastro vivo; a banca
@@ -37,18 +38,23 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros, Chave
         BancaRequeridaInput declarada, IReadOnlyCollection<BancaRequerida> gravadas, string campo, CancellationToken cancellationToken)
     {
         TipoDeBancaCopiado? tipo = await TipoAsync(declarada, gravadas, cancellationToken).ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return InterrupcaoDaEdicao.Com<BancaRequerida>($"{campo}.tipoBancaId", new DomainError(
-                FaseCronogramaErrorCodes.TipoBancaNaoEncontrado,
-                "O tipo de banca indicado não existe ou está desativado no cadastro."));
-        }
-
         Result<List<CategoriaJulgada>> atendidos = await CandidatosAtendidosAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
-        return atendidos.IsFailure
-            ? Result<BancaRequerida>.ValidationFailure(atendidos.Errors)
-            : Montada(declarada, tipo, atendidos.Value!, campo, gravadas);
+        (Result<RegraDeDeliberacao?> regra, ConsequenciaDoDescumprimento? consequencia, FieldError[] independentes) = Independentes(declarada, tipo, campo);
+        FieldError[] erros = [.. TipoNaoEncontrado(tipo, campo), .. atendidos.Errors, .. independentes];
+        return tipo is null || erros.Length > 0
+            ? Result<BancaRequerida>.ValidationFailure(erros)
+            : Result<BancaRequerida>.Success(BancaRequerida.Criar(ChaveDa(declarada, tipo, gravadas), tipo, atendidos.Value!, regra.Value, declarada.Id, consequencia));
     }
+
+    private static FieldError[] TipoNaoEncontrado(TipoDeBancaCopiado? tipo, string campo) => tipo is not null ? [] :
+    [
+        new($"{campo}.tipoBancaId", new DomainError(
+            FaseCronogramaErrorCodes.TipoBancaNaoEncontrado,
+            "O tipo de banca indicado não existe ou está desativado no cadastro.")),
+    ];
+
+    private ChaveLocal ChaveDa(BancaRequeridaInput declarada, TipoDeBancaCopiado tipo, IReadOnlyCollection<BancaRequerida> gravadas) =>
+        gravadas.FirstOrDefault(banca => banca.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo());
 
     private async Task<TipoDeBancaCopiado?> TipoAsync(
         BancaRequeridaInput declarada, IReadOnlyCollection<BancaRequerida> gravadas, CancellationToken cancellationToken)
@@ -63,14 +69,12 @@ internal sealed class MontagemDasBancasDaFase(CadastrosDasFases cadastros, Chave
         return tipo is null ? null : CopiaDoTipoDeBanca.De(tipo);
     }
 
-    private Result<BancaRequerida> Montada(
-        BancaRequeridaInput declarada, TipoDeBancaCopiado tipo, List<CategoriaJulgada> atendidos, string campo, IReadOnlyCollection<BancaRequerida> gravadas)
+    private static (Result<RegraDeDeliberacao?> Regra, ConsequenciaDoDescumprimento? Consequencia, FieldError[] Erros) Independentes(BancaRequeridaInput declarada, TipoDeBancaCopiado? tipo, string campo)
     {
         Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, campo);
-
-        return regra.Errors.Count > 0
-            ? Result<BancaRequerida>.ValidationFailure(regra.Errors)
-            : Result<BancaRequerida>.Success(BancaRequerida.Criar(gravadas.FirstOrDefault(banca => banca.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo()), tipo, atendidos, regra.Value, declarada.Id));
+        string campoDaConsequencia = $"{campo}.consequenciaDaAusencia";
+        Result<ConsequenciaDoDescumprimento?> consequencia = ConsequenciaDaAusenciaNaBanca.Ler(declarada.ConsequenciaDaAusencia, campoDaConsequencia);
+        return (regra, consequencia.Value, [.. regra.Errors, .. consequencia.Errors, .. (tipo is null ? [] : ConsequenciaDaAusenciaNaBanca.Violacao(tipo, consequencia.Value, campoDaConsequencia))]);
     }
 
     private async Task<Result<List<CategoriaJulgada>>> CandidatosAtendidosAsync(

@@ -79,7 +79,8 @@ internal static class ProjecaoDaFaseDoCronograma
         [.. banca.Tipo.TiposDeDecisaoJulgados.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
         [.. OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)
-            .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);
+            .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))],
+        banca.ConsequenciaDaAusencia is { } consequencia ? CodigoComRotulo<ConsequenciaDoDescumprimento>.De(consequencia) : null);
 
     private static RegraDeHomologacaoDto ProjetarRegraDeHomologacao(RegraDeHomologacaoDasInscricoes regra) => new(
         regra.ResultadoAtoCodigo,
