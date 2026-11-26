@@ -107,20 +107,20 @@ internal sealed class SelecaoDoFormularioDoModelo
     private bool DecidirCopiaEntreFormularios(FatoColetadoInput item)
     {
         FatoColetado? emOutro = _processo.FatosColetados.FirstOrDefault(f => f.FatoCodigo == item.FatoCodigo && f.FormularioId != _formulario.Id);
-        if (emOutro is null)
-        {
-            return true;
-        }
+        return emOutro is null || CopiaOFatoDeOutroFormulario(item.FatoCodigo, emOutro);
+    }
 
+    private bool CopiaOFatoDeOutroFormulario(string fatoCodigo, FatoColetado emOutro)
+    {
         if (emOutro.FormularioId is { } formularioDoFato && _formulariosDaInscricao.Contains(formularioDoFato))
         {
-            _relatorio.Mantidos.Add(item.FatoCodigo);
+            _relatorio.Mantidos.Add(fatoCodigo);
             return false;
         }
 
         if (_coletaAInscricao)
         {
-            _relatorio.Trazidos.Add(item.FatoCodigo);
+            _relatorio.Trazidos.Add(fatoCodigo);
         }
 
         return true;
