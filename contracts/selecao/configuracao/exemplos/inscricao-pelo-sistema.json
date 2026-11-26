@@ -622,7 +622,8 @@
     },
     {
       "numeroDaChamada": 2,
-      "pessoasDaReservaPorVaga": 2
+      "pessoasDaReservaPorVaga": 2,
+      "participacaoDaReserva": "ANTECIPA_A_HABILITACAO"
     }
   ],
   "motivosDeDecisao": [

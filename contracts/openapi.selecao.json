@@ -14309,7 +14309,8 @@
       "CadastroDeReservaDaChamadaDto": {
         "required": [
           "numeroDaChamada",
-          "pessoasDaReservaPorVaga"
+          "pessoasDaReservaPorVaga",
+          "participacaoDaReserva"
         ],
         "type": "object",
         "properties": {
@@ -14320,13 +14321,24 @@
           "pessoasDaReservaPorVaga": {
             "type": "integer",
             "format": "int32"
+          },
+          "participacaoDaReserva": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ParticipacaoDaReserva"
+              }
+            ]
           }
         }
       },
       "CadastroDeReservaInformado": {
         "required": [
           "numeroDaChamada",
-          "pessoasDaReservaPorVaga"
+          "pessoasDaReservaPorVaga",
+          "participacaoDaReserva"
         ],
         "type": "object",
         "properties": {
@@ -14343,6 +14355,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "participacaoDaReserva": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ParticipacaoDaReservaCodigo"
+              }
+            ]
           }
         }
       },
@@ -17452,7 +17474,7 @@
       },
       "DocumentoDaConfiguracaoCadastroDeReserva": {
         "title": "Cadastro de reserva de uma chamada",
-        "description": "O cadastro de reserva de uma chamada do processo: quantas pessoas da reserva a chamada convoca por vaga, al\u00E9m de quem ocupa a vaga. A chamada que n\u00E3o consta na lista do processo n\u00E3o tem reserva. O esquema descreve s\u00F3 a forma: o n\u00FAmero a partir de 1, declarado uma s\u00F3 vez, e a quantidade n\u00E3o negativa s\u00E3o regras do dom\u00EDnio.",
+        "description": "O cadastro de reserva de uma chamada do processo: quantas pessoas da reserva a chamada convoca por vaga, al\u00E9m de quem ocupa a vaga. A chamada que n\u00E3o consta na lista do processo n\u00E3o tem reserva. O esquema descreve s\u00F3 a forma: o n\u00FAmero a partir de 1, declarado uma s\u00F3 vez, a quantidade n\u00E3o negativa e a participa\u00E7\u00E3o da reserva, exigida quando a quantidade \u00E9 maior que zero e recusada quando \u00E9 zero, s\u00E3o regras do dom\u00EDnio.",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -17470,6 +17492,20 @@
             "description": "Quantas pessoas da reserva a chamada convoca por vaga, al\u00E9m de quem ocupa a vaga. Zero \u00E9 a chamada sem reserva. O limite superior \u00E9 o do inteiro de 32 bits; a confer\u00EAncia de que a quantidade n\u00E3o \u00E9 negativa \u00E9 do dom\u00EDnio.",
             "type": "integer",
             "maximum": 2147483647
+          },
+          "participacaoDaReserva": {
+            "title": "Participa\u00E7\u00E3o da reserva",
+            "description": "O que a reserva faz quando a chamada a convoca. Obrigat\u00F3ria na chamada com pessoas da reserva por vaga, sem valor padr\u00E3o, e ausente na chamada sem reserva; a confer\u00EAncia \u00E9 do dom\u00EDnio. ANTECIPA_A_HABILITACAO: a reserva s\u00F3 antecipa a habilita\u00E7\u00E3o. ASSUME_NA_MESMA_CHAMADA: a reserva assume na mesma chamada.",
+            "enum": [
+              "ANTECIPA_A_HABILITACAO",
+              "ASSUME_NA_MESMA_CHAMADA"
+            ]
+          },
+          "participacaoDaReservaRotulo": {
+            "title": "R\u00F3tulo da participa\u00E7\u00E3o da reserva",
+            "description": "R\u00F3tulo atual da participa\u00E7\u00E3o da reserva. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "readOnly": true
           }
         }
       },
@@ -27076,6 +27112,29 @@
             "type": "string"
           }
         }
+      },
+      "ParticipacaoDaReserva": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ParticipacaoDaReservaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ParticipacaoDaReservaCodigo": {
+        "enum": [
+          "ANTECIPA_A_HABILITACAO",
+          "ASSUME_NA_MESMA_CHAMADA"
+        ],
+        "type": "string",
+        "description": "- \u0060ANTECIPA_A_HABILITACAO\u0060: A reserva s\u00F3 antecipa a habilita\u00E7\u00E3o \u2014 A pessoa da reserva sai da chamada com a documenta\u00E7\u00E3o deferida, sem ser homologada como apta \u00E0 matr\u00EDcula; a vaga que sobrar segue para a chamada seguinte.\n- \u0060ASSUME_NA_MESMA_CHAMADA\u0060: A reserva assume na mesma chamada \u2014 A pessoa da reserva homologada como habilitada ocupa a vaga na pr\u00F3pria chamada."
       },
       "PendenciaDaAvaliacaoDto": {
         "required": [

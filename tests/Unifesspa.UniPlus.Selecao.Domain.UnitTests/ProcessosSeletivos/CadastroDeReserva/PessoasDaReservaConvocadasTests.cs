@@ -13,7 +13,7 @@ public sealed class PessoasDaReservaConvocadasTests
     private static NumeroDaChamada Numero(int valor) => NumeroDaChamada.Criar(valor).Value!;
 
     private static CadastroDeReservaPorChamada Declarada(params (int Chamada, int PessoasPorVaga)[] chamadas) =>
-        CadastroDeReservaPorChamada.Declarar([.. chamadas.Select(static c => new CadastroDeReservaInformado(c.Chamada, c.PessoasPorVaga))]).Value!;
+        CadastroDeReservaPorChamada.Declarar([.. chamadas.Select(static c => new CadastroDeReservaInformado(c.Chamada, c.PessoasPorVaga, c.PessoasPorVaga > 0 ? "ASSUME_NA_MESMA_CHAMADA" : null))]).Value!;
 
     [Fact(DisplayName = "A primeira chamada com duas pessoas da reserva por vaga e três vagas convoca seis")]
     public void PrimeiraChamada_DuasPorVaga_TresVagas_ConvocaSeis()

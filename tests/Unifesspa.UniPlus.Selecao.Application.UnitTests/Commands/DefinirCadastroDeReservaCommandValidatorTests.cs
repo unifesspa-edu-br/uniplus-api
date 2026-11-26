@@ -25,5 +25,5 @@ public sealed class DefinirCadastroDeReservaCommandValidatorTests
 
     [Fact]
     public void Validate_ElementoNuloEQuantidadeNegativa_DeixaValidacaoAoDominio() =>
-        _validator.Validate(new DefinirCadastroDeReservaCommand(Guid.NewGuid(), [null, new(1, -1)])).IsValid.Should().BeTrue();
+        _validator.Validate(new DefinirCadastroDeReservaCommand(Guid.NewGuid(), [null, new(1, -1, null)])).IsValid.Should().BeTrue();
 }

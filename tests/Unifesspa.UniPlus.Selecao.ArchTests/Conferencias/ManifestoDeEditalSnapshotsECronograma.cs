@@ -25,7 +25,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
 
         // Cadastro de reserva por chamada: as chamadas declaradas pelo processo, no bloco cadastroDeReserva.
         [typeof(CadastroDeReservaPorChamada)] = (["Chamadas"], []),
-        [typeof(CadastroDeReservaDaChamada)] = (["Chamada", "PessoasDaReservaPorVaga"], []),
+        [typeof(CadastroDeReservaDaChamada)] = (["Chamada", "PessoasDaReservaPorVaga", "Participacao"], []),
         [typeof(NumeroDaChamada)] = (["Valor"], []),
 
         // Motivo de decisão escolhido pelo processo, copiado por valor no bloco motivosDeDecisao.

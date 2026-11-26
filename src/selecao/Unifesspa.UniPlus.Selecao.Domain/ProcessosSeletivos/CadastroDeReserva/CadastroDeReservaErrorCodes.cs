@@ -11,4 +11,13 @@ public static class CadastroDeReservaErrorCodes
 
     /// <summary>A chamada não informa a quantidade de pessoas da reserva por vaga, ou informa uma quantidade negativa.</summary>
     public const string PessoasDaReservaPorVagaInvalida = "CadastroDeReserva.PessoasDaReservaPorVagaInvalida";
+
+    /// <summary>A chamada com pessoas da reserva por vaga não informa a participação da reserva.</summary>
+    public const string ParticipacaoAusente = "CadastroDeReserva.ParticipacaoAusente";
+
+    /// <summary>A chamada sem pessoas da reserva por vaga informa uma participação da reserva, que não tem reserva a que se aplicar.</summary>
+    public const string ParticipacaoSemReserva = "CadastroDeReserva.ParticipacaoSemReserva";
+
+    /// <summary>A participação da reserva informada não é uma das duas que o sistema oferece.</summary>
+    public const string ParticipacaoDesconhecida = "CadastroDeReserva.ParticipacaoDesconhecida";
 }

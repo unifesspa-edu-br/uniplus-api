@@ -246,8 +246,8 @@ Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-proces
 
 A `v1` ganha a propriedade `cadastroDeReserva` em `documento.schema.json`, na própria `v1`, pelo mesmo motivo das emendas anteriores: a `v1` ainda não congelou. A propriedade é uma lista de itens definidos em `cadastro-de-reserva.schema.json`, com o mesmo nome do bloco do documento congelado (ADR-0109, emenda 10).
 
-- `numeroDaChamada` é obrigatório. `pessoasDaReservaPorVaga` informa quantas pessoas da reserva a chamada convoca por vaga.
-- O esquema declara só o teto de 2.147.483.647, o limite do inteiro gravado. O mínimo e a repetição de chamada são regra de negócio: a API os recusa com os erros de domínio, todos de uma vez, no caminho do item (`cadastroDeReserva[i].numeroDaChamada`, `cadastroDeReserva[i].pessoasDaReservaPorVaga`).
+- `numeroDaChamada` é obrigatório. `pessoasDaReservaPorVaga` informa quantas pessoas da reserva a chamada convoca por vaga. `participacaoDaReserva` é a opção do edital para a reserva da chamada (`ANTECIPA_A_HABILITACAO` ou `ASSUME_NA_MESMA_CHAMADA`, UNI-REQ-0505), com `participacaoDaReservaRotulo` só de leitura na exportação.
+- O esquema declara só o teto de 2.147.483.647, o limite do inteiro gravado. O mínimo, a repetição de chamada e a exigência da opção quando há pessoas da reserva, que a quantidade zero recusa, são regra de negócio: a API os recusa com os erros de domínio, todos de uma vez, no caminho do item (`cadastroDeReserva[i].numeroDaChamada`, `cadastroDeReserva[i].pessoasDaReservaPorVaga`, `cadastroDeReserva[i].participacaoDaReserva`).
 - A propriedade ausente equivale à lista vazia: o processo sem cadastro de reserva.
 
 **Confirmação:** o teste de contrato valida o exemplo publicado e os três envelopes de referência convertidos contra a `v1`, que agora inclui o cadastro de reserva.

@@ -14647,6 +14647,51 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_ausente",
+      "requisitos": [
+        "UNI-REQ-0505"
+      ],
+      "oQueAconteceu": [
+        "A chamada tem pessoas da reserva por vaga, mas o edital não escolheu o que a reserva faz nela."
+      ],
+      "comoResolver": [
+        "Escolha a participação da reserva da chamada: a reserva só antecipa a habilitação ou a reserva assume na mesma chamada. O sistema não escolhe por conta própria."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_com_quantidade_zero",
+      "requisitos": [
+        "UNI-REQ-0505"
+      ],
+      "oQueAconteceu": [
+        "A chamada foi declarada com zero pessoas da reserva por vaga, mas traz uma participação da reserva. Sem reserva, não há a que aplicar a opção."
+      ],
+      "comoResolver": [
+        "Retire a participação da reserva da chamada ou informe a quantidade de pessoas da reserva por vaga maior que zero."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_desconhecida",
+      "requisitos": [
+        "UNI-REQ-0505"
+      ],
+      "oQueAconteceu": [
+        "A participação da reserva informada não é uma das duas opções que o sistema oferece."
+      ],
+      "comoResolver": [
+        "Informe uma das duas opções: \"A reserva só antecipa a habilitação\" (ANTECIPA_A_HABILITACAO) ou \"A reserva assume na mesma chamada\" (ASSUME_NA_MESMA_CHAMADA)."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.cadastro_de_reserva.pessoas_da_reserva_por_vaga_invalida",
       "requisitos": [
         "UNI-REQ-0355"
