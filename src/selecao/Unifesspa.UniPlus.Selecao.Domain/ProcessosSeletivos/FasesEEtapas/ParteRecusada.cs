@@ -23,6 +23,14 @@ public sealed record ParteRecusada
         Causa = causa;
     }
 
+    /// <summary>A parte de um bloco sem lista que a leitura recusou: o campo do bloco como caminho e a causa já apontada no documento.</summary>
+    internal static ParteRecusada DoBloco(string campoDoBloco, FieldError causa)
+    {
+        ArgumentNullException.ThrowIfNull(causa);
+
+        return new(campoDoBloco, null, 0, causa with { Field = PonteiroNoDocumento.Converter(causa.Field, OrigemNoDocumento.Identidade) });
+    }
+
     public string Caminho { get; }
 
     public string? Chave { get; }

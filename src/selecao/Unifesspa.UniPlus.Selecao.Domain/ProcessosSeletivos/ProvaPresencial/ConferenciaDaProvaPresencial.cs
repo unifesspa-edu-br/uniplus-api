@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class ConferenciaDaProvaPresencial
 {
-    private const string CampoDosMunicipios = "provaPresencial.municipios";
+    private const string CampoDosMunicipios = DeclaracaoDaProvaPresencial.Campo + ".municipios";
 
     public static IReadOnlyList<FieldError> Conferir(DeclaracaoDaProvaPresencial? declaracao, MunicipiosConferidosNoGeo conferidos, int limiteDeMunicipios)
     {
@@ -18,7 +18,7 @@ public static class ConferenciaDaProvaPresencial
 
         return declaracao switch
         {
-            null => [Recusa("provaPresencial", ProvaPresencialErrorCodes.PorDeclarar, "O processo ainda não declara se tem prova presencial.")],
+            null => [Recusa(DeclaracaoDaProvaPresencial.Campo, ProvaPresencialErrorCodes.PorDeclarar, "O processo ainda não declara se tem prova presencial.")],
             { TemProvaPresencial: false } => [],
             { Municipios.Count: 0 } => [Recusa(
                 CampoDosMunicipios, ProvaPresencialErrorCodes.SemMunicipio,

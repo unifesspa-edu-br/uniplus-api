@@ -11,7 +11,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record DeclaracaoDaProvaPresencial
 {
-    private const string CampoDosMunicipios = "provaPresencial.municipios";
+    /// <summary>O campo do bloco da declaração, no corpo do pedido e no documento.</summary>
+    public const string Campo = "provaPresencial";
+
+    private const string CampoDosMunicipios = Campo + ".municipios";
 
     private readonly List<MunicipioDeProva> _municipios = [];
 
