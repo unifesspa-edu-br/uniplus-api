@@ -74,6 +74,8 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao", new[] { "VOTO_DA_PRESIDENCIA", "NOVA_VOTACAO" })]
     [InlineData("/api/selecao/vocabularios/encerramentos-votacao", "encerramento-votacao", new[] { "TODOS_OS_TITULARES", "PRESIDENCIA_NO_QUORUM" })]
     [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade", "resultado-sem-unanimidade", new[] { "FAVORAVEL", "DESFAVORAVEL", "NOVA_VOTACAO" })]
+    [InlineData("/api/selecao/vocabularios/participacoes-reserva", "participacao-da-reserva", new[] { "ANTECIPA_A_HABILITACAO", "ASSUME_NA_MESMA_CHAMADA" })]
+    [InlineData("/api/selecao/vocabularios/manifestacoes-interesse", "manifestacao-de-interesse", new[] { "UMA_VEZ", "CONFIRMA_A_CADA_CHAMADA" })]
     public async Task Vocabularios_DevolvemCodigoERotulo(string rota, string recurso, string[] codigos)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -88,10 +90,12 @@ public sealed class VocabulariosEndpointTests
         opcoes.Should().AllSatisfy(static o => o.GetProperty("rotulo").GetString().Should().NotBeNullOrWhiteSpace());
     }
 
-    [Theory(DisplayName = "As opções de efeito suspensivo e de guarda da vaga devolvem a descrição do que cada uma significa")]
+    [Theory(DisplayName = "As opções de efeito suspensivo, de guarda da vaga, de participação da reserva e de manifestação de interesse devolvem a descrição do que cada uma significa")]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo")]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga")]
-    public async Task VocabulariosDoRecursoComDescricao_DevolvemDescricaoPreenchida(string rota, string recurso)
+    [InlineData("/api/selecao/vocabularios/participacoes-reserva", "participacao-da-reserva")]
+    [InlineData("/api/selecao/vocabularios/manifestacoes-interesse", "manifestacao-de-interesse")]
+    public async Task VocabulariosComDescricao_DevolvemDescricaoPreenchida(string rota, string recurso)
     {
         OpcaoComDescricao[] opcoes = await LerVocabularioAsync<OpcaoComDescricao>(rota, $"application/vnd.uniplus.{recurso}.v1+json");
 
@@ -104,6 +108,8 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso")]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo")]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga")]
+    [InlineData("/api/selecao/vocabularios/participacoes-reserva", "participacao-da-reserva")]
+    [InlineData("/api/selecao/vocabularios/manifestacoes-interesse", "manifestacao-de-interesse")]
     [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao")]
     [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao")]
     [InlineData("/api/selecao/vocabularios/desempates-votacao", "desempate-votacao")]
@@ -132,6 +138,8 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/vocabularios/desempates-votacao")]
     [InlineData("/api/selecao/vocabularios/encerramentos-votacao")]
     [InlineData("/api/selecao/vocabularios/resultados-sem-unanimidade")]
+    [InlineData("/api/selecao/vocabularios/participacoes-reserva")]
+    [InlineData("/api/selecao/vocabularios/manifestacoes-interesse")]
     public async Task Vocabularios_NaoTemRotaDeEscrita(string rota)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
