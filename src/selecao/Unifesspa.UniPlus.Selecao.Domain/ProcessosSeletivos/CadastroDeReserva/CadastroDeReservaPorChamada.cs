@@ -12,7 +12,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record CadastroDeReservaPorChamada
 {
-    private const string CampoDasChamadas = "cadastroDeReserva";
+    /// <summary>O campo da declaração no documento da configuração e no envelope.</summary>
+    public const string Campo = "cadastroDeReserva";
 
     private CadastroDeReservaPorChamada(IReadOnlyList<CadastroDeReservaDaChamada> chamadas) => Chamadas = chamadas;
 
@@ -87,7 +88,7 @@ public sealed record CadastroDeReservaPorChamada
         HashSet<int> jaDeclaradas = [];
         for (int indice = 0; indice < chamadas.Count; indice++)
         {
-            string campo = $"{CampoDasChamadas}[{indice}]";
+            string campo = $"{Campo}[{indice}]";
             CadastroDeReservaInformado? chamada = chamadas[indice];
             foreach (FieldError recusa in RecusasDoNumero(chamada?.NumeroDaChamada, jaDeclaradas, $"{campo}.numeroDaChamada")
                 .Concat(RecusasDaQuantidade(chamada?.PessoasDaReservaPorVaga, $"{campo}.pessoasDaReservaPorVaga"))

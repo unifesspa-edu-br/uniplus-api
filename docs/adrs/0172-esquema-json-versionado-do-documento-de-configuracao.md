@@ -249,6 +249,7 @@ A `v1` ganha a propriedade `cadastroDeReserva` em `documento.schema.json`, na pr
 - `numeroDaChamada` é obrigatório. `pessoasDaReservaPorVaga` informa quantas pessoas da reserva a chamada convoca por vaga. `participacaoDaReserva` é a opção do edital para a reserva da chamada (`ANTECIPA_A_HABILITACAO` ou `ASSUME_NA_MESMA_CHAMADA`, UNI-REQ-0505), com `participacaoDaReservaRotulo` só de leitura na exportação.
 - O esquema declara só o teto de 2.147.483.647, o limite do inteiro gravado. O mínimo, a repetição de chamada e a exigência da opção quando há pessoas da reserva, que a quantidade zero recusa, são regra de negócio: a API os recusa com os erros de domínio, todos de uma vez, no caminho do item (`cadastroDeReserva[i].numeroDaChamada`, `cadastroDeReserva[i].pessoasDaReservaPorVaga`, `cadastroDeReserva[i].participacaoDaReserva`).
 - A propriedade ausente equivale à lista vazia: o processo sem cadastro de reserva.
+- Rascunho: ao salvar e importar, as recusas do cadastro de reserva e da manifestação não impedem o salvamento; aparecem como diagnóstico no ponteiro do item, pelas mesmas regras de domínio da gravação por dimensão; a recusa (422) vem na publicação/retificação. A exportação do rascunho traz `participacaoDaReservaRotulo` com o rótulo atual.
 
 **Confirmação:** o teste de contrato valida o exemplo publicado e os três envelopes de referência convertidos contra a `v1`, que agora inclui o cadastro de reserva.
 
@@ -259,5 +260,6 @@ A `v1` ganha a propriedade `manifestacaoDeInteresse` em `documento.schema.json`,
 - O valor é `UMA_VEZ` ou `CONFIRMA_A_CADA_CHAMADA` (UNI-REQ-0503). Os dois preveem a manifestação e a exigem; o segundo exige ainda a confirmação a cada chamada. Não há propriedade separada para "prevista", "exigida" ou "confirmação a cada chamada", nem para o prazo da manifestação, que é da publicação de cada chamada.
 - A propriedade ausente é a manifestação não prevista. Não existe valor para "não prevista", e a ausência não impede a publicação.
 - O código fora da lista é recusado pelo esquema na forma e, pelo domínio, com o erro `uniplus.selecao.manifestacao_de_interesse.codigo_desconhecido`, no caminho `manifestacaoDeInteresse` e sem repetir o valor.
+- Rascunho: ao salvar e importar, a recusa da manifestação não impede o salvamento; aparece como diagnóstico no ponteiro `/manifestacaoDeInteresse`, pela mesma regra de domínio da gravação por dimensão; a recusa (422) vem na publicação/retificação.
 
 **Confirmação:** o teste de contrato valida o exemplo publicado e os três envelopes de referência convertidos contra a `v1`, que agora inclui a manifestação de interesse, e o teste de paridade confere que a lista do esquema é a do catálogo do domínio.

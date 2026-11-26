@@ -25,7 +25,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
         UnidadeDoDocumentoDoRascunho unidades,
         IRascunhoDeProcessoSeletivoRepository rascunhos,
         IUnitOfWork unitOfWork,
-        ResolucaoDosModelosCitados resolucao,
+        DiagnosticoDoRascunho diagnostico,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -33,7 +33,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(rascunhos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(resolucao);
+        ArgumentNullException.ThrowIfNull(diagnostico);
 
         Result<RascunhoDeProcessoSeletivo> rascunho = await NovoRascunhoAsync(command, preparacao, unidades, cancellationToken).ConfigureAwait(false);
         if (rascunho.IsFailure)
@@ -41,7 +41,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
             return Result<RascunhoSalvoDto>.ValidationFailure(rascunho.Errors);
         }
 
-        return await GravarAsync(rascunho.Value!, rascunhos, unitOfWork, resolucao, cancellationToken).ConfigureAwait(false);
+        return await GravarAsync(rascunho.Value!, rascunhos, unitOfWork, diagnostico, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<RascunhoDeProcessoSeletivo>> NovoRascunhoAsync(
@@ -64,7 +64,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
 
     private static async Task<Result<RascunhoSalvoDto>> GravarAsync(
         RascunhoDeProcessoSeletivo rascunho, IRascunhoDeProcessoSeletivoRepository rascunhos,
-        IUnitOfWork unitOfWork, ResolucaoDosModelosCitados resolucao, CancellationToken cancellationToken)
+        IUnitOfWork unitOfWork, DiagnosticoDoRascunho diagnostico, CancellationToken cancellationToken)
     {
         await rascunhos.AdicionarAsync(rascunho, cancellationToken).ConfigureAwait(false);
         Result gravacao = await SalvarRecusandoConflitoAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
@@ -73,7 +73,7 @@ public static class CriarRascunhoDeProcessoSeletivoCommandHandler
             return Result<RascunhoSalvoDto>.ValidationFailure(gravacao.Errors);
         }
 
-        IReadOnlyList<FieldError> diagnosticos = await resolucao.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> diagnosticos = await diagnostico.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
         return Result<RascunhoSalvoDto>.Success(RascunhoSalvoDto.DoRascunho(rascunho, diagnosticos));
     }
 

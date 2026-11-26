@@ -22,6 +22,7 @@ internal static class CamposDeContextoDoDocumento
     public const string RecursosDeAcessibilidade = "recursosDeAcessibilidade";
     public const string TiposDeDeficiencia = "tiposDeDeficiencia";
     public const string BasesLegaisDaFada = "basesLegaisDaFada";
+    public const string ParticipacoesDaReserva = "participacoesDaReserva";
 
     public static IReadOnlyList<CampoDeContexto> Todos { get; } =
     [
@@ -43,6 +44,7 @@ internal static class CamposDeContextoDoDocumento
         new("/atendimento/recursos/*", "recursoCodigo", RecursosDeAcessibilidade, ["recursoNome"]),
         new("/atendimento/tiposDeficiencia/*", "tipoDeficienciaCodigo", TiposDeDeficiencia, ["tipoDeficienciaNome"]),
         new("/fada", "baseLegalCodigo", BasesLegaisDaFada, ["tipoInstrumento", "identificacao", "descricao", "municipios"]),
+        new("/cadastroDeReserva/*", "participacaoDaReserva", ParticipacoesDaReserva, ["participacaoDaReservaRotulo"]),
     ];
 
     public static IReadOnlyList<ListaDeCodigosDeContexto> ListasDeCodigos { get; } =

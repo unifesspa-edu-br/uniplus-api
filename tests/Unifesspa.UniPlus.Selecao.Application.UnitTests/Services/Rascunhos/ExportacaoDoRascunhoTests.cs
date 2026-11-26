@@ -38,7 +38,7 @@ public sealed class ExportacaoDoRascunhoTests
             _cenario.UnidadesDoDocumento,
             _cenario.Bloqueio,
             _cenario.UnitOfWork,
-            _cenario.Resolucao,
+            _cenario.Diagnostico,
             CancellationToken.None);
 
     private void OCodigoDaUnidadeMudou()
