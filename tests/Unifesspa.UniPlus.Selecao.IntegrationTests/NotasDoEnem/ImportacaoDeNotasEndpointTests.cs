@@ -340,7 +340,7 @@ public sealed class ImportacaoDeNotasEndpointTests
             scope.ServiceProvider.GetRequiredService<UniPlusDbContext>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
-            new(cenario.Processo.ProcessoId, Pessoas[1], SituacaoInscricao.Submetida, Edicao)
+            new(cenario.Processo.ProcessoId, Pessoas[1], SituacaoInscricao.Enviada, Edicao)
             {
                 OfertaCursoId = cenario.Processo.OfertaTecnologicaId,
                 OfertaCursoSegundaOpcaoId = Guid.CreateVersion7(),

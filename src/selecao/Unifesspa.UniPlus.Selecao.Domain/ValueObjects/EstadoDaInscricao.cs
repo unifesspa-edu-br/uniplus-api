@@ -24,7 +24,7 @@ public sealed record EstadoDaInscricao
         new(Situacao, NumeroInscricao ?? numeroInscricao, Cancelamento);
 
     internal EstadoDaInscricao SubmeterAposConferencia(string numeroInscricao) =>
-        new(SituacaoInscricao.Submetida, NumeroInscricao ?? numeroInscricao, Cancelamento);
+        new(SituacaoInscricao.Enviada, NumeroInscricao ?? numeroInscricao, Cancelamento);
 
     internal EstadoDaInscricao CancelarAposConferencia(CancelamentoDaInscricao cancelamento) =>
         new(SituacaoInscricao.Cancelada, NumeroInscricao, cancelamento);

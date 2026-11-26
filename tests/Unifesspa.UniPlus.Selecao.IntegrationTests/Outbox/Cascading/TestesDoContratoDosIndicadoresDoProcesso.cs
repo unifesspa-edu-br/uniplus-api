@@ -48,7 +48,7 @@ public sealed class TestesDoContratoDosIndicadoresDoProcesso : IAsyncLifetime
         operacao.GetProperty("operationId").GetString().Should().Be("ObterIndicadoresDoProcesso");
         operacao.GetProperty("summary").GetString().Should().Be("Obtém os indicadores quantitativos do processo seletivo");
         operacao.GetProperty("description").GetString().Should()
-            .Contain("inscrições submetidas não canceladas, inscritos distintos e rascunhos");
+            .Contain("inscrições enviadas não canceladas, inscritos distintos e rascunhos");
     }
 
     private static void ConferirParametroERespostas(JsonElement operacao)

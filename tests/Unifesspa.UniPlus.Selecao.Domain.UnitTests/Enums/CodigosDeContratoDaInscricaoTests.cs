@@ -23,7 +23,7 @@ public sealed class CodigosDeContratoDaInscricaoTests
         Enum.GetValues<SituacaoInscricao>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
             .Should().Equal(
                 (SituacaoInscricao.Rascunho, "RASCUNHO", "Rascunho"),
-                (SituacaoInscricao.Submetida, "SUBMETIDA", "Submetida"),
+                (SituacaoInscricao.Enviada, "ENVIADA", "Enviada"),
                 (SituacaoInscricao.Cancelada, "CANCELADA", "Cancelada"));
 
     [Fact]

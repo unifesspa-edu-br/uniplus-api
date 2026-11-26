@@ -62,7 +62,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "Com a inscrição enviada, toda operação do processo responde 403 impedido e o registro traz o motivo")]
     public async Task InscricaoEnviada_Impede()
     {
-        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Submetida);
+        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Enviada);
         await ConcederAsync(processo);
 
         using HttpResponseMessage configurar = await PutTaxaAsync(processo);
@@ -80,7 +80,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "O impedimento vale só no processo em que está inscrita")]
     public async Task InscricaoEmOutroProcesso_NaoImpede()
     {
-        Guid inscrita = await SemearProcessoAsync(SituacaoInscricao.Submetida);
+        Guid inscrita = await SemearProcessoAsync(SituacaoInscricao.Enviada);
         Guid outro = await SemearProcessoAsync();
         await ConcederAsync(inscrita, outro);
 
@@ -94,7 +94,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "Inscrição de outro emissor com a mesma conta não impede: a identidade é o par emissor e conta")]
     public async Task InscricaoDeOutroEmissorComOMesmoContaId_NaoImpede()
     {
-        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Submetida, emissor: "https://outro-emissor.exemplo/realms/outro");
+        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Enviada, emissor: "https://outro-emissor.exemplo/realms/outro");
         await ConcederAsync(processo);
 
         using HttpResponseMessage resposta = await PutTaxaAsync(processo);
@@ -105,7 +105,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "A concessão nova, aprovada depois da inscrição, não supera o impedimento")]
     public async Task ConcessaoNovaDepoisDaInscricao_NaoSupera()
     {
-        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Submetida);
+        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Enviada);
         await ConcederAsync(processo);
         Guid unidade = await UnidadeDoProcessoAsync(processo);
         Guid outroPerfil = await ConcessoesDeTeste.CriarPerfilAsync(
@@ -120,7 +120,7 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "Impedida no processo, a servidora segue consultando as próprias inscrições como candidata")]
     public async Task ComoCandidata_SegueConsultando()
     {
-        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Submetida);
+        Guid processo = await SemearProcessoAsync(SituacaoInscricao.Enviada);
         await ConcederAsync(processo);
 
         using HttpResponseMessage minhas = await SendAsync(

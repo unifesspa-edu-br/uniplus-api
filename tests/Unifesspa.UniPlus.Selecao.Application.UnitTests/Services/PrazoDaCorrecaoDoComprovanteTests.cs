@@ -30,7 +30,7 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
     {
         return Inscricao.Reidratar(Guid.CreateVersion7(), ProcessoId,
             TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
-            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000123", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Enviada, "000123", CancelamentoDaInscricao.Reidratar(null, null, null)),
             FormularioDaInscricao.Reidratar(Guid.CreateVersion7(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), []),
                 new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
     }

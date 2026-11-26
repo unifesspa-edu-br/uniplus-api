@@ -33,7 +33,7 @@ internal static class ExemplosDoContratoDeInscricao
     {
         Id = Guid.Parse("0199e000-0000-7000-8000-000000000010"),
         ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
-        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida),
+        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Enviada),
         NumeroInscricao = "000123",
         Formulario = new FormularioDaInscricaoDto(
                 Guid.Parse("0199e000-0000-7000-8000-000000000012"),
@@ -90,7 +90,7 @@ internal static class ExemplosDoContratoDeInscricao
         ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
         NomeDoProcesso = "PSS Medicina 2027",
         NumeroInscricao = "000123",
-        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida),
+        Situacao = CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Enviada),
         OpcoesDeCurso = [new OpcaoDeCursoDaInscricaoDto(1, "Medicina", "Bacharelado"), new OpcaoDeCursoDaInscricaoDto(2, "Direito", "Bacharelado")],
         CanceladaEm = null,
         MotivoDoCancelamento = null,

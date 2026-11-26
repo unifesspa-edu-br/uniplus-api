@@ -59,7 +59,7 @@ public static class InscricaoErrorCodes
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";
 
-    // Veredito de submissão: só avaliados no POST .../submissao, nunca no PUT do
+    // Veredito de submissão: só avaliados no POST .../envio, nunca no PUT do
     // rascunho, que não exige obrigatórios.
     public const string ItemObrigatorioAusente = "Inscricao.ItemObrigatorioAusente";
     public const string Impedimento = "Inscricao.Impedimento";

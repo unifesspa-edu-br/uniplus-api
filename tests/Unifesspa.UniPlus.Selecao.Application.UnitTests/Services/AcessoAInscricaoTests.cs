@@ -34,7 +34,7 @@ public sealed class AcessoAInscricaoTests
     [Fact(DisplayName = "A inscrição enviada deste processo é confirmada com a unidade dona")]
     public async Task ConferirVinculo_Enviada_ConfirmaComAUnidade()
     {
-        Vincular(Processo, SituacaoInscricao.Submetida);
+        Vincular(Processo, SituacaoInscricao.Enviada);
 
         ConferenciaDoVinculo conferencia = await AcessoAInscricao.ConferirVinculoAsync(_processos, _inscricoes, Processo, Inscricao, default);
 
@@ -42,7 +42,7 @@ public sealed class AcessoAInscricaoTests
     }
 
     [Theory(DisplayName = "A inscrição de outro processo, a em rascunho e a que não existe não são encontradas")]
-    [InlineData(false, SituacaoInscricao.Submetida)]
+    [InlineData(false, SituacaoInscricao.Enviada)]
     [InlineData(true, SituacaoInscricao.Rascunho)]
     [InlineData(true, null)]
     public async Task ConferirVinculo_ForaDoAlcance_NaoEncontra(bool doProcesso, SituacaoInscricao? situacao)
@@ -60,7 +60,7 @@ public sealed class AcessoAInscricaoTests
     [Fact(DisplayName = "O processo inexistente não tem unidade dona, e a inscrição não é encontrada")]
     public async Task ConferirVinculo_ProcessoInexistente_NaoEncontra()
     {
-        Vincular(Processo, SituacaoInscricao.Submetida);
+        Vincular(Processo, SituacaoInscricao.Enviada);
         _processos.ObterUnidadeENomeAsync(Processo, Arg.Any<CancellationToken>()).Returns((UnidadeENomeDoProcesso?)null);
 
         (await AcessoAInscricao.ConferirVinculoAsync(_processos, _inscricoes, Processo, Inscricao, default))
@@ -82,6 +82,11 @@ public sealed class AcessoAInscricaoTests
             verificador, vinculo, PermissaoSelecao.InscricoesConsultar.Requisito,
             AcessoAoProcesso.ResourceDaInscricao(Unidade, Processo, Inscricao), default);
 
+        ConferirDesfecho(acesso, desfecho);
+    }
+
+    private static void ConferirDesfecho(AcessoNaInscricao acesso, ResultadoDoAcesso desfecho)
+    {
         if (desfecho == ResultadoDoAcesso.Permitido)
         {
             acesso.Should().BeSameAs(Permitido.Instancia);
@@ -119,5 +124,5 @@ public sealed class AcessoAInscricaoTests
             .Returns(new VinculoDaInscricao(Inscricao, processo, situacao, Guid.CreateVersion7(), null, null));
 
     private static Vinculo UmVinculo(Guid processo) =>
-        new(Unidade, "PSR 2027", new VinculoDaInscricao(Inscricao, processo, SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null));
+        new(Unidade, "PSR 2027", new VinculoDaInscricao(Inscricao, processo, SituacaoInscricao.Enviada, Guid.CreateVersion7(), null, null));
 }

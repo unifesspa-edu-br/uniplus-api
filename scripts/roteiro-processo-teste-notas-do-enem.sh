@@ -235,7 +235,7 @@ inscrever_persona() {
             situacao=$(sed '$d' <<< "$rascunho" | jq -r '.situacao.codigo // empty') \
                 || fail "resposta inválida ao consultar a inscrição da persona $username"
             case "$situacao" in
-                SUBMETIDA) return ;;
+                ENVIADA) return ;;
                 RASCUNHO) ;;
                 *) fail "não foi possível completar a inscrição da persona $username: situação inesperada" ;;
             esac
@@ -256,7 +256,7 @@ inscrever_persona() {
         || fail "não foi possível salvar as respostas da persona $username"
     jq -e '.eTag' <<< "$rascunho" >/dev/null || fail "não foi possível salvar as respostas da persona $username"
 
-    resposta=$(curl -sS -w '\n%{http_code}' -X POST "$url/submissao" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
+    resposta=$(curl -sS -w '\n%{http_code}' -X POST "$url/envio" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
         -H "If-Match: $(jq -r '.eTag' <<< "$rascunho")" -H "Content-Type: application/json" \
         -H "Accept: application/vnd.uniplus.recibo-da-inscricao.v1+json" -d "$corpo") \
         || fail "não foi possível enviar a inscrição da persona $username"

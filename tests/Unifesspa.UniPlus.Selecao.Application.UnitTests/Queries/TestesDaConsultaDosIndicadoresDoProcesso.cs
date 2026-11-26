@@ -323,8 +323,8 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
         ProcessoId,
         Agora,
         [
-            new("INSCRICOES", 12L, "Inscrições", "Submetidas e não canceladas"),
-            new("INSCRITOS", 9L, "Inscritos", "Pessoas distintas com inscrição submetida e não cancelada"),
+            new("INSCRICOES", 12L, "Inscrições", "Enviadas e não canceladas"),
+            new("INSCRITOS", 9L, "Inscritos", "Pessoas distintas com inscrição enviada e não cancelada"),
             new("RASCUNHOS", 4L, "Rascunhos", "Inscrições ainda não enviadas")
         ],
         null!);

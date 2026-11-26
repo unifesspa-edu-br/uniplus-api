@@ -31,7 +31,7 @@ public sealed class IndicadoresDoProcessoController : ControllerBase
     [HttpGet]
     [EndpointName("ObterIndicadoresDoProcesso")]
     [EndpointSummary("Obtém os indicadores quantitativos do processo seletivo")]
-    [EndpointDescription("Retorna inscrições submetidas não canceladas, inscritos distintos e rascunhos do processo seletivo. A consulta exige autenticação e autorização conforme o estado e a unidade do processo.")]
+    [EndpointDescription("Retorna inscrições enviadas não canceladas, inscritos distintos e rascunhos do processo seletivo. A consulta exige autenticação e autorização conforme o estado e a unidade do processo.")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [VendorMediaType(Resource = "indicadores-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IndicadoresDoProcessoDto), StatusCodes.Status200OK)]

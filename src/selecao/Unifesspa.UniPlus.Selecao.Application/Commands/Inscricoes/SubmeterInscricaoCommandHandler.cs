@@ -27,7 +27,7 @@ public static class SubmeterInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(submissao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         Result<Inscricao> inscricao = await inscricaoDoDono.ObterAtivaAsync(
-            command.ProcessoSeletivoId, "submeter a inscrição", cancellationToken).ConfigureAwait(false);
+            command.ProcessoSeletivoId, "enviar a inscrição", cancellationToken).ConfigureAwait(false);
         return inscricao.IsFailure
             ? Result<ReciboDaInscricaoDto>.Failure(inscricao.Error!)
             : await SubmeterEConfirmarAsync(inscricao.Value!, command, submissao, unitOfWork, cancellationToken).ConfigureAwait(false);

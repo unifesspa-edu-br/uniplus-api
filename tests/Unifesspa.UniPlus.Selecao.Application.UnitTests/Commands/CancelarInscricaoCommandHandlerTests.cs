@@ -86,7 +86,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
-        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Enviada);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -118,6 +118,6 @@ public sealed class CancelarInscricaoCommandHandlerTests
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, contaId: "conta-outro");
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
-        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Enviada);
     }
 }

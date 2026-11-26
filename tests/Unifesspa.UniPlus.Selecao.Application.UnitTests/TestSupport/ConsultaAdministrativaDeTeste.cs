@@ -37,7 +37,7 @@ internal static class ConsultaAdministrativaDeTeste
 
     public static JsonElement Texto(string valor) => JsonSerializer.SerializeToElement(valor);
 
-    public static InscricaoAdministrativaDeTeste DeFernanda(SituacaoInscricao situacao = SituacaoInscricao.Submetida) =>
+    public static InscricaoAdministrativaDeTeste DeFernanda(SituacaoInscricao situacao = SituacaoInscricao.Enviada) =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, situacao)
             .Fato("CPF", "IDENTIFICADOR", TipoDeCampo.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF")
             .Fato("NOME", "PESSOAL", TipoDeCampo.Texto, Texto(PersonasDeTeste.NomeFernandaDrumond), ordem: 1)

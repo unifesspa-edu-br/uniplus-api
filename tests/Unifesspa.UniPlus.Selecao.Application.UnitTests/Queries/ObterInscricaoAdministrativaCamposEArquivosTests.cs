@@ -64,7 +64,7 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, leandro);
 
         dto.Id.Should().Be(cenario.InscricaoId);
-        dto.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida));
+        dto.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Enviada));
         dto.Ofertas.Should().Equal(new OfertaEscolhidaDto(cenario.OfertaCursoId, InscricaoAdministrativaDeTeste.NomeDaOferta, 1));
         dto.Processo.Should().Be(new ProcessoDaInscricaoDto(cenario.ProcessoId, InscricaoAdministrativaDeTeste.NomeDoProcesso));
         dto.NumeroInscricao.Should().BeNull("o número é dado interno");
@@ -98,9 +98,9 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
         InscricaoAdministrativaDto comInterno = await ConsultarComo("diogo.souza", PermissaoSelecao.DadosInternosConsultar, cenario, mundoDeDiogo);
         InscricaoAdministrativaDto semInterno = await ConsultarComo("kevin.carvalho", PermissaoSelecao.DadosPessoaisConsultar, cenario, mundoDeKevin);
 
-        comInterno.SubmetidaEm.Should().Be(primeiro);
-        semInterno.SubmetidaEm.Should().BeNull();
-        JsonSerializer.Serialize(semInterno).Should().NotContain("submetidaEm");
+        comInterno.EnviadaEm.Should().Be(primeiro);
+        semInterno.EnviadaEm.Should().BeNull();
+        JsonSerializer.Serialize(semInterno).Should().NotContain("enviadaEm");
         await mundoDeDiogo.Comprovantes.Received(1).ObterPrimeirosEnviosAsync(
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == cenario.InscricaoId), Arg.Any<CancellationToken>());
         await mundoDeKevin.Comprovantes.DidNotReceiveWithAnyArgs().ObterPrimeirosEnviosAsync(default!, default);
@@ -122,9 +122,9 @@ public sealed class ObterInscricaoAdministrativaCamposEArquivosTests
     }
 
     [Theory(DisplayName = "O número do último comprovante é a quantidade emitida, nulo sem nenhum, e vem na cancelada, sem decifrar comprovante e com só o acesso às inscrições")]
-    [InlineData(SituacaoInscricao.Submetida, 0, null)]
-    [InlineData(SituacaoInscricao.Submetida, 1, 1)]
-    [InlineData(SituacaoInscricao.Submetida, 3, 3)]
+    [InlineData(SituacaoInscricao.Enviada, 0, null)]
+    [InlineData(SituacaoInscricao.Enviada, 1, 1)]
+    [InlineData(SituacaoInscricao.Enviada, 3, 3)]
     [InlineData(SituacaoInscricao.Cancelada, 2, 2)]
     [InlineData(SituacaoInscricao.Cancelada, 0, null)]
     public async Task NumeroDoUltimoComprovante_QuantidadeEmitida(SituacaoInscricao situacao, int emitidos, int? esperado)

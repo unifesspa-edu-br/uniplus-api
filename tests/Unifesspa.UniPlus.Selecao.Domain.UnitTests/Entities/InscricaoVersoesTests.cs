@@ -27,11 +27,11 @@ public sealed class InscricaoVersoesTests
 
         Inscricao inscricao = Inscricao.Reidratar(id, Processo,
             TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
-            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000123", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Enviada, "000123", CancelamentoDaInscricao.Reidratar(null, null, null)),
             FormularioComOferta(OfertaDoProcesso), 3, new DatasDeGravacaoDaInscricao(default, null));
 
         inscricao.Id.Should().Be(id);
-        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Enviada);
         inscricao.Formulario.Preenchimento.Opcoes.Primeira.Should().Be(OfertaDoProcesso);
         inscricao.Estado.NumeroInscricao.Should().Be("000123");
         inscricao.Revisao.Should().Be(3);

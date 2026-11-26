@@ -69,8 +69,8 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         string chave = Guid.CreateVersion7().ToString("N");
         string etag = rascunho.GetProperty("eTag").GetString()!;
 
-        using HttpResponseMessage primeira = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/submissao", "recibo-da-inscricao", pedido, etag, chave);
-        using HttpResponseMessage repetida = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/submissao", "recibo-da-inscricao", pedido, etag, chave);
+        using HttpResponseMessage primeira = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/envio", "recibo-da-inscricao", pedido, etag, chave);
+        using HttpResponseMessage repetida = await EnviarAsync(HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/inscricao/envio", "recibo-da-inscricao", pedido, etag, chave);
 
         await ConferirReciboRepetidoAsync(primeira, repetida, inscricaoId);
     }
@@ -208,7 +208,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
     {
         return Inscricao.Reidratar(Guid.CreateVersion7(), processoId,
             TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, Dono, TestAuthHandler.DefaultIssuer),
-            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, "000321", CancelamentoDaInscricao.Reidratar(null, null, null)),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Enviada, "000321", CancelamentoDaInscricao.Reidratar(null, null, null)),
             FormularioDaInscricao.Reidratar(versaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor) }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
                 {
@@ -278,9 +278,9 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         (await EnviarAsync(HttpMethod.Get, $"{rota}/formulario", "formulario-inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
         (await EnviarAsync(HttpMethod.Post, $"{rota}/avaliacoes", "avaliacao-da-inscricao", pedido, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
         JsonElement salvo = await LerAsync(await EnviarAsync(HttpMethod.Put, rota, "inscricao", pedido, rascunho.GetProperty("eTag").GetString(), null));
-        using HttpResponseMessage semPrecondicao = await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, null, null);
+        using HttpResponseMessage semPrecondicao = await EnviarAsync(HttpMethod.Post, $"{rota}/envio", "recibo-da-inscricao", pedido, null, null);
         semPrecondicao.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
-        (await EnviarAsync(HttpMethod.Post, $"{rota}/submissao", "recibo-da-inscricao", pedido, salvo.GetProperty("eTag").GetString(), null))
+        (await EnviarAsync(HttpMethod.Post, $"{rota}/envio", "recibo-da-inscricao", pedido, salvo.GetProperty("eTag").GetString(), null))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
     }

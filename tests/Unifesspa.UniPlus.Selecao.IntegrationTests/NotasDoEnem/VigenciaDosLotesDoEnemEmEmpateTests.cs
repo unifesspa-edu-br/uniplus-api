@@ -65,7 +65,7 @@ public sealed class VigenciaDosLotesDoEnemEmEmpateTests : IClassFixture<Inscrica
         Escopo escopo = await NovoEscopoAsync(_fixture);
         Guid oferta = Guid.CreateVersion7();
         Guid inscricao = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-            _fixture, new(escopo.ProcessoId, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Submetida, Edicao)
+            _fixture, new(escopo.ProcessoId, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Enviada, Edicao)
             {
                 OfertaCursoId = oferta,
             });

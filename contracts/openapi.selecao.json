@@ -2516,7 +2516,7 @@
           "IndicadoresDoProcesso"
         ],
         "summary": "Obt\u00E9m os indicadores quantitativos do processo seletivo",
-        "description": "Retorna inscri\u00E7\u00F5es submetidas n\u00E3o canceladas, inscritos distintos e rascunhos do processo seletivo. A consulta exige autentica\u00E7\u00E3o e autoriza\u00E7\u00E3o conforme o estado e a unidade do processo.",
+        "description": "Retorna inscri\u00E7\u00F5es enviadas n\u00E3o canceladas, inscritos distintos e rascunhos do processo seletivo. A consulta exige autentica\u00E7\u00E3o e autoriza\u00E7\u00E3o conforme o estado e a unidade do processo.",
         "operationId": "ObterIndicadoresDoProcesso",
         "parameters": [
           {
@@ -3382,12 +3382,12 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{id}/inscricao/submissao": {
+    "/api/selecao/processos-seletivos/{id}/inscricao/envio": {
       "post": {
         "tags": [
           "Inscricoes"
         ],
-        "operationId": "SubmeterInscricao",
+        "operationId": "EnviarInscricao",
         "parameters": [
           {
             "name": "id",
@@ -10531,7 +10531,7 @@
             }
           },
           "409": {
-            "description": "Outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "Outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e enviar novamente), o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10673,7 +10673,7 @@
             }
           },
           "409": {
-            "description": "Responde 409 quando outra publica\u00E7\u00E3o ou retifica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "Responde 409 quando outra publica\u00E7\u00E3o ou retifica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e enviar novamente), quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -14647,7 +14647,7 @@
           "RASCUNHOS"
         ],
         "type": "string",
-        "description": "- \u0060INSCRICOES\u0060: Inscri\u00E7\u00F5es \u2014 Submetidas e n\u00E3o canceladas\n- \u0060INSCRITOS\u0060: Inscritos \u2014 Pessoas distintas com inscri\u00E7\u00E3o submetida e n\u00E3o cancelada\n- \u0060RASCUNHOS\u0060: Rascunhos"
+        "description": "- \u0060INSCRICOES\u0060: Inscri\u00E7\u00F5es \u2014 Enviadas e n\u00E3o canceladas\n- \u0060INSCRITOS\u0060: Inscritos \u2014 Pessoas distintas com inscri\u00E7\u00E3o enviada e n\u00E3o cancelada\n- \u0060RASCUNHOS\u0060: Rascunhos"
       },
       "ColetaApresentada": {
         "required": [
@@ -23732,7 +23732,7 @@
               "string"
             ]
           },
-          "submetidaEm": {
+          "enviadaEm": {
             "type": [
               "null",
               "string"
@@ -23841,7 +23841,7 @@
               }
             ]
           },
-          "submetidaEm": {
+          "enviadaEm": {
             "type": [
               "null",
               "string"
@@ -29924,11 +29924,11 @@
       "SituacaoInscricaoCodigo": {
         "enum": [
           "RASCUNHO",
-          "SUBMETIDA",
+          "ENVIADA",
           "CANCELADA"
         ],
         "type": "string",
-        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 A inscri\u00E7\u00E3o est\u00E1 em preenchimento.\n- \u0060SUBMETIDA\u0060: Submetida \u2014 A inscri\u00E7\u00E3o foi enviada.\n- \u0060CANCELADA\u0060: Cancelada \u2014 A inscri\u00E7\u00E3o enviada foi cancelada."
+        "description": "- \u0060RASCUNHO\u0060: Rascunho \u2014 A inscri\u00E7\u00E3o est\u00E1 em preenchimento.\n- \u0060ENVIADA\u0060: Enviada \u2014 A inscri\u00E7\u00E3o foi enviada.\n- \u0060CANCELADA\u0060: Cancelada \u2014 A inscri\u00E7\u00E3o enviada foi cancelada."
       },
       "SnapshotVigenteDto": {
         "required": [

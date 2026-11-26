@@ -226,7 +226,7 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         Guid versaoId = await db.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).SingleAsync();
         Guid unidadeId = await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
         IInscricaoRepository repositorio = escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>();
-        Guid enviada = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Submetida, motivo: null);
+        Guid enviada = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Enviada, motivo: null);
         Guid cancelada = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Cancelada, "Mudei de curso");
         Guid semMotivo = await SemearInscricaoAsync(repositorio, escopo.ServiceProvider.GetRequiredService<IComprovanteDaInscricaoRepository>(), processoId, versaoId, SituacaoInscricao.Cancelada, motivo: null);
         await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();

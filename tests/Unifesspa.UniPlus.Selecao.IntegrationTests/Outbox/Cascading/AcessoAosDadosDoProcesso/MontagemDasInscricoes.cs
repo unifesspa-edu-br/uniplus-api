@@ -119,7 +119,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         Dictionary<string, DefinicaoDaResposta> definicoes, Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos) =>
         Inscricao.Reidratar(Guid.CreateVersion7(), processo.Id,
             TitularDaInscricao.Reidratar(cpf, contaId, TestAuthHandler.DefaultIssuer),
-            EstadoDaInscricao.Reidratar(SituacaoInscricao.Submetida, numero, CancelamentoDaInscricao.Reidratar(null, null, null)),
+            EstadoDaInscricao.Reidratar(SituacaoInscricao.Enviada, numero, CancelamentoDaInscricao.Reidratar(null, null, null)),
             FormularioDaInscricao.Reidratar(processo.VersaoId, PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), respostas, grupos, []),
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), definicoes), 1, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 

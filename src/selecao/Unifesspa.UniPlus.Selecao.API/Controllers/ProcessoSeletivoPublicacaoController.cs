@@ -59,7 +59,7 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     /// <para>
     /// Devolve <b>409</b> quando outra publicação congelou uma versão entre a leitura da
     /// anterior e a gravação desta: a requisição foi montada contra um estado que deixou de
-    /// ser o atual, e o corpo não tem defeito. É o caso de reler e resubmeter.
+    /// ser o atual, e o corpo não tem defeito. É o caso de reler e enviar novamente.
     /// </para>
     /// <para>
     /// O bloco <c>ato</c> é o MESMO que a retificação recebe: o tipo do ato vem
@@ -76,7 +76,7 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta (reler o processo e resubmeter), o identificador legível já é de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta (reler o processo e enviar novamente), o identificador legível já é de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
         Guid id,

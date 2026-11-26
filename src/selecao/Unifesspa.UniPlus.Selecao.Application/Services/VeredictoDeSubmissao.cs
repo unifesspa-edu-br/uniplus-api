@@ -207,7 +207,7 @@ public static class VeredictoDeSubmissao
         AvaliacaoItem item, string campo, IReadOnlyDictionary<string, FatoResolvido> fatos, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
     {
         if (item.Impedido == Ternario.Verdadeiro)
-            yield return Independente(Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede a submissão desta inscrição."));
+            yield return Independente(Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede o envio desta inscrição."));
         if (item.RestricoesVioladas.Count > 0)
             yield return new RecusaDaSubmissao(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
         if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)
