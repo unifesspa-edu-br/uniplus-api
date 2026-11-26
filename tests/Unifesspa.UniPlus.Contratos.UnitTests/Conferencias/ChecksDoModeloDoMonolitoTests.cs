@@ -88,8 +88,12 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("migracoes_da_concessao", "ck_migracoes_da_concessao_situacao", "situacao IN ('RETIDA', 'AGUARDANDO_PROTECAO_DE_DADOS', 'MIGRADA', 'RECUSADA', 'NAO_MIGRADA', 'FORA_DA_LISTA')"),
         new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')"),
         new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')"),
+        new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')"),
+        new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')"),
         new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')"),
         new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')"),
+        new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')"),
+        new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')"),
     ];
 
     public static TheoryData<string, string, string> RestricoesEsperadas()
@@ -103,9 +107,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 74 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 78 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(74);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(78);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]
