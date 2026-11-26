@@ -17,6 +17,9 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
     private const string PublicarProcessos = "selecao:processos:publicar";
     private const string ConsultarModelosNaUnidade = "configuracao:modelos-formulario:consultar-na-unidade";
     private const string ManterModelos = "configuracao:modelos-formulario:manter";
+    private const string GerarEnvioAoInep = "selecao:envios-inep:gerar";
+    private const string ConsultarLeiautesNaUnidade = "selecao:leiautes-inep:consultar-na-unidade";
+    private const string ConsultarLeiautes = "selecao:leiautes-inep:consultar";
 
     public PerfilEndpointTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
@@ -122,6 +125,29 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
 
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarModelosNaUnidade, ManterModelos]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");
+    }
+
+    [Fact(DisplayName = "Perfil que reúne só permissões de unidade, inclusive a de consultar os leiautes do INEP, é aceito")]
+    public async Task Criar_ConsultaDosLeiautesJuntoComPermissoesDeUnidade_Devolve201()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [GerarEnvioAoInep, ConsultarLeiautesNaUnidade]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "Perfil que junta a consulta dos leiautes do INEP na unidade com a consulta institucional devolve 422")]
+    public async Task Criar_ConsultaDosLeiautesJuntoComConsultaInstitucional_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarLeiautesNaUnidade, ConsultarLeiautes]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");

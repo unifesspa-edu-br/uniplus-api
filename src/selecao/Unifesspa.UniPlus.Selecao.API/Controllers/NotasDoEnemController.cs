@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// <summary>
 /// Envio dos CPFs da edição do ENEM ao INEP e importação das notas que o INEP devolve. Cada operação
 /// exige a permissão própria na unidade dona do processo (gerar o envio, importar e consultar as notas); a lista de
-/// leiautes, que não é de um processo, tem permissão institucional.
+/// leiautes, que não é de um processo, aceita a permissão institucional ou a de consulta numa unidade.
 /// </summary>
 [ApiController]
 [EmiteEsperaEsgotadaPelaTrava]
@@ -67,7 +67,10 @@ public sealed class NotasDoEnemController : ControllerBase
     /// </summary>
     [HttpGet("leiautes-de-arquivo-do-inep")]
     [EndpointName("ListarLeiautesDeArquivoDoInep")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.LeiautesInepConsultar, ResourceTipo = ResourceTiposSelecao.LeiauteInep)]
+    [ExigePermissao<PermissaoSelecao>(
+        PermissaoSelecao.LeiautesInepConsultar,
+        OuEmAlgumaUnidade = PermissaoSelecao.LeiautesInepConsultarNaUnidade,
+        ResourceTipo = ResourceTiposSelecao.LeiauteInep)]
     [VendorMediaType(Resource = "leiaute-de-arquivo-do-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LeiauteDoInepDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
