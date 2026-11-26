@@ -5584,7 +5584,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.tipo_documento_com_protecao_pendente",
       "status": 422,
-      "titulo": "O tipo de documento aguarda a aprovação da proteção de dados e não aceita vínculo novo"
+      "titulo": "O tipo de documento aguarda a aprovação do Representante do controlador e não aceita vínculo novo"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado",
@@ -7309,7 +7309,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente",
       "status": 422,
-      "titulo": "Fato do processo aguarda a aprovação da proteção de dados"
+      "titulo": "O dado do candidato usado pelo processo aguarda a aprovação do Representante do controlador"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.fato_congelado_nao_encontrado",
@@ -7674,7 +7674,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.tipo_documento_com_protecao_pendente",
       "status": 422,
-      "titulo": "Tipo de documento do processo aguarda a aprovação da proteção de dados"
+      "titulo": "O tipo de documento exigido pelo processo aguarda a aprovação do Representante do controlador"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.tipo_etapa_nao_encontrado_ou_inativo",

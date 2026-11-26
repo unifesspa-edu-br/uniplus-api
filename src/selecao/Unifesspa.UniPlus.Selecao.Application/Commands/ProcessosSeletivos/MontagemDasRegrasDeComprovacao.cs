@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Errors;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -9,13 +10,20 @@ using Kernel.Results;
 /// <summary>Compõe as regras informadas e propaga o grupo de repetição às regras contidas.</summary>
 internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido documentos)
 {
-    public async Task<Result<List<RegraDeComprovacao>>> MontarRegrasSemGrupoAsync(
+    /// <param name="Regras">As regras montadas; falha com todas as recusas, inclusive as de vínculo do tipo de documento.</param>
+    /// <param name="VinculosDosTipos">Recusas de tipo de documento como vínculo novo. Não impedem a montagem: as regras vêm
+    /// em <paramref name="Regras"/> para que o catálogo confira também os dados das mesmas exigências.</param>
+    internal sealed record Montadas(Result<List<RegraDeComprovacao>> Regras, IReadOnlyList<FieldError> VinculosDosTipos);
+
+    public async Task<Montadas> MontarRegrasSemGrupoAsync(
         IReadOnlyList<RegraInformadaConferida> entradas, int ordemInicial, CancellationToken cancellationToken)
     {
         RegrasMontadas montados = await MontarRegrasAsync(entradas, ordemInicial, cancellationToken).ConfigureAwait(false);
         List<FieldError> recusas = [.. montados.Declaracao, .. montados.Cadastros, .. montados.Composicao];
-        return recusas.Count > 0 ? Result<List<RegraDeComprovacao>>.ValidationFailure(recusas)
-            : Result<List<RegraDeComprovacao>>.Success(montados.Regras);
+        return new(
+            recusas.Count > 0 ? Result<List<RegraDeComprovacao>>.ValidationFailure([.. recusas, .. montados.Vinculos])
+                : Result<List<RegraDeComprovacao>>.Success(montados.Regras),
+            montados.Vinculos);
     }
 
     private async Task<RegrasMontadas> MontarRegrasAsync(
@@ -52,9 +60,10 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             return null;
         }
         Result<MontagemDoDocumentoExigido.Partes> partes = await documentos.ConferirReferenciasAsync(documento, regra.Repeticao, cancellationToken).ConfigureAwait(false);
-        if (partes.IsFailure)
+        IEnumerable<FieldError> erros = partes.IsFailure ? partes.Errors : partes.Value!.VinculoDoTipo.Errors;
+        foreach (FieldError erro in ErrosDoDocumento(erros, regra))
         {
-            destino.Cadastros.AddRange(ErrosDoDocumento(partes.Errors, regra));
+            (EhVinculoDoTipo(erro) ? destino.Vinculos : destino.Cadastros).Add(erro);
         }
         return partes;
     }
@@ -99,6 +108,10 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             distincao?.Criterio, distincao?.DataReferencia, distincao?.OcorrenciasEsperadas, regra.Entrada.GrupoDoFormularioParaRepeticao);
     }
 
+    // As recusas de vínculo do tipo ficam juntas, na ordem das exigências, qualquer que seja o resultado das outras referências.
+    private static bool EhVinculoDoTipo(FieldError erro) =>
+        erro.Error.Code == ProcessoSeletivoErrorCodes.TipoDocumentoNoVinculoComProtecaoPendente;
+
     private static IEnumerable<FieldError> ErrosDoDocumento(IEnumerable<FieldError> erros, RegraInformadaConferida regra) =>
         erros.Select(erro => ComMensagemDoItem(erro.NoCaminhoDoItem("documento").NoCaminhoDe(regra.Caminho), regra.Indice));
 
@@ -111,6 +124,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         internal List<FieldError> Declaracao { get; } = [];
         internal List<FieldError> Cadastros { get; } = [];
         internal List<FieldError> Composicao { get; } = [];
+        internal List<FieldError> Vinculos { get; } = [];
         internal bool TodosMontados { get; set; } = true;
         internal bool TemErros => Declaracao.Count + Cadastros.Count + Composicao.Count > 0;
         internal void IncorporarErros(RegrasMontadas itens)
@@ -118,6 +132,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
             Declaracao.AddRange(itens.Declaracao);
             Cadastros.AddRange(itens.Cadastros);
             Composicao.AddRange(itens.Composicao);
+            Vinculos.AddRange(itens.Vinculos);
         }
     }
 

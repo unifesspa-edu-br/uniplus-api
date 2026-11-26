@@ -170,7 +170,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
     public async Task Publicacao_TipoEFatoComProtecaoPendente_RecusaComAsDuasCausasSemCampo()
     {
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Publicacao_TipoEFatoComProtecaoPendente_RecusaComAsDuasCausasSemCampo));
-        Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
+        Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO", "Laudo médico");
         await Aceito(ctx.PutExigenciaAsync(sensivel));
         await VoltarParaPendenteAsync(sensivel);
         try
@@ -200,6 +200,10 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             causas.Select(static c => c.GetProperty("code").GetString()).Should().Equal(
                 "uniplus.selecao.processo_seletivo.tipo_documento_com_protecao_pendente",
                 "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente");
+            string[] mensagens = [.. causas.Select(static c => c.GetProperty("message").GetString()!)];
+            mensagens[0].Should().StartWith("O tipo de documento 'Laudo médico', exigido pelo processo, aguarda a aprovação do Representante do controlador");
+            mensagens[1].Should().StartWith("O dado do candidato 'Quilombola', usado pelo processo, aguarda a aprovação do Representante do controlador");
+            mensagens.Should().AllSatisfy(static m => m.Should().NotContain("LAUDO_MEDICO").And.NotContain(FatoSensivel));
             causas.Any(static c => c.TryGetProperty("field", out JsonElement _)).Should().BeFalse("a causa do cadastro não aponta campo do pedido");
             problema.RootElement.GetProperty("code").GetString().Should().Be(causas[0].GetProperty("code").GetString());
         }
@@ -213,10 +217,10 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.dados_do_candidato SET protecao_situacao = 'PENDENTE' WHERE codigo = {FatoSensivel}");
     }
 
-    private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)
+    private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo, string? nome = null)
     {
         TipoDocumento tipo = TipoDocumento.Criar(new DeclaracaoDoTipoDocumento(
-            $"{prefixo}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}", prefixo, null, "SAUDE", null, null, null,
+            $"{prefixo}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}", nome ?? prefixo, null, "SAUDE", null, null, null,
             classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();

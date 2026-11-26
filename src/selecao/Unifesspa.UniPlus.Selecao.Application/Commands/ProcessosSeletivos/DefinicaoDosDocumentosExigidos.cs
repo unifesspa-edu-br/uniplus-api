@@ -19,11 +19,11 @@ internal static class DefinicaoDosDocumentosExigidos
         List<RegraInformadaConferida> conferidos = EscritaDasRegrasDeComprovacao.Conferir(entradas, processo.GruposColetados);
         List<RegraDeComprovacaoInformada> regrasDeDocumento = EscritaDasRegrasDeComprovacao.RegrasDeDocumentoConferidas(conferidos);
         ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, regrasDeDocumento, EscritaDasRegrasDeComprovacao.RegrasParaLeituraDeFatos(conferidos), mantidas, cadastros, cancellationToken).ConfigureAwait(false);
-        Result<List<RegraDeComprovacao>> regrasMontadas = await new MontagemDasRegrasDeComprovacao(new MontagemDoDocumentoExigido(contexto))
+        MontagemDasRegrasDeComprovacao.Montadas montadas = await new MontagemDasRegrasDeComprovacao(new MontagemDoDocumentoExigido(contexto))
             .MontarRegrasSemGrupoAsync(conferidos, ProximaOrdemDasRegras(mantidas), cancellationToken).ConfigureAwait(false);
-        return regrasMontadas.IsFailure
-            ? Result.ValidationFailure(regrasMontadas.Errors)
-            : DefinirNoProcesso(processo, mantidas, regrasMontadas.Value!, contexto.Fatos);
+        return montadas.Regras.IsFailure
+            ? Result.ValidationFailure(montadas.Regras.Errors)
+            : DefinirNoProcesso(processo, mantidas, montadas, contexto.Fatos);
     }
 
     private static int ProximaOrdemDasRegras(IReadOnlyList<RegraDeComprovacao> mantidas) =>
@@ -32,16 +32,18 @@ internal static class DefinicaoDosDocumentosExigidos
     private static Result DefinirNoProcesso(
         ProcessoSeletivo processo,
         IReadOnlyList<RegraDeComprovacao> mantidas,
-        List<RegraDeComprovacao> regrasMontadas,
+        MontagemDasRegrasDeComprovacao.Montadas montadas,
         FatosDoGatilho? fatos)
     {
-        Result vinculoNovo = fatos is null ? Result.Success() : ConferenciaDosVinculosDasExigencias.Conferir(processo, fatos, regrasMontadas);
-        if (vinculoNovo.IsFailure)
+        List<RegraDeComprovacao> regras = montadas.Regras.Value!;
+        Result vinculosDosDados = fatos is null ? Result.Success() : ConferenciaDosVinculosDasExigencias.Conferir(processo, fatos, regras);
+        List<FieldError> recusasDeVinculo = [.. montadas.VinculosDosTipos, .. vinculosDosDados.Errors];
+        if (recusasDeVinculo.Count > 0)
         {
-            return vinculoNovo;
+            return Result.ValidationFailure(recusasDeVinculo);
         }
 
-        Result definida = processo.DefinirDocumentosExigidos([.. mantidas, .. regrasMontadas]);
+        Result definida = processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
         return definida.IsFailure ? Result.Failure(definida.Error!) : Result.Success();
     }
 

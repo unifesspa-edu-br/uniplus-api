@@ -18446,10 +18446,11 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "Um tipo de documento só pode ser exigido depois de o Representante do controlador aprovar a classificação, a finalidade e a base legal dele. O tipo é novo ou teve a proteção alterada e está pendente."
+        "Um tipo de documento só pode ser exigido depois de o Representante do controlador aprovar a classificação, a finalidade e a base legal dele. O tipo é novo ou teve a proteção alterada e está pendente. O Gestor de proteção de dados pode se manifestar sobre a proteção, mas não decide a aprovação.",
+        "A mensagem da resposta nomeia o tipo de documento pendente, como aparece no cadastro."
       ],
       "comoResolver": [
-        "Peça ao administrador do catálogo que envie a solicitação de aprovação, ou escolha um tipo já aprovado."
+        "Escolha outro tipo de documento ou retire a exigência, ou peça ao administrador do catálogo que envie a solicitação de aprovação ao Representante do controlador, se ainda não a enviou."
       ],
       "ondeAparece": [
         "Cadastro ou alteração de exigência documental do processo seletivo"
@@ -18463,7 +18464,7 @@
         "- na definição dos documentos exigidos e na aplicação de um modelo de formulário, o tipo\n  citado não existe no cadastro; o sistema o procura pelo identificador, na montagem de cada\n  exigência, depois da conferência de forma;\n- na publicação e na retificação em ato único, o tipo\n  existia quando a exigência foi escrita e deixou de existir. Essa é a primeira conferência\n  de congelamento, anterior às demais."
       ],
       "comoResolver": [
-        "Troque a exigência por um tipo de documento que exista no cadastro. Se o tipo escolhido for\nnovo ou tiver a proteção de dados alterada, a exigência só o aceita depois da aprovação da\nproteção de dados (ver\n[`tipo_documento_com_protecao_pendente`](/erros/uniplus.selecao.documento_exigido.tipo_documento_com_protecao_pendente)).",
+        "Troque a exigência por um tipo de documento que exista no cadastro. Se o tipo escolhido for\nnovo ou tiver a proteção de dados alterada, a exigência só o aceita depois da aprovação do\nRepresentante do controlador (ver\n[`tipo_documento_com_protecao_pendente`](/erros/uniplus.selecao.documento_exigido.tipo_documento_com_protecao_pendente)).",
         "Na aplicação de um modelo de formulário, é o modelo que cita um tipo que não está no cadastro:\nescolha outro modelo ou peça a revisão do modelo."
       ],
       "ondeAparece": [
@@ -24254,10 +24255,11 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "A publicação e a retificação conferem que todo fato que o processo coleta, e todo fato derivado do catálogo, que o processo congela, têm a proteção aprovada. Um deles é novo ou teve a proteção alterada e está pendente. A resposta aponta o fato."
+        "A publicação e a retificação conferem que todo dado do candidato que o processo coleta, e todo dado derivado do catálogo, que o processo congela, têm a proteção aprovada pelo Representante do controlador. Um deles é novo ou teve a proteção alterada e está pendente. O Gestor de proteção de dados pode se manifestar sobre a proteção, mas não decide a aprovação.",
+        "A mensagem da resposta nomeia o dado do candidato pendente, como aparece no catálogo. Quando mais de um item está pendente, a resposta traz uma causa por item em `errors[]`, sem `field`."
       ],
       "comoResolver": [
-        "Falta a aprovação da proteção de dados, ou o aceite da recomendação dela. Depois disso, publique ou feche a retificação de novo."
+        "Peça ao administrador do catálogo que envie a solicitação de aprovação ao Representante do controlador ou, se houver ajuste recomendado, que aceite a recomendação. Também é possível retirar o dado do formulário, da regra, da condição ou da exigência de documento que o usa. Depois disso, publique ou feche a retificação de novo."
       ],
       "ondeAparece": [
         "Publicação de processo seletivo",
@@ -25528,10 +25530,11 @@
         "UNI-REQ-0205"
       ],
       "oQueAconteceu": [
-        "A publicação e a retificação conferem que todo tipo de documento exigido pelo processo tem a proteção aprovada. Um deles é novo ou teve a proteção alterada depois de vinculado e voltou a pendente. A resposta aponta o tipo."
+        "A publicação e a retificação conferem que todo tipo de documento exigido pelo processo tem a proteção aprovada pelo Representante do controlador. Um deles é novo ou teve a proteção alterada depois de vinculado e voltou a pendente. O Gestor de proteção de dados pode se manifestar sobre a proteção, mas não decide a aprovação.",
+        "A mensagem da resposta nomeia o tipo de documento pendente, como aparece no cadastro. Quando mais de um item está pendente, a resposta traz uma causa por item em `errors[]`, sem `field`."
       ],
       "comoResolver": [
-        "Falta a aprovação da proteção de dados, ou o aceite da recomendação dela. Depois disso, publique ou feche a retificação de novo."
+        "Peça ao administrador do catálogo que envie a solicitação de aprovação ao Representante do controlador ou, se houver ajuste recomendado, que aceite a recomendação. Também é possível trocar o tipo de documento da exigência. Depois disso, publique ou feche a retificação de novo."
       ],
       "ondeAparece": [
         "Publicação de processo seletivo",
