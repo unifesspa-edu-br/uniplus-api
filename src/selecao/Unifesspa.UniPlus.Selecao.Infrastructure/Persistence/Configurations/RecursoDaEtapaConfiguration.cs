@@ -33,6 +33,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
             tabela.HasCheckConstraint(
                 "ck_recursos_configurados_da_etapa_evento_inicial_do_prazo",
                 $"evento_inicial_do_prazo IN ({SqlDosCodigosDeContrato.Lista<EventoInicialDoPrazo>()})");
+            ParametrosDoRecursoOwnedConfiguration.RestringirCodigosDosParametrosDoRecurso(tabela, "recursos_configurados_da_etapa");
         });
         builder.Property(r => r.EtapaProcessoId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(r => r.Id);

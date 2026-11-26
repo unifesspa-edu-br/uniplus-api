@@ -25,6 +25,10 @@ public sealed record ParametrosDeclaradosDoRecurso(
     private const string SegundaInstanciaValor = "prazoSegundaInstanciaValor";
     private const string SegundaInstanciaUnidade = "prazoSegundaInstanciaUnidade";
 
+    private const string OpcoesDeEfeitoAceitas =
+        "efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem "
+        + "do ato recorrido decide em cada recurso.";
+
     /// <summary>
     /// As recusas, acumuladas na ordem: prazo de interposição, efeito suspensivo, guarda não declarável, prazo da 2ª instância
     /// e "não guarda" com instância superior. Sem recusa, os parâmetros conferidos; com recusa, nenhum.
@@ -49,8 +53,8 @@ public sealed record ParametrosDeclaradosDoRecurso(
         CatalogoDe<EfeitoSuspensivo>.TentarObter(EfeitoSuspensivo, out _)
             ? null
             : new(MotivoDaRecusaDosParametros.EfeitoSuspensivoNaoDeclarado, "efeitoSuspensivo", EfeitoSuspensivo is null
-                ? "Declare o efeito suspensivo do recurso na 1ª instância. Opção aceita: sem efeito suspensivo."
-                : "O efeito suspensivo declarado não é uma das opções aceitas. Opção aceita: sem efeito suspensivo.");
+                ? "Declare o efeito suspensivo do recurso na 1ª instância. Opções aceitas: " + OpcoesDeEfeitoAceitas
+                : "O efeito suspensivo declarado não é uma das opções aceitas: " + OpcoesDeEfeitoAceitas);
 
     private RecusaDosParametrosDoRecurso? RecusaDaGuardaNaoDeclaravel() =>
         GuardaConferida() is null

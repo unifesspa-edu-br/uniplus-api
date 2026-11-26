@@ -85,7 +85,8 @@ internal static class ExemploDeEnvelopeEtapas
             EventoInicialDoPrazo.PublicacaoDoAto,
             Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
             ParametrosDoRecursoDeTeste.Declarados(
-                3m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(1m, UnidadePrazo.DiasUteis)),
+                3m, UnidadePrazo.DiasUteis, admiteInstanciaSuperior: true, segundaInstancia: new PrazoDoRecurso(1m, UnidadePrazo.DiasUteis),
+                efeitoSuspensivo: "PARA_TODOS_OS_RECURSOS"),
             ProdutoDaObjetivaId(1, variante),
             ProcedimentosDoExemploSemAlvo()).Value!;
 

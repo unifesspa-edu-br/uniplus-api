@@ -19,12 +19,13 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Um processo publicado com recurso na fase de resultado e na etapa dela, e duas versões da configuração, ambas com instância
-/// superior. No recurso da fase só o prazo da 2ª instância muda de uma versão para a outra (72 horas na primeira, 48 horas na
-/// segunda). No recurso da etapa mudam o prazo e o prazo da 2ª instância (120 e 96 horas na primeira; 72 e 24 horas na segunda);
-/// a guarda da vaga é a mesma nas duas, porque a instância superior exige guardar a vaga até o resultado definitivo, e o efeito
-/// suspensivo não muda, porque só existe um
-/// valor. Os valores da etapa diferem dos da fase, para que uma leitura trocada de lugar seja percebida. A leitura é a que os
-/// consumidores do recurso usam: a configuração congelada na versão vigente num instante.
+/// superior. No recurso da fase mudam o prazo da 2ª instância (72 horas na primeira, 48 horas na segunda) e o efeito suspensivo
+/// (sem efeito suspensivo na primeira, para todos os recursos na segunda). No recurso da etapa mudam o prazo e o prazo da 2ª
+/// instância (120 e 96 horas na primeira; 72 e 24 horas na segunda) e o efeito suspensivo (sem efeito suspensivo na primeira,
+/// a unidade decidindo em cada recurso na segunda). O envelope grava o rótulo do efeito ao lado do código, e os dois trocam
+/// juntos. A guarda da vaga é a mesma nas duas versões, porque a instância superior exige guardar a vaga até o resultado
+/// definitivo. Os valores da etapa diferem dos da fase, para que uma leitura trocada de lugar seja percebida. A leitura é a que
+/// os consumidores do recurso usam: a configuração congelada na versão vigente num instante.
 /// </summary>
 internal sealed class CenarioDoRecursoPorVersao
 {
@@ -34,15 +35,17 @@ internal sealed class CenarioDoRecursoPorVersao
     /// <summary>O instante em que a segunda versão passa a valer.</summary>
     public static readonly DateTimeOffset VigenciaDaSegunda = VigenciaDaPrimeira.AddDays(2);
 
-    public static readonly ParametrosRegraPrazoRecurso CongeladosNaPrimeira = ParametrosComSegundaInstanciaEm(new PrazoDoRecurso(72m, UnidadePrazo.Horas));
+    public static readonly ParametrosRegraPrazoRecurso CongeladosNaPrimeira = ParametrosComSegundaInstanciaEm(
+        new PrazoDoRecurso(72m, UnidadePrazo.Horas), EfeitoSuspensivo.SemEfeitoSuspensivo);
 
-    public static readonly ParametrosRegraPrazoRecurso CongeladosNaSegunda = ParametrosComSegundaInstanciaEm(new PrazoDoRecurso(48m, UnidadePrazo.Horas));
+    public static readonly ParametrosRegraPrazoRecurso CongeladosNaSegunda = ParametrosComSegundaInstanciaEm(
+        new PrazoDoRecurso(48m, UnidadePrazo.Horas), EfeitoSuspensivo.ParaTodosOsRecursos);
 
     public static readonly ParametrosRegraPrazoRecurso CongeladosDaEtapaNaPrimeira = ParametrosDaEtapa(
-        new PrazoDoRecurso(120m, UnidadePrazo.Horas), new PrazoDoRecurso(96m, UnidadePrazo.Horas), GuardaDaVaga.AteOResultadoDefinitivo);
+        new PrazoDoRecurso(120m, UnidadePrazo.Horas), new PrazoDoRecurso(96m, UnidadePrazo.Horas), EfeitoSuspensivo.SemEfeitoSuspensivo);
 
     public static readonly ParametrosRegraPrazoRecurso CongeladosDaEtapaNaSegunda = ParametrosDaEtapa(
-        new PrazoDoRecurso(72m, UnidadePrazo.Horas), new PrazoDoRecurso(24m, UnidadePrazo.Horas), GuardaDaVaga.AteOResultadoDefinitivo);
+        new PrazoDoRecurso(72m, UnidadePrazo.Horas), new PrazoDoRecurso(24m, UnidadePrazo.Horas), EfeitoSuspensivo.UnidadeDecideEmCadaRecurso);
 
     private readonly ProcessoSeletivoDbFixture _fixture;
     private readonly CenarioDeVersaoVigentePersistida _persistencia;
@@ -83,6 +86,14 @@ internal sealed class CenarioDoRecursoPorVersao
         return (vigente.NumeroDaVersao, vigente.Configuracao.Avaliacao.Etapas.Single().Recursos.Single().Parametros);
     }
 
+    /// <summary>O código e o rótulo do efeito suspensivo gravados no envelope da versão vigente no instante, no recurso da fase.</summary>
+    public async Task<(string Codigo, string Rotulo)> LerOEfeitoGravadoDaFaseAsync(Guid processoId, DateTimeOffset instante) =>
+        EfeitoGravadoEm(ParametrosDoRecursoDaFase(await LerOEnvelopeVigenteAsync(processoId, instante)));
+
+    /// <summary>O código e o rótulo do efeito suspensivo gravados no envelope da versão vigente no instante, no recurso da etapa.</summary>
+    public async Task<(string Codigo, string Rotulo)> LerOEfeitoGravadoDaEtapaAsync(Guid processoId, DateTimeOffset instante) =>
+        EfeitoGravadoEm(ParametrosDoRecursoDaEtapa(await LerOEnvelopeVigenteAsync(processoId, instante)));
+
     public async Task<Result<ConfiguracaoVigente>> LerAsync(Guid processoId, DateTimeOffset instante)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -90,6 +101,18 @@ internal sealed class CenarioDoRecursoPorVersao
 
         return await leitor.LerAsync(processoId, instante, CancellationToken.None);
     }
+
+    private async Task<JsonObject> LerOEnvelopeVigenteAsync(Guid processoId, DateTimeOffset instante)
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository processos = ProcessoSeletivoRepositoryDeTeste.Criar(context);
+        VersaoConfiguracao vigente = (await processos.ObterVersaoVigenteAsync(processoId, instante, CancellationToken.None))!;
+
+        return VersoesDoEnvelopeDeTeste.EnvelopeDosBytes(vigente.ConfiguracaoCongeladaCanonica);
+    }
+
+    private static (string Codigo, string Rotulo) EfeitoGravadoEm(JsonObject parametros) =>
+        (parametros["efeitoSuspensivo"]!.GetValue<string>(), parametros["contexto"]!["efeitoSuspensivoRotulo"]!.GetValue<string>());
 
     private async Task<ConfiguracaoVigente> LerQueExisteAsync(Guid processoId, DateTimeOffset instante)
     {
@@ -99,11 +122,11 @@ internal sealed class CenarioDoRecursoPorVersao
         return lida.Value!;
     }
 
-    private static ParametrosRegraPrazoRecurso ParametrosDaEtapa(PrazoDoRecurso interposicao, PrazoDoRecurso segunda, GuardaDaVaga guarda) =>
-        new(interposicao, AdmiteInstanciaSuperior: true, segunda, EfeitoSuspensivo.SemEfeitoSuspensivo, guarda);
+    private static ParametrosRegraPrazoRecurso ParametrosDaEtapa(PrazoDoRecurso interposicao, PrazoDoRecurso segunda, EfeitoSuspensivo efeito) =>
+        new(interposicao, AdmiteInstanciaSuperior: true, segunda, efeito, GuardaDaVaga.AteOResultadoDefinitivo);
 
-    private static ParametrosRegraPrazoRecurso ParametrosComSegundaInstanciaEm(PrazoDoRecurso segunda) =>
-        new(new PrazoDoRecurso(48m, UnidadePrazo.Horas), AdmiteInstanciaSuperior: true, segunda, EfeitoSuspensivo.SemEfeitoSuspensivo, GuardaDaVaga.AteOResultadoDefinitivo);
+    private static ParametrosRegraPrazoRecurso ParametrosComSegundaInstanciaEm(PrazoDoRecurso segunda, EfeitoSuspensivo efeito) =>
+        new(new PrazoDoRecurso(48m, UnidadePrazo.Horas), AdmiteInstanciaSuperior: true, segunda, efeito, GuardaDaVaga.AteOResultadoDefinitivo);
 
     // O registro congelado da segunda versão é o da primeira com os parâmetros do recurso da fase e da etapa trocados, serializado
     // pelo perfil canônico, o mesmo que o codec exige na leitura.
@@ -125,19 +148,34 @@ internal sealed class CenarioDoRecursoPorVersao
 
     private static void TrocarOPrazoDaSegundaInstanciaDaFase(JsonObject envelope)
     {
-        JsonObject parametros = envelope["cronogramaFases"]!["fases"]!.AsArray().Single()!["regraRecurso"]!["parametros"]!.AsObject();
+        JsonObject parametros = ParametrosDoRecursoDaFase(envelope);
         parametros["prazoSegundaInstanciaValor"] = "48.0000";
         parametros["prazoSegundaInstanciaUnidade"] = UnidadePrazo.Horas.Codigo();
+        TrocarOEfeitoSuspensivo(parametros, CongeladosNaSegunda.EfeitoSuspensivo);
     }
 
     private static void TrocarOsParametrosDaEtapa(JsonObject envelope)
     {
-        JsonObject parametros = envelope["etapas"]!.AsArray().Single()!["recursos"]!.AsArray().Single()!["parametros"]!.AsObject();
+        JsonObject parametros = ParametrosDoRecursoDaEtapa(envelope);
         parametros["prazoValor"] = "72.0000";
         parametros["prazoUnidade"] = UnidadePrazo.Horas.Codigo();
         parametros["prazoSegundaInstanciaValor"] = "24.0000";
         parametros["prazoSegundaInstanciaUnidade"] = UnidadePrazo.Horas.Codigo();
+        TrocarOEfeitoSuspensivo(parametros, CongeladosDaEtapaNaSegunda.EfeitoSuspensivo);
     }
+
+    // O envelope grava o código do efeito e, ao lado, o rótulo dele no contexto: os dois trocam juntos.
+    private static void TrocarOEfeitoSuspensivo(JsonObject parametros, EfeitoSuspensivo efeito)
+    {
+        parametros["efeitoSuspensivo"] = efeito.Codigo();
+        parametros["contexto"]!["efeitoSuspensivoRotulo"] = efeito.Rotulo();
+    }
+
+    private static JsonObject ParametrosDoRecursoDaFase(JsonObject envelope) =>
+        envelope["cronogramaFases"]!["fases"]!.AsArray().Single()!["regraRecurso"]!["parametros"]!.AsObject();
+
+    private static JsonObject ParametrosDoRecursoDaEtapa(JsonObject envelope) =>
+        envelope["etapas"]!.AsArray().Single()!["recursos"]!.AsArray().Single()!["parametros"]!.AsObject();
 
     // A etapa da fase de resultado abre também um recurso por ciência individual do candidato, com os parâmetros da primeira versão;
     // a ciência individual exige que a etapa prometa parecer individual e não tem produto em que ancorar.

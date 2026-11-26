@@ -291,7 +291,7 @@
           "prazoUnidade": "DIAS_UTEIS",
           "publicacaoDeReferenciaAtoCodigo": "RESULTADO_FINAL",
           "admiteInstanciaSuperior": false,
-          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO",
+          "efeitoSuspensivo": "PARA_TODOS_OS_RECURSOS",
           "guardaDaVaga": "ATE_O_RESULTADO_DEFINITIVO",
           "procedimentosDeRecurso": [
             {
@@ -397,7 +397,7 @@
           "admiteInstanciaSuperior": true,
           "prazoSegundaInstanciaValor": 3,
           "prazoSegundaInstanciaUnidade": "DIAS_UTEIS",
-          "efeitoSuspensivo": "SEM_EFEITO_SUSPENSIVO",
+          "efeitoSuspensivo": "UNIDADE_DECIDE_EM_CADA_RECURSO",
           "procedimentosDeRecurso": [
             {
               "tipoDeDecisao": "CLASSIFICACAO",

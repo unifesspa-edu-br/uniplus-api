@@ -67,7 +67,7 @@ public sealed class VocabulariosEndpointTests
     [InlineData("/api/selecao/vocabularios/consequencias-do-descumprimento", "consequencias-do-descumprimento", new[] { "ELIMINA_DO_PROCESSO", "RETIRA_A_MODALIDADE", "RETIRA_O_ACRESCIMO" })]
     [InlineData("/api/selecao/vocabularios/formas-comprovacao", "forma-de-comprovacao", new[] { "DOCUMENTO", "TODOS_OS_ITENS", "QUANTIDADE_MINIMA_DE_ITENS" })]
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "HORAS", "DIAS_UTEIS" })]
-    [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "SEM_EFEITO_SUSPENSIVO" })]
+    [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "PARA_TODOS_OS_RECURSOS", "SEM_EFEITO_SUSPENSIVO", "UNIDADE_DECIDE_EM_CADA_RECURSO" })]
     [InlineData("/api/selecao/guardas-da-vaga", "guarda-da-vaga", new[] { "ATE_O_RESULTADO_DEFINITIVO", "NAO_GUARDA" })]
     [InlineData("/api/selecao/vocabularios/modos-deliberacao", "modo-deliberacao", new[] { "COLEGIADA_COM_VOTACAO", "ATO_INDIVIDUAL" })]
     [InlineData("/api/selecao/vocabularios/criterios-votacao", "criterio-votacao", new[] { "MAIORIA_SIMPLES", "MAIORIA_ABSOLUTA", "UNANIMIDADE" })]

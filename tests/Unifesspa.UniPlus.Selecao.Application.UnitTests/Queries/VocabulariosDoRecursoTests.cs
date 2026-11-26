@@ -20,12 +20,12 @@ public sealed class VocabulariosDoRecursoTests
         PrazoDoRecurso.UnidadesDeclaraveis.Should().Equal(UnidadePrazo.Horas, UnidadePrazo.DiasUteis);
     }
 
-    [Fact(DisplayName = "Os efeitos suspensivos oferecidos são todos os do enum, cada um com o rótulo e a descrição")]
+    [Fact(DisplayName = "Os efeitos suspensivos oferecidos são todos os do enum, na ordem declarada, cada um com o rótulo e a descrição")]
     public void EfeitosSuspensivos_OferecemTodosComDescricao()
     {
         IReadOnlyList<CodigoComDescricao<EfeitoSuspensivo>> efeitos = ListarEfeitosSuspensivosQueryHandler.Handle(new ListarEfeitosSuspensivosQuery());
 
-        efeitos.Select(static e => e.Codigo).Should().Equal("SEM_EFEITO_SUSPENSIVO");
+        efeitos.Select(static e => e.Codigo).Should().Equal("PARA_TODOS_OS_RECURSOS", "SEM_EFEITO_SUSPENSIVO", "UNIDADE_DECIDE_EM_CADA_RECURSO");
         efeitos.Should().OnlyContain(static e => !string.IsNullOrWhiteSpace(e.Rotulo) && !string.IsNullOrWhiteSpace(e.Descricao));
     }
 

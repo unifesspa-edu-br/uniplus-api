@@ -157,8 +157,20 @@ public sealed class RecursoDaEtapaTests
         resultado.Error!.Code.Should().Be("RecursoDaEtapa.NaoGuardaComInstanciaSuperior");
     }
 
+    [Theory(DisplayName = "Recurso da etapa aceita cada uma das três opções de efeito suspensivo")]
+    [InlineData("PARA_TODOS_OS_RECURSOS", EfeitoSuspensivo.ParaTodosOsRecursos)]
+    [InlineData("SEM_EFEITO_SUSPENSIVO", EfeitoSuspensivo.SemEfeitoSuspensivo)]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO", EfeitoSuspensivo.UnidadeDecideEmCadaRecurso)]
+    public void EfeitoSuspensivoDeclarado_Cria(string codigo, EfeitoSuspensivo esperado)
+    {
+        Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(efeitoSuspensivo: codigo));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Parametros.EfeitoSuspensivo.Should().Be(esperado);
+    }
+
     [Fact(DisplayName = "Recurso da etapa sem efeito suspensivo declarado é recusado")]
-    public void SemEfeitoSuspensivo_Recusa()
+    public void EfeitoSuspensivoNaoDeclarado_Recusa()
     {
         Result<RecursoDaEtapa> resultado = Criar(ParametrosDoRecursoDeTeste.Declarados(efeitoSuspensivo: null));
 

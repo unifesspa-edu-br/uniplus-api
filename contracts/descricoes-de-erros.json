@@ -16629,10 +16629,12 @@
       "oQueAconteceu": [
         "A configuração do recurso de uma etapa não declara o **efeito suspensivo** do recurso na 1ª instância, ou declara um que não é uma das opções aceitas. A declaração é obrigatória e não tem valor padrão (UNI-REQ-0440). A recusa sai com **422**, nada é gravado, e o campo recusado é `etapas[i].recursos[j].efeitoSuspensivo`, em que `i` é a posição da etapa e `j`, a do recurso na etapa.",
         "A mensagem da resposta tem duas formas, e nenhuma repete o valor enviado:",
-        "- campo ausente: \"Declare o efeito suspensivo do recurso na 1ª instância. Opção aceita: sem efeito suspensivo.\";\n- valor recusado: \"O efeito suspensivo declarado não é uma das opções aceitas. Opção aceita: sem efeito suspensivo.\""
+        "- campo ausente: \"Declare o efeito suspensivo do recurso na 1ª instância. Opções aceitas: efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso.\";\n- valor recusado: \"O efeito suspensivo declarado não é uma das opções aceitas: efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso.\""
       ],
       "comoResolver": [
-        "Informe, em `efeitoSuspensivo`, o código `SEM_EFEITO_SUSPENSIVO`: o recurso não suspende o processo, e as fases seguintes começam nas datas do cronograma, mesmo com recurso em análise. É a única opção aceita."
+        "Informe, em `efeitoSuspensivo`, um destes três códigos:",
+        "- `PARA_TODOS_OS_RECURSOS`: todo recurso da 1ª instância tem efeito suspensivo; enquanto o prazo para recorrer está aberto e, havendo recurso, até que todos tenham decisão e o resultado definitivo esteja publicado, ficam suspensos os atos que não podem ser desfeitos e o início das fases posteriores;\n- `SEM_EFEITO_SUSPENSIVO`: o recurso da 1ª instância não suspende nenhum ato do processo enquanto é analisado;\n- `UNIDADE_DECIDE_EM_CADA_RECURSO`: em cada recurso da 1ª instância, a unidade responsável pela fase de origem do ato recorrido decide se concede o efeito suspensivo e registra a fundamentação; só o recurso com a concessão suspende os atos que não podem ser desfeitos e o início das fases posteriores.",
+        "A lista das opções, com rótulo e descrição, está em `GET /api/selecao/efeitos-suspensivos`. A escolha vale só para a 1ª instância: a 2ª instância sempre tem efeito suspensivo."
       ],
       "ondeAparece": [
         "Definição de etapas do processo seletivo",
@@ -16787,10 +16789,12 @@
       "oQueAconteceu": [
         "A configuração do recurso de uma fase não declara o **efeito suspensivo** do recurso na 1ª instância, ou declara um que não é uma das opções aceitas. A declaração é obrigatória e não tem valor padrão (UNI-REQ-0440). A recusa sai com **422**, nada é gravado, e o campo recusado é `fases[i].regraRecurso.efeitoSuspensivo`, em que `i` é a posição da fase.",
         "A mensagem da resposta tem duas formas, e nenhuma repete o valor enviado:",
-        "- campo ausente: \"Declare o efeito suspensivo do recurso na 1ª instância. Opção aceita: sem efeito suspensivo.\";\n- valor recusado: \"O efeito suspensivo declarado não é uma das opções aceitas. Opção aceita: sem efeito suspensivo.\""
+        "- campo ausente: \"Declare o efeito suspensivo do recurso na 1ª instância. Opções aceitas: efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso.\";\n- valor recusado: \"O efeito suspensivo declarado não é uma das opções aceitas: efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso.\""
       ],
       "comoResolver": [
-        "Informe, em `efeitoSuspensivo`, o código `SEM_EFEITO_SUSPENSIVO`: o recurso não suspende o processo, e as fases seguintes começam nas datas do cronograma, mesmo com recurso em análise. É a única opção aceita."
+        "Informe, em `efeitoSuspensivo`, um destes três códigos:",
+        "- `PARA_TODOS_OS_RECURSOS`: todo recurso da 1ª instância tem efeito suspensivo; enquanto o prazo para recorrer está aberto e, havendo recurso, até que todos tenham decisão e o resultado definitivo esteja publicado, ficam suspensos os atos que não podem ser desfeitos e o início das fases posteriores;\n- `SEM_EFEITO_SUSPENSIVO`: o recurso da 1ª instância não suspende nenhum ato do processo enquanto é analisado;\n- `UNIDADE_DECIDE_EM_CADA_RECURSO`: em cada recurso da 1ª instância, a unidade responsável pela fase de origem do ato recorrido decide se concede o efeito suspensivo e registra a fundamentação; só o recurso com a concessão suspende os atos que não podem ser desfeitos e o início das fases posteriores.",
+        "A lista das opções, com rótulo e descrição, está em `GET /api/selecao/efeitos-suspensivos`. A escolha vale só para a 1ª instância: a 2ª instância sempre tem efeito suspensivo."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo",
