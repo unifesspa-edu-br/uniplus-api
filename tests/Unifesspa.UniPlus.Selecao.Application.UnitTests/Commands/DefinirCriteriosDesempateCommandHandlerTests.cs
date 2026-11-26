@@ -194,6 +194,19 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.Error!.Code.Should().Be("CriterioDesempate.RegraTipoInvalido");
     }
 
+    [Fact(DisplayName = "Código de regra de desempate fora do rol conhecido é recusado no campo da regra, sem repetir o código enviado")]
+    public async Task Handle_CodigoDeRegraDesconhecido_MensagemSemOCodigoEnviado()
+    {
+        ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
+        CenarioDosCriteriosDeDesempate cenario = Com(processo).ComCriteriosNoCatalogo("REGRA_INEXISTENTE_DE_TESTE");
+
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, "REGRA_INEXISTENTE_DE_TESTE")));
+
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].regra.codigo", "CriterioDesempate.RegraTipoInvalido"));
+        erro.Error.Message.Should().NotContain("REGRA_INEXISTENTE_DE_TESTE");
+    }
+
     [Fact(DisplayName = "ADR-0125: ordem inválida acumula junto com a regra inexistente, no mesmo item e em outro")]
     public async Task Handle_OrdemInvalidaERegraInexistente_Acumula()
     {

@@ -22,7 +22,7 @@ internal static class ParametrosDoDesempateDeclarados
     public static Result<ParametrosCriterioDesempate> Montar(int ordem, ParametrosDoCriterioDesempateInput parametros, string regraCodigo) =>
         CatalogoDe<RegraDeDesempate>.TentarObter(regraCodigo, out RegraDeDesempate regra)
             ? DaRegra(ordem, parametros, regra)
-            : Recusa("regraCodigo", new DomainError("CriterioDesempate.RegraTipoInvalido", $"Código de regra de desempate desconhecido: {regraCodigo}."));
+            : Recusa("regraCodigo", new DomainError("CriterioDesempate.RegraTipoInvalido", "O código da regra de desempate não consta do catálogo de regras de desempate."));
 
     private static Result<ParametrosCriterioDesempate> DaRegra(int ordem, ParametrosDoCriterioDesempateInput parametros, RegraDeDesempate regra) =>
         regra switch

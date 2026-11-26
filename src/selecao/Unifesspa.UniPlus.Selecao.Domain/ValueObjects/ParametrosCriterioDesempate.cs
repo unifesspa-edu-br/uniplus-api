@@ -162,7 +162,7 @@ public sealed record ParametrosDesempateMaiorNotaAreaEnem : ParametrosCriterioDe
     private FieldError? RecusaDaArea(int indice, string codigo) => !FormaDoCodigoDeAreaCitada.Aceita(codigo)
         ? new($"areas[{indice}]", new DomainError(DesempatePorAreaEnemErrorCodes.AreaInvalida, $"Cada área da ordem de desempate é {FormaDoCodigoDeAreaCitada.Descricao}."))
         : Areas.Take(indice).Contains(codigo, StringComparer.Ordinal)
-            ? new($"areas[{indice}]", new DomainError(DesempatePorAreaEnemErrorCodes.AreaRepetida, $"A área {codigo} aparece mais de uma vez na ordem de desempate.")) : null;
+            ? new($"areas[{indice}]", new DomainError(DesempatePorAreaEnemErrorCodes.AreaRepetida, "Cada área aparece uma só vez na ordem de desempate.")) : null;
     private static FieldError RecusaDaOrdem(string codigo, string mensagem) => new("areas", new DomainError(codigo, mensagem));
 
     public ParametrosDesempateMaiorNotaAreaEnem(IReadOnlyList<string> areas)
