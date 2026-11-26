@@ -26,9 +26,6 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// <summary>O formulário do grupo; atribuído pelo processo ao definir os itens.</summary>
     public Guid? FormularioId { get; private set; }
 
-    /// <summary>A finalidade do formulário do grupo; atribuída pelo processo ao definir os itens.</summary>
-    public FinalidadeFormulario? Finalidade { get; private set; }
-
     /// <summary>Código do grupo no formulário, fora do espaço de códigos dos fatos.</summary>
     public string Codigo { get; private set; } = string.Empty;
 
@@ -85,10 +82,10 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// <summary>
     /// Acumula as violações da forma do grupo e, quando ele inclui o candidato, as da identificação
     /// da ocorrência dele (ADR-0125); a citação dos campos e a posição do grupo são do formulário
-    /// inteiro, conferidas pelo processo. O grupo adota a finalidade e o formulário dos campos, que têm de ser os
-    /// mesmos: o processo vincula o do formulário depois, e o envelope remonta os campos com o lido.
+    /// inteiro, conferidas pelo processo. O grupo adota o formulário dos campos, que têm de ser o
+    /// mesmo: o processo vincula o do formulário depois, e o envelope remonta os campos com o lido.
     /// </summary>
-    /// <exception cref="ArgumentException">Os campos são de finalidades ou de formulários diferentes.</exception>
+    /// <exception cref="ArgumentException">Os campos são de formulários diferentes.</exception>
     public static Result<GrupoColetado> Criar(
         string codigo,
         int ordem,
@@ -118,7 +115,6 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
 
     private void AdotarCampos(IReadOnlyList<FatoColetado> subitens)
     {
-        Finalidade = FinalidadeComumDos(subitens);
         FormularioId = FormularioComumDos(subitens);
         foreach (FatoColetado subitem in subitens)
         {
@@ -126,11 +122,6 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
             _subitens.Add(subitem);
         }
     }
-
-    private static FinalidadeFormulario? FinalidadeComumDos(IReadOnlyList<FatoColetado> campos) =>
-        campos.Select(static c => c.Finalidade).Distinct().ToList() is [var comum]
-            ? comum
-            : throw new ArgumentException("Os campos do grupo são de finalidades diferentes: o grupo tem a finalidade dos seus campos.", nameof(campos));
 
     private static Guid? FormularioComumDos(IReadOnlyList<FatoColetado> campos) =>
         campos.Select(static c => c.FormularioId).Distinct().ToList() is [var comum]
@@ -163,7 +154,6 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     internal void VincularFormulario(FormularioProcesso formulario)
     {
         FormularioId = formulario.Id;
-        Finalidade = formulario.Finalidade;
         foreach (FatoColetado subitem in _subitens)
         {
             subitem.VincularFormulario(formulario);

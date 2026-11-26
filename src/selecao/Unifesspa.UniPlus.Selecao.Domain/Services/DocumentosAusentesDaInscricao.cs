@@ -30,7 +30,7 @@ public static class DocumentosAusentesDaInscricao
 
     private static List<DocumentoAusente> SomenteDosFormularios(List<DocumentoAusente> ausentes, IReadOnlyCollection<CodigoDoFormulario> formularios) =>
         [.. ausentes
-            .Select(ausente => ausente with { Alternativas = [.. ausente.Alternativas.Where(d => d.FormularioCodigo is { } formulario && formularios.Contains(formulario))] })
+            .Select(ausente => ausente with { Alternativas = [.. ausente.Alternativas.Where(d => formularios.Contains(d.FormularioCodigo))] })
             .Where(static ausente => ausente.Alternativas.Count > 0)];
 
     private static void Percorrer(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,

@@ -26,7 +26,7 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Result gravado = processo.DefinirItens(
-            [Item("ITEM_A", 0), Item("ITEM_B", 1)], grupos: [Grupo("COMPOSICAO", 2, Item("CAMPO_A", 0), Item("CAMPO_B", 1))], finalidade: FinalidadeFormulario.Habilitacao);
+            [Item("ITEM_A", 0), Item("ITEM_B", 1)], grupos: [Grupo("COMPOSICAO", 2, Item("CAMPO_A", 0), Item("CAMPO_B", 1))], papel: PapelDoFormularioDeTeste.Habilitacao);
         gravado.IsSuccess.Should().BeTrue(string.Join(";", gravado.Errors.Select(static e => e.Error.Message)));
 
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, CatalogoSemNada());
@@ -39,19 +39,19 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
         resultado.Errors.Select(static e => e.Error.Code).Should().OnlyContain(codigo => codigo == NaoMaisDeclarado);
     }
 
-    [Fact(DisplayName = "Com mais de uma finalidade, a ordem do documento é por formulário, com os itens antes dos grupos de cada um")]
-    public void MaisDeUmaFinalidade_OrdemDoDocumentoEPorFormulario()
+    [Fact(DisplayName = "Com mais de um formulário, a ordem do documento é pelo código do formulário, com os itens antes dos grupos de cada um")]
+    public void MaisDeUmFormulario_OrdemDoDocumentoEPorFormulario()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([Item("HAB_ITEM", 0)], grupos: [Grupo("COMPOSICAO", 1, Item("HAB_CAMPO", 0))], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Item("HAB_ITEM", 0)], grupos: [Grupo("COMPOSICAO", 1, Item("HAB_CAMPO", 0))], papel: PapelDoFormularioDeTeste.Habilitacao)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("ISEN_ITEM", 0)], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("ISEN_ITEM", 0)], papel: PapelDoFormularioDeTeste.IsencaoTaxa).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemNoDocumento> naoColetaveis = ConferenciaDeColetabilidadeDeFatos.NaoColetaveis(processo, CatalogoSemNada());
 
-        naoColetaveis.Select(static n => n.Item.FatoCodigo).Should().Equal("ISEN_ITEM", "HAB_ITEM", "HAB_CAMPO");
+        naoColetaveis.Select(static n => n.Item.FatoCodigo).Should().Equal("HAB_ITEM", "HAB_CAMPO", "ISEN_ITEM");
         naoColetaveis.Select(static n => n.Caminho).Should().Equal(
-            "formularios[0].itens[0]", "formularios[1].itens[0]", "formularios[1].grupos[0].subitens[0]");
+            "formularios[0].itens[0]", "formularios[0].grupos[0].subitens[0]", "formularios[1].itens[0]");
     }
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(

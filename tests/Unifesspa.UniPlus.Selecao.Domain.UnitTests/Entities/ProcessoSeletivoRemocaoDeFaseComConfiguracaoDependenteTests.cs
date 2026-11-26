@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
 /// <summary>
-/// Cobertura da remoção de uma fase do cronograma: leva junto as etapas, os documentos e os grupos
-/// que eram só dela, e continua recusada quando o que depende dela é de outra fase.
+/// Cobertura da remoção de uma fase do cronograma: leva junto as etapas que eram só dela, e é
+/// recusada quando um formulário com exigência é respondido nela ou o que depende dela é de outra fase.
 /// </summary>
 public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
 {
@@ -31,6 +31,9 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeDocumentoDaFase(fase.Id, 0), RegraDeDocumentoDaFase(fase.Id, 1)]).Value!;
         return RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 1, [], [grupoInterno, RegraDeDocumentoDaFase(fase.Id, 2)]).Value!;
     }
+
+    private static RegraDeComprovacao RegraDeDocumentoNaHabilitacao(FaseCronograma fase) =>
+        RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(fase.Id, papel: PapelDoFormularioDeTeste.Habilitacao), 0).Value!;
 
     /// <summary>
     /// O operador removia a fase e o passo travava: as etapas dela ficavam apontando para uma
@@ -75,26 +78,23 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
     }
 
     /// <summary>
-    /// A exigência declarada na fase é configuração dela. Antes, ela travava a remoção e o
-    /// operador tinha de esvaziar a lista de documentos à mão para conseguir tirar a fase.
+    /// A exigência pertence a um formulário respondido na fase dela; remover a fase deixaria o
+    /// formulário e a exigência sem fase, então a remoção é recusada até que se tire um e outro.
     /// </summary>
-    [Fact(DisplayName = "Remover a fase leva junto os documentos exigidos nela")]
-    public void DefinirCronogramaFases_RemoveFase_LevaOsDocumentosDela()
+    [Fact(DisplayName = "Remover a fase em que um formulário com exigência é respondido é recusado")]
+    public void DefinirCronogramaFases_RemoveFaseComExigenciaNoFormulario_Recusa()
     {
         FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO");
         FaseCronograma habilitacao = Fase(2, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoComFases(isencao, habilitacao);
-        processo.DefinirFormulario(FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Habilitacao, habilitacao.Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
-            .IsSuccess.Should().BeTrue();
-        ExigirDocumentos(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, finalidade: FinalidadeFormulario.Habilitacao));
+        ExigirDocumentos(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, papel: PapelDoFormularioDeTeste.Habilitacao));
 
         Result resultado = processo.DefinirCronogramaFases(
             [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.DocumentosExigidos.Should().ContainSingle()
-            .Which.ExigidoNaFaseId.Should().Be(habilitacao.Id);
-        processo.RegrasDeComprovacao.Should().ContainSingle();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario);
+        processo.DocumentosExigidos.Should().HaveCount(2);
     }
 
     /// <summary>
@@ -118,21 +118,21 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         resultado.Error!.Code.Should().Be("FaseCronograma.EtapaDaFaseReferenciada");
     }
 
-    [Fact(DisplayName = "Remover uma fase retira suas regras e preserva as regras das demais fases")]
-    public void DefinirCronogramaFases_RemoveFase_PodaGruposEmCascataEPreservaOutraFase()
+    [Fact(DisplayName = "Remover uma fase com grupo de exigências em formulário dela é recusado e preserva as regras de todas as fases")]
+    public void DefinirCronogramaFases_RemoveFaseComGrupoNoFormulario_RecusaEPreservaAsRegras()
     {
         FaseCronograma faseQueFica = Fase(1, "INSCRICAO");
         FaseCronograma faseQueSai = Fase(2, "RECURSO");
         ProcessoSeletivo processo = ProcessoComFases(faseQueFica, faseQueSai);
-        RegraDeComprovacao regraDeDocumentoQueFica = RegraDeDocumentoDaFase(faseQueFica.Id, 0);
-        processo.DefinirDocumentosExigidos([regraDeDocumentoQueFica, GrupoDaFaseComItens(faseQueSai)])
+        RegraDeComprovacao regraDeDocumentoQueFica = RegraDeDocumentoNaHabilitacao(faseQueFica);
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumentoQueFica, GrupoDaFaseComItens(faseQueSai)])
             .IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO", faseQueFica.FaseCanonicaOrigemId)], []);
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO", faseQueFica.FaseCanonicaOrigemId)], []);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.DocumentosExigidos.Should().ContainSingle().Which.ExigidoNaFaseId.Should().Be(faseQueFica.Id);
-        processo.RegrasDeComprovacao.Should().ContainSingle().Which.Should().BeSameAs(regraDeDocumentoQueFica);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario);
+        processo.DocumentosExigidos.Should().HaveCount(4);
+        processo.RegrasDeComprovacao.Should().Contain(regraDeDocumentoQueFica);
     }
 }

@@ -130,11 +130,11 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         ProcessoSeletivo processo = ProcessoConformeComDuasFasesDeIsencao();
         Guid faseDaExigencia = processo.CronogramaFases.Single(static f => f.Ordem == 1).Id;
         DefinirFormularioDeIsencaoNaFase(processo, faseDaExigencia);
-        ExigirDocumentos(processo, DocumentoGeral(faseDaExigencia, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        ExigirDocumentos(processo, DocumentoGeral(faseDaExigencia, obrigatorio: false, consequencia: null, papel: PapelDoFormularioDeTeste.IsencaoTaxa));
 
         DefinirFormularioDeIsencaoNaFase(processo, processo.CronogramaFases.Single(static f => f.Ordem == 2).Id);
 
-        Item(processo, "exigencia_finalidade_incoerente_com_a_fase").Ok.Should().BeFalse();
+        Item(processo, "exigencia_no_formulario_da_sua_fase").Ok.Should().BeFalse();
         PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao())!.Code
             .Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
     }
@@ -152,7 +152,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     private static void DefinirFormularioDeIsencaoNaFase(ProcessoSeletivo processo, Guid faseId)
     {
         Result definido = processo.DefinirFormulario(
-            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.IsencaoTaxa, faseId), null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa));
+            FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.IsencaoTaxa, faseId), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa));
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 

@@ -56,7 +56,7 @@ public sealed class DocumentosDaInscricaoTests
     private static DocumentoExigido Documento(string codigo, string nome) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Guid.NewGuid(), null, null))
+            .ComMomento(new MomentoDaExigencia(Guid.NewGuid(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))

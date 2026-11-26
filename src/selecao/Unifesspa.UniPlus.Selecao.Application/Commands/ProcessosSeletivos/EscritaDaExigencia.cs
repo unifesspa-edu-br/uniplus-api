@@ -30,10 +30,6 @@ internal static class EscritaDaExigencia
     /// <summary>A aplicabilidade do código, nula quando ausente ou desconhecida: a forma da exigência a recusa.</summary>
     public static Aplicabilidade? AplicabilidadeDoToken(string? token) => CodigoLidoDoPedido.Ler<Aplicabilidade>(token);
 
-    // Provisório até a conferência do gatilho deixar de decidir pela finalidade do formulário.
-    /// <summary>A finalidade do código, nula quando o cliente não a declarou ou declarou um código desconhecido.</summary>
-    public static FinalidadeFormulario? FinalidadeDoCodigo(string? codigo) => CodigoLidoDoPedido.Ler<FinalidadeFormulario>(codigo);
-
     /// <summary>O código do formulário informado, nulo quando ausente ou fora do formato: a forma da exigência já recusou o código que não é de formulário conhecido.</summary>
     public static CodigoDoFormulario? FormularioDoCodigo(string? codigo) => CodigoDoFormulario.Criar(codigo).Value;
 

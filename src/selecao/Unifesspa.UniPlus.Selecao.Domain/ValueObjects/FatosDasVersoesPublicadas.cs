@@ -220,10 +220,6 @@ public sealed class FatosDasVersoesPublicadas
         return !_garantidos.TryGetValue(formulario, out SortedSet<string>? garantidos) || garantidos.Contains(fato);
     }
 
-    // Provisório até a retirada da finalidade: o código dos formulários conhecidos dá a finalidade deles.
-    public bool Garante(FinalidadeFormulario finalidade, string fato) =>
-        Garante(CodigoDoFormulario.Criar(finalidade.Codigo()).Value!, fato);
-
     /// <summary>
     /// O primeiro fato que a inscrição coletava na versão base e que os itens e os grupos dados
     /// deixam de coletar no mesmo papel: o item continua item, e o campo de grupo continua no grupo

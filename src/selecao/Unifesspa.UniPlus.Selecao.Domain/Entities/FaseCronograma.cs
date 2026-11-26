@@ -71,25 +71,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// <summary>Se a fase abre a janela de pedido de isenção da taxa.</summary>
     public bool ColetaSolicitacaoIsencao { get; private set; }
 
-    private static readonly FinalidadeFormulario[] FinalidadesNaOrdemDeApresentacao =
-        [FinalidadeFormulario.Inscricao, FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao];
-
-    /// <summary>
-    /// As finalidades cujo formulário se responde nesta fase; inscrição e isenção podem dividir a mesma fase.
-    /// </summary>
-    public IReadOnlyList<FinalidadeFormulario> FinalidadesQueAtende() =>
-        [.. FinalidadesNaOrdemDeApresentacao.Where(Atende)];
-
-    /// <summary>Se o formulário da finalidade se responde nesta fase.</summary>
-    public bool Atende(FinalidadeFormulario finalidade) => finalidade switch
-    {
-        FinalidadeFormulario.Inscricao => ColetaInscricao,
-        FinalidadeFormulario.IsencaoTaxa => ColetaSolicitacaoIsencao,
-        FinalidadeFormulario.Habilitacao =>
-            string.Equals(Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal),
-        _ => false,
-    };
-
     /// <summary>Início da janela, sempre em UTC (<c>Offset</c> zero).</summary>
     public DateTimeOffset? Inicio { get; private set; }
 

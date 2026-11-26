@@ -110,7 +110,6 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             .HasConversion<CodigoDoFormularioValueConverter>()
             .HasMaxLength(CodigoDoFormulario.TamanhoMaximo).IsRequired()
             .HasComment("Código do formulário a que o documento pertence, entre os do processo.");
-        builder.Ignore(d => d.Finalidade);
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)

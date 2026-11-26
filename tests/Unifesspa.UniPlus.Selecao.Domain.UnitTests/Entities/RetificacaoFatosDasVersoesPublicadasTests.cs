@@ -17,9 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Ao congelar a retificação, o formulário e as exigências de uma finalidade só usam, de outra finalidade, fato
+/// Ao congelar a retificação, o formulário e as exigências de um formulário só usam, de outro formulário, fato
 /// que o formulário dela coletou em todas as versões publicadas, e a inscrição não deixa de coletar o
-/// que já coletava (UNI-REQ-0144): o candidato pode ter preenchido cada finalidade em qualquer versão.
+/// que já coletava (UNI-REQ-0144): o candidato pode ter preenchido cada formulário em qualquer versão.
 /// </summary>
 /// <remarks>
 /// O cenário publica duas versões: a inscrição coleta <c>TEM_RENDA</c> e o grupo <c>FAMILIA</c> nas
@@ -89,7 +89,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // CA-02 — formulário e exigência de outra finalidade
+    // CA-02 — formulário e exigência de outro formulário
     // ══════════════════════════════════════════════════════════════════════════════
 
     [Fact(DisplayName = "Item da habilitação cita fato da inscrição coletado em todas as versões; o que só a base coleta é recusado")]
@@ -98,11 +98,11 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado();
         ProcessoSeletivo processo = cenario.Processo;
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE", 0, "TEM_RENDA")])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE", 0, "TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
         cenario.PrimeiraCausa().Should().BeNull();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE", 0, Novo)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE", 0, Novo)])
             .IsSuccess.Should().BeTrue();
         cenario.PrimeiraCausa()!.Code.Should().Be(FatoAusente);
     }
@@ -124,10 +124,10 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static Result EscreverRegraQueCitaFatoNovo(Cenario cenario, string regra) => regra switch
     {
         "secao" => cenario.Processo.DefinirFormulario(
-            FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, PaginasDaHabilitacao(exibicaoDaSegunda: Novo)),
-        "termo" => cenario.Processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita(Novo)]),
+            PapelDoFormularioDeTeste.Habilitacao, cenario.Habilitacao.Id, null, PaginasDaHabilitacao(exibicaoDaSegunda: Novo)),
+        "termo" => cenario.Processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [TermoQueCita(Novo)]),
         _ => cenario.Processo.DefinirFatosColetados(
-            FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)],
+            PapelDoFormularioDeTeste.Habilitacao, [Item("COMPROVANTE", 0)],
             [GrupoColetadoDeTeste.Agrupando("DEPENDENTES", 1)
                 .ComRotulo("Dependentes")
                 .ExibidoQuando(Cita(Novo))
@@ -142,25 +142,25 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado(comHabilitacao: false);
         ProcessoSeletivo processo = cenario.Processo;
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
+                PapelDoFormularioDeTeste.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao))
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE", 0, Novo)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE", 0, Novo)])
             .IsSuccess.Should().BeTrue();
 
         cenario.PrimeiraCausa()!.Code.Should().Be(FatoAusente);
     }
 
     [Fact(DisplayName = "Exigência da habilitação não cita fato que só a base da inscrição coleta; a da inscrição, cita")]
-    public void Exigencia_GatilhoEmFatoNaoGarantido_SoNaFaseDaPropriaFinalidade()
+    public void Exigencia_GatilhoEmFatoNaoGarantido_SoNaFaseDoProprioFormulario()
     {
         Cenario cenario = Publicado();
         ConfiguracaoDeclarada configuracao = cenario.Processo.Declaracao();
 
-        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas)!.Code.Should().Be(FatoAusente);
-        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Inscricao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), SemCatalogo, SemCatalogo, cenario.Publicadas)
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas)!.Code.Should().Be(FatoAusente);
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Inscricao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), SemCatalogo, SemCatalogo, cenario.Publicadas)
             .Should().BeNull("as exigências da inscrição seguem a versão do próprio formulário");
-        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao), SemCatalogo, SemCatalogo)
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, Novo, cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), SemCatalogo, SemCatalogo)
             .Should().BeNull("sem versão publicada, ninguém preencheu versão anterior");
     }
 
@@ -170,9 +170,9 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado(comHabilitacao: false);
         ProcessoSeletivo processo = cenario.Processo;
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
+                PapelDoFormularioDeTeste.Habilitacao, cenario.Habilitacao.Id, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
 
         FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), "COMPROVANTE", cenario.Matricula.Id, formularioDaExigencia: null, SemCatalogo, SemCatalogo, cenario.Publicadas)
             .Should().BeNull("ninguém preencheu a habilitação antes desta retificação");
@@ -184,16 +184,16 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     /// precisa estar em todas as versões publicadas.
     /// </summary>
     [Theory(DisplayName = "Com dois formulários na fase da exigência, só o fato do outro formulário precisa estar em todas as versões")]
-    [InlineData(FinalidadeFormulario.Inscricao, Novo, true)]
-    [InlineData(FinalidadeFormulario.IsencaoTaxa, "LAUDO", true)]
-    [InlineData(FinalidadeFormulario.IsencaoTaxa, Novo, false)]
-    public void Exigencia_FaseComDoisFormularios_SegueAPropriaFinalidade(FinalidadeFormulario finalidade, string fato, bool aceito)
+    [InlineData(PapelDoFormularioDeTeste.Inscricao, Novo, true)]
+    [InlineData(PapelDoFormularioDeTeste.IsencaoTaxa, "LAUDO", true)]
+    [InlineData(PapelDoFormularioDeTeste.IsencaoTaxa, Novo, false)]
+    public void Exigencia_FaseComDoisFormularios_SegueOProprioFormulario(PapelDoFormularioDeTeste papel, string fato, bool aceito)
     {
         FaseCronograma unica = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: unica);
         FatosDasVersoesPublicadas publicadas = PublicarFormulariosNaMesmaFase(processo, unica);
 
-        DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, unica.Id, FormularioDeTeste.CodigoDoPapel(finalidade), SemCatalogo, SemCatalogo, publicadas);
+        DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, unica.Id, FormularioDeTeste.CodigoDoPapel(papel), SemCatalogo, SemCatalogo, publicadas);
 
         (recusa is null).Should().Be(aceito);
         if (!aceito)
@@ -210,7 +210,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         FatosDasVersoesPublicadas publicadas = PublicarFormulariosNaMesmaFase(processo, unica);
 
         FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                processo.Declaracao(), "LAUDO", unica.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), SemCatalogo, SemCatalogo, publicadas)!
+                processo.Declaracao(), "LAUDO", unica.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), SemCatalogo, SemCatalogo, publicadas)!
             .Code.Should().Be(DocumentoExigidoErrorCodes.FatoDeFormularioNaoAlcancado);
     }
 
@@ -218,12 +218,12 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(
-                FinalidadeFormulario.IsencaoTaxa, unica.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
+                PapelDoFormularioDeTeste.IsencaoTaxa, unica.Id, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.IsencaoTaxa, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
         ConfiguracaoPublicada primeira = VersoesPublicadasDeTeste.DoProcesso(processo);
         processo.DefinirItens([Item("TEM_RENDA", 0), Item(Novo, 1)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.IsencaoTaxa, [Item("COMPROVANTE", 0), Item("LAUDO", 1)])
             .IsSuccess.Should().BeTrue();
         return VersoesPublicadasDeTeste.SemEixosCongelados([primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
     }
@@ -240,7 +240,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado();
         ProcessoSeletivo processo = cenario.Processo;
         processo.DefinirRegrasDerivacao(Derivacoes(indireto, "TEM_RENDA")).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE", 0, "RENDA_DECLARADA")])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE", 0, "RENDA_DECLARADA")])
             .IsSuccess.Should().BeTrue();
         ItemDoChecklist(cenario).Ok.Should().BeTrue();
 
@@ -255,11 +255,11 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         Cenario cenario = Publicado();
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, "TEM_RENDA")).IsSuccess.Should().BeTrue();
-        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(cenario.Processo.Declaracao(), "RENDA_DECLARADA", cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(cenario.Processo.Declaracao(), "RENDA_DECLARADA", cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas).Should().BeNull();
 
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, Novo)).IsSuccess.Should().BeTrue();
 
-        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(cenario.Processo.Declaracao(), "RENDA_DECLARADA", cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas)!.Code.Should().Be(FatoAusente);
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(cenario.Processo.Declaracao(), "RENDA_DECLARADA", cenario.Habilitacao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), SemCatalogo, SemCatalogo, cenario.Publicadas)!.Code.Should().Be(FatoAusente);
     }
 
     [Fact(DisplayName = "O derivado usado só pela inscrição depende de fato novo da inscrição sem recusa no congelamento")]
@@ -307,9 +307,9 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static void DefinirHabilitacao(ProcessoSeletivo processo, FaseCronograma habilitacao)
     {
         processo.DefinirFormulario(
-                FinalidadeFormulario.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
+                PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("COMPROVANTE", 0)]).IsSuccess.Should().BeTrue();
     }
 
     private static ItemConformidade ItemDoChecklist(Cenario cenario) =>

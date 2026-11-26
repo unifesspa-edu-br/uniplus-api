@@ -87,7 +87,7 @@ public sealed class SalvamentoDoRascunho(ConferenciaDoEnderecoDaInscricao confer
             pedido.Envio,
             EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
             NaFaseDaInscricao: true)));
-        return avaliacao.IsFailure ? avaliacao.Errors : RecusasEstruturais(AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), pedido.Envio.Dia);
+        return avaliacao.IsFailure ? avaliacao.Errors : RecusasEstruturais(AvaliacaoDaInscricao.DaInscricao(pedido.Contexto.Configuracao, avaliacao.Value!.Formulario), pedido.Envio.Dia);
     }
 
     /// <summary>

@@ -43,16 +43,16 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: isencao);
         Result cronograma = processo.DefinirCronogramaFases([isencao, inscricao], []);
         cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
-        DefinirFormularioComUmFato(processo, FinalidadeFormulario.Inscricao, inscricao, "TEM_RENDA");
-        DefinirFormularioComUmFato(processo, FinalidadeFormulario.IsencaoTaxa, isencao, "BOLSISTA");
+        DefinirFormularioComUmFato(processo, PapelDoFormularioDeTeste.Inscricao, inscricao, "TEM_RENDA");
+        DefinirFormularioComUmFato(processo, PapelDoFormularioDeTeste.IsencaoTaxa, isencao, "BOLSISTA");
 
         return (processo, isencao);
     }
 
-    private static void DefinirFormularioComUmFato(ProcessoSeletivo processo, FinalidadeFormulario finalidade, FaseCronograma fase, string fato)
+    private static void DefinirFormularioComUmFato(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, FaseCronograma fase, string fato)
     {
-        processo.DefinirFormulario(finalidade, fase.Id, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
-        Result itens = processo.DefinirFatosColetados(finalidade, [Item(fato)]);
+        processo.DefinirFormulario(papel, fase.Id, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        Result itens = processo.DefinirFatosColetados(papel, [Item(fato)]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
@@ -62,7 +62,7 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
         (ProcessoSeletivo processo, FaseCronograma isencao) = ProcessoComIsencaoAntesDaInscricao(inscricaoMarcada: false);
 
         DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados);
+            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados);
 
         recusa.Should().NotBeNull();
         recusa!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
@@ -75,6 +75,6 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
         (ProcessoSeletivo processo, FaseCronograma isencao) = ProcessoComIsencaoAntesDaInscricao(inscricaoMarcada: true);
 
         FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados).Should().BeNull();
+            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados).Should().BeNull();
     }
 }

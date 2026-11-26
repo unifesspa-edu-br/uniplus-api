@@ -33,7 +33,7 @@ internal sealed record GrupoColetadoDeTeste
 
     private Obrigatoriedade Obrigatoriedade { get; init; } = Obrigatoriedade.Nunca;
 
-    private FinalidadeFormulario? Finalidade { get; init; }
+    private FormularioProcesso? Formulario { get; init; }
 
     private IReadOnlyList<FatoColetado> Campos { get; init; } = [];
 
@@ -51,7 +51,6 @@ internal sealed record GrupoColetadoDeTeste
             IncluiCandidato = grupo.IncluiCandidato,
             Exibicao = grupo.Exibicao,
             Obrigatoriedade = grupo.Obrigatoriedade,
-            Finalidade = grupo.Finalidade,
             Campos = [.. grupo.Subitens],
         };
 
@@ -71,8 +70,8 @@ internal sealed record GrupoColetadoDeTeste
 
     public GrupoColetadoDeTeste ComObrigatoriedade(Obrigatoriedade obrigatoriedade) => this with { Obrigatoriedade = obrigatoriedade };
 
-    /// <summary>A finalidade do formulário do grupo; os campos de outra finalidade são refeitos nela.</summary>
-    public GrupoColetadoDeTeste DaFinalidade(FinalidadeFormulario finalidade) => this with { Finalidade = finalidade };
+    /// <summary>O formulário do grupo e dos campos dele; sem ele, o processo liga o grupo ao formulário que define.</summary>
+    public GrupoColetadoDeTeste NoFormulario(FormularioProcesso? formulario) => this with { Formulario = formulario };
 
     /// <summary>Cria o grupo pela fábrica, para o teste que olha a recusa.</summary>
     public Result<GrupoColetado> Criar() =>
@@ -83,13 +82,13 @@ internal sealed record GrupoColetadoDeTeste
             Rotulo,
             new OcorrenciasDoGrupo(Minimo, Maximo, IncluiCandidato),
             new ExibicaoEObrigatoriedade(Exibicao, Obrigatoriedade),
-            CamposNaFinalidade());
+            CamposNoFormulario());
 
     /// <summary>O grupo criado, para o teste que parte de um grupo válido.</summary>
     public GrupoColetado Construir() => Criar().Value!;
 
-    private FatoColetado[] CamposNaFinalidade() =>
-        [.. Campos.Select(campo => Finalidade is not { } finalidade || campo.Finalidade == finalidade
+    private FatoColetado[] CamposNoFormulario() =>
+        [.. Campos.Select(campo => Formulario is not { } formulario || campo.FormularioId == formulario.Id
             ? campo
-            : FatoColetadoDeTeste.Como(campo).DaFinalidade(finalidade).Construir())];
+            : FatoColetadoDeTeste.Como(campo).NoFormulario(formulario).Construir())];
 }

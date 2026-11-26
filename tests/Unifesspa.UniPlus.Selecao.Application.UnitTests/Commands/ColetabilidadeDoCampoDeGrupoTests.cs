@@ -33,7 +33,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir();
         GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO", 0).ComCampos(campo).Construir();
-        processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], grupos: [grupo], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, ParentescoNoCatalogo(escopo));
 

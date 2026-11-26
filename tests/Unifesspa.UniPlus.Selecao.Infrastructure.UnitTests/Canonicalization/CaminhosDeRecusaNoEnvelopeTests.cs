@@ -16,7 +16,7 @@ public sealed class CaminhosDeRecusaNoEnvelopeTests
     {
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         FatoColetado fato = ItensDoFormularioDeTeste.Campo("FATO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!);
-        JsonArray fatos = SerializacaoDosFatos.SerializarFatosColetados([fato], formularios.CodigosPorIdentificador(), null);
+        JsonArray fatos = SerializacaoDosFatos.SerializarFatosColetados([fato], formularios.Formularios, null);
         fatos[0]!["tipoDeCampo"] = "DESCONHECIDO";
         LeitorEnvelope leitor = new();
 

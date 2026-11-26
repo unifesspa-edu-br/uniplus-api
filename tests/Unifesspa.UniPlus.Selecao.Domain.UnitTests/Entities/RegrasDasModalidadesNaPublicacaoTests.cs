@@ -60,7 +60,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     {
         ProcessoSeletivo processo = ProcessoComAmplaEReservaPcd();
         processo.DefinirItens([Booleano("PCD", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Booleano("CONCORRER_PCD", 0)], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Booleano("CONCORRER_PCD", 0)], papel: PapelDoFormularioDeTeste.IsencaoTaxa).IsSuccess.Should().BeTrue();
 
         Item(processo, ItemFatoNaoColetado).Ok.Should().BeFalse("CONCORRER_PCD é perguntado só na isenção");
     }
@@ -75,9 +75,9 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     }
 
     [Theory(DisplayName = "A regra que cita a opção pelas cotas depende da opção pelas vagas de escola pública perguntada na inscrição")]
-    [InlineData(FinalidadeFormulario.Inscricao, true)]
-    [InlineData(FinalidadeFormulario.Habilitacao, false)]
-    public void OpcaoPelasCotas_DependeDaInscricao(FinalidadeFormulario finalidade, bool esperadoOk)
+    [InlineData(PapelDoFormularioDeTeste.Inscricao, true)]
+    [InlineData(PapelDoFormularioDeTeste.Habilitacao, false)]
+    public void OpcaoPelasCotas_DependeDaInscricao(PapelDoFormularioDeTeste papel, bool esperadoOk)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Ofertar(processo,
@@ -85,7 +85,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
         processo.DefinirRegrasDerivacao(
             [ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!]).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)], finalidade: finalidade).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)], papel: papel).IsSuccess.Should().BeTrue();
 
         Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
             "a opção pelas cotas é derivada da opção pelas vagas de escola pública, que a inscrição tem de perguntar");
@@ -102,7 +102,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
         List<FatoColetado> itens = CamposDaOrigemEscolar(perguntaAOrigemEscolar);
 
-        processo.DefinirItens(itens, finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(itens, papel: PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
 
         processo.RegrasDerivacao.Should().BeEmpty("o processo não aplicou modelo nem configurou derivação");
         Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
@@ -124,16 +124,16 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
     }
 
     [Theory(DisplayName = "A regra que cita agregado sobre grupo é aceita quando um grupo da inscrição pergunta o campo de membro, e a recusa nomeia esse campo")]
-    [InlineData(FinalidadeFormulario.Inscricao, true)]
-    [InlineData(FinalidadeFormulario.Habilitacao, false)]
-    public void AgregadoDeGrupo_DependeDoCampoDeMembroNaInscricao(FinalidadeFormulario finalidadeDoGrupo, bool esperadoAceito)
+    [InlineData(PapelDoFormularioDeTeste.Inscricao, true)]
+    [InlineData(PapelDoFormularioDeTeste.Habilitacao, false)]
+    public void AgregadoDeGrupo_DependeDoCampoDeMembroNaInscricao(PapelDoFormularioDeTeste papelDoGrupo, bool esperadoAceito)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Ofertar(processo,
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade("X", NaturezaLegalModalidade.AcaoAfirmativa, Exige((OpcaoPelasCotasDaLei.Fato, false), (AgregadoDoGrupo, true))));
-        processo.DefinirItens([], finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([], finalidade: finalidadeDoGrupo, grupos: [GrupoComOCampoDeMembro(finalidadeDoGrupo)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], papel: PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], papel: papelDoGrupo, grupos: [GrupoComOCampoDeMembro(papelDoGrupo)]).IsSuccess.Should().BeTrue();
 
         DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
@@ -227,11 +227,10 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         FatosDeModalidadeDeTeste.DoCatalogo.Codigos,
         new Dictionary<string, string>(StringComparer.Ordinal) { [AgregadoDoGrupo] = CampoDeMembro });
 
-    private static GrupoColetado GrupoComOCampoDeMembro(FinalidadeFormulario finalidade) =>
+    private static GrupoColetado GrupoComOCampoDeMembro(PapelDoFormularioDeTeste papel) =>
         GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 2)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(FatoColetadoDeTeste.Coletando(CampoDeMembro, 0).ComRotulo("Membro pede").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
-            .DaFinalidade(finalidade)
             .Construir();
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>

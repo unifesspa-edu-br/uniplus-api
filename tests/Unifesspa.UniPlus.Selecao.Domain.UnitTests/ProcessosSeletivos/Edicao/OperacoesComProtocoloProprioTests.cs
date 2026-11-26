@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// As operações que não passam pela guarda de edição: o congelamento as chama sobre um processo
@@ -43,7 +44,7 @@ public sealed class OperacoesComProtocoloProprioTests
     {
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.Publicado(out _);
 
-        Result resultado = processo.RemoverFormulario(FinalidadeFormulario.Inscricao);
+        Result resultado = processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }

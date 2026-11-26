@@ -88,7 +88,7 @@ public sealed class MunicipiosDaProvaPresencialTests
 
     private static void ColetarCidade(ProcessoSeletivo processo) =>
         processo.DefinirItens([FatoColetadoDeTeste.Coletando(Codigo, 0).DoTipo(TipoDeCampo.EscolhaUnica)
-            .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            .ComOrigem(OrigemValoresColeta.MunicipiosDaProvaPresencial).Construir()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
     private static FatoCandidatoView Fato() => new(
         Guid.CreateVersion7(), Codigo, "Cidade de prova", "Cidade de prova",

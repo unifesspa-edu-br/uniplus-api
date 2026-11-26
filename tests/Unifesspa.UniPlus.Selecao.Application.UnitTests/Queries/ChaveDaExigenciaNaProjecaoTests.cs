@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ChaveDaExigenciaNaProjecaoTests
 {
@@ -12,7 +13,7 @@ public sealed class ChaveDaExigenciaNaProjecaoTests
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ApoioDaProjecaoDosDocumentosExigidos.ProcessoComUmaFase();
         DocumentoExigido documento = new ApoioDaProjecaoDosDocumentosExigidos.ExigenciaParaProjetar().NaFase(fase.Id);
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!]).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto resultado = await ApoioDaProjecaoDosDocumentosExigidos.ProjetarAsync(processo);
 

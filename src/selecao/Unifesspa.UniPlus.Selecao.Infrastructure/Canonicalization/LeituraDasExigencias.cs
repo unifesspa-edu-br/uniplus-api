@@ -80,30 +80,21 @@ internal static class LeituraDasExigencias
         LeitorEnvelope leitor, JsonObject item, string path, CamposDaExigenciaNoEnvelope campos, ClassificacaoDeProtecao classificacaoProtecao)
     {
         ComplementosDaExigencia? complementos = LerComplementos(leitor, item, path);
-        if (complementos is null)
-        {
-            return null;
-        }
-
-        CodigoDoFormulario? formulario = CodigoDoFormulario.Criar(campos.FormularioCodigo).Value;
-        if (RecusaDoFormularioOuDoTamanho(campos, formulario, path) is { } recusa)
-        {
-            return Recusar(leitor, recusa);
-        }
-
-        return Reidratar(campos, classificacaoProtecao, formulario, complementos);
+        return complementos is null ? null : LerExigenciaDoFormulario(leitor, path, campos, classificacaoProtecao, complementos);
     }
 
-    private static string? RecusaDoFormularioOuDoTamanho(CamposDaExigenciaNoEnvelope campos, CodigoDoFormulario? formulario, string path)
+    private static DocumentoExigido? LerExigenciaDoFormulario(
+        LeitorEnvelope leitor, string path, CamposDaExigenciaNoEnvelope campos, ClassificacaoDeProtecao classificacaoProtecao, ComplementosDaExigencia complementos)
     {
-        if (formulario is null)
+        Result<CodigoDoFormulario> formulario = CodigoDoFormulario.Criar(campos.FormularioCodigo);
+        if (formulario.IsFailure)
         {
-            return $"'{path}.formularioCodigo' fora do formato do código de formulário.";
+            return Recusar(leitor, $"'{path}.formularioCodigo' fora do formato do código de formulário.");
         }
 
         return campos.TamanhoMaximoBytes is <= 0
-            ? $"'{path}.tamanhoMaximoBytes' deve ser maior que zero quando presente."
-            : null;
+            ? Recusar(leitor, $"'{path}.tamanhoMaximoBytes' deve ser maior que zero quando presente.")
+            : Reidratar(campos, classificacaoProtecao, formulario.Value!, complementos);
     }
 
     private static ComplementosDaExigencia? LerComplementos(LeitorEnvelope leitor, JsonObject item, string path)
@@ -124,7 +115,7 @@ internal static class LeituraDasExigencias
     private static DocumentoExigido Reidratar(
         CamposDaExigenciaNoEnvelope d,
         ClassificacaoDeProtecao classificacaoProtecao,
-        CodigoDoFormulario? formulario,
+        CodigoDoFormulario formulario,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
             d.Chave!.Value, d.ExigenciaId,
             new DocumentoExigidoDeclarado(

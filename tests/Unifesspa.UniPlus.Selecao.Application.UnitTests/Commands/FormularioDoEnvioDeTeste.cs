@@ -85,7 +85,7 @@ internal static class FormularioDoEnvioDeTeste
 
     /// <summary>
     /// Um item obrigatório na seção do formulário, mais um termo obrigatório exigido na mesma
-    /// finalidade; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção, e
+    /// papel; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção, e
     /// <paramref name="ajustar"/> muda o processo antes de a versão o congelar.
     /// </summary>
     internal static (VersaoConfiguracao Versao, ConfiguracaoPublicada Configuracao, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
@@ -98,7 +98,7 @@ internal static class FormularioDoEnvioDeTeste
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Submeter inscrição");
         Result itensDefinidos = processoBase.DefinirItens([ItemApelidoObrigatorio(), .. outrosItens ?? []], grupos: grupos);
         itensDefinidos.IsSuccess.Should().BeTrue(itensDefinidos.Error?.Message);
-        processoBase.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoDeVeracidade(versaoDoTermo)]).IsSuccess.Should().BeTrue(
+        processoBase.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Inscricao, [TermoDeVeracidade(versaoDoTermo)]).IsSuccess.Should().BeTrue(
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
         ajustar?.Invoke(processoBase);
 
@@ -113,7 +113,7 @@ internal static class FormularioDoEnvioDeTeste
         .Construir();
 
     internal static TermoExigidoFormulario TermoDeVeracidade(VersaoTermoEscolhida versaoDoTermo) => TermoExigidoFormulario.Criar(
-        "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+        "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre).Value!;
 
     internal static ConfiguracaoPublicada ConfiguracaoDoProcesso(
         ProcessoSeletivo processoBase, Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<RegraDeComprovacao> Nos)>? exigencias)
@@ -164,7 +164,6 @@ internal static class FormularioDoEnvioDeTeste
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
             .Construir())
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     internal static Dictionary<string, JsonElement> Texto(params (string Fato, string Valor)[] respostas) =>

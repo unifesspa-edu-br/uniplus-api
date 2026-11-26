@@ -237,7 +237,7 @@ public sealed class AvaliadorDaComprovacaoTests
     }
     private static DocumentoExigido DocumentoDeAtendimento(string tipo, params string[] condicoes) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(FaseId, null, null))
+            .ComMomento(new MomentoDaExigencia(FaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. condicoes.SelectMany(static (c, clausula) => new[]
             {
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,

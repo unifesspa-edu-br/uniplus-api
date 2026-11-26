@@ -26,7 +26,7 @@ public sealed class OrdemDasCausasDasConsequenciasTests
     public void Causas_FormularioFacultativoEBancaComAcrescimoNaoOferecido_RecusaOFormularioPrimeiro()
     {
         ProcessoSeletivo processo = ProcessoComBancaNaFase(ConsequenciaDoDescumprimento.RetiraOAcrescimo);
-        DefinirNoFormulario(processo, FinalidadeFormulario.IsencaoTaxa, ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        DefinirNoFormulario(processo, PapelDoFormularioDeTeste.IsencaoTaxa, ConsequenciaDoDescumprimento.EliminaDoProcesso);
 
         Campos(processo).Should().HaveCount(2);
         Campos(processo)[0].Should().StartWith("formularios[");
@@ -37,7 +37,7 @@ public sealed class OrdemDasCausasDasConsequenciasTests
     public void Causas_ExigenciaComAcrescimoNaoOferecidoEFormularioSemModalidadeEmQuestao_RecusaAExigenciaPrimeiro()
     {
         ProcessoSeletivo processo = ProcessoComBancaNaFase(null);
-        DefinirNoFormulario(processo, FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
+        DefinirNoFormulario(processo, PapelDoFormularioDeTeste.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaQueRetiraOAcrescimo(processo), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Campos(processo).Should().HaveCount(2);
@@ -49,7 +49,7 @@ public sealed class OrdemDasCausasDasConsequenciasTests
     public void Causas_FormularioBancaExigenciaEGrupoComAcrescimoNaoOferecido_SegueAOrdemDosLugares()
     {
         ProcessoSeletivo processo = ProcessoComBancaNaFase(ConsequenciaDoDescumprimento.RetiraOAcrescimo);
-        DefinirNoFormulario(processo, FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraOAcrescimo);
+        DefinirNoFormulario(processo, PapelDoFormularioDeTeste.Habilitacao, ConsequenciaDoDescumprimento.RetiraOAcrescimo);
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaQueRetiraOAcrescimo(processo), 0).Value!, GrupoQueRetiraOAcrescimo(processo)])
             .IsSuccess.Should().BeTrue();
 
@@ -67,8 +67,8 @@ public sealed class OrdemDasCausasDasConsequenciasTests
     {
         ProcessoSeletivo processo = ProcessoComBancaNaFase(ConsequenciaDoDescumprimento.RetiraAModalidade, acaoDaModalidade: "RETIRA_A_MODALIDADE");
         ConsequenciasDaRetiradaDaModalidadeTests.RetirarAmplaDaOferta(processo);
-        DefinirNoFormulario(processo, FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
-        ExigirNoFormulario(processo, FinalidadeFormulario.Habilitacao, "LB_PPI");
+        DefinirNoFormulario(processo, PapelDoFormularioDeTeste.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
+        ExigirNoFormulario(processo, PapelDoFormularioDeTeste.Habilitacao, "LB_PPI");
 
         string[] campos = Campos(processo);
 
@@ -80,15 +80,15 @@ public sealed class OrdemDasCausasDasConsequenciasTests
 
     private static string[] Campos(ProcessoSeletivo processo) => [.. Causas(processo.Declaracao(), processo).Select(static causa => causa.Field!)];
 
-    private static void DefinirNoFormulario(ProcessoSeletivo processo, FinalidadeFormulario finalidade, ConsequenciaDoDescumprimento consequencia) =>
-        processo.DefinirFormulario(finalidade, null, null, FormularioDeTeste.Paginas(), null, consequencia).IsSuccess.Should().BeTrue();
+    private static void DefinirNoFormulario(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, ConsequenciaDoDescumprimento consequencia) =>
+        processo.DefinirFormulario(papel, null, null, FormularioDeTeste.Paginas(), null, consequencia).IsSuccess.Should().BeTrue();
 
     private static DocumentoExigido ExigenciaQueRetiraOAcrescimo(ProcessoSeletivo processo) =>
-        DocumentoGeral(processo.CronogramaFases.First().Id, obrigatorio: false, consequencia: "RETIRA_O_ACRESCIMO", finalidade: FinalidadeFormulario.Inscricao);
+        DocumentoGeral(processo.CronogramaFases.First().Id, obrigatorio: false, consequencia: "RETIRA_O_ACRESCIMO", papel: PapelDoFormularioDeTeste.Inscricao);
 
     private static RegraDeComprovacao GrupoQueRetiraOAcrescimo(ProcessoSeletivo processo)
     {
-        RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoGeral(processo.CronogramaFases.First().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.Inscricao), 0).Value!;
+        RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoGeral(processo.CronogramaFases.First().Id, obrigatorio: false, consequencia: null, papel: PapelDoFormularioDeTeste.Inscricao), 0).Value!;
         return RegraDeComprovacao.CriarGrupo(
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_O_ACRESCIMO"), 1, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [item]).Value!;
     }
@@ -103,7 +103,7 @@ public sealed class OrdemDasCausasDasConsequenciasTests
             ComposicaoVagasModalidade.DentroDaReservaLegal, acaoDaModalidade);
         ProcessoSeletivo processo = NovoProcessoComModalidade(modalidade);
         BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca_merito").Value, TiposDeBancaCopiadosDeTeste.Avaliadora(), [], BancasDeTeste.Regra(), consequenciaDaAusencia: consequencia);
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
         Result definido = processo.DefinirCronogramaFases([ProcessoConformeFactory.FaseConforme(bancas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), banca])], []);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);

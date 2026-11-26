@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -24,10 +25,10 @@ public sealed class VinculoAoFormularioTests
         ProcessoSeletivo processo = Processo();
 
         Result criado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos());
+            PapelDoFormularioDeTeste.Inscricao, null, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos());
 
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
+        Guid formularioId = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id;
         processo.Campos.Should().NotBeEmpty().And.OnlyContain(f => f.FormularioId == formularioId);
     }
 
@@ -35,12 +36,12 @@ public sealed class VinculoAoFormularioTests
     public void DefinirFatosColetados_FormularioExistente_LigaItensEGruposAoFormulario()
     {
         ProcessoSeletivo processo = Processo();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
 
-        Result definido = processo.DefinirItens([Item("QUILOMBOLA", 0)], FinalidadeFormulario.Habilitacao, [Grupo("COMPOSICAO_FAMILIAR", 1, FinalidadeFormulario.Habilitacao, Campo("MAIOR_IDADE"))]);
+        Result definido = processo.DefinirItens([Item("QUILOMBOLA", 0)], PapelDoFormularioDeTeste.Habilitacao, [Grupo("COMPOSICAO_FAMILIAR", 1, Campo("MAIOR_IDADE"))]);
 
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id;
+        Guid formularioId = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
         processo.Campos.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(["QUILOMBOLA", "MAIOR_IDADE"]);
         processo.Campos.Should().OnlyContain(f => f.FormularioId == formularioId);
         processo.GruposColetados.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
@@ -51,10 +52,10 @@ public sealed class VinculoAoFormularioTests
     {
         ProcessoSeletivo processo = Processo();
 
-        Result definido = processo.DefinirTermos([ApoioFormulariosPorFinalidade.Termo("VERACIDADE")], FinalidadeFormulario.Habilitacao);
+        Result definido = processo.DefinirTermos([ApoioFormulariosDoProcesso.Termo("VERACIDADE")], PapelDoFormularioDeTeste.Habilitacao);
 
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id;
+        Guid formularioId = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
         processo.TermosExigidos.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
     }
 
@@ -63,11 +64,11 @@ public sealed class VinculoAoFormularioTests
     {
         ProcessoSeletivo processo = Processo();
         processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("CERTIFICADO", 0)], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([ApoioFormulariosPorFinalidade.Termo("VERACIDADE")], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("CERTIFICADO", 0)], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([ApoioFormulariosDoProcesso.Termo("VERACIDADE")], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
-        Guid inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
-        Guid habilitacao = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id;
+        Guid inscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id;
+        Guid habilitacao = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
         processo.Campos.Single(static f => f.FatoCodigo == "QUILOMBOLA").FormularioId.Should().Be(inscricao);
         processo.Campos.Single(static f => f.FatoCodigo == "CERTIFICADO").FormularioId.Should().Be(habilitacao);
         processo.TermosExigidos.Should().ContainSingle().Which.FormularioId.Should().Be(habilitacao);
@@ -77,13 +78,13 @@ public sealed class VinculoAoFormularioTests
     public void AplicarModeloDeFormulario_FormularioExistente_LigaAoFormularioQuePermanece()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id;
+        processo.DefinirItens([Item("QUILOMBOLA", 0)], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        Guid formularioId = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
 
-        Result aplicado = processo.AplicarModeloDeFormulario(CopiaDoModelo(FinalidadeFormulario.Habilitacao));
+        Result aplicado = processo.AplicarModeloDeFormulario(CopiaDoModelo(PapelDoFormularioDeTeste.Habilitacao));
 
         aplicado.IsSuccess.Should().BeTrue(aplicado.Error?.Message);
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id.Should().Be(formularioId);
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id.Should().Be(formularioId);
         processo.Campos.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "PARENTESCO"]);
         processo.Campos.Should().OnlyContain(f => f.FormularioId == formularioId);
         processo.GruposColetados.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
@@ -95,23 +96,23 @@ public sealed class VinculoAoFormularioTests
     {
         ProcessoSeletivo processo = Processo();
         processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "QUILOMBOLA")], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        Guid inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
+        processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "QUILOMBOLA")], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        Guid inscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id;
 
-        Result aplicado = processo.AplicarModeloDeFormulario(CopiaDoModelo(FinalidadeFormulario.Inscricao));
+        Result aplicado = processo.AplicarModeloDeFormulario(CopiaDoModelo(PapelDoFormularioDeTeste.Inscricao));
 
         aplicado.IsFailure.Should().BeTrue();
         processo.Campos.Single(static f => f.FatoCodigo == "QUILOMBOLA").FormularioId.Should().Be(inscricao);
     }
 
     [Theory(DisplayName = "O formulário declara o próprio código, a fase e a obrigatoriedade")]
-    [InlineData(FinalidadeFormulario.Inscricao, false)]
-    [InlineData(FinalidadeFormulario.Habilitacao, true)]
-    [InlineData(FinalidadeFormulario.IsencaoTaxa, true)]
-    public void Declarado_EspelhaCodigoFaseEObrigatoriedade(FinalidadeFormulario finalidade, bool comFase)
+    [InlineData(PapelDoFormularioDeTeste.Inscricao, false)]
+    [InlineData(PapelDoFormularioDeTeste.Habilitacao, true)]
+    [InlineData(PapelDoFormularioDeTeste.IsencaoTaxa, true)]
+    public void Declarado_EspelhaCodigoFaseEObrigatoriedade(PapelDoFormularioDeTeste papel, bool comFase)
     {
         Guid? fase = comFase ? Guid.CreateVersion7() : null;
-        FormularioProcesso formulario = FormularioProcesso.Criar(finalidade, fase, null, FormularioDeTeste.Paginas(finalidade)).Value!;
+        FormularioProcesso formulario = LigacaoAoFormulario.FormularioNoPapel(papel, fase);
 
         formulario.Declarado.Should().Be(new FormularioDeclarado(formulario.Codigo, fase, formulario.Obrigatorio));
     }
@@ -120,8 +121,8 @@ public sealed class VinculoAoFormularioTests
     public void FormulariosDeclarados_ProcessoComDoisFormularios_ListaOsDois()
     {
         ProcessoSeletivo processo = Processo();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
 
         IReadOnlyList<FormularioDeclarado> declarados = processo.Declaracao().Coleta.FormulariosDeclarados;
 
@@ -137,9 +138,9 @@ public sealed class VinculoAoFormularioTests
     public void FormularioDe_PeloCodigo_DevolveOFormularioDoCodigo()
     {
         ProcessoSeletivo processo = Processo();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
-        FormularioProcesso habilitacao = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!;
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
+        FormularioProcesso habilitacao = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!;
 
         processo.Declaracao().Coleta.FormularioDe(habilitacao.Codigo).Should().BeSameAs(habilitacao);
     }
@@ -148,7 +149,7 @@ public sealed class VinculoAoFormularioTests
     public void FormularioDe_CodigoDeOutroFormulario_DevolveNulo()
     {
         ProcessoSeletivo processo = Processo();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         CodigoDoFormulario desconhecido = CodigoDoFormulario.Criar("FORMULARIO_FICTICIO").Value!;
 
         processo.Declaracao().Coleta.FormularioDe(desconhecido).Should().BeNull();
@@ -169,16 +170,16 @@ public sealed class VinculoAoFormularioTests
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .Construir();
 
-    private static GrupoColetado Grupo(string codigo, int ordem, FinalidadeFormulario finalidade, params FatoColetado[] campos) =>
-        GrupoColetadoDeTeste.Agrupando(codigo, ordem).ComCampos(campos).DaFinalidade(finalidade).Construir();
+    private static GrupoColetado Grupo(string codigo, int ordem, params FatoColetado[] campos) =>
+        GrupoColetadoDeTeste.Agrupando(codigo, ordem).ComCampos(campos).Construir();
 
-    private static CopiaDeModeloDeFormulario CopiaDoModelo(FinalidadeFormulario finalidade) => new(
-        FormularioDeTeste.CodigoDoPapel(finalidade),
+    private static CopiaDeModeloDeFormulario CopiaDoModelo(PapelDoFormularioDeTeste papel) => new(
+        FormularioDeTeste.CodigoDoPapel(papel),
         "Formulário",
-        FormularioDeTeste.Paginas(finalidade),
+        FormularioDeTeste.Paginas(papel),
         [Item("COR_RACA", 0)],
-        [Grupo("COMPOSICAO_FAMILIAR", 1, finalidade, Campo("PARENTESCO"))],
-        [ApoioFormulariosPorFinalidade.Termo("VERACIDADE")],
+        [Grupo("COMPOSICAO_FAMILIAR", 1, Campo("PARENTESCO"))],
+        [ApoioFormulariosDoProcesso.Termo("VERACIDADE")],
         [],
         new ModeloDeOrigem(Guid.CreateVersion7(), "MODELO_FICTICIO", "Modelo fictício"));
 }

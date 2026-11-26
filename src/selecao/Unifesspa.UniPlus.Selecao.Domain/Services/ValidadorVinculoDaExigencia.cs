@@ -43,62 +43,33 @@ public static class ValidadorVinculoDaExigencia
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(etapas);
 
-        foreach (DocumentoExigido item in exigencias)
-        {
-            FaseCronograma? faseDaExigencia = fases.FirstOrDefault(fase => fase.Id == item.ExigidoNaFaseId);
-            if (faseDaExigencia is null)
-            {
-                return new DomainError(
-                    "DocumentoExigido.FaseNaoPertenceAoProcesso",
-                    $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo.");
-            }
-
-            if (item.ExigidoNaEtapaId is not { } exigidoNaEtapaId)
-            {
-                continue;
-            }
-
-            EtapaProcesso? etapaDaExigencia = etapas.FirstOrDefault(etapa => etapa.Id == exigidoNaEtapaId);
-            if (etapaDaExigencia is null)
-            {
-                return new DomainError(
-                    "DocumentoExigido.EtapaNaoPertenceAoProcesso",
-                    $"A etapa {exigidoNaEtapaId} não pertence a este processo.");
-            }
-
-            if (!string.Equals(etapaDaExigencia.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal))
-            {
-                return new DomainError(
-                    "DocumentoExigido.EtapaNaoPertenceAFase",
-                    $"A etapa {exigidoNaEtapaId} não acontece na fase {faseDaExigencia.Codigo}.");
-            }
-        }
-
-        return null;
+        return exigencias.Select(item => VinculoInvalido(item, fases, etapas)).FirstOrDefault(static erro => erro is not null);
     }
 
-    /// <summary>
-    /// A finalidade declarada para um documento exigido na fase: obrigatória quando a fase responde
-    /// algum formulário, e então uma das que a fase responde; nula quando a fase não responde nenhum.
-    /// </summary>
-    public static DomainError? RecusaDaFinalidade(FinalidadeFormulario? finalidade, FaseCronograma fase)
+    private static DomainError? VinculoInvalido(
+        DocumentoExigido item, IReadOnlyCollection<FaseCronograma> fases, IReadOnlyCollection<EtapaProcesso> etapas)
     {
-        ArgumentNullException.ThrowIfNull(fase);
-
-        IReadOnlyList<FinalidadeFormulario> atendidas = fase.FinalidadesQueAtende();
-        if (finalidade is not { } declarada)
+        FaseCronograma? faseDaExigencia = fases.FirstOrDefault(fase => fase.Id == item.ExigidoNaFaseId);
+        if (faseDaExigencia is null)
         {
-            return atendidas.Count == 0
-                ? null
-                : new DomainError(
-                    DocumentoExigidoErrorCodes.FinalidadeObrigatoria,
-                    $"A fase '{fase.Codigo}' responde o formulário de {string.Join(" e de ", atendidas.Select(static a => a.Codigo()))}; informe a que formulário o documento pertence.");
+            return new DomainError(
+                "DocumentoExigido.FaseNaoPertenceAoProcesso",
+                $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo.");
         }
 
-        return atendidas.Contains(declarada)
+        return item.ExigidoNaEtapaId is { } exigidoNaEtapaId ? VinculoInvalidoDaEtapa(exigidoNaEtapaId, faseDaExigencia, etapas) : null;
+    }
+
+    private static DomainError? VinculoInvalidoDaEtapa(Guid etapaId, FaseCronograma fase, IReadOnlyCollection<EtapaProcesso> etapas)
+    {
+        EtapaProcesso? etapa = etapas.FirstOrDefault(candidata => candidata.Id == etapaId);
+        if (etapa is null)
+        {
+            return new DomainError("DocumentoExigido.EtapaNaoPertenceAoProcesso", $"A etapa {etapaId} não pertence a este processo.");
+        }
+
+        return string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal)
             ? null
-            : new DomainError(
-                DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade,
-                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {declarada.Codigo()}.");
+            : new DomainError("DocumentoExigido.EtapaNaoPertenceAFase", $"A etapa {etapaId} não acontece na fase {fase.Codigo}.");
     }
 }

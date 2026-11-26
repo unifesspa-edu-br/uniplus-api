@@ -145,7 +145,7 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
             new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
-            FinalidadeFormulario.Inscricao,
+            PapelDoFormularioDeTeste.Inscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("QUILOMBOLA", 101)],
             documentos: ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, laudo)).Construir()));
 

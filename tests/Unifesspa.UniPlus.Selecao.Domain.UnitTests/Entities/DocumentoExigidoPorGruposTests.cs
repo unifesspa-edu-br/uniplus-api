@@ -28,7 +28,7 @@ public sealed class DocumentoExigidoPorGruposTests
 
     private static DocumentoExigidoDeclarado Declarada() => new(
         new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-        new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+        new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao),
         new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
         new IndeferimentoDoDocumento(true, null, []),
         new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
@@ -43,12 +43,12 @@ public sealed class DocumentoExigidoPorGruposTests
         Guid faseId = Guid.CreateVersion7();
         Guid etapaId = Guid.CreateVersion7();
 
-        DocumentoExigido exigencia = Reidratada(Declarada() with { Momento = new(faseId, etapaId, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)) });
+        DocumentoExigido exigencia = Reidratada(Declarada() with { Momento = new(faseId, etapaId, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)) });
 
         exigencia.Id.Should().Be(IdCongelado);
         exigencia.ExigidoNaFaseId.Should().Be(faseId);
         exigencia.ExigidoNaEtapaId.Should().Be(etapaId);
-        exigencia.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        exigencia.FormularioCodigo.Should().Be(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao));
     }
 
     [Fact(DisplayName = "Reidratar grava o tipo de documento copiado e a proteção dele")]
@@ -124,7 +124,7 @@ public sealed class DocumentoExigidoPorGruposTests
     [Fact(DisplayName = "Criar recusa a fase vazia")]
     public void Criar_FaseVazia_Lanca()
     {
-        Action criar = () => DocumentoExigido.Criar(Chave, Declarada() with { Momento = new(Guid.Empty, null, null) });
+        Action criar = () => DocumentoExigido.Criar(Chave, Declarada() with { Momento = new(Guid.Empty, null, FormularioDeTeste.FormularioDaInscricao) });
 
         criar.Should().Throw<ArgumentException>().WithParameterName("momento");
     }

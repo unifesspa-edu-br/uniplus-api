@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -35,7 +36,7 @@ public sealed class CopiasDosNomesDeCadastroTests
     [Fact]
     public void Criar_FormularioSemModelo_NaoTemOrigem()
     {
-        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao));
+        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Inscricao, null), new CronogramaDoProcesso([]), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Inscricao));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ModeloDeOrigem.Should().BeNull();
@@ -46,7 +47,7 @@ public sealed class CopiasDosNomesDeCadastroTests
     {
         ModeloDeOrigem origem = new(Guid.CreateVersion7(), "MODELO_FICTICIO", "  Modelo fictício  ");
 
-        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao), origem);
+        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Inscricao, null), new CronogramaDoProcesso([]), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Inscricao), origem);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ModeloDeOrigem!.Nome.Should().Be("Modelo fictício");

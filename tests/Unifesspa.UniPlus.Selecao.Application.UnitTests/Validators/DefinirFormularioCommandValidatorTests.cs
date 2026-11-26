@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Só a forma do <c>ProcessoSeletivoId</c> — identificador de rota sem equivalente no
@@ -22,7 +23,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Passa com título nulo — ausência é estado válido")]
     public void Aceita_TituloNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), null, null, true, []));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), null, null, true, []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -30,7 +31,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Falha quando ProcessoSeletivoId é vazio")]
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, FinalidadeFormulario.Inscricao.Codigo(), null, null, true, []));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, PapelDoFormularioDeTeste.Inscricao.Codigo(), null, null, true, []));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");

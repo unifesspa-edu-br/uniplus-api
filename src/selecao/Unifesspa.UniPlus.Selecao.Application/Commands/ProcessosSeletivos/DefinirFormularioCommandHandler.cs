@@ -100,7 +100,7 @@ public static class DefinirFormularioCommandHandler
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, declarado.FinalidadeProvisoria);
+        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, declarado.Codigo);
         List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto), .. consequencia.Errors];
         List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
         return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros, consequencia.Value);
@@ -122,7 +122,7 @@ public static class DefinirFormularioCommandHandler
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), declarado.FinalidadeProvisoria, declarado.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
+                processo.Declaracao(), declarado, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 

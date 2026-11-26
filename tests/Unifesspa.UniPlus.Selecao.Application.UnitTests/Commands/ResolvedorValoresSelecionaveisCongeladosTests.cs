@@ -50,7 +50,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             processo, new Dictionary<string, FatoCandidatoView>(StringComparer.Ordinal) { [fato.Codigo] = fato }).Value![fato.Codigo];
 
     private static void ColetarNaHabilitacao(ProcessoSeletivo processo, params FatoColetado[] fatos) =>
-        processo.DefinirItens(fatos, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(fatos, papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
     private static FatoColetado CampoDeSelecaoComOpcoesDoProcesso(string codigo, int ordem, string rotulo) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
@@ -165,7 +165,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
                 .ComRotulo("Tipo de deficiência")
                 .DoTipo(TipoDeCampo.EscolhaMultipla)
                 .ComClassificacao("SENSIVEL")
-                .Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+                .Construir()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -215,7 +215,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [CampoDeSelecao("CAMPO_A", ordemDoPrimeiro), CampoDeSelecao("CAMPO_B", ordemDoSegundo)], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [CampoDeSelecao("CAMPO_A", ordemDoPrimeiro), CampoDeSelecao("CAMPO_B", ordemDoSegundo)], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }

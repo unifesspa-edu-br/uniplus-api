@@ -89,7 +89,7 @@ internal static class ApoioDaProjecaoDosDocumentosExigidos
     internal static async Task<DocumentoExigidoDto> ProjetarAUnicaExigenciaAsync(ExigenciaParaProjetar exigencia)
     {
         (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoComUmaFase();
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia.NaFase(fase.Id), 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia.NaFase(fase.Id), 0).Value!]).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 

@@ -39,7 +39,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComPrazoEValidade(fase.Id, PrazoNoFimDaFase(Guid.CreateVersion7()), null));
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, ExigenciaComPrazoEValidade(fase.Id, PrazoNoFimDaFase(Guid.CreateVersion7()), null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
@@ -52,7 +52,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComPrazoEValidade(fase.Id, null, ValidadeNoInicioDaFase(Guid.CreateVersion7())));
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, ExigenciaComPrazoEValidade(fase.Id, null, ValidadeNoInicioDaFase(Guid.CreateVersion7())));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         DocumentoExigido exigencia = ExigenciaComPrazoEValidade(
             fase.Id, PrazoNoFimDaFase(Guid.CreateVersion7()), ValidadeNoInicioDaFase(Guid.CreateVersion7()));
 
-        Result resultado = DefinirRegrasDeDocumento(processo, exigencia);
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, exigencia);
 
         resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
             DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso, DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
@@ -80,7 +80,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         FaseCronograma referenciada = Fase(2, "ANALISE");
         ProcessoSeletivo processo = ProcessoComFases(exigida, referenciada);
 
-        Result resultado = DefinirRegrasDeDocumento(
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(
             processo, ExigenciaComPrazoEValidade(exigida.Id, PrazoNoFimDaFase(referenciada.Id), ValidadeNoInicioDaFase(referenciada.Id)));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -92,7 +92,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         FaseCronograma fase = Fase(1, "ANALISE");
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaComPrazoEValidade(fase.Id, new PrazoDeEmissaoBuilder().Construir(), null));
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, ExigenciaComPrazoEValidade(fase.Id, new PrazoDeEmissaoBuilder().Construir(), null));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -127,8 +127,8 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
         resultado.Error.Message.Should().Contain("referência da validade");
     }
 
-    [Fact(DisplayName = "Remover a fase de referência e a fase da exigência juntas é aceito: a exigência sai com a fase")]
-    public void DefinirCronogramaFases_RemoveAsDuasFases_Aceita()
+    [Fact(DisplayName = "Remover a fase de referência e a fase da exigência juntas é recusado: o formulário da exigência é respondido na fase dela")]
+    public void DefinirCronogramaFases_RemoveAsDuasFases_Recusa()
     {
         FaseCronograma referenciada = Fase(1, "ANALISE");
         FaseCronograma exigida = Fase(2, "RECURSO");
@@ -138,8 +138,9 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
 
         Result resultado = processo.DefinirCronogramaFases([Fase(1, "RESULTADO", queFica.FaseCanonicaOrigemId)], []);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.DocumentosExigidos.Should().BeEmpty();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario);
+        processo.DocumentosExigidos.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Redefinir o cronograma e a fase de referência perder a data é aceito: a falta é pendência de publicação")]

@@ -19,12 +19,6 @@
       "description": "Se o formulário é obrigatório para o candidato. O formulário obrigatório ligado a uma fase que coleta inscrição é o que a inscrição responde.",
       "type": "boolean"
     },
-    "finalidadeRotulo": {
-      "title": "Rótulo da finalidade",
-      "description": "Rótulo da finalidade do formulário. Campo só de leitura: ignorado na importação; a referência é o código.",
-      "type": "string",
-      "readOnly": true
-    },
     "faseChave": {
       "title": "Fase do formulário",
       "description": "Chave local da fase do cronograma a que o formulário pertence.",

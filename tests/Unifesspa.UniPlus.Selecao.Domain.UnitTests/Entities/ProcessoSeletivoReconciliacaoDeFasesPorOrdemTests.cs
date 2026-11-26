@@ -36,12 +36,12 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
     }
 
     /// <summary>
-    /// Fase diferente ocupando a mesma posição é remoção mais inserção, não edição: a
-    /// exigência que era da fase antiga sai com ela. O que este teste protege é o silêncio —
-    /// a exigência não pode sobreviver retargetada para a fase nova, que não a declarou.
+    /// Fase diferente ocupando a mesma posição é remoção mais inserção, não edição. Como a exigência
+    /// está num formulário respondido na fase antiga, a troca é recusada; o que este teste protege é o
+    /// silêncio: a exigência não pode sobreviver retargetada para a fase nova, que não a declarou.
     /// </summary>
-    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem leva a exigência da fase antiga junto — não a retargeta")]
-    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_LevaAExigenciaJunto()
+    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem com exigência viva é recusado — a exigência não é retargetada")]
+    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_Recusa()
     {
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
@@ -51,10 +51,9 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         // fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
         Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], []);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.DocumentosExigidos.Should().BeEmpty(
-            "a exigência era da fase que saiu; sobreviver seria ficar pendurada numa fase que nunca a declarou");
-        processo.RegrasDeComprovacao.Should().BeEmpty();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario);
+        processo.DocumentosExigidos.Should().ContainSingle().Which.ExigidoNaFaseId.Should().Be(fase.Id);
     }
 
     [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]

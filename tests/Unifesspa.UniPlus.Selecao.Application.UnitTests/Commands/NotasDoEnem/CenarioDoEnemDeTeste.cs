@@ -75,7 +75,7 @@ internal sealed class CenarioDoEnemDeTeste
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. modelo.Cronograma.CronogramaFases]),
             new AvaliacaoDeclarada([EtapaDoEnem, EtapaSemEnem], [.. modelo.Avaliacao.CriteriosDesempate], ClassificacaoPelosPesosDoEnem()),
             VagasDoEnem(modelo), new ExigenciasDeclaradas([.. modelo.Exigencias.DocumentosExigidos], []),
-            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. modelo.Coleta.Itens], [.. modelo.Coleta.GruposColetados]), [.. modelo.Coleta.GruposColetados], [.. modelo.Coleta.Formularios.Where(f => !semFormularioDeInscricao || f.Finalidade != FinalidadeFormulario.Inscricao)], [], opcoes, [], null),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. modelo.Coleta.Itens], [.. modelo.Coleta.GruposColetados]), [.. modelo.Coleta.GruposColetados], [.. modelo.Coleta.Formularios.Where(f => !semFormularioDeInscricao || f.Codigo != FormularioDeTeste.FormularioDaInscricao)], [], opcoes, [], null),
             new DivulgacaoETaxaDeclaradas(null, null), null);
     }
 

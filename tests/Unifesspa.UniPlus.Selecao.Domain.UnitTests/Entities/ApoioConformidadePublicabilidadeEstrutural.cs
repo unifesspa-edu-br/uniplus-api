@@ -149,7 +149,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         ArgumentNullException.ThrowIfNull(processo);
 
         GarantirFormularioNaFaseDaImportacao(processo);
-        return processo.DefinirItens(fatos, FinalidadeFormulario.Habilitacao);
+        return processo.DefinirItens(fatos, PapelDoFormularioDeTeste.Habilitacao);
     }
 
     /// <summary>Define os termos no formulário obrigatório da fase da importação.</summary>
@@ -158,18 +158,18 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         ArgumentNullException.ThrowIfNull(processo);
 
         GarantirFormularioNaFaseDaImportacao(processo);
-        return processo.DefinirTermos(termos, FinalidadeFormulario.Habilitacao);
+        return processo.DefinirTermos(termos, PapelDoFormularioDeTeste.Habilitacao);
     }
 
     private static void GarantirFormularioNaFaseDaImportacao(ProcessoSeletivo processo)
     {
-        if (processo.FormularioDe(FinalidadeFormulario.Habilitacao) is not null)
+        if (processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao) is not null)
         {
             return;
         }
 
         Result definido = processo.DefinirFormulario(
-            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Habilitacao, processo.CronogramaFases.Single().Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao));
+            FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Habilitacao, processo.CronogramaFases.Single().Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao));
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 

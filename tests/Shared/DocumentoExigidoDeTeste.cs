@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -21,7 +22,7 @@ internal sealed record DocumentoExigidoDeTeste
 
     private Guid? EtapaId { get; init; }
 
-    private FinalidadeFormulario? Finalidade { get; init; }
+    private CodigoDoFormulario Formulario { get; init; } = FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao);
 
     private Guid TipoDeOrigemId { get; init; } = Guid.CreateVersion7();
 
@@ -61,7 +62,9 @@ internal sealed record DocumentoExigidoDeTeste
 
     public DocumentoExigidoDeTeste NaEtapa(Guid? etapaId) => this with { EtapaId = etapaId };
 
-    public DocumentoExigidoDeTeste NaFinalidade(FinalidadeFormulario? finalidade) => this with { Finalidade = finalidade };
+    public DocumentoExigidoDeTeste NoFormulario(PapelDoFormularioDeTeste papel) => this with { Formulario = FormularioDeTeste.CodigoDoPapel(papel) };
+
+    public DocumentoExigidoDeTeste NoFormulario(CodigoDoFormulario formulario) => this with { Formulario = formulario };
 
     public DocumentoExigidoDeTeste ComTipoDeOrigem(Guid tipoDeOrigemId) => this with { TipoDeOrigemId = tipoDeOrigemId };
 
@@ -118,7 +121,7 @@ internal sealed record DocumentoExigidoDeTeste
 
     private CopiaDoTipoDeDocumento TipoDoDocumento() => new(TipoDeOrigemId, TipoCodigo, TipoNome, TipoCategoria, Protecao);
 
-    private MomentoDaExigencia MomentoDaColeta() => new(FaseId, EtapaId, FormularioDeTeste.CodigoDoPapel(Finalidade));
+    private MomentoDaExigencia MomentoDaColeta() => new(FaseId, EtapaId, Formulario);
 
     private AplicabilidadeDaExigencia AplicabilidadeDeclarada() => new(TipoDeAplicabilidade, Condicoes);
 

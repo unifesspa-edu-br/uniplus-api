@@ -48,7 +48,7 @@ public sealed class OfertaVaziaNoRascunhoTests
         ProcessoSeletivo processo = ProcessoComOfertaVazia();
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await ObterFormularioApresentadoDoRascunhoQueryHandler.Handle(
-            new ObterFormularioApresentadoDoRascunhoQuery(processo.Id, FinalidadeFormulario.Habilitacao.Codigo()),
+            new ObterFormularioApresentadoDoRascunhoQuery(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo()),
             RepositorioDo(processo), CatalogoComOFato(), new ResolvedorFusoDeTeste(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -60,7 +60,7 @@ public sealed class OfertaVaziaNoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Oferta vazia");
         processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoDeCampo.EscolhaMultipla).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando(Fato, 0).ComRotulo("Condição de atendimento").DoTipo(TipoDeCampo.EscolhaMultipla).Construir()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }

@@ -85,7 +85,6 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
             .ComRotulo("Grupo")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(Item(TipoDeCampo.Data))
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
         FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo])]);
 
@@ -124,7 +123,6 @@ public sealed class ConferenciaDosEixosDosItensPublicadosTests
             .ComRotulo("Grupo")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(publicado)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Criar();
         grupo.IsSuccess.Should().BeTrue(grupo.Error?.Message);
         return VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([], [], [grupo.Value!])]);

@@ -22,12 +22,12 @@ public sealed class DefinicaoDoProcessoTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirTermos([Termo("VERACIDADE")]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("VERACIDADE")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("VERACIDADE")], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         DefinicaoFormulario definicao = Montar(processo);
 
         definicao.Termos.Select(static t => t.Codigo).Should().BeEquivalentTo(
-            [DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "VERACIDADE"), DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Habilitacao, "VERACIDADE")]);
+            [DefinicaoDoProcesso.CodigoDoTermo(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), "VERACIDADE"), DefinicaoDoProcesso.CodigoDoTermo(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), "VERACIDADE")]);
     }
 
     [Fact(DisplayName = "As páginas saem na ordem do código do formulário, qualquer que seja a ordem em que os formulários chegam")]
@@ -52,18 +52,17 @@ public sealed class DefinicaoDoProcessoTests
             .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .Construir())
-        .DaFinalidade(FinalidadeFormulario.Habilitacao)
         .Construir();
 
     [Fact(DisplayName = "A seção que só tem grupo entra na definição com o grupo")]
     public void Montar_SecaoSoComGrupo_EntraComOGrupo()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [ComposicaoFamiliarNaSecaoFamilia()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], papel: PapelDoFormularioDeTeste.Habilitacao, grupos: [ComposicaoFamiliarNaSecaoFamilia()]).IsSuccess.Should().BeTrue();
 
         DefinicaoFormulario definicao = Montar(processo);
 
-        definicao.Paginas.Single(static e => e.Codigo == DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Habilitacao, "FAMILIA"))
+        definicao.Paginas.Single(static e => e.Codigo == DefinicaoDoProcesso.CodigoDaPagina(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), "FAMILIA"))
             .Grupos.Should().ContainSingle().Which.Codigo.Should().Be("COMPOSICAO_FAMILIAR");
     }
 
@@ -77,9 +76,8 @@ public sealed class DefinicaoDoProcessoTests
                 .DeTexto("CPF")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .NaSecao("DADOS")
-                .DaFinalidade(FinalidadeFormulario.Habilitacao)
                 .Construir()],
-            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         DefinicaoItem item = Montar(processo).Paginas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");
 
@@ -93,7 +91,7 @@ public sealed class DefinicaoDoProcessoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFormulario(
-            FinalidadeFormulario.Habilitacao, null, null,
+            PapelDoFormularioDeTeste.Habilitacao, null, null,
             [
                 PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
                 PaginaDoFormulario.Criar(new PaginaEstrutura("FAMILIA", 1, TipoPaginaFormulario.Secao, null), "Família", null, null).Value!,

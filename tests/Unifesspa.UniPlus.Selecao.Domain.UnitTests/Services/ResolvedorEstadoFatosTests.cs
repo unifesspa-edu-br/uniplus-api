@@ -83,7 +83,7 @@ public sealed class ResolvedorEstadoFatosTests
         IReadOnlyList<DerivacaoDoFato>? derivacoes = null,
         IReadOnlyDictionary<string, IReadOnlySet<string>>? oferta = null)
     {
-        FormularioProcesso unico = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
+        FormularioProcesso unico = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao);
         return ResolvedorEstadoFatos.Resolver(
             formularios ?? [unico],
             formularios is null ? fatos.Em(unico) : fatos,
@@ -166,7 +166,6 @@ public sealed class ResolvedorEstadoFatosTests
         FatoColetadoDeTeste.Coletando(codigo, ordem)
             .ComRotulo(rotulo)
             .NaSecao(secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     private static FormularioProcesso FormularioComSecaoDeCotas()
@@ -174,7 +173,7 @@ public sealed class ResolvedorEstadoFatosTests
         PredicadoDnf egresso = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!)]).Value!;
         return FormularioProcesso.Criar(
-            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Inscricao, null), new CronogramaDoProcesso([]), null,
+            FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Inscricao, null), new CronogramaDoProcesso([]), null,
             [
                 PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
                 PaginaDoFormulario.Criar(new PaginaEstrutura("COTAS", 1, TipoPaginaFormulario.Secao, null), "Cotas", null, null, egresso).Value!,
@@ -186,21 +185,19 @@ public sealed class ResolvedorEstadoFatosTests
         .ComRotulo("Declaração")
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ExibidoQuando(ExibicaoDeTeste.Quando("COR_RACA", Operador.Igual, Cor("PRETA")))
-        .DaFinalidade(FinalidadeFormulario.Habilitacao)
         .Construir();
 
     private static FatoColetado CorRacaDaInscricao() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
         .ComRotulo("Cor ou raça")
         .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
     public void DoisFormularios_ResolvemJuntos()
     {
-        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao);
-        FormularioProcesso habilitacao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
+        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao);
+        FormularioProcesso habilitacao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao);
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(
             [DeclaracaoDePertencimentoDaHabilitacao().Em(habilitacao), CorRacaDaInscricao().Em(inscricao)], [("COR_RACA", Cor("BRANCA"))],

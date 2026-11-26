@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </para>
 /// <para>
 /// A avaliação é a do avaliador de formulário compartilhado (ADR-0135): cada seção é uma página,
-/// com a exibição da seção, na ordem das finalidades e das seções, e os fatos na ordem de coleta,
+/// com a exibição da seção, na ordem dos formulários e das seções, e os fatos na ordem de coleta,
 /// com a pré-condição como exibição, a obrigatoriedade e as restrições de valor do campo — a
 /// resposta que viola uma restrição não vale. Nenhuma página é dada como concluída, então um campo aplicável sem resposta fica pendente.
 /// </para>

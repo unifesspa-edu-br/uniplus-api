@@ -98,7 +98,6 @@ internal sealed class InscricaoAdministrativaDeTeste
             .DoTipo(tipo)
             .ComCopia(copia)
             .NaSecao(metadados.Secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .ComAjuda(metadados.Ajuda)
             .ComRestricoes(metadados.Restricoes)
             .Criar();
@@ -189,7 +188,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     private EnvelopeReidratado EnvelopeDoCenario()
     {
         FormularioProcesso formulario = FormularioProcesso.Criar(
-            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Inscricao, _faseId),
+            FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Inscricao, _faseId),
             CronogramaDoProcesso.Do(_processo.CronogramaFases), null, FormularioDeTeste.Paginas()).Value!;
 
         return new EnvelopeReidratado(

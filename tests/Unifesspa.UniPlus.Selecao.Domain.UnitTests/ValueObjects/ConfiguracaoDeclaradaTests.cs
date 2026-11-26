@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ConfiguracaoDeclaradaTests
 {
@@ -72,7 +73,7 @@ public sealed class ConfiguracaoDeclaradaTests
 
         declarada.Coleta.Itens.Should().BeEmpty();
         declarada.Vagas.HaVagasOfertadas.Should().BeFalse();
-        declarada.Coleta.FormularioDe(FinalidadeFormulario.Inscricao).Should().BeNull();
+        declarada.Coleta.FormularioDe(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)).Should().BeNull();
     }
 
     [Fact(DisplayName = "O apoio compõe a declaração com a etapa fornecida")]

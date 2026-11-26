@@ -168,7 +168,6 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
                 .ComCopia(ProtecaoDoFatoDeTeste.Copia() with { HipoteseLegal = InscricaoAdministrativaDeTeste.Hipotese, Descricao = "Município do local" })
                 .ComRestricoes(new MunicipiosDaUf("NATURALIDADE_UF"))
                 .Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
     private static InscricaoAdministrativaDeTeste ComAjudaEDescricao()
     {

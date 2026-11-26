@@ -138,7 +138,7 @@ public sealed record DocumentosDaInscricao(
 
     /// <summary>Os documentos avaliados que as exigências dos formulários da inscrição pedem.</summary>
     public IEnumerable<DocumentoAvaliado> DaInscricao =>
-        Itens.Where(d => d.Documento.FormularioCodigo is { } formulario && CodigosDosFormulariosDaInscricao.Contains(formulario));
+        Itens.Where(d => CodigosDosFormulariosDaInscricao.Contains(d.Documento.FormularioCodigo));
 
     /// <summary>Cada ausência obrigatória recusa o envio; arquivo ainda em verificação pede espera (UNI-REQ-0028).</summary>
     public IEnumerable<FieldError> RecusasDosAusentes(IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao = null) =>

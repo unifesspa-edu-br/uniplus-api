@@ -87,7 +87,6 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Ignore(f => f.Exibicao);
         builder.Ignore(f => f.Apresentacao);
         builder.Ignore(f => f.Regras);
-        builder.Ignore(f => f.Finalidade);
         builder.Property(f => f.PaginaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaPagina.CodigoMaxLength);
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em

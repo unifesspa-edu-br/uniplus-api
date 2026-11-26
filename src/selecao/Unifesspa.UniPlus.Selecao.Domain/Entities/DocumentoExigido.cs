@@ -52,15 +52,11 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     public Guid? ExigidoNaEtapaId { get; private set; }
 
     /// <summary>
-    /// O formulário a que o documento pertence, quando a fase coleta formulário: é no bloco de
-    /// comprovação dele que o candidato o apresenta. A fase diz o momento da coleta e a finalidade
-    /// diz o formulário, porque inscrição e isenção podem dividir a mesma fase. Nula só em fase que
-    /// não coleta formulário nenhum. Declarada por quem configura, nunca deduzida da fase.
+    /// O código do formulário a que o documento pertence: é no bloco de comprovação dele que o candidato o
+    /// apresenta. A fase diz o momento da coleta e o formulário diz onde, porque dois formulários podem dividir a
+    /// mesma fase. Declarado por quem configura, nunca deduzido da fase.
     /// </summary>
-    public FinalidadeFormulario? Finalidade { get; private set; }
-
-    /// <summary>O código do formulário a que o documento pertence; nulo só em fase que não coleta formulário nenhum.</summary>
-    public CodigoDoFormulario? FormularioCodigo { get; private set; }
+    public CodigoDoFormulario FormularioCodigo { get; private set; } = null!;
 
     /// <summary>Id do <c>TipoDocumento</c> vivo no momento da configuração — snapshot-copy (ADR-0061), sem FK cross-módulo.</summary>
     public Guid TipoDocumentoOrigemId { get; private set; }
@@ -138,14 +134,6 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ValidarFatos(fatosComprovados, erros);
         return erros;
     }
-
-    public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes,
-        FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null) =>
-    [
-        .. finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [],
-        .. ValidarFormaBasica(aplicabilidade, consequenciaDoDescumprimento, quantidadeCondicoes, fatosComprovados),
-    ];
 
     private static void ValidarAplicabilidade(Aplicabilidade? aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
     {
@@ -231,7 +219,6 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ExigidoNaFaseId = declarado.Momento.FaseId;
         ExigidoNaEtapaId = declarado.Momento.EtapaId;
         FormularioCodigo = declarado.Momento.Formulario;
-        Finalidade = declarado.Momento.Finalidade;
         CopiarTipo(declarado.Tipo);
         FatosComprovados = [.. declarado.FatosComprovados ?? []];
         Aplicabilidade = declarado.Aplicabilidade.Tipo
@@ -271,6 +258,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(declarado);
         ArgumentNullException.ThrowIfNull(declarado.Tipo, nameof(declarado));
         ArgumentNullException.ThrowIfNull(declarado.Momento, nameof(declarado));
+        ArgumentNullException.ThrowIfNull(declarado.Momento.Formulario, nameof(declarado));
         ArgumentNullException.ThrowIfNull(declarado.Aplicabilidade, nameof(declarado));
         ArgumentNullException.ThrowIfNull(declarado.Indeferimento, nameof(declarado));
         ArgumentNullException.ThrowIfNull(declarado.Requisitos, nameof(declarado));

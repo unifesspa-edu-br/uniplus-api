@@ -14,11 +14,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class LigacaoAoFormulario
 {
     /// <summary>O formulário que cumpre o papel dado, na fase dada, com as páginas do teste.</summary>
-    public static FormularioProcesso FormularioNoPapel(FinalidadeFormulario papel, Guid? faseId = null) =>
+    public static FormularioProcesso FormularioNoPapel(PapelDoFormularioDeTeste papel, Guid? faseId = null) =>
         FormularioProcesso.Criar(FormularioDeTeste.DeclaradoNoPapel(papel, faseId), new CronogramaDoProcesso([]), null, FormularioDeTeste.Paginas(papel)).Value!;
 
     /// <summary>O formulário que cumpre o papel dado, com as páginas dadas.</summary>
-    public static FormularioProcesso FormularioNoPapel(FinalidadeFormulario papel, IReadOnlyList<PaginaDoFormulario> paginas) =>
+    public static FormularioProcesso FormularioNoPapel(PapelDoFormularioDeTeste papel, IReadOnlyList<PaginaDoFormulario> paginas) =>
         FormularioProcesso.Criar(FormularioDeTeste.DeclaradoNoPapel(papel, null), new CronogramaDoProcesso([]), null, paginas).Value!;
 
     /// <summary>A fase do cronograma que coleta a inscrição, na ordem dada.</summary>
@@ -32,7 +32,7 @@ internal static class LigacaoAoFormulario
         bancasRequeridas: []).Value!;
 
     /// <summary>O formulário que cumpre o papel dado, ligado à fase dada, com as páginas do teste.</summary>
-    public static FormularioProcesso FormularioNaFase(FinalidadeFormulario papel, FaseCronograma fase) =>
+    public static FormularioProcesso FormularioNaFase(PapelDoFormularioDeTeste papel, FaseCronograma fase) =>
         FormularioProcesso.Criar(FormularioDeTeste.DeclaradoNoPapel(papel, fase.Id), CronogramaDoProcesso.Do([fase]), null, FormularioDeTeste.Paginas(papel)).Value!;
 
     public static FatoColetado Em(this FatoColetado item, FormularioProcesso formulario)

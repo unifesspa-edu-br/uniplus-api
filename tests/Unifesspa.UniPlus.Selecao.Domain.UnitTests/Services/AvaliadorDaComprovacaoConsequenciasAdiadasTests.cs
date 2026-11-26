@@ -27,7 +27,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     private static DocumentoExigido DocumentoGeral(string? consequencia) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(FaseId, null, null))
+            .ComMomento(new MomentoDaExigencia(FaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, consequencia, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
@@ -37,7 +37,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     private static DocumentoExigido DocumentoCondicional(string fato) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(FaseId, null, null))
+            .ComMomento(new MomentoDaExigencia(FaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))

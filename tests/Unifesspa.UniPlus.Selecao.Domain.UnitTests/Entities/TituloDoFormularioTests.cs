@@ -15,23 +15,23 @@ public sealed class TituloDoFormularioTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "  Formulário  ", FormularioDeTeste.Paginas())
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, "  Formulário  ", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().Be("Formulário");
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Titulo.Should().Be("Formulário");
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "   ", FormularioDeTeste.Paginas())
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, "   ", FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Titulo.Should().BeNull();
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Titulo.Should().BeNull();
     }
 
     [Fact(DisplayName = "Título de 301 caracteres é recusado no campo titulo e não cria o formulário")]
     public void DefinirFormulario_TituloExcedeLimite_RecusaSemCriarFormulario()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao).Should().BeNull();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Habilitacao, null, new string('a', 301), FormularioDeTeste.Paginas());
+            PapelDoFormularioDeTeste.Habilitacao, null, new string('a', 301), FormularioDeTeste.Paginas());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
@@ -39,6 +39,6 @@ public sealed class TituloDoFormularioTests
             Field = "titulo",
             Error = new { Code = EstruturaFormularioErrorCodes.TituloTamanho },
         });
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao).Should().BeNull();
     }
 }

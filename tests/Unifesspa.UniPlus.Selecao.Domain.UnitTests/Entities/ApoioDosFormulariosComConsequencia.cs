@@ -36,12 +36,12 @@ internal static class ApoioDosFormulariosComConsequencia
 
     internal static FatosDeModalidade Fatos(ProcessoSeletivo processo) => CadastrosDeTeste.Para(processo).FatosDeModalidade;
 
-    internal static void ExigirNoFormulario(ProcessoSeletivo processo, FinalidadeFormulario finalidade, string modalidade)
+    internal static void ExigirNoFormulario(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, string modalidade)
     {
-        Guid fase = finalidade == FinalidadeFormulario.Habilitacao ? AcrescentarFaseDaHabilitacao(processo) : processo.CronogramaFases.Single().Id;
-        LigarFormularioAFase(processo, finalidade, fase);
+        Guid fase = papel == PapelDoFormularioDeTeste.Habilitacao ? AcrescentarFaseDaHabilitacao(processo) : processo.CronogramaFases.Single().Id;
+        LigarFormularioAFase(processo, papel, fase);
         DocumentoExigido exigencia = new DocumentoExigidoBuilder()
-            .ComMomento(new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
                 [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidade)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
@@ -51,11 +51,11 @@ internal static class ApoioDosFormulariosComConsequencia
     }
 
     /// <summary>Liga o formulário do papel à fase dada, mantendo a consequência da falta de envio que ele declara: a exigência só vale no formulário ligado à fase dela.</summary>
-    internal static void LigarFormularioAFase(ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid fase)
+    internal static void LigarFormularioAFase(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, Guid fase)
     {
-        FormularioProcesso formulario = processo.FormularioDe(finalidade)!;
+        FormularioProcesso formulario = processo.FormularioDe(papel)!;
         Result ligado = processo.DefinirFormulario(
-            FormularioDeTeste.DeclaradoNoPapel(finalidade, fase), formulario.Titulo, FormularioDeTeste.Paginas(finalidade), null, formulario.ConsequenciaDaFaltaDeEnvio);
+            FormularioDeTeste.DeclaradoNoPapel(papel, fase), formulario.Titulo, FormularioDeTeste.Paginas(papel), null, formulario.ConsequenciaDaFaltaDeEnvio);
         ligado.IsSuccess.Should().BeTrue(ligado.Error?.Message);
     }
 
@@ -73,16 +73,16 @@ internal static class ApoioDosFormulariosComConsequencia
     }
 
     /// <summary>
-    /// Um processo com uma oferta cuja modalidade LB_PPI retira a modalidade do indeferido, e o formulário da finalidade
+    /// Um processo com uma oferta cuja modalidade LB_PPI retira a modalidade do indeferido, e o formulário do papel dado
     /// com a consequência declarada; o formulário de inscrição do processo é o primeiro, e o de isenção, o segundo.
     /// </summary>
-    internal static ProcessoSeletivo ProcessoCom(FinalidadeFormulario finalidade, ConsequenciaDoDescumprimento? consequencia)
+    internal static ProcessoSeletivo ProcessoCom(PapelDoFormularioDeTeste papel, ConsequenciaDoDescumprimento? consequencia)
     {
         ModalidadeSelecionada modalidade = NovaModalidadeComAcao("LB_PPI", NaturezaLegalModalidade.CotaReservada,
             ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(modalidade);
-        Guid? fase = finalidade == FinalidadeFormulario.Inscricao ? processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId : null;
-        Result definido = processo.DefinirFormulario(finalidade, fase, null, FormularioDeTeste.Paginas(), null, consequencia);
+        Guid? fase = papel == PapelDoFormularioDeTeste.Inscricao ? processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId : null;
+        Result definido = processo.DefinirFormulario(papel, fase, null, FormularioDeTeste.Paginas(), null, consequencia);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         return processo;
     }

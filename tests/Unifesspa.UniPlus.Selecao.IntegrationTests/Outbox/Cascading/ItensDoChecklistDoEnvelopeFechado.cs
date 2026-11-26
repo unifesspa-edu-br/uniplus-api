@@ -147,7 +147,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cascata_destino_desconhecido",
         // ── PendenciaPreCanonicalizacao ──
         "exigencia_condicional_vazia_determina_resultado",
-        "exigencia_finalidade_incoerente_com_a_fase",
+        "exigencia_no_formulario_da_sua_fase",
         "exigencia_fato_comprovado_fora_do_processo",
         "exigencia_menos_protegida_que_fato_comprovado",
         // consequências do descumprimento (exigência, grupo, modalidade, banca e formulário)

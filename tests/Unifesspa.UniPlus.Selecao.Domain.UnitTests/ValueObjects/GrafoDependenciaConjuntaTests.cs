@@ -24,9 +24,9 @@ public sealed class GrafoDependenciaConjuntaTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static readonly FormularioProcesso FormularioDaInscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao);
+    private static readonly FormularioProcesso FormularioDaInscricao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao);
 
-    private static readonly FormularioProcesso FormularioDaHabilitacao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
+    private static readonly FormularioProcesso FormularioDaHabilitacao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao);
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem)
@@ -46,7 +46,7 @@ public sealed class GrafoDependenciaConjuntaTests
     private static DocumentoExigido ExigenciaGatilhadaPor(string fato) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
+            .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
@@ -249,7 +249,7 @@ public sealed class GrafoDependenciaConjuntaTests
         resultado.Value!.Dependencias.Should().NotContain(a => a.Motivo == MotivoDaDependencia.CondicionaExigencia);
     }
 
-    private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao,
+    private static FormularioProcesso InscricaoComSecaoDeCotasCondicionada() => LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao,
     [
         PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
         PaginaDoFormulario.Criar(new PaginaEstrutura("COTAS", 1, TipoPaginaFormulario.Secao, null), "Cotas", null, null, Cita("EGRESSO")).Value!,
@@ -277,7 +277,7 @@ public sealed class GrafoDependenciaConjuntaTests
         TermoExigidoFormulario termo = TermoExigidoFormulario.Criar(
             "CONSULTA", 0,
             new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Consulta", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
-            Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!.Em(FormularioDaInscricao);
+            Cita("EGRESSO"), Obrigatoriedade.Sempre).Value!.Em(FormularioDaInscricao);
 
         GrafoDependenciaConjunta grafo = Construir([NoFormulario(FormularioDaInscricao, "EGRESSO", 0, "DADOS")], termos: [termo]).Value!;
 
@@ -303,7 +303,7 @@ public sealed class GrafoDependenciaConjuntaTests
     [Fact(DisplayName = "Seção condicional vazia fica na posição do primeiro campo das seções seguintes")]
     public void SecaoCondicionalVazia_FicaAntesDasSecoesSeguintes()
     {
-        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao,
+        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao,
         [
             PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
             PaginaDoFormulario.Criar(new PaginaEstrutura("AVISO", 1, TipoPaginaFormulario.Secao, null), "Aviso", null, null, Cita("EGRESSO")).Value!,
@@ -322,8 +322,8 @@ public sealed class GrafoDependenciaConjuntaTests
     public void TermosCondicionados_NaOrdemDeclarada()
     {
         VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64));
-        TermoExigidoFormulario primeiro = TermoExigidoFormulario.Criar("Z_PRIMEIRO", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!.Em(FormularioDaInscricao);
-        TermoExigidoFormulario segundo = TermoExigidoFormulario.Criar("A_SEGUNDO", 1, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!.Em(FormularioDaInscricao);
+        TermoExigidoFormulario primeiro = TermoExigidoFormulario.Criar("Z_PRIMEIRO", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre).Value!.Em(FormularioDaInscricao);
+        TermoExigidoFormulario segundo = TermoExigidoFormulario.Criar("A_SEGUNDO", 1, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre).Value!.Em(FormularioDaInscricao);
 
         GrafoDependenciaConjunta grafo = Construir(
             [NoFormulario(FormularioDaInscricao, "EGRESSO", 0, "DADOS"), NoFormulario(FormularioDaInscricao, "ULTIMO", 1, "DADOS")],
@@ -337,7 +337,7 @@ public sealed class GrafoDependenciaConjuntaTests
     {
         VersaoTermoEscolhida versao = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo", "Texto", "Base", FormaAceite.RegistroSemEnderecoIp, new string('a', 64));
         FormularioProcesso inscricao = InscricaoComSecaoDeCotasCondicionada();
-        TermoExigidoFormulario termo = TermoExigidoFormulario.Criar("CONSULTA", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!.Em(inscricao);
+        TermoExigidoFormulario termo = TermoExigidoFormulario.Criar("CONSULTA", 0, versao, Cita("EGRESSO"), Obrigatoriedade.Sempre).Value!.Em(inscricao);
         GrafoDependenciaConjunta grafo = Construir([NoFormulario(inscricao, "EGRESSO", 0, "DADOS")],
             formularios: [inscricao], termos: [termo]).Value!;
         Posicao(grafo, TipoDeParteDaConfiguracao.Campo, "EGRESSO").Should().BeLessThan(Posicao(grafo, TipoDeParteDaConfiguracao.Secao, "INSCRICAO/COTAS"));

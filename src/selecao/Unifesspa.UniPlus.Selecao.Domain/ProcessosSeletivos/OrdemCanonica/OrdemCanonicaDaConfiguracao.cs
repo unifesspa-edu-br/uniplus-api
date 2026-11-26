@@ -111,14 +111,6 @@ public static class OrdemCanonicaDaConfiguracao
         return categorias.OrderBy(static categoria => categoria.Codigo, StringComparer.Ordinal);
     }
 
-    /// <summary>As finalidades que têm formulário no documento, cada uma uma vez, na ordem da finalidade.</summary>
-    public static IEnumerable<FinalidadeFormulario> Finalidades(IEnumerable<FinalidadeFormulario> finalidades)
-    {
-        ArgumentNullException.ThrowIfNull(finalidades);
-
-        return finalidades.Distinct().Order();
-    }
-
     /// <summary>Os formulários do processo, pela ordem ordinal do código.</summary>
     public static IOrderedEnumerable<FormularioProcesso> Formularios(IEnumerable<FormularioProcesso> formularios)
     {
@@ -153,24 +145,6 @@ public static class OrdemCanonicaDaConfiguracao
         ArgumentNullException.ThrowIfNull(campos);
 
         return campos.OrderBy(static campo => campo.Ordem);
-    }
-
-    // Provisório até a retirada da finalidade: quem ainda não passa os formulários ordena pela finalidade do campo.
-    /// <summary>Os campos coletados, pela finalidade e pela ordem dentro dela.</summary>
-    public static IOrderedEnumerable<FatoColetado> Campos(IEnumerable<FatoColetado> campos)
-    {
-        ArgumentNullException.ThrowIfNull(campos);
-
-        return campos.OrderBy(static campo => campo.Finalidade).ThenBy(static campo => campo.Ordem);
-    }
-
-    // Provisório até a retirada da finalidade: quem ainda não passa os formulários ordena pela finalidade do grupo.
-    /// <summary>Os grupos repetíveis, pela finalidade e pela ordem dentro dela.</summary>
-    public static IOrderedEnumerable<GrupoColetado> Grupos(IEnumerable<GrupoColetado> grupos)
-    {
-        ArgumentNullException.ThrowIfNull(grupos);
-
-        return grupos.OrderBy(static grupo => grupo.Finalidade).ThenBy(static grupo => grupo.Ordem);
     }
 
     private static Dictionary<Guid, string> CodigosPorFormulario(IEnumerable<FormularioProcesso> formularios) =>

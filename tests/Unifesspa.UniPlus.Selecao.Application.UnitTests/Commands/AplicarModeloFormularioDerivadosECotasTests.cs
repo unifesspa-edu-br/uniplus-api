@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
@@ -27,8 +28,8 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     {
         FatoColetadoInput exibido = ItemQueCita(Item("CERTIFICADO", 1), "PERFIL", "ALGUM_DE", new[] { "A" });
 
-        Result<AplicacaoDeModeloDto> copia = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
-        Result<AplicacaoDeModeloDto> reaplicacao = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
+        Result<AplicacaoDeModeloDto> copia = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
+        Result<AplicacaoDeModeloDto> reaplicacao = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), exibido]));
 
         copia.IsSuccess.Should().BeTrue(copia.Error?.Message);
         copia.Value!.DerivacoesCopiadas.Should().Equal("PERFIL");
@@ -41,7 +42,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     {
         FatoColetadoInput porFlag = ItemQueCita(Item("CERTIFICADO", 1), "FLAG", "IGUAL", true);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porFlag]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), porFlag]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         _cenario.Processo.RegrasDerivacao.Should().ContainSingle().Which.Booleano.Should().BeTrue();
@@ -52,7 +53,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     {
         FatoColetadoInput porSemRegra = ItemQueCita(Item("CERTIFICADO", 1, "ESCOLHA_UNICA"), "SEM_REGRA", "ALGUM_DE", new[] { "X" });
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), porSemRegra]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), porSemRegra]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
     }
@@ -63,7 +64,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         FatoColetadoInput porAmarela = ItemQueCita(Item("QUILOMBOLA", 1), "COR_RACA", "IGUAL", "AMARELA");
         FatoColetadoInput porIndigena = ItemQueCita(Item("CERTIFICADO", 2), "COR_RACA", "IGUAL", "INDIGENA");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, [Item("COR_RACA", 0, "ESCOLHA_UNICA"), porAmarela, porIndigena]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("COR_RACA", 0, "ESCOLHA_UNICA"), porAmarela, porIndigena]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(VinculoCatalogoErrorCodes.ValorDesativado, VinculoCatalogoErrorCodes.ValorDesativado);
     }
@@ -73,7 +74,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     {
         FatoColetadoInput porCotista = ItemQueCita(Item("QUILOMBOLA", 1), "COTISTA", "ALGUM_DE", new[] { "SIM" });
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porCotista]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0), porCotista]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas);
     }
@@ -83,7 +84,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
     {
         FatoColetadoInput porModalidade = ItemQueCita(Item("QUILOMBOLA", 1), "MODALIDADE", "ALGUM_DE", new[] { "AC" });
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porModalidade]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0), porModalidade]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas);
     }
@@ -94,7 +95,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         _cenario.Ofertar(Ofertada("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula));
         FatoColetadoInput porOpcao = ItemQueCita(Item("QUILOMBOLA", 1), OpcaoPelasCotasDaLei.Fato, "IGUAL", true);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porOpcao]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0), porOpcao]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada);
         _cenario.Processo.RegrasDerivacao.Should().BeEmpty();
@@ -109,7 +110,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         FatoColetadoInput porOpcao = ItemQueCita(Item("QUILOMBOLA", 2), OpcaoPelasCotasDaLei.Fato, "IGUAL", true);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
-            FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), Item(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 1), porOpcao]));
+            PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0), Item(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 1), porOpcao]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.DerivacoesMantidas.Should().Contain(OpcaoPelasCotasDaLei.Fato);

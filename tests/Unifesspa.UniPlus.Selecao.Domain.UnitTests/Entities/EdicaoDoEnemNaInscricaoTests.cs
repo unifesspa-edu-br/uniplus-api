@@ -104,9 +104,9 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     public void Publicacao_CampoEmSecaoCondicional_Recusa()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
-        FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
+        FormularioProcesso inscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!;
         processo.DefinirFormulario(
-                FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo,
+                PapelDoFormularioDeTeste.Inscricao, inscricao.FaseId, inscricao.Titulo,
                 [
                     FormularioDeTeste.Paginas()[0],
                     PaginaDoFormulario.Criar(new PaginaEstrutura(FormularioDeTeste.Secao, 1, TipoPaginaFormulario.Secao, null), "Dados", null, null, SeCasado()).Value!,
@@ -237,7 +237,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     public void Conformidade_SemFormularioDeInscricao_SoOFormularioFicaVermelho()
     {
         ProcessoSeletivo processo = ProcessoDoEnem();
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
 
         ItemOk(processo, "formulario_inscricao_ausente").Should().BeFalse();
         ItemOk(processo, ItemDoCampo).Should().BeTrue();

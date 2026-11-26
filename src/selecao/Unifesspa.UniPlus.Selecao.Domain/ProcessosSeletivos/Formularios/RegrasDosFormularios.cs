@@ -92,19 +92,6 @@ public static class RegrasDosFormularios
         return recusas;
     }
 
-    // Provisório até a retirada da finalidade: quem ainda declara o formulário pela finalidade recebe o código dela.
-    public static IReadOnlyList<FieldError> ConferirFormulario(
-        ConfiguracaoDeclarada configuracao,
-        FinalidadeFormulario? finalidade,
-        Guid? faseId,
-        string? titulo,
-        IReadOnlyList<PaginaDoFormulario> paginas,
-        bool paginasCompletas = true,
-        IReadOnlyList<FatoColetado>? itensDaCriacao = null) =>
-        finalidade is { } declarada
-            ? ConferirFormulario(configuracao, FormularioDeclarado.DaFinalidade(declarada, faseId), titulo, paginas, paginasCompletas, itensDaCriacao)
-            : FormaDoCabecalho.Validar(finalidade, titulo);
-
     private static void AcrescentarRecusaDaFase(List<FieldError> recusas, ConfiguracaoDeclarada configuracao, Guid? faseId)
     {
         if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseForaDoCronograma(configuracao, fase) is { } recusa)
@@ -192,8 +179,7 @@ public static class RegrasDosFormularios
 
     private static IEnumerable<ExigenciaDeDocumentoDoFormulario> ExigenciasDoProcesso(ConfiguracaoDeclarada configuracao) =>
         configuracao.Exigencias.DocumentosExigidos
-            .Where(static documento => documento.FormularioCodigo is not null)
-            .Select(static documento => new ExigenciaDeDocumentoDoFormulario(documento.FormularioCodigo!, documento.ExigidoNaFaseId));
+            .Select(ExigenciaDeDocumentoDoFormulario.De);
 
     private static Result<MudancaDaConfiguracao> RemocaoSemOrfas(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario) =>
         CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, formulario, []) is { } orfa

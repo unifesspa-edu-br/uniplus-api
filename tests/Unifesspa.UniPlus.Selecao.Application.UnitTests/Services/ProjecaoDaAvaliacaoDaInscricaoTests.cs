@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A avaliação da inscrição na forma que o candidato recebe: os documentos agrupados pelas fases do
-/// cronograma da versão fixada, só os que se aplicam ou podem se aplicar, com a finalidade de cada um
+/// cronograma da versão fixada, só os que se aplicam ou podem se aplicar, com o formulário de cada um
 /// (UNI-REQ-0069, UNI-REQ-0077).
 /// </summary>
 public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
@@ -48,8 +48,8 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         (DocumentoExigido, SituacaoDoDocumento)[] documentos =
         [
-            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Pendente),
-            (Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.Pendente),
+            (Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao), SituacaoDoDocumento.Pendente),
+            (Documento(FaseDaHabilitacao, PapelDoFormularioDeTeste.Habilitacao), SituacaoDoDocumento.Pendente),
         ];
 
         Projetar(documentos, FaseDaHabilitacao.Id).Value!.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("HABILITACAO");
@@ -62,7 +62,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         ModeloDaExigencia modelo = new(Guid.CreateVersion7(), "Autodeclaração.odt", FormatoDeDocumento.Odt, new string('a', 64));
 
         DocumentoDaInscricaoDto documento = Projetar(
-            [(Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao, modelo), SituacaoDoDocumento.Pendente)], faseId: null)
+            [(Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao, modelo), SituacaoDoDocumento.Pendente)], faseId: null)
             .Value!.Documentos.Fases[0].Documentos.Single();
 
         documento.Modelo!.UrlDownload!.ToString().Should().Contain($"/atos/{AtoId:D}/");
@@ -74,8 +74,8 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         (DocumentoExigido, SituacaoDoDocumento)[] documentos =
         [
-            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Pendente),
-            (Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.PodeSerExigido),
+            (Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao), SituacaoDoDocumento.Pendente),
+            (Documento(FaseDaHabilitacao, PapelDoFormularioDeTeste.Habilitacao), SituacaoDoDocumento.PodeSerExigido),
         ];
         Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> pendencias = new()
         {
@@ -150,12 +150,12 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             new HashSet<Guid>(),
             new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
-    private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
+    private static DocumentoExigido Documento(FaseCronograma fase, PapelDoFormularioDeTeste papel, ModeloDaExigencia? modelo = null) =>
         DocumentoExigidoDeTeste.Novo()
             .NaFase(fase.Id)
             .ComTipo("COMPROVANTE", "Comprovante", "CAT")
             .ComModelo(modelo)
-            .NaFinalidade(finalidade)
+            .NoFormulario(papel)
             .Criar().Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
@@ -172,10 +172,10 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         DocumentoExigido DaInscricao, DocumentoExigido DaIsencao, DocumentoExigido Dispensado, DocumentoExigido DaHabilitacao)
     {
         internal static DocumentosDasDuasFases Novos() => new(
-            Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao),
-            Documento(FaseDaInscricao, FinalidadeFormulario.IsencaoTaxa),
-            Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao),
-            Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao));
+            Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao),
+            Documento(FaseDaInscricao, PapelDoFormularioDeTeste.IsencaoTaxa),
+            Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao),
+            Documento(FaseDaHabilitacao, PapelDoFormularioDeTeste.Habilitacao));
 
         internal (DocumentoExigido, SituacaoDoDocumento)[] ComAsSituacoesDaAvaliacao() =>
         [
@@ -196,11 +196,11 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
                 .ComTipo("LAUDO", "Laudo", "CAT")
                 .ComFormatos(FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!)
                 .ComTamanhoMaximo(2_000_000)
-                .NaFinalidade(FinalidadeFormulario.Inscricao)
+                .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
                 .Criar().Value!;
             ArquivoDaApresentacaoDto arquivo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, CodigoComRotulo<SituacaoDoArquivoDoCandidato>.De(SituacaoDoArquivoDoCandidato.Verificado), null, "Arquivo 1", null);
 
-            return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), arquivo);
+            return new ExigenciasComArquivoEnviado(laudo, Documento(FaseDaInscricao, PapelDoFormularioDeTeste.Inscricao), arquivo);
         }
 
         internal IReadOnlyList<DocumentoDaInscricaoDto> DocumentosDaFaseDaInscricao() =>

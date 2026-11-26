@@ -158,7 +158,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     {
         const string Mensagem = "Quem tem vínculo com o PARFOR não pode se inscrever neste processo.";
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PSIQ 2027");
-        processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), VinculoParforComImpedimento(Mensagem)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Inscricao, [.. FormularioDeTeste.DadosBasicos(), VinculoParforComImpedimento(Mensagem)])
             .IsSuccess.Should().BeTrue();
 
         Result<PreVisualizacaoDoProcessoDto> resultado = await HandleAsync(
@@ -264,8 +264,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Medicina 2027");
         FaseCronograma fase = FaseDaHabilitacao();
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, fase], []).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], [ComposicaoFamiliar(minimoDaComposicao)]).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [], [ComposicaoFamiliar(minimoDaComposicao)]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, Json("INDIGENA")).Value!)]).Value!)],
@@ -298,7 +298,6 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
                 .ComRotulo("Menor sob guarda")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
-        .DaFinalidade(FinalidadeFormulario.Habilitacao)
         .Construir();
 
     private static RegraDeComprovacao[] DocumentosDaHabilitacaoDeMedicina(Guid fase) =>
@@ -322,7 +321,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         .ComTipo(codigo, codigo, "PESSOAL")
         .Condicional(condicoes)
         .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!])
-        .NaFinalidade(FinalidadeFormulario.Habilitacao)
+        .NoFormulario(PapelDoFormularioDeTeste.Habilitacao)
         .Criar().Value!;
 
     private static CondicaoGatilho Condicao(int clausula, string fato, Operador operador, object valor) =>

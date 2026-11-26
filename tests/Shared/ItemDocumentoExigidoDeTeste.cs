@@ -19,7 +19,7 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     private Guid? EtapaId { get; init; }
 
-    private string? Finalidade { get; init; }
+    private string? FormularioCodigo { get; init; }
 
     private string? Aplicabilidade { get; init; } = "GERAL";
 
@@ -60,7 +60,7 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     public ItemDocumentoExigidoDeTeste ComBasesLegais(params BaseLegalInput[] basesLegais) => this with { BasesLegais = basesLegais };
 
-    public ItemDocumentoExigidoDeTeste NaFinalidade(string? finalidade) => this with { Finalidade = finalidade };
+    public ItemDocumentoExigidoDeTeste NoFormulario(string? formularioCodigo) => this with { FormularioCodigo = formularioCodigo };
 
     public ItemDocumentoExigidoDeTeste NaEtapa(Guid etapaId) => this with { EtapaId = etapaId };
 
@@ -82,7 +82,7 @@ internal sealed record ItemDocumentoExigidoDeTeste
     public ItemDocumentoExigidoInput Construir() =>
         new(
             new TipoDocumentoDaExigenciaInput(TipoDocumentoId),
-            new MomentoDaExigenciaInput(FaseId, EtapaId, Finalidade),
+            new MomentoDaExigenciaInput(FaseId, EtapaId, FormularioCodigo),
             new AplicabilidadeDaExigenciaInput(Aplicabilidade, Condicoes),
             new IndeferimentoDoDocumentoInput(Obrigatorio, Consequencia, BasesLegais),
             ComRequisitos

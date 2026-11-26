@@ -23,14 +23,6 @@ public sealed class FormularioDoProcessoNoModeloTests
         chave.GetName().Should().Be("ux_formularios_processo_processo_codigo");
     }
 
-    [Theory(DisplayName = "Formulário, dado, grupo e termo não guardam finalidade")]
-    [InlineData(typeof(FormularioProcesso))]
-    [InlineData(typeof(FatoColetado))]
-    [InlineData(typeof(GrupoColetado))]
-    [InlineData(typeof(TermoExigidoFormulario))]
-    public void Entidade_Modelo_NaoTemPropriedadeDeFinalidade(Type entidade) =>
-        ModeloDaSelecao.Entidade(entidade).FindProperty("Finalidade").Should().BeNull();
-
     [Theory(DisplayName = "Dado, grupo e termo pertencem a um formulário e saem com ele")]
     [InlineData(typeof(FatoColetado))]
     [InlineData(typeof(GrupoColetado))]

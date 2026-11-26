@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -17,14 +18,14 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// As exigências que a fase da inscrição ainda não decide: a exigência cujo gatilho cita um fato perguntado por um
 /// formulário de fase posterior à da inscrição fica bloqueada, e a de fato perguntado até a fase da inscrição, não.
-/// Cada finalidade pergunta um fato próprio e tem uma exigência citando esse fato.
+/// Cada formulário pergunta um fato próprio e tem uma exigência citando esse fato.
 /// </summary>
 public sealed class ExigenciasDeFasePosteriorTests
 {
     private const string Secao = "DADOS";
 
-    private static readonly FinalidadeFormulario[] Finalidades =
-        [FinalidadeFormulario.Inscricao, FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao];
+    private static readonly PapelDoFormularioDeTeste[] Papeis =
+        [PapelDoFormularioDeTeste.Inscricao, PapelDoFormularioDeTeste.IsencaoTaxa, PapelDoFormularioDeTeste.Habilitacao];
 
     [Fact(DisplayName = "O formulário da fase de isenção anterior à inscrição é conhecido, e o da habilitação posterior fica bloqueado")]
     public void FormularioDeFaseAnterior_Conhecido_FormularioDeFasePosterior_Bloqueado()
@@ -33,12 +34,12 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma inscricao = FaseDeTeste.Criar(2, "INSCRICAO", coletaInscricao: true);
         FaseCronograma habilitacao = FaseDeTeste.Criar(3, "HABILITACAO");
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [isencao, inscricao, habilitacao],
-            (FinalidadeFormulario.Inscricao, inscricao.Id),
-            (FinalidadeFormulario.IsencaoTaxa, isencao.Id),
-            (FinalidadeFormulario.Habilitacao, habilitacao.Id))
-            .Should().Equal(FinalidadeFormulario.Habilitacao);
+            (PapelDoFormularioDeTeste.Inscricao, inscricao.Id),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id),
+            (PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id))
+            .Should().Equal(PapelDoFormularioDeTeste.Habilitacao);
     }
 
     [Fact(DisplayName = "O formulário posto numa fase que só abre a isenção não é da inscrição: a fase da inscrição é a que coleta inscrição")]
@@ -47,11 +48,11 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma abreAIsencao = FaseDeTeste.Criar(1, "ABERTURA_DA_ISENCAO", coletaSolicitacaoIsencao: true);
         FaseCronograma primeiraInscricao = FaseDeTeste.Criar(2, "INSCRICAO", coletaInscricao: true);
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [abreAIsencao, primeiraInscricao],
-            (FinalidadeFormulario.Inscricao, abreAIsencao.Id),
-            (FinalidadeFormulario.Habilitacao, primeiraInscricao.Id))
-            .Should().Equal(FinalidadeFormulario.IsencaoTaxa);
+            (PapelDoFormularioDeTeste.Inscricao, abreAIsencao.Id),
+            (PapelDoFormularioDeTeste.Habilitacao, primeiraInscricao.Id))
+            .Should().Equal(PapelDoFormularioDeTeste.IsencaoTaxa);
     }
 
     [Fact(DisplayName = "Havendo várias fases de inscrição, vale a fase do formulário de inscrição")]
@@ -62,12 +63,12 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma segundaInscricao = FaseDeTeste.Criar(3, "INSCRICAO_COMPLEMENTAR", coletaInscricao: true);
         FaseCronograma habilitacao = FaseDeTeste.Criar(4, "HABILITACAO");
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [primeiraInscricao, isencao, segundaInscricao, habilitacao],
-            (FinalidadeFormulario.Inscricao, segundaInscricao.Id),
-            (FinalidadeFormulario.IsencaoTaxa, isencao.Id),
-            (FinalidadeFormulario.Habilitacao, habilitacao.Id))
-            .Should().Equal(FinalidadeFormulario.Habilitacao);
+            (PapelDoFormularioDeTeste.Inscricao, segundaInscricao.Id),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id),
+            (PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id))
+            .Should().Equal(PapelDoFormularioDeTeste.Habilitacao);
     }
 
     [Fact(DisplayName = "Com formulários obrigatórios em duas fases que coletam inscrição, vale a mais tardia das duas")]
@@ -77,11 +78,11 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma isencao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
         FaseCronograma segundaInscricao = FaseDeTeste.Criar(3, "INSCRICAO_COMPLEMENTAR", coletaInscricao: true);
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [primeiraInscricao, isencao, segundaInscricao],
-            (FinalidadeFormulario.Inscricao, primeiraInscricao.Id),
-            (FinalidadeFormulario.IsencaoTaxa, isencao.Id),
-            (FinalidadeFormulario.Habilitacao, segundaInscricao.Id))
+            (PapelDoFormularioDeTeste.Inscricao, primeiraInscricao.Id),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id),
+            (PapelDoFormularioDeTeste.Habilitacao, segundaInscricao.Id))
             .Should().BeEmpty("o formulário da isenção, na fase 2, vem antes da fase 3 da segunda inscrição");
     }
 
@@ -92,12 +93,12 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma naMesmaPosicao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
         FaseCronograma habilitacao = FaseDeTeste.Criar(3, "HABILITACAO");
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [inscricao, naMesmaPosicao, habilitacao],
-            (FinalidadeFormulario.Inscricao, inscricao.Id),
-            (FinalidadeFormulario.IsencaoTaxa, naMesmaPosicao.Id),
-            (FinalidadeFormulario.Habilitacao, habilitacao.Id))
-            .Should().Equal(FinalidadeFormulario.Habilitacao);
+            (PapelDoFormularioDeTeste.Inscricao, inscricao.Id),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, naMesmaPosicao.Id),
+            (PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id))
+            .Should().Equal(PapelDoFormularioDeTeste.Habilitacao);
     }
 
     [Fact(DisplayName = "O formulário cuja fase não está no cronograma fica fora do que se conhece")]
@@ -105,11 +106,11 @@ public sealed class ExigenciasDeFasePosteriorTests
     {
         FaseCronograma inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
 
-        FinalidadesBloqueadasNa(
+        PapeisBloqueadosNa(
             [inscricao],
-            (FinalidadeFormulario.Inscricao, inscricao.Id),
-            (FinalidadeFormulario.IsencaoTaxa, Guid.CreateVersion7()))
-            .Should().Equal(FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao);
+            (PapelDoFormularioDeTeste.Inscricao, inscricao.Id),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, Guid.CreateVersion7()))
+            .Should().Equal(PapelDoFormularioDeTeste.IsencaoTaxa, PapelDoFormularioDeTeste.Habilitacao);
     }
 
     [Fact(DisplayName = "Sem formulário de inscrição, nenhuma exigência é bloqueada")]
@@ -118,7 +119,7 @@ public sealed class ExigenciasDeFasePosteriorTests
         FaseCronograma isencao = FaseDeTeste.Criar(1, "ISENCAO", coletaSolicitacaoIsencao: true);
 
         IReadOnlySet<Guid> bloqueadas = ExigenciasDeFasePosterior.Na(
-            Configuracao([isencao], (FinalidadeFormulario.IsencaoTaxa, isencao.Id)).Configuracao, SemFatosConhecidos);
+            Configuracao([isencao], (PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id)).Configuracao, SemFatosConhecidos);
 
         bloqueadas.Should().BeEmpty();
     }
@@ -131,8 +132,8 @@ public sealed class ExigenciasDeFasePosteriorTests
         IReadOnlySet<Guid> bloqueadas = ExigenciasDeFasePosterior.Na(
             Configuracao(
                 [habilitacao],
-                (FinalidadeFormulario.Inscricao, Guid.CreateVersion7()),
-                (FinalidadeFormulario.Habilitacao, habilitacao.Id)).Configuracao,
+                (PapelDoFormularioDeTeste.Inscricao, Guid.CreateVersion7()),
+                (PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id)).Configuracao,
             SemFatosConhecidos);
 
         bloqueadas.Should().BeEmpty();
@@ -143,7 +144,7 @@ public sealed class ExigenciasDeFasePosteriorTests
     {
         Guid identidade = Guid.CreateVersion7();
         FaseCronograma[] fases = [FaseReidratada(identidade, 1), FaseReidratada(identidade, 2)];
-        ConfiguracaoAvaliavel configuracao = Configuracao(fases, (FinalidadeFormulario.Inscricao, identidade)).Configuracao;
+        ConfiguracaoAvaliavel configuracao = Configuracao(fases, (PapelDoFormularioDeTeste.Inscricao, identidade)).Configuracao;
 
         Func<IReadOnlySet<Guid>> consultar = () => ExigenciasDeFasePosterior.Na(configuracao, SemFatosConhecidos);
 
@@ -152,54 +153,54 @@ public sealed class ExigenciasDeFasePosteriorTests
 
     private static Dictionary<string, FatoResolvido> SemFatosConhecidos { get; } = new(StringComparer.Ordinal);
 
-    private static List<FinalidadeFormulario> FinalidadesBloqueadasNa(
-        FaseCronograma[] fases, params (FinalidadeFormulario Finalidade, Guid FaseId)[] formularios)
+    private static List<PapelDoFormularioDeTeste> PapeisBloqueadosNa(
+        FaseCronograma[] fases, params (PapelDoFormularioDeTeste Papel, Guid FaseId)[] formularios)
     {
-        (ConfiguracaoAvaliavel configuracao, Dictionary<FinalidadeFormulario, Guid> exigencias) = Configuracao(fases, formularios);
+        (ConfiguracaoAvaliavel configuracao, Dictionary<PapelDoFormularioDeTeste, Guid> exigencias) = Configuracao(fases, formularios);
         IReadOnlySet<Guid> bloqueadas = ExigenciasDeFasePosterior.Na(configuracao, SemFatosConhecidos);
 
-        return [.. Finalidades.Where(f => bloqueadas.Contains(exigencias[f]))];
+        return [.. Papeis.Where(f => bloqueadas.Contains(exigencias[f]))];
     }
 
-    private static (ConfiguracaoAvaliavel Configuracao, Dictionary<FinalidadeFormulario, Guid> ExigenciaPorFinalidade) Configuracao(
-        FaseCronograma[] fases, params (FinalidadeFormulario Finalidade, Guid FaseId)[] formularios)
+    private static (ConfiguracaoAvaliavel Configuracao, Dictionary<PapelDoFormularioDeTeste, Guid> ExigenciaPorPapel) Configuracao(
+        FaseCronograma[] fases, params (PapelDoFormularioDeTeste Papel, Guid FaseId)[] formularios)
     {
-        Dictionary<FinalidadeFormulario, DocumentoExigido> documentos = Finalidades.ToDictionary(static f => f, f => ExigenciaDoFato(fases[0], FatoDe(f)));
+        Dictionary<PapelDoFormularioDeTeste, DocumentoExigido> documentos = Papeis.ToDictionary(static f => f, f => ExigenciaDoFato(fases[0], FatoDe(f)));
         ConfiguracaoAvaliavel configuracao = new(
-            DefinicaoComUmaPaginaPorFinalidade(),
+            DefinicaoComUmaPaginaPorFormulario(),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([.. Finalidades.Select((f, indice) => RegraDeComprovacao.CriarRegraDeDocumento(documentos[f], indice).Value!)]),
+            RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([.. Papeis.Select((f, indice) => RegraDeComprovacao.CriarRegraDeDocumento(documentos[f], indice).Value!)]),
             [],
             [],
             [],
             fases,
-            [.. formularios.Select(static f => Formulario(f.Finalidade, f.FaseId))]);
+            [.. formularios.Select(static f => Formulario(f.Papel, f.FaseId))]);
 
         return (configuracao, documentos.ToDictionary(static d => d.Key, static d => d.Value.Id));
     }
 
-    private static DefinicaoFormulario DefinicaoComUmaPaginaPorFinalidade() =>
+    private static DefinicaoFormulario DefinicaoComUmaPaginaPorFormulario() =>
         new(
-            [.. Finalidades.Select(static f => new DefinicaoPagina(
-                DefinicaoDoProcesso.CodigoDaPagina(f, Secao), null, [new DefinicaoItem(FatoDe(f), null, Obrigatoriedade.Sempre, [])]))],
+            [.. Papeis.Select(static f => new DefinicaoPagina(
+                DefinicaoDoProcesso.CodigoDaPagina(FormularioDeTeste.CodigoDoPapel(f), Secao), null, [new DefinicaoItem(FatoDe(f), null, Obrigatoriedade.Sempre, [])]))],
             [],
             []);
 
-    private static string FatoDe(FinalidadeFormulario finalidade) => $"FATO_DA_{finalidade}".ToUpperInvariant();
+    private static string FatoDe(PapelDoFormularioDeTeste papel) => $"FATO_DA_{papel}".ToUpperInvariant();
 
     private static DocumentoExigido ExigenciaDoFato(FaseCronograma fase, string fato) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(fase.Id, null, null))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
 
-    private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, Guid faseId) =>
+    private static FormularioProcesso Formulario(PapelDoFormularioDeTeste papel, Guid faseId) =>
         FormularioProcesso.Criar(
-            finalidade, faseId, null,
+            FormularioDeTeste.DeclaradoNoPapel(papel, faseId), new CronogramaDoProcesso([]), null,
             [PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 0, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>

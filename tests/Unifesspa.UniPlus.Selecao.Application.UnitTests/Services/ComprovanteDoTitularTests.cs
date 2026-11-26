@@ -192,7 +192,6 @@ public sealed class ComprovanteDoTitularTests
             .ComOcorrencias(1, null)
             .IncluindoOCandidato()
             .ComCampos(parentesco, Texto("NOME_MEMBRO", "Nome do membro", 1))
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
     }
 

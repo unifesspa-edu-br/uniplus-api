@@ -147,7 +147,8 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(OrigemCandidatos.ImportacaoExterna);
         Guid faseColetaId = DefinirCronogramaSemFaseDeColeta(processo);
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!])
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, faseColetaId, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao)).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, PapelDoFormularioDeTeste.Habilitacao), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
@@ -180,13 +181,13 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     }
 
     private static DocumentoExigido ExigenciaCondicionalComGatilhoPorFaixaEtaria(
-        Guid exigidoNaFaseId, FinalidadeFormulario? finalidade = FinalidadeFormulario.Inscricao)
+        Guid exigidoNaFaseId, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao)
     {
         CondicaoGatilho condicao = CondicaoGatilho.Criar(
             0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
         return new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -273,7 +274,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
         FormularioDeTeste.TrocarCronograma(processo, [ColetaNaSegundaQuinzena(), ColetaNaPrimeiraQuinzena()]).IsSuccess.Should().BeTrue();
         // A exigência fica na fase em que o formulário de inscrição é respondido: a conferência recusa a de outra fase.
-        Guid faseDoFormularioId = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId!.Value;
+        Guid faseDoFormularioId = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId!.Value;
 
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseDoFormularioId), 0).Value!])
             .IsSuccess.Should().BeTrue();

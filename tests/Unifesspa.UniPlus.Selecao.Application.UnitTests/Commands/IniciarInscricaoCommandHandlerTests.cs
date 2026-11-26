@@ -198,7 +198,6 @@ public sealed class IniciarInscricaoCommandHandlerTests
         .ComOcorrencias(0, null)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComCampos(Fato("RG_NUMERO_MEMBRO", 0, "RG do membro", Obrigatoriedade.Sempre, "IDENTIFICADOR"))
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static ConfiguracaoPublicada ConfiguracaoComDocumentoNoGrupo(ProcessoSeletivo processoBase) => new ConfiguracaoPublicada(

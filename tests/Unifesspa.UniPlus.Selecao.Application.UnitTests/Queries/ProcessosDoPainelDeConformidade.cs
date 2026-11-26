@@ -110,7 +110,7 @@ internal static class ProcessosDoPainelDeConformidade
             .NaFase(faseId)
             .ComTipoDeOrigem(tipo.Id)
             .ComTipo(tipo.Codigo, tipo.Nome, tipo.Categoria)
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .ComFatosComprovados(fatosComprovados)
             .Criar().Value!;
         Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);

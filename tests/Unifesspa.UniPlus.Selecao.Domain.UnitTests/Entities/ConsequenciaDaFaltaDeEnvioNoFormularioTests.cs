@@ -18,7 +18,7 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoFormularioTests
     [Fact]
     public void Ler_SemCodigo_NaoTemConsequencia()
     {
-        Result<ConsequenciaDoDescumprimento?> lida = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(null, FinalidadeFormulario.Habilitacao);
+        Result<ConsequenciaDoDescumprimento?> lida = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao));
 
         lida.IsSuccess.Should().BeTrue();
         lida.Value.Should().BeNull();
@@ -30,7 +30,7 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoFormularioTests
     [InlineData("RETIRA_O_ACRESCIMO", ConsequenciaDoDescumprimento.RetiraOAcrescimo)]
     public void Ler_CodigoDoVocabulario_DevolveAConsequencia(string codigo, ConsequenciaDoDescumprimento esperada)
     {
-        LeituraDaConsequenciaDaFaltaDeEnvio.Ler(codigo, FinalidadeFormulario.Habilitacao).Value.Should().Be(esperada);
+        LeituraDaConsequenciaDaFaltaDeEnvio.Ler(codigo, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao)).Value.Should().Be(esperada);
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoFormularioTests
     [InlineData("")]
     public void Ler_CodigoForaDoVocabulario_RecusaCitandoOFormulario(string codigo)
     {
-        Result<ConsequenciaDoDescumprimento?> lida = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(codigo, FinalidadeFormulario.Habilitacao);
+        Result<ConsequenciaDoDescumprimento?> lida = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(codigo, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao));
 
         FieldError recusa = lida.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("consequenciaDaFaltaDeEnvio");
@@ -52,35 +52,35 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoFormularioTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
             .IsSuccess.Should().BeTrue();
 
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        processo.FormularioDe(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao))!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
     }
 
     [Fact]
     public void DefinirFormulario_SemConsequencia_RetiraADeclaracaoAnterior()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
 
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().BeNull();
+        processo.FormularioDe(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao))!.ConsequenciaDaFaltaDeEnvio.Should().BeNull();
     }
 
     [Fact]
     public void DefinirFormulario_ConsequenciaDeUmFormulario_NaoMudaADeOutro()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.IsencaoTaxa, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
 
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
-        processo.FormularioDe(FinalidadeFormulario.IsencaoTaxa)!.ConsequenciaDaFaltaDeEnvio.Should().BeNull();
+        processo.FormularioDe(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao))!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        processo.FormularioDe(PapelDoFormularioDeTeste.IsencaoTaxa)!.ConsequenciaDaFaltaDeEnvio.Should().BeNull();
     }
 
     [Fact]
@@ -88,9 +88,9 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoFormularioTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        Result recusado = processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, [], null, ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        Result recusado = processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, [], null, ConsequenciaDoDescumprimento.EliminaDoProcesso);
 
         recusado.IsFailure.Should().BeTrue();
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
+        processo.FormularioDe(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao)).Should().BeNull();
     }
 }

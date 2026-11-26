@@ -31,10 +31,6 @@ public static class CitacoesDosFormularios
         return GrafoDependenciaConjunta.Construir([.. configuracao.Coleta.Itens], configuracao.DerivacoesEfetivas(), configuracao.Exigencias.DocumentosExigidos, configuracao.Coleta.Formularios, configuracao.Coleta.TermosExigidos, configuracao.Coleta.GruposColetados);
     }
 
-    /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
-    internal static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
-        new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-
     /// <summary>
     /// A primeira citação que usa, de outro formulário, fato que ele não coletou em todas as versões
     /// publicadas (UNI-REQ-0144): quem preencheu aquele formulário numa versão anterior pode não o ter
@@ -63,16 +59,6 @@ public static class CitacoesDosFormularios
 
         return null;
     }
-
-    // Provisório até a retirada da finalidade: quem ainda cita pela finalidade tem o formulário dela como próprio.
-    internal static DomainError? CitacaoNaoGarantida(
-        ConfiguracaoDeclarada configuracao,
-        FatosDasVersoesPublicadas publicadas,
-        IEnumerable<(string Citante, string Citado)> citacoes,
-        FinalidadeFormulario? finalidadePropria,
-        IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        CitacaoNaoGarantida(
-            configuracao, publicadas, citacoes, finalidadePropria is { } propria ? FormularioDeclarado.DaFinalidade(propria, null).Codigo : null, membroPorAgregado);
 
     private static DomainError ErroDeFatoNaoGarantido(
         string citante, string citado, (string Fato, CodigoDoFormulario Produtor) naoGarantido)
@@ -262,7 +248,7 @@ public static class CitacoesDosFormularios
 
     /// <summary>
     /// O grafo de coleta de um formulário. As regras de um campo citam campo anterior do mesmo
-    /// formulário, em outra finalidade um fato já coletado pela inscrição, que todo candidato
+    /// formulário que não é da inscrição, um fato já coletado pela inscrição, que todo candidato
     /// preenche antes, ou um derivado por regra cujas dependências estão todas entre esses
     /// (UNI-REQ-0144, UNI-REQ-0145).
     /// </summary>
@@ -353,42 +339,6 @@ public static class CitacoesDosFormularios
             [.. itens.Select(static i => i.ParaGrafo())], [.. paginas.Select(static e => e.ParaGrafo())],
             termos.Select(static t => t.ParaGrafo()), dependencias,
             [.. grupos.Select(static g => g.ParaGrafo())]);
-
-    // Provisório até a retirada da finalidade: quem ainda confere pela finalidade dos itens (a leitura do documento
-    // congelado e a pendência dos fatos citados) segue por esta forma, que sai com a finalidade.
-    public static DomainError? CitacaoInvalidaNosFormularios(
-        IEnumerable<FormularioProcesso> formularios,
-        IReadOnlyCollection<FatoColetado> fatos,
-        IReadOnlyCollection<TermoExigidoFormulario> termos,
-        IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes,
-        IReadOnlyCollection<GrupoColetado>? grupos = null)
-    {
-        ArgumentNullException.ThrowIfNull(formularios);
-        ArgumentNullException.ThrowIfNull(fatos);
-        ArgumentNullException.ThrowIfNull(termos);
-        ArgumentNullException.ThrowIfNull(derivacoes);
-
-        HashSet<string> daInscricao = FatosDaInscricao(fatos);
-        Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes = MapaDeDerivacoes(derivacoes);
-        return formularios.Select(formulario => CitacaoInvalidaDaFinalidade(
-            formulario, fatos, termos, grupos ?? [], daInscricao, dependenciasDasDerivacoes))
-            .FirstOrDefault(static recusa => recusa is not null);
-    }
-
-    private static DomainError? CitacaoInvalidaDaFinalidade(
-        FormularioProcesso formulario, IReadOnlyCollection<FatoColetado> fatos, IReadOnlyCollection<TermoExigidoFormulario> termos,
-        IReadOnlyCollection<GrupoColetado> grupos, IReadOnlySet<string> daInscricao,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
-    {
-        FinalidadeFormulario finalidade = formulario.Finalidade;
-        FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
-        return CitacaoInvalida(
-            formulario.Paginas,
-            itens,
-            termos.Where(t => t.Finalidade == finalidade),
-            grupos.Where(g => g.Finalidade == finalidade),
-            DependenciasDe(itens, finalidade == FinalidadeFormulario.Inscricao ? new HashSet<string>(StringComparer.Ordinal) : daInscricao, derivacoes));
-    }
 
     internal static IEnumerable<FieldError> RecusasDosTermos(
         IReadOnlyList<TermoExigidoFormulario> termos, DependenciasDoFormulario dependencias)

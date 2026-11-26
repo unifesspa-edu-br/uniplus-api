@@ -14,10 +14,6 @@ public static class LeituraDaConsequenciaDaFaltaDeEnvio
 {
     public const string Campo = "consequenciaDaFaltaDeEnvio";
 
-    // Provisório até a retirada da finalidade: quem ainda declara o formulário pela finalidade lê com o código dela.
-    public static Result<ConsequenciaDoDescumprimento?> Ler(string? codigo, FinalidadeFormulario finalidade) =>
-        Ler(codigo, CodigoDoFormulario.Criar(finalidade.Codigo()).Value!);
-
     public static Result<ConsequenciaDoDescumprimento?> Ler(string? codigo, CodigoDoFormulario formulario)
     {
         ArgumentNullException.ThrowIfNull(formulario);

@@ -18,14 +18,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosPorFinalidade;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosDoProcesso;
 
 /// <summary>
-/// Um formulário por finalidade (UNI-REQ-0144): cada fato tem um só produtor no processo, a ordem é
-/// única dentro de cada formulário, a fase é a que a finalidade pede, e a publicação exige o
+/// Um formulário por código (UNI-REQ-0144): cada fato tem um só produtor no processo, a ordem é
+/// única dentro de cada formulário, a fase é a que o formulário declara, e a publicação exige o
 /// formulário de inscrição quando a inscrição é própria.
 /// </summary>
-public sealed class FormulariosPorFinalidadeTests
+public sealed class FormulariosDoProcessoTests
 {
     [Fact(DisplayName = "O fato coletado por um formulário não é coletado por outro do mesmo processo")]
     public void ProdutorUnico_EntreFormularios()
@@ -33,7 +33,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("TEM_RENDA", 0)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("TEM_RENDA", 0)])
             .Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
     }
 
@@ -43,23 +43,25 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("CERTIFICADO_EMITIDO", 0)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO_EMITIDO", 0)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("A", 1), Item("B", 1)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("A", 1), Item("B", 1)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.OrdemDuplicada);
-        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => (f.Finalidade, f.FatoCodigo)).Should().BeEquivalentTo(
-            [(FinalidadeFormulario.Inscricao, "TEM_RENDA"), (FinalidadeFormulario.Habilitacao, "CERTIFICADO_EMITIDO")],
+        Guid inscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id;
+        Guid habilitacao = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
+        processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => (f.FormularioId!.Value, f.FatoCodigo)).Should().BeEquivalentTo(
+            [(inscricao, "TEM_RENDA"), (habilitacao, "CERTIFICADO_EMITIDO")],
             "definir os itens de um formulário não mexe nos do outro");
     }
 
-    [Fact(DisplayName = "Itens e termos só entram em finalidade que tem formulário")]
+    [Fact(DisplayName = "Itens e termos só entram em formulário que o processo tem")]
     public void ItensETermos_SemFormulario_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [Item("A", 0)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.IsencaoTaxa, [Item("A", 0)])
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.IsencaoTaxa, [Termo("DECLARACAO")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.IsencaoTaxa, [Termo("DECLARACAO")])
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
     }
 
@@ -68,14 +70,14 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.RemoverFormulario(FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa))
+        processo.RemoverFormulario(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.IsencaoTaxa))
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "No rascunho, a recusa de seção aponta o item pelo índice dele na lista enviada")]
     public void Item_ForaDeSecao_ApontaOIndiceOriginal() =>
         ProcessoConformeFactory.Criar().DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [Item("A", 0, pagina: null), Item("B", 1, "INEXISTENTE")])
+                PapelDoFormularioDeTeste.Inscricao, [Item("A", 0, pagina: null), Item("B", 1, "INEXISTENTE")])
             .Errors.Should().ContainSingle().Which.Field.Should().Be("itens[1].paginaCodigo");
 
     [Fact(DisplayName = "Aviso da pagina acima do limite é recusado no próprio campo")]
@@ -88,7 +90,7 @@ public sealed class FormulariosPorFinalidadeTests
     [InlineData("INEXISTENTE")]
     [InlineData("")]
     public void Item_ForaDeSecao_RecusaNaDefinicao(string pagina) =>
-        ProcessoConformeFactory.Criar().DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("A", 0, pagina)])
+        ProcessoConformeFactory.Criar().DefinirFatosColetados(PapelDoFormularioDeTeste.Inscricao, [Item("A", 0, pagina)])
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
 
     [Fact(DisplayName = "A fase do formulário, quando informada, está no cronograma do processo")]
@@ -96,7 +98,7 @@ public sealed class FormulariosPorFinalidadeTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Paginas())
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Paginas())
             .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseForaDoCronograma);
     }
 
@@ -106,7 +108,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
 
         FormulariosDaInscricao.De(processo.Declaracao().Coleta.FormulariosDeclarados, processo.CronogramaFases)
             .Select(static f => f.Codigo.Valor).Should().Equal("HABILITACAO", "INSCRICAO");
@@ -118,7 +120,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         PaginaDoFormulario soSecao = PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!;
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), new string('a', 301), [soSecao])
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, Guid.CreateVersion7(), new string('a', 301), [soSecao])
             .Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             [
                 EstruturaFormularioErrorCodes.TituloTamanho,
@@ -136,7 +138,7 @@ public sealed class FormulariosPorFinalidadeTests
         PaginaDoFormulario revisao = PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!;
 
         processo.DefinirFormulario(
-                FinalidadeFormulario.Inscricao, processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId, null,
+                PapelDoFormularioDeTeste.Inscricao, processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId, null,
                 [FormularioDeTeste.Paginas()[0], outraSecao, revisao])
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
@@ -154,7 +156,7 @@ public sealed class FormulariosPorFinalidadeTests
     public void Publicacao_ExigeFormularioDeInscricao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormularioObrigatorio);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
@@ -173,7 +175,7 @@ public sealed class FormulariosPorFinalidadeTests
     public void Publicacao_IsencaoExigeTaxa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(coletaSolicitacaoIsencao: true));
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.IsencaoTaxa);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.IsencaoTaxa);
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
     }
@@ -184,7 +186,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         // Direto no agregado: o helper de teste põe na seção de dados o item que vem sem ela.
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao,
+                PapelDoFormularioDeTeste.Inscricao,
                 [Item("TEM_RENDA", FormularioDeTeste.PrimeiraOrdemDeInscricao, pagina: null), .. FormularioDeTeste.DadosBasicos()])
             .IsSuccess.Should().BeTrue();
 
@@ -196,15 +198,17 @@ public sealed class FormulariosPorFinalidadeTests
     public void Remover_LevaItensETermos()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("CERTIFICADO_EMITIDO", 0)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO_EMITIDO", 0)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [Termo("DECLARACAO")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [Termo("DECLARACAO")])
             .IsSuccess.Should().BeTrue();
 
-        processo.RemoverFormulario(FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        Guid habilitacao = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
 
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
-        processo.FatosColetados.Should().NotContain(static f => f.Finalidade == FinalidadeFormulario.Habilitacao);
-        processo.TermosExigidos.Should().NotContain(static t => t.Finalidade == FinalidadeFormulario.Habilitacao);
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao).Should().BeNull();
+        processo.FatosColetados.Should().NotContain(f => f.FormularioId == habilitacao);
+        processo.TermosExigidos.Should().NotContain(t => t.FormularioId == habilitacao);
     }
 }

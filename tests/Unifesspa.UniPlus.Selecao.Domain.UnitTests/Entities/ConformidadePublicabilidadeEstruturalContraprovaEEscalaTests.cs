@@ -78,7 +78,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     private static RegraDeComprovacao ExigenciaGeralDeIdentidade(Guid faseId) => RegraDeComprovacao.CriarRegraDeDocumento(
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -90,7 +90,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void Contraprova_SemGatilhoPorFaixaEtaria_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirDocumentosExigidos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)])
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)])
             .IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));

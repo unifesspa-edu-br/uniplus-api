@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosPorFinalidade;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosDoProcesso;
 
 /// <summary>
 /// A exibição condicional da seção e do campo cita campos de seção anterior, e o campo opcional que
@@ -29,14 +29,14 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Secao_ExibicaoCitaSoOQueVemAntes()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("RENDA_FORMAL"))
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao("RENDA_FORMAL"))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "paginas[2].exibicao",
@@ -48,13 +48,13 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Secao_EstruturaEExibicaoInvalidas_AcumulaAsDuasRecusas()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
         IReadOnlyList<PaginaDoFormulario> semOBlocoDeRevisao = [.. PaginasComExibicao("RENDA_FORMAL").Take(3)];
 
-        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, semOBlocoDeRevisao);
+        Result resultado = processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, semOBlocoDeRevisao);
 
         resultado.Errors.Select(static e => e.Field).Should().Contain("paginas[2].exibicao")
             .And.Contain(static campo => campo != "paginas[2].exibicao", "a estrutura recusada também é informada");
@@ -64,23 +64,23 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Secao_ItensQueQuebramAExibicao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
-    [Fact(DisplayName = "A inscrição não perde fato que a exibição de uma seção de outra finalidade cita")]
-    public void Inscricao_NaoPerdeFatoCitadoPorSecaoDeOutraFinalidade()
+    [Fact(DisplayName = "A inscrição não perde fato que a exibição de uma seção de outro formulário cita")]
+    public void Inscricao_NaoPerdeFatoCitadoPorSecaoDeOutroFormulario()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, PaginasComExibicao("TEM_RENDA"))
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, PaginasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([Item("COR_RACA", 0)])
@@ -91,12 +91,12 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Publicacao_SecaoCitaDerivadoRedefinido_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComExibicao(null))
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComExibicao(null))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, PaginasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("RENDA_FORMAL")]).IsSuccess.Should().BeTrue();

@@ -51,7 +51,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoDeCampo).Construir()]));
+            processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo("Rótulo").DoTipo(tipoDeCampo).Construir()]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().TipoDeCampo.Should().Be(CatalogoDe<TipoDeCampo>.Obter(tipoDeCampo));
@@ -64,7 +64,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores) } : f)]));
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
             [EntradaDoFatoColetadoDeTeste.Coletando("NOME_SOCIAL").ComRotulo("Nome social").DoTipo("TEXTO").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoDeCampoIncoerenteComDominio");
@@ -100,7 +100,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
         [
             EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", -1).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("").ComObrigatoriedade("NUNCA").Construir(),
@@ -256,7 +256,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
             [.. VocabularioSeed().Select(static f => f.Codigo == "COR_RACA"
                 ? f with { ValoresDominioDeclarados = [new FatoValorDominioViewItem("AMARELA", null, 0, Ativo: false)] }
                 : f)]));
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
         [
             EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]).Construir(),
         ]);

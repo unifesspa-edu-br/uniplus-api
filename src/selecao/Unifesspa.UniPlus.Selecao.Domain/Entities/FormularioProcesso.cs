@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -11,10 +10,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O formulário do processo para uma finalidade (UNI-REQ-0144): a fase do cronograma em que é
-/// respondido, o título, as páginas e o modelo de que partiu. Os itens e os termos ficam no processo,
-/// marcados com a finalidade do formulário a que pertencem, porque o produtor único de cada fato e as
-/// condições vivas são regras do processo inteiro.
+/// O formulário do processo, identificado pelo código dentro dele (UNI-REQ-0144): a fase do cronograma
+/// em que é respondido, se é obrigatório, o título, as páginas e o modelo de que partiu. Os itens e os
+/// termos ficam no processo, ligados ao formulário a que pertencem, porque o produtor único de cada fato
+/// e as condições vivas são regras do processo inteiro.
 /// </summary>
 public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 {
@@ -25,8 +24,6 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     public Guid ProcessoSeletivoId { get; private set; }
 
-    public FinalidadeFormulario Finalidade { get; private set; }
-
     /// <summary>O código que identifica o formulário dentro do processo; não muda depois de criado.</summary>
     public CodigoDoFormulario Codigo { get; private set; } = null!;
 
@@ -35,7 +32,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// A fase do cronograma do processo em que o formulário é respondido. O rascunho pode ainda não
-    /// tê-la; a publicação exige a fase que a finalidade pede.
+    /// tê-la; a publicação exige a fase que o formulário responde.
     /// </summary>
     public Guid? FaseId { get; private set; }
 
@@ -53,31 +50,6 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     public IReadOnlyCollection<PaginaDoFormulario> Paginas => _paginas.AsReadOnly();
 
     private FormularioProcesso() { }
-
-    /// <summary>
-    /// Acumula as recusas de forma (ADR-0125): finalidade, título e a estrutura das páginas pelas
-    /// regras do formulário compartilhadas com o modelo. A fase é conferida pelo processo, que tem o
-    /// cronograma.
-    /// </summary>
-    /// <param name="modeloDeOrigem">O modelo de que o formulário partiu, quando partiu de um.</param>
-    public static Result<FormularioProcesso> Criar(
-        FinalidadeFormulario? finalidade,
-        Guid? faseId,
-        string? titulo,
-        IReadOnlyList<PaginaDoFormulario> paginas,
-        ModeloDeOrigem? modeloDeOrigem = null)
-    {
-        ArgumentNullException.ThrowIfNull(paginas);
-        List<FieldError> erros = ValidarForma(finalidade, titulo, paginas);
-        if (erros.Count > 0)
-        {
-            return Result<FormularioProcesso>.ValidationFailure(erros);
-        }
-
-        FormularioProcesso formulario = Novo(finalidade!.Value, faseId, titulo, modeloDeOrigem);
-        formulario.AdicionarPaginas(paginas);
-        return Result<FormularioProcesso>.Success(formulario);
-    }
 
     /// <summary>
     /// Acumula as recusas de forma (ADR-0125): o título e a estrutura das páginas, conferida pelo que o formulário
@@ -108,21 +80,9 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     private static FormularioProcesso Novo(FormularioDeclarado declarado, string? titulo, ModeloDeOrigem? modeloDeOrigem) => new()
     {
-        Finalidade = declarado.FinalidadeProvisoria,
         Codigo = declarado.Codigo,
         Obrigatorio = declarado.Obrigatorio,
         FaseId = declarado.FaseId == Guid.Empty ? null : declarado.FaseId,
-        Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
-        ModeloDeOrigem = modeloDeOrigem,
-    };
-
-    // Enquanto a finalidade identifica o formulário, o código e a obrigatoriedade derivam dela, num lugar só.
-    private static FormularioProcesso Novo(FinalidadeFormulario finalidade, Guid? faseId, string? titulo, ModeloDeOrigem? modeloDeOrigem) => new()
-    {
-        Finalidade = finalidade,
-        Codigo = CodigoDoFormulario.Criar(finalidade.Codigo()).Value!,
-        Obrigatorio = CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade).Obrigatorio,
-        FaseId = faseId == Guid.Empty ? null : faseId,
         Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
         ModeloDeOrigem = modeloDeOrigem,
     };
@@ -133,17 +93,6 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         .. FormaDoCabecalho.ValidarTitulo(titulo),
         .. EstruturaFormulario.ValidarPaginas(declarado.Estrutura(cronograma), [.. paginas.Select(static e => e.Estrutura)]),
     ];
-
-    private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas)
-    {
-        List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (finalidade is { } declarada)
-        {
-            erros.AddRange(EstruturaFormulario.ValidarPaginas(CorrespondenciaDaFinalidade.DeclaracaoDa(declarada), [.. paginas.Select(static e => e.Estrutura)]));
-        }
-
-        return erros;
-    }
 
     private void AdicionarPaginas(IReadOnlyList<PaginaDoFormulario> paginas)
     {
@@ -271,9 +220,6 @@ public static class FormularioProcessoErrorCodes
     /// <summary>A fase declarada não está no cronograma do processo.</summary>
     public const string FaseForaDoCronograma = "FormularioProcesso.FaseForaDoCronograma";
 
-    /// <summary>A fase declarada não é a que a finalidade exige.</summary>
-    public const string FaseIncoerenteComFinalidade = "FormularioProcesso.FaseIncoerenteComFinalidade";
-
     /// <summary>Formulário de isenção num processo que não cobra taxa.</summary>
     public const string IsencaoSemTaxa = "FormularioProcesso.IsencaoSemTaxa";
 
@@ -282,9 +228,6 @@ public static class FormularioProcessoErrorCodes
 
     /// <summary>A remoção, os itens ou os termos citam, no caminho, um código de formulário que o processo não tem.</summary>
     public const string NaoEncontrado = "FormularioProcesso.NaoEncontrado";
-
-    /// <summary>Processo com inscrição própria publicado sem formulário de inscrição.</summary>
-    public const string InscricaoSemFormulario = "ProcessoSeletivo.InscricaoSemFormulario";
 
     /// <summary>Formulário de inscrição publicado sem algum dado do conjunto básico do candidato.</summary>
     public const string InscricaoSemConjuntoBasico = "ProcessoSeletivo.InscricaoSemConjuntoBasico";

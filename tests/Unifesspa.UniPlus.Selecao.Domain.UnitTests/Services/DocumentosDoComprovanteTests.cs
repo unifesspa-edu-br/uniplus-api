@@ -16,17 +16,17 @@ public sealed class DocumentosDoComprovanteTests
     private static readonly Guid Fase = Guid.CreateVersion7();
 
     private static DocumentoExigido Documento(
-        string nome, string? consequencia = null, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
+        string nome, string? consequencia = null, bool obrigatorio = true, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
 
-    private static readonly CodigoDoFormulario[] FormulariosDaInscricao = [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)];
+    private static readonly CodigoDoFormulario[] FormulariosDaInscricao = [FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)];
 
     private static DocumentosDaInscricao Avaliacao(params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens) =>
         new([.. itens.Select(static i => new DocumentoAvaliado(i.Documento, i.Situacao, null, i.Ocorrencia, [], null))],
@@ -77,7 +77,7 @@ public sealed class DocumentosDoComprovanteTests
         DocumentosDaInscricao avaliacao = Avaliacao(
             (aplica, SituacaoDoDocumento.Satisfeita, null),
             (Documento("CPF"), SituacaoDoDocumento.NaoExigido, null),
-            (Documento("Comprovante de renda", finalidade: FinalidadeFormulario.IsencaoTaxa), SituacaoDoDocumento.Pendente, null));
+            (Documento("Comprovante de renda", papel: PapelDoFormularioDeTeste.IsencaoTaxa), SituacaoDoDocumento.Pendente, null));
 
         DocumentosDoComprovante.Compor(avaliacao, []).Select(static d => d.Nome).Should().Equal("RG");
     }
@@ -87,11 +87,11 @@ public sealed class DocumentosDoComprovanteTests
     {
         DocumentosDaInscricao avaliacao = Avaliacao(
             (Documento("RG"), SituacaoDoDocumento.Satisfeita, null),
-            (Documento("Laudo", finalidade: FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.Pendente, null),
-            (Documento("Comprovante de renda", finalidade: FinalidadeFormulario.IsencaoTaxa), SituacaoDoDocumento.Pendente, null))
+            (Documento("Laudo", papel: PapelDoFormularioDeTeste.Habilitacao), SituacaoDoDocumento.Pendente, null),
+            (Documento("Comprovante de renda", papel: PapelDoFormularioDeTeste.IsencaoTaxa), SituacaoDoDocumento.Pendente, null))
             with
         {
-            CodigosDosFormulariosDaInscricao = [.. FormulariosDaInscricao, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao)],
+            CodigosDosFormulariosDaInscricao = [.. FormulariosDaInscricao, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao)],
         };
 
         DocumentosDoComprovante.Compor(avaliacao, []).Select(static d => d.Nome).Should().Equal("RG", "Laudo");

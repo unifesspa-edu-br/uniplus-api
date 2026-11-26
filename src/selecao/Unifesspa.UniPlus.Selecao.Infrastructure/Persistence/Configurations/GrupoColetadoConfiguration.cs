@@ -44,7 +44,6 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).ValueGeneratedNever();
 
-        builder.Ignore(g => g.Finalidade);
         builder.Property(g => g.Codigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(g => g.Ordem).IsRequired();
         builder.Property(g => g.PaginaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaPagina.CodigoMaxLength);

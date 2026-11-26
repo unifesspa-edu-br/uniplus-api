@@ -38,14 +38,10 @@ public sealed class ExigenciaEAceiteDoFormularioNoModeloTests
         chave.DeleteBehavior.Should().Be(DeleteBehavior.NoAction);
     }
 
-    [Fact(DisplayName = "A exigência de documento não guarda finalidade e comenta a coluna do formulário")]
-    public void Exigencia_Modelo_SemFinalidadeEComComentario()
-    {
-        IEntityType exigencia = ModeloDaSelecao.Entidade(typeof(DocumentoExigido));
-
-        exigencia.FindProperty("Finalidade").Should().BeNull();
-        exigencia.FindProperty(nameof(DocumentoExigido.FormularioCodigo))!.GetComment().Should().NotBeNullOrWhiteSpace();
-    }
+    [Fact(DisplayName = "A coluna do formulário da exigência de documento tem comentário")]
+    public void Exigencia_ColunaDoFormulario_TemComentario() =>
+        ModeloDaSelecao.Propriedade(typeof(DocumentoExigido), nameof(DocumentoExigido.FormularioCodigo))
+            .GetComment().Should().NotBeNullOrWhiteSpace();
 
     [Fact(DisplayName = "O aceite do termo guarda o código do formulário, obrigatório e de até 60 caracteres")]
     public void Aceite_CodigoDoFormulario_EObrigatorioEDeAte60Caracteres()

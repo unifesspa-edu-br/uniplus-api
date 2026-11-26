@@ -51,7 +51,7 @@ public static class RetificacaoErrorCodes
     /// <summary>O bloco declara novo ciclo para um item sem resultado preliminar publicado e com o ciclo ainda aberto.</summary>
     public const string CicloNovoDeItemSemPreliminarAberto = "Retificacao.CicloNovoDeItemSemPreliminarAberto";
 
-    /// <summary>O documento usa, de outra finalidade, fato que o formulário dela não coletou em todas as versões publicadas.</summary>
+    /// <summary>O documento usa, de outro formulário, fato que ele não coletou em todas as versões publicadas.</summary>
     public const string FatoAusenteDeVersaoPublicada = "Retificacao.FatoAusenteDeVersaoPublicada";
 
     /// <summary>O fato que o formulário de inscrição já coleta saiu do formulário ou mudou de papel, de item para campo de grupo ou de um grupo para outro.</summary>

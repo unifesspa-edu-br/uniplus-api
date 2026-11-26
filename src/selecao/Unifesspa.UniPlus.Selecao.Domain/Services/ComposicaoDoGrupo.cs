@@ -65,21 +65,6 @@ internal static class ComposicaoDoGrupo
         return fases.Count == 1 ? fases.First() : null;
     }
 
-    internal static bool FinalidadeComumDosItens(IReadOnlyList<RegraDeComprovacao> itens, out FinalidadeFormulario? finalidade)
-    {
-        finalidade = null;
-        if (itens.Count == 0)
-        {
-            return true;
-        }
-        if (!itens[0].TentarFinalidadeComum(out finalidade))
-        {
-            return false;
-        }
-        FinalidadeFormulario? comum = finalidade;
-        return itens.Skip(1).All(item => item.TentarFinalidadeComum(out FinalidadeFormulario? doItem) && doItem == comum);
-    }
-
     internal static bool ContemCiclo(IReadOnlyList<RegraDeComprovacao> regras)
     {
         HashSet<RegraDeComprovacao> visitados = new(ReferenceEqualityComparer.Instance);

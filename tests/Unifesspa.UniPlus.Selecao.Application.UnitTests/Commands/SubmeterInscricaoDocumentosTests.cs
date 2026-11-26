@@ -96,7 +96,7 @@ public sealed class SubmeterInscricaoDocumentosTests
             .ComTipo(nome.ToUpperInvariant(), nome, "CAT")
             .ComAplicabilidade(aplicabilidade)
             .ComCondicoes(condicoes)
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Criar().Value!;
 
     private async Task<(Result<ReciboDaInscricaoDto>, IDocumentoDaInscricaoRepository, ArquivoDaApresentacao, ArquivoDaApresentacao, Inscricao)> EnviarAsync(

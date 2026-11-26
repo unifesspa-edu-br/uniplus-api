@@ -41,7 +41,7 @@ public sealed class ObterFormularioApresentadoDoRascunhoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Habilitação do rascunho");
         processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando("CONDICAO_DA_HABILITACAO", 0).DoTipo(TipoDeCampo.SimOuNao).Construir()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("CONDICAO_DA_HABILITACAO", 0).DoTipo(TipoDeCampo.SimOuNao).Construir()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result<FormularioApresentadoDoProcessoDto> daHabilitacao = await ObterAsync(processo, CodigoDaHabilitacao, CondicaoDaHabilitacaoNoCatalogo());
 

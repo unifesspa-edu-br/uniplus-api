@@ -178,7 +178,7 @@ internal static class EnvelopeDeReferencia
     // e gatilho (MODALIDADE→exigência).
     private static void DefinirDocumentosEFatos(ProcessoSeletivo processo, FaseCronograma fase)
     {
-        processo.DefinirDocumentosExigidos(
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [RegraDeComprovacao.CriarRegraDeDocumento(DocumentoExigidoDeReferencia(fase.Id), 0).Value!])
             .IsSuccess.Should().BeTrue();
 

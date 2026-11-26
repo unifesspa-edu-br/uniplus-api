@@ -74,5 +74,5 @@ internal sealed record FormularioDaInscricaoDeTeste(string Codigo, bool Obrigato
     private static TermoExigidoFormulario Termo(string codigo, string formulario) => TermoExigidoFormulario.Criar(
         codigo, 0,
         new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), $"TERMO_{codigo}", 1, $"Termo {codigo} do formulário {formulario}", "Declaro que é verdade.", "Lei 9.784/1999", FormaAceite.RegistroSemEnderecoIp, new string('a', 64)),
-        null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+        null, Obrigatoriedade.Sempre).Value!;
 }

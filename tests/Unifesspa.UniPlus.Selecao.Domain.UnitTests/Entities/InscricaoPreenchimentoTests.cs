@@ -238,7 +238,7 @@ public sealed class InscricaoPreenchimentoTests
     public void Submeter_DocumentoObrigatorioAusente_RecusaJuntoDasDemais()
     {
         Inscricao inscricao = NovaInscricao();
-        DocumentoExigido laudo = new DocumentoExigidoBuilder().NaFase(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao).Construir();
+        DocumentoExigido laudo = new DocumentoExigidoBuilder().NaFase(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao).Construir();
         ResultadoDaAvaliacaoDaInscricao avaliacao = ComModalidades(SituacaoDasModalidades.FaltaResponder);
         avaliacao = avaliacao with { Documentos = avaliacao.Documentos with { Ausentes = [new DocumentoAusente([laudo], null)] } };
 

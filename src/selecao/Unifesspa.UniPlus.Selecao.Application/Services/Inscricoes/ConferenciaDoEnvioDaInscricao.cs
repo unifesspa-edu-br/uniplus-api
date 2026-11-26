@@ -58,7 +58,7 @@ public sealed class ConferenciaDoEnvioDaInscricao(
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricaoPorOpcao.Avaliar(entrada.Pedido.Contexto, EntradaDaAvaliacaoDaInscricao.Montar(
             DerivadosDoSistemaInscricao.ComOsDerivados(entrada.Pedido.Contexto.Admitidas.Definicoes), new EntradaDaAvaliacaoDaInscricao(entrada.Mesclado.Respostas,
             InscricaoRequestMapper.ParaAvaliacao(entrada.Mesclado.Grupos), FatosConhecidos(entrada.Derivados),
-            AvaliacaoDaInscricao.CodigosDasPaginasDaInscricao(entrada.Pedido.Contexto.Configuracao.Definicao),
+            AvaliacaoDaInscricao.CodigosDasPaginasDaInscricao(entrada.Pedido.Contexto.Configuracao),
             entrada.Envio, arquivos.ApresentacoesVerificadas(), NaFaseDaInscricao: true)));
         return avaliacao.IsFailure
             ? Result<EnvioConferido>.Failure(avaliacao.Error!)
@@ -106,7 +106,7 @@ public sealed class ConferenciaDoEnvioDaInscricao(
         bool nomeSocialRecusado = ConferenciaDosNomesDoTitular.RecusasDoNomeSocialAoEnviar(entrada.Mesclado.Respostas, admitidas).Any();
         HashSet<string> camposDoGeo = [.. municipiosConferidos.Recusas.Select(static r => r.Field).OfType<string>()];
         return VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(finais, entrada.Mesclado.Grupos, entrada.Pedido.Contexto.Ofertas)
-            .Concat(VeredictoDeSubmissao.AvaliarDistinguindoOGeo(AvaliacaoDaInscricao.DaInscricao(avaliacao.Formulario),
+            .Concat(VeredictoDeSubmissao.AvaliarDistinguindoOGeo(AvaliacaoDaInscricao.DaInscricao(entrada.Pedido.Contexto.Configuracao, avaliacao.Formulario),
                     admitidas.Termos, entrada.Pedido.Recebido.Aceites, entrada.Envio.Dia, dependencia)
                 .Where(static r => !r.DependeDoGeo).Select(static r => r.Recusa)
                 .Where(e => !nomeSocialRecusado || !string.Equals(e.Field, ConjuntoBasicoDaInscricao.NomeSocial, StringComparison.Ordinal))
