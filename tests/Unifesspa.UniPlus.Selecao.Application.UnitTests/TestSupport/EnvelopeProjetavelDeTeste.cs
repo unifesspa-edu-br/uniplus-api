@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using System.Text;
 
 /// <summary>
-/// O recorte público de um envelope canônico de referência: o que a divulgação do certame lê ao ser montada junto
+/// A parte pública de um envelope canônico de referência: o que a divulgação do certame lê ao ser montada junto
 /// com a versão. Só os blocos classificados como públicos, o bastante para a projeção não recusar o envelope.
 /// </summary>
 internal static class EnvelopeProjetavelDeTeste

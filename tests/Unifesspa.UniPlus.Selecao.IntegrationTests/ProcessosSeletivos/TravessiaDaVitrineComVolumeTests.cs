@@ -94,10 +94,10 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
 
     [Theory(DisplayName = "A travessia para a frente devolve cada certame exatamente uma vez")]
     [InlineData(null, null)]
-    [InlineData(CamposOrdenacaoDaVitrine.Nome, "asc")]
-    [InlineData(CamposOrdenacaoDaVitrine.Nome, "desc")]
-    [InlineData(CamposOrdenacaoDaVitrine.DivulgadoEm, "asc")]
-    [InlineData(CamposOrdenacaoDaVitrine.InscricoesDe, "desc")]
+    [InlineData(CamposDeOrdenacaoDaListaPublica.Nome, "asc")]
+    [InlineData(CamposDeOrdenacaoDaListaPublica.Nome, "desc")]
+    [InlineData(CamposDeOrdenacaoDaListaPublica.DivulgadoEm, "asc")]
+    [InlineData(CamposDeOrdenacaoDaListaPublica.InscricoesDe, "desc")]
     public async Task Travessia_QuandoPercorreParaAFrente_DeveCobrirOConjuntoUmaVez(string? campo, string? sentido)
     {
         IReadOnlyList<Guid> percorridos = await PercorrerAsync(Ordenacao(campo, sentido), PaginationDirection.Next);
@@ -138,7 +138,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     public async Task Travessia_QuandoPedeOrdenacaoDecrescente_DeveValerNaColecaoInteira()
     {
         IReadOnlyList<string> nomes = await PercorrerNomesAsync(
-            [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)]);
+            [new SortField(CamposDeOrdenacaoDaListaPublica.Nome, SortDirection.Descending)]);
 
         nomes.Should().HaveCount(Volume);
         nomes.Should().BeInDescendingOrder(StringComparer.Ordinal);

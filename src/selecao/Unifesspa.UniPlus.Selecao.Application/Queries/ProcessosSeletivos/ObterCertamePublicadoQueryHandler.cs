@@ -81,8 +81,8 @@ public static class ObterCertamePublicadoQueryHandler
 
     private static CertamePublicadoDto PrepararCertame(CertameDivulgado divulgado, CertamePublicadoDto certame, DateTimeOffset instante)
     {
-        SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
-            divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias);
+        SituacaoDoCertame situacao = SituacaoDasInscricoesDoCertame.Classificar(
+            divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias);
         CertamePublicadoDto servido = divulgado.CopiouOsDocumentosDoAto(certame.AtoCriadorId) ? certame : SemEnderecos(certame);
         return servido with { Situacao = CodigoComRotulo<SituacaoDoCertame>.De(situacao), EditaisPublicados = EditaisServidos(divulgado) };
     }

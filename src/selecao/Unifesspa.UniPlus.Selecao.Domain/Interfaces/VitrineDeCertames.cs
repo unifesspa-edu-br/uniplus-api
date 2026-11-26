@@ -41,10 +41,10 @@ public enum SituacaoDoCertame
 /// </summary>
 /// <remarks>
 /// Único enunciado da partição em código que roda. A consulta precisa repeti-la como predicado
-/// traduzível para SQL, e é contra este método que o recorte do banco é conferido — duas expressões
+/// traduzível para SQL, e é contra este método que o filtro do banco é conferido — duas expressões
 /// da mesma regra divergem em silêncio.
 /// </remarks>
-public static class SituacaoDaVitrine
+public static class SituacaoDasInscricoesDoCertame
 {
     /// <summary>
     /// A partir de quanto tempo do encerramento um certame é "últimos dias".
@@ -92,7 +92,7 @@ public static class SituacaoDaVitrine
 /// Quantos certames divulgados há em cada situação, no instante da consulta.
 /// </summary>
 /// <remarks>
-/// Agregação sobre o conjunto divulgado <b>sem</b> o recorte de situação: são estes números que
+/// Agregação sobre o conjunto divulgado <b>sem</b> o filtro de situação: são estes números que
 /// alimentam o próprio filtro, e aplicá-lo a eles deixaria todos zerados menos um. Como as quatro
 /// situações particionam o conjunto, os quatro somam o total.
 /// </remarks>

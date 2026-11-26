@@ -16,11 +16,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// chave ausente. Campo mapeado e não declarado nunca é alcançável. Campo fora da descrição existe
 /// e ninguém descobre.
 /// </remarks>
-public sealed class CatalogoDeOrdenacaoDaVitrineTests
+public sealed class CatalogoDeOrdenacaoDaListaPublicaTests
 {
     [Fact(DisplayName = "Todo campo declarado no contrato aparece na descrição que o cliente lê")]
     public void Catalogo_QuandoCampoEDeclarado_DeveAparecerNaDescricao() =>
-        CamposOrdenacaoDaVitrine.Todos.Should().AllSatisfy(campo =>
+        CamposDeOrdenacaoDaListaPublica.Todos.Should().AllSatisfy(campo =>
             CertamePublicadoController.DescricaoDoSort.Should().Contain(
                 campo,
                 "o contrato precisa anunciar exatamente os campos que a rota aceita"));
@@ -36,7 +36,7 @@ public sealed class CatalogoDeOrdenacaoDaVitrineTests
 
         string[] naDescricao = [.. listados[inicio..fim].Split(',', StringSplitOptions.TrimEntries)];
 
-        naDescricao.Should().BeEquivalentTo(CamposOrdenacaoDaVitrine.Todos);
+        naDescricao.Should().BeEquivalentTo(CamposDeOrdenacaoDaListaPublica.Todos);
     }
 
 }

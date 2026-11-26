@@ -72,7 +72,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         string revisao = await RevisaoDosCertamesAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
         OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor.ApplyAsync(
             LinhasParaOrdenar(consulta, instanteUtc),
-            OrdenacaoDaVitrine.Montar(consulta.Ordenacao, AssinaturaDaConsulta(consulta.Filtro, instanteUtc, revisao)),
+            OrdenacaoDaListaPublica.Montar(consulta.Ordenacao, AssinaturaDaConsulta(consulta.Filtro, instanteUtc, revisao)),
             afterSortKey, afterId, limit, direction, cancellationToken).ConfigureAwait(false);
         ContadoresDaVitrine? contadores = await ContadoresSePedidosAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
         return new PaginaDaVitrine([.. page.Items.Select(static linha => linha.Entidade)],
@@ -108,7 +108,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
     private static async Task<ContadoresDaVitrine> ContagemPorSituacao(
         IQueryable<CertameDivulgado> certames, DateTimeOffset instanteUtc, CancellationToken cancellationToken)
     {
-        DateTimeOffset limiar = instanteUtc + SituacaoDaVitrine.LimiarDosUltimosDias;
+        DateTimeOffset limiar = instanteUtc + SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias;
         return await certames.GroupBy(static _ => 1).Select(g => new ContadoresDaVitrine(
             g.Count(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
             g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
@@ -123,7 +123,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
             .Select(static c => new { c.Id, c.AtoCriadorId, c.InscricoesDe, c.InscricoesAte })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         string texto = string.Concat(linhas.Select(c => ParteDaRevisao(c.Id, c.AtoCriadorId,
-            SituacaoDaVitrine.Classificar(c.InscricoesDe, c.InscricoesAte, instanteUtc, SituacaoDaVitrine.LimiarDosUltimosDias))));
+            SituacaoDasInscricoesDoCertame.Classificar(c.InscricoesDe, c.InscricoesAte, instanteUtc, SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias))));
         return ResumoDaRevisao(texto);
     }
 
@@ -146,8 +146,8 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
     /// <remarks>
     /// <para>
     /// A chave é o serializado de <c>[assinatura, ...valores das colunas]</c>, e a assinatura é, por
-    /// sua vez, o serializado de <c>[campo, sentido, ...] + recorte</c>. O instante é a primeira
-    /// parte do recorte, e chegar até ele é desembrulhar duas vezes — as duas com a contagem exata,
+    /// sua vez, o serializado de <c>[campo, sentido, ...] + filtro</c>. O instante é a primeira
+    /// parte do filtro, e chegar até ele é desembrulhar duas vezes — as duas com a contagem exata,
     /// que é o que torna a leitura estrita.
     /// </para>
     /// <para>

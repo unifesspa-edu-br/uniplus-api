@@ -148,7 +148,7 @@ internal static class CadastrosVivos
 
     /// <summary>
     /// Tipo de etapa vivo que admite qualquer caráter, por ser o caso comum dos cenários de
-    /// outro assunto. Quem testa o recorte de caráter declara os sinalizadores explicitamente.
+    /// outro assunto. Quem testa a classificação de caráter declara os sinalizadores explicitamente.
     /// </summary>
     public static TipoEtapaView TipoEtapa(string codigo) =>
         TipoEtapaViewDeTeste.Com(IdentidadeDe(codigo), codigo).Construir();

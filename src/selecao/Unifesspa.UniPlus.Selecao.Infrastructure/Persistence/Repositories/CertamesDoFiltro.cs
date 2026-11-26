@@ -24,11 +24,11 @@ internal static class CertamesDoFiltro
         return termo is null ? porModalidade : porModalidade.ComBusca(termo);
     }
 
-    /// <remarks>Predicados traduzíveis da regra de SituacaoDaVitrine.Classificar, executada fora do banco.</remarks>
+    /// <remarks>Predicados traduzíveis da regra de SituacaoDasInscricoesDoCertame.Classificar, executada fora do banco.</remarks>
     private static IQueryable<CertameDivulgado> NaSituacao(
         this IQueryable<CertameDivulgado> certames, SituacaoDoCertame? situacao, DateTimeOffset instanteUtc)
     {
-        DateTimeOffset limiar = instanteUtc + SituacaoDaVitrine.LimiarDosUltimosDias;
+        DateTimeOffset limiar = instanteUtc + SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias;
         return situacao switch
         {
             SituacaoDoCertame.EmBreve => certames.Where(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),

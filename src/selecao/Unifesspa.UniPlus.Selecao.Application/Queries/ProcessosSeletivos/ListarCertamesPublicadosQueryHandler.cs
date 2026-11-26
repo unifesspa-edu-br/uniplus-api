@@ -45,7 +45,7 @@ public static class ListarCertamesPublicadosQueryHandler
         ListarCertamesPublicadosQuery query, ICertameDivulgadoRepository certameDivulgadoRepository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(query.Ordenacao, CamposOrdenacaoDaVitrine.Todos, OrdemCanonica);
+        Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(query.Ordenacao, CamposDeOrdenacaoDaListaPublica.Todos, OrdemCanonica);
 
         if (!ordenacao.IsSuccess)
         {
@@ -91,6 +91,6 @@ public static class ListarCertamesPublicadosQueryHandler
         certame.ModalidadesOfertadas,
         divulgado.InscricoesDe,
         divulgado.InscricoesAte,
-        CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDaVitrine.Classificar(divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias)),
+        CodigoComRotulo<SituacaoDoCertame>.De(SituacaoDasInscricoesDoCertame.Classificar(divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias)),
         certame.Vagas.Sum(static v => v.TotalDeVagasDoEdital));
 }

@@ -263,10 +263,10 @@ public sealed class LeituraPublicaDoCertameTests
         com.Contadores.Should().Be(new ContadoresDaVitrine(5, 12, 3, 40));
     }
 
-    [Fact(DisplayName = "A revisão do recorte passa do repositório ao resultado sem alteração")]
-    public async Task Handle_DeveRepassarARevisaoDoRecorte()
+    [Fact(DisplayName = "A revisão da consulta passa do repositório ao resultado sem alteração")]
+    public async Task Handle_DeveRepassarARevisaoDaConsulta()
     {
-        // O valor é opaco para a aplicação: quem o deriva é a consulta, que enxerga o recorte
+        // O valor é opaco para a aplicação: quem o deriva é a consulta, que enxerga o filtro
         // inteiro. Recalculá-lo ou omiti-lo aqui faria o cabeçalho da vitrine deixar de avisar que
         // a coleção avançou.
         ICertameDivulgadoRepository repository = RepositorioComVitrine(Guid.CreateVersion7());
@@ -274,7 +274,7 @@ public sealed class LeituraPublicaDoCertameTests
         ListarCertamesPublicadosResult resultado = (await ListarCertamesPublicadosQueryHandler.Handle(
             Consulta(), repository, CancellationToken.None)).Value!;
 
-        resultado.Revisao.Should().Be(RevisaoDoRecorte);
+        resultado.Revisao.Should().Be(RevisaoDaConsulta);
     }
 
     private static async Task<Result<CertamePublicadoDto>> LerCertameDivulgado(Guid processoId, CertameDivulgado divulgado)
@@ -299,7 +299,7 @@ public sealed class LeituraPublicaDoCertameTests
         repository.ListarVitrineAsync(
                 Arg.Any<ConsultaDosCertamesPublicados>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
                 Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
-            .Returns(new PaginaDaVitrine([certame], Agora, null, null, null, RevisaoDoRecorte));
+            .Returns(new PaginaDaVitrine([certame], Agora, null, null, null, RevisaoDaConsulta));
         return repository;
     }
 
@@ -316,7 +316,7 @@ public sealed class LeituraPublicaDoCertameTests
             ]);
     }
 
-    private const string RevisaoDoRecorte = "revisao-do-recorte";
+    private const string RevisaoDaConsulta = "revisao-da-consulta";
 
     private static ListarCertamesPublicadosQuery Consulta(bool incluirContadores = false) =>
         new(Agora, new FiltroDosCertamesPublicados(), [], null, null, 20, PaginationDirection.Next, incluirContadores);
@@ -334,7 +334,7 @@ public sealed class LeituraPublicaDoCertameTests
                 null,
                 ("ancora", processoIds[^1]),
                 chamada.ArgAt<ConsultaDosCertamesPublicados>(0).IncluirContadores ? new ContadoresDaVitrine(5, 12, 3, 40) : null,
-                RevisaoDoRecorte));
+                RevisaoDaConsulta));
         return repository;
     }
 }
