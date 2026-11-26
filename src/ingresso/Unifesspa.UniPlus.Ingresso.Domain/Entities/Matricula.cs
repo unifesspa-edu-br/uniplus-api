@@ -5,13 +5,14 @@ using Enums;
 using Events;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 public sealed class Matricula : SoftDeletableEntity
 {
     public Guid ConvocacaoId { get; private set; }
     public Guid CandidatoId { get; private set; }
     public StatusMatricula Status { get; private set; }
-    public string CodigoCurso { get; private set; } = string.Empty;
+    public CopiaDaOfertaDeCurso OfertaCurso { get; private set; } = null!;
     public string? Observacoes { get; private set; }
 
     private readonly List<DocumentoMatricula> _documentos = [];
@@ -19,14 +20,15 @@ public sealed class Matricula : SoftDeletableEntity
 
     private Matricula() { }
 
-    public static Matricula Criar(Guid convocacaoId, Guid candidatoId, string codigoCurso)
+    public static Matricula Criar(Guid convocacaoId, Guid candidatoId, CopiaDaOfertaDeCurso ofertaCurso)
     {
+        ArgumentNullException.ThrowIfNull(ofertaCurso);
         return new Matricula
         {
             ConvocacaoId = convocacaoId,
             CandidatoId = candidatoId,
             Status = StatusMatricula.Pendente,
-            CodigoCurso = codigoCurso
+            OfertaCurso = ofertaCurso.ParaNovoDono()
         };
     }
 
@@ -58,7 +60,7 @@ public sealed class Matricula : SoftDeletableEntity
         AddDomainEvent(new MatriculaEfetivadaEvent(
             Id,
             CandidatoId,
-            CodigoCurso,
+            OfertaCurso.Codigo,
             clock.GetUtcNow()));
     }
 }

@@ -978,7 +978,6 @@ ingresso.chamadas.status: Interno
 ingresso.chamadas.updated_at: Interno
 ingresso.convocacoes.candidato_id: Pessoal
 ingresso.convocacoes.chamada_id: Pessoal
-ingresso.convocacoes.codigo_curso: Pessoal
 ingresso.convocacoes.created_at: Pessoal
 ingresso.convocacoes.data_manifestacao: Pessoal
 ingresso.convocacoes.deleted_at: Pessoal
@@ -986,6 +985,11 @@ ingresso.convocacoes.deleted_by: Pessoal
 ingresso.convocacoes.id: Pessoal
 ingresso.convocacoes.inscricao_id: Pessoal
 ingresso.convocacoes.is_deleted: Pessoal
+ingresso.convocacoes.oferta_curso_codigo: Pessoal
+ingresso.convocacoes.oferta_curso_grau: Pessoal
+ingresso.convocacoes.oferta_curso_nome: Pessoal
+ingresso.convocacoes.oferta_turnos: Pessoal
+ingresso.convocacoes.oferta_unidade_ofertante_nome: Pessoal
 ingresso.convocacoes.posicao: Pessoal
 ingresso.convocacoes.protocolo: Pessoal
 ingresso.convocacoes.status: Pessoal
@@ -1004,7 +1008,6 @@ ingresso.documentos_matricula.tipo_documento: Pessoal
 ingresso.documentos_matricula.updated_at: Pessoal
 ingresso.documentos_matricula.validado: Pessoal
 ingresso.matriculas.candidato_id: Pessoal
-ingresso.matriculas.codigo_curso: Pessoal
 ingresso.matriculas.convocacao_id: Pessoal
 ingresso.matriculas.created_at: Pessoal
 ingresso.matriculas.deleted_at: Pessoal
@@ -1012,6 +1015,11 @@ ingresso.matriculas.deleted_by: Pessoal
 ingresso.matriculas.id: Pessoal
 ingresso.matriculas.is_deleted: Pessoal
 ingresso.matriculas.observacoes: Pessoal
+ingresso.matriculas.oferta_curso_codigo: Pessoal
+ingresso.matriculas.oferta_curso_grau: Pessoal
+ingresso.matriculas.oferta_curso_nome: Pessoal
+ingresso.matriculas.oferta_turnos: Pessoal
+ingresso.matriculas.oferta_unidade_ofertante_nome: Pessoal
 ingresso.matriculas.status: Pessoal
 ingresso.matriculas.updated_at: Pessoal
 organizacao.identificadores_da_unidade.created_at: Interno

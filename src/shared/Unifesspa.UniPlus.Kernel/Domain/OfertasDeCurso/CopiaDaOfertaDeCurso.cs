@@ -55,6 +55,9 @@ public sealed record CopiaDaOfertaDeCurso
         private set => _turnosProtegidos = Array.AsReadOnly(value.ToArray());
     }
 
+    public CopiaDaOfertaDeCurso ParaNovoDono() =>
+        new(Codigo, CursoNome, CursoGrau, UnidadeOfertanteNome, Turnos);
+
     public static Result<CopiaDaOfertaDeCurso> Criar(
         string? codigo, string? cursoNome, string? cursoGrau, string? unidadeOfertanteNome, IReadOnlyList<string>? turnos)
     {
