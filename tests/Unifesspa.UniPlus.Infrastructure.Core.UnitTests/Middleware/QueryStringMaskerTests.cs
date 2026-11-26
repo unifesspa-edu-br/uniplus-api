@@ -62,6 +62,45 @@ public class QueryStringMaskerTests
         resultado.Should().Be($"?{chave}=***");
     }
 
+    [Theory]
+    [InlineData("q")]
+    [InlineData("Q")]
+    [InlineData("%71")]
+    [InlineData("busca")]
+    [InlineData("BUSCA")]
+    [InlineData("%62usca")]
+    [InlineData("contaId")]
+    [InlineData("CONTAID")]
+    [InlineData("ocorrencia")]
+    public void Mascarar_ParametroDeTextoDoClienteDosPadroes_DeveMascararQualquerGrafiaDoNome(string chave)
+    {
+        QueryStringMasker masker = CriarMasker();
+
+        string resultado = masker.Mascarar(new QueryString($"?{chave}=termo-ficticio-gama"));
+
+        resultado.Should().Be($"?{chave}=***");
+    }
+
+    [Fact]
+    public void Mascarar_ParametroDeBuscaRepetido_DeveMascararTodasAsOcorrencias()
+    {
+        QueryStringMasker masker = CriarMasker();
+
+        string resultado = masker.Mascarar(new QueryString("?q=termo-ficticio-alfa&Q=termo-ficticio-beta&%71=termo-ficticio-gama"));
+
+        resultado.Should().Be("?q=***&Q=***&%71=***");
+    }
+
+    [Fact]
+    public void Mascarar_BuscaComOutrosParametros_DeveManterLimiteDirecaoEFiltrosPorCodigo()
+    {
+        QueryStringMasker masker = CriarMasker();
+
+        string resultado = masker.Mascarar(new QueryString("?limit=20&direction=forward&situacao=ATIVO&q=termo-ficticio-delta"));
+
+        resultado.Should().Be("?limit=20&direction=forward&situacao=ATIVO&q=***");
+    }
+
     [Fact]
     public void Mascarar_ComParametrosNaoSensiveis_DevePreservarValores()
     {
