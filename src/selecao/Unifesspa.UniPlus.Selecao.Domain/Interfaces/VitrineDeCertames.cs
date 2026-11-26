@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Situação da janela de inscrição de um certame, resolvida contra o instante da consulta.
+/// Situação do período de inscrição de um certame, resolvida contra o instante da consulta.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,13 +13,13 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// parâmetro.
 /// </para>
 /// <para>
-/// A partição respeita os DOIS lados da janela. Um edital publicado antes de a inscrição abrir é o
+/// A partição respeita os DOIS lados do perÃ­odo. Um edital publicado antes de a inscrição abrir é o
 /// caso normal, e classificá-lo como aberto faria o candidato tomar recusa ao tentar se inscrever.
 /// </para>
 /// </remarks>
 public enum SituacaoDoCertame
 {
-    /// <summary>Divulgado, com a janela de inscrição ainda por abrir.</summary>
+    /// <summary>Divulgado, com o período de inscrição ainda por abrir.</summary>
     [CodigoDeContrato("EM_BREVE", "Em breve", Descricao = "As inscrições ainda não começaram.")]
     EmBreve = 1,
 
@@ -31,7 +31,7 @@ public enum SituacaoDoCertame
     [CodigoDeContrato("ULTIMOS_DIAS", "Últimos dias", Descricao = "As inscrições estão nos últimos dias.")]
     UltimosDias = 3,
 
-    /// <summary>A janela já encerrou.</summary>
+    /// <summary>O período já encerrou.</summary>
     [CodigoDeContrato("ENCERRADAS", "Encerradas", Descricao = "As inscrições estão encerradas.")]
     Encerradas = 4,
 }
@@ -59,12 +59,12 @@ public static class SituacaoDasInscricoesDoCertame
     public static readonly TimeSpan LimiarDosUltimosDias = TimeSpan.FromDays(7);
 
     /// <summary>
-    /// Em qual situação está um certame cuja janela vai de <paramref name="inscricoesDe"/> a
+    /// Em qual situação está um certame cujo perÃ­odo vai de <paramref name="inscricoesDe"/> a
     /// <paramref name="inscricoesAte"/>, no instante dado.
     /// </summary>
     /// <remarks>
     /// A ordem dos testes é a da linha do tempo, e é ela que garante a partição mesmo diante de
-    /// janela invertida.
+    /// perÃ­odo invertido.
     /// </remarks>
     public static SituacaoDoCertame Classificar(
         DateTimeOffset inscricoesDe,
@@ -96,7 +96,7 @@ public static class SituacaoDasInscricoesDoCertame
 /// alimentam o próprio filtro, e aplicá-lo a eles deixaria todos zerados menos um. Como as quatro
 /// situações particionam o conjunto, os quatro somam o total.
 /// </remarks>
-/// <param name="EmBreve">Divulgados com a janela ainda por abrir.</param>
+/// <param name="EmBreve">Divulgados com o perÃ­odo ainda por abrir.</param>
 /// <param name="InscricoesAbertas">Recebem inscrição, sem estar no limiar final.</param>
 /// <param name="UltimosDias">Recebem inscrição, e encerram dentro do limiar final.</param>
 /// <param name="Encerrados">Já encerraram.</param>

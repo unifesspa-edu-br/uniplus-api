@@ -128,7 +128,7 @@ public sealed class BuscaDeUnidadesNoEndpointTests
         pagina.Corpo.Should().Contain(CodigoDaRecusa);
     }
 
-    [Theory(DisplayName = "O cursor da próxima página só carrega a âncora, qualquer que seja o q")]
+    [Theory(DisplayName = "O cursor da próxima página só carrega o ponto de continuação, qualquer que seja o q")]
     [InlineData("q=&")]
     [InlineData("")]
     [InlineData("q=a%25b&")]

@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// seguintes: sem isso, um prazo que vence no meio do percurso moveria o certame de segmento, e ele
 /// apareceria duas vezes ou sumiria.
 /// </param>
-/// <param name="Filtro">O que reduz a vitrine: situação da janela, modalidade e texto pesquisado.</param>
+/// <param name="Filtro">O que reduz a vitrine: situação do período, modalidade e texto pesquisado.</param>
 /// <param name="Ordenacao">
 /// Campos pedidos pela consulta, na ordem de prioridade. Vazio é a ordem canônica por urgência.
 /// </param>
@@ -30,7 +30,7 @@ public sealed record ListarCertamesPublicadosQuery(
     PaginationDirection Direction,
     bool IncluirContadores) : IQuery<Result<ListarCertamesPublicadosResult>>;
 
-/// <summary>Página da vitrine, com as âncoras de continuação e a revisão da consulta.</summary>
+/// <summary>Página da vitrine, com os pontos de continuação de continuação e a revisão da consulta.</summary>
 /// <param name="Revisao">Marcador opaco dos certames selecionados pela consulta e do que cada um tem de ordenável e exibível.</param>
 public sealed record ListarCertamesPublicadosResult(
     IReadOnlyList<CertameNaVitrineDto> Items,

@@ -15,14 +15,14 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// <b>A revisão do filtro muda exatamente quando muda o que a travessia percorre.</b>
+/// <b>A revisão do filtro muda exatamente quando muda o que o percurso percorre.</b>
 /// </summary>
 /// <remarks>
 /// <para>
 /// Quem compõe a vitrine (a Portal) pagina sobre a de Seleção e precisa saber, entre uma página e
 /// outra, se a coleção avançou — a ADR-0131 manda avisar e recomeçar, em vez de entregar uma lista
 /// com item repetido ou sumido. Os dois erros possíveis são simétricos: um marcador que não muda
-/// quando a coleção muda deixa a inconsistência passar; um que muda sem mudança derruba travessias
+/// quando a coleção muda deixa a inconsistência passar; um que muda sem mudança derruba percursos
 /// íntegras.
 /// </para>
 /// <para>
@@ -65,7 +65,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Fact(DisplayName = "Sem mudança na coleção, a revisão se repete entre leituras e entre páginas da mesma travessia")]
+    [Fact(DisplayName = "Sem mudança na coleção, a revisão se repete entre leituras e entre páginas da mesmo percurso")]
     public async Task Revisao_SemMudanca_DeveSerEstavel()
     {
         PaginaDaVitrine primeira = await ListarAsync(new FiltroDosCertamesPublicados(), Agora, limite: 2);
@@ -74,7 +74,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
 
         repetida.Revisao.Should().Be(primeira.Revisao, "nada mudou entre as duas leituras");
         segunda.Revisao.Should().Be(primeira.Revisao,
-            "as páginas da mesma travessia descrevem o mesmo filtro — marcador diferente faria quem compõe recomeçar sem motivo");
+            "as páginas da mesmo percurso descrevem o mesmo filtro — marcador diferente faria quem compõe recomeçar sem motivo");
         segunda.Itens.Should().NotBeEmpty("a continuação precisa existir para o teste valer");
     }
 
@@ -104,8 +104,8 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         (await ListarAsync(encerradas, Agora)).Revisao.Should().NotBe(encerradasAntes);
     }
 
-    [Fact(DisplayName = "Cruzar a fronteira da janela de inscrição muda a revisão, sem nenhuma linha mudar")]
-    public async Task Revisao_QuandoORelogioCruzaAJanela_DeveMudar()
+    [Fact(DisplayName = "Cruzar a fronteira do período de inscrição muda a revisão, sem nenhuma linha mudar")]
+    public async Task Revisao_QuandoORelogioCruzaOPeriodo_DeveMudar()
     {
         // O primeiro aberto encerra em 20 dias: um dia depois ele muda de grupo e de posição.
         string antes = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao;
@@ -159,7 +159,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        // O instante da primeira página viaja na âncora; o que se passa aqui é ignorado na
+        // O instante da primeira página viaja no ponto de continuação; o que se passa aqui é ignorado na
         // continuação, e passar outro prova que a revisão não depende dele.
         return await repository.ListarVitrineAsync(Consulta(Agora.AddDays(365), filtro, [], false), sortKey, id, limite, PaginationDirection.Next, CancellationToken.None);
     }

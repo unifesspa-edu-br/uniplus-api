@@ -211,7 +211,7 @@ public sealed class CursoPersistenceTests
         (IReadOnlyList<Curso> volta, _, (string SortKey, Guid Id)? voltaProx) =
             await PaginarAsync(comItemDoBloco.Anterior, PaginationDirection.Prev);
         volta.Select(c => c.Id).Should().Equal(percorridas[indice - 1].Itens.Select(c => c.Id));
-        voltaProx!.Value.Id.Should().Be(volta[^1].Id, "a âncora de próximo é o último item da página");
+        voltaProx!.Value.Id.Should().Be(volta[^1].Id, "o ponto de continuação de próximo é o último item da página");
     }
 
     private static async Task VerificarViolacaoDeCodigoAsync(Func<Task> act)
@@ -276,30 +276,30 @@ public sealed class CursoPersistenceTests
         (string SortKey, Guid Id)? Anterior,
         (string SortKey, Guid Id)? Proximo);
 
-    /// <summary>Percorre a listagem inteira seguindo as âncoras de próximo.</summary>
+    /// <summary>Percorre a listagem inteira seguindo os pontos de continuação de próximo.</summary>
     private async Task<List<Pagina>> PercorrerTudoAsync()
     {
         List<Pagina> paginas = [];
-        (string SortKey, Guid Id)? ancora = null;
+        (string SortKey, Guid Id)? pontoDeContinuacao = null;
 
         do
         {
             (IReadOnlyList<Curso> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
-                await PaginarAsync(ancora, PaginationDirection.Next);
+                await PaginarAsync(pontoDeContinuacao, PaginationDirection.Next);
             paginas.Add(new Pagina(itens, anterior, proximo));
-            ancora = proximo;
+            pontoDeContinuacao = proximo;
         }
-        while (ancora is not null);
+        while (pontoDeContinuacao is not null);
         return paginas;
     }
 
     private async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
-        PaginarAsync((string SortKey, Guid Id)? ancora, PaginationDirection direction)
+        PaginarAsync((string SortKey, Guid Id)? pontoDeContinuacao, PaginationDirection direction)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new CursoRepository(ctx);
         return await repository.ListarPaginadoAsync(
-            OrdenacaoPadraoDeCurso, busca: null, ancora?.SortKey, ancora?.Id, limit: 2, direction,
+            OrdenacaoPadraoDeCurso, busca: null, pontoDeContinuacao?.SortKey, pontoDeContinuacao?.Id, limit: 2, direction,
             CancellationToken.None);
     }
 
