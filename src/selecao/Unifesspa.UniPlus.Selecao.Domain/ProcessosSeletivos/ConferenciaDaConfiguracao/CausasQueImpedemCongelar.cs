@@ -95,6 +95,7 @@ internal static class CausasQueImpedemCongelar
         .. etapas.ConferirCompletude(),
         .. cronograma.ConferirCronogramaExigidoPeloProcesso(configuracao.Identidade.OrigemCandidatos, configuracao.Vagas.HaVagasOfertadas),
         .. ExigenciaDaHomologacaoPorOrigem.Causas(configuracao.Identidade.OrigemCandidatos, cronograma, etapas),
+        .. EdicoesDoExameDaHomologacao.Causas(cronograma, configuracao.Coleta.OpcoesDeclaradas),
         .. cronograma.ConferirCompletude(contexto.FusoInstitucional),
         .. CicloRecursalDoProcesso.Conferir(cronograma, etapas),
     ];

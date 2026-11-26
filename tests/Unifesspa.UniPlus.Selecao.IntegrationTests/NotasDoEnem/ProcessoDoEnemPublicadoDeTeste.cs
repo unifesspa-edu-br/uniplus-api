@@ -31,6 +31,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ProcessoDoEnemPublicadoDeTeste
 {
     public const string Edicao = "2025";
+    private const string EdicaoDaRegraDeHomologacao = "2026";
 
     /// <summary>
     /// O processo publicado: a etapa de nota do ENEM e as duas ofertas do edital, uma no grupo
@@ -117,8 +118,11 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
     private static void DefinirDadosDoEnem(ProcessoSeletivo processo)
     {
+        // A regra de homologação do processo conforme confirma a edição 2026 do INEP, que o processo precisa declarar.
         Exigir(processo.DefinirOpcoesDeclaradas(
-            Regras.Services.EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, Edicao, Edicao, 0).Value!]));
+            Regras.Services.EdicaoDoEnem.Fato,
+            [.. new[] { Edicao, EdicaoDaRegraDeHomologacao }.Select(static (edicao, ordem) =>
+                OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, edicao, edicao, ordem).Value!)]));
 
         FatoColetado[] basicos = [.. FormularioDeTeste.DadosBasicos()];
         Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)]));

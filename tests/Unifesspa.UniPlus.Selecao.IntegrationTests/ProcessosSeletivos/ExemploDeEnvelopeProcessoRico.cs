@@ -121,9 +121,9 @@ internal static class ExemploDeEnvelopeProcessoRico
         DefinirFada(processo);
         DefinirCriteriosDeDesempate(processo, variante, permutar);
         DefinirClassificacao(processo, variante, permutar);
-        // Classificação baseada em ENEM exige ao menos uma edição admitida.
+        // Classificação baseada em ENEM exige ao menos uma edição admitida; a regra de homologação confirma as edições de 2024 a 2026.
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
+            "EDICAO_ENEM", [.. new[] { "2024", "2025", "2026" }.Select(static (edicao, ordem) => OpcaoDeclaradaFato.Criar("EDICAO_ENEM", edicao, edicao, ordem).Value!)])
             .IsSuccess.Should().BeTrue();
     }
 
