@@ -17595,7 +17595,7 @@
         "UNI-REQ-0080"
       ],
       "oQueAconteceu": [
-        "Um dia não útil de abrangência `ESTADUAL` do calendário de dias úteis vigente traz uma sigla de\nUF que não é de uma unidade federativa reconhecida. A mensagem informa o valor recebido. A sigla é\nconferida depois de passar para maiúsculas.",
+        "Um dia não útil de abrangência `ESTADUAL` do calendário de dias úteis vigente traz uma sigla de\nUF que não é de uma unidade federativa reconhecida. A mensagem informa a sigla recebida em maiúsculas, que\né a forma conferida.",
         "O calendário de dias úteis vigente é cadastrado no módulo Configuração, e a versão do processo\ncongela uma cópia dele por valor, com a lista dos dias não úteis (UNI-REQ-0080). Ao copiá-lo, o\nsistema confere de novo cada dia e o conjunto, e recusa o que o cadastro não aceitaria. A recusa\nsó vale para o processo que depende do calendário, isto é, o que tem prazo de recurso (ver\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)); um processo sem contagem sobre dia útil segue normalmente, porque não usa o dado.",
         "A conferência vem depois das da localidade ([`localidade_ausente`](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)) e da convenção de contagem\n([`algoritmo_contagem_prazo_nao_declarado`](/erros/uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado)), e antes das demais conferências de conformidade e do cronograma. A consulta de\nconformidade do processo mostra o item \"Calendário de dias úteis vigente\" como pendente enquanto o\ncalendário vigente estiver nessa condição. Nada é gravado.",
         "Os dias são conferidos um a um, na ordem em que o calendário os lista, e o primeiro dia com\ndefeito interrompe a cópia. As conferências do calendário como um todo (identificador, versão,\nlista vazia e dia repetido) vêm depois das de todos os dias. Dentro de um dia, vem primeiro a conferência da forma bruta ([`forma_territorial_invalida`](/erros/uniplus.selecao.calendario_vigente.forma_territorial_invalida)), depois a data, a\nabrangência e o recorte territorial.",
@@ -25723,7 +25723,7 @@
         "- `PRELIMINAR` — o resultado que abre o ciclo e admite recurso;\n- `DEFINITIVO` — o resultado que encerra a matéria;\n- **nenhum papel** — o produto não é resultado, e portanto não ocupa posição no ciclo.\n  É o caso de avisos e demais publicações que não decidem sobre candidato."
       ],
       "comoResolver": [
-        "Use um dos dois valores, exatamente como estão escritos acima, ou não informe papel\nalgum. A mensagem da recusa devolve o valor rejeitado e a lista do que é aceito.",
+        "Use um dos dois valores, exatamente como estão escritos acima, ou não informe papel\nalgum. A mensagem da recusa lista os papéis aceitos (`PRELIMINAR`, `DEFINITIVO` ou nenhum) e não repete o valor recebido.",
         "Se o produto não é resultado, o caminho é omitir o campo — declarar papel em ato que\nnão é resultado tem\n[recusa própria](/erros/uniplus.selecao.produto_da_etapa.papel_em_ato_que_nao_eh_resultado)."
       ],
       "ondeAparece": [
@@ -25774,7 +25774,7 @@
         "- `PRELIMINAR` — o resultado que abre o ciclo e admite recurso;\n- `DEFINITIVO` — o resultado que encerra a matéria;\n- **nenhum papel** — o produto não é resultado, e portanto não ocupa posição no\n  ciclo. É o caso de avisos, convocações e demais publicações que não decidem sobre\n  candidato."
       ],
       "comoResolver": [
-        "Use um dos dois valores, exatamente como estão escritos acima, ou não informe papel\nalgum. A mensagem da recusa devolve o valor rejeitado e a lista do que é aceito.",
+        "Use um dos dois valores, exatamente como estão escritos acima, ou não informe papel\nalgum. A mensagem da recusa lista os papéis aceitos (`PRELIMINAR`, `DEFINITIVO` ou nenhum) e não repete o valor recebido.",
         "Se o produto não é resultado, o caminho é omitir o campo — declarar papel em ato que\nnão é resultado tem\n[recusa própria](/erros/uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado)."
       ],
       "ondeAparece": [
