@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+
 using Xunit;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.AdulteracaoDeEnvelopeDeTeste;
@@ -94,6 +96,7 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [Classificacao, IsencaoDaTaxa], comBancasExigidasNaPublicacao: true);
         ProvaObjetivaDe(processo).DefinirTiposDeDecisao([Classificacao]).IsSuccess.Should().BeTrue();
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico congelado = Codificar(processo);
         ExemploDeEnvelopeEntrada.Publicar(processo);
         VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);

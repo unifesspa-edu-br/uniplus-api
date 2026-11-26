@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -122,19 +123,25 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
     private async Task<Guid> SemearProcessoQueCobraComFundamentoAsync(string nome)
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
-
-        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome, fase: FaseConforme());
-
-        Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
-            cobra: true, valor: 100m,
-            fundamentosCodigos: ["CADASTRO_UNICO"]);
-        taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
-        processo.DefinirTaxaInscricao(taxa.Value!).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoQueCobraComFundamento(nome);
 
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
         return processo.Id;
+    }
+
+    private static ProcessoSeletivo ProcessoQueCobraComFundamento(string nome)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome, fase: FaseConforme());
+        Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
+            cobra: true, valor: 100m,
+            fundamentosCodigos: ["CADASTRO_UNICO"]);
+        taxa.IsSuccess.Should().BeTrue(taxa.Error?.Message);
+        processo.DefinirTaxaInscricao(taxa.Value!).IsSuccess.Should().BeTrue();
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
+
+        return processo;
     }
 
     private async Task AdulterarFundamentosAsync(Guid processoId, string[] fundamentos)

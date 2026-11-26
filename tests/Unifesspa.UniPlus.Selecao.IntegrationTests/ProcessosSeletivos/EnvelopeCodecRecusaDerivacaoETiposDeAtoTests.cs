@@ -84,10 +84,26 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void ImpedimentoForaDaInscricao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            FatoColetadoPorCodigo(envelope, "RENDA")["formularioCodigo"] = "HABILITACAO");
+        {
+            AcrescentarFormularioSemTermosAntesDaInscricao(envelope, "HABILITACAO");
+            FatoColetadoPorCodigo(envelope, "RENDA")["formularioCodigo"] = "HABILITACAO";
+        });
 
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         resultado.Error.Message.Should().Contain(".impedimento'");
+    }
+
+    // O formulário novo copia o de inscrição, sem termos, mas fica em uma fase que não coleta a inscrição; entra na frente
+    // dele porque os formulários seguem a ordem ordinal do código.
+    private static void AcrescentarFormularioSemTermosAntesDaInscricao(JsonObject envelope, string codigo)
+    {
+        JsonArray formularios = envelope["formularios"]!.AsArray();
+        JsonObject copia = formularios[0]!.DeepClone().AsObject();
+        copia["codigo"] = codigo;
+        copia["faseId"] = envelope["cronogramaFases"]!["fases"]!.AsArray()
+            .First(static fase => !fase!["coletaInscricao"]!.GetValue<bool>())!["id"]!.GetValue<Guid>();
+        copia["termos"] = new JsonArray();
+        formularios.Insert(0, copia);
     }
 
     [Fact(DisplayName = "A modalidade do candidato gravada entre as derivações do processo é recusada")]

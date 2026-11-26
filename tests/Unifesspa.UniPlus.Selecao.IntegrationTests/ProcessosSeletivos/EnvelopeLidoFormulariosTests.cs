@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 public sealed class EnvelopeLidoFormulariosTests
 {
@@ -33,7 +33,7 @@ public sealed class EnvelopeLidoFormulariosTests
 
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["codigo"]!.GetValue<string>())
-            .Should().Equal("INSCRICAO", "HABILITACAO");
+            .Should().Equal("HABILITACAO", "INSCRICAO");
     }
 
     [Fact(DisplayName = "Item com obrigatoriedade QUANDO, ajuda e confirmação reproduz os bytes")]

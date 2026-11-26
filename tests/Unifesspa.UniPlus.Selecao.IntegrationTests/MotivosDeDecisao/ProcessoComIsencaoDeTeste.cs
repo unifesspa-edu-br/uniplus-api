@@ -14,12 +14,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O processo publicável com um fundamento de isenção habilitado: a taxa é cobrada com o fundamento e a janela da isenção
 /// é uma fase própria, que declara o tipo de decisão da isenção. Para publicar, essa fase precisa de ao menos um motivo
-/// favorável e um desfavorável escolhidos para o fundamento.
+/// favorável e um desfavorável escolhidos para o fundamento, e o formulário facultativo do pedido de isenção.
 /// </summary>
 internal static class ProcessoComIsencaoDeTeste
 {
@@ -54,5 +55,6 @@ internal static class ProcessoComIsencaoDeTeste
             .IsSuccess.Should().BeTrue();
         ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [Fundamento]).Value!;
         processo.DefinirTaxaInscricao(taxa).IsSuccess.Should().BeTrue();
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
     }
 }

@@ -101,12 +101,13 @@ public sealed class EnvelopeCanonicoReferenciasTests
     // `origemId` distingue o snapshot de TipoProcesso; `naturezaLegal` distingue a MODALIDADE (que
     // também tem `codigo`, mas não é referência de regra); `ordem` distingue a FASE do cronograma
     // (Story #554, PR #903) pela mesma razão; `unicoPorObjeto` distingue a classificação congelada
-    // de um tipo de ato; `finalidadeTratamento` distingue o fato derivado congelado.
+    // de um tipo de ato; `finalidadeTratamento` distingue o fato derivado congelado; `paginas` distingue o formulário.
     private static bool PareceReferenciaDeRegra(JsonObject obj) =>
         obj.ContainsKey("codigo")
         && !obj.ContainsKey("origemId")
         && !obj.ContainsKey("naturezaLegal")
         && !obj.ContainsKey("ordem")
         && !obj.ContainsKey("unicoPorObjeto")
-        && !obj.ContainsKey("finalidadeTratamento");
+        && !obj.ContainsKey("finalidadeTratamento")
+        && !obj.ContainsKey("paginas");
 }

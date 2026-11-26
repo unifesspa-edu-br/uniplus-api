@@ -86,11 +86,12 @@ internal sealed class CenarioDeFormularioPublicado
     /// <summary>
     /// Publica o processo e grava o processo, a versão publicada e a divulgação. No caminho real a
     /// divulgação nasce quando o ato normativo se confirma no registro central; aqui é semeada
-    /// direto, porque o que se exercita é a projeção.
+    /// direto, porque o que se exercita é a projeção. O processo que cobra taxa recebe, antes, o formulário de isenção que a publicação exige.
     /// </summary>
     public async Task<VersaoConfiguracao> PublicarEPersistirAsync(
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, string hashDocumento, string ator)
     {
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento), AtorUsuarioContaId = ator, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico(), MotivosEscolhidos = MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo) });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);

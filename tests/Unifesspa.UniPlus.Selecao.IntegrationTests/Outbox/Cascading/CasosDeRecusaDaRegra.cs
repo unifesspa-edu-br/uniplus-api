@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+
 internal sealed record CasoDeRecusaDaRegra(object[] Regras, string Codigo, string Campo, string Mensagem);
 
 internal static class CasosDeRecusaDaRegra
@@ -104,7 +106,7 @@ internal static class CasosDeRecusaDaRegra
     private static object Documento() => new
     {
         tipoDocumento = new { id = Guid.CreateVersion7() },
-        momento = new { faseId = Guid.CreateVersion7() },
+        momento = new { faseId = Guid.CreateVersion7(), formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao },
         aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
         indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
         requisitos = new { formatosPermitidos = "QUALQUER" },
