@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
-using System.Diagnostics.CodeAnalysis;
-
 using System.Reflection;
 
 using Microsoft.AspNetCore.Mvc;
@@ -20,11 +18,15 @@ using Microsoft.AspNetCore.Routing;
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
 public sealed class FromCursorAttribute : ModelBinderAttribute
 {
-    public FromCursorAttribute(string resource)
+    /// <param name="resource">Identificador do recurso embutido no payload do cursor.</param>
+    /// <param name="scopeRouteValues">Nomes dos valores de rota que escopam a coleção; vazio quando ela é única.</param>
+    public FromCursorAttribute(string resource, params string[] scopeRouteValues)
         : base(typeof(PageRequestModelBinder))
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resource);
+        ArgumentNullException.ThrowIfNull(scopeRouteValues);
         Resource = resource;
+        ScopeRouteValues = Array.AsReadOnly([.. scopeRouteValues]);
         BindingSource = Microsoft.AspNetCore.Mvc.ModelBinding.BindingSource.Query;
     }
 
@@ -50,22 +52,18 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
     /// <summary>
     /// Nomes dos valores de rota que escopam a coleção (ex.:
     /// <c>["entidadeTipo", "entidadeId"]</c> em
-    /// <c>/api/publicacoes/entidades/{entidadeTipo}/{entidadeId}/atos</c>). O binder
-    /// compõe a etiqueta esperada com eles (<see cref="CursorResourceTag"/>), de modo que
-    /// um cursor emitido para uma entidade não seja navegável na coleção de outra — mesmo
-    /// recurso, coleções distintas. Vazio na maioria dos recursos, cuja coleção é única e
-    /// a etiqueta, uma constante.
+    /// <c>/api/publicacoes/entidades/{entidadeTipo}/{entidadeId}/atos</c>), declarados depois do recurso:
+    /// <c>[FromCursor("atos", "entidadeTipo", "entidadeId")]</c>. A etiqueta do cursor é composta com eles
+    /// (<see cref="CursorResourceTag"/>), de modo que um cursor emitido para uma entidade não seja navegável
+    /// na coleção de outra — mesmo recurso, coleções distintas. Vazio na maioria dos recursos, cuja coleção
+    /// é única e a etiqueta, uma constante.
     /// </summary>
     /// <remarks>
-    /// Quem emite tem de compor a etiqueta com os <b>mesmos</b> valores, na mesma ordem,
-    /// pelo mesmo <see cref="CursorResourceTag.Compose"/> — senão nenhum cursor emitido
-    /// passa na conferência.
+    /// Emissão e conferência compõem a etiqueta pelo mesmo <see cref="ResourceTagFor"/>, com os mesmos valores
+    /// na mesma ordem: o escritor da resposta e o binder leem esta declaração, e nenhum cursor emitido deixa de
+    /// passar na conferência.
     /// </remarks>
-    [SuppressMessage(
-        "Performance",
-        "CA1819:Properties should not return arrays",
-        Justification = "Argumento nomeado de atributo — a linguagem só admite array aqui.")]
-    public string[] ScopeRouteValues { get; init; } = [];
+    public IReadOnlyList<string> ScopeRouteValues { get; }
 
     /// <summary>
     /// Acha a declaração do cursor da ação: olha a <see cref="ParameterInfo"/> do

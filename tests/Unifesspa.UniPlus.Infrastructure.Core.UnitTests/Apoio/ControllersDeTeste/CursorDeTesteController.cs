@@ -18,7 +18,7 @@ public sealed class CursorDeTesteController : ControllerBase
     [HttpGet]
     public IActionResult UserSortedCidades([FromCursor("cidades", RequireUserBinding = true, RequireSortKey = true)] PageRequest request) => Ok(request);
     [HttpGet]
-    public IActionResult ScopedByEntity([FromCursor("atos", ScopeRouteValues = ["entidadeTipo", "entidadeId"])] PageRequest request) => Ok(request);
+    public IActionResult ScopedByEntity([FromCursor("atos", "entidadeTipo", "entidadeId")] PageRequest request) => Ok(request);
     [HttpGet]
     public IActionResult WithoutAttribute([FromQuery] PageRequest request) => Ok(request);
     [HttpGet]
