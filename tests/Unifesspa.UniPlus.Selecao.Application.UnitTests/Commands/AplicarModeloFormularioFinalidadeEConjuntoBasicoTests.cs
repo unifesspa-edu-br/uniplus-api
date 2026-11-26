@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
@@ -36,7 +37,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     public async Task Handle_HabilitacaoComFatoDaInscricao_MantemNaInscricao()
     {
         _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("QUILOMBOLA", "Quilombola")]).IsSuccess.Should().BeTrue();
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
+        ModeloFormularioView modelo = Modelo(DeOutraFaseObrigatoria, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -51,7 +52,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     {
         _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("CERTIFICADO", "Certificado")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [Item("CERTIFICADO", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosTrazidosParaAInscricao.Should().Equal("CERTIFICADO");
@@ -61,7 +62,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     [Fact(DisplayName = "O modelo de inscrição sem a seção dos dados básicos é copiado com ela em primeiro")]
     public async Task Handle_ModeloDeInscricaoSemASecao_CopiaComASecao()
     {
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [Item("QUILOMBOLA", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         _cenario.Processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
@@ -74,10 +75,36 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     {
         FatoColetadoInput porCor = ItemQueCita(Item("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao), "COR_RACA", "IGUAL", "PRETA");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, porCor]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [.. ConjuntoBasicoDaInscricao.Itens, porCor]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FatosCitados.Should().Equal("COR_RACA");
+    }
+
+    [Theory(DisplayName = "A finalidade com que o modelo é copiado vem da declaração dele: serve à inscrição, é inscrição; senão, obrigatório é habilitação e facultativo é isenção")]
+    [InlineData(true, true, "INSCRICAO")]
+    [InlineData(true, false, "INSCRICAO")]
+    [InlineData(false, true, "HABILITACAO")]
+    [InlineData(false, false, "ISENCAO_TAXA")]
+    public async Task Handle_ModeloDeclarado_CopiaComAFinalidadeDaDeclaracao(bool serveAFaseDeInscricao, bool obrigatorio, string finalidadeEsperada)
+    {
+        DeclaracaoDoFormulario declaracao = new(serveAFaseDeInscricao, obrigatorio);
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(declaracao, [Item("CERTIFICADO", 0)]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Finalidade.Codigo.Should().Be(finalidadeEsperada);
+    }
+
+    [Fact(DisplayName = "O modelo facultativo que serve à fase de inscrição é copiado com a seção dos dados básicos em primeiro")]
+    public async Task Handle_ModeloFacultativoQueServeAInscricao_CopiaComASecao()
+    {
+        DeclaracaoDoFormulario declaracao = new(ServeAFaseDeInscricao: true, Obrigatorio: false);
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(declaracao, [Item("QUILOMBOLA", 0)]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        _cenario.Processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "O impedimento do item do modelo é copiado, e só a resposta anterior que ele cita é dependência do campo")]
@@ -86,7 +113,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
         const string Mensagem = "Quem é quilombola e se declarou preto concorre pelo processo próprio.";
         FatoColetadoInput impedido = ItemQuilombolaImpedidoParaPretos(Mensagem);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, impedido]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [.. ConjuntoBasicoDaInscricao.Itens, impedido]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FatoColetado copiado = _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Subject;
@@ -97,7 +124,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     [Fact(DisplayName = "O modelo de inscrição que altera um dado básico é recusado na posição do item no modelo")]
     public async Task Handle_ModeloDeInscricaoComDadoBasicoAlterado_Recusa()
     {
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")]));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {

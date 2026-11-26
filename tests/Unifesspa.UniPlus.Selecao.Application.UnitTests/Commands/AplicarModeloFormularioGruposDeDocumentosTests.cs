@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
@@ -144,7 +145,7 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
             new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
-            FinalidadeFormulario.Inscricao,
+            DaInscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("QUILOMBOLA", 101)],
             documentos: ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, laudo)).Construir()));
 

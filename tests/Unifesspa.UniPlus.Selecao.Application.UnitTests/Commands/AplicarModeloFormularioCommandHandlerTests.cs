@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
@@ -30,7 +31,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Página inválida do modelo gravado é recusada no caminho do modelo")]
     public async Task Handle_PaginaInvalidaDoModelo_RecusaNoCaminhoDasPaginas()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, []);
+        ModeloFormularioView modelo = Modelo(DeOutraFaseObrigatoria, []);
         PaginaDoFormularioInput[] paginas =
         [
             EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).Construir(),
@@ -55,7 +56,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Modelo inativo e de outro tipo de processo é recusado pelos dois motivos")]
     public async Task Handle_ModeloInativoDeOutroTipo_RecusaOsDois()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]) with { Ativo = false, TipoProcessoCodigo = "INDIGENA_E_QUILOMBOLA" };
+        ModeloFormularioView modelo = Modelo(DaInscricao, [Item("QUILOMBOLA", 0)]) with { Ativo = false, TipoProcessoCodigo = "INDIGENA_E_QUILOMBOLA" };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -66,7 +67,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Pressuposto que a inscrição do processo não coleta é recusado com o índice")]
     public async Task Handle_PressupostoAusente_Recusa()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("CERTIFICADO", 0)], pressupostos: ["QUILOMBOLA"]);
+        ModeloFormularioView modelo = Modelo(DeOutraFaseObrigatoria, [Item("CERTIFICADO", 0)], pressupostos: ["QUILOMBOLA"]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -87,7 +88,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
 
         // Na habilitação, que não tem a seção do conjunto básico, a data de nascimento é coletada só se o modelo a pede.
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Habilitacao, itens, termos: [termo]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DeOutraFaseObrigatoria, itens, termos: [termo]));
 
         resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
@@ -95,7 +96,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "O grupo repetível do modelo é copiado para o formulário do processo")]
     public async Task Handle_ModeloComGrupo_CopiaOGrupo()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0))]);
+        ModeloFormularioView modelo = Modelo(DaInscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0))]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -107,7 +108,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_GrupoComCampoDesativado_DescartaOGrupo()
     {
         ModeloFormularioView modelo = Modelo(
-            FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0), Campo("SOB_GUARDA", 1))]);
+            DaInscricao, [Item("CERTIFICADO", 0)], grupos: [Composicao(Campo("MAIOR_IDADE", 0), Campo("SOB_GUARDA", 1))]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -119,7 +120,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_DerivadoCitadoPeloCampoDoGrupo_CopiaARegra()
     {
         ModeloFormularioView modelo = Modelo(
-            FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)],
+            DaInscricao, [Item("QUILOMBOLA", 0)],
             grupos: [Composicao(ItemQueCita(Campo("MAIOR_IDADE", 0), "PERFIL", "IGUAL", "A"))]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
@@ -132,7 +133,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_PartesQueOCatalogoMudou_DescartaERelata()
     {
         TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Item("QUILOMBOLA", 1)], termos: [termo]);
+        ModeloFormularioView modelo = Modelo(DaInscricao, [Item("BAIXA_RENDA", 0), Item("QUILOMBOLA", 1)], termos: [termo]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -148,7 +149,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     {
         _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("BAIXA_RENDA", "Baixa renda")]).IsSuccess.Should().BeTrue();
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [Item("BAIXA_RENDA", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Descartados.Should().BeEmpty();
@@ -160,7 +161,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     {
         FatoColetadoInput descartado = ItemQueCita(Item("BAIXA_RENDA", 1), "SEM_REGRA", "ALGUM_DE", new[] { "X" });
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), descartado]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(DaInscricao, [Item("QUILOMBOLA", 0), descartado]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Descartados.Should().ContainSingle().Which.Codigo.Should().Be("BAIXA_RENDA");
@@ -169,7 +170,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "A recusa de um item aponta a posição dele no modelo, mesmo depois de um descarte")]
     public async Task Handle_RecusaDepoisDeDescarte_ApontaAPosicaoNoModelo()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0), Montar("QUILOMBOLA", 1).ComRotulo("").Construir()]);
+        ModeloFormularioView modelo = Modelo(DaInscricao, [Item("BAIXA_RENDA", 0), Montar("QUILOMBOLA", 1).ComRotulo("").Construir()]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
@@ -189,7 +190,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             .ExibidoQuando([[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]]).Construir();
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(
-            Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
+            Modelo(DeOutraFaseObrigatoria, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.termos[1]");
     }

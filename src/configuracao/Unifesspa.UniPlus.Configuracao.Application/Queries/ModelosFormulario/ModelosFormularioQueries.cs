@@ -17,12 +17,12 @@ public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<ModeloFormular
 
 /// <summary>
 /// Lista de manutenção dos modelos, paginada, com filtros opcionais: o tipo de processo (traz os
-/// modelos que servem a ele, inclusive os que servem a todos), a finalidade (código publicado) e o
+/// modelos que servem a ele, inclusive os que servem a todos), se serve à fase de inscrição e o
 /// estado ativo.
 /// </summary>
 public sealed record ListarModelosFormularioQuery(
-    Guid? AfterId, int Limit, PaginationDirection Direction, string? TipoProcessoCodigo, string? Finalidade, bool? Ativo)
-    : IQuery<Result<ListarModelosFormularioResult>>;
+    Guid? AfterId, int Limit, PaginationDirection Direction, string? TipoProcessoCodigo, bool? ServeAFaseDeInscricao, bool? Ativo)
+    : IQuery<ListarModelosFormularioResult>;
 
 public sealed record ListarModelosFormularioResult(
     IReadOnlyList<ModeloFormularioDto> Items, Guid? AnteriorAfterId, Guid? ProximoAfterId);
@@ -43,32 +43,24 @@ public static class ListarModelosFormularioQueryHandler
 {
     private static readonly ListarModelosFormularioResult PaginaVazia = new([], null, null);
 
-    public static async Task<Result<ListarModelosFormularioResult>> Handle(
+    public static async Task<ListarModelosFormularioResult> Handle(
         ListarModelosFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        Result<FinalidadeFormulario?> finalidade = FiltroPorCodigoPedido.Ler<FinalidadeFormulario>(query.Finalidade,
-            new DomainError(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida, "Finalidade inválida. Use um dos códigos publicados para a finalidade do formulário."));
-        if (finalidade.IsFailure)
-        {
-            return Result<ListarModelosFormularioResult>.Failure(finalidade.Error!);
-        }
-
-        ListarModelosFormularioResult pagina = TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
+        return TipoDeProcessoNaoGravavel(query.TipoProcessoCodigo)
             ? PaginaVazia
-            : await ListarPaginaAsync(query, finalidade.Value, repository, cancellationToken).ConfigureAwait(false);
-        return Result<ListarModelosFormularioResult>.Success(pagina);
+            : await ListarPaginaAsync(query, repository, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<ListarModelosFormularioResult> ListarPaginaAsync(
-        ListarModelosFormularioQuery query, FinalidadeFormulario? finalidade, IModeloFormularioRepository repository, CancellationToken cancellationToken)
+        ListarModelosFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         (IReadOnlyList<ModeloFormulario> itens, Guid? anterior, Guid? proximo) = await repository
             .ListarPaginadoAsync(
                 query.AfterId, query.Limit, query.Direction,
-                string.IsNullOrWhiteSpace(query.TipoProcessoCodigo) ? null : query.TipoProcessoCodigo.Trim(), finalidade, query.Ativo,
+                string.IsNullOrWhiteSpace(query.TipoProcessoCodigo) ? null : query.TipoProcessoCodigo.Trim(), query.ServeAFaseDeInscricao, query.Ativo,
                 cancellationToken)
             .ConfigureAwait(false);
         return new ListarModelosFormularioResult([.. itens.Select(static m => m.ToDto())], anterior, proximo);

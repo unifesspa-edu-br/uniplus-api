@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O conteúdo do modelo, lido e gravado inteiro: o título, as páginas, os itens, os termos, os fatos
-/// pressupostos — coletados pela inscrição, que o modelo de outra finalidade pode citar (UNI-REQ-0144)
+/// pressupostos — coletados pela inscrição, que o modelo de outra fase pode citar (UNI-REQ-0144)
 /// — e os grupos repetíveis.
 /// </summary>
 public sealed record ConteudoDoModelo(

@@ -221,8 +221,8 @@ public sealed class FormulariosController : ControllerBase
     }
 
     /// <summary>
-    /// Aplica ao processo a cópia de um modelo de formulário: o formulário da finalidade do modelo é
-    /// criado ou substituído por inteiro, e a resposta relata o que a cópia trouxe, manteve,
+    /// Aplica ao processo a cópia de um modelo de formulário: o formulário da finalidade derivada da
+    /// declaração do modelo é criado ou substituído por inteiro, e a resposta relata o que a cópia trouxe, manteve,
     /// descartou e derivou (UNI-REQ-0144). Só em rascunho; mudar o modelo depois não muda o processo.
     /// </summary>
     [HttpPost("admin/processos-seletivos/{id:guid}/formularios/aplicacoes-de-modelo")]

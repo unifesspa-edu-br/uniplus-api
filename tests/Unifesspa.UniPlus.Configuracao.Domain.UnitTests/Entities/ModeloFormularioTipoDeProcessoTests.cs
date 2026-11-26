@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// O tipo de processo é guardado como recebido em criação e atualização.
 /// </summary>
@@ -33,7 +35,7 @@ public sealed class ModeloFormularioTipoDeProcessoTests
     public void Criar_TipoValido_GuardaCodigoRecebido()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, Codigo, Conteudo(), SemDerivacoes);
+            "HABILITACAO", "Habilitação", null, DeOutraFaseObrigatoria, Codigo, Conteudo(), SemDerivacoes);
 
         modelo.Value!.TipoProcessoCodigo.Should().Be(Codigo);
     }
@@ -42,7 +44,7 @@ public sealed class ModeloFormularioTipoDeProcessoTests
     public void Atualizar_TipoValido_GuardaCodigoRecebido()
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo(), SemDerivacoes).Value!;
+            "HABILITACAO", "Habilitação", null, DeOutraFaseObrigatoria, null, Conteudo(), SemDerivacoes).Value!;
 
         Result atualizado = modelo.Atualizar("Habilitação", null, Codigo, Conteudo(), SemDerivacoes);
 

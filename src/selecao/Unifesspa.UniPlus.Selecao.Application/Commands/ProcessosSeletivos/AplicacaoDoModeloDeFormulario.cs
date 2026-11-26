@@ -7,7 +7,6 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -48,7 +47,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade)));
+        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(plano.Copia.Finalidade));
     }
 
     // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do handler,

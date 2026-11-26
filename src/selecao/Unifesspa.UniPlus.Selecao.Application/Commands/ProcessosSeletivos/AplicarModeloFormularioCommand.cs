@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Aplica ao processo a cópia de um modelo de formulário (UNI-REQ-0144, ADR-0061): o formulário da
-/// finalidade do modelo é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois
+/// finalidade derivada da declaração do modelo é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois
 /// não muda o processo.
 /// </summary>
 public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId)

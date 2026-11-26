@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDoModeloDeFormulario;
 
 /// <summary>
@@ -25,7 +26,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
     public void Habilitacao_CitaPressuposto_Aceita()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, exibicao: Quando("CONCLUSAO_REGULAR"))], "CONCLUSAO_REGULAR"));
+            DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO_EMITIDO", 0, exibicao: Quando("CONCLUSAO_REGULAR"))], "CONCLUSAO_REGULAR"));
 
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
     }
@@ -34,7 +35,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
     public void Habilitacao_CitaFatoSemPressuposto_Recusa()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, exibicao: Quando("CONCLUSAO_REGULAR"))]));
+            DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO_EMITIDO", 0, exibicao: Quando("CONCLUSAO_REGULAR"))]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
@@ -45,7 +46,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
         Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal) { ["EGRESSO_ESCOLA_PUBLICA"] = ["TIPO_ESCOLA"] };
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([Item("DECLARACAO_ESCOLAR", 0, exibicao: Quando("EGRESSO_ESCOLA_PUBLICA"))], "TIPO_ESCOLA"),
             derivacoes);
 
@@ -87,7 +88,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
     [Fact(DisplayName = "Pressuposto com espaço no fim é recusado pelo formato, e não tomado pelo item")]
     public void PressupostoComEspacoNoFim_RecusaPeloFormato()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], "CONCLUSAO_REGULAR "));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CONCLUSAO_REGULAR", 0)], "CONCLUSAO_REGULAR "));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoDoConteudoFormatoInvalido);
     }
@@ -104,7 +105,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
             ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)),
         };
 
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, conteudo);
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, conteudo);
 
         modelo.IsSuccess.Should().Be(aceito, string.Join("; ", modelo.Errors.Select(static e => e.Error.Message)));
     }
@@ -112,7 +113,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
     [Fact(DisplayName = "Pressuposto em branco é recusado")]
     public void PressupostoEmBranco_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)], "  "));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)], "  "));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoEmBranco);
     }

@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// a fase canônica pelos códigos, que o processo resolve ao aplicar o modelo, as condições sobre fatos
 /// que o tornam exigido (ausentes, vale para todo candidato) e o indeferimento, que diz se é obrigatório,
 /// a consequência de o candidato não o apresentar e as bases legais, e os requisitos, que dizem o prazo de
-/// emissão e a validade escolhidos para ele. É sempre do formulário da finalidade do próprio modelo. Com <paramref name="PorOpcao"/>,
+/// emissão e a validade escolhidos para ele. É sempre do formulário do próprio modelo. Com <paramref name="PorOpcao"/>,
 /// o processo recebe uma exigência por opção ofertada, cada uma condicionada à declaração dela.
 /// </summary>
 public sealed record DocumentoExigidoDoModelo(

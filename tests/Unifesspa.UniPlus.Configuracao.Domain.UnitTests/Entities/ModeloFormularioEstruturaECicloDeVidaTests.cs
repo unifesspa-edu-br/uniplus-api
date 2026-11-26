@@ -11,17 +11,18 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDoModeloDeFormulario;
 
 /// <summary>
-/// A estrutura do modelo (seções, teto, duplicidades, restrições, finalidade) e a ativação.
+/// A estrutura do modelo (seções, teto, duplicidades, restrições, declaração) e a ativação.
 /// </summary>
 public sealed class ModeloFormularioEstruturaECicloDeVidaTests
 {
     [Fact(DisplayName = "O modelo nasce desativado, fora da escolha de processos novos, e é ativado quando pronto")]
     public void Criar_NasceDesativado_AtivacaoLiberaParaAEscolha()
     {
-        ModeloFormulario modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)])).Value!;
+        ModeloFormulario modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)])).Value!;
 
         modelo.Ativo.Should().BeFalse();
         modelo.Ativar().IsSuccess.Should().BeTrue();
@@ -31,7 +32,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     [Fact(DisplayName = "Todo item do modelo está numa seção")]
     public void ItemSemSecao_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO_EMITIDO", 0, pagina: null)]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO_EMITIDO", 0, pagina: null)]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
@@ -42,7 +43,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         ItemDoModelo comImpedimento = Item("CERTIFICADO_EMITIDO", 0)
             .ComImpedimento(new Impedimento(Quando("CERTIFICADO_EMITIDO"), "Quem já tem o certificado não se habilita por este processo."));
 
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([comImpedimento]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([comImpedimento]));
 
         modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -55,7 +56,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     public void ItensAcimaDoTeto_Recusa()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => Item($"FATO_{i}", i))]));
+            DeOutraFaseObrigatoria, Conteudo([.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => Item($"FATO_{i}", i))]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
     }
@@ -63,7 +64,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     [Fact(DisplayName = "Fatos que diferem por espaço são distintos")]
     public void FatoDiferentePorEspaco_NaoRepete()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0), Item("CERTIFICADO ", 1)]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0), Item("CERTIFICADO ", 1)]));
 
         modelo.IsSuccess.Should().BeTrue();
     }
@@ -74,7 +75,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         PaginaDoModelo outraDados = Dados with { Codigo = " DADOS", Ordem = 2 };
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], [], []));
+            DeOutraFaseObrigatoria, new ConteudoDoModelo("Habilitação", [Dados, outraDados, Revisao with { Ordem = 3 }], [Item("CERTIFICADO", 0)], [], [], []));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.PaginaCodigoInvalido);
     }
@@ -86,7 +87,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
             .ComTipoDeCampo(TipoDeCampo.Numero)
             .ComRestricoes([new TamanhoTexto(1, 10), new FaixaNumerica(0, 10)]);
 
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([item]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([item]));
 
         FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
         recusa.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);
@@ -97,25 +98,25 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     public void TipoProcessoEmBranco_Recusa()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", null, FinalidadeFormulario.Habilitacao, "   ", Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            "HABILITACAO_MEDICINA", "Habilitação", null, DeOutraFaseObrigatoria, "   ", Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco);
     }
 
-    [Fact(DisplayName = "Finalidade inválida é recusada no cadastro, não no conteúdo, e a estrutura que depende dela não é conferida")]
-    public void FinalidadeInvalida_RecusaNoCadastro()
+    [Fact(DisplayName = "Declaração ausente é recusada no cadastro, não no conteúdo, e a estrutura que depende dela não é conferida")]
+    public void DeclaracaoAusente_RecusaNoCadastro()
     {
         Result<ModeloFormulario> modelo = Criar(null, Conteudo([Item("CERTIFICADO", 0)]));
 
         modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new FieldError("finalidade", new DomainError(EstruturaFormularioErrorCodes.FinalidadeInvalida, string.Empty)),
+            new FieldError("declaracao", new DomainError(ModeloFormularioErrorCodes.DeclaracaoIncompleta, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message));
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o modelo; repetir o estado atual é recusado")]
     public void AtivarDesativar_AlternaERecusaORepetido()
     {
-        ModeloFormulario modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)])).Value!;
+        ModeloFormulario modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)])).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
 
         modelo.Ativar().Error!.Code.Should().Be(ModeloFormularioErrorCodes.JaAtivo);

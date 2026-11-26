@@ -507,7 +507,7 @@ Dois códigos distintos moram aqui: a **finalidade** do formulário (fechada em 
 
 ### 5.1 Finalidade
 
-Origem: `src/shared/Unifesspa.UniPlus.Regras/Formularios/EstruturaFormulario.cs` (constantes `FinalidadeInscricao`, `FinalidadeIsencaoTaxa`, `FinalidadeHabilitacao`) e o enumerado `FinalidadeFormulario`. Gravada em `modelos_formulario.finalidade`, em `formularios_processo` e no envelope da versão publicada; aparece na rota `/formularios/{finalidade}` e no JSON das requisições.
+Origem: `src/shared/Unifesspa.UniPlus.Regras/Formularios/EstruturaFormulario.cs` (constantes `FinalidadeInscricao`, `FinalidadeIsencaoTaxa`, `FinalidadeHabilitacao`) e o enumerado `FinalidadeFormulario`. O modelo de formulário não grava finalidade: grava a declaração, nas colunas `modelos_formulario.serve_a_fase_de_inscricao` e `modelos_formulario.obrigatorio` (ADR-0171), e a finalidade é derivada dela. Gravada em `formularios_processo` e no envelope da versão publicada; aparece na rota `/formularios/{finalidade}` e no JSON das requisições.
 
 | Código atual | Código novo ou mantido | Ação |
 |---|---|---|
@@ -515,16 +515,14 @@ Origem: `src/shared/Unifesspa.UniPlus.Regras/Formularios/EstruturaFormulario.cs`
 | `ISENCAO_TAXA` | mantido | manter |
 | `HABILITACAO` | mantido neste mapa | manter; ponto em aberto para o líder técnico (PA-2) |
 
-Usos de `INSCRICAO` e `ISENCAO_TAXA` como finalidade (mantidos): constantes e conversões em `EstruturaFormulario.cs` (linhas 44, 45, 182, 183, 191 e 192), CHECK `ck_modelos_formulario_finalidade` (`ModeloFormularioConfiguration.cs`, linha 31) e a ADR-0137. A fase que atende cada uma é decidida pela capacidade da fase (`ColetaInscricao`, `ColetaSolicitacaoIsencao`), e não por código; só a habilitação usa o código.
+Usos de `INSCRICAO` e `ISENCAO_TAXA` como finalidade (mantidos): constantes e conversões em `EstruturaFormulario.cs` (linhas 44, 45, 182, 183, 191 e 192) e a ADR-0137. A fase que atende cada uma é decidida pela capacidade da fase (`ColetaInscricao`, `ColetaSolicitacaoIsencao`), e não por código; só a habilitação usa o código.
 
 Usos de `HABILITACAO` como finalidade:
 
 | Arquivo | Uso | Ação |
 |---|---|---|
 | `src/shared/Unifesspa.UniPlus.Regras/Formularios/EstruturaFormulario.cs` (linhas 46, 184 e 193) | constante e conversões de e para o enumerado | manter; PA-2 |
-| `src/configuracao/.../Persistence/Configurations/ModeloFormularioConfiguration.cs` (linha 31) | CHECK `ck_modelos_formulario_finalidade` | manter; PA-2 |
-| `src/configuracao/.../Persistence/Migrations/20261001042908_AdicionaModelosFormulario.cs` | o mesmo CHECK na migração aplicada | manter |
-| `src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/ModeloFormularioView.cs` (linha 48) | comentário com os tokens | manter; PA-2 |
+| `src/host/Unifesspa.UniPlus.Monolito.Persistencia/Migrations/20261126035634_Inicial.cs` (e o snapshot) | a coluna `finalidade` e o CHECK `ck_modelos_formulario_finalidade`, que o modelo não grava mais | a migração única é gerada de novo com as colunas da declaração |
 | `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/FormulariosController.cs` (linha 30) | comentário; rota por finalidade | manter; PA-2 |
 | `src/selecao/Unifesspa.UniPlus.Selecao.Application/DTOs/DocumentoExigidoDto.cs` (linha 20), `PreVisualizacaoDoProcessoDto.cs` (linha 91) e `Commands/ProcessosSeletivos/DefinirDocumentosExigidosCommand.cs` (linha 62) | comentários com os tokens | manter; PA-2 |
 | `docs/adrs/0137` (linha 36) | decisão das finalidades | manter; PA-2 |

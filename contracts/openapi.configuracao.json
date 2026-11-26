@@ -6735,10 +6735,10 @@
             }
           },
           {
-            "name": "finalidade",
+            "name": "serveAFaseDeInscricao",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
+              "type": "boolean"
             }
           },
           {
@@ -6850,16 +6850,6 @@
           },
           "410": {
             "description": "Gone",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -19307,7 +19297,7 @@
       "CriarModeloFormularioCommand": {
         "required": [
           "codigo",
-          "finalidade",
+          "declaracao",
           "descritivo",
           "conteudo"
         ],
@@ -19316,8 +19306,15 @@
           "codigo": {
             "type": "string"
           },
-          "finalidade": {
-            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
+          "declaracao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DeclaracaoDoModeloInput"
+              }
+            ]
           },
           "descritivo": {
             "oneOf": [
@@ -20169,6 +20166,42 @@
           },
           "dianteDeManifestacaoDesfavoravel": {
             "type": "boolean"
+          }
+        }
+      },
+      "DeclaracaoDoModeloDto": {
+        "required": [
+          "serveAFaseDeInscricao",
+          "obrigatorio"
+        ],
+        "type": "object",
+        "properties": {
+          "serveAFaseDeInscricao": {
+            "type": "boolean"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeclaracaoDoModeloInput": {
+        "required": [
+          "serveAFaseDeInscricao",
+          "obrigatorio"
+        ],
+        "type": "object",
+        "properties": {
+          "serveAFaseDeInscricao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "obrigatorio": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -21895,30 +21928,6 @@
           }
         }
       },
-      "FinalidadeFormulario": {
-        "required": [
-          "codigo",
-          "rotulo"
-        ],
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "$ref": "#/components/schemas/FinalidadeFormularioCodigo"
-          },
-          "rotulo": {
-            "type": "string"
-          }
-        }
-      },
-      "FinalidadeFormularioCodigo": {
-        "enum": [
-          "INSCRICAO",
-          "ISENCAO_TAXA",
-          "HABILITACAO"
-        ],
-        "type": "string",
-        "description": "Para que o formul\u00E1rio coleta respostas: cada processo tem no m\u00E1ximo um formul\u00E1rio por finalidade.\n\n- \u0060INSCRICAO\u0060: Inscri\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato se inscreve no processo seletivo.\n- \u0060ISENCAO_TAXA\u0060: Isen\u00E7\u00E3o da taxa \u2014 Formul\u00E1rio em que o candidato pede a isen\u00E7\u00E3o da taxa de inscri\u00E7\u00E3o.\n- \u0060HABILITACAO\u0060: Habilita\u00E7\u00E3o \u2014 Formul\u00E1rio em que o candidato comprova os requisitos para ser habilitado."
-      },
       "FonteValoresFato": {
         "required": [
           "codigo",
@@ -23062,7 +23071,7 @@
         "required": [
           "id",
           "codigo",
-          "finalidade",
+          "declaracao",
           "ativo",
           "descritivo",
           "conteudo"
@@ -23076,8 +23085,8 @@
           "codigo": {
             "type": "string"
           },
-          "finalidade": {
-            "$ref": "#/components/schemas/FinalidadeFormulario"
+          "declaracao": {
+            "$ref": "#/components/schemas/DeclaracaoDoModeloDto"
           },
           "ativo": {
             "type": "boolean"

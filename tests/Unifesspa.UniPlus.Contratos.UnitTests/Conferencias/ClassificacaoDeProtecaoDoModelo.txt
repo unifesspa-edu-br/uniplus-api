@@ -694,9 +694,10 @@ configuracao.modelos_formulario.conteudo: Interno
 configuracao.modelos_formulario.created_at: Interno
 configuracao.modelos_formulario.created_by: Pessoal
 configuracao.modelos_formulario.descricao: Interno
-configuracao.modelos_formulario.finalidade: Interno
 configuracao.modelos_formulario.id: Interno
 configuracao.modelos_formulario.nome: Interno
+configuracao.modelos_formulario.obrigatorio: Interno
+configuracao.modelos_formulario.serve_a_fase_de_inscricao: Interno
 configuracao.modelos_formulario.tipo_processo_codigo: Interno
 configuracao.modelos_formulario.updated_at: Interno
 configuracao.modelos_formulario.updated_by: Pessoal

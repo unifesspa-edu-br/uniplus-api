@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
 /// <summary>
@@ -29,9 +30,9 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
 
     private static List<FieldError> Conferir(
         ConteudoDoModelo conteudo,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Habilitacao,
+        DeclaracaoDoFormulario? declaracao = null,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
-        ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, derivacoes ?? SemDerivacoes);
+        ConferenciaDoConteudoDoModelo.Conferir(declaracao ?? DeOutraFaseObrigatoria, conteudo, derivacoes ?? SemDerivacoes);
 
     private static ItemDoModelo Opcional(string fato, int ordem = 0) => Item(fato, ordem).ComObrigatoriedade(Obrigatoriedade.Nunca);
 
@@ -157,7 +158,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         };
 
         List<FieldError> erros = Conferir(
-            Conteudo(Opcional("TIPO_ESCOLA"), Item("COTA", 1, Quando("COTA_DERIVADA"))), FinalidadeFormulario.Inscricao, derivacoes);
+            Conteudo(Opcional("TIPO_ESCOLA"), Item("COTA", 1, Quando("COTA_DERIVADA"))), DaInscricao, derivacoes);
 
         erros.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
     }
@@ -167,7 +168,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
     {
         Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal) { ["OUTRO_DERIVADO"] = ["RENDA_DECLARADA"] };
 
-        Conferir(Conteudo(Opcional("RENDA_DECLARADA"), Item("COTA", 1)), FinalidadeFormulario.Inscricao, derivacoes).Should().BeEmpty();
+        Conferir(Conteudo(Opcional("RENDA_DECLARADA"), Item("COTA", 1)), DaInscricao, derivacoes).Should().BeEmpty();
     }
 
     [Theory(DisplayName = "Derivados que se citam em cadeia e em diamante chegam à mesma base: opcional é recusado uma vez, obrigatório passa")]
@@ -183,7 +184,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         };
         ItemDoModelo @base = baseOpcional ? Opcional("BASE") : Item("BASE");
 
-        List<FieldError> erros = Conferir(Conteudo(@base, Item("COTA", 1, Quando("DERIVADO_1"))), FinalidadeFormulario.Inscricao, derivacoes);
+        List<FieldError> erros = Conferir(Conteudo(@base, Item("COTA", 1, Quando("DERIVADO_1"))), DaInscricao, derivacoes);
 
         erros.Select(static e => e.Error.Code).Should().HaveCount(recusas).And.AllBe(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
     }
@@ -198,7 +199,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         };
 
         List<FieldError> erros = Conferir(
-            Conteudo(Item("CICLO_A"), Opcional("BASE", 1), Item("COTA", 2, Quando("CICLO_A"))), FinalidadeFormulario.Inscricao, derivacoes);
+            Conteudo(Item("CICLO_A"), Opcional("BASE", 1), Item("COTA", 2, Quando("CICLO_A"))), DaInscricao, derivacoes);
 
         FieldError recusa = erros.Should().ContainSingle().Subject;
         recusa.Error.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);

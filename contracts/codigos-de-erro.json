@@ -1872,6 +1872,11 @@
       "titulo": "Consequência do indeferimento desconhecida"
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.declaracao_incompleta",
+      "status": 422,
+      "titulo": "A declaração do modelo de formulário está ausente ou incompleta"
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.descricao_tamanho",
       "status": 422,
       "titulo": "Descrição do modelo de formulário excede o tamanho máximo"
@@ -1885,11 +1890,6 @@
       "codigo": "uniplus.configuracao.modelo_formulario.exigencia_por_opcao_invalida",
       "status": 422,
       "titulo": "O documento só se multiplica pelas opções de fato categórico cujas opções o processo declara"
-    },
-    {
-      "codigo": "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida",
-      "status": 400,
-      "titulo": "Finalidade do filtro de modelos inválida"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.ja_ativo",
@@ -1934,7 +1934,7 @@
     {
       "codigo": "uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao",
       "status": 422,
-      "titulo": "O modelo de inscrição não tem pressupostos"
+      "titulo": "O modelo que serve à fase de inscrição não tem pressupostos"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.pressuposto_repetido",

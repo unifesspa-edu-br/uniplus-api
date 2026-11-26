@@ -27,6 +27,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
 
 /// <summary>
@@ -42,7 +43,7 @@ public sealed class ModeloFormularioVinculoNovoTests
         ItemDoModelo item = new(
             "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null,
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, null,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [termo], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }
@@ -156,7 +157,7 @@ public sealed class ModeloFormularioVinculoNovoTests
     public async Task Criar_RecusaDeLeitura_AcumulaAsDoCadastro()
     {
         CriarModeloFormularioCommand command = new(
-            "", "XYZ", new DescritivoDoModeloInput("Habilitação", null, null), Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
+            "", null, new DescritivoDoModeloInput("Habilitação", null, null), Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
             command, _cenario.Repository, _cenario.Fatos, _cenario.Termos, _cenario.Tipos, _cenario.UnitOfWork, CancellationToken.None);
@@ -165,7 +166,7 @@ public sealed class ModeloFormularioVinculoNovoTests
         [
             ("conteudo.itens[0].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida),
             ("codigo", ModeloFormularioErrorCodes.CodigoObrigatorio),
-            ("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida),
+            ("declaracao", ModeloFormularioErrorCodes.DeclaracaoIncompleta),
         ]);
     }
 

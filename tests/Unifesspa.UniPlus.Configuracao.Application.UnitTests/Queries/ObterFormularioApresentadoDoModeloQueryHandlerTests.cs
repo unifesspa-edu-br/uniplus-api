@@ -20,6 +20,8 @@ using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// O apresentado do modelo projeta o conteúdo como aplicado, com o catálogo vivo e o cadastro
 /// institucional, no mesmo formato que o certame divulgado serve.
@@ -55,7 +57,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
     }
 
-    [Fact(DisplayName = "As seções e os campos saem na ordem, com a finalidade e o título do modelo")]
+    [Fact(DisplayName = "As seções e os campos saem na ordem, com a finalidade derivada da declaração do modelo e o título")]
     public async Task Handle_Modelo_ProjetaSecoesECamposNaOrdem()
     {
         ModeloFormulario modelo = Modelo(itens: [Item("SEGUNDO", 1), Item("PRIMEIRO", 0)]);
@@ -150,10 +152,32 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         grupo.Subitens.Select(static c => c.FatoCodigo).Should().Equal("PRIMEIRO", "SEGUNDO");
     }
 
+    [Fact(DisplayName = "O modelo facultativo que serve à fase de inscrição sai com o conjunto básico, como o obrigatório")]
+    public async Task Handle_ModeloFacultativoQueServeAInscricao_SaiComOConjuntoBasico()
+    {
+        ModeloFormulario modelo = Modelo(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: true, Obrigatorio: false), itens: [Item("CERTIFICADO", 100)]);
+
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+
+        resultado.Finalidade.Should().Be("INSCRICAO");
+        resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
+    }
+
+    [Fact(DisplayName = "O modelo facultativo de outra fase sai só com os itens do modelo")]
+    public async Task Handle_ModeloFacultativoDeOutraFase_SaiSemOConjuntoBasico()
+    {
+        ModeloFormulario modelo = Modelo(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: false), itens: [Item("CERTIFICADO", 0)]);
+
+        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+
+        resultado.Finalidade.Should().Be("ISENCAO_TAXA");
+        resultado.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Equal("CERTIFICADO");
+    }
+
     [Fact(DisplayName = "O modelo de inscrição sai com o conjunto básico do candidato, como o formulário do processo o terá")]
     public async Task Handle_ModeloDeInscricao_SaiComOConjuntoBasico()
     {
-        ModeloFormulario modelo = Modelo(FinalidadeFormulario.Inscricao, itens: [Item("CERTIFICADO", 100)]);
+        ModeloFormulario modelo = Modelo(DaInscricao, itens: [Item("CERTIFICADO", 100)]);
 
         FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
@@ -193,14 +217,14 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     }
 
     private static ModeloFormulario Modelo(
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Habilitacao,
+        DeclaracaoDoFormulario? declaracao = null,
         IReadOnlyList<ItemDoModelo>? itens = null,
         IReadOnlyList<TermoDoModelo>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
         IReadOnlyList<GrupoDoModelo>? grupos = null)
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "MODELO_DE_TESTE", "Modelo de teste", null, finalidade, null,
+            "MODELO_DE_TESTE", "Modelo de teste", null, declaracao ?? DeOutraFaseObrigatoria, null,
             new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens ?? [], termos ?? [], pressupostos ?? [], grupos ?? []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

@@ -10,16 +10,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Modelo de formulário composto pelo administrador para um tipo de processo — ou para todos — e uma
-/// finalidade (UNI-REQ-0144, ADR-0137). O processo parte de um modelo e recebe uma cópia por valor
-/// (ADR-0061): mudar o modelo depois não muda o processo.
+/// Modelo de formulário composto pelo administrador para um tipo de processo — ou para todos — que declara
+/// se serve à fase de inscrição e se é obrigatório (UNI-REQ-0144, ADR-0171). O processo parte de um modelo
+/// e recebe uma cópia por valor (ADR-0061): mudar o modelo depois não muda o processo.
 /// </summary>
 /// <remarks>
 /// O modelo segue as mesmas regras do formulário do processo, pelo mesmo código de
 /// <c>Unifesspa.UniPlus.Regras</c>: a forma do cabeçalho, das páginas, dos itens e dos termos, o teto de
-/// itens, a estrutura por finalidade e o grafo de coleta. A conferência contra o catálogo de fatos e de
+/// itens, a estrutura pela declaração e o grafo de coleta. A conferência contra o catálogo de fatos e de
 /// termos é de quem tem o catálogo; o modelo recebe dele só as dependências dos derivados por regra.
-/// O código e a finalidade são imutáveis; vários modelos ativos convivem por tipo e finalidade.
+/// O código e a declaração são imutáveis; vários modelos ativos convivem por tipo e declaração.
 /// </remarks>
 public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 {
@@ -37,10 +37,20 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     /// <summary>O caminho do descritivo — nome, descrição e tipo de processo — no corpo da escrita, onde as recusas dele se apontam.</summary>
     public const string CaminhoDoDescritivo = "descritivo";
 
+    private const string CaminhoDaDeclaracao = "declaracao";
+
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
-    public FinalidadeFormulario Finalidade { get; private set; }
+
+    /// <summary>Se o modelo serve à fase que coleta a inscrição e traz o conjunto básico de dados do candidato.</summary>
+    public bool ServeAFaseDeInscricao { get; private set; }
+
+    /// <summary>Se o modelo é obrigatório. Até a finalidade do formulário do processo sair, o modelo que serve à inscrição é tratado como obrigatório ao ser aplicado.</summary>
+    public bool Obrigatorio { get; private set; }
+
+    /// <summary>A declaração do modelo, imutável depois da criação.</summary>
+    public DeclaracaoDoFormulario Declaracao => new(ServeAFaseDeInscricao, Obrigatorio);
 
     /// <summary>O tipo de processo a que o modelo se destina; nulo quando serve a todos.</summary>
     public string? TipoProcessoCodigo { get; private set; }
@@ -62,7 +72,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         string? codigo,
         string? nome,
         string? descricao,
-        FinalidadeFormulario? finalidade,
+        DeclaracaoDoFormulario? declaracao,
         string? tipoProcessoCodigo,
         ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
@@ -71,19 +81,19 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(derivacoes);
 
         ConteudoDoModelo normalizado = conteudo.NaFormaGravada();
-        List<FieldError> erros = ConferirCadastro(codigo, nome, descricao, tipoProcessoCodigo, finalidade);
-        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(finalidade, normalizado, derivacoes));
+        List<FieldError> erros = ConferirCadastro(codigo, nome, descricao, tipoProcessoCodigo, declaracao);
+        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(declaracao, normalizado, derivacoes));
         if (erros.Count > 0)
         {
             return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
-        ModeloFormulario modelo = new() { Codigo = codigo!, Finalidade = finalidade!.Value, Ativo = false };
+        ModeloFormulario modelo = Declarado(codigo!, declaracao!.Value);
         modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result<ModeloFormulario>.Success(modelo);
     }
 
-    /// <summary>Substitui o descritivo e o conteúdo; o código e a finalidade são imutáveis.</summary>
+    /// <summary>Substitui o descritivo e o conteúdo; o código e a declaração são imutáveis.</summary>
     public Result Atualizar(
         string? nome,
         string? descricao,
@@ -96,7 +106,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
         ConteudoDoModelo normalizado = conteudo.NaFormaGravada();
         List<FieldError> erros = ConferirDescritivo(nome, descricao, tipoProcessoCodigo);
-        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(Finalidade, normalizado, derivacoes));
+        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(Declaracao, normalizado, derivacoes));
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -131,16 +141,25 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e finalidade
+    /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e declaração
     /// —, para que essas recusas saiam junto das do conteúdo mesmo quando ele não chega a ser lido.
     /// </summary>
     public static List<FieldError> ConferirCadastro(
-        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, FinalidadeFormulario? finalidade) =>
-        [.. ValidarCodigo(codigo), .. ValidarDescritivo(nome, descricao, tipoProcessoCodigo), .. FormaDoCabecalho.ValidarFinalidade(finalidade)];
+        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, DeclaracaoDoFormulario? declaracao) =>
+        [.. ValidarCodigo(codigo), .. ValidarDescritivo(nome, descricao, tipoProcessoCodigo), .. ValidarDeclaracao(declaracao)];
 
     /// <summary>O que a edição confere fora do conteúdo: o descritivo e o tipo de processo.</summary>
     public static List<FieldError> ConferirDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
         ValidarDescritivo(nome, descricao, tipoProcessoCodigo);
+
+    private static List<FieldError> ValidarDeclaracao(DeclaracaoDoFormulario? declaracao) =>
+        declaracao is null ? [DeclaracaoIncompleta] : [];
+
+    private static FieldError DeclaracaoIncompleta { get; } = new(
+        CaminhoDaDeclaracao,
+        new DomainError(
+            ModeloFormularioErrorCodes.DeclaracaoIncompleta,
+            "A declaração do modelo informa se ele serve à fase de inscrição e se é obrigatório."));
 
     private static List<FieldError> ValidarCodigo(string? codigo) =>
         CampoCodigo.Recusa(codigo, "codigo") is { } erro ? [erro] : [];
@@ -189,6 +208,14 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             yield return erro;
         }
     }
+
+    private static ModeloFormulario Declarado(string codigo, DeclaracaoDoFormulario declaracao) => new()
+    {
+        Codigo = codigo,
+        ServeAFaseDeInscricao = declaracao.ServeAFaseDeInscricao,
+        Obrigatorio = declaracao.Obrigatorio,
+        Ativo = false,
+    };
 
     /// <summary>Grava o descritivo e o conteúdo já na forma gravada, na ordem em que é gravado.</summary>
     private void Aplicar(string nome, string? descricao, string? tipoProcessoCodigo, ConteudoDoModelo conteudo)

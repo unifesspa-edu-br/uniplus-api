@@ -18,11 +18,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
 /// Os documentos exigidos que o modelo de formulário copia para o processo: a fase onde entram, a troca só
-/// dos documentos da finalidade do modelo, a regra padrão dos derivados que citam e a multiplicação pelas
+/// dos documentos da finalidade derivada da declaração do modelo, a regra padrão dos derivados que citam e a multiplicação pelas
 /// opções ofertadas.
 /// </summary>
 public sealed class AplicarModeloFormularioDocumentosExigidosTests
@@ -81,8 +82,8 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
             [("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 0), ("CONDICAO_ATENDIMENTO", 0)]);
     }
 
-    [Fact(DisplayName = "O modelo copia o conjunto de documentos exigidos para o processo, na fase de inscrição, e a nova aplicação troca só os da finalidade do modelo")]
-    public async Task Handle_ModeloComDocumentos_CopiaETrocaOsDaFinalidade()
+    [Fact(DisplayName = "O modelo copia o conjunto de documentos exigidos para o processo, na fase de inscrição, e a nova aplicação troca só os da finalidade derivada da declaração do modelo")]
+    public async Task Handle_ModeloComDocumentos_CopiaETrocaOsDaFinalidadeDerivadaDaDeclaracao()
     {
         FaseCronograma fase = DeclararCronogramaComDocumentoDaHabilitacao();
         ModeloFormularioView modelo = ModeloComDocumentos(
@@ -142,7 +143,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.DeclararAtendimentoEspecializado();
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
-            FinalidadeFormulario.Inscricao,
+            DaInscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("QUILOMBOLA", 101)],
             documentos: ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(LaudoQueDependeDeUmFatoDerivado())));
 

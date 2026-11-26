@@ -256,7 +256,7 @@ public static class SementePsrMedicina2027
     /// <summary>
     /// Os comandos que gravam os modelos, ativos: a inscrição sem prova e com prova, que partem das
     /// mesmas partes e diferem só pelo atendimento especializado, e a habilitação. O conteúdo é construído pelos records do
-    /// domínio e conferido por <see cref="ModeloFormulario.Criar"/> — estrutura, blocos por finalidade
+    /// domínio e conferido por <see cref="ModeloFormulario.Criar"/> — estrutura, blocos pela declaração
     /// e grafo das regras —, e serializado pelo mesmo conversor que a aplicação usa para ler.
     /// </summary>
     /// <remarks>
@@ -267,14 +267,14 @@ public static class SementePsrMedicina2027
     [
         ComandoDoModelo(4, ModeloDeInscricaoSemProva, "Inscrição — PSR sem prova",
             "Formulário de inscrição do Processo Seletivo Regular Unificado sem aplicação de prova, que classifica pela nota do ENEM.",
-            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: false), FormatosDoCatalogo()), DerivacoesDaInscricao),
+            DeclaracaoDoFormulario.DaInscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: false), FormatosDoCatalogo()), DerivacoesDaInscricao),
         ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
             "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Habilitacao, ModelosDaSementePsrMedicina2027.Habilitacao(),
+            new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), ModelosDaSementePsrMedicina2027.Habilitacao(),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
         ComandoDoModelo(3, ModeloDeInscricaoComProva, "Inscrição — PSR com prova",
             "Formulário de inscrição do Processo Seletivo Regular Unificado com aplicação de prova, com o pedido de atendimento especializado nas etapas presenciais.",
-            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: true), FormatosDoCatalogo()), DerivacoesDaInscricao),
+            DeclaracaoDoFormulario.DaInscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: true), FormatosDoCatalogo()), DerivacoesDaInscricao),
     ];
 
     /// <summary>
@@ -300,11 +300,11 @@ public static class SementePsrMedicina2027
             .ToDictionary(StringComparer.Ordinal);
 
     private static ComandoDaSemente ComandoDoModelo(
-        int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
+        int n, string codigo, string nome, string descricao, DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ModeloFormulario modelo = Declaracao.Exigir(
-            ModeloFormulario.Criar(codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes), $"modelo {codigo}");
+            ModeloFormulario.Criar(codigo, nome, descricao, declaracao, TipoProcessoCodigo, conteudo, derivacoes), $"modelo {codigo}");
         Declaracao.Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
         return SqlDaSemente.ComandoDoModelo(Id(TabelaModelo, n), modelo, Declaracao);
     }

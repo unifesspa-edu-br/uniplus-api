@@ -25,6 +25,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// Um processo, o catálogo de fatos e os leitores que o handler de aplicação do modelo de formulário consulta.
 /// Os testes descrevem o que o catálogo e o modelo têm; a chamada ao handler fica toda aqui, de modo que uma
@@ -89,13 +91,13 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     ];
 
     public static ModeloFormularioView Modelo(
-        FinalidadeFormulario finalidade,
+        DeclaracaoDoFormulario declaracao,
         IReadOnlyList<FatoColetadoInput> itens,
         IReadOnlyList<TermoExigidoInput>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
         IReadOnlyList<GrupoColetadoInput>? grupos = null,
         ConjuntoDeDocumentosDoModeloInput? documentos = null) =>
-        new(Guid.NewGuid(), "MODELO", "Modelo", null, finalidade.Codigo(), null, true,
+        new(Guid.NewGuid(), "MODELO", "Modelo", null, declaracao, null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
                 [
@@ -109,7 +111,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     public static ModeloFormularioView ModeloComConjunto(ConjuntoDeDocumentosDoModeloInput conjunto) =>
         Modelo(
-            FinalidadeFormulario.Inscricao,
+            DaInscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "ESCOLHA_MULTIPLA")],
             documentos: conjunto);
 

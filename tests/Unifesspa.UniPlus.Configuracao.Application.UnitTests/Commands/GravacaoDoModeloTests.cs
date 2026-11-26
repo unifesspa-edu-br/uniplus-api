@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ConteudosDeModeloParaTeste;
 
 /// <summary>
@@ -193,7 +194,7 @@ public sealed class GravacaoDoModeloTests
 
     private Task<Result<Guid>> CriarAsync() =>
         CriarModeloFormularioCommandHandler.Handle(
-            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "HABILITACAO", new DescritivoDoModeloInput("Habilitação Medicina", null, null), Conteudo(Item("CERTIFICADO", 0))),
+            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", EntradaDeOutraFaseObrigatoria, new DescritivoDoModeloInput("Habilitação Medicina", null, null), Conteudo(Item("CERTIFICADO", 0))),
             _repository, _fatos, _termos, _tipos, _unitOfWork, CancellationToken.None);
 
     private Task<Result> AtualizarAsync(Guid id, ConteudoDoModeloInput conteudo, string nome = "Habilitação Medicina") =>

@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Http;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
-/// <summary>Mapeamentos HTTP dos erros de Modelo de formulário (UNI-REQ-0144, ADR-0137).</summary>
+/// <summary>Mapeamentos HTTP dos erros de Modelo de formulário (UNI-REQ-0144, ADR-0171).</summary>
 internal static class ModeloFormularioErrorMappings
 {
     internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
     [
-        new(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida, new DomainErrorMapping(StatusCodes.Status400BadRequest,
-            "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida", "Finalidade do filtro de modelos inválida")),
+        new(ModeloFormularioErrorCodes.DeclaracaoIncompleta, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+            "uniplus.configuracao.modelo_formulario.declaracao_incompleta", "A declaração do modelo de formulário está ausente ou incompleta")),
         new(ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -45,7 +45,7 @@ internal static class ModeloFormularioErrorMappings
                 "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_formato_invalido", "Código do tipo de processo fora do formato")),
         new(ModeloFormularioErrorCodes.PressupostoNaInscricao,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao", "O modelo de inscrição não tem pressupostos")),
+                "uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao", "O modelo que serve à fase de inscrição não tem pressupostos")),
         new(ModeloFormularioErrorCodes.PressupostoRepetido,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modelo_formulario.pressuposto_repetido", "O fato aparece mais de uma vez entre os pressupostos")),

@@ -41,7 +41,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
+        Guid modeloId = await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, "QUILOMBOLA");
 
         HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId);
 
@@ -58,9 +58,9 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_FatoDeOutraFinalidade_MudaDeFormularioNaMesmaGravacao()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FatoDeOutraFinalidade_MudaDeFormularioNaMesmaGravacao));
-        (await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Habilitacao, "QUILOMBOLA"))).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AplicarAsync(processoId, await SemearModeloAsync(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), "QUILOMBOLA"))).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA"));
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, "QUILOMBOLA"));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
@@ -72,7 +72,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_ComGrupo_GravaESubstitui()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ComGrupo_GravaESubstitui));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, ConteudoComGrupoDaComposicaoFamiliar());
+        Guid modeloId = await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, ConteudoComGrupoDaComposicaoFamiliar());
 
         (await AplicarAsync(processoId, modeloId)).StatusCode.Should().Be(HttpStatusCode.OK);
         HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId);
@@ -107,12 +107,12 @@ public sealed class AplicarModeloFormularioEndpointTests
         return processo.Id;
     }
 
-    private Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, params string[] fatos) => SemearModeloAsync(finalidade, Conteudo(fatos));
+    private Task<Guid> SemearModeloAsync(DeclaracaoDoFormulario declaracao, params string[] fatos) => SemearModeloAsync(declaracao, Conteudo(fatos));
 
-    private async Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+    private async Task<Guid> SemearModeloAsync(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, finalidade, null, conteudo,
+            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, declaracao, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

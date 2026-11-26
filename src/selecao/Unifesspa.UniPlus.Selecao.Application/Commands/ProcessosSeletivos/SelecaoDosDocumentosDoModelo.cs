@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Copia o conjunto padrão de documentos exigidos do modelo para as regras do processo, resolvendo a fase
 /// pelo código no cronograma e o tipo pelo código no catálogo. Cada grupo de documentos vira uma regra de
 /// quantidade mínima de itens, com os documentos do grupo como itens; o grupo sem nenhum documento que valha
-/// sai da cópia, e que a quantidade caiba nos itens e que eles sejam da mesma fase quem confere é o processo. Os documentos da finalidade do modelo que o
+/// sai da cópia, e que a quantidade caiba nos itens e que eles sejam da mesma fase quem confere é o processo. Os documentos da finalidade derivada da declaração do modelo que o
 /// processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os das outras
 /// finalidades ficam. Modelo sem conjunto não altera as regras. A cláusula que cita valor que o processo não
 /// oferta — a condição de atendimento fora das condições ofertadas — não tem como valer e sai da cópia; o documento sem
@@ -61,7 +61,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             : Result.ValidationFailure([.. definida.Errors.Select(erro => RegraCopiadaDoModelo.NoModelo(erro, copiadas))]);
     }
 
-    // O modelo substitui as regras sem grupo cujos documentos pertencem à sua finalidade.
+    // O modelo substitui as regras sem grupo cujos documentos pertencem à finalidade derivada da declaração dele.
     private List<RegraDeComprovacao> RegrasSemGrupoQueOModeloNaoSubstitui() =>
         [.. processo.RegrasDeComprovacaoSemGrupo.Where(regraSemGrupo => !regraSemGrupo.EnumerarRegraEItens()
             .Where(static regraDeDocumento => regraDeDocumento.Forma == FormaDeComprovacao.Documento)

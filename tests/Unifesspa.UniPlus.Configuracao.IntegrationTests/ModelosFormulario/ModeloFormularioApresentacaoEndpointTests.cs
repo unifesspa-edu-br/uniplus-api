@@ -44,7 +44,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
     public async Task ObterFormularioApresentado_ModeloComGrupo_TrazOGrupo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await IdDoModeloAsync(client, "HABILITACAO", "PSR_MEDICINA_2027_HABILITACAO");
+        Guid id = await IdDoModeloAsync(client, serveAFaseDeInscricao: false, "PSR_MEDICINA_2027_HABILITACAO");
 
         JsonObject formulario = await ApresentacaoAsync(client, id);
 
@@ -58,7 +58,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
     public async Task ObterFormularioApresentado_ModeloDeInscricaoSemOBasico_TrazOsDadosDoCandidato()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await IdDoModeloAsync(client, "INSCRICAO", "PSR_INSCRICAO_SEM_PROVA");
+        Guid id = await IdDoModeloAsync(client, serveAFaseDeInscricao: true, "PSR_INSCRICAO_SEM_PROVA");
 
         JsonObject formulario = await ApresentacaoAsync(client, id);
 
@@ -78,7 +78,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         await CadastrarAsync(client, "/api/configuracao/admin/condicoes-atendimento", new { codigo = condicao, nome = "Ledor" });
         await CadastrarAsync(client, "/api/configuracao/admin/tipos-deficiencia", new { codigo = deficiencia, nome = $"Deficiência {deficiencia}", descricao = "Deficiência relacionada à visão" });
 
-        JsonObject formulario = await ApresentacaoAsync(client, await IdDoModeloAsync(client, "INSCRICAO", "PSR_INSCRICAO_COM_PROVA"));
+        JsonObject formulario = await ApresentacaoAsync(client, await IdDoModeloAsync(client, serveAFaseDeInscricao: true, "PSR_INSCRICAO_COM_PROVA"));
 
         Opcoes(formulario, "CONDICAO_ATENDIMENTO").Should().Contain(condicao);
         Opcoes(formulario, "TIPO_DEFICIENCIA").Should().Contain(deficiencia);
@@ -104,7 +104,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         await CadastrarBaseLegalAsync(client, [Municipio(Maraba, "Marabá"), Municipio("1500131", "Abel Figueiredo")]);
         await CadastrarBaseLegalAsync(client, [Municipio(Maraba, "Marabá")]);
-        Guid id = await IdDoModeloAsync(client, "INSCRICAO", "PSR_INSCRICAO_SEM_PROVA");
+        Guid id = await IdDoModeloAsync(client, serveAFaseDeInscricao: true, "PSR_INSCRICAO_SEM_PROVA");
 
         JsonObject formulario = await ApresentacaoAsync(client, id);
 

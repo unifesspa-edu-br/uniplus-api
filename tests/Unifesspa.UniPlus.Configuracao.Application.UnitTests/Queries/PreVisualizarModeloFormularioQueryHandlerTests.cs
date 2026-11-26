@@ -20,6 +20,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// A pré-visualização avalia o modelo contra respostas simuladas pelo avaliador da inscrição
 /// (UNI-REQ-0145): exibição e obrigatoriedade de itens e termos, restrições violadas, pressupostos
@@ -232,7 +234,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         IReadOnlyList<GrupoDoModelo>? grupos = null)
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
+            "HABILITACAO_MEDICINA", "Habilitação", null, DeOutraFaseObrigatoria, null,
             new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? [], grupos ?? []),
             derivacoes ?? new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

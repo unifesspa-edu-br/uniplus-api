@@ -27,6 +27,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
 
 /// <summary>
@@ -52,7 +53,7 @@ public sealed class ModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "O descritivo ausente na criação recusa o nome obrigatório no caminho do descritivo")]
     public async Task Criar_DescritivoAusente_RecusaONomeNoCaminhoDoDescritivo()
     {
-        CriarModeloFormularioCommand comando = new("HABILITACAO_MEDICINA", "HABILITACAO", null, Conteudo(Item("CERTIFICADO", 0)));
+        CriarModeloFormularioCommand comando = new("HABILITACAO_MEDICINA", EntradaDeOutraFaseObrigatoria, null, Conteudo(Item("CERTIFICADO", 0)));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
             comando, _cenario.Repository, _cenario.Fatos, _cenario.Termos, _cenario.Tipos, _cenario.UnitOfWork, CancellationToken.None);
