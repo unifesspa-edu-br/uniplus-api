@@ -14,7 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Handler do <see cref="SubstituirRascunhoDeProcessoSeletivoCommand"/>. A ordem das recusas é a do contrato: precondição
 /// ausente, forma, unidade ausente, e só então o bloqueio da linha, onde ficam a existência, a revisão e o acesso à unidade nova.
-/// Sem chave de idempotência e sob <c>FOR UPDATE</c>, a exceção de concorrência não é esperada e propaga ao tratamento central.
+/// A conferência no Geo vem antes do bloqueio, porque a espera por ele não pode ficar presa à trava da linha, e depois da permissão
+/// sobre o processo, decidida antes de o corpo ser lido. A permissão na unidade nova fica sob a trava, depois da revisão: a recusa
+/// dela pode vir depois de o Geo ser consultado, no limite de municípios configurado. Sem chave de idempotência e sob <c>FOR UPDATE</c>, a exceção de concorrência não é esperada e propaga ao tratamento central.
 /// </summary>
 public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
 {
@@ -34,7 +36,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(diagnostico);
 
-        Result<SubstituicaoPreparada> preparada = await PrepararAsync(command, preparacao, unidades, bloqueio, cancellationToken).ConfigureAwait(false);
+        Result<SubstituicaoPreparada> preparada = await PrepararAsync(command, preparacao, unidades, bloqueio, diagnostico, cancellationToken).ConfigureAwait(false);
         if (preparada.IsFailure)
         {
             return Result<RascunhoSalvoDto>.ValidationFailure(preparada.Errors);
@@ -48,6 +50,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         PreparacaoDoDocumentoDoRascunho preparacao,
         UnidadeDoDocumentoDoRascunho unidades,
         BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
+        DiagnosticoDoRascunho diagnostico,
         CancellationToken cancellationToken)
     {
         Result<DocumentoPreparado> preparado = Preparar(command, preparacao);
@@ -57,10 +60,11 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         }
 
         UnidadeView? nova = await unidades.ResolverAsync(preparado.Value!.CodigoDaUnidade, cancellationToken).ConfigureAwait(false);
+        DocumentoConferidoAntesDeGravar conferido = await diagnostico.ConferirAntesDeGravarAsync(preparado.Value.Documento, cancellationToken).ConfigureAwait(false);
         Result<RascunhoDeProcessoSeletivo> rascunho = await bloqueio.BloquearEConferirAsync(command.Id, command.Precondicao, cancellationToken).ConfigureAwait(false);
         return rascunho.IsFailure
             ? Result<SubstituicaoPreparada>.ValidationFailure(rascunho.Errors)
-            : Result<SubstituicaoPreparada>.Success(new SubstituicaoPreparada(rascunho.Value!, preparado.Value.Documento, nova));
+            : Result<SubstituicaoPreparada>.Success(new SubstituicaoPreparada(rascunho.Value!, preparado.Value.Documento, nova, conferido));
     }
 
     // A precondição ausente é a primeira recusa: nada do documento se lê antes dela.
@@ -89,10 +93,14 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<FieldError> diagnosticos = await diagnostico.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> diagnosticos = await diagnostico.DiagnosticarAsync(rascunho, preparada.Conferido, cancellationToken).ConfigureAwait(false);
         return Result<RascunhoSalvoDto>.Success(RascunhoSalvoDto.DoRascunho(rascunho, diagnosticos));
     }
 
-    /// <summary>O que a substituição leva até a gravação: o rascunho bloqueado e conferido, o documento novo e a unidade que ele nomeia.</summary>
-    private sealed record SubstituicaoPreparada(RascunhoDeProcessoSeletivo Rascunho, DocumentoDoRascunho Documento, UnidadeView? UnidadeNova);
+    /// <summary>
+    /// O que a substituição leva até a gravação: o rascunho bloqueado e conferido, o documento novo, a unidade que ele nomeia e o que
+    /// o documento tem conferido no Geo.
+    /// </summary>
+    private sealed record SubstituicaoPreparada(
+        RascunhoDeProcessoSeletivo Rascunho, DocumentoDoRascunho Documento, UnidadeView? UnidadeNova, DocumentoConferidoAntesDeGravar Conferido);
 }

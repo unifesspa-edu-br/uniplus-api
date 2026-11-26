@@ -9,8 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// A leitura da identificação e do cronograma de um documento que passou pela forma: traduz o JSON para as declarações do domínio,
 /// junta os códigos que ele cita, lê os cadastros desses códigos uma vez e num instante único, e entrega as declarações lidas pelo
-/// domínio. A recusa de uma parte do documento não é falha daqui: viaja na origem do resultado. Só o que impede de ler os cadastros
-/// (o Geo fora do ar, o fuso institucional que o runtime não reconhece) é falha.
+/// domínio. A recusa de uma parte do documento não é falha daqui: viaja na origem do resultado, e o Geo fora do ar vira causa na
+/// localidade, sem falhar a leitura. Só o que impede de ler os cadastros (o fuso institucional que o runtime não reconhece) é falha.
 /// </summary>
 public sealed class LeituraDaIdentificacaoEDoCronograma(LeituraDosCadastrosCitados cadastros)
 {

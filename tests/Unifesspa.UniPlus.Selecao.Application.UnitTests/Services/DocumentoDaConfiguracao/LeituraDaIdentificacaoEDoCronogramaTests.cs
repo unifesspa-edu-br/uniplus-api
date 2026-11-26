@@ -108,15 +108,51 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         await _geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 
-    [Fact(DisplayName = "O Geo fora do ar é falha da leitura, e nada é entregue ao domínio")]
-    public async Task GeoIndisponivel_EFalhaDaLeitura()
+    [Fact(DisplayName = "O Geo fora do ar não impede a leitura: a localidade fica sem conferir, e o restante do documento é lido")]
+    public async Task GeoIndisponivel_NaoImpedeALeitura()
     {
-        _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>())
-            .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível (dublê de teste).")));
+        GeoResponde(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível (dublê de teste).")));
 
         Result<IdentificacaoECronogramaLidos> lidos = await Ler();
 
-        lidos.IsFailure.Should().BeTrue();
-        lidos.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.Cronograma.Localidade.Should().BeNull();
+        lidos.Value.Cronograma.CronogramaFases.Should().NotBeEmpty();
     }
+
+    [Fact(DisplayName = "O Geo fora do ar aponta uma só causa no campo da localidade: a falta de conferência, nunca município inexistente")]
+    public async Task GeoIndisponivel_ApontaAFaltaDeConferenciaEUmaVezSo()
+    {
+        GeoResponde(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível (dublê de teste).")));
+
+        Result<IdentificacaoECronogramaLidos> lidos = await Ler();
+
+        CausasDaLocalidade(lidos.Value!).Should().Equal(("/identificacao/localidadeCodigoIbge", ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel));
+    }
+
+    [Fact(DisplayName = "O município que o Geo diz não existir aponta a causa de município inexistente no campo da localidade")]
+    public async Task MunicipioInexistente_ApontaMunicipioNaoEncontrado()
+    {
+        GeoResponde(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município inexistente (dublê de teste).")));
+
+        Result<IdentificacaoECronogramaLidos> lidos = await Ler();
+
+        CausasDaLocalidade(lidos.Value!).Should().Equal(("/identificacao/localidadeCodigoIbge", MunicipioErrorCodes.NaoEncontrado));
+    }
+
+    [Fact(DisplayName = "O município que o Geo confirma não deixa causa no campo da localidade")]
+    public async Task MunicipioConfirmado_NaoApontaCausa()
+    {
+        Result<IdentificacaoECronogramaLidos> lidos = await Ler();
+
+        CausasDaLocalidade(lidos.Value!).Should().BeEmpty();
+    }
+
+    private void GeoResponde(Result<string> resposta) =>
+        _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(resposta);
+
+    private static IEnumerable<(string? Campo, string Codigo)> CausasDaLocalidade(IdentificacaoECronogramaLidos lidos) =>
+        lidos.Origem.PartesRecusadas
+            .Where(static parte => parte.Causa.Field == "/identificacao/localidadeCodigoIbge")
+            .Select(static parte => (parte.Causa.Field, parte.Causa.Error.Code));
 }

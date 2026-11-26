@@ -106,3 +106,16 @@ A prova presencial é o último assunto da conferência, depois dos motivos de d
 ## Emenda (2026-11-25) — consequências do descumprimento
 
 Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), a conferência ganha o assunto «consequências do descumprimento», imediatamente antes das condições que a canonicalização exige. Suas conferências acumulam as causas na mesma ordem única.
+
+## Emenda (2026-11-26) — prova presencial ao salvar e ao importar o rascunho
+
+**Contexto.** O UNI-REQ-0407 manda conferir no Geo, ao salvar e ao importar o rascunho, a existência dos municípios de prova, com o rascunho gravado e o problema apontado. A emenda 1 reservava o Geo à publicação, à retificação e ao painel.
+
+**Decisão.** A gravação da declaração continua sem ler o Geo. O diagnóstico devolvido ao salvar e ao importar o rascunho roda a conferência da prova presencial, com o Geo lido uma vez, antes da trava do rascunho. Na criação, a leitura vem depois da permissão na unidade do documento; na substituição, depois da permissão sobre o processo, decidida antes de o corpo ser lido. A permissão na unidade nova, quando o documento troca a unidade, continua decidida sob a trava, depois da revisão: a substituição que ela recusa pode já ter consultado o Geo, no limite de municípios configurado, como a que a trava recusa por revisão. Com o Geo indisponível, o rascunho é salvo e o diagnóstico traz um único aviso de Geo indisponível, no caminho `/provaPresencial/municipios`, como pendência, sem aviso por município; essa escolha vale para o salvamento e para a importação, e o aviso reaproveita o código de Geo indisponível que a publicação já usa, sem código novo. A declaração recusada na leitura não é tratada como declaração por fazer: o diagnóstico traz só as causas da leitura, e nenhum município vai ao Geo. No documento do rascunho, a forma do código do IBGE (sete dígitos com o prefixo de uma UF) é do esquema da `v1` e recusa o salvamento e a importação inteiros (422), como as demais formas do documento (ADR-0172); a recusa de forma do item 4 da emenda 1 vale para a gravação da declaração pela parte da prova presencial. No documento, o diagnóstico traz como aviso só a coerência com a UF, o município repetido, o município que o Geo não confirma e o limite. A lista acima do limite configurado é recusada na leitura e também não vai ao Geo, o que mantém as consultas de uma requisição no limite configurado, 100 por padrão. Os avisos saem na ordem do diagnóstico do rascunho, a posição no documento, com o aviso da lista antes dos avisos de cada município; a ordem do assunto da emenda 1 continua a da publicação, da retificação e do painel.
+
+**Consequências.**
+
+- O diagnóstico ao salvar passa a ter os mesmos itens da prova presencial que a publicação recusa.
+- A espera do Geo não fica presa à trava da linha do rascunho.
+- A página do código de Geo indisponível passa a descrever também a configuração do processo.
+- Quem configura o processo pode fazer o Geo ser consultado numa substituição recusada depois, até o limite de municípios por requisição, o mesmo custo de uma substituição aceita.

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Collections.Frozen;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -65,6 +66,12 @@ public sealed class CadastrosCitadosNoDocumento
         get => _localidades;
         init => _localidades = Congelado(value);
     }
+
+    /// <summary>
+    /// A causa de a localidade citada não ter sido conferida, quando o Geo não respondeu; vazia quando ele respondeu, seja para
+    /// confirmar o município, seja para dizer que não o conhece. Sem ela, a falta de conferência se confundiria com município inexistente.
+    /// </summary>
+    public DomainError? LocalidadeNaoConferida { get; init; }
 
     /// <summary>As regras do catálogo, pelo par de código e versão.</summary>
     public IReadOnlyDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> Regras

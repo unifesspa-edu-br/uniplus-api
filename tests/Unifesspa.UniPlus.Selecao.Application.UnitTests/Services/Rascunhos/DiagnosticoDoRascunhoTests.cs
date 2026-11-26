@@ -5,11 +5,13 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O diagnóstico do rascunho junta as recusas do cadastro de reserva e da manifestação de interesse, pelas regras de domínio, às
@@ -19,11 +21,7 @@ public sealed class DiagnosticoDoRascunhoTests
 {
     private readonly CenarioDoRascunho _cenario = new();
 
-    private async Task<IReadOnlyList<FieldError>> DiagnosticarAsync(string documento)
-    {
-        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, documento);
-        return await _cenario.Diagnostico.DiagnosticarAsync(rascunho, CancellationToken.None);
-    }
+    private Task<IReadOnlyList<FieldError>> DiagnosticarAsync(string documento) => _cenario.DiagnosticarOSalvamentoAsync(documento);
 
     private static (string? Ponteiro, string Codigo)[] Pares(IReadOnlyList<FieldError> causas) =>
         [.. causas.Select(static causa => (causa.Field, causa.Error.Code))];
@@ -40,9 +38,9 @@ public sealed class DiagnosticoDoRascunhoTests
     [Fact(DisplayName = "O cadastro de reserva e a manifestação conformes não têm causa")]
     public async Task BlocosConformes_NaoTemCausa()
     {
-        IReadOnlyList<FieldError> causas = await DiagnosticarAsync("""
+        IReadOnlyList<FieldError> causas = await DiagnosticarAsync($$"""
             { "cadastroDeReserva": [ { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 2, "participacaoDaReserva": "ANTECIPA_A_HABILITACAO" } ],
-              "manifestacaoDeInteresse": "UMA_VEZ" }
+              "manifestacaoDeInteresse": "UMA_VEZ", {{CenarioDoRascunho.SemProvaPresencial}} }
             """);
 
         causas.Should().BeEmpty();
@@ -52,11 +50,11 @@ public sealed class DiagnosticoDoRascunhoTests
     [Fact(DisplayName = "Cada recusa do cadastro de reserva aponta o item e o campo no documento, todas de uma vez e na ordem do documento")]
     public async Task CadastroDeReservaRecusado_ApontaCadaItemECampo()
     {
-        IReadOnlyList<FieldError> causas = await DiagnosticarAsync("""
+        IReadOnlyList<FieldError> causas = await DiagnosticarAsync($$"""
             { "cadastroDeReserva": [
               { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 2 },
               { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 0, "participacaoDaReserva": "ASSUME_NA_MESMA_CHAMADA" },
-              { "pessoasDaReservaPorVaga": 1, "participacaoDaReserva": "CODIGO_QUE_NAO_EXISTE" } ] }
+              { "pessoasDaReservaPorVaga": 1, "participacaoDaReserva": "CODIGO_QUE_NAO_EXISTE" } ], {{CenarioDoRascunho.SemProvaPresencial}} }
             """);
 
         Pares(causas).Should().Equal(
@@ -70,10 +68,10 @@ public sealed class DiagnosticoDoRascunhoTests
     [Fact(DisplayName = "A chamada sem número aponta só o número da chamada, e as outras chamadas conformes não têm causa")]
     public async Task ChamadaSemNumero_ApontaONumeroDaChamada()
     {
-        IReadOnlyList<FieldError> causas = await DiagnosticarAsync("""
+        IReadOnlyList<FieldError> causas = await DiagnosticarAsync($$"""
             { "cadastroDeReserva": [
               { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 0 },
-              { "pessoasDaReservaPorVaga": 0 } ] }
+              { "pessoasDaReservaPorVaga": 0 } ], {{CenarioDoRascunho.SemProvaPresencial}} }
             """);
 
         Pares(causas).Should().Equal(("/cadastroDeReserva/1/numeroDaChamada", CadastroDeReservaErrorCodes.NumeroDaChamadaInvalido));
@@ -82,7 +80,7 @@ public sealed class DiagnosticoDoRascunhoTests
     [Fact(DisplayName = "A manifestação de interesse desconhecida aponta o campo da manifestação, sem repetir o valor")]
     public async Task ManifestacaoDesconhecida_ApontaOCampo()
     {
-        IReadOnlyList<FieldError> causas = await DiagnosticarAsync("""{ "manifestacaoDeInteresse": "VALOR-DIGITADO" }""");
+        IReadOnlyList<FieldError> causas = await DiagnosticarAsync($$"""{ "manifestacaoDeInteresse": "VALOR-DIGITADO", {{CenarioDoRascunho.SemProvaPresencial}} }""");
 
         Pares(causas).Should().Equal(("/manifestacaoDeInteresse", ManifestacaoDeInteresseErrorCodes.CodigoDesconhecido));
         causas.Single().Error.Message.Should().NotContain("VALOR-DIGITADO");
@@ -96,7 +94,7 @@ public sealed class DiagnosticoDoRascunhoTests
         IReadOnlyList<FieldError> causas = await DiagnosticarAsync($$"""
             { "manifestacaoDeInteresse": "VALOR-DIGITADO",
               "documentosExigidos": { "exigencias": [ { "modeloId": "{{modeloAusente}}" } ] },
-              "cadastroDeReserva": [ { "numeroDaChamada": 0, "pessoasDaReservaPorVaga": 0 } ] }
+              "cadastroDeReserva": [ { "numeroDaChamada": 0, "pessoasDaReservaPorVaga": 0 } ], {{CenarioDoRascunho.SemProvaPresencial}} }
             """);
 
         Pares(causas).Should().Equal(
@@ -110,7 +108,9 @@ public sealed class DiagnosticoDoRascunhoTests
     [Fact(DisplayName = "O rascunho nulo é defeito de quem chama")]
     public async Task RascunhoNulo_Lanca()
     {
-        Func<Task> diagnosticar = () => _cenario.Diagnostico.DiagnosticarAsync(null!, CancellationToken.None);
+        DocumentoConferidoAntesDeGravar conferido = await _cenario.Diagnostico.ConferirAntesDeGravarAsync(
+            DocumentoDoRascunho.Criar(CenarioDoRascunho.DocumentoValido(), null).Value!, CancellationToken.None);
+        Func<Task> diagnosticar = () => _cenario.Diagnostico.DiagnosticarAsync(null!, conferido, CancellationToken.None);
 
         await diagnosticar.Should().ThrowAsync<ArgumentNullException>();
     }
