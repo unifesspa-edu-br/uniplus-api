@@ -48,6 +48,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
     /// texto devolvido.
     /// </summary>
     [HttpPost("termos-de-responsabilidade/versoes")]
+    [EndpointName("PublicarVersaoDoTermoDeResponsabilidade")]
     [RequiresIdempotencyKey]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.TermosPublicar, ResourceTipo = ResourceTiposAutorizacao.TermoDeResponsabilidade)]
     [ProducesResponseType(typeof(VersaoDoTermoDto), StatusCodes.Status201Created)]
@@ -71,6 +72,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
 
     /// <summary>A versão vigente, para quem vai pedir acesso; 404 se nenhuma foi publicada.</summary>
     [HttpGet("termos-de-responsabilidade/vigente")]
+    [EndpointName("ObterTermoDeResponsabilidadeVigente")]
     [VendorMediaType(Resource = "versao-do-termo", Versions = [1])]
     [ProducesResponseType(typeof(VersaoDoTermoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -81,6 +83,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
 
     /// <summary>Uma versão pelo id, vigente ou não: a tela de aceite mostra a versão fixada no pedido.</summary>
     [HttpGet("termos-de-responsabilidade/versoes/{id:guid}")]
+    [EndpointName("ObterVersaoDoTermoDeResponsabilidade")]
     [VendorMediaType(Resource = "versao-do-termo", Versions = [1])]
     [ProducesResponseType(typeof(VersaoDoTermoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -94,6 +97,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
     /// (ADR-0026 + ADR-0089) cuja chave é o número da versão. Só para quem publica o termo.
     /// </summary>
     [HttpGet("termos-de-responsabilidade/versoes")]
+    [EndpointName("ListarVersoesDoTermoDeResponsabilidade")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.TermosPublicar, ResourceTipo = ResourceTiposAutorizacao.TermoDeResponsabilidade)]
     [VendorMediaType(Resource = "versao-do-termo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<VersaoDoTermoResumoDto>), StatusCodes.Status200OK)]

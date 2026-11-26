@@ -61,6 +61,7 @@ public sealed class ConcessoesController : ControllerBase
     /// recusado.
     /// </summary>
     [HttpGet("concessoes")]
+    [EndpointName("ListarConcessoes")]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
         ResourceTipo = ResourceTiposAutorizacao.Concessao,
@@ -99,6 +100,7 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>Obtém uma concessão pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("concessoes/{id:guid}")]
+    [EndpointName("ObterConcessao")]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
         ResourceTipo = ResourceTiposAutorizacao.Concessao,
@@ -121,6 +123,7 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>Trilha da concessão: eventos em ordem cronológica, montados na leitura.</summary>
     [HttpGet("concessoes/{id:guid}/trilha")]
+    [EndpointName("ObterTrilhaDaConcessao")]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
         ResourceTipo = ResourceTiposAutorizacao.Concessao,
@@ -146,6 +149,7 @@ public sealed class ConcessoesController : ControllerBase
     /// não se revoga se deixaria menos de dois gestores. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPost("concessoes/{id:guid}/revogacao")]
+    [EndpointName("RevogarConcessao")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

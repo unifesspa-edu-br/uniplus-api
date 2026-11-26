@@ -55,6 +55,7 @@ public sealed class ProvidenciasController : ControllerBase
     /// controlador são avisados por e-mail, sem o fundamento nem nome de pessoa.
     /// </summary>
     [HttpPost("providencias")]
+    [EndpointName("SolicitarProvidenciaSobreConcessao")]
     [RequiresIdempotencyKey]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ProvidenciasSolicitar, ResourceTipo = ResourceTiposAutorizacao.Providencia)]
     [ProducesResponseType(typeof(ProvidenciaDto), StatusCodes.Status201Created)]
@@ -82,6 +83,7 @@ public sealed class ProvidenciasController : ControllerBase
     /// quem solicitou e o beneficiário da concessão não respondem. Quem solicitou é avisado por e-mail.
     /// </summary>
     [HttpPost("providencias/{id:guid}/resposta")]
+    [EndpointName("ResponderProvidenciaSobreConcessao")]
     [RequiresIdempotencyKey]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Providencia)]
     [ProducesResponseType(typeof(ProvidenciaDto), StatusCodes.Status200OK)]
@@ -104,6 +106,7 @@ public sealed class ProvidenciasController : ControllerBase
     /// beneficiário são avisados por e-mail.
     /// </summary>
     [HttpPost("providencias/{id:guid}/atendimento")]
+    [EndpointName("AtenderProvidenciaSobreConcessao")]
     [RequiresIdempotencyKey]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Providencia)]
     [ProducesResponseType(typeof(ProvidenciaDto), StatusCodes.Status200OK)]
@@ -124,6 +127,7 @@ public sealed class ProvidenciasController : ControllerBase
 
     /// <summary>Lê a providência, com o fundamento, a situação derivada no instante e o desfecho com o motivo.</summary>
     [HttpGet("providencias/{id:guid}")]
+    [EndpointName("ObterProvidenciaSobreConcessao")]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
         ResourceTipo = ResourceTiposAutorizacao.Providencia,
@@ -146,6 +150,7 @@ public sealed class ProvidenciasController : ControllerBase
     /// concessão. Os itens não trazem o fundamento nem o motivo do desfecho.
     /// </summary>
     [HttpGet("providencias")]
+    [EndpointName("ListarProvidenciasSobreConcessao")]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
         ResourceTipo = ResourceTiposAutorizacao.Providencia,

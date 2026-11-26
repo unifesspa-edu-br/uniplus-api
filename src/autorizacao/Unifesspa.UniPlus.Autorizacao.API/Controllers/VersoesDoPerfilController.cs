@@ -78,7 +78,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Pede a URL de PUT de outro documento, depois que a verificação recusou o anterior.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
-    [EndpointName("ReservarDocumentoDaVersao")]
+    [EndpointName("ReservarDocumentoDaVersaoDoPerfil")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
@@ -103,7 +103,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Pede outra URL de PUT para o documento que ainda aguarda o envio.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento/envio")]
-    [EndpointName("ReemitirEnvioDoDocumentoDaVersao")]
+    [EndpointName("ReemitirEnvioDoDocumentoDaVersaoDoPerfil")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
@@ -125,7 +125,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Confirma o PUT com o ETag devolvido; o PDF segue para a verificação.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento/confirmacao")]
-    [EndpointName("ConfirmarDocumentoDaVersao")]
+    [EndpointName("ConfirmarDocumentoDaVersaoDoPerfil")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [ProducesResponseType(typeof(DocumentoDaVersaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -150,7 +150,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// acesso entra na trilha.
     /// </summary>
     [HttpGet("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
-    [EndpointName("LerDocumentoDaVersao")]
+    [EndpointName("LerDocumentoDaVersaoDoPerfil")]
     [VendorMediaType(Resource = "documento-da-versao", Versions = [1])]
     [ProducesResponseType(typeof(LeituraDoDocumentoDaVersaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

@@ -58,6 +58,7 @@ public sealed class InstalacaoController : ControllerBase
     /// assinada para o PDF (validade curta, <c>Content-Type</c> <c>application/pdf</c>).
     /// </summary>
     [HttpPost("instalacao")]
+    [EndpointName("IniciarInstalacao")]
     [Authorize(Policy = PoliticaDeInstalacao)]
     // TTL alinhado ao da URL de PUT devolvida: um replay depois de ela expirar devolveria uma URL inutilizável.
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
@@ -90,6 +91,7 @@ public sealed class InstalacaoController : ControllerBase
     /// em verificação e publica o pedido ao verificador na mesma transação.
     /// </summary>
     [HttpPost("instalacao/{id:guid}/documento/confirmacao")]
+    [EndpointName("ConfirmarDocumentoDaInstalacao")]
     [Authorize(Policy = PoliticaDeInstalacao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(InstalacaoDto), StatusCodes.Status200OK)]
@@ -117,6 +119,7 @@ public sealed class InstalacaoController : ControllerBase
     /// enquanto a instalação aguarda o código: o novo código invalida o anterior e o prazo recomeça.
     /// </summary>
     [HttpPost("instalacao/{id:guid}/codigo")]
+    [EndpointName("EnviarCodigoDaInstalacao")]
     [Authorize(Policy = PoliticaDeInstalacao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(InstalacaoDto), StatusCodes.Status200OK)]
@@ -139,6 +142,7 @@ public sealed class InstalacaoController : ControllerBase
     /// recusa de código tem a mesma resposta, sem revelar se há instalação pendente.
     /// </summary>
     [HttpPost("instalacao/confirmacao")]
+    [EndpointName("ConfirmarInstalacao")]
     [Authorize(Policy = PoliticaDeInstalacao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -160,6 +164,7 @@ public sealed class InstalacaoController : ControllerBase
 
     /// <summary>Situação da instalação, só para quem a iniciou; a de outra pessoa responde 404.</summary>
     [HttpGet("instalacao/{id:guid}")]
+    [EndpointName("ObterInstalacao")]
     [Authorize(Policy = PoliticaDeInstalacao)]
     [VendorMediaType(Resource = "instalacao", Versions = [1])]
     [ProducesResponseType(typeof(InstalacaoDto), StatusCodes.Status200OK)]
@@ -182,6 +187,7 @@ public sealed class InstalacaoController : ControllerBase
     /// consulta as concessões, e a leitura é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("instalacoes/{id:guid}/trilha")]
+    [EndpointName("ObterTrilhaDaInstalacao")]
     [Authorize]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,
@@ -209,6 +215,7 @@ public sealed class InstalacaoController : ControllerBase
     /// consulta as concessões, e a leitura é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("instalacoes/tentativas-sem-pendencia")]
+    [EndpointName("ListarTentativasDeConfirmacaoSemInstalacaoPendente")]
     [Authorize]
     [ExigePermissao<PermissaoAutorizacao>(
         PermissaoAutorizacao.ConcessoesAdministrar,

@@ -37,6 +37,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>A revisão das concessões mais recente do perfil, com cada concessão na situação em que está.</summary>
     [HttpGet("perfis/{id:guid}/revisao-das-concessoes")]
+    [EndpointName("ObterRevisaoDasConcessoesDoPerfil")]
     [ProducesResponseType(typeof(RevisaoDasConcessoesDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -47,6 +48,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>Lista as revisões abertas em que quem lê tem concessão a decidir na etapa; a permissão é a da etapa.</summary>
     [HttpGet("revisoes-de-concessoes")]
+    [EndpointName("ListarFilaDeRevisoesDasConcessoes")]
     [ProducesResponseType(typeof(IReadOnlyList<ItemDaListaDeRevisoesDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -62,6 +64,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>Envia as decisões da gestão de acessos: uma decisão por concessão elegível, menos as do próprio gestor.</summary>
     [HttpPost("perfis/{id:guid}/revisao-das-concessoes/decisoes")]
+    [EndpointName("EnviarDecisoesDaRevisaoDasConcessoes")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(RevisaoDasConcessoesDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -78,6 +81,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>Decide a concessão retida no envio de decisões, por outra pessoa que não o beneficiário.</summary>
     [HttpPost("perfis/{id:guid}/revisao-das-concessoes/retidas/{concessaoId:guid}")]
+    [EndpointName("DecidirConcessaoRetidaNaRevisao")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(RevisaoDasConcessoesDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -94,6 +98,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>Decide a etapa da proteção de dados das concessões que a aguardam.</summary>
     [HttpPost("perfis/{id:guid}/revisao-das-concessoes/protecao-de-dados")]
+    [EndpointName("DecidirEtapaDaProtecaoDeDadosNaRevisao")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(RevisaoDasConcessoesDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -110,6 +115,7 @@ public sealed class RevisaoDasConcessoesController : ControllerBase
 
     /// <summary>Encerra a revisão antes do término, com motivo: quem não migrou perde o acesso.</summary>
     [HttpPost("perfis/{id:guid}/revisao-das-concessoes/encerramento")]
+    [EndpointName("EncerrarRevisaoDasConcessoes")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(RevisaoDasConcessoesDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

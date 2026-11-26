@@ -53,6 +53,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Lista os perfis, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
     [HttpGet("perfis")]
+    [EndpointName("ListarPerfisDeAcesso")]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PerfilListadoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -82,6 +83,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]
+    [EndpointName("ObterPerfilDeAcesso")]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -103,6 +105,7 @@ public sealed class PerfisController : ControllerBase
     /// vigor quando esse documento é verificado. <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("perfis")]
+    [EndpointName("CriarPerfilDeAcesso")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]

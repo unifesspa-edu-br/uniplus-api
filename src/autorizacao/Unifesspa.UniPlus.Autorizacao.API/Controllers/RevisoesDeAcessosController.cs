@@ -55,6 +55,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPost("revisoes")]
+    [EndpointName("AbrirRevisaoDeAcessos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RevisaoDeAcessosDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -77,6 +78,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     /// consulta as revisões; cada revisão exibida é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("revisoes")]
+    [EndpointName("ListarRevisoesDeAcessos")]
     [VendorMediaType(Resource = "revisao-de-acessos", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<RevisaoResumoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -106,6 +108,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
 
     /// <summary>Lê a revisão com os itens: concessão, quem decide, resultado, decisor e data.</summary>
     [HttpGet("revisoes/{id:guid}")]
+    [EndpointName("ObterRevisaoDeAcessos")]
     [VendorMediaType(Resource = "revisao-de-acessos", Versions = [1])]
     [ProducesResponseType(typeof(RevisaoDeAcessosDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -127,6 +130,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     /// concessão. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPost("revisoes/{id:guid}/itens/{item:guid}/confirmacao")]
+    [EndpointName("ConfirmarItemDaRevisaoDeAcessos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -148,6 +152,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     /// de dois gestores. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPost("revisoes/{id:guid}/itens/{item:guid}/revogacao")]
+    [EndpointName("RevogarConcessaoDoItemDaRevisaoDeAcessos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

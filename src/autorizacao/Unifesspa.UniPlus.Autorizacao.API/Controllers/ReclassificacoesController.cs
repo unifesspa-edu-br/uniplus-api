@@ -43,6 +43,7 @@ public sealed class ReclassificacoesController : ControllerBase
 
     /// <summary>Lista as reclassificações com concessões suspensas que ainda aguardam a etapa; a permissão é a da etapa.</summary>
     [HttpGet("reclassificacoes")]
+    [EndpointName("ListarFilaDeReclassificacoes")]
     [ProducesResponseType(typeof(IReadOnlyList<ItemDaFilaDeReclassificacoesDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -52,6 +53,7 @@ public sealed class ReclassificacoesController : ControllerBase
 
     /// <summary>O detalhe da reclassificação: as permissões de cada versão em uso, o documento e as concessões suspensas.</summary>
     [HttpGet("reclassificacoes/{id:guid}")]
+    [EndpointName("ObterReclassificacao")]
     [ProducesResponseType(typeof(ReclassificacaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -62,6 +64,7 @@ public sealed class ReclassificacoesController : ControllerBase
 
     /// <summary>Decide uma etapa da liberação, de forma atômica, para as concessões da lista ou para todas as que a aguardam.</summary>
     [HttpPost("reclassificacoes/{id:guid}/decisoes")]
+    [EndpointName("DecidirReclassificacao")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(DecisaoDaReclassificacaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -78,6 +81,7 @@ public sealed class ReclassificacoesController : ControllerBase
 
     /// <summary>As divergências da governança, da mais recente para a mais antiga.</summary>
     [HttpGet("governanca/divergencias")]
+    [EndpointName("ListarDivergenciasDaGovernanca")]
     [ProducesResponseType(typeof(IReadOnlyList<DivergenciaDaGovernancaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
