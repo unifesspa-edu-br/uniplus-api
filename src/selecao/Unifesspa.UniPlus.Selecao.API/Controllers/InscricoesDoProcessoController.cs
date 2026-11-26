@@ -39,6 +39,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 public sealed class InscricoesDoProcessoController : ControllerBase
 {
     private const string ResourceTag = "inscricoes-do-processo";
+    private const string RouteProcessoId = "id";
 
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -67,7 +68,8 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Listar(Guid id, [FromCursor(ResourceTag)] PageRequest page, CancellationToken cancellationToken)
+    public async Task<IActionResult> Listar(
+        Guid id, [FromCursor(ResourceTag, RouteProcessoId)] PageRequest page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
