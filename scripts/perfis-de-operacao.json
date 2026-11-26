@@ -2,7 +2,7 @@
   {
     "nome": "Administração dos cadastros",
     "descricao": "Mantém os cadastros de configuração da instituição usados pelos processos seletivos.",
-    "alcance": "instituicao",
+    "alcance": "INSTITUICAO",
     "permissoes": [
       "configuracao:base-legal-do-fada:manter",
       "configuracao:calendarios-dias-uteis:manter",
@@ -39,7 +39,7 @@
   {
     "nome": "Consulta sem dados pessoais",
     "descricao": "Consulta as inscrições da unidade só com os dados e documentos públicos e internos, sem nome nem identificadores.",
-    "alcance": "unidade",
+    "alcance": "UNIDADE",
     "permissoes": [
       "selecao:dados-internos:consultar",
       "selecao:dados-publicos:consultar",
@@ -51,7 +51,7 @@
   {
     "nome": "Coordenação de processo seletivo",
     "descricao": "Configura, publica e acompanha os processos seletivos da unidade proprietária, sem acesso aos dados dos candidatos.",
-    "alcance": "unidade",
+    "alcance": "UNIDADE",
     "permissoes": [
       "selecao:processos:acompanhar",
       "selecao:processos:configurar",
@@ -61,7 +61,7 @@
   {
     "nome": "Dados e documentos sensíveis",
     "descricao": "Consulta os dados sensíveis respondidos no formulário e os documentos sensíveis das inscrições da unidade.",
-    "alcance": "unidade",
+    "alcance": "UNIDADE",
     "permissoes": [
       "selecao:dados-sensiveis:consultar",
       "selecao:documentos-sensiveis:consultar"
@@ -70,7 +70,7 @@
   {
     "nome": "Envio ao INEP",
     "descricao": "Gera o envio de CPFs ao INEP e revela o CPF da inscrição quando necessário.",
-    "alcance": "unidade",
+    "alcance": "UNIDADE",
     "permissoes": [
       "selecao:dados-identificadores:consultar",
       "selecao:dados-identificadores:revelar",
@@ -81,7 +81,7 @@
   {
     "nome": "Equipe de inscrições",
     "descricao": "Consulta as inscrições da unidade com os dados públicos, internos, pessoais e identificadores (mascarados) e os documentos correspondentes, e importa as notas do ENEM.",
-    "alcance": "unidade",
+    "alcance": "UNIDADE",
     "permissoes": [
       "selecao:dados-identificadores:consultar",
       "selecao:dados-internos:consultar",
@@ -98,7 +98,7 @@
   {
     "nome": "Organização institucional",
     "descricao": "Mantém o cadastro da instituição e das unidades.",
-    "alcance": "instituicao",
+    "alcance": "INSTITUICAO",
     "permissoes": [
       "organizacao:instituicao:manter",
       "organizacao:unidades:manter"
@@ -107,7 +107,7 @@
   {
     "nome": "Publicações",
     "descricao": "Registra atos normativos e mantém o catálogo de tipos de ato.",
-    "alcance": "instituicao",
+    "alcance": "INSTITUICAO",
     "permissoes": [
       "publicacoes:atos-normativos:registrar",
       "publicacoes:tipos-ato:manter"
