@@ -76,7 +76,8 @@
       "selecao:dados-identificadores:consultar",
       "selecao:dados-identificadores:revelar",
       "selecao:envios-inep:gerar",
-      "selecao:inscricoes:consultar"
+      "selecao:inscricoes:consultar",
+      "selecao:leiautes-inep:consultar-na-unidade"
     ]
   },
   {
@@ -93,6 +94,7 @@
       "selecao:documentos-pessoais:consultar",
       "selecao:documentos-publicos:consultar",
       "selecao:inscricoes:consultar",
+      "selecao:leiautes-inep:consultar-na-unidade",
       "selecao:notas-enem:importar"
     ]
   },
