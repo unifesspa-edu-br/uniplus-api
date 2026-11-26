@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -45,7 +46,7 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
 
     private static readonly ValueConverter<IReadOnlyList<AtoDivulgado>, string> AtosConverter =
         new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
-            json => JsonSerializer.Deserialize<List<AtoDivulgado>>(json, OpcoesJson)!);
+            json => LerAtos(json));
 
     private static readonly ValueComparer<IReadOnlyList<AtoDivulgado>> AtosComparer =
         new(
@@ -153,4 +154,9 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         builder.HasIndex(NomeOrdenacaoPropriedade, nameof(CertameDivulgado.Id))
             .HasDatabaseName("ix_certames_divulgados_nome_ordenacao");
     }
+
+    private static List<AtoDivulgado> LerAtos(string json) =>
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<List<AtoDivulgado>>(json, OpcoesJson) ?? throw new JsonException("documento nulo"),
+            nameof(CertameDivulgado.AtosDivulgados));
 }

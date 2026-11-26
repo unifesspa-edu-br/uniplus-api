@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -78,7 +79,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
     private static readonly ValueConverter<ParametrosCriterioDesempate, string> ParametrosConverter =
         new(
             parametros => JsonSerializer.Serialize(parametros, JsonOptions),
-            json => JsonSerializer.Deserialize<ParametrosCriterioDesempate>(json, JsonOptions)!);
+            json => Deserialize(json));
 
     private static readonly ValueComparer<ParametrosCriterioDesempate> ParametrosComparer =
         new(
@@ -90,5 +91,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
 
     private static ParametrosCriterioDesempate Deserialize(string json) =>
-        JsonSerializer.Deserialize<ParametrosCriterioDesempate>(json, JsonOptions)!;
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<ParametrosCriterioDesempate>(json, JsonOptions) ?? throw new JsonException("documento nulo"),
+            nameof(ParametrosCriterioDesempate));
 }

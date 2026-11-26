@@ -299,12 +299,16 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             return null;
         }
 
-        List<FormatoPermitidoEntryJson>? itens = JsonSerializer.Deserialize<List<FormatoPermitidoEntryJson>>(json, JsonOptions);
+        List<FormatoPermitidoEntryJson>? itens = ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<List<FormatoPermitidoEntryJson>>(json, JsonOptions),
+            nameof(DocumentoExigido.FormatosPermitidos));
         return itens is null ? null : [.. itens.Select(static item => EntradaDoFormato(item))];
     }
 
     private static FormatoPermitidoEntry EntradaDoFormato(FormatoPermitidoEntryJson item) =>
-        FormatoPermitidoEntry.Criar(CatalogoDe<FormatoPermitido>.Obter(item.Formato), item.TamanhoMaximoBytesMax).Value!;
+        ObjetoDeValorGravado.Reidratar(
+            FormatoPermitidoEntry.Criar(CatalogoDe<FormatoPermitido>.Obter(item.Formato), item.TamanhoMaximoBytesMax),
+            nameof(FormatoPermitidoEntry));
 
     private sealed record FormatoPermitidoEntryJson(string Formato, int? TamanhoMaximoBytesMax);
 }

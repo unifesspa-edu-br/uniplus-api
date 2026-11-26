@@ -32,7 +32,7 @@ public sealed class EtapaNosParametrosGravadosTests
     {
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(RegraEliminacao), "Parametros").GetValueConverter()!;
         Action ler = () => conversor.ConvertFromProvider(json);
-        ler.Should().Throw<JsonException>();
+        ler.DeveRecusarComoDocumentoInvalido("ParametrosRegraEliminacao");
     }
 
     [Theory(DisplayName = "Variantes de desempate preservam os parâmetros gravados")]
@@ -59,7 +59,7 @@ public sealed class EtapaNosParametrosGravadosTests
     {
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), "Parametros").GetValueConverter()!;
         Action ler = () => conversor.ConvertFromProvider(json);
-        ler.Should().Throw<JsonException>();
+        ler.DeveRecusarComoDocumentoInvalido("ParametrosCriterioDesempate");
     }
 
     private static void ConferirJson(Type entidade, string json)

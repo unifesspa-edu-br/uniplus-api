@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
@@ -22,11 +23,13 @@ internal sealed class ValorGravadoDaResposta
         [TipoDoValorDeResposta.Numero] = static (linha, valor) => linha.ValorNumero = valor.GetDecimal(),
         [TipoDoValorDeResposta.Opcao] = static (linha, valor) => linha.ValorCodigo = valor.GetString(),
         [TipoDoValorDeResposta.Texto] = static (linha, valor) => linha.ValorTexto = valor.GetString(),
-        [TipoDoValorDeResposta.Data] = static (linha, valor) =>
-            linha.ValorData = DateOnly.ParseExact(valor.GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture),
+        [TipoDoValorDeResposta.Data] = static (linha, valor) => linha.ValorData = DiaDaResposta(valor),
     };
 
     private readonly IUniPlusEncryptionService _encryption;
+
+    private static DateOnly DiaDaResposta(JsonElement valor) =>
+        DiaDoCalendario.Ler(valor) ?? throw new InvalidOperationException("A resposta do tipo data não está no formato de dia esperado.");
 
     public ValorGravadoDaResposta(IUniPlusEncryptionService encryption)
     {
@@ -68,7 +71,9 @@ internal sealed class ValorGravadoDaResposta
     {
         byte[] plano = await _encryption.DecryptAsync(chave, cifrado, cancellationToken).ConfigureAwait(false);
 
-        return JsonSerializer.Deserialize<JsonElement>(plano);
+        return ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<JsonElement>(plano),
+            nameof(RespostaDaInscricaoRecord.ValorCifrado));
     }
 
     /// <summary>Leva o valor que a linha guarda — coluna e cifra — para a linha que a substitui na mesma chave natural.</summary>
