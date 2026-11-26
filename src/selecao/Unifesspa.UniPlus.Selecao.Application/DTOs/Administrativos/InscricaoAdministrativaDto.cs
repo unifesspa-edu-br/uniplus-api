@@ -80,7 +80,7 @@ public sealed record OcorrenciaDaInscricaoDto(string Id, IReadOnlyList<ItemDeRes
 
 /// <summary>
 /// Uma resposta do formulário, todas com a mesma forma. O <c>tipo</c> diz como ler o <c>valor</c> e o <c>componente</c>, como
-/// exibi-lo; os dois, o rótulo e a descrição vêm do que o processo congelou na publicação, nunca do catálogo vivo. O
+/// exibi-lo; a forma e a exibição são resolvidas a partir do que o processo congelou na publicação, nunca do catálogo vivo. O
 /// identificador sai mascarado, e o valor completo só se pede por <c>revelacao</c>.
 /// </summary>
 public sealed record ItemDeRespostaDto : ItemClassificado
@@ -100,11 +100,11 @@ public sealed record ItemDeRespostaDto : ItemClassificado
     /// <summary>O que o dado significa, para a dica e o leiaute da tela.</summary>
     public required string Descricao { get; init; }
 
-    /// <summary>Como ler o valor: texto, data, data-hora, hora, booleano, numero, opcao, opcoes ou endereco.</summary>
-    public required string Tipo { get; init; }
+    /// <summary>A forma do valor.</summary>
+    public required CodigoComRotulo<FormaDoValorDoItem> Tipo { get; init; }
 
-    /// <summary>Como exibir: padrao, cpf, identificador, moeda ou situacao.</summary>
-    public required string Componente { get; init; }
+    /// <summary>Como exibir o valor.</summary>
+    public required CodigoComRotulo<ExibicaoDoValorDoItem> Componente { get; init; }
 
     /// <summary>
     /// O valor, na forma que o <see cref="Tipo"/> define.

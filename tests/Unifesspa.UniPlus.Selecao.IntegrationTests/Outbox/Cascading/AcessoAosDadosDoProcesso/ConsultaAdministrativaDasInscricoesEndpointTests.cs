@@ -302,7 +302,8 @@ public sealed class ConsultaAdministrativaDasInscricoesEndpointTests : IAsyncLif
 
     private static void ConferirCpfMascaradoComOComponente(JsonElement cpf)
     {
-        cpf.GetProperty("componente").GetString().Should().Be("cpf");
+        cpf.GetProperty("componente").GetProperty("codigo").GetString().Should().Be("CPF");
+        cpf.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("TEXTO");
         cpf.GetProperty("valor").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
         cpf.GetProperty("podeRevelar").GetBoolean().Should().BeFalse();
         cpf.GetProperty("descricao").GetString().Should().NotBeNullOrWhiteSpace();

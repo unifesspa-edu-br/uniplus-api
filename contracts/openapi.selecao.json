@@ -21635,6 +21635,32 @@
         "type": "string",
         "description": "- \u0060PUBLICACAO_DO_ATO\u0060: Publica\u00E7\u00E3o do ato \u2014 O prazo conta da publica\u00E7\u00E3o do ato e vale igual para todos os candidatos (UNI-REQ-0115).\n- \u0060CIENCIA_INDIVIDUAL\u0060: Ci\u00EAncia individual do candidato \u2014 O prazo conta da data em que cada candidato toma ci\u00EAncia da decis\u00E3o que o alcan\u00E7a."
       },
+      "ExibicaoDoValorDoItem": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ExibicaoDoValorDoItemCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ExibicaoDoValorDoItemCodigo": {
+        "enum": [
+          "PADRAO",
+          "CPF",
+          "IDENTIFICADOR",
+          "MOEDA",
+          "SITUACAO"
+        ],
+        "type": "string",
+        "description": "- \u0060PADRAO\u0060: Padr\u00E3o \u2014 O valor aparece conforme sua forma.\n- \u0060CPF\u0060: CPF \u2014 O CPF aparece mascarado.\n- \u0060IDENTIFICADOR\u0060: Identificador \u2014 O identificador aparece mascarado.\n- \u0060MOEDA\u0060: Valor em reais \u2014 O valor aparece em reais, como R$ 1.234,56.\n- \u0060SITUACAO\u0060: Situa\u00E7\u00E3o \u2014 A tela mostra o r\u00F3tulo numa etiqueta, sem mudar a forma do valor."
+      },
       "ExibicaoEObrigatoriedadeDto": {
         "required": [
           "exibicao",
@@ -22289,6 +22315,34 @@
         ],
         "type": "string",
         "description": "- \u0060DOCUMENTO\u0060: Documento\n- \u0060TODOS_OS_ITENS\u0060: Todos estes itens\n- \u0060QUANTIDADE_MINIMA_DE_ITENS\u0060: Pelo menos a quantidade indicada destes itens"
+      },
+      "FormaDoValorDoItem": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormaDoValorDoItemCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "FormaDoValorDoItemCodigo": {
+        "enum": [
+          "TEXTO",
+          "NUMERO",
+          "SIM_OU_NAO",
+          "DATA",
+          "OPCAO",
+          "OPCOES",
+          "ENDERECO"
+        ],
+        "type": "string",
+        "description": "- \u0060TEXTO\u0060: Texto \u2014 O valor \u00E9 um texto.\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 O valor \u00E9 um n\u00FAmero em texto, como foi respondido.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 O valor \u00E9 verdadeiro ou falso.\n- \u0060DATA\u0060: Data \u2014 O valor \u00E9 uma data em texto, no formato AAAA-MM-DD.\n- \u0060OPCAO\u0060: Op\u00E7\u00E3o \u2014 O valor \u00E9 um objeto com c\u00F3digo e r\u00F3tulo da op\u00E7\u00E3o.\n- \u0060OPCOES\u0060: Op\u00E7\u00F5es \u2014 O valor \u00E9 uma lista de objetos com c\u00F3digo e r\u00F3tulo de cada op\u00E7\u00E3o.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 O valor \u00E9 um objeto com cep, logradouro, numero, complemento, bairro, municipio, municipioCodigoIbge, uf e ufNome, em texto."
       },
       "FormatoDeDocumento": {
         "required": [
@@ -24084,10 +24138,10 @@
             "type": "string"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaDoValorDoItem"
           },
           "componente": {
-            "type": "string"
+            "$ref": "#/components/schemas/ExibicaoDoValorDoItem"
           },
           "valor": {
             "oneOf": [
@@ -24120,10 +24174,10 @@
             "type": "string"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/FormaDoValorDoItem"
           },
           "componente": {
-            "type": "string"
+            "$ref": "#/components/schemas/ExibicaoDoValorDoItem"
           },
           "valor": {
             "oneOf": [
@@ -24131,7 +24185,7 @@
                 "type": "null"
               },
               {
-                "description": "O valor respondido; a forma depende de \u0060tipo\u0060. \u0060texto\u0060, \u0060data\u0060 (AAAA-MM-DD), \u0060data-hora\u0060 (ISO 8601 com deslocamento), \u0060hora\u0060 (HH:mm), \u0060numero\u0060 (em texto, como foi respondido) e \u0060booleano\u0060 (verdadeiro ou falso) trazem um valor simples. \u0060opcao\u0060 traz \u0060{ codigo, rotulo }\u0060. \u0060opcoes\u0060 traz uma lista de \u0060{ codigo, rotulo }\u0060. \u0060endereco\u0060 traz \u0060{ cep, logradouro, numero, complemento, bairro, municipio, municipioCodigoIbge, uf, ufNome }\u0060, todos em texto. Ausente quando o item n\u00E3o foi respondido.",
+                "description": "O valor respondido, na forma indicada pelo tipo; ausente quando o item n\u00E3o foi respondido.",
                 "$ref": "#/components/schemas/JsonElement"
               }
             ]

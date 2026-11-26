@@ -70,7 +70,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, diogo);
 
         ItemDeRespostaDto passaporte = ItensDe(dto).Single();
-        passaporte.Componente.Should().Be(ComponentesDeItem.Identificador);
+        passaporte.Componente.Codigo.Should().Be("IDENTIFICADOR");
         passaporte.Classificacao.Should().Be(ClassificacaoDeProtecao.Identificador);
         passaporte.PodeRevelar.Should().Be(podeRevelar);
         passaporte.Valor.HasValue.Should().Be(comValor);
@@ -86,8 +86,8 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
         InscricaoAdministrativaDto dto = await ConsultarDto(DeFernanda(), isabella);
 
         ItemDeRespostaDto cpf = ItemDe(dto, "CPF");
-        cpf.Componente.Should().Be(ComponentesDeItem.Cpf);
-        cpf.Valor!.Value.GetString().Should().Be("***.598.363-**");
+        cpf.Componente.Codigo.Should().Be("CPF");
+        cpf.Valor!.Value.GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
         cpf.PodeRevelar.Should().BeFalse();
     }
 
@@ -129,7 +129,7 @@ public sealed class ObterInscricaoAdministrativaProjecaoDosDadosTests
         InscricaoAdministrativaDto dto = await ConsultarDto(DeFernanda(), kevin);
 
         ItensDe(dto).Select(static i => i.FatoCodigo).Should().Equal("NOME");
-        JsonSerializer.Serialize(dto).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain("***.598.363-**");
+        JsonSerializer.Serialize(dto).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
     }
 
     [Fact(DisplayName = "Só revelar, sem o identificador mascarado: o item é omitido, nada do identificador é registrado e a revelação não é pedida na consulta")]

@@ -105,6 +105,8 @@ public sealed class ConteudoDoComprovanteTests
             inscricao, comprovante, Envelope(derivados: Derivados(Derivado("UF_RESIDENCIA", "Estado de residência", TipoDoDado.Opcao))));
 
         ItemDoComprovanteDto estado = dto.Formulario.Derivados.Should().ContainSingle(d => d.Rotulo == "Estado de residência").Subject;
+        estado.Tipo.Codigo.Should().Be("OPCAO");
+        estado.Componente.Codigo.Should().Be("PADRAO");
         estado.Valor!.Value.GetProperty("rotulo").GetString().Should().Be("Pará");
     }
 
@@ -119,6 +121,8 @@ public sealed class ConteudoDoComprovanteTests
 
         ItemDoComprovanteDto idade = dto.Formulario.Derivados.Should().ContainSingle().Subject;
         idade.Rotulo.Should().Be(faixaEtaria.Nome);
+        idade.Tipo.Codigo.Should().Be("NUMERO");
+        idade.Componente.Codigo.Should().Be("PADRAO");
         idade.Valor!.Value.ValueKind.Should().Be(JsonValueKind.String);
         idade.Valor!.Value.GetString().Should().Be("26");
     }
