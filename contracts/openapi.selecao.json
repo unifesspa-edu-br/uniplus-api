@@ -17418,7 +17418,8 @@
         "title": "C\u00F3digo de cadastro",
         "description": "C\u00F3digo com letra mai\u00FAscula inicial, seguido de letras mai\u00FAsculas e algarismos, com palavras separadas por sublinhado.",
         "type": "string",
-        "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$"
+        "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
+        "maxLength": 80
       },
       "DocumentoDaConfiguracaoComunsCodigoDeCatalogo": {
         "title": "C\u00F3digo est\u00E1vel de cat\u00E1logo",
@@ -17426,7 +17427,7 @@
         "type": "string",
         "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
         "minLength": 1,
-        "maxLength": 128,
+        "maxLength": 50,
         "not": {
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         }
@@ -17897,7 +17898,7 @@
           "tipoFaseCodigo": {
             "title": "Fase can\u00F4nica",
             "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
           },
           "tipoFaseNome": {
             "title": "Nome do tipo de fase",
@@ -18760,7 +18761,7 @@
           "tipoEtapaCodigo": {
             "title": "Tipo de etapa",
             "description": "C\u00F3digo do tipo de etapa no cat\u00E1logo de tipos de etapa.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
           },
           "peso": {
             "title": "Peso",
@@ -19050,7 +19051,7 @@
             "description": "C\u00F3digo do tipo de documento no cat\u00E1logo, de 1 a 60 caracteres.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+                "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
               }
             ],
             "maxLength": 60
@@ -19853,7 +19854,7 @@
           "tipoProcessoCodigo": {
             "title": "Tipo de processo",
             "description": "C\u00F3digo do tipo de processo no cat\u00E1logo de tipos de processo.",
-            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
           },
           "tipoProcessoNome": {
             "title": "Nome do tipo de processo",

@@ -50,7 +50,7 @@
           "description": "Código do tipo de documento no catálogo, de 1 a 60 caracteres.",
           "allOf": [
             {
-              "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+              "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
             }
           ],
           "maxLength": 60

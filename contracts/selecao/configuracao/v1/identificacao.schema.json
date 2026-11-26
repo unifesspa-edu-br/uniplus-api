@@ -16,7 +16,7 @@
     "tipoProcessoCodigo": {
       "title": "Tipo de processo",
       "description": "Código do tipo de processo no catálogo de tipos de processo.",
-      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
     },
     "tipoProcessoNome": {
       "title": "Nome do tipo de processo",
