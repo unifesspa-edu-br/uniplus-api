@@ -18,7 +18,7 @@ public sealed class TipoInstrumentoNormativoTests
             ("RESOLUCAO", "Resolução", "Ato normativo de órgão colegiado (conselho, câmara, comitê) com efeitos internos ou externos conforme a norma instituidora."),
             ("INSTRUCAO_NORMATIVA", "Instrução Normativa", "Ato administrativo de caráter técnico-operacional que detalha a execução de normas superiores."),
             ("PARECER", "Parecer", "Manifestação técnica ou jurídica de órgão competente que orienta a aplicação de normas — vinculante quando aprovado pela autoridade competente."),
-            ("EDITAL", "Edital", "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o bônus que ele institui."));
+            ("EDITAL", "Edital", "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o Fator de Atenuação das Desigualdades de Acesso (FADA) que ele institui."));
     }
 
     [Fact(DisplayName = "Os valores seguem a ordem declarada, da lei ao edital")]

@@ -46,7 +46,7 @@ public static class ResolvedorEstadoFatos
     /// Os valores que o processo oferta a cada fato categórico coletado, congelados no edital. Uma
     /// resposta com valor fora da oferta <b>não vale</b>: o fato fica sem resposta e nunca satisfaz
     /// uma condição, mesmo que a condição cite aquele valor — por exemplo, uma opção retirada numa
-    /// retificação ou um município que deixou a área do bônus.
+    /// retificação ou um município que deixou a área do FADA.
     /// </param>
     public static IReadOnlyDictionary<string, FatoResolvido> Resolver(
         IReadOnlyCollection<FormularioProcesso> formularios,

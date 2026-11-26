@@ -43,9 +43,9 @@ public sealed record AvisoConformidadeDto(string Codigo, string Dimensao, string
 /// (<c>GET /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
 /// request-specific que só o comando de publicação avalia.
 /// <para>
-/// O bônus regional e os critérios de desempate entram neste checklist: o processo declara se
-/// aplica o bônus (a ausência da declaração é pendência; a da configuração só significa "sem
-/// bônus" quando a declaração é falsa), e o desempate é obrigatório quando a inscrição é feita no
+/// O FADA e os critérios de desempate entram neste checklist: o processo declara se
+/// aplica o FADA (a ausência da declaração é pendência; a da configuração só significa "sem
+/// FADA" quando a declaração é falsa), e o desempate é obrigatório quando a inscrição é feita no
 /// sistema (com resultado importado a lista já vem classificada). Etapa não é
 /// item incondicional: um processo sem prova (SiSU, <c>CLASSIFICACAO_IMPORTADA</c>)
 /// publica sem etapa quando o cronograma é coerente.

@@ -59,7 +59,7 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
         cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { RegraDeHomologacao = regra };
 
     private static FaseCronogramaInput FaseComRecursoRecusado(CenarioDoCronogramaDeFases cenario, RegraDeHomologacaoInput regra) =>
-        Fase(cenario, regra) with { RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = RegraDeBonus().Codigo } };
+        Fase(cenario, regra) with { RegraRecurso = RecursoAncoradoNaClassificacao() with { RegraCodigo = RegraDoFadaDeTeste().Codigo } };
 
     private static (string? Campo, string Codigo)[] Recusas(Result resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
@@ -335,7 +335,7 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
     [Fact(DisplayName = "A regra de recurso recusada não impede a conferência da regra de homologação da mesma fase")]
     public async Task Handle_RegraDeRecursoRecusada_AcumulaComARegraDeHomologacao()
     {
-        CenarioDoCronogramaDeFases cenario = Cenario().ComRegraNoCatalogo(RegraDeBonus());
+        CenarioDoCronogramaDeFases cenario = Cenario().ComRegraNoCatalogo(RegraDoFadaDeTeste());
 
         Result resultado = await cenario.DefinirFasesAsync(
             FaseComRecursoRecusado(cenario, Regra(AtoDaClassificacao, Alternativa(Condicao(edicao: 1997)))));
@@ -343,13 +343,13 @@ public sealed class DefinirCronogramaFasesRegraDeHomologacaoTests
         Recusas(resultado).Should().Equal(
             ("fases[0].regraRecurso.regraCodigo", "RegraRecursoFase.RegraCatalogoInvalida"),
             ($"{CampoDaRegra}.alternativas[0].condicoes[0].edicaoDoExame", HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida));
-        resultado.Errors[0].Error.Message.Should().NotContain(RegraDeBonus().Codigo).And.NotContain(RegraDeBonus().Versao);
+        resultado.Errors[0].Error.Message.Should().NotContain(RegraDoFadaDeTeste().Codigo).And.NotContain(RegraDoFadaDeTeste().Versao);
     }
 
     [Fact(DisplayName = "A regra de recurso recusada em uma fase não impede a conferência das demais fases")]
     public async Task Handle_RegraDeRecursoRecusada_AcumulaComAsDemaisFases()
     {
-        CenarioDoCronogramaDeFases cenario = Cenario().ComRegraNoCatalogo(RegraDeBonus());
+        CenarioDoCronogramaDeFases cenario = Cenario().ComRegraNoCatalogo(RegraDoFadaDeTeste());
         FaseCronogramaInput outraFase = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with { Ordem = 2, RegraDeHomologacao = Regra("OUTRO_RESULTADO") };
 
         Result resultado = await cenario.DefinirFasesAsync(FaseComRecursoRecusado(cenario, Regra()), outraFase);

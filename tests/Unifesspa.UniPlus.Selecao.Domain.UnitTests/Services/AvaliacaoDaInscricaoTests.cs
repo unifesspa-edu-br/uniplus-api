@@ -116,12 +116,12 @@ public sealed class AvaliacaoDaInscricaoTests
             .Should().Equal([BaixaRenda], "o campo de renda ainda não aparece: falta a resposta que decide se ele aparece");
     }
 
-    [Fact(DisplayName = "O Fator depende do fato que a configuração do bônus cita, e só dele, sem a matriz de modalidades")]
+    [Fact(DisplayName = "O Fator depende do fato que a configuração do FADA cita, e só dele, sem a matriz de modalidades")]
     public void DependenciasDoFator_SaoOFatoDeElegibilidadeCitado()
     {
         ConfiguracaoAvaliavel configuracao = Configuracao(derivaModalidade: true);
 
-        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(configuracao, Bonus("CONCORRER_EP"));
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(configuracao, Fada("CONCORRER_EP"));
 
         dependencias.Fatos.Should().Equal(["CONCORRER_EP"]);
         dependencias.Grupos.Should().BeEmpty();
@@ -131,36 +131,36 @@ public sealed class AvaliacaoDaInscricaoTests
     public void DependenciasDoFator_FatoDerivadoTrazOsCamposDaDerivacao()
     {
         DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
-            Configuracao(derivaModalidade: false), Bonus(OrigemEscolar.FatoEgresso));
+            Configuracao(derivaModalidade: false), Fada(OrigemEscolar.FatoEgresso));
 
         dependencias.Fatos.Should().Contain([OrigemEscolar.FatoOndeCursou, OrigemEscolar.FatoFormaDeConclusao]);
         dependencias.Fatos.Should().NotContain(OrigemEscolar.FatoEgresso, "o derivado não é perguntado");
     }
 
-    [Fact(DisplayName = "O campo com os municípios do bônus entra nas dependências do Fator, com o campo que decide se ele aparece")]
-    public void DependenciasDoFator_CampoDeMunicipioDoBonusEntraComOQueOExibe()
+    [Fact(DisplayName = "O campo com os municípios do FADA entra nas dependências do Fator, com o campo que decide se ele aparece")]
+    public void DependenciasDoFator_CampoDeMunicipioDoFadaEntraComOQueOExibe()
     {
         DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
-            Configuracao(derivaModalidade: false, municipioDoBonus: true), Bonus(fatoElegibilidade: null));
+            Configuracao(derivaModalidade: false, municipioDoFada: true), Fada(fatoElegibilidade: null));
 
-        dependencias.Fatos.Should().BeEquivalentTo([MunicipioDoBonus, PedeOFator]);
+        dependencias.Fatos.Should().BeEquivalentTo([MunicipioDoFada, PedeOFator]);
     }
 
-    [Fact(DisplayName = "O campo com os municípios do bônus dentro de um grupo repetível entra como GRUPO.FATO, com o grupo e o que o exibe")]
+    [Fact(DisplayName = "O campo com os municípios do FADA dentro de um grupo repetível entra como GRUPO.FATO, com o grupo e o que o exibe")]
     public void DependenciasDoFator_CampoDeMunicipioNoGrupoEntraComoMembro()
     {
         DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
-            Configuracao(derivaModalidade: false, municipioDoBonus: false, municipioNoGrupo: true), Bonus(fatoElegibilidade: null));
+            Configuracao(derivaModalidade: false, municipioDoFada: false, municipioNoGrupo: true), Fada(fatoElegibilidade: null));
 
-        dependencias.Fatos.Should().BeEquivalentTo([$"{GrupoDeMunicipios}.{MunicipioDoBonus}", PedeOFator]);
+        dependencias.Fatos.Should().BeEquivalentTo([$"{GrupoDeMunicipios}.{MunicipioDoFada}", PedeOFator]);
         dependencias.Grupos.Should().Equal([GrupoDeMunicipios]);
     }
 
-    [Fact(DisplayName = "Processo sem bônus regional não tem Fator: as dependências são vazias")]
-    public void DependenciasDoFator_SemBonus_Vazias()
+    [Fact(DisplayName = "Processo sem FADA não tem Fator: as dependências são vazias")]
+    public void DependenciasDoFator_SemFada_Vazias()
     {
         DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
-            Configuracao(derivaModalidade: true, municipioDoBonus: true), bonus: null);
+            Configuracao(derivaModalidade: true, municipioDoFada: true), fada: null);
 
         dependencias.Fatos.Should().BeEmpty();
         dependencias.Grupos.Should().BeEmpty();
@@ -206,15 +206,15 @@ public sealed class AvaliacaoDaInscricaoTests
 
     private const string BaixaRenda = "BAIXA_RENDA";
     private const string PedeOFator = "PEDE_O_FATOR";
-    private const string MunicipioDoBonus = "MUNICIPIO_DO_BONUS";
+    private const string MunicipioDoFada = "MUNICIPIO_DO_FADA";
     private const string GrupoDeMunicipios = "GRUPO_MUNICIPIOS";
 
-    private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
-        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+    private static ConfiguracaoDoFada Fada(string? fatoElegibilidade) =>
+        ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
-    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)
+    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoFada = false, bool municipioNoGrupo = false)
     {
-        string[] perguntas = PerguntasDa(rendaSoParaBaixaRenda, municipioDoBonus, municipioNoGrupo);
+        string[] perguntas = PerguntasDa(rendaSoParaBaixaRenda, municipioDoFada, municipioNoGrupo);
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
         List<DerivacaoDoFato> derivacoes = DerivacoesDa(derivaModalidade, ofertadas);
         DefinicaoFormulario definicao = municipioNoGrupo
@@ -227,8 +227,8 @@ public sealed class AvaliacaoDaInscricaoTests
             CamposDe(perguntas), grupos, ofertadas, [], []);
     }
 
-    private static string[] PerguntasDa(bool rendaSoParaBaixaRenda, bool municipioDoBonus, bool municipioNoGrupo) =>
-        [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : municipioNoGrupo ? new[] { PedeOFator } : []];
+    private static string[] PerguntasDa(bool rendaSoParaBaixaRenda, bool municipioDoFada, bool municipioNoGrupo) =>
+        [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoFada ? new[] { PedeOFator, MunicipioDoFada } : municipioNoGrupo ? new[] { PedeOFator } : []];
 
     private static PredicadoDnf QuandoEIgualATrue(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
         [(1, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
@@ -238,7 +238,7 @@ public sealed class AvaliacaoDaInscricaoTests
             .ComRotulo($"Rótulo de {f}")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")
-            .ComOrigem(f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoFada : OrigemValoresColeta.Catalogo)
+            .ComOrigem(f == MunicipioDoFada ? OrigemValoresColeta.MunicipiosDoFada : OrigemValoresColeta.Catalogo)
             .NaSecao(Secao)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir())];
@@ -265,13 +265,13 @@ public sealed class AvaliacaoDaInscricaoTests
             return QuandoEIgualATrue(BaixaRenda);
         }
 
-        return pergunta == MunicipioDoBonus ? QuandoEIgualATrue(PedeOFator) : null;
+        return pergunta == MunicipioDoFada ? QuandoEIgualATrue(PedeOFator) : null;
     }
 
     private static DefinicaoFormulario DefinicaoComGrupoDeMunicipios(string[] perguntas, List<DerivacaoDoFato> derivacoes) => new(
         [new DefinicaoPagina(Pagina, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
             [new DefinicaoGrupo(GrupoDeMunicipios, QuandoEIgualATrue(PedeOFator), Obrigatoriedade.Sempre, 0, 3,
-                [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
+                [new DefinicaoItem(MunicipioDoFada, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false)])],
         [],
         derivacoes);
 
@@ -280,7 +280,7 @@ public sealed class AvaliacaoDaInscricaoTests
         .ComRotulo("Municípios")
         .ComOcorrencias(0, 3)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
-        .ComCampos(FatoColetadoDeTeste.Coletando(MunicipioDoBonus, 0)
+        .ComCampos(FatoColetadoDeTeste.Coletando(MunicipioDoFada, 0)
             .ComRotulo("Município")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")

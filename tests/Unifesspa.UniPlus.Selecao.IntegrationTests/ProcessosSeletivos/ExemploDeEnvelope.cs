@@ -32,7 +32,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Exemp
 /// <para>
 /// A golden fixture de <c>EnvelopeDeReferencia</c> <b>não serve de oráculo</b> aqui: ela normaliza os ids
 /// voláteis para tokens (<c>&lt;&lt;id-1&gt;&gt;</c>, que não é um GUID e não decodifica) e
-/// o agregado dela é pobre de propósito — atendimento vazio, sem bônus, sem desempate,
+/// o agregado dela é pobre de propósito — atendimento vazio, sem FADA, sem desempate,
 /// sem eliminações. Um decoder que perdesse metade dos campos passaria por ela.
 /// </para>
 /// <para>

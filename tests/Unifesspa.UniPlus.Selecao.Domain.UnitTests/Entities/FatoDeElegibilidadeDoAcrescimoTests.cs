@@ -86,9 +86,9 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
             .Construir();
 
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>
-        processo.DefinirBonusRegional(
+        processo.DefinirFada(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
 
     /// <summary>Derivado booleano: verdadeiro quando a dependência é verdadeira.</summary>
     private static void Derivar(ProcessoSeletivo processo, string derivado, string dependencia, string? contribui = null) =>
@@ -101,7 +101,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
     private static bool ItemVermelho(ProcessoSeletivo processo) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
-            .Single(static i => i.Codigo == "bonus_regional_fato_de_elegibilidade").Ok is false;
+            .Single(static i => i.Codigo == "fada_fato_de_elegibilidade").Ok is false;
 
     [Fact(DisplayName = "Com inscrição própria, o acréscimo sem o fato de elegibilidade fica pendente no checklist")]
     public void InscricaoPropria_SemFato_Pendente()
@@ -140,13 +140,13 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     [InlineData("pede_o_acrescimo")]
     public void Criar_FatoDeElegibilidadeInexato_Recusa(string codigo)
     {
-        ReferenciaRegra regra = ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64));
+        ReferenciaRegra regra = ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('a', 64));
         BaseLegalCongelada baseLegal = new(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")]);
-        Result<ConfiguracaoBonusRegional> resultado = ConfiguracaoBonusRegional.Criar(regra, 1.20m, null, codigo, baseLegal);
+        Result<ConfiguracaoDoFada> resultado = ConfiguracaoDoFada.Criar(regra, 1.20m, null, codigo, baseLegal);
 
         resultado.IsFailure.Should().BeTrue();
         FieldError recusa = resultado.Errors.Should().ContainSingle().Which;
-        recusa.Error.Code.Should().Be("ConfiguracaoBonusRegional.FatoElegibilidadeInvalido");
+        recusa.Error.Code.Should().Be("ConfiguracaoDoFada.FatoElegibilidadeInvalido");
         recusa.Error.Message.Should().NotContain(codigo);
     }
 

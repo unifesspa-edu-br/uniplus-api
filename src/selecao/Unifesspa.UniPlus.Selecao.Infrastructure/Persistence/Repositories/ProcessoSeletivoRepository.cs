@@ -99,7 +99,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
     {
         IQueryable<ProcessoSeletivo> carregada = ComEtapas(query);
         carregada = ComAtendimentoEspecializado(carregada);
-        carregada = ComVagasEBonusRegional(carregada);
+        carregada = ComVagasEFada(carregada);
         carregada = ComDivulgacaoETaxaDeInscricao(carregada);
         carregada = ComDesempateEClassificacao(carregada);
         carregada = ComCronogramaDeFases(carregada);
@@ -125,11 +125,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
             .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia);
 
-    private static IQueryable<ProcessoSeletivo> ComVagasEBonusRegional(IQueryable<ProcessoSeletivo> query) =>
+    private static IQueryable<ProcessoSeletivo> ComVagasEFada(IQueryable<ProcessoSeletivo> query) =>
         query
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
-            .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios);
+            .Include(p => p.Fada!).ThenInclude(b => b.Municipios);
 
     private static IQueryable<ProcessoSeletivo> ComDivulgacaoETaxaDeInscricao(IQueryable<ProcessoSeletivo> query) =>
         query

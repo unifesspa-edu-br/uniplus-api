@@ -16,15 +16,15 @@ public sealed class PrecisaoDasConfiguracoesTests
     [InlineData("100", "fator")]
     [InlineData("0.12345", "teto")]
     [InlineData("100", "teto")]
-    public void Criar_BonusForaDaPrecisao_RecusaFormato(string texto, string campo)
+    public void Criar_FadaForaDaPrecisao_RecusaFormato(string texto, string campo)
     {
         decimal valor = decimal.Parse(texto, System.Globalization.CultureInfo.InvariantCulture);
-        Result<ConfiguracaoBonusRegional> resultado = Bonus(campo == "fator" ? valor : 1m, campo == "teto" ? valor : 1m);
+        Result<ConfiguracaoDoFada> resultado = Fada(campo == "fator" ? valor : 1m, campo == "teto" ? valor : 1m);
         resultado.Errors.Should().Contain(e => e.Field == campo && e.Error.Code == CodigosDeValidacao.Formato);
     }
 
     [Fact]
-    public void Criar_BonusNoLimite_Aceita() => Bonus(99.9999m, 99.9999m).IsSuccess.Should().BeTrue();
+    public void Criar_FadaNoLimite_Aceita() => Fada(99.9999m, 99.9999m).IsSuccess.Should().BeTrue();
 
     [Theory]
     [InlineData("50.555")]
@@ -56,10 +56,10 @@ public sealed class PrecisaoDasConfiguracoesTests
     [Fact]
     public void Criar_ValoresForaDaFaixaEDaPrecisao_AcumulaNaOrdem()
     {
-        Result<ConfiguracaoBonusRegional> resultado = Bonus(-0.00001m, -0.00001m);
+        Result<ConfiguracaoDoFada> resultado = Fada(-0.00001m, -0.00001m);
         resultado.Errors.Select(e => e.Error.Code).Should().Equal(
-            "ConfiguracaoBonusRegional.FatorInvalido", CodigosDeValidacao.Formato,
-            "ConfiguracaoBonusRegional.TetoInvalido", CodigosDeValidacao.Formato);
+            "ConfiguracaoDoFada.FatorInvalido", CodigosDeValidacao.Formato,
+            "ConfiguracaoDoFada.TetoInvalido", CodigosDeValidacao.Formato);
     }
 
     [Fact]
@@ -78,8 +78,8 @@ public sealed class PrecisaoDasConfiguracoesTests
             DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite, CodigosDeValidacao.Formato);
     }
 
-    private static Result<ConfiguracaoBonusRegional> Bonus(decimal fator, decimal teto) =>
-        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)),
+    private static Result<ConfiguracaoDoFada> Fada(decimal fator, decimal teto) =>
+        ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('a', 64)),
             fator, teto, null, new BaseLegalCongelada(Guid.CreateVersion7(), "BASE", "PORTARIA", "Portaria", "Descrição", [("1504208", "Marabá", "PA")]));
 
     private static Result<ConfiguracaoTaxaInscricao> Taxa(decimal valor) =>

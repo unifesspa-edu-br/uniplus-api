@@ -39,10 +39,10 @@ public sealed class ConsequenciasDasBancasTests
     public void Acrescimo_BancaComFatorOferecido_Aceita()
     {
         ProcessoSeletivo processo = ProcessoComBanca(ConsequenciaDoDescumprimento.RetiraOAcrescimo);
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), 1.2m, null,
+        ConfiguracaoDoFada fada = ConfiguracaoDoFada.Criar(
+            ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", HashFixo), 1.2m, null,
             FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA", "PORTARIA", "Portaria", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        processo.DefinirBonusRegional(true, bonus).IsSuccess.Should().BeTrue();
+        processo.DefinirFada(true, fada).IsSuccess.Should().BeTrue();
         ConsequenciasDasBancas.Acrescimo(processo.Declaracao(), CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas)).Should().BeEmpty();
     }
 
@@ -129,7 +129,7 @@ public sealed class ConsequenciasDasBancasTests
 
     [Theory]
     [InlineData("etapas", "banca_acrescimo_nao_oferecido")]
-    [InlineData("bonusRegional", "banca_acrescimo_nao_oferecido")]
+    [InlineData("fada", "banca_acrescimo_nao_oferecido")]
     [InlineData("distribuicaoVagas", "banca_sem_modalidade_em_questao")]
     [InlineData("documentosExigidos", "banca_sem_modalidade_em_questao")]
     public void Painel_ParteNecessariaRecusada_MantemOItemDaBancaPendente(string recusada, string item)

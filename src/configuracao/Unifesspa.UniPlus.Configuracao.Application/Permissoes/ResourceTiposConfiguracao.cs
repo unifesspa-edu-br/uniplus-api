@@ -56,7 +56,7 @@ public static class ResourceTiposConfiguracao
     public const string TermoConsentimento = "termo-consentimento";
 
     /// <summary>Tipo <c>base-legal-do-fada</c>.</summary>
-    public const string BaseLegalBonusRegional = "base-legal-do-fada";
+    public const string BaseLegalDoFada = "base-legal-do-fada";
 
     /// <summary>Tipo <c>tipo-processo</c>.</summary>
     public const string TipoProcesso = "tipo-processo";

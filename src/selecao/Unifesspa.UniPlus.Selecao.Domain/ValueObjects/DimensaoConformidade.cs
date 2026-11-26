@@ -34,7 +34,7 @@ public static class DimensaoConformidade
     public const string ExigenciasDocumentais = "exigencias_documentais";
     public const string CascataRemanejamento = "cascata_remanejamento";
     public const string ColetaDeFatos = "coleta_de_fatos";
-    public const string BonusRegional = "bonus_regional";
+    public const string Fada = "fada";
     public const string Desempate = "desempate";
     public const string ProvaPresencial = "prova_presencial";
 
@@ -59,7 +59,7 @@ public static class DimensaoConformidade
         [ExigenciasDocumentais] = "documentosExigidos",
         [CascataRemanejamento] = "ordemDeRemanejamento",
         [ColetaDeFatos] = "coleta",
-        [BonusRegional] = "fada",
+        [Fada] = "fada",
         [ProvaPresencial] = "provaPresencial",
     };
 

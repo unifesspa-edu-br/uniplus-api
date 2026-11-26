@@ -59,10 +59,10 @@ internal sealed record ViolacaoDeRegra(
             p => p.DefinirOpcoesDeCurso(3),
             ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
             static p => [p.NumeroDeOpcoesDeCurso]),
-        [nameof(ProcessoSeletivo.DefinirBonusRegional)] = new(
-            p => p.DefinirBonusRegional(aplica: true, bonus: null),
-            ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
-            static p => [p.AplicaBonusRegional, p.BonusRegional]),
+        [nameof(ProcessoSeletivo.DefinirFada)] = new(
+            p => p.DefinirFada(aplica: true, configuracao: null),
+            ProcessoSeletivoErrorCodes.FadaAplicaSemConfiguracao,
+            static p => [p.AplicaFada, p.Fada]),
         [nameof(ProcessoSeletivo.DefinirCriteriosDesempate)] = new(
             p => p.DefinirCriteriosDesempate([CriterioMaiorIdade(1), CriterioMaiorIdade(1)]),
             "ProcessoSeletivo.OrdemDesempateDuplicada",

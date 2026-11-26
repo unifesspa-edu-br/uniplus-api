@@ -14,10 +14,10 @@ public sealed class DescricaoDeBasesLegaisDaFadaTests
 {
     private const string DocumentoComBaseLegal = """{ "fada": { "aplica": true, "baseLegalCodigo": "LEI_ESTADUAL_EXEMPLO" } }""";
 
-    private readonly IBaseLegalBonusRegionalReader _bases = Substitute.For<IBaseLegalBonusRegionalReader>();
+    private readonly IBaseLegalDoFadaReader _bases = Substitute.For<IBaseLegalDoFadaReader>();
 
     public DescricaoDeBasesLegaisDaFadaTests() =>
-        _bases.ObterPorCodigoAsync("LEI_ESTADUAL_EXEMPLO", Arg.Any<CancellationToken>()).Returns(new BaseLegalBonusRegionalView(
+        _bases.ObterPorCodigoAsync("LEI_ESTADUAL_EXEMPLO", Arg.Any<CancellationToken>()).Returns(new BaseLegalDoFadaView(
             Guid.CreateVersion7(), "LEI_ESTADUAL_EXEMPLO", "LEI", "Lei estadual de exemplo", "Atenua as desigualdades de acesso na região.",
             [new("1504208", "Marabá", "PA"), new("1505502", "Parauapebas", "PA")]));
 

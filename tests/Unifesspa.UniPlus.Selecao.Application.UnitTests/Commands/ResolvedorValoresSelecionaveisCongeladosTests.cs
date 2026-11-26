@@ -122,12 +122,12 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         }
     }
 
-    [Fact(DisplayName = "Resolver congela, para fato de fonte dos municípios do bônus, os municípios da área em ordem de nome")]
-    public void Resolver_FatoDosMunicipiosDoBonus_CongelaOsMunicipiosDaArea()
+    [Fact(DisplayName = "Resolver congela, para fato de fonte dos municípios do FADA, os municípios da área em ordem de nome")]
+    public void Resolver_FatoDosMunicipiosDoFada_CongelaOsMunicipiosDaArea()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
-        ColetarNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_BONUS", 0)
+        processo.DefinirFada(aplica: true, configuracao: ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1505536", "Parauapebas", "PA"), ("1504208", "Marabá", "PA"), ("1500131", "Água Azul do Norte", "PA")])).Value!).IsSuccess.Should().BeTrue();
+        ColetarNaHabilitacao(processo, FatoColetadoDeTeste.Coletando("MUNICIPIO_EM_AREA_FADA", 0)
             .ComRotulo("Município")
             .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
@@ -135,7 +135,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             .Construir());
 
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valores = ValoresCongeladosDe(
-            processo, FatoCategoricoDeEscopoProcesso("MUNICIPIO_EM_AREA_BONUS") with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.MunicipiosDoFada) });
+            processo, FatoCategoricoDeEscopoProcesso("MUNICIPIO_EM_AREA_FADA") with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.MunicipiosDoFada) });
 
         valores!.Select(static v => (v.Codigo, v.Descricao)).Should().Equal(
             ("1500131", "Água Azul do Norte/PA"), ("1504208", "Marabá/PA"), ("1505536", "Parauapebas/PA"));

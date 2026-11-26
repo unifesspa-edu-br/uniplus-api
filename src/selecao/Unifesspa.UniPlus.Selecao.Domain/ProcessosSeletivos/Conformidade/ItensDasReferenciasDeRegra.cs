@@ -20,7 +20,7 @@ internal static class ItensDasReferenciasDeRegra
         var c when c.StartsWith("etapas", StringComparison.Ordinal) => DimensaoConformidade.Etapas,
         var c when c.StartsWith("classificacao.criteriosDeDesempate", StringComparison.Ordinal) => DimensaoConformidade.Desempate,
         var c when c.StartsWith("classificacao", StringComparison.Ordinal) => DimensaoConformidade.Classificacao,
-        var c when c.StartsWith("bonusRegional", StringComparison.Ordinal) => DimensaoConformidade.BonusRegional,
+        var c when c.StartsWith("fada", StringComparison.Ordinal) => DimensaoConformidade.Fada,
         _ => DimensaoConformidade.ContagemDePrazos,
     };
 }

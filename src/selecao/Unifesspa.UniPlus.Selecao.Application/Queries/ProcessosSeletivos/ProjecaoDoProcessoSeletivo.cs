@@ -23,7 +23,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjetarUnidadeAdministradora(processo), ProjetarLocalidade(processo),
         ProjecaoDaEtapaDoProcesso.ProjetarEtapas(processo),
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado), ProjecaoDasVagas.ProjetarDistribuicoes(processo),
-        ProjecaoDasVagas.ProjetarBonusRegional(processo.BonusRegional), processo.AplicaBonusRegional,
+        ProjecaoDasVagas.ProjetarFada(processo.Fada), processo.AplicaFada,
         processo.NumeroDeOpcoesDeCurso is { } opcoesDeCurso ? new OpcoesDeCursoDto(opcoesDeCurso) : null,
         ProjetarProvaPresencial(processo.ProvaPresencial), ProjetarCadastroDeReserva(processo.CadastroDeReserva),
         ProjetarManifestacaoDeInteresse(processo.ManifestacaoDeInteresse), ProjecaoDasVagas.ProjetarCascata(processo.Cascata),

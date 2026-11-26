@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração dos critérios de desempate, do bônus regional, das opções de curso, da taxa de inscrição, da divulgação, da cascata de remanejamento e da classificação do processo seletivo.
+/// Configuração dos critérios de desempate, do FADA, das opções de curso, da taxa de inscrição, da divulgação, da cascata de remanejamento e da classificação do processo seletivo.
 /// </summary>
 [ApiController]
 [EmiteEsperaEsgotadaPelaTrava]
@@ -69,27 +69,27 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015). <c>Aplica</c> falso
-    /// dispensa a configuração; verdadeiro exige <c>RegraCodigo</c> e os demais campos do bônus.
+    /// Declara se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA, UNI-REQ-0015). <c>Aplica</c> falso
+    /// dispensa a configuração; verdadeiro exige <c>Regra</c> e os demais campos do FADA.
     /// A declaração é obrigatória para publicar.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
-    [HttpPut("{id:guid}/bonus-regional")]
+    [HttpPut("{id:guid}/fada")]
     [EndpointName("DefinirFadaDoProcesso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> DefinirBonusRegional(
+    public async Task<IActionResult> DefinirFada(
         Guid id,
-        [FromBody] DefinirBonusRegionalRequest request,
+        [FromBody] DefinirFadaRequest request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         Result resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.Aplica, request.Regra, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegal),
+            new DefinirFadaCommand(id, request.Aplica, request.Regra, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegal),
             cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
@@ -262,7 +262,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     /// Substitui integralmente a configuração de classificação do processo
     /// — o 15º bloco canônico, que compõe
     /// por referência a fórmula da nota, a precisão, a lista de eliminação e
-    /// a ordem de alocação. Bônus e desempate não são parâmetros aqui.
+    /// a ordem de alocação. O FADA e o desempate não são parâmetros aqui.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/classificacao")]

@@ -100,7 +100,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(
-            processo, processo.Id, RegraDoCatalogo(codigo: "FADA_MULTIPLICATIVO", tipo: TipoRegra.RegraBonus));
+            processo, processo.Id, RegraDoCatalogo(codigo: "FADA_MULTIPLICATIVO", tipo: TipoRegra.RegraFada));
         DefinirAlgoritmoContagemPrazoCommand command = new(
             processo.Id, "FADA_MULTIPLICATIVO", "v1");
 

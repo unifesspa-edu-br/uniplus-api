@@ -193,8 +193,8 @@ public sealed class ProjecaoDoFormularioApresentadoTests
             return new ConfiguracaoPublicada(
                 new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. estrutura.CronogramaFases]),
                 new AvaliacaoDeclarada([.. estrutura.Etapas], [.. estrutura.CriteriosDesempate], estrutura.Classificacao!),
-                new VagasDeclaradas([.. estrutura.DistribuicaoVagas], 1, estrutura.BonusRegional is not null,
-                    estrutura.BonusRegional, null, estrutura.AtendimentoEspecializado!),
+                new VagasDeclaradas([.. estrutura.DistribuicaoVagas], 1, estrutura.Fada is not null,
+                    estrutura.Fada, null, estrutura.AtendimentoEspecializado!),
                 new ExigenciasDeclaradas([.. estrutura.DocumentosExigidos], []),
                 new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(Fatos, Grupos), Grupos, Formularios, Termos,
                     [], [], null),

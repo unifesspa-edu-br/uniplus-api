@@ -38,13 +38,13 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     private readonly ICondicaoAtendimentoRepository _condicoes = Substitute.For<ICondicaoAtendimentoRepository>();
     private readonly IRecursoAcessibilidadeRepository _recursos = Substitute.For<IRecursoAcessibilidadeRepository>();
     private readonly ITipoDeficienciaRepository _tiposDeficiencia = Substitute.For<ITipoDeficienciaRepository>();
-    private readonly IBaseLegalBonusRegionalRepository _basesDoBonus = Substitute.For<IBaseLegalBonusRegionalRepository>();
+    private readonly IBaseLegalDoFadaRepository _basesDoFada = Substitute.For<IBaseLegalDoFadaRepository>();
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
     private readonly OpcoesDoCadastroInstitucional _cadastro;
 
     public PreVisualizarModeloFormularioQueryHandlerTests()
     {
-        _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoBonus);
+        _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoFada);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado]);
     }
 

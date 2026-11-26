@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -159,8 +159,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
 
-    /// <summary>Bônus regional (UNI-REQ-0015); só existe quando o processo declara que o aplica.</summary>
-    public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
+    /// <summary>Fator de Atenuação das Desigualdades de Acesso (FADA) (UNI-REQ-0015); só existe quando o processo declara que o aplica.</summary>
+    public ConfiguracaoDoFada? Fada { get; private set; }
 
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; private set; }
 
@@ -172,8 +172,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Como o edital prevê a manifestação de interesse depois da 1ª chamada (UNI-REQ-0503); nulo é a manifestação não prevista, que não impede a publicação.</summary>
     public ManifestacaoDeInteresse? ManifestacaoDeInteresse { get; private set; }
 
-    /// <summary>Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="BonusRegional"/>.</summary>
-    public bool? AplicaBonusRegional { get; private set; }
+    /// <summary>Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="Fada"/>.</summary>
+    public bool? AplicaFada { get; private set; }
 
     /// <summary>Quantos cursos o candidato escolhe na inscrição; nulo bloqueia a publicação e o número não passa do de ofertas.</summary>
     public int? NumeroDeOpcoesDeCurso { get; private set; }
@@ -207,7 +207,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new IdentidadeDoProcessoDeclarada(Nome, OrigemCandidatos, IdentificadorLegivel, TipoProcesso, UnidadeAdministradora),
         new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemCanonicaDaConfiguracao.Fases(_cronogramaFases)]),
         new AvaliacaoDeclarada([.. OrdemCanonicaDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
-        new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaBonusRegional, BonusRegional, Cascata, AtendimentoEspecializado),
+        new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaFada, Fada, Cascata, AtendimentoEspecializado),
         new ExigenciasDeclaradas([.. _documentosExigidos], [.. _regrasDeComprovacao]),
         new ColetaDeclarada([.. _campos], [.. _gruposColetados], [.. _formularios], [.. _termosExigidos], [.. _opcoesDeclaradas], [.. _regrasDerivacao], ReferenciaTemporalFatos),
         new DivulgacaoETaxaDeclaradas(ConfiguracaoDivulgacao, ConfiguracaoTaxaInscricao))
@@ -276,11 +276,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDaDistribuicaoDeVagas.ConferirOpcoesDeCurso(Declaracao(), numero).Com(numero),
             declarado => NumeroDeOpcoesDeCurso = declarado);
 
-    /// <summary>Declara se o processo aplica o bônus regional (UNI-REQ-0015); a declaração e a configuração não podem divergir.</summary>
-    public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus) =>
+    /// <summary>Declara se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) (UNI-REQ-0015); a declaração e a configuração não podem divergir.</summary>
+    public Result DefinirFada(bool aplica, ConfiguracaoDoFada? configuracao) =>
         Editar(
-            () => RegrasDoBonusRegional.Recusa(Declaracao(), aplica, bonus).Com((aplica, bonus)),
-            declaracao => (BonusRegional, AplicaBonusRegional) = (Vincular(declaracao.bonus), declaracao.aplica));
+            () => RegrasDoFada.Recusa(Declaracao(), aplica, configuracao).Com((aplica, configuracao)),
+            declaracao => (Fada, AplicaFada) = (Vincular(declaracao.configuracao), declaracao.aplica));
 
     public Result DefinirProvaPresencial(bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios) =>
         Editar(() => DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial, municipios, limiteDeMunicipios),

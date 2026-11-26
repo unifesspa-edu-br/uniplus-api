@@ -41,7 +41,7 @@ public sealed class SoftDeleteInterceptorTests
         public string Valor { get; set; } = string.Empty;
     }
 
-    // Entidade com coleção OwnsMany (ex.: BaseLegalBonusRegional.Municipios) —
+    // Entidade com coleção OwnsMany (ex.: BaseLegalDoFada.Municipios) —
     // cada item vive na própria tabela filha, ao contrário de OwnsOne (table splitting).
     private sealed class EntidadeComColecaoOwned : SoftDeletableEntity
     {

@@ -83,7 +83,7 @@ internal sealed class CenarioDoEnemDeTeste
         [
             ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCursoOrigemId: OfertaTecnologica),
             ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCursoOrigemId: OfertaHumanistica),
-        ], 1, modelo.Vagas.BonusRegional is not null, modelo.Vagas.BonusRegional, null, modelo.Vagas.AtendimentoEspecializado);
+        ], 1, modelo.Vagas.Fada is not null, modelo.Vagas.Fada, null, modelo.Vagas.AtendimentoEspecializado);
 
     /// <summary>Uma retificação divulgada prorrogou as inscrições até o instante.</summary>
     public void ProrrogarInscricoesAte(DateTimeOffset fim) =>

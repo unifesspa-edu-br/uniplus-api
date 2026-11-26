@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 /// <summary>
 /// Recusas das regras do certame, reunidas por assunto: distribuição e quadro de vagas,
-/// modalidades ofertadas, desempate, bônus, cascata de remanejamento e classificação. A ordem vale: o
+/// modalidades ofertadas, desempate, FADA, cascata de remanejamento e classificação. A ordem vale: o
 /// registro global guarda o último mapeamento de um código repetido.
 /// </summary>
 internal static class ErrosDaOfertaEDaClassificacao
@@ -15,7 +15,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         .. ErrosDoQuadroDeVagas.Mapeamentos(),
         .. ErrosDasModalidadesOfertadas.Mapeamentos(),
         .. ErrosDoDesempate.Mapeamentos(),
-        .. ErrosDoBonusRegional.Mapeamentos(),
+        .. ErrosDoFada.Mapeamentos(),
         .. ErrosDaCascataDeRemanejamento.Mapeamentos(),
         .. ErrosDaClassificacao.Mapeamentos(),
     ];

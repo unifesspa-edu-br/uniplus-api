@@ -106,10 +106,10 @@ public sealed class ConsequenciasDosFormulariosTests
     public void Acrescimo_FormularioObrigatorioComFatorOferecido_Aceita()
     {
         ProcessoSeletivo processo = ProcessoCom(FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraOAcrescimo);
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), 1.2m, null,
+        ConfiguracaoDoFada fada = ConfiguracaoDoFada.Criar(
+            ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", HashFixo), 1.2m, null,
             FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA", "PORTARIA", "Portaria", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        processo.DefinirBonusRegional(true, bonus).IsSuccess.Should().BeTrue();
+        processo.DefinirFada(true, fada).IsSuccess.Should().BeTrue();
 
         ConsequenciasDosFormularios.Acrescimo(processo.Declaracao(), Cronograma(processo.Declaracao())).Should().BeEmpty();
     }

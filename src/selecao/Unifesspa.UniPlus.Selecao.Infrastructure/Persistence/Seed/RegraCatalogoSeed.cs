@@ -122,7 +122,7 @@ public static class RegraCatalogoSeed
             "Edital (eliminação do candidato que faltar à etapa)"),
 
         // regra_fada — Fator de Atenuação das Desigualdades de Acesso (FADA) sobre a nota final
-        new(SeedId(8), RegraDeBonus.Multiplicativo.Codigo(), VersaoV1, TipoRegra.RegraBonus,
+        new(SeedId(8), RegraDoFada.Multiplicativo.Codigo(), VersaoV1, TipoRegra.RegraFada,
             "{}",
             """["nota final multiplicada pelo fator, após os pesos; teto opcional"]""",
             "Fator de Atenuação das Desigualdades de Acesso (FADA) multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão"),

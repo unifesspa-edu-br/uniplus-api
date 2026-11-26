@@ -33,7 +33,7 @@ internal sealed record BlocosDaConfiguracao
 
     public required AtendimentoEspecializado? Atendimento { get; init; }
 
-    public required ConfiguracaoBonusRegional? Bonus { get; init; }
+    public required ConfiguracaoDoFada? Fada { get; init; }
 
     public required ConfiguracaoCascataRemanejamento? Cascata { get; init; }
 

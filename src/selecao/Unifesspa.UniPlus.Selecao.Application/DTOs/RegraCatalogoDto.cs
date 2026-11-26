@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <remarks>
 /// <para>
 /// Existe para que o frontend pare de manter constantes paralelas de fórmula, precisão,
-/// eliminação, bônus, desempate, distribuição, ajuste, remanejamento, prazo recursal, ordem
+/// eliminação, FADA, desempate, distribuição, ajuste, remanejamento, prazo recursal, ordem
 /// de alocação e algoritmo de contagem. Cada uma dessas listas duplicada no cliente é uma
 /// cópia que envelhece quando o catálogo ganha uma versão nova.
 /// </para>

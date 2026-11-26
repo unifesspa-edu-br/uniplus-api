@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// <summary>
 /// Handler do <see cref="DefinirConfiguracaoDivulgacaoCommand"/> (UNI-REQ-0050, issue #563):
 /// <c>CamposPublicos</c> nulo remove a configuração explícita (toggle por ausência, mesmo
-/// padrão de <see cref="DefinirBonusRegionalCommandHandler"/>); caso contrário reconstrói a
+/// padrão de <see cref="DefinirFadaCommandHandler"/>); caso contrário reconstrói a
 /// entidade por inteiro.
 /// </summary>
 public static class DefinirConfiguracaoDivulgacaoCommandHandler

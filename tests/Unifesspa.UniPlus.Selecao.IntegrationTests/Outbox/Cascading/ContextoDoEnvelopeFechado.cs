@@ -89,16 +89,16 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
     public Task<HttpResponseMessage> PutOpcoesDeCursoAsync() => EnviarAsync(
         HttpMethod.Put, $"{Rota}/{ProcessoId}/opcoes-de-curso", new { numero = 1 });
 
-    public Task<HttpResponseMessage> PutBonusRegionalAsync(Guid baseLegalBonusRegionalId) => EnviarAsync(
-        HttpMethod.Put, $"{Rota}/{ProcessoId}/bonus-regional",
+    public Task<HttpResponseMessage> PutFadaAsync(Guid baseLegalDoFadaId) => EnviarAsync(
+        HttpMethod.Put, $"{Rota}/{ProcessoId}/fada",
         new
         {
             aplica = true,
-            regra = new { codigo = RegraDeBonus.Multiplicativo.Codigo(), versao = "v1" },
+            regra = new { codigo = RegraDoFada.Multiplicativo.Codigo(), versao = "v1" },
             fator = 1.2000m,
             teto = 95.5000m,
             fatoElegibilidadeCodigo = FormularioDeTeste.FatoBooleanoDaInscricao,
-            baseLegal = new { id = baseLegalBonusRegionalId },
+            baseLegal = new { id = baseLegalDoFadaId },
         });
 
     public Task<HttpResponseMessage> PutProvaPresencialAsync() => EnviarAsync(

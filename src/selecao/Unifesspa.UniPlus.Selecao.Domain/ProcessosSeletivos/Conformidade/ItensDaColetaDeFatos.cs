@@ -23,6 +23,6 @@ internal static class ItensDaColetaDeFatos
         new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciasDasExigencias.PendenciaDaRepeticaoPorGrupo(configuracao) is null),
         new ItemConformidade("formulario_edicao_enem_sem_classificacao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: só pedem a edição do ENEM quando a classificação é baseada em ENEM", PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(configuracao.Coleta.Campos, configuracao.Avaliacao.Classificacao) is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(configuracao) is null),
-        new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(configuracao) is null),
+        new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_fada", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do FADA: condição cita só município da área", PendenciasDosFatos.PendenciaDeMunicipioDoFadaForaDaArea(configuracao) is null),
     ];
 }

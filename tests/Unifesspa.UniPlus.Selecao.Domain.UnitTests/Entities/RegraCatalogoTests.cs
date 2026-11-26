@@ -21,10 +21,10 @@ public sealed class RegraCatalogoTests
     }
 
     private static RegraCatalogo CriarValida() => RegraCatalogo.Criar(
-        "FADA_MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
+        "FADA_MULTIPLICATIVO", "v1", TipoRegra.RegraFada,
         Json("""{"fator":"numeric","teto":"numeric|null"}"""),
         Json("""["nota_final × fator, após os pesos"]"""),
-        "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM");
+        "Multiplicador do FADA aplicado à nota final após os pesos das áreas do ENEM");
 
     [Fact(DisplayName = "Criar com definição válida computa hash content-addressable")]
     public void Criar_Valida_ComputaHash()
@@ -33,7 +33,7 @@ public sealed class RegraCatalogoTests
 
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
         regra.RecomputeHash().Should().Be(regra.Hash, "recomputar a partir do estado deve bater com o hash gravado");
-        regra.Tipo.Should().Be(TipoRegra.RegraBonus);
+        regra.Tipo.Should().Be(TipoRegra.RegraFada);
     }
 
     [Fact(DisplayName = "Referencia devolve a identidade content-addressable da regra")]
@@ -53,7 +53,7 @@ public sealed class RegraCatalogoTests
     [InlineData("R", "v1", "", "baseLegal")]
     public void Criar_CamposObrigatoriosVazios_LancaArgumentException(string codigo, string versao, string baseLegal, string parametro)
     {
-        Action criar = () => RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraBonus, Json("{}"), Json("[]"), baseLegal);
+        Action criar = () => RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraFada, Json("{}"), Json("[]"), baseLegal);
 
         criar.Should().Throw<ArgumentException>().WithParameterName(parametro);
     }
@@ -69,7 +69,7 @@ public sealed class RegraCatalogoTests
     [Fact(DisplayName = "Criar recusa declaracao_da_regra que não é objeto JSON")]
     public void Criar_DeclaracaoDaRegraNaoObjeto_LancaArgumentException()
     {
-        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraBonus, Json("[]"), Json("[]"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraFada, Json("[]"), Json("[]"), "base");
 
         criar.Should().Throw<ArgumentException>().WithParameterName("declaracaoDaRegra");
     }
@@ -77,7 +77,7 @@ public sealed class RegraCatalogoTests
     [Fact(DisplayName = "Criar recusa invariantes que não é array JSON")]
     public void Criar_InvariantesNaoArray_LancaArgumentException()
     {
-        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraBonus, Json("{}"), Json("{}"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraFada, Json("{}"), Json("{}"), "base");
 
         criar.Should().Throw<ArgumentException>().WithParameterName("invariantes");
     }

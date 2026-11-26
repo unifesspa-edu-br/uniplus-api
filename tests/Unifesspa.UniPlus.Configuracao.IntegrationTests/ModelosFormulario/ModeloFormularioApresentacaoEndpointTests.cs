@@ -98,8 +98,8 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         opcao["descricao"]!.GetValue<string>().Should().Be($"Sala para amamentação {recurso}");
     }
 
-    [Fact(DisplayName = "Sem processo, o município da área do bônus oferece os municípios das bases legais cadastradas, sem repetir")]
-    public async Task ObterFormularioApresentado_MunicipioDoBonus_OfereceAsBasesLegais()
+    [Fact(DisplayName = "Sem processo, o município da área do FADA oferece os municípios das bases legais cadastradas, sem repetir")]
+    public async Task ObterFormularioApresentado_MunicipioDoFada_OfereceAsBasesLegais()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         await CadastrarBaseLegalAsync(client, [Municipio(Maraba, "Marabá"), Municipio("1500131", "Abel Figueiredo")]);

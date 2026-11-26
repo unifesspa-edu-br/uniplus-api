@@ -17,8 +17,8 @@ public static class DefinirManifestacaoDeInteresseCommandHandler
         ArgumentNullException.ThrowIfNull(repositorio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<ProcessoSeletivo> obtido = await DefinirBonusRegionalCommandHandler
-            .ObterParaEdicaoAsync(repositorio, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(repositorio, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirAsync(obtido.Value!, command, unitOfWork, cancellationToken).ConfigureAwait(false);

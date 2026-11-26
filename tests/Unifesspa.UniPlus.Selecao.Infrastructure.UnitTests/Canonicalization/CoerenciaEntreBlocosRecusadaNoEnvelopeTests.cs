@@ -112,7 +112,7 @@ public sealed class CoerenciaEntreBlocosRecusadaNoEnvelopeTests
         Etapas = [],
         Distribuicao = [],
         Atendimento = null,
-        Bonus = null,
+        Fada = null,
         Cascata = null,
         Desempate = [],
         Classificacao = null,

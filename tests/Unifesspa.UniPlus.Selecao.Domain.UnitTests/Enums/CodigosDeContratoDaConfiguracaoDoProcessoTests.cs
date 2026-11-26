@@ -60,7 +60,7 @@ public sealed class CodigosDeContratoDaConfiguracaoDoProcessoTests
             [CategoriaObrigatoriedade.Modalidade] = "MODALIDADE",
             [CategoriaObrigatoriedade.Desempate] = "DESEMPATE",
             [CategoriaObrigatoriedade.Documento] = "DOCUMENTO",
-            [CategoriaObrigatoriedade.Bonus] = "FADA",
+            [CategoriaObrigatoriedade.Fada] = "FADA",
             [CategoriaObrigatoriedade.Atendimento] = "ATENDIMENTO",
             [CategoriaObrigatoriedade.Outros] = "OUTROS",
         });

@@ -2,22 +2,22 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-/// <summary>A oferta do processo: a distribuição de vagas, o número de opções de curso, o bônus regional, a cascata e o atendimento especializado.</summary>
+/// <summary>A oferta do processo: a distribuição de vagas, o número de opções de curso, o Fator de Atenuação das Desigualdades de Acesso (FADA), a cascata e o atendimento especializado.</summary>
 public sealed class VagasDeclaradas
 {
     public VagasDeclaradas(
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas,
         int? numeroDeOpcoesDeCurso,
-        bool? aplicaBonusRegional,
-        ConfiguracaoBonusRegional? bonusRegional,
+        bool? aplicaFada,
+        ConfiguracaoDoFada? fada,
         ConfiguracaoCascataRemanejamento? cascata,
         AtendimentoEspecializado? atendimentoEspecializado)
     {
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
         DistribuicaoVagas = [.. distribuicaoVagas];
         NumeroDeOpcoesDeCurso = numeroDeOpcoesDeCurso;
-        AplicaBonusRegional = aplicaBonusRegional;
-        BonusRegional = bonusRegional;
+        AplicaFada = aplicaFada;
+        Fada = fada;
         Cascata = cascata;
         AtendimentoEspecializado = atendimentoEspecializado;
     }
@@ -26,9 +26,9 @@ public sealed class VagasDeclaradas
 
     public int? NumeroDeOpcoesDeCurso { get; }
 
-    public bool? AplicaBonusRegional { get; }
+    public bool? AplicaFada { get; }
 
-    public ConfiguracaoBonusRegional? BonusRegional { get; }
+    public ConfiguracaoDoFada? Fada { get; }
 
     public ConfiguracaoCascataRemanejamento? Cascata { get; }
 

@@ -30,7 +30,7 @@ internal static class ExemploDeEnvelopeProcessoRico
 {
     /// <summary>
     /// O agregado mais rico que o modelo permite: três etapas (uma de cada caráter),
-    /// atendimento povoado, bônus com teto, <b>as quatro</b> variantes de desempate,
+    /// atendimento povoado, FADA com teto, <b>as quatro</b> variantes de desempate,
     /// classificação local com regras de eliminação de <b>todas</b> as variantes — duas delas do
     /// <b>mesmo</b> código — e duas ofertas de curso, uma sob a Lei 12.711 (com
     /// referência demográfica e as nove modalidades federais) e outra institucional, o cadastro de reserva das chamadas 1 (sem reserva) e 2, e a manifestação de interesse com confirmação a cada chamada.
@@ -117,7 +117,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         processo.DefinirDistribuicaoVagas(
             Ordem([DistribuicaoLei12711(vagasOfertadasBase: vagasOfertadasBase), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"), vagasOfertadasBase)], permutar),
             FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-        DefinirBonusRegional(processo);
+        DefinirFada(processo);
         DefinirCriteriosDeDesempate(processo, variante, permutar);
         DefinirClassificacao(processo, variante, permutar);
         // Classificação baseada em ENEM exige ao menos uma edição admitida.
@@ -141,9 +141,9 @@ internal static class ExemploDeEnvelopeProcessoRico
                 DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!).IsSuccess.Should().BeTrue();
 
-    internal static void DefinirBonusRegional(ProcessoSeletivo processo) =>
-        processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-            Regra(RegraDeBonus.Multiplicativo.Codigo(), 'b'),
+    internal static void DefinirFada(ProcessoSeletivo processo) =>
+        processo.DefinirFada(aplica: true, configuracao: ConfiguracaoDoFada.Criar(
+            Regra(RegraDoFada.Multiplicativo.Codigo(), 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
             fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao,

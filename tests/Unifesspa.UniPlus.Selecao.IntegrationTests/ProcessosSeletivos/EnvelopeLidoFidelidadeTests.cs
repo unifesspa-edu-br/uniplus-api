@@ -28,8 +28,8 @@ public sealed class EnvelopeLidoFidelidadeTests
             ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
 
-        lido.BonusRegional!.Fator.Should().Be(1.2000m);
-        lido.BonusRegional.Teto.Should().Be(95.5000m);
+        lido.Fada!.Fator.Should().Be(1.2000m);
+        lido.Fada.Teto.Should().Be(95.5000m);
         lido.ConfiguracaoTaxaInscricao!.Valor.Should().Be(150.00m);
         lido.DistribuicaoVagas.Select(d => d.PercentualDaReservaLegal).Should().Contain(0.7500m);
     }

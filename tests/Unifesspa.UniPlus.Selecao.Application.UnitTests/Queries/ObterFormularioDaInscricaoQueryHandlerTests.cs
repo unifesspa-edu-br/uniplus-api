@@ -69,8 +69,8 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     private static ConfiguracaoPublicada ConfiguracaoComFormulario(ProcessoSeletivo processoBase, FormularioProcesso formulario) => new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),
             new AvaliacaoDeclarada([.. processoBase.Etapas], [.. processoBase.CriteriosDesempate], processoBase.Classificacao!),
-            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.BonusRegional is not null,
-                processoBase.BonusRegional, null, processoBase.AtendimentoEspecializado!),
+            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.Fada is not null,
+                processoBase.Fada, null, processoBase.AtendimentoEspecializado!),
             new ExigenciasDeclaradas([.. processoBase.DocumentosExigidos], []),
             new ColetaDeclarada([], [], [formulario], [],
                 [], [], null),

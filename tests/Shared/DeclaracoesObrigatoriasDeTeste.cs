@@ -6,24 +6,24 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// As declarações que o processo exige para publicar além da taxa: o bônus regional (aplica ou
+/// As declarações que o processo exige para publicar além da taxa: o FADA (aplica ou
 /// não), o número de opções de curso e, com inscrição própria, ao menos um critério de desempate. Para fixtures que precisam
 /// de um processo publicável sem que essas dimensões sejam o assunto.
 /// </summary>
 internal static class DeclaracoesObrigatoriasDeTeste
 {
     /// <summary>
-    /// Declara "não aplica bônus" e um critério de desempate, só onde falta: o que o teste já
+    /// Declara "não aplica o FADA" e um critério de desempate, só onde falta: o que o teste já
     /// configurou fica como está. Os parâmetros deixam uma das três por declarar, para provar a
     /// recusa correspondente. O número de opções declarado é 1, que cabe em qualquer distribuição.
     /// </summary>
-    public static void Declarar(ProcessoSeletivo processo, bool bonus = true, bool desempate = true, bool opcoesDeCurso = true)
+    public static void Declarar(ProcessoSeletivo processo, bool fada = true, bool desempate = true, bool opcoesDeCurso = true)
     {
         ArgumentNullException.ThrowIfNull(processo);
         DeclararProvaPresencial(processo);
 
         DeclararOpcoesDeCurso(processo, opcoesDeCurso);
-        DeclararBonus(processo, bonus);
+        DeclararFada(processo, fada);
         if (desempate)
         {
             DeclararDesempate(processo);
@@ -38,11 +38,11 @@ internal static class DeclaracoesObrigatoriasDeTeste
         }
     }
 
-    private static void DeclararBonus(ProcessoSeletivo processo, bool bonus)
+    private static void DeclararFada(ProcessoSeletivo processo, bool fada)
     {
-        if (bonus && processo.AplicaBonusRegional is null)
+        if (fada && processo.AplicaFada is null)
         {
-            ExigirSucesso(processo.DefinirBonusRegional(aplica: false, bonus: null));
+            ExigirSucesso(processo.DefinirFada(aplica: false, configuracao: null));
         }
     }
 

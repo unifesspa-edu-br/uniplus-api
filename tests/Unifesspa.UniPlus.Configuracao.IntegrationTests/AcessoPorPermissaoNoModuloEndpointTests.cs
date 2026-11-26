@@ -148,7 +148,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     private static string RotaDoRecurso(string recurso) => recurso switch
     {
-        "base-legal-do-fada" => "base-legal-bonus-regional",
+        "base-legal-do-fada" => "bases-legais-fada",
         _ => recurso,
     };
 

@@ -42,7 +42,7 @@ internal static class ProcessoDoGrafoLidoDeTeste
     {
         Aceita(processo.DefinirClassificacao(grafo.Avaliacao.Classificacao!));
         Aceita(processo.DefinirCriteriosDesempate(grafo.Avaliacao.CriteriosDesempate));
-        Aceita(processo.DefinirBonusRegional(grafo.Vagas.BonusRegional is not null, grafo.Vagas.BonusRegional));
+        Aceita(processo.DefinirFada(grafo.Vagas.Fada is not null, grafo.Vagas.Fada));
         Aceita(processo.DefinirCascataRemanejamento(grafo.Vagas.Cascata));
         Aceita(processo.DefinirConfiguracaoDivulgacao(grafo.DivulgacaoETaxa.ConfiguracaoDivulgacao));
         Aceita(processo.DefinirTaxaInscricao(grafo.DivulgacaoETaxa.ConfiguracaoTaxaInscricao));

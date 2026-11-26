@@ -125,12 +125,12 @@ public sealed class ProcessoSeletivoEdicaoTests
         violacao.Dimensao(processo).Should().Equal(antes);
     }
 
-    [Fact(DisplayName = "Bônus regional nulo é válido quando o processo declara que não o aplica")]
-    public void BonusNulo_EValido()
+    [Fact(DisplayName = "FADA nulo é válido quando o processo declara que não o aplica")]
+    public void FadaNulo_EValido()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirBonusRegional(aplica: false, bonus: null).IsSuccess.Should().BeTrue();
+        processo.DefinirFada(aplica: false, configuracao: null).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Fatos coletados sem grupos informados são válidos")]

@@ -78,7 +78,7 @@ internal static class LeituraDoEnvelope
             Etapas = LeituraDasEtapas.LerEtapas(leitor, payload),
             Distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload),
             Atendimento = LeituraDoAtendimento.LerAtendimento(leitor, payload),
-            Bonus = LeituraDoFada.LerFada(leitor, payload),
+            Fada = LeituraDoFada.LerFada(leitor, payload),
             Cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload),
             Desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload),
             Classificacao = LeituraDaClassificacao.LerClassificacao(leitor, payload),

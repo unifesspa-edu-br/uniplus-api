@@ -58,8 +58,8 @@ public static class ProcessoSeletivoErrorCodes
     public const string IdentificadorLegivelComFormatoDeGuid = "ProcessoSeletivo.IdentificadorLegivelComFormatoDeGuid";
     public const string IdentificadorLegivelAusente = "ProcessoSeletivo.IdentificadorLegivelAusente";
     public const string IdentificadorLegivelImutavel = "ProcessoSeletivo.IdentificadorLegivelImutavel";
-    public const string BonusRegionalAplicaSemConfiguracao = "ProcessoSeletivo.BonusRegionalAplicaSemConfiguracao";
-    public const string BonusRegionalNaoAplicaComConfiguracao = "ProcessoSeletivo.BonusRegionalNaoAplicaComConfiguracao";
+    public const string FadaAplicaSemConfiguracao = "ProcessoSeletivo.FadaAplicaSemConfiguracao";
+    public const string FadaNaoAplicaComConfiguracao = "ProcessoSeletivo.FadaNaoAplicaComConfiguracao";
     public const string OpcoesDeCursoInvalido = "ProcessoSeletivo.OpcoesDeCursoInvalido";
     public const string ConflitoDeConcorrencia = "ProcessoSeletivo.ConflitoDeConcorrencia";
     public const string OpcoesDeCursoAcimaDasOfertas = "ProcessoSeletivo.OpcoesDeCursoAcimaDasOfertas";

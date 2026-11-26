@@ -36,13 +36,13 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     private readonly ICondicaoAtendimentoRepository _condicoes = Substitute.For<ICondicaoAtendimentoRepository>();
     private readonly IRecursoAcessibilidadeRepository _recursos = Substitute.For<IRecursoAcessibilidadeRepository>();
     private readonly ITipoDeficienciaRepository _tiposDeficiencia = Substitute.For<ITipoDeficienciaRepository>();
-    private readonly IBaseLegalBonusRegionalRepository _basesDoBonus = Substitute.For<IBaseLegalBonusRegionalRepository>();
+    private readonly IBaseLegalDoFadaRepository _basesDoFada = Substitute.For<IBaseLegalDoFadaRepository>();
     private readonly ITermoConsentimentoRepository _termos = Substitute.For<ITermoConsentimentoRepository>();
     private readonly OpcoesDoCadastroInstitucional _cadastro;
 
     public ObterFormularioApresentadoDoModeloQueryHandlerTests()
     {
-        _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoBonus);
+        _cadastro = new OpcoesDoCadastroInstitucional(_condicoes, _recursos, _tiposDeficiencia, _basesDoFada);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => []);
     }
 

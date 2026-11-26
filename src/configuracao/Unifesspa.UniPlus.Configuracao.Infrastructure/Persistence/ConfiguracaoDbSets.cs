@@ -20,7 +20,7 @@ public static class ConfiguracaoDbSets
 
         public DbSet<TipoDocumento> TiposDocumento => contexto.Set<TipoDocumento>();
 
-        public DbSet<BaseLegalBonusRegional> BaseLegaisBonus => contexto.Set<BaseLegalBonusRegional>();
+        public DbSet<BaseLegalDoFada> BasesLegaisDoFada => contexto.Set<BaseLegalDoFada>();
 
         public DbSet<CategoriaDocumento> CategoriasDocumento => contexto.Set<CategoriaDocumento>();
 

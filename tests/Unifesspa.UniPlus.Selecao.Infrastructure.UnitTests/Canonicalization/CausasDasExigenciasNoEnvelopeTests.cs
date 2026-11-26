@@ -119,8 +119,8 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
         LeituraDoFada.LerFada(leitor, documento);
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
-        ConferirCausaNoDocumento.Conferir(documento, causas[0], "fada.fator", "ConfiguracaoBonusRegional.FatorInvalido", "O fator do bônus deve ser maior que zero.");
-        ConferirCausaNoDocumento.Conferir(documento, causas[1], "fada", "ConfiguracaoBonusRegional.SemMunicipios", "A base legal do bônus regional deve abranger pelo menos um município.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[0], "fada.fator", "ConfiguracaoDoFada.FatorInvalido", "O multiplicador do Fator de Atenuação das Desigualdades de Acesso (FADA) deve ser maior que zero.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[1], "fada", "ConfiguracaoDoFada.SemMunicipios", "A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve abranger pelo menos um município.");
     }
     [Fact]
     public void LerFada_SemMunicipios_ApontaObjeto()
@@ -129,7 +129,7 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
         documento["fada"]!["fator"] = "1.2000";
         LeitorEnvelope leitor = new();
         LeituraDoFada.LerFada(leitor, documento);
-        ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "fada", "ConfiguracaoBonusRegional.SemMunicipios", "A base legal do bônus regional deve abranger pelo menos um município.");
+        ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "fada", "ConfiguracaoDoFada.SemMunicipios", "A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve abranger pelo menos um município.");
     }
 
     private static JsonObject DocumentoDaFada() => JsonNode.Parse("""

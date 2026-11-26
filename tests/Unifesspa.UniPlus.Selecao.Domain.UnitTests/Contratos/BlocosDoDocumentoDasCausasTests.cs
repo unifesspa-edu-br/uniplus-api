@@ -153,7 +153,7 @@ public sealed class BlocosDoDocumentoDasCausasTests
         DimensaoConformidade.Identificacao, DimensaoConformidade.AtendimentoEspecializado,
         DimensaoConformidade.DistribuicaoVagas, DimensaoConformidade.Classificacao, DimensaoConformidade.Cronograma,
         DimensaoConformidade.Etapas, DimensaoConformidade.TaxaInscricao, DimensaoConformidade.ExigenciasDocumentais,
-        DimensaoConformidade.CascataRemanejamento, DimensaoConformidade.ColetaDeFatos, DimensaoConformidade.BonusRegional,
+        DimensaoConformidade.CascataRemanejamento, DimensaoConformidade.ColetaDeFatos, DimensaoConformidade.Fada,
         DimensaoConformidade.Desempate, DimensaoConformidade.ContagemDePrazos,
     ];
 

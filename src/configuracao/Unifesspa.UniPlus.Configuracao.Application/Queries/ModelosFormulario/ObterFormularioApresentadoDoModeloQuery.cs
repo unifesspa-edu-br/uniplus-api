@@ -25,8 +25,8 @@ public sealed record ObterFormularioApresentadoDoModeloQuery(Guid Id) : IQuery<F
 /// apresentado: as regras pela mesma definição da pré-visualização do modelo, recortadas como um
 /// formulário só; as opções que o catálogo oferece a cada campo; e o conteúdo da versão escolhida de cada
 /// termo. As opções que só existem no processo — as que ele declara, as modalidades, os municípios do
-/// bônus — saem nulas: no modelo, ainda não há processo que as oferte. A condição de atendimento, o
-/// recurso de acessibilidade, o tipo de deficiência e os municípios do bônus são a exceção: oferecem o
+/// FADA — saem nulas: no modelo, ainda não há processo que as oferte. A condição de atendimento, o
+/// recurso de acessibilidade, o tipo de deficiência e os municípios do FADA são a exceção: oferecem o
 /// cadastro institucional, que o processo recorta.
 /// </summary>
 public static class ObterFormularioApresentadoDoModeloQueryHandler

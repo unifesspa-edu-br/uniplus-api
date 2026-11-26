@@ -6,15 +6,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>As entradas do manifesto das etapas, do atendimento, das vagas, do bônus e da classificação.</summary>
+/// <summary>As entradas do manifesto das etapas, do atendimento, das vagas, do FADA e da classificação.</summary>
 internal static class ManifestoDeEtapasVagasEClassificacao
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
     {
         [typeof(AvaliacaoDeclarada)] = (["Etapas", "CriteriosDesempate", "Classificacao"], []),
         [typeof(VagasDeclaradas)] = (
-            ["DistribuicaoVagas", "NumeroDeOpcoesDeCurso", "BonusRegional", "Cascata", "AtendimentoEspecializado"],
-            [("AplicaBonusRegional", "A configuração publicada deriva o sinalizador da presença do bônus congelado."),
+            ["DistribuicaoVagas", "NumeroDeOpcoesDeCurso", "Fada", "Cascata", "AtendimentoEspecializado"],
+            [("AplicaFada", "A configuração publicada deriva o sinalizador da presença do FADA congelado."),
              ("HaVagasOfertadas", "Derivada das quantidades de vagas declaradas nas ofertas.")]),
 
         [typeof(BancaDaEtapa)] = (
@@ -115,16 +115,16 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ["ModalidadeOrigemId", "ModalidadeCodigo", "Quantidade"],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
 
-        // O bônus regional referencia um cadastro tipado de Base Legal
-        // de Bônus Regional (Configuração) — o snapshot congelado no momento da
+        // O FADA referencia um cadastro tipado de Base Legal
+        // do FADA (Configuração) — o snapshot congelado no momento da
         // gravação dispensa campos de texto livre.
-        [typeof(ConfiguracaoBonusRegional)] = (
-            ["Regra", "Fator", "Teto", "FatoElegibilidadeCodigo", "BaseLegalBonusRegionalId", "BaseLegalBonusRegionalCodigo", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
+        [typeof(ConfiguracaoDoFada)] = (
+            ["Regra", "Fator", "Teto", "FatoElegibilidadeCodigo", "BaseLegalId", "BaseLegalCodigo", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
-        [typeof(ConfiguracaoBonusRegionalMunicipio)] = (
+        [typeof(MunicipioDoFada)] = (
             ["CodigoIbge", "Nome", "Uf"],
-            [("ConfiguracaoBonusRegionalId", "FK interna.")]),
+            [("ConfiguracaoDoFadaId", "FK interna.")]),
 
         // Divulgação pública (UNI-REQ-0050) — a última dimensão provisória do
         // envelope. A regra de abreviação (regraNomeAbreviado) NÃO é propriedade desta
@@ -135,7 +135,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             ["CamposPublicos", "Justificativa"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
-        // Taxa de inscrição e isenção — diferente de ConfiguracaoBonusRegional/
+        // Taxa de inscrição e isenção — diferente de ConfiguracaoDoFada/
         // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável (CA-01).
         [typeof(ConfiguracaoTaxaInscricao)] = (
             ["Cobra", "Valor", "Fundamentos"],

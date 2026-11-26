@@ -124,8 +124,8 @@ internal static class FormularioDoEnvioDeTeste
         return new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),
             new AvaliacaoDeclarada([.. processoBase.Etapas], [.. processoBase.CriteriosDesempate], processoBase.Classificacao!),
-            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.BonusRegional is not null,
-                processoBase.BonusRegional, null, processoBase.AtendimentoEspecializado!),
+            new VagasDeclaradas([.. processoBase.DistribuicaoVagas], 1, processoBase.Fada is not null,
+                processoBase.Fada, null, processoBase.AtendimentoEspecializado!),
             new ExigenciasDeclaradas(documentos, nos),
             new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta([.. processoBase.FatosColetados], [.. processoBase.GruposColetados]), [.. processoBase.GruposColetados], [.. processoBase.Formularios], [.. processoBase.TermosExigidos],
                 [], [], null),

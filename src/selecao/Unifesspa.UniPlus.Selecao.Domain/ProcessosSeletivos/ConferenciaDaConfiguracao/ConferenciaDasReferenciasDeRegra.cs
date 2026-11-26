@@ -57,7 +57,7 @@ internal static class ConferenciaDasReferenciasDeRegra
     {
         "distribuicaoVagas" => $"na {int.Parse(partes[1], System.Globalization.CultureInfo.InvariantCulture) + 1}ª oferta de vagas, na regra de {(partes[2] == "regraAjuste" ? "ajuste" : "distribuição")}",
         "ordemDeRemanejamento" => "na cascata de remanejamento",
-        "bonusRegional" => "no bônus regional",
+        "fada" => "no Fator de Atenuação das Desigualdades de Acesso (FADA)",
         "classificacao" => LocalizacaoNaClassificacao(partes),
         _ => "na contagem de prazo",
     };

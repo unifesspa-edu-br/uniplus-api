@@ -44,7 +44,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         .. OfertaCursoErrorMappings.Todos,
         .. CalendarioDiasUteisErrorMappings.Todos,
         .. TermoConsentimentoErrorMappings.Todos,
-        .. BaseLegalBonusRegionalErrorMappings.Todos,
+        .. BaseLegalDoFadaErrorMappings.Todos,
         .. ProtecaoDoCatalogoErrorMappings.Todos,
     ];
 }

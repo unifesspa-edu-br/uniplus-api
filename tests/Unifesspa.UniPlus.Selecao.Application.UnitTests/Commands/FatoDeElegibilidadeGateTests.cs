@@ -104,7 +104,7 @@ public sealed class FatoDeElegibilidadeGateTests
             .IsSuccess.Should().BeTrue();
 
         DefinirOFatoDoAcrescimo(processo);
-        DefinirOBonusRegionalDoAcrescimo(processo);
+        DefinirOFadaDoAcrescimo(processo);
 
         RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), new Dictionary<string, string>(), new Dictionary<string, string>())
             .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
@@ -118,11 +118,11 @@ public sealed class FatoDeElegibilidadeGateTests
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
-    private static void DefinirOBonusRegionalDoAcrescimo(ProcessoSeletivo processo)
+    private static void DefinirOFadaDoAcrescimo(ProcessoSeletivo processo)
     {
-        processo.DefinirBonusRegional(
+        processo.DefinirFada(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
+            ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()

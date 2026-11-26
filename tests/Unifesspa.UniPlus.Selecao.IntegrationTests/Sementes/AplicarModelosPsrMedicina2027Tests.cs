@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os modelos de inscrição (com e sem prova) e de habilitação do PSR, semeados pela migration da
-/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, o
+/// Configuração, são aplicados a um processo PSR em rascunho, com o FADA, o
 /// atendimento especializado e cota da lei ofertada, pelo passo Formulários, sem recusa.
 /// </summary>
 [Collection(CascadingCollection.Name)]
@@ -45,7 +45,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     public AplicarModelosPsrMedicina2027Tests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A inscrição com prova e a habilitação são aplicadas ao processo PSR com bônus regional e atendimento especializado, com os municípios do bônus, as condições e os recursos, os documentos dele e a composição familiar")]
+    [Fact(DisplayName = "A inscrição com prova e a habilitação são aplicadas ao processo PSR com o FADA e atendimento especializado, com os municípios do FADA, as condições e os recursos, os documentos dele e a composição familiar")]
     public async Task ModelosComProva_SaoAplicadosAoProcessoPsr()
     {
         ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoComProva);
@@ -54,7 +54,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
         AfirmarDocumentosDoAtendimento(processo);
-        AfirmarCamposDoBonusEDoAtendimento(processo);
+        AfirmarCamposDoFadaEDoAtendimento(processo);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .Should().HaveCount(3, "sem pedir atendimento não há exigência");
     }
 
-    private static void AfirmarCamposDoBonusEDoAtendimento(ProcessoSeletivo processo)
+    private static void AfirmarCamposDoFadaEDoAtendimento(ProcessoSeletivo processo)
     {
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
             ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
@@ -224,7 +224,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             SementePsrMedicina2027.TipoProcessoId, SementePsrMedicina2027.TipoProcessoCodigo, "Processo Seletivo Regular Unificado").Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Medicina 2027 {Guid.CreateVersion7()}", Complementar = p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), Tipo = psr });
+        (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, new OpcoesDoProcessoSeletivoPublicavel { Nome = $"Medicina 2027 {Guid.CreateVersion7()}", Complementar = p => ComFadaEAtendimento(p, ofertarAtendimento), Tipo = psr });
         return processo.Id;
     }
 
@@ -236,15 +236,15 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         bancasRequeridas: []).Value!;
 
     /// <summary>
-    /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
+    /// O FADA com um município, de onde o campo do município do FADA tira as opções; a
     /// atendimento especializado com a condição fora da lista, cuja escolha a inscrição cita para pedir a
     /// descrição, uma condição que o modelo não conhece, a lactante, a pessoa idosa e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
     /// pelas cotas.
     /// </summary>
-    private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
+    private static void ComFadaEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
     {
         DefinirDistribuicaoComCotaDaLei(processo);
-        DefinirBonusRegionalEmMaraba(processo);
+        DefinirFadaEmMaraba(processo);
         DefinirClassificacaoPelasNotasDoEnem(processo);
 
         if (ofertarAtendimento)
@@ -283,10 +283,10 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private static CondicaoDnf OpcaoPelasCotasDaLeiMarcada() =>
         CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!;
 
-    private static void DefinirBonusRegionalEmMaraba(ProcessoSeletivo processo)
+    private static void DefinirFadaEmMaraba(ProcessoSeletivo processo)
     {
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus);
+        ConfiguracaoDoFada fada = ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+        Result definido = processo.DefinirFada(aplica: true, configuracao: fada);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 

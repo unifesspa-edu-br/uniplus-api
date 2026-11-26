@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <summary>
 /// Contrato HTTP dos vocabulários fechados de Configuração — <c>TipoBanca</c>, o papel da banca, os tipos
 /// de decisão que a banca julga e <c>FaseCanonica</c> (UNI-REQ-0139), e <c>TipoInstrumentoNormativo</c>,
-/// usado pela Base Legal de Bônus Regional. O que se prova aqui é o que o fitness test não alcança: que as rotas existem, respondem sem
+/// usado pela Base Legal do Fator de Atenuação das Desigualdades de Acesso (FADA). O que se prova aqui é o que o fitness test não alcança: que as rotas existem, respondem sem
 /// autenticação, negociam a vendor MIME e não têm par de escrita.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]

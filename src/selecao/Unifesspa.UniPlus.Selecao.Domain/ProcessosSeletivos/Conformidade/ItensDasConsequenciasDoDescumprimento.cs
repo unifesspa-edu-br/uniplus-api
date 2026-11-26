@@ -53,7 +53,7 @@ internal static class ItensDasConsequenciasDoDescumprimento
         && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "documentosExigidos");
 
     private static bool PodeAvaliarAcrescimoDasBancas(ConfiguracaoDeclarada configuracao) =>
-        !ConsequenciasDasBancas.SemJulgar(configuracao) && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "bonusRegional");
+        !ConsequenciasDasBancas.SemJulgar(configuracao) && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "fada");
 
     private static bool PodeAvaliarCoerenciaDasBancas(ConfiguracaoDeclarada configuracao) =>
         !ConsequenciasDasBancas.SemJulgar(configuracao)

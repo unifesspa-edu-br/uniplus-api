@@ -166,7 +166,7 @@ public static class LimitesDoEnvelope
 
     // Decimais — precisão total (o `p` de numeric(p,s)).
     public const int PrecisaoEtapa = 18;
-    public const int PrecisaoBonus = 6;
+    public const int PrecisaoDoFada = 6;
     public const int PrecisaoPr = 5;
 
     /// <summary>Fração de um nível de atendimento: entre 0 e 1, com 4 casas — cinco dígitos no total.</summary>
@@ -266,28 +266,28 @@ public static class LimitesDoEnvelope
     /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — texto de negócio livre, não um rótulo curto.</summary>
     public const int Justificativa = 1000;
 
-    // Bônus regional: referencia a base legal tipada.
-    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — cópia do código canônico de <c>TipoInstrumentoNormativo</c>.</summary>
+    // FADA: referencia a base legal tipada.
+    /// <summary><c>ConfiguracaoDoFada.TipoInstrumento</c> — cópia do código canônico de <c>TipoInstrumentoNormativo</c>.</summary>
     public const int TipoInstrumentoNormativo = 30;
 
-    /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
-    public const int FatoElegibilidadeBonusRegional = ConfiguracaoBonusRegional.FatoElegibilidadeCodigoMaxLength;
+    /// <summary><c>ConfiguracaoDoFada.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
+    public const int CodigoDoDadoDeElegibilidadeDoFada = ConfiguracaoDoFada.FatoElegibilidadeCodigoMaxLength;
 
-    /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — cópia do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
-    public const int CodigoBaseLegalBonusRegional = 80;
+    /// <summary><c>ConfiguracaoDoFada.BaseLegalCodigo</c> — cópia do código estável da Base Legal (teto do <c>CodigoDaBaseLegalDoFada</c>).</summary>
+    public const int CodigoDaBaseLegalDoFada = 80;
 
-    /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — cópia da identificação da Base Legal.</summary>
-    public const int IdentificacaoBaseLegalBonusRegional = 500;
+    /// <summary><c>ConfiguracaoDoFada.Identificacao</c> — cópia da identificação da Base Legal.</summary>
+    public const int IdentificacaoDaBaseLegalDoFada = 500;
 
-    /// <summary><c>ConfiguracaoBonusRegional.Descricao</c> — cópia da descrição da Base Legal.</summary>
-    public const int DescricaoBaseLegalBonusRegional = 2000;
+    /// <summary><c>ConfiguracaoDoFada.Descricao</c> — cópia da descrição da Base Legal.</summary>
+    public const int DescricaoDaBaseLegalDoFada = 2000;
 
-    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.CodigoIbge</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.CodigoIbgeLength"/>: cópia do município do cadastro de Base Legal de Bônus Regional.</summary>
-    public const int MunicipioBonusRegionalCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
+    /// <summary><c>MunicipioDoFada.CodigoIbge</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.CodigoIbgeLength"/>: cópia do município do cadastro de Base Legal do FADA.</summary>
+    public const int MunicipioDoFadaCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
 
-    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.Nome</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.NomeMaxLength"/>.</summary>
-    public const int MunicipioBonusRegionalNome = ReferenciaCidadeGeo.NomeMaxLength;
+    /// <summary><c>MunicipioDoFada.Nome</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.NomeMaxLength"/>.</summary>
+    public const int MunicipioDoFadaNome = ReferenciaCidadeGeo.NomeMaxLength;
 
-    /// <summary><c>ConfiguracaoBonusRegionalMunicipio.Uf</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.UfLength"/>.</summary>
-    public const int MunicipioBonusRegionalUf = ReferenciaCidadeGeo.UfLength;
+    /// <summary><c>MunicipioDoFada.Uf</c> — mesma grandeza de <see cref="ReferenciaCidadeGeo.UfLength"/>.</summary>
+    public const int MunicipioDoFadaUf = ReferenciaCidadeGeo.UfLength;
 }

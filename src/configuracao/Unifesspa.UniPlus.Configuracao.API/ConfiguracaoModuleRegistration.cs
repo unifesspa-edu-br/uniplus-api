@@ -69,7 +69,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisResumoDto>, CalendarioDiasUteisResumoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoDto>, TermoConsentimentoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoResumoDto>, TermoConsentimentoResumoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<BaseLegalBonusRegionalDto>, BaseLegalBonusRegionalLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<BaseLegalDoFadaDto>, BaseLegalDoFadaLinksBuilder>();
 
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.

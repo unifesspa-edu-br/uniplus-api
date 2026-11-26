@@ -48,7 +48,7 @@ internal static class ProcessosDeInscricaoDeTeste
         DefinirOferta(processo, modalidades);
         DefinirClassificacaoImportada(processo);
         DefinirCronogramaEEtapas(processo, comIsencao);
-        DefinirTaxaEBonus(processo, comIsencao, fatoDoFator);
+        DefinirTaxaEFada(processo, comIsencao, fatoDoFator);
         DefinirCamposDaInscricao(processo, camposAdicionais);
         DefinirFormularioDaIsencao(processo, comIsencao);
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
@@ -164,7 +164,7 @@ internal static class ProcessosDeInscricaoDeTeste
     }
 
 
-    private static void DefinirTaxaEBonus(ProcessoSeletivo processo, bool comIsencao, string? fatoDoFator)
+    private static void DefinirTaxaEFada(ProcessoSeletivo processo, bool comIsencao, string? fatoDoFator)
     {
         processo.DefinirTaxaInscricao(
             (comIsencao
@@ -173,8 +173,8 @@ internal static class ProcessosDeInscricaoDeTeste
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         if (fatoDoFator is not null)
         {
-            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", new string('d', 64)), 1.20m, null, fatoDoFator, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-            processo.DefinirBonusRegional(aplica: true, bonus).IsSuccess.Should().BeTrue();
+            ConfiguracaoDoFada fada = ConfiguracaoDoFada.Criar(ReferenciaRegra.De(RegraDoFada.Multiplicativo.Codigo(), "v1", new string('d', 64)), 1.20m, null, fatoDoFator, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
+            processo.DefinirFada(aplica: true, fada).IsSuccess.Should().BeTrue();
         }
     }
 

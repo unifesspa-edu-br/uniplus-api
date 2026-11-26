@@ -13,7 +13,7 @@ public static class ReferenciasDeRegraDaConfiguracao
         ArgumentNullException.ThrowIfNull(configuracao);
 
         return [.. Identificacao(configuracao), .. Vagas(configuracao), .. Fases(configuracao),
-            .. Etapas(configuracao), .. Classificacao(configuracao), .. Desempate(configuracao), .. Bonus(configuracao)];
+            .. Etapas(configuracao), .. Classificacao(configuracao), .. Desempate(configuracao), .. Fada(configuracao)];
     }
 
     private static IEnumerable<(string Campo, ReferenciaRegra Regra)> Identificacao(ConfiguracaoDeclarada configuracao) =>
@@ -87,8 +87,8 @@ public static class ReferenciasDeRegraDaConfiguracao
         return Posicoes(criterios.Count, lista, configuracao.Origem).Select(i => ($"{lista}[{i}].regra", criterios[i].Regra));
     }
 
-    private static IEnumerable<(string Campo, ReferenciaRegra Regra)> Bonus(ConfiguracaoDeclarada configuracao) =>
-        Referencia("bonusRegional.regra", configuracao.Vagas.BonusRegional?.Regra);
+    private static IEnumerable<(string Campo, ReferenciaRegra Regra)> Fada(ConfiguracaoDeclarada configuracao) =>
+        Referencia("fada.regra", configuracao.Vagas.Fada?.Regra);
 
     private static IEnumerable<(string Campo, ReferenciaRegra Regra)> Procedimentos(
         ProcedimentosDeRecurso procedimentos, string lista, OrigemNoDocumento origem)

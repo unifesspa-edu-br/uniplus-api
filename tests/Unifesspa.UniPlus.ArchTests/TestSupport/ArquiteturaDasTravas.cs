@@ -24,7 +24,7 @@ internal static class ArquiteturaDasTravas
             typeof(Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo.CatalogoDePermissoesDaAplicacao).Assembly,
             typeof(Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
             typeof(Unifesspa.UniPlus.Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
-            typeof(Unifesspa.UniPlus.Configuracao.Contracts.BaseLegalBonusRegionalView).Assembly,
+            typeof(Unifesspa.UniPlus.Configuracao.Contracts.BaseLegalDoFadaView).Assembly,
             typeof(Unifesspa.UniPlus.Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
             typeof(Unifesspa.UniPlus.Configuracao.Infrastructure.ConfiguracaoInfrastructureRegistration).Assembly,
             typeof(Unifesspa.UniPlus.Discentes.API.DiscentesApiAssemblyMarker).Assembly,

@@ -127,8 +127,8 @@ internal sealed class ApoioDaListaDeInscricoes(TimeProvider relogio)
             new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processoBase.CronogramaFases]),
             new AvaliacaoDeclarada([.. processoBase.Etapas], [.. processoBase.CriteriosDesempate], processoBase.Classificacao!),
-            new VagasDeclaradas(distribuicao, 2, processoBase.BonusRegional is not null,
-                processoBase.BonusRegional, null, processoBase.AtendimentoEspecializado!),
+            new VagasDeclaradas(distribuicao, 2, processoBase.Fada is not null,
+                processoBase.Fada, null, processoBase.AtendimentoEspecializado!),
             new ExigenciasDeclaradas([.. processoBase.DocumentosExigidos], []),
             new ColetaDeclarada([], [], [], [],
                 [], [], null),

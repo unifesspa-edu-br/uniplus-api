@@ -4,7 +4,7 @@ using System.Collections.Frozen;
 
 /// <summary>
 /// Os valores que uma condição pode citar para um fato categórico de domínio dinâmico: um
-/// conjunto que o processo oferece (modalidades, opções declaradas, municípios do bônus) ou uma
+/// conjunto que o processo oferece (modalidades, opções declaradas, municípios do FADA) ou uma
 /// regra de formato, quando o conjunto vem de uma fonte que o servidor não enumera, como os
 /// municípios do Geo (referência fraca por formato, ADR-0090).
 /// </summary>

@@ -84,7 +84,7 @@ internal static class PassosDoEnvelopeFechado
         await ExecutarPassoAsync(() => c.Ctx.PutProvaPresencialAsync(), HttpStatusCode.NoContent, "PUT prova presencial", "/prova-presencial");
         await DeclararEtapasAsync(c);
         await DeclararAtendimentoEVagasAsync(c);
-        await DeclararBonusETaxaAsync(c);
+        await DeclararFadaETaxaAsync(c);
         await DeclararDesempateEClassificacaoAsync(c);
         await DeclararFormularioAsync(c);
         await DeclararRegrasEDocumentosAsync(c);
@@ -151,13 +151,13 @@ internal static class PassosDoEnvelopeFechado
         await ExecutarPassoAsync(() => c.Ctx.PutOpcoesDeCursoAsync(), HttpStatusCode.NoContent, "PUT opcoes-de-curso", "/opcoes-de-curso");
     }
 
-    // Passos 5 e 5b — bônus regional e taxa de inscrição: publicar sem declarar cobrança é
+    // Passos 5 e 5b — FADA e taxa de inscrição: publicar sem declarar cobrança é
     // recusado, e o exemplo declara "não cobra".
-    internal static async Task DeclararBonusETaxaAsync(Cenario c)
+    internal static async Task DeclararFadaETaxaAsync(Cenario c)
     {
-        Guid baseLegalId = await SemearBaseLegalBonusRegionalAsync(c.Api);
+        Guid baseLegalId = await SemearBaseLegalDoFadaAsync(c.Api);
 
-        await ExecutarPassoAsync(() => c.Ctx.PutBonusRegionalAsync(baseLegalId), HttpStatusCode.NoContent, "PUT bonus-regional", "/bonus-regional");
+        await ExecutarPassoAsync(() => c.Ctx.PutFadaAsync(baseLegalId), HttpStatusCode.NoContent, "PUT fada", "/fada");
         await ExecutarPassoAsync(() => c.Ctx.PutTaxaInscricaoAsync(), HttpStatusCode.NoContent, "PUT taxa-inscricao", "/taxa-inscricao");
     }
 

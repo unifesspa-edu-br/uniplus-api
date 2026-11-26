@@ -40,9 +40,9 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// desativar recusa só vínculo novo (ADR-0136). Para as demais, decide a origem copiada para o
 /// campo coletado (<c>ProcessoSeletivo.OrigemDasOpcoes</c>), a mesma que o agregado confere na
 /// publicação: as opções do PRÓPRIO processo, pela mesma leitura que valida predicado
-/// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>); ou os municípios do bônus regional, com o código
+/// (<c>ProcessoSeletivo.OpcoesDoProcesso</c>); ou os municípios do FADA, com o código
 /// IBGE como valor, "Município/UF" como rótulo e a ordem alfabética de nome de
-/// <c>VocabularioDeFatos.MunicipiosDoBonus</c>; ou os municípios da prova presencial, na ordem declarada.
+/// <c>VocabularioDeFatos.MunicipiosDoFada</c>; ou os municípios da prova presencial, na ordem declarada.
 /// </para>
 /// <para>
 /// Não faz I/O próprio — recebe o catálogo já lido UMA vez pelo handler, o mesmo
@@ -162,7 +162,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato) switch
             {
                 OrigemValoresColeta.OpcoesDoProcesso => Result<ValoresDoCampo>.Success(OpcoesDoProcesso(fato)),
-                OrigemValoresColeta.MunicipiosDoFada => Result<ValoresDoCampo>.Success(MunicipiosDoBonus()),
+                OrigemValoresColeta.MunicipiosDoFada => Result<ValoresDoCampo>.Success(MunicipiosDoFada()),
                 OrigemValoresColeta.MunicipiosDaProvaPresencial => Result<ValoresDoCampo>.Success(MunicipiosDaProvaPresencial()),
                 OrigemValoresColeta.UnidadesFederativas => Result<ValoresDoCampo>.Success(UnidadesFederativas()),
                 _ => DoCatalogo(fato, fatoNoCatalogo),
@@ -171,8 +171,8 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         private ValoresDoCampo OpcoesDoProcesso(FatoColetado fato) =>
             [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
 
-        private ValoresDoCampo MunicipiosDoBonus() =>
-            [.. VocabularioDeFatos.MunicipiosDoBonus(processo)
+        private ValoresDoCampo MunicipiosDoFada() =>
+            [.. VocabularioDeFatos.MunicipiosDoFada(processo)
                 .Select(static (m, ordem) => new ValorDominioDeclaradoCongelado(m.CodigoIbge, $"{m.Nome}/{m.Uf}", ordem))];
 
         private ValoresDoCampo MunicipiosDaProvaPresencial() =>
@@ -213,7 +213,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
                     $"O fato coletado '{fatoNoCatalogo.Codigo}' oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem nenhum tipo ativo.")
                 : null;
 
-        // O fato do catálogo sem nenhum valor vigente não tem o que oferecer. A oferta vazia do processo e a do bônus regional
+        // O fato do catálogo sem nenhum valor vigente não tem o que oferecer. A oferta vazia do processo e a do FADA
         // são da conferência da configuração, que a recusa uma vez só.
         private static DomainError SemValoresVigentes(FatoCandidatoView fatoNoCatalogo) =>
             SemTiposDeDeficiencia(fatoNoCatalogo)
@@ -225,6 +225,6 @@ internal static class ResolvedorValoresSelecionaveisCongelados
             new(
                 "ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores",
                 $"O fato coletado '{fatoCodigo}' está vinculado como seleção, mas o catálogo não declara valores de domínio para ele "
-                + "e a fonte dos seus valores não é o processo nem o bônus regional — não há de onde derivar os valores selecionáveis.");
+                + "e a fonte dos seus valores não é o processo nem o Fator de Atenuação das Desigualdades de Acesso (FADA) — não há de onde derivar os valores selecionáveis.");
     }
 }

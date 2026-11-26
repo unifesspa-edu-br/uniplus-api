@@ -59,12 +59,12 @@ public static class SelecaoCodegenRegistration
     }
 
     // Mesmo motivo das leituras de atendimento e oferta. Tipo de processo, pesos por área do ENEM, base legal do
-    // bônus regional e vocabulário de fatos do candidato (validação do predicado de desempate).
+    // FADA e vocabulário de fatos do candidato (validação do predicado de desempate).
     private static void OptInDasLeiturasDeClassificacaoEDoTipoDeProcesso(WolverineOptions opts)
     {
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IPesoAreaEnemReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalBonusRegionalReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IBaseLegalDoFadaReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
     }
 

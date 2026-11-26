@@ -61,7 +61,7 @@ public static class RespostaDeCampo
 
     /// <summary>
     /// As respostas que valem diante da oferta: a de um fato ofertado só vale com códigos da oferta
-    /// — uma opção retirada ou um município fora da área do bônus não satisfaz condição alguma. A
+    /// — uma opção retirada ou um município fora da área do FADA não satisfaz condição alguma. A
     /// resposta em branco e a de fato sem oferta passam como estão.
     /// </summary>
     public static Dictionary<string, JsonElement> DentroDaOferta(

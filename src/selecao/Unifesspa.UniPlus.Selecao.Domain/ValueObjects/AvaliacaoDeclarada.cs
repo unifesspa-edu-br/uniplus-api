@@ -23,7 +23,7 @@ public sealed class AvaliacaoDeclarada
     /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
-    /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
+    /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão</c>, antes do FADA.
     /// </summary>
     public decimal CalcularDivisorMedia() =>
         Etapas.Where(e => e.ComponeNota).Sum(e => e.Peso!.Value);

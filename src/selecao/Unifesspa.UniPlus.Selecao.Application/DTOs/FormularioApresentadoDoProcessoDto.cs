@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </param>
 /// <param name="DependenciasDoFator">
 /// No formulário de inscrição publicado, os campos e os grupos de que o Fator de Atenuação depende
-/// (ADR-0142), só pelo código, no desenho de <paramref name="DependenciasDaAvaliacao"/>: o fato que a
-/// configuração do bônus cita e os campos com os municípios do bônus. Vazio quando o processo não tem
+/// (ADR-0142), só pelo código, no desenho de <paramref name="DependenciasDaAvaliacao"/>: o dado do candidato
+/// que a configuração do FADA cita e os campos com os municípios do FADA. Vazio quando o processo não tem
 /// Fator; nulo nas demais finalidades e no rascunho.
 /// </param>
 /// <param name="FaseId">

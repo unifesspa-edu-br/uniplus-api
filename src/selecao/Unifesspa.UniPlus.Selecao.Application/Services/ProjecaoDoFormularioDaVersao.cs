@@ -145,7 +145,7 @@ public static class ProjecaoDoFormularioDaVersao
 
         ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(lida.Configuracao, lida.Avaliavel);
         DependenciasDaAvaliacao daAvaliacao = Domain.Services.AvaliacaoDaInscricao.Dependencias(configuracao);
-        DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, lida.Configuracao.Vagas.BonusRegional);
+        DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, lida.Configuracao.Vagas.Fada);
         return (new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos), new DependenciasDaAvaliacaoDto(doFator.Fatos, doFator.Grupos));
     }
 

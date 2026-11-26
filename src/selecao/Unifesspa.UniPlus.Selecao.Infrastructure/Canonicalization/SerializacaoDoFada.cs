@@ -12,7 +12,7 @@ internal static class SerializacaoDoFada
 {
     internal static JsonObject SerializarFada(ProcessoSeletivo processo)
     {
-        if (processo.BonusRegional is not { } fada)
+        if (processo.Fada is not { } fada)
         {
             return new JsonObject { ["presente"] = false };
         }
@@ -22,7 +22,7 @@ internal static class SerializacaoDoFada
         return json;
     }
 
-    private static JsonObject ParametrosDaFada(ConfiguracaoBonusRegional fada) =>
+    private static JsonObject ParametrosDaFada(ConfiguracaoDoFada fada) =>
         new()
         {
             ["presente"] = true,
@@ -32,17 +32,17 @@ internal static class SerializacaoDoFada
             ["codigoDoDadoDeElegibilidade"] = fada.FatoElegibilidadeCodigo,
         };
 
-    private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoBonusRegional fada)
+    private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoDoFada fada)
     {
-        json["baseLegalId"] = fada.BaseLegalBonusRegionalId;
-        json["baseLegalCodigo"] = HashCanonicalComputer.NormalizeNfc(fada.BaseLegalBonusRegionalCodigo);
+        json["baseLegalId"] = fada.BaseLegalId;
+        json["baseLegalCodigo"] = HashCanonicalComputer.NormalizeNfc(fada.BaseLegalCodigo);
         json["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(fada.TipoInstrumento);
         json["identificacao"] = HashCanonicalComputer.NormalizeNfc(fada.Identificacao);
         json["descricao"] = HashCanonicalComputer.NormalizeNfc(fada.Descricao);
         json["municipios"] = SerializarMunicipiosDaFada(fada);
     }
 
-    private static JsonArray SerializarMunicipiosDaFada(ConfiguracaoBonusRegional fada) =>
+    private static JsonArray SerializarMunicipiosDaFada(ConfiguracaoDoFada fada) =>
         new([.. fada.Municipios
             .OrderBy(static m => m.CodigoIbge, StringComparer.Ordinal)
             .ThenBy(static m => HashCanonicalComputer.NormalizeNfc(m.Nome), StringComparer.Ordinal)

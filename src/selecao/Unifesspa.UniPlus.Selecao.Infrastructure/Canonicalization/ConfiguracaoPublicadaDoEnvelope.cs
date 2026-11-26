@@ -25,8 +25,8 @@ internal static class ConfiguracaoPublicadaDoEnvelope
 
     private static VagasDeclaradas Vagas(BlocosDoEnvelope blocos) => new(
         blocos.Configuracao.Distribuicao, blocos.Publicacao.NumeroDeOpcoesDeCurso,
-        // A presença do bônus é o que o envelope conserva; a declaração negativa não tem bloco próprio.
-        blocos.Configuracao.Bonus is not null, blocos.Configuracao.Bonus, blocos.Configuracao.Cascata, blocos.Configuracao.Atendimento);
+        // A presença do FADA é o que o envelope conserva; a declaração negativa não tem bloco próprio.
+        blocos.Configuracao.Fada is not null, blocos.Configuracao.Fada, blocos.Configuracao.Cascata, blocos.Configuracao.Atendimento);
 
     private static ExigenciasDeclaradas Exigencias(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> regras) => new(
         blocos.Documentos.DocumentosExigidos, regras);

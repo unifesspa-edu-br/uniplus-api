@@ -118,30 +118,30 @@ public static class AvaliacaoDaInscricao
 
     /// <summary>
     /// De que campos e grupos do formulário da inscrição depende o Fator de Atenuação (ADR-0142), só pelo
-    /// código: o fato de elegibilidade que o bônus regional cita — ou, sendo derivado, os campos de que a
-    /// derivação depende — e os campos cujos valores são os municípios do bônus, com o que decide se eles
-    /// aparecem e são exigidos. O fato é do administrador: nada aqui nomeia código. Sem bônus regional,
+    /// código: o fato de elegibilidade que o FADA cita — ou, sendo derivado, os campos de que a
+    /// derivação depende — e os campos cujos valores são os municípios do FADA, com o que decide se eles
+    /// aparecem e são exigidos. O fato é do administrador: nada aqui nomeia código. Sem FADA,
     /// o processo não tem Fator e a lista é vazia.
     /// </summary>
-    public static DependenciasDaAvaliacao DependenciasDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoBonusRegional? bonus)
+    public static DependenciasDaAvaliacao DependenciasDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoDoFada? fada)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (bonus is null)
+        if (fada is null)
         {
             return new DependenciasDaAvaliacao([], []);
         }
 
-        string[] doCandidato = FatosDoFator(configuracao, bonus);
+        string[] doCandidato = FatosDoFator(configuracao, fada);
         (string Grupo, string Fato)[] deMembro = FatosDeMembroDoFator(configuracao);
         return DependenciasDaInscricao.DependenciasDe(
             configuracao.Definicao,
             new DependenciasDaInscricao.CitacoesDosGatilhos(doCandidato, deMembro, [.. deMembro.Select(static m => m.Grupo).Distinct(StringComparer.Ordinal)]));
     }
 
-    private static string[] FatosDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoBonusRegional bonus) =>
+    private static string[] FatosDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoDoFada fada) =>
     [
-        .. bonus.FatoElegibilidadeCodigo is { } elegibilidade ? [elegibilidade] : Array.Empty<string>(),
+        .. fada.FatoElegibilidadeCodigo is { } elegibilidade ? [elegibilidade] : Array.Empty<string>(),
         .. configuracao.Campos.Where(static c => c.OrigemValores == OrigemValoresColeta.MunicipiosDoFada).Select(static c => c.FatoCodigo),
     ];
 

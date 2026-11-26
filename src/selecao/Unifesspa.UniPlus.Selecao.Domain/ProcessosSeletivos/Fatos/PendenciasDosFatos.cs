@@ -220,35 +220,35 @@ public static class PendenciasDosFatos
                 new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
                     $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele."),
-            OrigemValoresColeta.MunicipiosDoFada when configuracao.Vagas.BonusRegional is null =>
+            OrigemValoresColeta.MunicipiosDoFada when configuracao.Vagas.Fada is null =>
                 new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional."),
+                    $"O fato '{fato.FatoCodigo}' oferece os municípios do Fator de Atenuação das Desigualdades de Acesso (FADA), mas o processo não tem o FADA."),
             _ => null,
         };
 
     /// <summary>
-    /// Toda condição viva que cita um campo com os municípios do bônus regional cita município da
-    /// área atual. A recusa ao redefinir o bônus só alcança os campos coletados naquele momento;
+    /// Toda condição viva que cita um campo com os municípios do FADA cita município da
+    /// área atual. A recusa ao redefinir o FADA só alcança os campos coletados naquele momento;
     /// conferir na publicação cobre qualquer ordem de edição, como retirar o campo da coleta,
     /// trocar a área e recolocá-lo.
     /// </summary>
-    internal static DomainError? PendenciaDeMunicipioDoBonusForaDaArea(ConfiguracaoDeclarada configuracao)
+    internal static DomainError? PendenciaDeMunicipioDoFadaForaDaArea(ConfiguracaoDeclarada configuracao)
     {
-        if (configuracao.Vagas.BonusRegional is null)
+        if (configuracao.Vagas.Fada is null)
         {
             return null;
         }
 
-        HashSet<string> municipios = [.. configuracao.Vagas.BonusRegional.Municipios.Select(static m => m.CodigoIbge)];
+        HashSet<string> municipios = [.. configuracao.Vagas.Fada.Municipios.Select(static m => m.CodigoIbge)];
         FatoColetado? fato = configuracao.Coleta.Campos.FirstOrDefault(f =>
             f.OrigemValores == OrigemValoresColeta.MunicipiosDoFada
             && ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, f.FatoCodigo, municipios));
         return fato is null
             ? null
             : new DomainError(
-                "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
-                $"Existe condição citando, no fato '{fato.FatoCodigo}', um município fora da área do bônus regional.");
+                "ProcessoSeletivo.MunicipioDoFadaReferenciadoPorCondicaoViva",
+                $"Existe condição citando, no fato '{fato.FatoCodigo}', um município fora da área do Fator de Atenuação das Desigualdades de Acesso (FADA).");
     }
 
     /// <summary>

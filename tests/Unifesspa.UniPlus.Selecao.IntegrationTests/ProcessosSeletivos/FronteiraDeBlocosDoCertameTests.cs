@@ -51,7 +51,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "O envelope com os blocos condicionais presentes também está inteiramente classificado")]
     public void Classificacao_QuandoEnvelopeTemBlocosCondicionais_NaoDeveTerBlocoSemClassificar()
     {
-        // Cascata e bônus regional alternam presença; sem a variante em que existem, escapam.
+        // Cascata e FADA alternam presença; sem a variante em que existem, escapam.
         SnapshotCanonico canonico = EnvelopeDeReferencia.CanonicalizarReferenciaComCascata();
         IReadOnlyCollection<string> naoClassificados = NaoClassificados(ChavesDe(canonico));
 
