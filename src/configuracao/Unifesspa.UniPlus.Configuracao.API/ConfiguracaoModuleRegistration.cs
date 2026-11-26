@@ -39,37 +39,7 @@ public static class ConfiguracaoModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // OpenAPI 3.1 (ADR-0030) — spec em /openapi/configuracao.json.
-        services.AddUniPlusOpenApi(ConfiguracaoApiAssemblyMarker.ModuleName, configuration);
-
-        // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
-        // uma vez no host via IEnumerable<IDomainErrorRegistration>).
-        services.AddSingleton<IDomainErrorRegistration, ConfiguracaoDomainErrorRegistration>();
-
-        // HATEOAS Level 1 (ADR-0029) — builders de _links dos cadastros (UNI-REQ #587).
-        services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoDocumentoDto>, TipoDocumentoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<CategoriaDocumentoDto>, CategoriaDocumentoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<CondicaoAtendimentoDto>, CondicaoAtendimentoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<RecursoAcessibilidadeDto>, RecursoAcessibilidadeLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoDeficienciaDto>, TipoDeficienciaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<ModalidadeDto>, ModalidadeLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<FaseCanonicaDto>, FaseCanonicaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoBancaDto>, TipoBancaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoProcessoDto>, TipoProcessoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoEtapaDto>, TipoEtapaLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TipoConceitoDto>, TipoConceitoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<CursoDto>, CursoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<OfertaCursoDto>, OfertaCursoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<PrecedenciaFaseDto>, PrecedenciaFaseLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisDto>, CalendarioDiasUteisLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisResumoDto>, CalendarioDiasUteisResumoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoDto>, TermoConsentimentoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoResumoDto>, TermoConsentimentoResumoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<BaseLegalDoFadaDto>, BaseLegalDoFadaLinksBuilder>();
+        AddFronteiraHttp(services, configuration);
 
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.
@@ -79,5 +49,58 @@ public static class ConfiguracaoModuleRegistration
         services.AddConfiguracaoInfrastructure();
 
         return services;
+    }
+
+    // OpenAPI 3.1 (ADR-0030), em /openapi/configuracao.json; erros de domínio do módulo (consumidos
+    // por AddDomainErrorMapper, registrado uma vez no host); builders HATEOAS Level 1 (ADR-0029, UNI-REQ #587).
+    private static void AddFronteiraHttp(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddUniPlusOpenApi(ConfiguracaoApiAssemblyMarker.ModuleName, configuration);
+
+        services.AddSingleton<IDomainErrorRegistration, ConfiguracaoDomainErrorRegistration>();
+
+        AddLinksDaOferta(services);
+        AddLinksDosDocumentosEDoAtendimento(services);
+        AddLinksDoProcessoSeletivo(services);
+        AddLinksDaClassificacao(services);
+    }
+
+    private static void AddLinksDaOferta(IServiceCollection services)
+    {
+        services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CursoDto>, CursoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<OfertaCursoDto>, OfertaCursoLinksBuilder>();
+    }
+
+    private static void AddLinksDosDocumentosEDoAtendimento(IServiceCollection services)
+    {
+        services.AddSingleton<IResourceLinksBuilder<TipoDocumentoDto>, TipoDocumentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CategoriaDocumentoDto>, CategoriaDocumentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoDto>, TermoConsentimentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoResumoDto>, TermoConsentimentoResumoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CondicaoAtendimentoDto>, CondicaoAtendimentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<RecursoAcessibilidadeDto>, RecursoAcessibilidadeLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoDeficienciaDto>, TipoDeficienciaLinksBuilder>();
+    }
+
+    private static void AddLinksDoProcessoSeletivo(IServiceCollection services)
+    {
+        services.AddSingleton<IResourceLinksBuilder<FaseCanonicaDto>, FaseCanonicaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<PrecedenciaFaseDto>, PrecedenciaFaseLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoBancaDto>, TipoBancaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoProcessoDto>, TipoProcessoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoEtapaDto>, TipoEtapaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoConceitoDto>, TipoConceitoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisDto>, CalendarioDiasUteisLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisResumoDto>, CalendarioDiasUteisResumoLinksBuilder>();
+    }
+
+    private static void AddLinksDaClassificacao(IServiceCollection services)
+    {
+        services.AddSingleton<IResourceLinksBuilder<ModalidadeDto>, ModalidadeLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<BaseLegalDoFadaDto>, BaseLegalDoFadaLinksBuilder>();
     }
 }

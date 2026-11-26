@@ -19,7 +19,11 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
     Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, ConfiguracaoDomainErrorRegistration>().")]
 internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistration
 {
+    // A ordem vale: o registro global guarda o último mapeamento de um código repetido.
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
+        [.. DaOfertaEDoCandidato(), .. DoProcessoSeletivo(), .. DosCursosEDemaisCadastros()];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaOfertaEDoCandidato() =>
     [
         .. CampusErrorMappings.Todos,
         .. LocalOfertaErrorMappings.Todos,
@@ -32,6 +36,10 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         .. TipoDeficienciaErrorMappings.Todos,
         .. FatoCandidatoErrorMappings.Todos,
         .. FatoValorDominioErrorMappings.Todos,
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DoProcessoSeletivo() =>
+    [
         .. ModalidadeErrorMappings.Todos,
         .. FaseCanonicaErrorMappings.Todos,
         .. PrecedenciaFaseErrorMappings.Todos,
@@ -40,6 +48,10 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         .. ModeloFormularioErrorMappings.Todos,
         .. TipoEtapaErrorMappings.Todos,
         .. TipoConceitoErrorMappings.Todos,
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DosCursosEDemaisCadastros() =>
+    [
         .. CursoErrorMappings.Todos,
         .. OfertaCursoErrorMappings.Todos,
         .. CalendarioDiasUteisErrorMappings.Todos,
