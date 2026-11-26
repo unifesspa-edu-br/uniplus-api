@@ -111,12 +111,12 @@ internal sealed class ResolucaoDaDistribuicao(
         return recusa;
     }
 
-    private DomainError? ConferirRegraDeDistribuicao(RegraCatalogo? regra) =>
+    private static DomainError? ConferirRegraDeDistribuicao(RegraCatalogo? regra) =>
         regra is null
-            ? RecusasDaResolucaoDeVagas.RegraDeDistribuicaoNaoEncontrada(pedido.RegraDistribuicaoCodigo, pedido.RegraDistribuicaoVersao)
+            ? RecusasDaResolucaoDeVagas.RegraDeDistribuicaoNaoEncontrada()
             : regra.Tipo == TipoRegra.RegraDistribuicaoVagas
                 ? null
-                : RecusasDaResolucaoDeVagas.RegraDeDistribuicaoDeTipoInvalido(pedido.RegraDistribuicaoCodigo, pedido.RegraDistribuicaoVersao);
+                : RecusasDaResolucaoDeVagas.RegraDeDistribuicaoDeTipoInvalido();
 
     // Ausência é válida: a distribuição decide se a regra de ajuste é obrigatória conforme o tipo de distribuição.
     private async Task<DomainError?> ResolverRegraDeAjusteAsync(CancellationToken cancellationToken)
@@ -128,17 +128,17 @@ internal sealed class ResolucaoDaDistribuicao(
 
         RegraCatalogo? regra = await regraCatalogoReader
             .ObterAsync(pedido.RegraAjusteCodigo, pedido.RegraAjusteVersao!, cancellationToken).ConfigureAwait(false);
-        DomainError? recusa = ConferirRegraDeAjuste(regra, pedido.RegraAjusteCodigo);
+        DomainError? recusa = ConferirRegraDeAjuste(regra);
         _regraDeAjuste = recusa is null ? regra!.Referencia() : null;
         return recusa;
     }
 
-    private DomainError? ConferirRegraDeAjuste(RegraCatalogo? regra, string codigo) =>
+    private static DomainError? ConferirRegraDeAjuste(RegraCatalogo? regra) =>
         regra is null
-            ? RecusasDaResolucaoDeVagas.RegraDeAjusteNaoEncontrada(codigo, pedido.RegraAjusteVersao)
+            ? RecusasDaResolucaoDeVagas.RegraDeAjusteNaoEncontrada()
             : regra.Tipo == TipoRegra.RegraAjusteDistribuicaoVagas
                 ? null
-                : RecusasDaResolucaoDeVagas.RegraDeAjusteDeTipoInvalido(codigo, pedido.RegraAjusteVersao);
+                : RecusasDaResolucaoDeVagas.RegraDeAjusteDeTipoInvalido();
 
     private async Task<DomainError?> ResolverReferenciaDemograficaAsync(CancellationToken cancellationToken)
     {

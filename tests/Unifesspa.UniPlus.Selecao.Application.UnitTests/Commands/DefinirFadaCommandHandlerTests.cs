@@ -224,12 +224,13 @@ public sealed class DefinirFadaCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
 
-        DefinirFadaCommand command = FadaDeTeste.Para(processo.Id).QueAplica().ComRegra("INEXISTENTE").ComFator(1.20m).ComBaseLegal(BaseLegalId).Construir();
+        DefinirFadaCommand command = FadaDeTeste.Para(processo.Id).QueAplica().ComRegra("REGRA_INEXISTENTE_DE_TESTE", "versao-inexistente-de-teste").ComFator(1.20m).ComBaseLegal(BaseLegalId).Construir();
 
         Result result = await Handle(command, mocks);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDoFada.RegraNaoEncontrada");
+        result.Error.Message.Should().NotContain("REGRA_INEXISTENTE_DE_TESTE").And.NotContain("versao-inexistente-de-teste");
     }
 
     [Fact(DisplayName = "Handle com regra de tipo diferente de REGRA_FADA recusa")]
@@ -237,15 +238,16 @@ public sealed class DefinirFadaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
-        mocks.RegraCatalogoReader.ObterAsync(RegraDoFada.Multiplicativo.Codigo(), "v1", Arg.Any<CancellationToken>())
+        mocks.RegraCatalogoReader.ObterAsync(RegraDoFada.Multiplicativo.Codigo(), "versao-de-tipo-invalido-de-teste", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraDoFada.Multiplicativo.Codigo(), TipoRegra.RegraCalculo));
 
-        DefinirFadaCommand command = FadaDeTeste.Para(processo.Id).QueAplica().ComRegra(RegraDoFada.Multiplicativo.Codigo()).ComFator(1.20m).ComBaseLegal(BaseLegalId).Construir();
+        DefinirFadaCommand command = FadaDeTeste.Para(processo.Id).QueAplica().ComRegra(RegraDoFada.Multiplicativo.Codigo(), "versao-de-tipo-invalido-de-teste").ComFator(1.20m).ComBaseLegal(BaseLegalId).Construir();
 
         Result result = await Handle(command, mocks);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDoFada.RegraTipoInvalido");
+        result.Error.Message.Should().NotContain(RegraDoFada.Multiplicativo.Codigo()).And.NotContain("versao-de-tipo-invalido-de-teste");
     }
 
     [Fact(DisplayName = "Handle com Base Legal inexistente ou desativada recusa (CA-02) sem persistir")]

@@ -129,12 +129,12 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     private static FieldError CotaDaLeiNaoOfertada(string codigo) => Recusa(
         codigo,
         AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
-        $"O modelo cita '{codigo}', que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes.");
+        "O modelo cita a opção pelas cotas da lei, que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes.");
 
     private static FieldError DerivadoSemRegraPadrao(string codigo) => Recusa(
         codigo,
         AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
-        $"O modelo cita '{codigo}', que o processo ainda não deriva e o catálogo não tem regra padrão; configure as regras de derivação dele no processo antes.");
+        "O modelo cita um dado calculado que o processo ainda não deriva e que não tem regra padrão no catálogo; configure as regras de derivação dele no processo antes.");
 
     private static Dictionary<string, ConfiguracaoDerivacaoFato> DerivadosDoProcesso(ProcessoSeletivo processo) =>
         processo.DerivacoesEfetivas()

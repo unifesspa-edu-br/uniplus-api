@@ -72,6 +72,7 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
         Result resultado = await _cenario.AtualizarAsync(ComandoDeAtualizar(_regra.Id));
 
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.RegraCodigoDuplicada");
+        resultado.Error.Message.Should().NotContain("REGRA_GRAVADA");
         _cenario.Repositorio.DidNotReceive().Atualizar(Arg.Any<ObrigatoriedadeLegal>());
     }
 }

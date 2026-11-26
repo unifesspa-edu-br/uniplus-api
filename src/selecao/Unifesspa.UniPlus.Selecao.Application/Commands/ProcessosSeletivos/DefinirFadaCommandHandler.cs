@@ -146,10 +146,10 @@ public static class DefinirFadaCommandHandler
         {
             null => Falha<ReferenciaRegra>(
                 "ConfiguracaoDoFada.RegraNaoEncontrada",
-                $"Regra do Fator de Atenuação das Desigualdades de Acesso (FADA) {declarada.RegraCodigo}/{declarada.RegraVersao} não encontrada no catálogo de regras."),
+                "A regra do Fator de Atenuação das Desigualdades de Acesso (FADA) na versão informada não foi encontrada no catálogo de regras."),
             { Tipo: not TipoRegra.RegraFada } => Falha<ReferenciaRegra>(
                 "ConfiguracaoDoFada.RegraTipoInvalido",
-                $"A regra {declarada.RegraCodigo}/{declarada.RegraVersao} não é do tipo `REGRA_FADA`."),
+                "A regra informada não é uma regra do Fator de Atenuação das Desigualdades de Acesso (FADA)."),
             _ => Result<ReferenciaRegra>.Success(regra.Referencia()),
         };
     }

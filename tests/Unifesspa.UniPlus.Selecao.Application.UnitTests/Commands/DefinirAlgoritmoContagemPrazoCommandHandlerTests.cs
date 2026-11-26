@@ -91,6 +91,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado");
+        result.Error.Message.Should().NotContain("CONTAGEM-PRAZO-INVENTADA").And.NotContain("v9");
         processo.AlgoritmoContagemPrazo.Should().BeNull();
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -109,6 +110,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado");
+        result.Error.Message.Should().NotContain("FADA_MULTIPLICATIVO");
     }
 
     [Theory(DisplayName = "Par ausente ou pela metade recusa antes de consultar o catálogo — meio par não aponta entrada nenhuma")]

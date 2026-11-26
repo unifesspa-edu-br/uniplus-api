@@ -13,6 +13,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public static class ObterRegraCatalogoQueryHandler
 {
+    /// <remarks>
+    /// Código inexistente e versão inexistente de um código conhecido são a mesma resposta: a identidade da regra é o
+    /// par, e não o código sozinho. Distinguir os dois revelaria quais códigos existem no catálogo a quem só tentou
+    /// adivinhar.
+    /// </remarks>
     public static async Task<Result<RegraCatalogoDto>> Handle(
         ObterRegraCatalogoQuery query,
         IRegraCatalogoReader reader,
@@ -25,13 +30,10 @@ public static class ObterRegraCatalogoQueryHandler
             .ObterAsync(query.Codigo, query.Versao, cancellationToken)
             .ConfigureAwait(false);
 
-        // Código inexistente e versão inexistente de um código conhecido são a mesma resposta:
-        // a identidade da regra é o par, e não o código sozinho. Distinguir os dois revelaria
-        // quais códigos existem no catálogo a quem só tentou adivinhar.
         return regra is null
             ? Result<RegraCatalogoDto>.Failure(new DomainError(
                 "RegraCatalogo.NaoEncontrada",
-                $"Não há a versão '{query.Versao}' da regra '{query.Codigo}' no catálogo."))
+                "Não há, no catálogo, a regra na versão pedida."))
             : Result<RegraCatalogoDto>.Success(RegraCatalogoMapping.ToDto(regra));
     }
 }

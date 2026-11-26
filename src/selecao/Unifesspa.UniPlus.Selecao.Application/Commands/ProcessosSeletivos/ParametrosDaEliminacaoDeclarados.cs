@@ -10,7 +10,7 @@ internal static class ParametrosDaEliminacaoDeclarados
     internal static Result<ParametrosRegraEliminacao> Montar(RegraEliminacaoInput input) =>
         CatalogoDe<RegraDeEliminacaoPorCalculo>.TentarObter(input.RegraCodigo, out RegraDeEliminacaoPorCalculo regra)
             ? DaRegra(input, regra)
-            : RecusaDosParametros("RegraEliminacao.RegraTipoInvalido", $"Código de regra de eliminação desconhecido: {input.RegraCodigo}.");
+            : RecusaDosParametros("RegraEliminacao.RegraTipoInvalido", "Código de regra de eliminação desconhecido.");
 
     private static Result<ParametrosRegraEliminacao> DaRegra(RegraEliminacaoInput input, RegraDeEliminacaoPorCalculo regra) =>
         regra switch
@@ -49,7 +49,7 @@ internal static class ParametrosDaEliminacaoDeclarados
             ? Result<ParametrosRegraEliminacao>.Success(parametros)
             : RecusaDosParametros(
                 "RegraEliminacao.ParametrosIncompativeisComRegra",
-                $"A regra {input.RegraCodigo} não aceita parâmetros (EtapaRef/NotaMinima/Minimo/AreaCodigo).");
+                "A regra informada não aceita parâmetros (EtapaRef/NotaMinima/Minimo/AreaCodigo).");
 
     private static Result<ParametrosRegraEliminacao> RecusaDosParametros(string codigo, string mensagem) =>
         Result<ParametrosRegraEliminacao>.Failure(new DomainError(codigo, mensagem));

@@ -9,21 +9,21 @@ internal static class RecusasDaResolucaoDeVagas
         "ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada",
         $"Oferta de curso {ofertaCursoId} não encontrada ou não está mais viva.");
 
-    internal static DomainError RegraDeDistribuicaoNaoEncontrada(string codigo, string versao) => new(
+    internal static DomainError RegraDeDistribuicaoNaoEncontrada() => new(
         "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada",
-        $"Regra de distribuição {codigo}/{versao} não encontrada no catálogo de regras.");
+        "A regra de distribuição na versão informada não foi encontrada no catálogo de regras.");
 
-    internal static DomainError RegraDeDistribuicaoDeTipoInvalido(string codigo, string versao) => new(
+    internal static DomainError RegraDeDistribuicaoDeTipoInvalido() => new(
         "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido",
-        $"A regra {codigo}/{versao} não é do tipo regra_distribuicao_vagas.");
+        "A regra informada não é uma regra de distribuição de vagas.");
 
-    internal static DomainError RegraDeAjusteNaoEncontrada(string codigo, string? versao) => new(
+    internal static DomainError RegraDeAjusteNaoEncontrada() => new(
         "ConfiguracaoDistribuicaoVagas.RegraAjusteNaoEncontrada",
-        $"Regra de ajuste {codigo}/{versao} não encontrada no catálogo de regras.");
+        "A regra de ajuste na versão informada não foi encontrada no catálogo de regras.");
 
-    internal static DomainError RegraDeAjusteDeTipoInvalido(string codigo, string? versao) => new(
+    internal static DomainError RegraDeAjusteDeTipoInvalido() => new(
         "ConfiguracaoDistribuicaoVagas.RegraAjusteTipoInvalido",
-        $"A regra {codigo}/{versao} não é do tipo regra_ajuste_distribuicao_vagas.");
+        "A regra informada não é uma regra de ajuste da distribuição de vagas.");
 
     internal static DomainError ReferenciaDemograficaNaoEncontrada(Guid referenciaId) => new(
         "ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada",
