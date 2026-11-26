@@ -5,9 +5,9 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.Ordenacao;
 
-public sealed class CatalogoDeOrdenacaoDaVitrineTests
+public sealed class CatalogoDeOrdenacaoDaListaPublicaTests
 {
     [Fact(DisplayName = "O catálogo e o mapeamento de ordenação coincidem")]
     public void Catalogo_ContratoEMapeamento_Coincidem() =>
-        OrdenacaoDaVitrine.CamposMapeados.Should().BeEquivalentTo(CamposOrdenacaoDaVitrine.Todos);
+        OrdenacaoDaListaPublica.CamposMapeados.Should().BeEquivalentTo(CamposDeOrdenacaoDaListaPublica.Todos);
 }

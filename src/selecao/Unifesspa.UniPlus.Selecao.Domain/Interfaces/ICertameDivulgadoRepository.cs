@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// </remarks>
 /// <param name="Contadores">Nulo quando a consulta não os pediu — contar é percurso a mais.</param>
 /// <param name="Revisao">
-/// Marcador opaco dos certames do recorte e do que cada um tem de ordenável e exibível (versão
+/// Marcador opaco dos certames do filtro e do que cada um tem de ordenável e exibível (versão
 /// divulgada e situação no instante da travessia): igual em todas as páginas da mesma travessia,
 /// diferente quando uma publicação, uma retificação ou o relógio muda esse conjunto. Não depende da
 /// ordenação pedida, que a assinatura do cursor já fixa.

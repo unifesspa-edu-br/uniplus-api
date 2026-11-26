@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// <b>A revisão do recorte muda exatamente quando muda o que a travessia percorre.</b>
+/// <b>A revisão do filtro muda exatamente quando muda o que a travessia percorre.</b>
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,8 +26,8 @@ using Xunit;
 /// íntegras.
 /// </para>
 /// <para>
-/// Correm contra Postgres real porque a revisão é lida do recorte que o banco aplica, e é a
-/// tradução desse recorte que decide quais linhas entram no marcador.
+/// Correm contra Postgres real porque a revisão é lida do filtro que o banco aplica, e é a
+/// tradução desse filtro que decide quais linhas entram no marcador.
 /// </para>
 /// </remarks>
 public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
@@ -52,7 +52,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
         // Três abertos com prazos distintos e dois encerrados: dá página de continuação e dois
-        // recortes por situação que não se tocam.
+        // filtros por situação que não se tocam.
         _semeados.Add(Divulgado(Agora.AddDays(-5), Agora.AddDays(20)));
         _semeados.Add(Divulgado(Agora.AddDays(-5), Agora.AddDays(40)));
         _semeados.Add(Divulgado(Agora.AddDays(-5), Agora.AddDays(60)));
@@ -74,12 +74,12 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
 
         repetida.Revisao.Should().Be(primeira.Revisao, "nada mudou entre as duas leituras");
         segunda.Revisao.Should().Be(primeira.Revisao,
-            "as páginas da mesma travessia descrevem o mesmo recorte — marcador diferente faria quem compõe recomeçar sem motivo");
+            "as páginas da mesma travessia descrevem o mesmo filtro — marcador diferente faria quem compõe recomeçar sem motivo");
         segunda.Itens.Should().NotBeEmpty("a continuação precisa existir para o teste valer");
     }
 
-    [Fact(DisplayName = "Divulgar um certame que entra no recorte muda a revisão")]
-    public async Task Revisao_QuandoCertameEntraNoRecorte_DeveMudar()
+    [Fact(DisplayName = "Divulgar um certame que entra no filtro muda a revisão")]
+    public async Task Revisao_QuandoCertameEntraNoFiltro_DeveMudar()
     {
         string antes = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao;
 
@@ -88,8 +88,8 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao.Should().NotBe(antes);
     }
 
-    [Fact(DisplayName = "Recortes diferentes têm revisões independentes: mudar um não mexe no outro")]
-    public async Task Revisao_QuandoMudaOutroRecorte_NaoDeveMudar()
+    [Fact(DisplayName = "Filtros diferentes têm revisões independentes: mudar um não mexe no outro")]
+    public async Task Revisao_QuandoMudaOutroFiltro_NaoDeveMudar()
     {
         FiltroDosCertamesPublicados abertas = new(SituacaoDoCertame.InscricoesAbertas);
         FiltroDosCertamesPublicados encerradas = new(SituacaoDoCertame.Encerradas);
@@ -100,7 +100,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         await AdicionarAsync(Divulgado(Agora.AddDays(-90), Agora.AddDays(-30)));
 
         (await ListarAsync(abertas, Agora)).Revisao.Should().Be(abertasAntes,
-            "o certame novo é encerrado e não entra no recorte das abertas");
+            "o certame novo é encerrado e não entra no filtro das abertas");
         (await ListarAsync(encerradas, Agora)).Revisao.Should().NotBe(encerradasAntes);
     }
 
@@ -144,15 +144,15 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
         }
     }
 
-    private async Task<PaginaDaVitrine> ListarAsync(FiltroDosCertamesPublicados recorte, DateTimeOffset instante, int limite = 50)
+    private async Task<PaginaDaVitrine> ListarAsync(FiltroDosCertamesPublicados filtro, DateTimeOffset instante, int limite = 50)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        return await repository.ListarVitrineAsync(Consulta(instante, recorte, [], false), null, null, limite, PaginationDirection.Next, CancellationToken.None);
+        return await repository.ListarVitrineAsync(Consulta(instante, filtro, [], false), null, null, limite, PaginationDirection.Next, CancellationToken.None);
     }
 
-    private async Task<PaginaDaVitrine> ContinuarAsync(FiltroDosCertamesPublicados recorte, PaginaDaVitrine anterior, int limite)
+    private async Task<PaginaDaVitrine> ContinuarAsync(FiltroDosCertamesPublicados filtro, PaginaDaVitrine anterior, int limite)
     {
         (string sortKey, Guid id) = anterior.Proximo!.Value;
 
@@ -161,7 +161,7 @@ public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixtur
 
         // O instante da primeira página viaja na âncora; o que se passa aqui é ignorado na
         // continuação, e passar outro prova que a revisão não depende dele.
-        return await repository.ListarVitrineAsync(Consulta(Agora.AddDays(365), recorte, [], false), sortKey, id, limite, PaginationDirection.Next, CancellationToken.None);
+        return await repository.ListarVitrineAsync(Consulta(Agora.AddDays(365), filtro, [], false), sortKey, id, limite, PaginationDirection.Next, CancellationToken.None);
     }
 
     private async Task AdicionarAsync(CertameDivulgado divulgado)

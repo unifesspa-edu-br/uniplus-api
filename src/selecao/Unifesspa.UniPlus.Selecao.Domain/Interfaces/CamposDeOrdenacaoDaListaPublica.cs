@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// sobre o banco, sem índice previsível e servindo de sonda para descobrir colunas. Nenhum campo
 /// precisa ser único — a ordenação termina sempre pelo identificador.
 /// </remarks>
-public static class CamposOrdenacaoDaVitrine
+public static class CamposDeOrdenacaoDaListaPublica
 {
     /// <summary>Encerramento da janela de inscrição.</summary>
     public const string InscricoesAte = "inscricoesAte";

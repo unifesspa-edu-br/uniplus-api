@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -55,7 +56,7 @@ public sealed class CertamePublicadoController : ControllerBase
         + "não encerrou primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.";
 
     private const string ContagemEmBreve =
-        "Quantos certames divulgados ainda não abriram a janela de inscrição, no instante da "
+        "Quantos certames divulgados ainda não abriram o período de inscrição, no instante da "
         + "consulta. Presente só quando incluir_contadores=true.";
 
     private const string ContagemAbertas =
@@ -71,12 +72,12 @@ public sealed class CertamePublicadoController : ControllerBase
         + "incluir_contadores=true.";
 
     private const string DescricaoDaRevisao =
-        "Revisão do recorte percorrido: marcador opaco dos certames que a consulta seleciona "
+        "Revisão da consulta percorrida: marcador opaco dos certames que a consulta seleciona "
         + "(situação, modalidade e busca) e do que cada um tem de ordenável e exibível — a versão "
-        + "divulgada e a situação da janela de inscrição —, no instante em que a travessia começou. "
+        + "divulgada e a situação do período de inscrição —, no instante em que a leitura das páginas começou. "
         + "Não depende da ordenação pedida, que o cursor já fixa. É o mesmo em todas as páginas da "
-        + "mesma travessia e muda quando uma publicação, uma retificação ou a passagem do tempo altera "
-        + "esse conjunto. Quem compõe a vitrine compara o valor entre páginas para saber que precisa "
+        + "mesma sequência de páginas e muda quando uma publicação, uma retificação ou a passagem do tempo altera "
+        + "esse conjunto. Quem monta a lista compara o valor entre páginas para saber que precisa "
         + "recomeçar.";
 
     private const string DescricaoDoSeloDoCertame =
@@ -98,18 +99,18 @@ public sealed class CertamePublicadoController : ControllerBase
     }
 
     /// <summary>
-    /// Vitrine pública: os certames publicados, ordenados por urgência — quem ainda não encerrou
+    /// Lista pública: os certames publicados, ordenados por urgência — quem ainda não encerrou
     /// primeiro, do prazo mais próximo ao mais distante, e os encerrados depois.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Só existe linha para certame publicamente divulgável, então a página sai do banco já com o
     /// tamanho pedido: não há descarte de visibilidade depois de formada, e não há pergunta a outro
-    /// módulo no caminho da requisição. A continuação segue pela âncora do header <c>Link</c>, e o
-    /// cursor só vale para o mesmo recorte por situação que o emitiu.
+    /// módulo no caminho da requisição. A continuação segue pelo endereço do cabeçalho <c>Link</c>, e o
+    /// cursor só vale para o mesmo filtro por situação que o emitiu.
     /// </para>
     /// <para>
-    /// Sem <c>situacao</c> vem a vitrine inteira. Com ela, vêm exatamente os itens que trazem
+    /// Sem <c>situacao</c> vem a lista inteira. Com ela, vêm exatamente os itens que trazem
     /// aquela situação — e o contador homônimo diz quantos são: as quatro situações particionam o
     /// conjunto divulgado, e os quatro contadores somam o total.
     /// </para>
@@ -129,16 +130,16 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "O texto pesquisado excede 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa).")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> ListarVitrine(
-        // RequireSortKey: a âncora é o par (SortKey, Id). Sem a exigência, cursor sem a chave
+        // RequireSortKey: a posição de continuação é o par (SortKey, Id). Sem a exigência, cursor sem a chave
         // degrada em silêncio para primeira página em vez de ser recusado.
         [FromCursor(ResourceDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao"), AceitaCodigosDe<SituacaoDoCertame>] string? situacao,
         [FromQuery(Name = "modalidade")]
-        [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não recorta.")]
+        [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não filtra.")]
         string? modalidade,
-        [FromQuery(Name = "q")]
+        [FromQuery(Name = BuscaPedida.NomeDoParametro)]
         [Description("Texto pesquisado no título do certame e no número do edital. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
         string? q,
         [FromQuery(Name = "sort")][Description(DescricaoDoSort)] string? sort,

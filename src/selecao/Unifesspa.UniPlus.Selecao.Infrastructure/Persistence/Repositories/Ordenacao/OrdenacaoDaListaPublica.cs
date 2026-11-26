@@ -47,7 +47,7 @@ internal sealed class CertameNaVitrine : IIdentificavel
 /// </summary>
 /// <remarks>
 /// <para>
-/// Os nomes dos campos são contrato público e vivem em <see cref="CamposOrdenacaoDaVitrine"/>,
+/// Os nomes dos campos são contrato público e vivem em <see cref="CamposDeOrdenacaoDaListaPublica"/>,
 /// visíveis à borda que valida o parâmetro e documenta a rota. O que mora aqui é o outro lado da
 /// ponte: a coluna que cada nome designa e como o valor dela vira texto na âncora do cursor. Um
 /// teste confere que os dois conjuntos coincidem, de modo que declarar um campo sem mapeá-lo — ou o
@@ -58,7 +58,7 @@ internal sealed class CertameNaVitrine : IIdentificavel
 /// nenhum campo aqui precisa garantir unicidade sozinho.
 /// </para>
 /// </remarks>
-internal static class OrdenacaoDaVitrine
+internal static class OrdenacaoDaListaPublica
 {
     /// <summary>
     /// Ordem canônica por urgência, usada quando a consulta não pede outra: quem ainda não encerrou
@@ -70,35 +70,35 @@ internal static class OrdenacaoDaVitrine
     /// </remarks>
     private const string CampoDoSegmento = "encerrado";
 
-    /// <summary>Monta a ordenação da vitrine sobre o recorte informado.</summary>
+    /// <summary>Monta a ordenação da vitrine sobre o filtro informado.</summary>
     /// <param name="campos">
     /// Campos pedidos pela consulta. Vazio é a ordem canônica por urgência.
     /// </param>
-    /// <param name="recorte">O que reduziu a coleção antes do keyset.</param>
+    /// <param name="filtro">O que reduziu a coleção antes do keyset.</param>
     public static KeysetSort<CertameNaVitrine> Montar(
         IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> recorte) =>
+        IReadOnlyList<string> filtro) =>
         campos.Count == 0
             ? new KeysetSort<CertameNaVitrine>(
-                [ColunaDoSegmento(), Coluna(new SortField(CamposOrdenacaoDaVitrine.InscricoesAte, SortDirection.Ascending))],
+                [ColunaDoSegmento(), Coluna(new SortField(CamposDeOrdenacaoDaListaPublica.InscricoesAte, SortDirection.Ascending))],
                 AncoraDaOrdemCanonica,
-                recorte)
+                filtro)
             : new KeysetSort<CertameNaVitrine>(
                 [.. campos.Select(Coluna)],
                 (partes, id) => Ancora(campos, partes, id),
-                recorte);
+                filtro);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CertameNaVitrine>>> Campos =
         new(StringComparer.Ordinal)
         {
-            [CamposOrdenacaoDaVitrine.InscricoesAte] = d => KeysetSortColumn<CertameNaVitrine>.For(
-                CamposOrdenacaoDaVitrine.InscricoesAte, c => c.InscricoesAte, c => ChaveDeInstante(c.InscricoesAte), d),
-            [CamposOrdenacaoDaVitrine.InscricoesDe] = d => KeysetSortColumn<CertameNaVitrine>.For(
-                CamposOrdenacaoDaVitrine.InscricoesDe, c => c.InscricoesDe, c => ChaveDeInstante(c.InscricoesDe), d),
-            [CamposOrdenacaoDaVitrine.Nome] = d => KeysetSortColumn<CertameNaVitrine>.For(
-                CamposOrdenacaoDaVitrine.Nome, c => c.NomeOrdenacao, c => c.NomeOrdenacao, d),
-            [CamposOrdenacaoDaVitrine.DivulgadoEm] = d => KeysetSortColumn<CertameNaVitrine>.For(
-                CamposOrdenacaoDaVitrine.DivulgadoEm, c => c.DivulgadoEm, c => ChaveDeInstante(c.DivulgadoEm), d),
+            [CamposDeOrdenacaoDaListaPublica.InscricoesAte] = d => KeysetSortColumn<CertameNaVitrine>.For(
+                CamposDeOrdenacaoDaListaPublica.InscricoesAte, c => c.InscricoesAte, c => ChaveDeInstante(c.InscricoesAte), d),
+            [CamposDeOrdenacaoDaListaPublica.InscricoesDe] = d => KeysetSortColumn<CertameNaVitrine>.For(
+                CamposDeOrdenacaoDaListaPublica.InscricoesDe, c => c.InscricoesDe, c => ChaveDeInstante(c.InscricoesDe), d),
+            [CamposDeOrdenacaoDaListaPublica.Nome] = d => KeysetSortColumn<CertameNaVitrine>.For(
+                CamposDeOrdenacaoDaListaPublica.Nome, c => c.NomeOrdenacao, c => c.NomeOrdenacao, d),
+            [CamposDeOrdenacaoDaListaPublica.DivulgadoEm] = d => KeysetSortColumn<CertameNaVitrine>.For(
+                CamposDeOrdenacaoDaListaPublica.DivulgadoEm, c => c.DivulgadoEm, c => ChaveDeInstante(c.DivulgadoEm), d),
         };
 
     /// <summary>Nomes de campo que a vitrine sabe ordenar.</summary>
@@ -137,10 +137,10 @@ internal static class OrdenacaoDaVitrine
         return new CertameNaVitrine
         {
             Id = id,
-            NomeOrdenacao = valores.GetValueOrDefault(CamposOrdenacaoDaVitrine.Nome, string.Empty),
-            InscricoesDe = InstanteDaChave(valores.GetValueOrDefault(CamposOrdenacaoDaVitrine.InscricoesDe)),
-            InscricoesAte = InstanteDaChave(valores.GetValueOrDefault(CamposOrdenacaoDaVitrine.InscricoesAte)),
-            DivulgadoEm = InstanteDaChave(valores.GetValueOrDefault(CamposOrdenacaoDaVitrine.DivulgadoEm)),
+            NomeOrdenacao = valores.GetValueOrDefault(CamposDeOrdenacaoDaListaPublica.Nome, string.Empty),
+            InscricoesDe = InstanteDaChave(valores.GetValueOrDefault(CamposDeOrdenacaoDaListaPublica.InscricoesDe)),
+            InscricoesAte = InstanteDaChave(valores.GetValueOrDefault(CamposDeOrdenacaoDaListaPublica.InscricoesAte)),
+            DivulgadoEm = InstanteDaChave(valores.GetValueOrDefault(CamposDeOrdenacaoDaListaPublica.DivulgadoEm)),
         };
     }
 

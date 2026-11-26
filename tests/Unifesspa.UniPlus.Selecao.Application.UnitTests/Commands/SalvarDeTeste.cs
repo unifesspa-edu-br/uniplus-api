@@ -42,7 +42,7 @@ internal static class SalvarDeTeste
         processoBase.DefinirItens([item], grupos: grupos).IsSuccess.Should().BeTrue();
 
         // A definição avaliável só reconhece um item que esteja numa página de um FORMULÁRIO
-        // (RecorteDaFinalidade filtra por página de FormularioProcesso, não por EtapaProcesso do
+        // (O filtro da finalidade seleciona por página de FormularioProcesso, não por EtapaProcesso do
         // certame) — por isso o grafo leva processoBase.Formularios, que FormularioDeTeste.DefinirItens
         // já colocou o item dentro da seção "DADOS" da finalidade Inscrição.
         return (DivulgacaoDeTeste.VersaoSemReferenciaTemporal(ProcessoId), DivulgacaoDeTeste.ConfiguracaoDe(processoBase));

@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// <b>O recorte por situação no banco diz o mesmo que a regra que classifica o item.</b>
+/// <b>O filtro por situação no banco diz o mesmo que a regra que classifica o item.</b>
 /// </summary>
 /// <remarks>
 /// <para>
 /// A partição das quatro situações é enunciada uma vez, em
-/// <see cref="SituacaoDaVitrine.Classificar"/>, e precisa ser reescrita como predicado traduzível
+/// <see cref="SituacaoDasInscricoesDoCertame.Classificar"/>, e precisa ser reescrita como predicado traduzível
 /// para SQL — o banco não pode chamar o método. São duas expressões da mesma regra, e duas
 /// expressões divergem em silêncio.
 /// </para>
@@ -74,12 +74,12 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Theory(DisplayName = "O recorte no banco devolve exatamente o que a regra classifica naquela situação")]
+    [Theory(DisplayName = "O filtro no banco devolve exatamente o que a regra classifica naquela situação")]
     [InlineData(SituacaoDoCertame.EmBreve)]
     [InlineData(SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(SituacaoDoCertame.UltimosDias)]
     [InlineData(SituacaoDoCertame.Encerradas)]
-    public async Task ListarVitrine_QuandoRecortaPorSituacao_DeveConcordarComAClassificacao(SituacaoDoCertame situacao)
+    public async Task ListarVitrine_QuandoFiltraPorSituacao_DeveConcordarComAClassificacao(SituacaoDoCertame situacao)
     {
         IReadOnlyList<Guid> doBanco = await ListarAsync(situacao);
 
@@ -87,11 +87,11 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
 
         doBanco.Should().BeEquivalentTo(daRegra,
             "o predicado que o banco aplica e a regra que marca o item são a mesma partição — se discordam, "
-            + "o item aparece sob um recorte e vem marcado com outro");
+            + "o item aparece sob um filtro e vem marcado com outro");
     }
 
-    [Fact(DisplayName = "Os quatro recortes particionam a vitrine: nenhum certame fica de fora nem aparece duas vezes")]
-    public async Task ListarVitrine_QuandoPercorreOsQuatroRecortes_DeveParticionarOConjunto()
+    [Fact(DisplayName = "As quatro situações particionam a vitrine: nenhum certame fica de fora nem aparece duas vezes")]
+    public async Task ListarVitrine_QuandoPercorreAsQuatroSituacoes_DeveParticionarOConjunto()
     {
         List<Guid> reunidos = [];
         foreach (SituacaoDoCertame situacao in Enum.GetValues<SituacaoDoCertame>())
@@ -101,12 +101,12 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
 
         IReadOnlyList<Guid> semFiltro = await ListarAsync(situacao: null);
 
-        reunidos.Should().OnlyHaveUniqueItems("um certame em dois recortes apareceria em duas abas e contaria duas vezes");
-        reunidos.Should().BeEquivalentTo(semFiltro, "um certame em recorte nenhum some da vitrine quando ela é filtrada");
+        reunidos.Should().OnlyHaveUniqueItems("um certame em duas situações apareceria em duas abas e contaria duas vezes");
+        reunidos.Should().BeEquivalentTo(semFiltro, "um certame em situação nenhuma some da vitrine quando ela é filtrada");
     }
 
     [Fact(DisplayName = "Cada contador é o tamanho da lista que ele promete, e os quatro somam o total")]
-    public async Task ContarPorSituacao_QuandoHaDivulgadosEmTodasAsSituacoes_DeveBaterComOTamanhoDoRecorte()
+    public async Task ContarPorSituacao_QuandoHaDivulgadosEmTodasAsSituacoes_DeveBaterComOTamanhoDaSituacao()
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
@@ -114,13 +114,13 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
         ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), [], true), null, null, 1, PaginationDirection.Next, CancellationToken.None)).Contadores!.Value;
 
         // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
-        await ConferirTamanhoDosRecortesAsync(contadores);
+        await ConferirTamanhoDasSituacoesAsync(contadores);
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(_semeados.Count, "as quatro situações particionam o conjunto divulgado");
     }
 
-    private async Task ConferirTamanhoDosRecortesAsync(ContadoresDaVitrine contadores)
+    private async Task ConferirTamanhoDasSituacoesAsync(ContadoresDaVitrine contadores)
     {
         contadores.EmBreve.Should().Be((await ListarAsync(SituacaoDoCertame.EmBreve)).Count);
         contadores.InscricoesAbertas.Should().Be((await ListarAsync(SituacaoDoCertame.InscricoesAbertas)).Count);
@@ -156,7 +156,7 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
     }
 
     private static SituacaoDoCertame Classificar(CertameDivulgado certame) =>
-        SituacaoDaVitrine.Classificar(certame.InscricoesDe, certame.InscricoesAte, Agora, SituacaoDaVitrine.LimiarDosUltimosDias);
+        SituacaoDasInscricoesDoCertame.Classificar(certame.InscricoesDe, certame.InscricoesAte, Agora, SituacaoDasInscricoesDoCertame.LimiarDosUltimosDias);
 
     private async Task<IReadOnlyList<Guid>> ListarAsync(SituacaoDoCertame? situacao)
     {
@@ -177,8 +177,8 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
             Guid.CreateVersion7(),
             new string('a', 64),
             versaoProjecao,
-            new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, "Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
-            """{"nome":"Certame de recorte"}""",
+            new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, "Certame de filtro", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
+            """{"nome":"Certame de filtro"}""",
             Agora);
     private static ConsultaDosCertamesPublicados Consulta(
         DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>

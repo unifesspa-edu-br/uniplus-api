@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Regras e pressupostos do formulário público lido do banco real: as regras são as da
-/// configuração publicada, recortadas para a finalidade, e os pressupostos saem com a apresentação
+/// configuração publicada, filtradas para a finalidade, e os pressupostos saem com a apresentação
 /// congelada na publicação, não com a do catálogo vivo.
 /// </summary>
 [Collection(FormularioApresentadoPersistenciaColecao.Nome)]
@@ -37,8 +37,8 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         _cenario = new CenarioDeFormularioPublicado(fixture);
     }
 
-    [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, recortadas para a finalidade, sem derivado que o formulário não cita")]
-    public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaRecortadas()
+    [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, filtradas para a finalidade, sem derivado que o formulário não cita")]
+    public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaFiltradas()
     {
         // O exemplo rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
         // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
@@ -50,12 +50,12 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id);
 
-        RecorteDaFinalidade esperado = RecorteEsperado(processo, entrada);
+        RecorteDaFinalidade esperado = FiltroEsperado(processo, entrada);
         ConferirRegras(lido, esperado);
         ConferirConteudo(lido, esperado, processo);
     }
 
-    private static RecorteDaFinalidade RecorteEsperado(ProcessoSeletivo processo, EntradaCanonicalizacao entrada)
+    private static RecorteDaFinalidade FiltroEsperado(ProcessoSeletivo processo, EntradaCanonicalizacao entrada)
     {
         // A mesma montagem sobre a configuração viva, antes de passar pelo envelope: o que o front
         // interpreta é o que a configuração declarou.

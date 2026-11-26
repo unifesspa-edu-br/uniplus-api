@@ -12,7 +12,7 @@ using Xunit;
 /// <remarks>
 /// <para>
 /// O desfecho que se quer evitar não é o erro, é o <b>silêncio</b>: uma resposta 200 com a coleção
-/// inteira para quem pediu um recorte. O cliente não tem como perceber — recebe uma lista
+/// inteira para quem pediu um filtro. O cliente não tem como perceber — recebe uma lista
 /// plausível, e conclui que aquele é o conjunto filtrado.
 /// </para>
 /// <para>
@@ -101,8 +101,8 @@ public sealed class RecusaDeParametroDaVitrineTests
         corpo.Should().Contain("uniplus.consulta.busca_muito_longa");
     }
 
-    [Fact(DisplayName = "Toda resposta da vitrine traz a revisão do recorte, sem precisar pedi-la")]
-    public async Task Listar_DeveEmitirARevisaoDoRecorte()
+    [Fact(DisplayName = "Toda resposta da vitrine traz a revisão da consulta, sem precisar pedi-la")]
+    public async Task Listar_DeveEmitirARevisaoDaConsulta()
     {
         // Ao contrário dos contadores, a revisão não é opt-in: quem compõe a vitrine precisa dela
         // em toda página para perceber que a coleção avançou.
