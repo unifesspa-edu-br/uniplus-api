@@ -26,7 +26,6 @@ public static class ListarAtosDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
-
         bool existe = await processoSeletivoRepository
             .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -34,17 +33,27 @@ public static class ListarAtosDoProcessoQueryHandler
         {
             return Result<ListarAtosDoProcessoResult>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
-
-        IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
-            .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        // A ordem é a do repositório (instante de gravação decrescente, ato como desempate); reordenar
-        // aqui desfaria o que o contrato promete.
-        AtoDoProcessoDto[] itens = await ProjecaoDosAtosDoProcesso
-            .ProjetarAsync(query.ProcessoSeletivoId, atos, documentoAPublicarRepository, cancellationToken)
-            .ConfigureAwait(false);
-
+        AtoDoProcessoDto[] itens = await AtosComDocumentosAsync(
+            query.ProcessoSeletivoId, atoDoProcessoRepository, documentoAPublicarRepository, cancellationToken).ConfigureAwait(false);
         return Result<ListarAtosDoProcessoResult>.Success(new ListarAtosDoProcessoResult(itens));
+    }
+
+    /// <summary>
+    /// Lista os atos na ordem do repositório (instante de gravação decrescente, ato como desempate) e os projeta com os
+    /// documentos. Reordenar aqui desfaria o que o contrato do repositório promete.
+    /// </summary>
+    private static async Task<AtoDoProcessoDto[]> AtosComDocumentosAsync(
+        Guid processoId,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
+            .ListarDoProcessoAsync(processoId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return await ProjecaoDosAtosDoProcesso
+            .ProjetarAsync(processoId, atos, documentoAPublicarRepository, cancellationToken)
+            .ConfigureAwait(false);
     }
 }
