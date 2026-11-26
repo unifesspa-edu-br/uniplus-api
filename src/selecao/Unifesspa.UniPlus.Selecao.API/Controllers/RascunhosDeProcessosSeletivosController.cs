@@ -116,10 +116,10 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// <summary>
     /// Exporta o documento do rascunho. Traz o <c>id</c> do rascunho na raiz e, ao lado dos códigos de identificação, os
     /// descritivos só de leitura que o Uni+ já guarda nos cadastros: nomes das unidades, dos tipos, das categorias, das ofertas
-    /// de curso, das modalidades, do atendimento e da base legal da FADA, e o nome e a UF da localidade. O descritivo cujo cadastro
-    /// não resolve é omitido. Não traz <c>versao</c> nem <c>publicadoEm</c>, que não existem antes da publicação, nem o
-    /// quadro de vagas calculado nem os rótulos dos valores de código, que ainda não são preenchidos. O <c>ETag</c> da
-    /// resposta identifica a revisão exportada.
+    /// de curso, das modalidades, do atendimento e da base legal da FADA, o nome e a UF da localidade e o rótulo de cada valor de
+    /// código. O descritivo cujo cadastro não resolve é omitido. Não traz <c>versao</c> nem <c>publicadoEm</c>, que não existem
+    /// antes da publicação, nem o quadro de vagas calculado, que ainda não é preenchido. O <c>ETag</c> da resposta identifica a
+    /// revisão exportada.
     /// </summary>
     [HttpGet("{id:guid}")]
     [EndpointName("ObterRascunhoDeProcessoSeletivo")]

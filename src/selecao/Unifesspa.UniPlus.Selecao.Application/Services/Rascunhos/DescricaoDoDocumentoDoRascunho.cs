@@ -78,7 +78,7 @@ public sealed class DescricaoDoDocumentoDoRascunho(
         for (int indice = 0; indice < citacao.Campo.Atributos.Count; indice++)
         {
             string nome = citacao.Campo.Atributos[indice];
-            if (valores[indice] is not null && SomenteLeitura(citacao.Forma, nome))
+            if (valores[indice] is not null && citacao.Forma.DeclaraSomenteLeitura(nome))
             {
                 Inserir(citacao.Objeto, nome, posicao++, valores[indice]!);
             }
@@ -91,14 +91,11 @@ public sealed class DescricaoDoDocumentoDoRascunho(
         List<string> nomes = [.. citacao.Codigos
             .Select(codigo => atributos.TryGetValue((codigo, null), out IReadOnlyList<object?>? valores) ? valores[0] as string : null)
             .OfType<string>()];
-        if (nomes.Count == citacao.Codigos.Count && SomenteLeitura(citacao.Forma, citacao.Campo.Nomes))
+        if (nomes.Count == citacao.Codigos.Count && citacao.Forma.DeclaraSomenteLeitura(citacao.Campo.Nomes))
         {
             Inserir(citacao.Objeto, citacao.Campo.Nomes, citacao.Objeto.IndexOf(citacao.Campo.Codigos) + 1, nomes);
         }
     }
-
-    private static bool SomenteLeitura(FormaDoNo forma, string nome) =>
-        forma.Propriedades.TryGetValue(nome, out FormaDoNo? declarada) && declarada.SomenteLeitura;
 
     private static void Inserir(JsonObject objeto, string nome, int posicao, object valor)
     {

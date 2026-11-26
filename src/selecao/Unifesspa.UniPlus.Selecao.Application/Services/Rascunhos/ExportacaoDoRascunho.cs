@@ -9,13 +9,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// Exporta o documento guardado com o <c>id</c> do rascunho e os descritivos só de leitura dos cadastros vivos. A unidade
 /// administradora é a que o rascunho guarda pelo identificador, e o documento traz o código que ela tem hoje, para que o
 /// documento exportado, salvo de volta, nomeie a mesma unidade ainda que o código tenha mudado depois. O descritivo cujo
-/// cadastro não resolve é omitido.
+/// cadastro não resolve é omitido. Os rótulos dos códigos de enum vêm por último,
+/// para alcançar também o formato do modelo de documento, que a própria exportação escreve.
 /// </summary>
 public sealed class ExportacaoDoRascunho(
     IUnidadeReader unidades,
     DescricaoDoDocumentoDoRascunho descricao,
     ResolucaoDosModelosCitados resolucao,
-    DescricaoDaLocalidade localidade)
+    DescricaoDaLocalidade localidade,
+    IEsquemaDoDocumentoDaConfiguracao esquema)
 {
     private const int PosicaoDoIdNaRaiz = 2;
 
@@ -31,6 +33,7 @@ public sealed class ExportacaoDoRascunho(
         await localidade.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
         DescricaoDoNomeAbreviado.Descrever(documento);
         await DescreverModelosAsync(rascunho.Id, documento, cancellationToken).ConfigureAwait(false);
+        RotulosDosCodigosDeContrato.Descrever(documento, esquema.Forma);
         return documento;
     }
 
