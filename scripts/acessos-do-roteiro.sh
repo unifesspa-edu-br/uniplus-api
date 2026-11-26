@@ -35,6 +35,8 @@ GESTORES="${GESTORES:-diogo.souza leandro.viana}"
 SENHA_GESTORES="${SENHA_GESTORES:-$ADMIN_PASS}"
 ESPERA_VERIFICACAO="${ESPERA_VERIFICACAO:-240}"
 PDF_DO_PERFIL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf"
+# shellcheck source=perfis-pela-api.sh
+source "$(dirname "${BASH_SOURCE[0]}")/perfis-pela-api.sh"
 
 # Descrição do perfil criado; o roteiro dos perfis de operação a troca por perfil.
 DESCRICAO_DO_PERFIL="${DESCRICAO_DO_PERFIL:-Permissões que o roteiro local de processo de teste usa.}"
@@ -79,20 +81,6 @@ renovar_token_do_executor() {
     TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS") || fail "não foi possível renovar o token do executor."
 }
 
-# Chamada como uma pessoa; falha com o corpo da recusa. $1=passo $2=token $3=método $4=caminho $5=corpo
-como() {
-    local passo="$1" token="$2" metodo="$3" caminho="$4" corpo="${5:-}" resp status
-    local args=(-sS -w '\n%{http_code}' -X "$metodo" "$API_URL$caminho" -H "Authorization: Bearer $token")
-    [ "$metodo" = GET ] || args+=(-H "Idempotency-Key: $(idem)")
-    [ -z "$corpo" ] || args+=(-H "Content-Type: application/json" -d "$corpo")
-    resp=$(curl "${args[@]}")
-    status=$(tail -n1 <<< "$resp")
-    case "$status" in
-        2??) sed '$d' <<< "$resp" ;;
-        *) fail "$passo: $metodo $caminho → $status: $(sed '$d' <<< "$resp" | head -c 600)" ;;
-    esac
-}
-
 # O executor já tem o perfil no escopo? $1=nome $2=unidade (vazio: instituição)
 executor_tem_perfil() {
     como "a leitura dos perfis do executor" "$TOKEN" GET "/api/profile/me" \
@@ -110,22 +98,9 @@ aguardar_documento_do_perfil() {
     fail "o documento do perfil $perfil não foi verificado em ${ESPERA_VERIFICACAO}s (situação: '${situacao:-desconhecida}'). Confira o serviço 'verificador'."
 }
 
-enviar_documento_do_perfil() {
-    local envio="$1" token="$2" url etag
-    local -a redirecionamento=()
-    [ -z "${ARMAZENAMENTO_CONNECT_TO:-}" ] || redirecionamento=(--connect-to "$ARMAZENAMENTO_CONNECT_TO")
-    url=$(jq -r '.urlDeEnvio' <<< "$envio")
-    etag=$(curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" ${redirecionamento[@]+"${redirecionamento[@]}"} \
-        --data-binary @"$PDF_DO_PERFIL" "$url" | tr -d '\r' | awk -F': ' 'tolower($1)=="etag"{print $2}') \
-        || fail "o envio do PDF do perfil à URL assinada falhou (MinIO acessível?)."
-    como "a confirmação do documento do perfil" "$token" POST \
-        "/api/autorizacao/perfis/$(jq -r '.perfilId' <<< "$envio")/versoes/$(jq -r '.versaoId' <<< "$envio")/documento/confirmacao" \
-        "$(jq -nc --arg etag "${etag//\"/}" '{etag: $etag}')" >/dev/null
-}
-
 # A etapa em que a versão pendente do perfil espera decisão (vazia se não há versão pendente). $1=perfil
 etapa_pendente_do_perfil() {
-    detalhe_do_perfil "$1" | jq -r '.versaoPendente.etapaAtual // empty'
+    detalhe_do_perfil_do_gestor "$1" | jq -r '.versaoPendente.etapaAtual // empty'
 }
 
 # O segundo gestor aprova a versão depois do verificador. Se o perfil é protegido (traz dado pessoal), a versão ainda
@@ -148,15 +123,9 @@ aprovar_versao_do_perfil() {
     fi
 }
 
-# O detalhe do perfil, lido e conferido; interrompe o roteiro se a leitura falha ou a resposta não é um detalhe de perfil.
-# A listagem informa a situação do acesso, que um perfil suspenso muda; quem diz se há versão em vigor é o detalhe. $1=perfil
-detalhe_do_perfil() {
-    local detalhe
-    detalhe=$(como "a leitura do perfil $1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" GET "/api/autorizacao/perfis/$1") \
-        || fail "a leitura do perfil $1 falhou."
-    jq -e 'type == "object" and has("composicaoEmVigor")' <<< "$detalhe" >/dev/null \
-        || fail "a resposta da leitura do perfil $1 não é um detalhe de perfil válido."
-    printf '%s\n' "$detalhe"
+# O detalhe do perfil, lido com o token do primeiro gestor. $1=perfil
+detalhe_do_perfil_do_gestor() {
+    detalhe_do_perfil "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" "$1"
 }
 
 # Retoma a versão pendente que uma execução interrompida deixou com o documento já enviado, a partir do detalhe do perfil
@@ -177,7 +146,7 @@ criar_perfil_do_roteiro() {
     envio=$(como "a criação do perfil '$nome' por ${LISTA_DE_GESTORES[0]}" "$criador" POST "/api/autorizacao/perfis" \
         "$(jq -nc --arg n "$nome" --arg d "$DESCRICAO_DO_PERFIL" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
             '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')") || return 1
-    enviar_documento_do_perfil "$envio" "$criador" || return 1
+    enviar_e_confirmar_documento "$criador" "$envio" "$PDF_DO_PERFIL" || return 1
     perfil=$(jq -r '.perfilId' <<< "$envio")
     aprovar_versao_do_perfil "$perfil" "$(jq -r '.versaoId' <<< "$envio")" "$nome" || return 1
     printf '%s\n' "$perfil"
@@ -203,10 +172,10 @@ atualizar_permissoes_do_perfil() {
             envio=$(como "a nova versão do perfil '$nome'" "$criador" POST "/api/autorizacao/perfis/$id/versoes" \
                 "$(jq -nc --arg n "$nome" --arg d "$(jq -r '.descricao' <<< "$detalhe")" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
                     '{nome: $n, descricao: $d, permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')") || return 1
-            enviar_documento_do_perfil "$envio" "$criador" || return 1
+            enviar_e_confirmar_documento "$criador" "$envio" "$PDF_DO_PERFIL" || return 1
             aprovar_versao_do_perfil "$id" "$(jq -r '.versaoId' <<< "$envio")" "$nome" || return 1
         fi
-        detalhe=$(detalhe_do_perfil "$id") || return 1
+        detalhe=$(detalhe_do_perfil_do_gestor "$id") || return 1
         jq -e --argjson p "$pedidas" '(.composicaoEmVigor.permissoes | map(.codigo)) as $atuais | ($p - $atuais | length) == 0' \
             <<< "$detalhe" >/dev/null || fail "a versão em vigor do perfil '$nome' ainda não contém as permissões necessárias."
     fi
@@ -234,10 +203,10 @@ perfil_do_roteiro() {
     else
         local id detalhe
         id=$(jq -r '.id' <<< "$listado")
-        detalhe=$(detalhe_do_perfil "$id") || return 1
+        detalhe=$(detalhe_do_perfil_do_gestor "$id") || return 1
         if jq -e '.composicaoEmVigor == null' <<< "$detalhe" >/dev/null; then
             retomar_versao_pendente "$id" "$nome" "$detalhe" || return 1
-            detalhe=$(detalhe_do_perfil "$id") || return 1
+            detalhe=$(detalhe_do_perfil_do_gestor "$id") || return 1
         fi
         atualizar_permissoes_do_perfil "$id" "$nome" "$2" "$detalhe" || return 1
         printf '%s\n' "$id"

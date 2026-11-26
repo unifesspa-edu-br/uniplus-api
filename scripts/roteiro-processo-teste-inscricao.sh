@@ -101,12 +101,9 @@ NUMERO_OPCOES_DE_CURSO=1
 FASE_CLASSIFICACAO_ID=""
 TOKEN=""
 
-log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
-ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*" >&2; }
-warn() { printf '\033[1;33m!! %s\033[0m\n' "$*" >&2; }
-fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
-
-idem() { cat /proc/sys/kernel/random/uuid; }
+# As mensagens, o identificador de idempotência e a chamada à API como uma pessoa.
+# shellcheck source=chamadas-a-api.sh
+source "$(dirname "${BASH_SOURCE[0]}")/chamadas-a-api.sh"
 
 # As concessões que o executor precisa, pedidas e aprovadas pela API.
 # shellcheck source=acessos-do-roteiro.sh
