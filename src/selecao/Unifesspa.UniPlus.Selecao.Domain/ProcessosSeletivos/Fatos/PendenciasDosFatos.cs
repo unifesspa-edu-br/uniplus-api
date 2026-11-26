@@ -39,10 +39,7 @@ public static class PendenciasDosFatos
     private static DomainError? PendenciaDasRegrasNaInscricao(ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, string> membroPorAgregado)
     {
         HashSet<string> daInscricao = CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
-        HashSet<string> camposDosGrupos = new(
-            configuracao.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-                .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
-            StringComparer.Ordinal);
+        HashSet<string> camposDosGrupos = CamposDosGruposDaInscricao(configuracao);
         foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(configuracao.Vagas.DistribuicaoVagas.SelectMany(static d => d.Modalidades)))
         {
             if (PendenciaDaRegra(configuracao, modalidade, regra, daInscricao, camposDosGrupos, membroPorAgregado) is { } pendencia)
@@ -52,6 +49,21 @@ public static class PendenciasDosFatos
         }
 
         return null;
+    }
+
+    private static HashSet<string> CamposDosGruposDaInscricao(ConfiguracaoDeclarada configuracao)
+    {
+        HashSet<CodigoDoFormulario> codigosDaInscricao =
+            [.. FormulariosDaInscricao.De(configuracao.Coleta.FormulariosDeclarados, configuracao.Cronograma.CronogramaFases).Select(static formulario => formulario.Codigo)];
+        HashSet<Guid> formulariosDaInscricao =
+            [.. configuracao.Coleta.Formularios.Where(formulario => codigosDaInscricao.Contains(formulario.Codigo)).Select(static formulario => formulario.Id)];
+
+        return new(
+            configuracao.Coleta.GruposColetados
+                .Where(grupo => grupo.FormularioId is { } formularioId && formulariosDaInscricao.Contains(formularioId))
+                .SelectMany(static grupo => grupo.Subitens)
+                .Select(static campo => campo.FatoCodigo),
+            StringComparer.Ordinal);
     }
 
     private static DomainError? PendenciaDaRegra(
@@ -152,14 +164,18 @@ public static class PendenciasDosFatos
              FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
              $"A regra de derivação do fato '{derivacao.CodigoFato}' cita '{condicao.Fato}', que este processo não coleta nem deriva.")).FirstOrDefault();
 
+    /// <summary>O código do formulário a que o item ou o grupo pertence, para listar os formulários em ordem ordinal; vazio sem formulário.</summary>
+    private static string CodigoDoFormularioDe(ConfiguracaoDeclarada configuracao, Guid? formularioId) =>
+        configuracao.Coleta.Formularios.FirstOrDefault(formulario => formulario.Id == formularioId)?.Codigo.Valor ?? string.Empty;
+
     /// <summary>
     /// Campo opcional que alimenta derivação, negação ou impedimento, em qualquer regra viva do processo — a regra
     /// é a de <see cref="CampoQueAlimentaRegra"/>, avaliada sobre os formulários na ordem.
     /// </summary>
     internal static DomainError? PendenciaDeCampoOpcionalQueAlimentaRegra(ConfiguracaoDeclarada configuracao) =>
         CampoQueAlimentaRegra.PrimeiroOpcional(
-            configuracao.Coleta.Itens.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))
-                .Concat(configuracao.Coleta.GruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
+            configuracao.Coleta.Itens.OrderBy(f => CodigoDoFormularioDe(configuracao, f.FormularioId), StringComparer.Ordinal).ThenBy(static f => f.Ordem).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))
+                .Concat(configuracao.Coleta.GruposColetados.OrderBy(g => CodigoDoFormularioDe(configuracao, g.FormularioId), StringComparer.Ordinal).ThenBy(static g => g.Ordem)
                     .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
             CampoQueAlimentaRegra.Fatos(
                 configuracao.DerivacoesEfetivas().SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados(configuracao)),
@@ -186,7 +202,7 @@ public static class PendenciasDosFatos
             ReferenciasVivas.CondicoesVivasComOperador(configuracao).Select(static c => c.Fato).Where(membroPorAgregado.ContainsKey).Select(a => membroPorAgregado[a]),
             StringComparer.Ordinal);
         return CampoQueAlimentaRegra.PrimeiroGrupoOpcional(
-            configuracao.Coleta.GruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
+            configuracao.Coleta.GruposColetados.OrderBy(g => CodigoDoFormularioDe(configuracao, g.FormularioId), StringComparer.Ordinal).ThenBy(static g => g.Ordem)
                 .Select(static g => (g.Codigo, g.Obrigatoriedade.Tipo, g.Subitens.Select(static s => (s.FatoCodigo, s.Obrigatoriedade.Tipo)))),
             membros);
     }

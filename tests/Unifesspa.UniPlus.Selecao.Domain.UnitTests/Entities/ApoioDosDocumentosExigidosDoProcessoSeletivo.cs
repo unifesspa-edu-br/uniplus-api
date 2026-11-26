@@ -31,6 +31,14 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
+    /// <summary>A fase sem data que coleta a inscrição, o pedido de isenção, ou os dois, conforme as marcas.</summary>
+    internal static FaseCronograma FaseQueResponde(int ordem, string codigo, bool inscricao, bool isencao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: inscricao, ColetaSolicitacaoIsencao: isencao)),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     internal static FaseCronograma FaseNaOrdem(FaseCronograma fase, int ordem) =>
         Fase(ordem, fase.Codigo, fase.FaseCanonicaOrigemId);
 

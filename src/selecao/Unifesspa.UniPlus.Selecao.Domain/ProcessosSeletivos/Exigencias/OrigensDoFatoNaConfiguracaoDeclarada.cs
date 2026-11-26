@@ -19,7 +19,7 @@ internal sealed record OrigensDoFatoNaConfiguracaoDeclarada(
 
     public IEnumerable<FaseCronograma> FasesDosFormulariosQueColetam(string fato) =>
         Configuracao.Coleta.Campos.FirstOrDefault(campo => string.Equals(campo.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
-        && Configuracao.Coleta.FormularioDe(coletado.Finalidade!.Value)?.FaseId is { } faseDoFormulario
+        && Configuracao.Coleta.Formularios.FirstOrDefault(formulario => formulario.Id == coletado.FormularioId)?.FaseId is { } faseDoFormulario
         && Cronograma.FirstOrDefault(fase => fase.Id == faseDoFormulario) is { } fase
             ? [fase]
             : [];

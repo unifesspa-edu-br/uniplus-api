@@ -28,25 +28,33 @@ public static class RegrasDasExigencias
             : Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
     }
 
-    // Na ordem em que orientam: o vínculo e a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
+    // Na ordem em que orientam: o vínculo com a fase e a etapa, o formulário, a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
     private static IReadOnlyList<FieldError> Recusas(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos)
     {
-        DomainError? vinculo = ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)
-            ?? ConferirRepeticaoPorGrupo(configuracao, regras);
-        if (vinculo is not null)
-        {
-            return [new FieldError(null, vinculo)];
-        }
+        Func<IReadOnlyList<FieldError>>[] conferencias =
+        [
+            () => Unica(ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)),
+            () => FormularioDasExigencias(configuracao, documentos),
+            () => Unica(ConferirRepeticaoPorGrupo(configuracao, regras)),
+            () => DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos),
+            () => Unica(RecusaDaPendenciaDeReenvio(configuracao, regras)),
+        ];
 
-        IReadOnlyList<FieldError> datas = DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos);
-        if (datas.Count > 0)
-        {
-            return datas;
-        }
-
-        return RecusaDaPendenciaDeReenvio(configuracao, regras) is { } reenvio ? [new FieldError(null, reenvio)] : [];
+        return conferencias.Select(static conferir => conferir()).FirstOrDefault(static recusas => recusas.Count > 0) ?? [];
     }
+
+    private static IReadOnlyList<FieldError> Unica(DomainError? recusa) => recusa is null ? [] : [new FieldError(null, recusa)];
+
+    /// <summary>
+    /// A exigência cita um formulário que o processo tem, ligado à fase dela (ADR-0171). Todas as recusas saem
+    /// juntas, apontando a exigência pela posição.
+    /// </summary>
+    internal static IReadOnlyList<FieldError> FormularioDasExigencias(ConfiguracaoDeclarada configuracao, IEnumerable<DocumentoExigido> documentos) =>
+        ConferenciaDasExigenciasDoFormulario.Conferir(
+            configuracao.Coleta.FormulariosDeclarados,
+            [.. documentos.Where(static documento => documento.FormularioCodigo is not null)
+                .Select(static documento => new ExigenciaDeDocumentoDoFormulario(documento.FormularioCodigo!, documento.ExigidoNaFaseId))]);
 
     private static MudancaDaConfiguracao MudancaDaTroca(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<DocumentoExigido> documentos) => new()
@@ -127,14 +135,14 @@ public static class RegrasDasExigencias
     private static DomainError? RecusaDosFatosDaRepeticao(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra)
     {
         if (regra.GrupoDoFormularioParaRepeticao is null || regra.FaseComum() is not { } fase
-            || !regra.TentarFinalidadeComum(out FinalidadeFormulario? finalidade))
+            || !regra.TentarFormularioComum(out CodigoDoFormulario? formulario))
         {
             return null;
         }
 
         GrupoColetado grupo = configuracao.Coleta.GruposColetados.Single(g => string.Equals(g.Codigo, regra.GrupoDoFormularioParaRepeticao, StringComparison.Ordinal));
         return grupo.Subitens
-            .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, finalidade, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
+            .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, formulario, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
             .FirstOrDefault(static recusa => recusa is not null);
     }
 

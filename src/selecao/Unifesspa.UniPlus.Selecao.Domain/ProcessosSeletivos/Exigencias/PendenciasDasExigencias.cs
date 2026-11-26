@@ -11,6 +11,13 @@ public static class PendenciasDasExigencias
     internal static DomainError? PendenciaDaRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao) => RegrasDasExigencias.ConferirRepeticaoPorGrupo(configuracao, configuracao.Exigencias.RegrasDeComprovacao);
 
     /// <summary>
+    /// O formulário de cada exigência continua sendo um formulário do processo, ligado à fase dela: a escrita
+    /// confere, e o formulário pode ter mudado de fase ou saído depois.
+    /// </summary>
+    internal static DomainError? PendenciaDoFormularioDasExigencias(ConfiguracaoDeclarada configuracao) =>
+        RegrasDasExigencias.FormularioDasExigencias(configuracao, configuracao.Exigencias.DocumentosExigidos) is [{ } primeira, ..] ? primeira.Error : null;
+
+    /// <summary>
     /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o
     /// cronograma pode ter tirado da fase, depois, o formulário que a exigência declara.
     /// </summary>

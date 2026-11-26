@@ -113,7 +113,7 @@ public sealed class RepeticaoPorGrupoTests
         resultado.IsSuccess.Should().Be(aceito, resultado.Error?.Message);
         if (!aceito)
         {
-            resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
+            resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoDeFormularioNaoAlcancado);
         }
     }
 

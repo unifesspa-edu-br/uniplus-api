@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -80,6 +81,62 @@ public sealed class RegraDeComprovacaoTests
         {
             resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoComFormulariosDiferentes");
         }
+    }
+
+    [Fact(DisplayName = "A regra de documento entrega o formulário que o documento declara")]
+    public void TentarFormularioComum_RegraDeDocumento_DevolveOFormularioDoDocumento()
+    {
+        RegraDeComprovacao regra = RegraDeComprovacao.CriarRegraDeDocumento(Documento(finalidade: FinalidadeFormulario.IsencaoTaxa), 0).Value!;
+
+        regra.TentarFormularioComum(out CodigoDoFormulario? formulario).Should().BeTrue();
+        formulario.Should().Be(FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa));
+    }
+
+    [Fact(DisplayName = "A regra de documento sem formulário declarado tem formulário comum nulo")]
+    public void TentarFormularioComum_DocumentoSemFormulario_DevolveNulo()
+    {
+        RegraDeComprovacao regra = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
+
+        regra.TentarFormularioComum(out CodigoDoFormulario? formulario).Should().BeTrue();
+        formulario.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O grupo cujos documentos são do mesmo formulário entrega esse formulário")]
+    public void TentarFormularioComum_GrupoDoMesmoFormulario_DevolveOFormularioComum()
+    {
+        Guid faseId = Guid.CreateVersion7();
+        RegraDeComprovacao primeira = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: FinalidadeFormulario.Inscricao), 0).Value!;
+        RegraDeComprovacao segunda = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: FinalidadeFormulario.Inscricao), 1).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [primeira, segunda]).Value!;
+
+        grupo.TentarFormularioComum(out CodigoDoFormulario? formulario).Should().BeTrue();
+        formulario.Should().Be(FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao));
+    }
+
+    [Fact(DisplayName = "Documentos de formulários diferentes não têm formulário comum")]
+    public void TentarFormularioComum_ItensDeFormulariosDiferentes_NaoTemFormularioComum()
+    {
+        Guid faseId = Guid.CreateVersion7();
+        RegraDeComprovacao[] itens =
+        [
+            RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: FinalidadeFormulario.Inscricao), 0).Value!,
+            RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: FinalidadeFormulario.IsencaoTaxa), 1).Value!,
+        ];
+
+        RegraDeComprovacao.TentarFormularioComumDosItens(itens, out _).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Um documento sem formulário e outro com formulário não têm formulário comum")]
+    public void TentarFormularioComum_ItemSemFormularioEOutroComFormulario_NaoTemFormularioComum()
+    {
+        Guid faseId = Guid.CreateVersion7();
+        RegraDeComprovacao[] itens =
+        [
+            RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!,
+            RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: FinalidadeFormulario.Inscricao), 1).Value!,
+        ];
+
+        RegraDeComprovacao.TentarFormularioComumDosItens(itens, out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "CriarGrupo recusa ciclo (identidade de referência) — defesa em profundidade de chamador interno")]
