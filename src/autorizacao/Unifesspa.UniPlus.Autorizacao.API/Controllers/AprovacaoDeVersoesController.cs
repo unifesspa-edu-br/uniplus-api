@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -48,6 +49,7 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Retira permissões da versão em vigor, na hora e sem aprovação, com motivo.</summary>
     [HttpPost("perfis/{id:guid}/remocoes")]
+    [EndpointName("RemoverPermissoesDoPerfil")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaRemocaoEmSegundos)]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
@@ -65,6 +67,7 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Aprova uma etapa da aprovação da versão pendente; a permissão é a da etapa.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/aprovacao")]
+    [EndpointName("AprovarVersaoDoPerfil")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -84,6 +87,7 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Recusa uma etapa da aprovação da versão pendente, com motivo; a permissão é a da etapa.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/recusa")]
+    [EndpointName("RecusarVersaoDoPerfil")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -103,6 +107,7 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Cancela a versão pendente, com motivo: quem a criou ou quem mantém perfis.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/cancelamento")]
+    [EndpointName("CancelarVersaoDoPerfil")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -122,9 +127,12 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Lista as versões pendentes que aguardam a etapa da fila; a permissão é a da etapa.</summary>
     [HttpGet("versoes-de-perfil")]
+    [EndpointName("ListarFilaDeVersoes")]
+    [VendorMediaType(Resource = "fila-de-versoes", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<ItemDaFilaDeVersoesDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Fila([FromQuery] string? fila, CancellationToken cancellationToken)
     {
