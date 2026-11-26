@@ -93,12 +93,14 @@ public sealed class VocabularioDoCatalogoTests
     [Fact(DisplayName = "O fato do catálogo para as regras traz os tokens canônicos e os valores com a situação de cada um")]
     public void ParaRegras_TraduzOFatoParaOsTokensDoCatalogo()
     {
-        FatoCandidato global = FatoGlobalComValores("CATALOGO", EscopoFato.Candidato, ("URBANA", true), ("RURAL", false));
+        FatoCandidato global = Fato("CATALOGO", TipoDoDado.Opcao, FonteValoresFato.Catalogo, nome: "Zona de residência");
+        global.AdicionarValorDominio("URBANA", "URBANA", 1, ativo: true).IsSuccess.Should().BeTrue();
+        global.AdicionarValorDominio("RURAL", "RURAL", 2, ativo: false).IsSuccess.Should().BeTrue();
 
         FatoDoCatalogo fato = VocabularioDoCatalogo.ParaRegras([global, Fato("SIM_OU_NAO")])["CATALOGO"];
 
         fato.Should().BeEquivalentTo(new FatoDoCatalogo(
-            "CATALOGO", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, OrigemFato.Declarado, "CAMPO_FORMULARIO:CATALOGO", FonteValoresFato.Catalogo, EscopoFato.Candidato, true,
+            "CATALOGO", "Zona de residência", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, OrigemFato.Declarado, "CAMPO_FORMULARIO:CATALOGO", FonteValoresFato.Catalogo, EscopoFato.Candidato, true,
             [new ValorDoCatalogo("URBANA", true), new ValorDoCatalogo("RURAL", false)], false));
     }
 

@@ -15,10 +15,12 @@ public sealed record ValorDoCatalogo(string Codigo, bool Ativo);
 /// O fato do catálogo como as regras do formulário o conferem, pelos tokens do catálogo. O processo
 /// o lê pelo contrato da Configuração, e o modelo, pela própria entidade.
 /// </summary>
+/// <param name="Nome">O nome legível do fato no catálogo, o que as recusas mostram no lugar do código.</param>
 /// <param name="Valores">Os valores de um categórico de fonte global; vazio nos demais.</param>
 /// <param name="ProtecaoAprovada">Se a proteção de dados aprovou a proteção do fato; sem a aprovação, o fato não aceita vínculo novo.</param>
 public sealed record FatoDoCatalogo(
     string Codigo,
+    string Nome,
     TipoDoDado Dominio,
     QuantidadeDeValores Cardinalidade,
     OrigemFato Origem,
