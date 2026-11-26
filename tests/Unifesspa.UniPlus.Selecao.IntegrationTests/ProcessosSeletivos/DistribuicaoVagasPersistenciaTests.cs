@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -73,7 +75,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     public async Task PersisteERecarrega_InstitucionalSemDemografica()
     {
         ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.IndigenaEQuilombola);
-        ConfiguracaoDistribuicaoVagas oferta = OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [NovaAcaoAfirmativa("IND", 60)]);
+        ConfiguracaoDistribuicaoVagas oferta = OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [NovaAcaoAfirmativa("IND", 60)], semCopiaDaOferta: true);
         processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         await _apoio.GravarAsync(processo);
 
@@ -81,6 +83,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDeDistribuicaoDeVagas.Institucional.Codigo());
         distribuicao.ReferenciaDemografica.Should().BeNull();
+        distribuicao.OfertaCurso.Should().BeNull();
         distribuicao.GrupoAreaEnem.Should().BeNull("curso sem grupo declarado é aceito no rascunho e persiste sem grupo");
     }
 
@@ -123,6 +126,30 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "IND" && v.Quantidade == 25);
     }
 
+    [Fact(DisplayName = "O banco recusa código de oferta fora do formato em inserção direta")]
+    public async Task Inserir_CodigoDaOfertaForaDoFormato_RecusaPeloCheck()
+    {
+        ProcessoSeletivo processo = NovoProcesso(TiposDeProcessoDeTeste.IndigenaEQuilombola);
+        processo.DefinirDistribuicaoVagas([OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [NovaAcaoAfirmativa("IND", 60)])], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        await _apoio.GravarAsync(processo);
+        Func<Task> inserir = () => InserirCodigoInvalidoAsync(processo.Id);
+        PostgresException erro = (await inserir.Should().ThrowAsync<PostgresException>()).Which;
+        erro.SqlState.Should().Be(PostgresErrorCodes.CheckViolation);
+        erro.ConstraintName.Should().Be("ck_configuracoes_de_vagas_oferta_curso_codigo_formato");
+    }
+
+    private async Task InserirCodigoInvalidoAsync(Guid processoId)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        Guid novaChave = Guid.CreateVersion7();
+        await contexto.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO selecao.configuracoes_de_vagas
+            SELECT (jsonb_populate_record(NULL::selecao.configuracoes_de_vagas,
+                to_jsonb(original) || jsonb_build_object('id', {novaChave}, 'oferta_curso_codigo', 'invalido'))).*
+            FROM selecao.configuracoes_de_vagas AS original WHERE processo_seletivo_id = {processoId}
+            """);
+    }
+
     private static ProcessoSeletivo NovoProcesso(TipoProcessoSnapshot tipo) => ProcessoSeletivo.Criar(
         "PS 2026", tipo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
@@ -144,7 +171,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         NovaModalidade(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: quantidade);
 
     private static ConfiguracaoDistribuicaoVagas OfertaInstitucional(
-        Guid ofertaCursoId, int vagasBase, char hashDaRegra, ModalidadeSelecionada[] modalidades, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
+        Guid ofertaCursoId, int vagasBase, char hashDaRegra, ModalidadeSelecionada[] modalidades, (string? Codigo, string? Rotulo)? grupoAreaEnem = null, bool semCopiaDaOferta = false)
     {
         DistribuicaoDeVagasDeclarada declarada = new()
         {
@@ -154,7 +181,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             Modalidades = modalidades,
         };
         Result<ConfiguracaoDistribuicaoVagas> oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, declarada, new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina });
+            ofertaCursoId, declarada, new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = semCopiaDaOferta ? null : OfertaCursoDeTeste.Medicina });
         oferta.IsSuccess.Should().BeTrue(oferta.Error?.Message);
 
         return oferta.Value!;
