@@ -36,6 +36,8 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.ItemDeAvaliacaoRotulo), LimitesDoEnvelope.ItemDeAvaliacaoRotulo, Etapas, "/$defs/itemDeAvaliacao/properties/rotulo", true),
         (nameof(LimitesDoEnvelope.NivelDeAtendimentoRotulo), LimitesDoEnvelope.NivelDeAtendimentoRotulo, Etapas, "/$defs/nivelDeAtendimento/properties/rotulo", true),
         (nameof(LimitesDoEnvelope.TipoBancaCodigo), LimitesDoEnvelope.TipoBancaCodigo, "bancas.schema.json", "/properties/tipoBancaCodigo", true),
+        (nameof(LimitesDoEnvelope.TipoBancaNome), LimitesDoEnvelope.TipoBancaNome, "bancas.schema.json", "/properties/tipoBancaNome", true),
+        (nameof(LimitesDoEnvelope.TipoEtapaNome), LimitesDoEnvelope.TipoEtapaNome, Etapas, "/properties/tipoEtapaNome", true),
         (nameof(LimitesDoEnvelope.CategoriaDocumentoCodigo), LimitesDoEnvelope.CategoriaDocumentoCodigo, "bancas.schema.json", "/properties/categoriasDocumentoCodigos/items", true),
         (nameof(LimitesDoEnvelope.TipoAtoCodigo), LimitesDoEnvelope.TipoAtoCodigo, Comuns, "/$defs/publicacaoPrevista/properties/atoCodigo", true),
         (nameof(LimitesDoEnvelope.RegraCodigo), LimitesDoEnvelope.RegraCodigo, Comuns, "/$defs/referenciaDeRegra/properties/codigo", true),

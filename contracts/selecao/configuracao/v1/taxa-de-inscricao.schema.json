@@ -31,6 +31,15 @@
           "CARENCIA_SOCIOECONOMICA"
         ]
       }
+    },
+    "fundamentosRotulos": {
+      "title": "Rótulos dos fundamentos de isenção",
+      "description": "Rótulos dos fundamentos de isenção da taxa, na mesma ordem dos códigos. Campo só de leitura: ignorado na importação; a referência são os códigos.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "readOnly": true
     }
   }
 }

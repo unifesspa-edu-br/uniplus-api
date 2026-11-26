@@ -16,4 +16,20 @@ internal static class ProjecaoDeParte
             destino[nomeDestino] = valor.DeepClone();
         }
     }
+
+    public static void Juntar(JsonObject destino, string nomeDestino, JsonObject? valor)
+    {
+        if (valor is null)
+        {
+            return;
+        }
+
+        JsonObject junto = destino[nomeDestino] as JsonObject ?? [];
+        foreach ((string nome, JsonNode? item) in valor)
+        {
+            junto[nome] = item?.DeepClone();
+        }
+
+        destino[nomeDestino] = junto;
+    }
 }

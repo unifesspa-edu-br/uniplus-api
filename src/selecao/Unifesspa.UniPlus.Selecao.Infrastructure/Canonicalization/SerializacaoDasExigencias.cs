@@ -92,7 +92,7 @@ internal static class SerializacaoDasExigencias
         return objeto;
     }
 
-    private static JsonArray SerializarExigencias(IReadOnlyCollection<DocumentoExigido> exigencias)
+    internal static JsonArray SerializarExigencias(IReadOnlyCollection<DocumentoExigido> exigencias)
     {
         IOrderedEnumerable<DocumentoExigido> ordenadas = exigencias
             .OrderBy(static e => e.ExigidoNaFaseId)

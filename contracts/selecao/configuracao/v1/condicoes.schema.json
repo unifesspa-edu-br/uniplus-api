@@ -35,6 +35,12 @@
             "NENHUM_DE"
           ]
         },
+        "operadorRotulo": {
+          "title": "Rótulo do operador",
+          "description": "Rótulo do operador de comparação da condição. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "valor": {
           "title": "Valor",
           "description": "Valor de comparação: uma lista para ALGUM_DE e NENHUM_DE, um texto, número ou booleano para os demais. Texto em branco, sozinho ou como item da lista, é recusado.",
@@ -123,6 +129,12 @@
             "QUANDO"
           ]
         },
+        "tipoRotulo": {
+          "title": "Rótulo do tipo da obrigatoriedade",
+          "description": "Rótulo do tipo da obrigatoriedade. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "quando": {
           "title": "Condições",
           "description": "Condição em que a obrigatoriedade QUANDO vale; nas outras o campo é nulo ou ausente.",
@@ -185,6 +197,12 @@
             "INTERNA_EDITAL"
           ]
         },
+        "abrangenciaRotulo": {
+          "title": "Rótulo da abrangência",
+          "description": "Rótulo da esfera da norma. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "situacao": {
           "title": "Situação",
           "description": "Se a referência foi resolvida ou ainda está pendente.",
@@ -192,6 +210,12 @@
             "PENDENTE",
             "RESOLVIDO"
           ]
+        },
+        "situacaoRotulo": {
+          "title": "Rótulo da situação",
+          "description": "Rótulo da situação da referência da base legal. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "observacao": {
           "title": "Observação",

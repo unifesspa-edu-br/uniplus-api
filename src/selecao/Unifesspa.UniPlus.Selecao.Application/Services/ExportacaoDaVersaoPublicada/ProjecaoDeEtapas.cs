@@ -19,6 +19,7 @@ internal static class ProjecaoDeEtapas
     {
         JsonObject origem = (JsonObject)etapa.DeepClone();
         ProjecaoDeParte.Transferir(origem, "tipoEtapaCodigo", etapa["tipoEtapa"]?["codigo"]);
+        ProjecaoDeParte.Transferir(origem, "tipoEtapaNome", etapa["tipoEtapa"]?["nome"]);
         if (etapa["faseCodigo"] is { } fase)
         {
             origem["faseChave"] = chaves.FasePeloCodigo(fase.ToString());

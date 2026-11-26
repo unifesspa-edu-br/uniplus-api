@@ -54,6 +54,12 @@
           "pattern": "^[A-Z]+(_[A-Z]+)*$",
           "maxLength": 60
         },
+        "tipoRotulo": {
+          "title": "Rótulo do tipo da condição",
+          "description": "Rótulo do tipo da condição de homologação. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "edicaoDoExame": {
           "title": "Edição do exame",
           "description": "Ano da edição do exame, de 1998 a 2100.",

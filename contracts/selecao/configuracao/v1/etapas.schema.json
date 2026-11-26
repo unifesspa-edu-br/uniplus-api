@@ -37,10 +37,23 @@
         "AMBAS"
       ]
     },
+    "caraterRotulo": {
+      "title": "Rótulo do caráter",
+      "description": "Rótulo do caráter da etapa. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "tipoEtapaCodigo": {
       "title": "Tipo de etapa",
       "description": "Código do tipo de etapa no catálogo de tipos de etapa.",
       "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
+    },
+    "tipoEtapaNome": {
+      "title": "Nome do tipo de etapa",
+      "description": "Nome do tipo de etapa, guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é o código.",
+      "type": "string",
+      "maxLength": 200,
+      "readOnly": true
     },
     "peso": {
       "title": "Peso",
@@ -73,6 +86,12 @@
         "OBJETIVA",
         "HUMANA"
       ]
+    },
+    "formaDeAvaliacaoRotulo": {
+      "title": "Rótulo da forma de avaliação",
+      "description": "Rótulo da forma de avaliação da etapa. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
     },
     "regraDeApuracaoDaAvaliacao": {
       "title": "Regra de consolidação",
@@ -159,6 +178,15 @@
       "title": "Tipos de decisão da etapa",
       "description": "Tipos de decisão que a etapa toma e para os quais o processo escolhe motivos.",
       "$ref": "comuns.schema.json#/$defs/tiposDeDecisao"
+    },
+    "tiposDeDecisaoRotulos": {
+      "title": "Rótulos dos tipos de decisão da etapa",
+      "description": "Rótulos dos tipos de decisão da etapa, na mesma ordem dos códigos. Campo só de leitura: ignorado na importação; a referência são os códigos.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "readOnly": true
     }
   },
   "$defs": {
@@ -179,6 +207,12 @@
             "PUBLICACAO_DO_ATO",
             "CIENCIA_INDIVIDUAL"
           ]
+        },
+        "eventoInicialDoPrazoRotulo": {
+          "title": "Rótulo do evento que inicia o prazo",
+          "description": "Rótulo do evento que inicia o prazo do recurso. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         }
       },
       "unevaluatedProperties": false

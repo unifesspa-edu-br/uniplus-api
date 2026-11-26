@@ -52,6 +52,12 @@
         "IMPORTACAO_EXTERNA"
       ]
     },
+    "origemCandidatosRotulo": {
+      "title": "Rótulo da origem dos candidatos",
+      "description": "Rótulo da origem dos candidatos do processo. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "localidadeCodigoIbge": {
       "title": "Localidade do processo",
       "description": "Código IBGE do município (7 dígitos) que rege a contagem de prazos. O nome e a UF vêm do cadastro de localidades.",

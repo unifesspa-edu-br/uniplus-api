@@ -21,6 +21,12 @@
         "FAIXA_DE_DATA"
       ]
     },
+    "tipoRotulo": {
+      "title": "Rótulo do tipo da restrição",
+      "description": "Rótulo do tipo da restrição. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "minimo": {
       "title": "Mínimo",
       "description": "Limite inferior da faixa numérica (até quatro casas decimais) ou do tamanho do texto (inteiro). Usado nos tipos FAIXA_NUMERICA e TAMANHO_TEXTO.",

@@ -22,6 +22,12 @@
             "DATA_ESPECIFICA"
           ]
         },
+        "tipoRotulo": {
+          "title": "Rótulo do tipo de referência",
+          "description": "Rótulo do tipo de referência temporal dos dados. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "data": {
           "title": "Data específica",
           "description": "Data da referência, no formato AAAA-MM-DD. Usada quando o tipo é DATA_ESPECIFICA.",

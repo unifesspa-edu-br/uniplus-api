@@ -26,14 +26,22 @@ internal static class ProjecaoDeRecursos
         ProjecaoDeParte.Transferir(copia, "regraCodigo", recurso["regra"]?["codigo"]);
         ProjecaoDeParte.Transferir(copia, "regraVersao", recurso["regra"]?["versao"]);
         if (recurso["parametros"] is JsonObject parametros)
-        {
-            foreach ((string nome, JsonNode? valor) in parametros)
-                ProjecaoDeParte.Transferir(copia, nome, valor);
-        }
+            TransferirParametros(copia, parametros);
         AcrescentarReferencia(copia, recurso, lugar);
         if (recurso["procedimentos"] is JsonArray procedimentos)
             copia["procedimentosDeRecurso"] = new JsonArray([.. procedimentos.OfType<JsonObject>().Select(item => PrepararProcedimento(item, chaves))]);
         return copia;
+    }
+
+    private static void TransferirParametros(JsonObject copia, JsonObject parametros)
+    {
+        foreach ((string nome, JsonNode? valor) in parametros)
+        {
+            if (nome == "contexto")
+                ProjecaoDeParte.Juntar(copia, nome, valor as JsonObject);
+            else
+                ProjecaoDeParte.Transferir(copia, nome, valor);
+        }
     }
 
     private static void AcrescentarReferencia(JsonObject copia, JsonObject recurso, JsonObject lugar)
