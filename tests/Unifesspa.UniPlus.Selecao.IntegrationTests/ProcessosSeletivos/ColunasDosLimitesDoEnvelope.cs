@@ -65,8 +65,8 @@ internal static class ColunasDosLimitesDoEnvelope
         (nameof(LimitesDoEnvelope.TituloPaginaFormulario), typeof(PaginaDoFormulario), nameof(PaginaDoFormulario.Titulo)),
         (nameof(LimitesDoEnvelope.TextoPaginaFormulario), typeof(PaginaDoFormulario), nameof(PaginaDoFormulario.Descricao)),
         (nameof(LimitesDoEnvelope.TextoPaginaFormulario), typeof(PaginaDoFormulario), nameof(PaginaDoFormulario.Aviso)),
-        (nameof(LimitesDoEnvelope.CodigoModeloDeFormulario), typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemCodigo)),
-        (nameof(LimitesDoEnvelope.NomeModeloDeFormulario), typeof(FormularioProcesso), nameof(FormularioProcesso.ModeloOrigemNome)),
+        (nameof(LimitesDoEnvelope.CodigoModeloDeFormulario), typeof(FormularioProcesso), CaminhoDaOrigemDoModelo(nameof(ModeloDeOrigem.Codigo))),
+        (nameof(LimitesDoEnvelope.NomeModeloDeFormulario), typeof(FormularioProcesso), CaminhoDaOrigemDoModelo(nameof(ModeloDeOrigem.Nome))),
         (nameof(LimitesDoEnvelope.CodigoTermoExigido), typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Codigo)),
         (nameof(LimitesDoEnvelope.CodigoDoTermoNoCatalogo), typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.TermoCodigo)),
         (nameof(LimitesDoEnvelope.NomeDoTermo), typeof(TermoExigidoFormulario), nameof(TermoExigidoFormulario.Nome)),
@@ -95,4 +95,6 @@ internal static class ColunasDosLimitesDoEnvelope
     ];
 
     private static string CaminhoDaCopiaDoTipo(string propriedade) => $"{nameof(BancaRequerida.Tipo)}.{propriedade}";
+
+    private static string CaminhoDaOrigemDoModelo(string propriedade) => $"{nameof(FormularioProcesso.ModeloDeOrigem)}.{propriedade}";
 }

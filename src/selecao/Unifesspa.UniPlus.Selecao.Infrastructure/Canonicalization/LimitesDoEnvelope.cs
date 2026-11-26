@@ -237,11 +237,11 @@ public static class LimitesDoEnvelope
     /// <summary><c>DocumentoExigido.Modelo.NomeArquivo</c>.</summary>
     public const int NomeArquivoDoModelo = Domain.Entities.ModeloDeDocumento.NomeArquivoMaxLength;
 
-    /// <summary><c>FormularioProcesso.ModeloOrigemCodigo</c>.</summary>
-    public const int CodigoModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemCodigoMaxLength;
+    /// <summary><c>FormularioProcesso.ModeloDeOrigem.Codigo</c>.</summary>
+    public const int CodigoModeloDeFormulario = ModeloDeOrigem.CodigoMaxLength;
 
-    /// <summary><c>FormularioProcesso.ModeloOrigemNome</c>.</summary>
-    public const int NomeModeloDeFormulario = Domain.Entities.FormularioProcesso.ModeloOrigemNomeMaxLength;
+    /// <summary><c>FormularioProcesso.ModeloDeOrigem.Nome</c>.</summary>
+    public const int NomeModeloDeFormulario = ModeloDeOrigem.NomeMaxLength;
 
     // UNI-REQ-0086 — termos exigidos pelo formulário, copiados da versão do catálogo.
     /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>

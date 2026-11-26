@@ -51,7 +51,8 @@ public sealed class AplicarModeloFormularioEndpointTests
 
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
-        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloOrigemId.Should().Be(modeloId);
+        processo.FormularioDe(FinalidadeFormulario.Inscricao)!.ModeloDeOrigem!.Id.Should().Be(modeloId);
+        ExigirItensLigadosAoFormularioDaInscricao(processo);
     }
 
     [Fact(DisplayName = "O fato da habilitação passa para a inscrição na mesma gravação, sem colidir nos índices únicos")]
@@ -80,7 +81,16 @@ public sealed class AplicarModeloFormularioEndpointTests
         reaplicado.StatusCode.Should().Be(HttpStatusCode.OK, await reaplicado.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
         processo.GruposColetados.Should().ContainSingle().Which.Subitens.Should().ContainSingle().Which.FatoCodigo.Should().Be("MAIOR_IDADE");
+        ExigirItensLigadosAoFormularioDaInscricao(processo);
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("QUILOMBOLA");
+    }
+
+    private static void ExigirItensLigadosAoFormularioDaInscricao(ProcessoSeletivo processo)
+    {
+        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
+        processo.Campos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Should().NotBeEmpty()
+            .And.OnlyContain(f => f.FormularioId == formularioId);
+        processo.GruposColetados.Should().OnlyContain(g => g.FormularioId == formularioId);
     }
 
     private static async Task<string?> FinalidadeDoRelatorioAsync(HttpResponseMessage resposta)

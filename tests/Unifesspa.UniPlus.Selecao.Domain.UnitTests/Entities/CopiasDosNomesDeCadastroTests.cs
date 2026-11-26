@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CopiasDosNomesDeCadastroTests
@@ -32,11 +33,22 @@ public sealed class CopiasDosNomesDeCadastroTests
     }
 
     [Fact]
-    public void Criar_FormularioSemModelo_NaoGuardaNome()
+    public void Criar_FormularioSemModelo_NaoTemOrigem()
     {
-        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao), modeloOrigemNome: "Nome ignorado");
+        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao));
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.ModeloOrigemNome.Should().BeNull();
+        resultado.Value!.ModeloDeOrigem.Should().BeNull();
+    }
+
+    [Fact]
+    public void Criar_FormularioComModelo_CopiaONomeSemEspacosNasPontas()
+    {
+        ModeloDeOrigem origem = new(Guid.CreateVersion7(), "MODELO_FICTICIO", "  Modelo fictício  ");
+
+        Result<FormularioProcesso> resultado = FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Inscricao), origem);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.ModeloDeOrigem!.Nome.Should().Be("Modelo fictício");
     }
 }

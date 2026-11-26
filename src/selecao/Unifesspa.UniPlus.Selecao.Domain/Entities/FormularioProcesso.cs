@@ -1,10 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O formulário do processo para uma finalidade (UNI-REQ-0144): a fase do cronograma em que é
@@ -14,9 +17,6 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 {
-    public const int ModeloOrigemCodigoMaxLength = 60;
-    public const int ModeloOrigemNomeMaxLength = 200;
-
     /// <summary>O código canônico da fase de habilitação no catálogo de fases.</summary>
     public const string CodigoFaseHabilitacao = "HABILITACAO";
 
@@ -25,6 +25,12 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     public Guid ProcessoSeletivoId { get; private set; }
 
     public FinalidadeFormulario Finalidade { get; private set; }
+
+    /// <summary>O código que identifica o formulário dentro do processo; não muda depois de criado.</summary>
+    public CodigoDoFormulario Codigo { get; private set; } = null!;
+
+    /// <summary>Se o formulário é obrigatório para o candidato.</summary>
+    public bool Obrigatorio { get; private set; }
 
     /// <summary>
     /// A fase do cronograma do processo em que o formulário é respondido. O rascunho pode ainda não
@@ -35,11 +41,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     public string? Titulo { get; private set; }
 
     /// <summary>O modelo de que o formulário partiu, quando partiu de um; a cópia é a que vale.</summary>
-    public Guid? ModeloOrigemId { get; private set; }
-
-    public string? ModeloOrigemCodigo { get; private set; }
-
-    public string? ModeloOrigemNome { get; private set; }
+    public ModeloDeOrigem? ModeloDeOrigem { get; private set; }
 
     /// <summary>
     /// O que acontece com quem não envia o formulário. Ausente, a falta de envio não tem consequência própria e
@@ -56,17 +58,13 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     /// regras do formulário compartilhadas com o modelo. A fase é conferida pelo processo, que tem o
     /// cronograma.
     /// </summary>
-    /// <param name="modeloOrigemId">O modelo de que o formulário partiu, quando partiu de um.</param>
-    /// <param name="modeloOrigemCodigo">O código desse modelo.</param>
-    /// <param name="modeloOrigemNome">O nome desse modelo.</param>
+    /// <param name="modeloDeOrigem">O modelo de que o formulário partiu, quando partiu de um.</param>
     public static Result<FormularioProcesso> Criar(
         FinalidadeFormulario? finalidade,
         Guid? faseId,
         string? titulo,
         IReadOnlyList<PaginaDoFormulario> paginas,
-        Guid? modeloOrigemId = null,
-        string? modeloOrigemCodigo = null,
-        string? modeloOrigemNome = null)
+        ModeloDeOrigem? modeloDeOrigem = null)
     {
         ArgumentNullException.ThrowIfNull(paginas);
         List<FieldError> erros = ValidarForma(finalidade, titulo, paginas);
@@ -75,21 +73,21 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
             return Result<FormularioProcesso>.ValidationFailure(erros);
         }
 
-        FormularioProcesso formulario = Novo(finalidade!.Value, faseId, titulo, modeloOrigemId, modeloOrigemCodigo, modeloOrigemNome);
+        FormularioProcesso formulario = Novo(finalidade!.Value, faseId, titulo, modeloDeOrigem);
         formulario.AdicionarPaginas(paginas);
         return Result<FormularioProcesso>.Success(formulario);
     }
 
-    private static FormularioProcesso Novo(
-        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, Guid? modeloOrigemId, string? modeloOrigemCodigo, string? modeloOrigemNome) => new()
-        {
-            Finalidade = finalidade,
-            FaseId = faseId == Guid.Empty ? null : faseId,
-            Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
-            ModeloOrigemId = modeloOrigemId,
-            ModeloOrigemCodigo = modeloOrigemId is null ? null : modeloOrigemCodigo,
-            ModeloOrigemNome = modeloOrigemId is null ? null : modeloOrigemNome?.Trim(),
-        };
+    // Enquanto a finalidade identifica o formulário, o código e a obrigatoriedade derivam dela, num lugar só.
+    private static FormularioProcesso Novo(FinalidadeFormulario finalidade, Guid? faseId, string? titulo, ModeloDeOrigem? modeloDeOrigem) => new()
+    {
+        Finalidade = finalidade,
+        Codigo = CodigoDoFormulario.Criar(finalidade.Codigo()).Value!,
+        Obrigatorio = CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade).Obrigatorio,
+        FaseId = faseId == Guid.Empty ? null : faseId,
+        Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
+        ModeloDeOrigem = modeloDeOrigem,
+    };
 
     private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas)
     {
@@ -116,6 +114,9 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         item.Finalidade == Finalidade && item.GrupoColetadoId is null && item.SemPrecondicao && item.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre
         && !_paginas.Any(e => string.Equals(e.Codigo, item.PaginaCodigo, StringComparison.Ordinal) && e.Exibicao is not null);
 
+    /// <summary>O formulário no que as regras de alcance e de código conferem.</summary>
+    public FormularioDeclarado Declarado => new(Codigo, FaseId, Obrigatorio);
+
     /// <summary>As páginas na forma que a estrutura do formulário confere.</summary>
     public IReadOnlyList<PaginaEstrutura> Estrutura => [.. _paginas.Select(static e => e.Estrutura)];
 
@@ -137,12 +138,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
-    internal void RegistrarOrigem(Guid modeloId, string modeloCodigo, string modeloNome)
-    {
-        ModeloOrigemId = modeloId;
-        ModeloOrigemCodigo = modeloCodigo;
-        ModeloOrigemNome = modeloNome.Trim();
-    }
+    internal void RegistrarOrigem(ModeloDeOrigem modeloDeOrigem) => ModeloDeOrigem = modeloDeOrigem;
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 }

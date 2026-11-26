@@ -25,6 +25,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.Property(g => g.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
+        builder.Property(g => g.FormularioId).HasComment("Identificador do formulário em que o grupo é solicitado; nulo enquanto o grupo só se liga ao formulário pela finalidade.");
         builder.Property(g => g.Codigo).HasComment("Código que identifica o item no processo.");
         builder.Property(g => g.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(g => g.PaginaCodigo).HasComment("Código da página do formulário, quando houver.");
@@ -71,6 +72,12 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.HasIndex(g => new { g.ProcessoSeletivoId, g.Codigo })
             .IsUnique()
             .HasDatabaseName("ux_grupos_dos_formularios_processo_codigo");
+
+        builder.HasOne<FormularioProcesso>()
+            .WithMany()
+            .HasForeignKey(g => g.FormularioId)
+            .HasConstraintName("fk_grupos_dos_formularios_formulario_processo")
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(g => g.Subitens)
             .WithOne()

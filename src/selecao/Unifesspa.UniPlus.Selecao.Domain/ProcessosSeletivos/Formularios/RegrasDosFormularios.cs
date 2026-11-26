@@ -45,12 +45,11 @@ public static class RegrasDosFormularios
             : RegrasDaColeta.ConferirFatosColetados(configuracao, novo, finalidade, itensIniciais, []);
         return itens.IsFailure
             ? Result<PlanoDoFormulario>.ValidationFailure(itens.Errors)
-            : Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(novo, existente, MudancaDaDefinicao(configuracao, finalidade, novo, existente, itensIniciais)));
+            : Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(novo, existente, MudancaDaDefinicao(configuracao, novo, existente, itensIniciais)));
     }
 
     private static MudancaDaConfiguracao MudancaDaDefinicao(
         ConfiguracaoDeclarada configuracao,
-        FinalidadeFormulario finalidade,
         FormularioProcesso novo,
         FormularioProcesso? existente,
         IReadOnlyList<FatoColetado>? itensIniciais)
@@ -60,7 +59,7 @@ public static class RegrasDosFormularios
             return new MudancaDaConfiguracao();
         }
 
-        MudancaDaConfiguracao itens = itensIniciais is null ? new MudancaDaConfiguracao() : RegrasDaColeta.PlanejarTroca(configuracao, finalidade, itensIniciais, []);
+        MudancaDaConfiguracao itens = itensIniciais is null ? new MudancaDaConfiguracao() : RegrasDaColeta.PlanejarTroca(configuracao, novo, itensIniciais, []);
         return itens with { Formularios = Troca.Acrescentando([novo]) };
     }
 
@@ -194,7 +193,7 @@ public static class RegrasDosFormularios
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (configuracao.Coleta.FormularioDe(finalidade) is null)
+        if (configuracao.Coleta.FormularioDe(finalidade) is not { } formulario)
         {
             return Result<MudancaDaConfiguracao>.Failure(FormularioInexistente(finalidade));
         }
@@ -202,7 +201,7 @@ public static class RegrasDosFormularios
         List<FieldError> erros = RecusasDosTermos(configuracao, finalidade, termos);
         return erros.Count > 0
             ? Result<MudancaDaConfiguracao>.ValidationFailure(erros)
-            : Result<MudancaDaConfiguracao>.Success(MudancaDosTermos(configuracao, finalidade, termos));
+            : Result<MudancaDaConfiguracao>.Success(MudancaDosTermos(configuracao, formulario, termos));
     }
 
     private static List<FieldError> RecusasDosTermos(
@@ -217,12 +216,12 @@ public static class RegrasDosFormularios
     }
 
     private static MudancaDaConfiguracao MudancaDosTermos(
-        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+        ConfiguracaoDeclarada configuracao, FormularioProcesso formulario, IReadOnlyList<TermoExigidoFormulario> termos)
     {
-        MudancaDaConfiguracao mudanca = new() { TermosExigidos = Troca.Substituindo(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == finalidade), termos) };
+        MudancaDaConfiguracao mudanca = new() { TermosExigidos = Troca.Substituindo(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade), termos) };
         foreach (TermoExigidoFormulario termo in termos)
         {
-            termo.VincularFinalidade(finalidade);
+            termo.VincularFormulario(formulario);
         }
 
         return mudanca;

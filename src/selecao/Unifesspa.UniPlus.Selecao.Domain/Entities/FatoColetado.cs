@@ -133,6 +133,9 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// <summary>A resposta que impede a inscrição e a mensagem ao candidato; nulo quando nenhuma impede.</summary>
     public Impedimento? Impedimento { get; private set; }
 
+    /// <summary>O formulário que produz o fato; atribuído pelo processo ao definir os itens.</summary>
+    public Guid? FormularioId { get; private set; }
+
     /// <summary>A finalidade do formulário que produz o fato; atribuída pelo processo ao definir os itens.</summary>
     public FinalidadeFormulario? Finalidade { get; private set; }
 
@@ -307,7 +310,11 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
     internal void VincularGrupo(Guid grupoColetadoId) => GrupoColetadoId = grupoColetadoId;
 
-    internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
+    internal void VincularFormulario(FormularioProcesso formulario)
+    {
+        FormularioId = formulario.Id;
+        Finalidade = formulario.Finalidade;
+    }
 
     /// <summary>
     /// A pré-condição de exibição na forma avaliável, ou <see langword="null"/> quando o fato é

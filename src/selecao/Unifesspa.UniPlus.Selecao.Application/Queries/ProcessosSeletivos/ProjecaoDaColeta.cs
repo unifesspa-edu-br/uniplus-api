@@ -48,7 +48,7 @@ internal static class ProjecaoDaColeta
         CodigoComRotulo<FinalidadeFormulario>.De(formulario.Finalidade),
         formulario.FaseId,
         formulario.Titulo,
-        formulario.ModeloOrigemId is { } modeloId ? new ModeloDeOrigemDto(modeloId, formulario.ModeloOrigemCodigo!) : null,
+        formulario.ModeloDeOrigem is { } origem ? new ModeloDeOrigemDto(origem.Id, origem.Codigo) : null,
         [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(ProjetarPagina)],
         ProjetarColeta(processo, formulario.Finalidade),
         [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())])

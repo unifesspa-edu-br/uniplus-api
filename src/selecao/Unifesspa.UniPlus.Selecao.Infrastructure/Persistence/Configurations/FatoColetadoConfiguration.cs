@@ -30,6 +30,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
 
         builder.Property(f => f.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
         builder.Property(f => f.GrupoColetadoId).HasComment("Identificador do grupo repetível ao qual o dado pertence, quando houver.");
+        builder.Property(f => f.FormularioId).HasComment("Identificador do formulário em que o dado é solicitado; nulo enquanto o dado só se liga ao formulário pela finalidade.");
         builder.Property(f => f.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
         builder.Property(f => f.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(f => f.Rotulo).HasComment("Texto apresentado à pessoa candidata.");
@@ -107,6 +108,12 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.HasIndex(f => new { f.GrupoColetadoId, f.Ordem })
             .IsUnique()
             .HasDatabaseName("ux_dados_dos_formularios_grupo_ordem");
+
+        builder.HasOne<FormularioProcesso>()
+            .WithMany()
+            .HasForeignKey(f => f.FormularioId)
+            .HasConstraintName("fk_dados_dos_formularios_formulario_processo")
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(f => f.Precondicoes)
             .WithOne()

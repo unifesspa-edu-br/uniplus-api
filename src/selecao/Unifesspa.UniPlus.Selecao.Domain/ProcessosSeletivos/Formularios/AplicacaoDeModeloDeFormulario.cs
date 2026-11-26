@@ -24,7 +24,7 @@ internal static class AplicacaoDeModeloDeFormulario
         FinalidadeFormulario finalidade = copia.Finalidade;
         FormularioProcesso? existente = configuracao.Coleta.FormularioDe(finalidade);
         Result<FormularioProcesso> formulario = FormularioProcesso.Criar(
-            finalidade, existente?.FaseId, copia.Titulo, copia.Paginas, copia.ModeloId, copia.ModeloCodigo, copia.ModeloNome);
+            finalidade, existente?.FaseId, copia.Titulo, copia.Paginas, copia.Origem);
         if (formulario.IsFailure)
         {
             return Result<PlanoDaCopiaDoModelo>.ValidationFailure(formulario.Errors);
@@ -45,25 +45,26 @@ internal static class AplicacaoDeModeloDeFormulario
             return Result<PlanoDaCopiaDoModelo>.ValidationFailure(erros);
         }
 
-        VincularFinalidadeAosItens(copia);
+        // Substituir mantém a identidade do formulário existente; só sem ele o formulário novo é quem fica.
+        VincularAoFormulario(copia, existente ?? novo);
         return ConferirEstadoFinal(configuracao, copia, novo, existente, daCopia);
     }
 
-    private static void VincularFinalidadeAosItens(CopiaDeModeloDeFormulario copia)
+    private static void VincularAoFormulario(CopiaDeModeloDeFormulario copia, FormularioProcesso formulario)
     {
         foreach (FatoColetado item in copia.Itens)
         {
-            item.VincularFinalidade(copia.Finalidade);
+            item.VincularFormulario(formulario);
         }
 
         foreach (GrupoColetado grupo in copia.Grupos)
         {
-            grupo.VincularFinalidade(copia.Finalidade);
+            grupo.VincularFormulario(formulario);
         }
 
         foreach (TermoExigidoFormulario termo in copia.Termos)
         {
-            termo.VincularFinalidade(copia.Finalidade);
+            termo.VincularFormulario(formulario);
         }
     }
 
