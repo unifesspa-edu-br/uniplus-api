@@ -53,6 +53,7 @@
     "descricao": "Configura, publica e acompanha os processos seletivos da unidade proprietária, sem acesso aos dados dos candidatos.",
     "alcance": "UNIDADE",
     "permissoes": [
+      "configuracao:modelos-formulario:consultar-na-unidade",
       "selecao:processos:acompanhar",
       "selecao:processos:configurar",
       "selecao:processos:publicar"

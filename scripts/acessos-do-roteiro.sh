@@ -57,7 +57,7 @@ PERMISSOES_INSTITUCIONAIS='[
     "configuracao:modelos-formulario:consultar"
 ]'
 PERFIL_DA_UNIDADE="Roteiro de teste — processo seletivo da unidade"
-PERMISSOES_DA_UNIDADE='["selecao:processos:configurar", "selecao:processos:publicar"]'
+PERMISSOES_DA_UNIDADE='["configuracao:modelos-formulario:consultar-na-unidade", "selecao:processos:configurar", "selecao:processos:publicar"]'
 
 # Explica o 403 de uma rota do roteiro: a concessão que falta e onde ela nasce.
 explicar_recusa_de_acesso() {
