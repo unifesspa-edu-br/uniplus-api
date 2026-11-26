@@ -142,7 +142,7 @@ public sealed record DiaNaoUtilCongelado
         string normalizada = uf.ToUpperInvariant();
         if (!ReferenciaCidadeGeo.EhUfValida(normalizada))
         {
-            return Falha(DiaNaoUtilCongeladoErrorCodes.UfInvalida, $"UF '{uf}' não é uma unidade federativa reconhecida.");
+            return Falha(DiaNaoUtilCongeladoErrorCodes.UfInvalida, $"UF '{normalizada}' não é uma unidade federativa reconhecida.");
         }
 
         return Result<DiaNaoUtilCongelado>.Success(

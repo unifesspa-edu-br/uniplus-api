@@ -19,4 +19,16 @@ public sealed class DiaNaoUtilCongeladoTests
         resultado.Error!.Code.Should().Be(DiaNaoUtilCongeladoErrorCodes.AbrangenciaInvalida);
         resultado.Error.Message.Should().NotContain(abrangencia);
     }
+
+    [Theory]
+    [InlineData("zz", "ZZ")]
+    [InlineData("ZZ", "ZZ")]
+    [InlineData("xy", "XY")]
+    public void Criar_UfEstadualInvalida_CitaASiglaEmMaiusculas(string recebida, string esperada)
+    {
+        Result<DiaNaoUtilCongelado> resultado = DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "ESTADUAL", null, null, recebida);
+
+        resultado.Error!.Code.Should().Be(DiaNaoUtilCongeladoErrorCodes.UfInvalida);
+        resultado.Error.Message.Should().Be($"UF '{esperada}' não é uma unidade federativa reconhecida.");
+    }
 }
