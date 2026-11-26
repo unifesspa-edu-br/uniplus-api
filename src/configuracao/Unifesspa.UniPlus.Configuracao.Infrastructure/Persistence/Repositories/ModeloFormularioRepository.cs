@@ -7,7 +7,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 public sealed class ModeloFormularioRepository : IModeloFormularioRepository
 {
@@ -30,25 +29,11 @@ public sealed class ModeloFormularioRepository : IModeloFormularioRepository
         int limit,
         PaginationDirection direction,
         string? tipoProcessoCodigo,
-        FinalidadeFormulario? finalidade,
+        bool? serveAFaseDeInscricao,
         bool? ativo,
         CancellationToken cancellationToken)
     {
-        IQueryable<ModeloFormulario> consulta = _dbContext.ModelosFormulario.AsNoTracking();
-        if (tipoProcessoCodigo is not null)
-        {
-            consulta = consulta.Where(m => m.TipoProcessoCodigo == null || m.TipoProcessoCodigo == tipoProcessoCodigo);
-        }
-
-        if (finalidade is { } finalidadeFiltro)
-        {
-            consulta = consulta.Where(m => m.Finalidade == finalidadeFiltro);
-        }
-
-        if (ativo is { } ativoFiltro)
-        {
-            consulta = consulta.Where(m => m.Ativo == ativoFiltro);
-        }
+        IQueryable<ModeloFormulario> consulta = Filtrar(_dbContext.ModelosFormulario.AsNoTracking(), tipoProcessoCodigo, serveAFaseDeInscricao, ativo);
 
         CursorKeysetPage<ModeloFormulario> page = await CursorKeyset
             .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
@@ -69,5 +54,15 @@ public sealed class ModeloFormularioRepository : IModeloFormularioRepository
     {
         ArgumentNullException.ThrowIfNull(codigo);
         return _dbContext.ModelosFormulario.AsNoTracking().AnyAsync(m => m.Codigo == codigo, cancellationToken);
+    }
+
+    private static IQueryable<ModeloFormulario> Filtrar(
+        IQueryable<ModeloFormulario> consulta, string? tipoProcessoCodigo, bool? serveAFaseDeInscricao, bool? ativo)
+    {
+        IQueryable<ModeloFormulario> filtrada = tipoProcessoCodigo is null
+            ? consulta
+            : consulta.Where(m => m.TipoProcessoCodigo == null || m.TipoProcessoCodigo == tipoProcessoCodigo);
+        filtrada = serveAFaseDeInscricao is { } serve ? filtrada.Where(m => m.ServeAFaseDeInscricao == serve) : filtrada;
+        return ativo is { } ativoFiltro ? filtrada.Where(m => m.Ativo == ativoFiltro) : filtrada;
     }
 }

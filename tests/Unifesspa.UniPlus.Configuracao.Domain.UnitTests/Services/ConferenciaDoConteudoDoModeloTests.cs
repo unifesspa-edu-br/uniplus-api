@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
 
 /// <summary>
@@ -25,8 +26,10 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
     private static ConteudoDoModelo Conteudo(params ItemDoModelo[] itens) => new("Habilitação", [Pagina(), Revisao], itens, [], [], []);
 
-    private static List<FieldError> Conferir(ConteudoDoModelo conteudo, FinalidadeFormulario? finalidade = FinalidadeFormulario.Habilitacao) =>
-        ConferenciaDoConteudoDoModelo.Conferir(finalidade, conteudo, SemDerivacoes);
+    private static List<FieldError> Conferir(ConteudoDoModelo conteudo) => Conferir(conteudo, DeOutraFaseObrigatoria);
+
+    private static List<FieldError> Conferir(ConteudoDoModelo conteudo, DeclaracaoDoFormulario? declaracao) =>
+        ConferenciaDoConteudoDoModelo.Conferir(declaracao, conteudo, SemDerivacoes);
 
     private static string[] Campos(IEnumerable<FieldError> erros) => [.. erros.Select(static e => e.Field ?? "(sem campo)")];
 
@@ -50,8 +53,8 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "O conteúdo e as derivações são obrigatórios")]
     public void ConteudoOuDerivacoesNulos_Lanca()
     {
-        Action semConteudo = () => ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, null!, SemDerivacoes);
-        Action semDerivacoes = () => ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, Conteudo(), null!);
+        Action semConteudo = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, null!, SemDerivacoes);
+        Action semDerivacoes = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, Conteudo(), null!);
 
         semConteudo.Should().Throw<ArgumentNullException>();
         semDerivacoes.Should().Throw<ArgumentNullException>();
@@ -133,7 +136,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO").ComImpedimento(new Impedimento(Quando("CERTIFICADO"), "Já possui o certificado.")));
 
         Campos(Conferir(conteudo)).Should().Equal("conteudo.itens[0].regras.impedimento");
-        Conferir(conteudo, FinalidadeFormulario.Inscricao).Should().BeEmpty();
+        Conferir(conteudo, DaInscricao).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A forma do grupo, o candidato como membro e a forma de cada campo saem nessa ordem, cada um no caminho do grupo")]
@@ -169,7 +172,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "O modelo de inscrição não tem pressupostos")]
     public void Pressupostos_NaInscricao_Recusa()
     {
-        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Pressupostos = ["SEXO", string.Empty] }, FinalidadeFormulario.Inscricao);
+        List<FieldError> erros = Conferir(Conteudo(Item("CERTIFICADO")) with { Pressupostos = ["SEXO", string.Empty] }, DaInscricao);
 
         Campos(erros).Should().Equal("conteudo.pressupostos");
         Codigos(erros).Should().Equal(ModeloFormularioErrorCodes.PressupostoNaInscricao);
@@ -208,9 +211,9 @@ public sealed class ConferenciaDoConteudoDoModeloTests
             .Should().Equal(EstruturaFormularioErrorCodes.TituloTamanho);
     }
 
-    [Fact(DisplayName = "Com a finalidade recusada no cadastro, a estrutura que depende dela não é conferida")]
-    public void Estrutura_NaoEConferidaSemFinalidade() =>
-        Conferir(Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null }), finalidade: null).Should().BeEmpty();
+    [Fact(DisplayName = "Com a declaração recusada no cadastro, a estrutura que depende dela não é conferida")]
+    public void Estrutura_NaoEConferidaSemDeclaracao() =>
+        Conferir(Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null }), declaracao: null).Should().BeEmpty();
 
     [Fact(DisplayName = "A estrutura das paginas recusada impede a conferência da posição dos itens")]
     public void Estrutura_PaginaRecusada_ImpedeAConferenciaDosItens()

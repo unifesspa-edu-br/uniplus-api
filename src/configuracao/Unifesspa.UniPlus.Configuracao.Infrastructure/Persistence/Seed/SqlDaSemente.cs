@@ -49,7 +49,7 @@ internal static class SqlDaSemente
 
     /// <summary>
     /// O comando que grava o modelo, ativo. O conteúdo é serializado pelo mesmo conversor que a
-    /// aplicação usa para ler; quem o constrói confere estrutura, blocos por finalidade e grafo das
+    /// aplicação usa para ler; quem o constrói confere estrutura, blocos pela declaração e grafo das
     /// regras por <see cref="ModeloFormulario.Criar"/>. O modelo é pulado quando algum modelo tem o mesmo
     /// identificador ou o mesmo código, ou quando um termo ou uma versão que ele cita não existe, a versão
     /// não é do termo ou o termo foi removido: a mesma exigência que a escrita do modelo faz.
@@ -57,8 +57,8 @@ internal static class SqlDaSemente
     public static ComandoDaSemente ComandoDoModelo(Guid id, ModeloFormulario modelo, DeclaracaoDaSemente declaracao) =>
         new(InserirQuando("modelos_formulario", "id", CondicaoDoModelo(id, modelo),
                 ("id", Uuid(id)), ("codigo", Texto(modelo.Codigo)), ("nome", Texto(modelo.Nome)),
-                ("descricao", Texto(modelo.Descricao)), ("finalidade", Texto(modelo.Finalidade.Codigo())),
-                ("tipo_processo_codigo", Texto(modelo.TipoProcessoCodigo)),
+                ("descricao", Texto(modelo.Descricao)), ("serve_a_fase_de_inscricao", Logico(modelo.ServeAFaseDeInscricao)),
+                ("obrigatorio", Logico(modelo.Obrigatorio)), ("tipo_processo_codigo", Texto(modelo.TipoProcessoCodigo)),
                 ("conteudo", $"{Texto(ConteudoDoModeloJson.Serializar(modelo.Conteudo))}::jsonb"),
                 ("ativo", Logico(modelo.Ativo)), ("created_at", Momento(declaracao.Instante))),
             new ItemDaSemente(TipoDoItemDaSemente.Modelo, id, modelo.Codigo));

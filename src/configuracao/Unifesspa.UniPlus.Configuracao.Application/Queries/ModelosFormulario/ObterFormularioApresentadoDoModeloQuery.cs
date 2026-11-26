@@ -61,23 +61,23 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         SimulacaoDoModelo simulacao = await SimulacaoDoModelo.MontarAsync(modelo, fatos, cadastro, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<TermoApresentado> termos = await TermosAsync(modelo.Id, simulacao.Conteudo, termoRepository, cancellationToken).ConfigureAwait(false);
-        return Montar(modelo.Finalidade, simulacao, termos);
+        return Montar(modelo.Declaracao, simulacao, termos);
     }
 
-    private static FormularioApresentado Montar(FinalidadeFormulario finalidade, SimulacaoDoModelo simulacao, IReadOnlyList<TermoApresentado> termos)
+    private static FormularioApresentado Montar(DeclaracaoDoFormulario declaracao, SimulacaoDoModelo simulacao, IReadOnlyList<TermoApresentado> termos)
     {
         ConteudoDoModelo conteudo = simulacao.Conteudo;
         RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(simulacao.Definicao(), simulacao.Ofertas);
         DescricaoDosPressupostos descricao = new([], VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos), [.. simulacao.Agregados]);
 
         return new FormularioApresentado(
-            finalidade.Codigo(),
+            CorrespondenciaDaFinalidade.FinalidadeDa(declaracao).Codigo(),
             conteudo.Titulo,
             [.. conteudo.Paginas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,
             new ColetaApresentada(
-                [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(finalidade, i, simulacao.Opcoes))],
-                [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(finalidade, g, simulacao.Opcoes))]),
+                [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(declaracao, i, simulacao.Opcoes))],
+                [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => Grupo(declaracao, g, simulacao.Opcoes))]),
             recorte.Regras,
             new PressupostosDoFormulario(descricao.Descrever(recorte.Pressupostos), null, null));
     }
@@ -119,23 +119,23 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso));
 
     private static GrupoApresentado Grupo(
-        FinalidadeFormulario finalidade, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
+        DeclaracaoDoFormulario declaracao, GrupoDoModelo grupo, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         grupo.Codigo,
         grupo.Ordem,
         grupo.PaginaCodigo,
         grupo.Rotulo,
         new OcorrenciasDoGrupoDto(grupo.Ocorrencias.Minimo, grupo.Ocorrencias.Maximo, grupo.Ocorrencias.IncluiCandidato),
-        [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(finalidade, s, opcoes))]);
+        [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(declaracao, s, opcoes))]);
 
     private static CampoApresentado Campo(
-        FinalidadeFormulario finalidade, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
+        DeclaracaoDoFormulario declaracao, ItemDoModelo item, IReadOnlyDictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
         item.PaginaCodigo,
         new ApresentacaoDoCampoDto(
             item.Apresentacao.Rotulo,
             item.Apresentacao.TipoDeCampo.Codigo(),
-            ConjuntoBasicoDaInscricao.AjudaDoCampo(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), item.FatoCodigo, item.Apresentacao.Ajuda),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(declaracao, item.FatoCodigo, item.Apresentacao.Ajuda),
             item.Apresentacao.PedirConfirmacao),
         item.Formato,
         opcoes.GetValueOrDefault(item.FatoCodigo));

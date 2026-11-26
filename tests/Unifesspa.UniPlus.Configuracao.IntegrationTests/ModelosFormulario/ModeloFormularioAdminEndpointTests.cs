@@ -86,6 +86,44 @@ public sealed class ModeloFormularioAdminEndpointTests
         (await recusada.Content.ReadAsStringAsync()).Should().Contain("uniplus.estrutura_formulario.dado_basico_alterado");
     }
 
+    [Theory(DisplayName = "A declaração ausente ou incompleta no cadastro é recusada com 422 no caminho da declaração")]
+    [InlineData(null)]
+    [InlineData("{\"serveAFaseDeInscricao\":false}")]
+    [InlineData("{\"obrigatorio\":true}")]
+    public async Task Criar_DeclaracaoIncompleta_Retorna422NoCaminhoDaDeclaracao(string? declaracao)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonNode? corpoDaDeclaracao = declaracao is null ? null : JsonNode.Parse(declaracao);
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, ComDeclaracao(Habilitacao(CodigoUnico()), corpoDaDeclaracao));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(static e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString()))
+            .Should().Contain(("declaracao", "uniplus.configuracao.modelo_formulario.declaracao_incompleta"));
+    }
+
+    [Fact(DisplayName = "O modelo facultativo de outra fase é cadastrado e lido com a declaração informada")]
+    public async Task Criar_FacultativoDeOutraFase_LeComADeclaracaoInformada()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonNode declaracao = JsonNode.Parse("{\"serveAFaseDeInscricao\":false,\"obrigatorio\":false}")!;
+
+        Guid id = await CriarAsync(client, ComDeclaracao(Habilitacao(CodigoUnico()), declaracao));
+
+        JsonNode lida = (await ObterAsync(client, id))["declaracao"]!;
+        (lida["serveAFaseDeInscricao"]!.GetValue<bool>(), lida["obrigatorio"]!.GetValue<bool>()).Should().Be((false, false));
+    }
+
+    [Fact(DisplayName = "O filtro de servir à fase de inscrição que não é verdadeiro nem falso é recusado com 400")]
+    public async Task Listar_FiltroDeInscricaoInvalido_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        (await StatusAsync(client, HttpMethod.Get, $"{Base}?serveAFaseDeInscricao=talvez")).Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Fact(DisplayName = "Item de fato derivado é recusado pela conferência contra o catálogo")]
     public async Task Criar_ItemDeFatoDerivado_Retorna422()
     {
@@ -162,7 +200,8 @@ public sealed class ModeloFormularioAdminEndpointTests
     private static void ConferirHabilitacaoAtivaLida(JsonObject lido)
     {
         lido["ativo"]!.GetValue<bool>().Should().BeTrue();
-        lido["finalidade"]!["codigo"]!.GetValue<string>().Should().Be("HABILITACAO");
+        lido["declaracao"]!["serveAFaseDeInscricao"]!.GetValue<bool>().Should().BeFalse();
+        lido["declaracao"]!["obrigatorio"]!.GetValue<bool>().Should().BeTrue();
         JsonNode condicao = lido["conteudo"]!["itens"]![1]!["regras"]!["exibicao"]![0]![0]!;
         condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
         condicao["valor"]!.GetValue<bool>().Should().BeTrue();
@@ -177,14 +216,14 @@ public sealed class ModeloFormularioAdminEndpointTests
 
     private static async Task ConferirListasAsync(HttpClient client, Guid id)
     {
-        using (JsonDocument inativos = await ListarAsync(client, "?ativo=false&finalidade=HABILITACAO&tipoProcesso=QUALQUER_TIPO"))
+        using (JsonDocument inativos = await ListarAsync(client, "?ativo=false&serveAFaseDeInscricao=false&tipoProcesso=QUALQUER_TIPO"))
         {
             inativos.RootElement.EnumerateArray().Should().Contain(m => m.GetProperty("id").GetGuid() == id
                 && m.GetProperty("descritivo").GetProperty("nome").GetString() == "Habilitação editada");
         }
 
-        using JsonDocument outraFinalidade = await ListarAsync(client, "?finalidade=INSCRICAO");
-        outraFinalidade.RootElement.EnumerateArray().Should().NotContain(m => m.GetProperty("id").GetGuid() == id);
+        using JsonDocument daInscricao = await ListarAsync(client, "?serveAFaseDeInscricao=true");
+        daInscricao.RootElement.EnumerateArray().Should().NotContain(m => m.GetProperty("id").GetGuid() == id);
     }
 
     private static void ConferirSecaoDosDadosBasicos(JsonObject lido)

@@ -7,24 +7,31 @@ using Unifesspa.UniPlus.Regras.Leituras;
 /// <summary>
 /// Um modelo de formulário na leitura da manutenção, com o mesmo formato da escrita: o
 /// <see cref="Descritivo"/> e o <see cref="Conteudo"/> voltam ao PUT trocando cada <c>{ codigo, rotulo }</c>
-/// pelo <c>codigo</c>. O identificador, o código, a finalidade e o estado ativo são do modelo e o PUT os ignora.
+/// pelo <c>codigo</c>. O identificador, o código, a declaração e o estado ativo são do modelo e o PUT os ignora.
 /// </summary>
-/// <param name="Finalidade">Para que o formulário coleta respostas.</param>
+/// <param name="Declaracao">Se o modelo serve à fase de inscrição e se é obrigatório.</param>
 /// <param name="Ativo">O modelo desativado sai da escolha dos processos novos; o processo que já o copiou não muda.</param>
 public sealed record ModeloFormularioDto(
     Guid Id,
     string Codigo,
-    CodigoComRotulo<FinalidadeFormulario> Finalidade,
+    DeclaracaoDoModeloDto Declaracao,
     bool Ativo,
     DescritivoDoModeloDto Descritivo,
     ConteudoDoModeloDto Conteudo);
+
+/// <summary>
+/// O que o modelo declara de si: se serve à fase que coleta a inscrição, caso em que traz o conjunto básico de
+/// dados do candidato, e se é obrigatório. Até o formulário do processo deixar de ter finalidade, ele deriva a
+/// finalidade dessa declaração ao aplicar o modelo, e o modelo que serve à inscrição é tratado como obrigatório.
+/// </summary>
+public sealed record DeclaracaoDoModeloDto(bool ServeAFaseDeInscricao, bool Obrigatorio);
 
 /// <summary>O nome, a descrição e o tipo de processo a que o modelo se destina; o tipo é nulo quando o modelo serve a todos.</summary>
 public sealed record DescritivoDoModeloDto(string Nome, string? Descricao, string? TipoProcessoCodigo);
 
 /// <summary>
 /// O conteúdo do modelo: o título, as páginas, os itens, os termos, os fatos pressupostos — coletados pela
-/// inscrição, citáveis pelo modelo de outra finalidade (UNI-REQ-0144) —, os grupos repetíveis (UNI-REQ-0146)
+/// inscrição, citáveis pelo modelo de outra fase (UNI-REQ-0144) —, os grupos repetíveis (UNI-REQ-0146)
 /// e o conjunto de documentos exigidos.
 /// </summary>
 public sealed record ConteudoDoModeloDto(

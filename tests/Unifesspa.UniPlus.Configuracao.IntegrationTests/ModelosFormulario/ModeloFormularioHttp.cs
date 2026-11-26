@@ -76,9 +76,9 @@ internal static class ModeloFormularioHttp
         return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
     }
 
-    internal static async Task<Guid> IdDoModeloAsync(HttpClient client, string finalidade, string codigo)
+    internal static async Task<Guid> IdDoModeloAsync(HttpClient client, bool serveAFaseDeInscricao, string codigo)
     {
-        using JsonDocument lista = await ListarAsync(client, $"?finalidade={finalidade}");
+        using JsonDocument lista = await ListarAsync(client, $"?serveAFaseDeInscricao={(serveAFaseDeInscricao ? "true" : "false")}");
         return lista.RootElement.EnumerateArray()
             .Single(m => m.GetProperty("codigo").GetString() == codigo).GetProperty("id").GetGuid();
     }

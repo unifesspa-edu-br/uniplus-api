@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
+using Unifesspa.UniPlus.Configuracao.Application.Mappings;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -11,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ConteudosDeModeloParaTeste;
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 /// <summary>O conjunto básico no modelo de inscrição gravado antes de o conjunto ganhar itens.</summary>
 public sealed class ConjuntoBasicoDoModeloTests
@@ -65,21 +68,63 @@ public sealed class ConjuntoBasicoDoModeloTests
     [Fact(DisplayName = "O modelo de inscrição, como aplicado, traz o conjunto básico na seção reservada")]
     public void ComoAplicado_ModeloDeInscricao_TrazOConjuntoBasico()
     {
-        ModeloFormulario modelo = ModeloGravado(FinalidadeFormulario.Inscricao);
+        ModeloFormulario modelo = ModeloGravado(DaInscricao);
 
         ConteudoDoModelo aplicado = ConjuntoBasicoDoModelo.ComoAplicado(modelo, []);
 
         aplicado.Itens.Select(static i => i.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
     }
 
-    [Fact(DisplayName = "O modelo de outra finalidade, como aplicado, é o conteúdo gravado")]
-    public void ComoAplicado_OutraFinalidade_DevolveOConteudoGravado()
+    [Fact(DisplayName = "O modelo facultativo que serve à fase de inscrição, como aplicado, também traz o conjunto básico")]
+    public void ComoAplicado_ServeAInscricaoFacultativo_TrazOConjuntoBasico()
     {
-        ModeloFormulario modelo = ModeloGravado(FinalidadeFormulario.Habilitacao);
+        ModeloFormulario modelo = ModeloGravado(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: true, Obrigatorio: false));
+
+        ConteudoDoModelo aplicado = ConjuntoBasicoDoModelo.ComoAplicado(modelo, []);
+
+        aplicado.Itens.Select(static i => i.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+    }
+
+    [Fact(DisplayName = "O modelo de outra fase, como aplicado, é o conteúdo gravado")]
+    public void ComoAplicado_OutraFase_DevolveOConteudoGravado()
+    {
+        ModeloFormulario modelo = ModeloGravado(DeOutraFaseObrigatoria);
 
         ConteudoDoModelo aplicado = ConjuntoBasicoDoModelo.ComoAplicado(modelo, []);
 
         aplicado.Should().BeSameAs(modelo.Conteudo);
+    }
+
+    [Fact(DisplayName = "Na escrita, o modelo que serve à fase de inscrição recebe a seção dos dados básicos, obrigatório ou facultativo")]
+    public void ComASecaoDosDadosBasicos_ServeAInscricao_MesclaOConjunto()
+    {
+        ConteudoDoModeloInput entrada = new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []).ParaEntrada();
+
+        (ConteudoDoModeloInput? mesclada, _) = ConjuntoBasicoDoModelo.ComASecaoDosDadosBasicos(
+            entrada, new DeclaracaoDoFormulario(ServeAFaseDeInscricao: true, Obrigatorio: false), entrada);
+
+        mesclada!.Itens!.Select(static i => i.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+    }
+
+    [Fact(DisplayName = "Na escrita, o modelo de outra fase não recebe a seção dos dados básicos")]
+    public void ComASecaoDosDadosBasicos_OutraFase_DevolveAEntradaSemMudar()
+    {
+        ConteudoDoModeloInput entrada = new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []).ParaEntrada();
+
+        (ConteudoDoModeloInput? mesclada, List<FieldError> erros) = ConjuntoBasicoDoModelo.ComASecaoDosDadosBasicos(entrada, DeOutraFaseObrigatoria, entrada);
+
+        mesclada.Should().BeSameAs(entrada);
+        erros.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Na escrita, a declaração ausente não mescla o conjunto: a recusa dela é do cadastro")]
+    public void ComASecaoDosDadosBasicos_SemDeclaracao_DevolveAEntradaSemMudar()
+    {
+        ConteudoDoModeloInput entrada = new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []).ParaEntrada();
+
+        (ConteudoDoModeloInput? mesclada, _) = ConjuntoBasicoDoModelo.ComASecaoDosDadosBasicos(entrada, null, entrada);
+
+        mesclada.Should().BeSameAs(entrada);
     }
 
     private static ConteudoDoModelo ConteudoComOConjunto() =>
@@ -101,11 +146,11 @@ public sealed class ConjuntoBasicoDoModeloTests
     private static ItemDoModelo ItemOpcionalDeBaixaRenda(int ordem) =>
         new("BAIXA_RENDA", ordem, "DADOS", new ApresentacaoDoCampo("Baixa renda", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Nunca, []));
 
-    private static ModeloFormulario ModeloGravado(FinalidadeFormulario finalidade)
+    private static ModeloFormulario ModeloGravado(DeclaracaoDoFormulario declaracao)
     {
         ConteudoDoModelo conteudo = ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []), Formatos);
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
-            "MODELO_DO_TESTE", "Modelo do teste", null, finalidade, null, conteudo,
+            "MODELO_DO_TESTE", "Modelo do teste", null, declaracao, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
         return criado.Value!;

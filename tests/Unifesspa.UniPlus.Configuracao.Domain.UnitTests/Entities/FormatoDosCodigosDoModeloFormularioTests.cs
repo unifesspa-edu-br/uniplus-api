@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDoModeloDeFormulario;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 public sealed class FormatoDosCodigosDoModeloFormularioTests
 {
@@ -47,7 +48,7 @@ public sealed class FormatoDosCodigosDoModeloFormularioTests
     public void CriarECorrigir_CodigosValidos_GravaComoRecebidos()
     {
         ConteudoDoModelo conteudo = Conteudo([Item("CERTIFICADO", 0)]);
-        Result<ModeloFormulario> criado = ModeloFormulario.Criar("MODELO_1", "Modelo", null, FinalidadeFormulario.Habilitacao, "TIPO_1", conteudo, SemDerivacoes);
+        Result<ModeloFormulario> criado = ModeloFormulario.Criar("MODELO_1", "Modelo", null, DeOutraFaseObrigatoria, "TIPO_1", conteudo, SemDerivacoes);
         criado.IsSuccess.Should().BeTrue();
         ModeloFormulario modelo = criado.Value!;
         modelo.Codigo.Should().Be("MODELO_1");
@@ -57,7 +58,7 @@ public sealed class FormatoDosCodigosDoModeloFormularioTests
     }
 
     private static List<FieldError> Conferir(string codigo, string? tipo) =>
-        ModeloFormulario.ConferirCadastro(codigo, "Modelo", null, tipo, FinalidadeFormulario.Habilitacao);
+        ModeloFormulario.ConferirCadastro(codigo, "Modelo", null, tipo, DeOutraFaseObrigatoria);
 
     private static void ConferirRecusa(List<FieldError> erros, string codigo, string valor)
     {

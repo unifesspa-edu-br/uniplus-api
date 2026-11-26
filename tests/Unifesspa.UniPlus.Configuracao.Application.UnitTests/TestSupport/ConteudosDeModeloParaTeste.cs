@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// O catálogo de fatos e o conteúdo de modelo de formulário com que os testes da escrita do
 /// modelo montam a entrada, já com os padrões válidos.
@@ -62,7 +64,7 @@ internal static class ConteudosDeModeloParaTeste
         ItemDoModelo item = new(
             "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }

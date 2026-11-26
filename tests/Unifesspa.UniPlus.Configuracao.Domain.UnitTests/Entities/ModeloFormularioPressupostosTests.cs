@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>Os pressupostos do modelo (UNI-REQ-0144): fato coletado pela inscrição, fora do formulário que o cita.</summary>
 public sealed class ModeloFormularioPressupostosTests
 {
@@ -24,13 +26,13 @@ public sealed class ModeloFormularioPressupostosTests
     private static ConteudoDoModelo Conteudo(IReadOnlyList<ItemDoModelo> itens, IReadOnlyList<GrupoDoModelo> grupos, params string[] pressupostos) =>
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, grupos);
 
-    private static Result<ModeloFormulario> Criar(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo) =>
-        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "REGULAR_UNIFICADO", conteudo, SemDerivacoes);
+    private static Result<ModeloFormulario> Criar(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo) =>
+        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, declaracao, "REGULAR_UNIFICADO", conteudo, SemDerivacoes);
 
-    [Fact(DisplayName = "Modelo de inscrição não tem pressupostos")]
+    [Fact(DisplayName = "Modelo que serve à fase de inscrição não tem pressupostos")]
     public void Inscricao_ComPressuposto_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Inscricao, Conteudo([Item("COR_RACA", 0)], [], "SEXO"));
+        Result<ModeloFormulario> modelo = Criar(DaInscricao, Conteudo([Item("COR_RACA", 0)], [], "SEXO"));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoNaInscricao);
     }
@@ -38,7 +40,7 @@ public sealed class ModeloFormularioPressupostosTests
     [Fact(DisplayName = "Fato não é pressuposto e item do mesmo modelo")]
     public void PressupostoTambemItem_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "CONCLUSAO_REGULAR"));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "CONCLUSAO_REGULAR"));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoTambemItem);
     }
@@ -50,7 +52,7 @@ public sealed class ModeloFormularioPressupostosTests
             "COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),
             new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre), [Item("RENDA", 0, pagina: null)]);
 
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [composicao], "RENDA"));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [composicao], "RENDA"));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoTambemItem);
     }
@@ -58,7 +60,7 @@ public sealed class ModeloFormularioPressupostosTests
     [Fact(DisplayName = "Pressuposto em branco ou repetido é recusado com o índice de cada um")]
     public void PressupostoEmBrancoERepetido_RecusaNoIndice()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "SEXO", "", "SEXO"));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "SEXO", "", "SEXO"));
 
         modelo.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
         [
@@ -70,7 +72,7 @@ public sealed class ModeloFormularioPressupostosTests
     [Fact(DisplayName = "Pressuposto repetido e também item é recusado nessa ordem, por ocorrência")]
     public void PressupostoRepetidoETambemItem_RecusaNaOrdem()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "CONCLUSAO_REGULAR", "CONCLUSAO_REGULAR"));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CONCLUSAO_REGULAR", 0)], [], "CONCLUSAO_REGULAR", "CONCLUSAO_REGULAR"));
 
         modelo.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
         [

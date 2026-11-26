@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>Escrita e leitura de manutenção dos modelos de formulário (UNI-REQ-0144).</summary>
 public interface IModeloFormularioRepository
@@ -14,14 +13,15 @@ public interface IModeloFormularioRepository
 
     /// <summary>
     /// Lista paginada por cursor, com filtros opcionais. O filtro de tipo de processo traz os modelos
-    /// que servem a ele: os do próprio tipo e os que servem a todos.
+    /// que servem a ele: os do próprio tipo e os que servem a todos. O filtro de declaração separa os modelos
+    /// que servem à fase de inscrição dos que servem a outra fase.
     /// </summary>
     Task<(IReadOnlyList<ModeloFormulario> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         string? tipoProcessoCodigo,
-        FinalidadeFormulario? finalidade,
+        bool? serveAFaseDeInscricao,
         bool? ativo,
         CancellationToken cancellationToken);
 

@@ -6048,6 +6048,22 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.declaracao_incompleta",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O corpo da criação de um modelo de formulário (`POST /api/configuracao/admin/modelos-formulario`) não traz a `declaracao` do modelo, ou traz a `declaracao` sem `serveAFaseDeInscricao` ou sem `obrigatorio`. A declaração informa se o modelo serve à fase de inscrição, caso em que traz o conjunto básico de dados do candidato, e se ele é obrigatório (ADR-0171). Não há valor assumido: quem cadastra precisa responder às duas perguntas.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `declaracao`, junto das demais recusas do cadastro. Como a declaração decide quais blocos e pressupostos o modelo admite, a conferência do conteúdo contra ela não é feita enquanto a declaração está incompleta. Nada é gravado. A declaração não muda depois que o modelo é criado, e a edição (`PUT`) não a recebe."
+      ],
+      "comoResolver": [
+        "Envie `declaracao` com `serveAFaseDeInscricao` e `obrigatorio`, cada um verdadeiro ou falso, e repita o pedido."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.descricao_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
@@ -6096,19 +6112,6 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para finalidade do formulário. A consulta não foi realizada."
-      ],
-      "comoResolver": [
-        "Informe um dos códigos publicados para finalidade do formulário ou retire o filtro para consultar sem esse recorte."
-      ],
-      "ondeAparece": [
-        "Listagem de modelos de formulário"
       ]
     },
     {
@@ -6224,7 +6227,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A lista `pressupostos` do `conteudo` do modelo, enviada na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`), tem um item vazio, só com espaços ou `null`. Os pressupostos são os fatos que o modelo recebe da inscrição, sem coletá-los de novo, e cada um precisa nomear um fato.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `conteudo.pressupostos[i]`, em que `i` é a posição do item. Ela só é conferida num modelo que não é o de inscrição, porque este não tem pressupostos (ver [modelo de inscrição sem pressupostos](/erros/uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao)), e depois que o conteúdo foi lido sem recusa de leitura. Nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `conteudo.pressupostos[i]`, em que `i` é a posição do item. Ela só é conferida num modelo que não serve à fase de inscrição, porque este não tem pressupostos (ver [modelo da fase de inscrição sem pressupostos](/erros/uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao)), e depois que o conteúdo foi lido sem recusa de leitura. Nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente."
       ],
       "comoResolver": [
         "Retire o item em branco da lista `pressupostos`, ou preencha-o com o código de um fato do catálogo coletado pela inscrição, e repita o pedido."
@@ -6240,12 +6243,11 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "O `conteudo` de um modelo de finalidade `INSCRICAO`, enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`), traz a lista `pressupostos` com algum item. Pressuposto é um fato que o modelo recebe da inscrição em vez de coletá-lo. A inscrição é o formulário que coleta esses dados, e nenhum formulário é respondido antes dela; o formulário obrigatório da inscrição também não reaproveita respostas de outro formulário obrigatório da mesma fase (UNI-REQ-0144). Um item vazio na lista conta: a lista precisa estar vazia ou ausente.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `conteudo.pressupostos`, e as verificações de domínio dos pressupostos (item em branco, repetido, também usado como item do modelo) não prosseguem. Ela só é feita depois que o conteúdo foi lido sem recusa de leitura. A conferência do conteúdo contra o catálogo de fatos roda antes e não é interrompida por esta recusa: a mesma resposta pode trazer, além dela, recusas dessa conferência, como a de um fato desconhecido. Nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente.",
-        "Hoje a regra é definida pela finalidade `INSCRICAO` do modelo. A refatoração em andamento do formulário do processo (uniplus-api#2199) substitui a finalidade por declarações do próprio modelo, como a de servir à inscrição, e esta página será revista quando ela entrar."
+        "O `conteudo` de um modelo que serve à fase de inscrição (`declaracao.serveAFaseDeInscricao` verdadeiro), enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`), traz a lista `pressupostos` com algum item. Pressuposto é um fato que o modelo recebe da inscrição em vez de coletá-lo. A inscrição é o formulário que coleta esses dados, e nenhum formulário é respondido antes dela; o formulário obrigatório da inscrição também não reaproveita respostas de outro formulário obrigatório da mesma fase (UNI-REQ-0144). Um item vazio na lista conta: a lista precisa estar vazia ou ausente.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `conteudo.pressupostos`, e as verificações de domínio dos pressupostos (item em branco, repetido, também usado como item do modelo) não prosseguem. Ela só é feita depois que o conteúdo foi lido sem recusa de leitura. A conferência do conteúdo contra o catálogo de fatos roda antes e não é interrompida por esta recusa: a mesma resposta pode trazer, além dela, recusas dessa conferência, como a de um fato desconhecido. Nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente."
       ],
       "comoResolver": [
-        "Retire os pressupostos do modelo de inscrição e, se um fato é necessário, colete-o como item do próprio modelo. Um fato só é pressuposto em modelo de outra finalidade, que o recebe da inscrição."
+        "Retire os pressupostos do modelo que serve à fase de inscrição e, se um fato é necessário, colete-o como item do próprio modelo. Um fato só é pressuposto em modelo de outra fase, que o recebe da inscrição."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -10378,7 +10380,7 @@
       ],
       "oQueAconteceu": [
         "Todo formulário de inscrição coleta o conjunto básico de dados do candidato (UNI-REQ-0151) numa seção reservada, a primeira do formulário, e o conjunto é o mesmo em todo processo e em todo modelo de formulário de inscrição. Por isso, o item do conjunto que vem no pedido pode ser repetido como está, ou omitido, e o sistema o repõe; ele não pode ser alterado. A recusa sai quando o item básico enviado difere do item do conjunto em qualquer elemento que não seja a ordem e o rótulo, que são do conjunto, como a obrigatoriedade, a exibição, as restrições, a ajuda ou a seção; uma condição sem valor também o torna diferente. A mensagem é \"O item '`{fato\\}`' é do conjunto básico de dados do candidato: pode ser repetido como está, ou omitido, mas não alterado.\", com o código do fato do conjunto.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i]`, uma entrada por item alterado; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A conferência vale só para o formulário e o modelo de inscrição; nos de outras finalidades o conjunto não existe.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i]`, uma entrada por item alterado; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A conferência vale só para o formulário de inscrição e o modelo que serve à fase de inscrição; nos demais o conjunto não existe.",
         "O item do conjunto que o pedido omite é reposto pelo sistema, com a ordem e o rótulo do conjunto. Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -10412,14 +10414,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A finalidade informada não é `INSCRICAO`, `ISENCAO_TAXA` nem `HABILITACAO`, que são as três para as quais o formulário coleta respostas. A mensagem é \"A finalidade do formulário é inscrição, isenção de taxa ou habilitação.\"",
-        "Na criação de um modelo de formulário a finalidade vem em `finalidade`, é gravada na criação e não muda depois, e a recusa traz `field` igual a `finalidade`, sem o prefixo `conteudo.`, na mesma lista das demais recusas do cadastro e do conteúdo. Na definição de documentos exigidos do processo, a finalidade é declarada na exigência, para dizer em que formulário o documento é apresentado, e a recusa também traz `field` igual a `finalidade`. Em ambos os casos nada é gravado.",
-        "A finalidade do formulário do processo, que vai na rota, não passa por esta recusa: uma finalidade que não existe na rota é respondida com 404. E a propriedade `finalidade` ausente ou nula na criação do modelo é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo."
+        "Na definição de documentos exigidos do processo, a finalidade é declarada na exigência, para dizer em que formulário o documento é apresentado, e a recusa traz `field` igual a `finalidade`. Nada é gravado. O modelo de formulário não tem finalidade: ele declara se serve à fase de inscrição e se é obrigatório, e a recusa dessa declaração é a de [declaração do modelo ausente ou incompleta](/erros/uniplus.configuracao.modelo_formulario.declaracao_incompleta).",
+        "A finalidade do formulário do processo, que vai na rota, não passa por esta recusa: uma finalidade que não existe na rota é respondida com 404."
       ],
       "comoResolver": [
         "Use um dos três valores: `INSCRICAO`, `ISENCAO_TAXA` ou `HABILITACAO`, em maiúsculas e com o sublinhado."
       ],
       "ondeAparece": [
-        "Criação de um modelo de formulário",
         "Definição de documentos exigidos do processo seletivo"
       ]
     },
@@ -11044,7 +11045,7 @@
       "oQueAconteceu": [
         "A `ordem` de um grupo repetível, em `grupos`, é negativa. O grupo ocupa a posição dele na ordem de coleta do formulário, junto com os itens, e a posição não pode ser negativa. A mensagem é \"A ordem do grupo não pode ser negativa.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].ordem`, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
-        "No formulário de inscrição, e no modelo de finalidade inscrição, a ordem dos grupos e dos itens que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um grupo desse formulário não chega a ser recusada aqui. Nos formulários de isenção de taxa e de habilitação, e nos modelos dessas finalidades, a ordem negativa do grupo é recusada.",
+        "No formulário de inscrição, e no modelo que serve à fase de inscrição, a ordem dos grupos e dos itens que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um grupo desse formulário não chega a ser recusada aqui. Nos formulários de isenção de taxa e de habilitação, e nos modelos que não servem à fase de inscrição, a ordem negativa do grupo é recusada.",
         "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
@@ -11328,7 +11329,7 @@
       "codigo": "uniplus.item_formulario.impedimento_fora_da_inscricao",
       "requisitos": [],
       "oQueAconteceu": [
-        "O impedimento é a resposta do campo que impede a inscrição do candidato, e a mensagem que o explica é a que o administrador define. Por isso só o formulário de inscrição o tem. Um item do formulário de isenção de taxa ou de habilitação, ou de um modelo dessas finalidades, traz `impedimento`. A mensagem é \"Só o formulário de inscrição tem impedimento: ele impede a inscrição do candidato.\"",
+        "O impedimento é a resposta do campo que impede a inscrição do candidato, e a mensagem que o explica é a que o administrador define. Por isso só o formulário de inscrição o tem. Um item do formulário de isenção de taxa ou de habilitação, ou de um modelo que não serve à fase de inscrição, traz `impedimento`. A mensagem é \"Só o formulário de inscrição tem impedimento: ele impede a inscrição do candidato.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].impedimento`, uma entrada por item com impedimento; nos modelos de formulário, `conteudo.itens[i].impedimento`. O campo de um grupo repetível com impedimento é outra recusa, a de [campo de grupo com impedimento](/erros/uniplus.grupo_formulario.campo_com_impedimento), em qualquer finalidade. Nada é gravado.",
         "Na gravação dos itens do formulário, a recusa vem depois da recusa de todas as outras causas dos itens e dos grupos: enquanto houver forma, catálogo ou semântica a corrigir, ela não aparece, e só passa a ser apontada quando o resto do pedido está conforme. Nos modelos, ela sai junto com as recusas da forma dos itens. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -11496,7 +11497,7 @@
       "oQueAconteceu": [
         "A `ordem` de um item do formulário, ou de um campo de grupo, é negativa. A ordem é a posição do item na coleta, e não pode ser negativa. A mensagem é \"A ordem do item não pode ser negativa.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `itens[i].ordem` ou, no campo de um grupo, `grupos[g].subitens[j].ordem`; nos modelos de formulário o `field` começa por `conteudo.`. Cada item recusado tem a própria entrada, junto das demais recusas da forma do item, e nada é gravado.",
-        "No formulário de inscrição, e no modelo de finalidade inscrição, a ordem dos itens e dos grupos que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um item desse formulário não chega a ser recusada aqui; o campo de um grupo, que tem ordem própria dentro do grupo, não é deslocado. Nos formulários de isenção de taxa e de habilitação, e nos modelos dessas finalidades, a ordem negativa do item é recusada. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "No formulário de inscrição, e no modelo que serve à fase de inscrição, a ordem dos itens e dos grupos que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um item desse formulário não chega a ser recusada aqui; o campo de um grupo, que tem ordem própria dentro do grupo, não é deslocado. Nos formulários de isenção de taxa e de habilitação, e nos modelos que não servem à fase de inscrição, a ordem negativa do item é recusada. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
       "comoResolver": [
         "Informe `ordem` com 0 ou um número positivo, sem repetir a ordem de outro item ou grupo do mesmo formulário."
@@ -13343,7 +13344,7 @@
         "A conferência do modelo roda numa só passada: um modelo desativado que também é\nde outro tipo de processo, ou que cita fato que a inscrição do processo não\ncoleta, devolve as recusas juntas no array `errors[]`\n([`tipo_de_processo_diferente`](/erros/uniplus.selecao.aplicacao_de_modelo.tipo_de_processo_diferente),\n[`pressuposto_ausente`](/erros/uniplus.selecao.aplicacao_de_modelo.pressuposto_ausente)).\nNada foi alterado no processo."
       ],
       "comoResolver": [
-        "Escolha outro modelo ativo para o tipo do processo, ou\npeça a quem gere os modelos de formulário que reative este, se ele deve voltar a\nser usado. Se o formulário já foi aplicado antes, não é preciso reaplicar: ele\npode ser ajustado diretamente no processo."
+        "Escolha outro modelo ativo com a mesma declaração e para o tipo do processo, ou\npeça a quem gere os modelos de formulário que reative este, se ele deve voltar a\nser usado. Se o formulário já foi aplicado antes, não é preciso reaplicar: ele\npode ser ajustado diretamente no processo."
       ],
       "ondeAparece": [
         "Aplicação de modelo de formulário"
@@ -19450,7 +19451,7 @@
         "Um processo pode ter mais de um formulário (a inscrição, o pedido de isenção da taxa, a habilitação e os demais que declarar), mas cada fato é coletado por um só deles (UNI-REQ-0144). Além disso, o código de um grupo de campos não pode repetir o de um fato ou de um grupo de outro formulário; essa segunda regra é da API e o requisito não a declara. O formulário que se tenta gravar repete algum deles. A mensagem traz o código e diz de qual das situações se trata:",
         "- o fato, ou o campo de um grupo, **já é coletado** por outro formulário;\n- o código do grupo **já é usado** por um fato ou grupo de outro formulário, ou o\n  código de um fato já é usado por um grupo de outro formulário;\n- o fato é um dos **dados básicos do candidato**, que o formulário da inscrição\n  coleta, e está em outro formulário: a mensagem pede para tirá-lo\n  de lá antes.",
         "A recusa aparece em três operações:",
-        "- **Gravação dos itens do formulário** (`PUT .../formularios/{codigo}/itens`):\n  vem depois das conferências do grafo de fatos e da citação dos fatos, e é uma\n  recusa única, sem campo, que traz só a primeira ocorrência encontrada.\n- **Gravação do formulário do processo** (`PUT .../formularios/{codigo}`), ao\n  criar o formulário que coleta a inscrição, que já nasce com os itens dos dados\n  básicos do candidato: se outro formulário do processo já coleta algum deles, é este erro.\n- **Aplicação de modelo de formulário**\n  (`POST .../formularios/aplicacoes-de-modelo`): vale para o modelo aplicado a formulário\n  que não coleta a inscrição, cujos itens não podem repetir fato de outro\n  formulário (o modelo aplicado a formulário da inscrição traz para ele o fato que está em\n  outro formulário, e não recusa essa repetição), e para os códigos de grupos e\n  de campos de grupo, em qualquer formulário. As recusas saem no array `errors[]`,\n  no campo `itens` ou `grupos[n]`, uma por fato ou código repetido.",
+        "- **Gravação dos itens do formulário** (`PUT .../formularios/{codigo}/itens`):\n  vem depois das conferências do grafo de fatos e da citação dos fatos, e é uma\n  recusa única, sem campo, que traz só a primeira ocorrência encontrada.\n- **Gravação do formulário do processo** (`PUT .../formularios/{codigo}`), ao\n  criar o formulário de inscrição, que já nasce com os itens dos dados básicos do\n  candidato: se outro formulário do processo já coleta algum deles, é este erro.\n- **Aplicação de modelo de formulário**\n  (`POST .../formularios/aplicacoes-de-modelo`): vale para o modelo que não serve à\n  fase de inscrição, cujos itens não podem repetir fato de outro\n  formulário (o modelo que serve à fase de inscrição traz para a inscrição o fato que está em\n  outro formulário, e não recusa essa repetição), e para os códigos de grupos e\n  de campos de grupo, em qualquer modelo. As recusas saem no array `errors[]`,\n  no campo `itens` ou `grupos[n]`, uma por fato ou código repetido.",
         "Nada é gravado."
       ],
       "comoResolver": [

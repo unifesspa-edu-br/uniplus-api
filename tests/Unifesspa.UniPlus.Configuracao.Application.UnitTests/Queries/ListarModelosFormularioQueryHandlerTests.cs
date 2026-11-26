@@ -4,18 +4,19 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
-/// A lista de manutenção dos modelos filtra por tipo de processo, finalidade e estado.
+/// A lista de manutenção dos modelos filtra por tipo de processo, por servir à fase de inscrição e por estado.
 /// </summary>
 public sealed class ListarModelosFormularioQueryHandlerTests
 {
@@ -27,35 +28,24 @@ public sealed class ListarModelosFormularioQueryHandlerTests
             ((IReadOnlyList<ModeloFormulario>)[], (Guid?)null, (Guid?)null));
     }
 
-    [Theory]
-    [InlineData("NAO_EXISTE")]
-    [InlineData("habilitacao")]
-    [InlineData(" HABILITACAO ")]
-    [InlineData("   ")]
-    public async Task Handle_FinalidadeInvalida_RecusaSemConsultar(string finalidade)
+    [Theory(DisplayName = "O filtro de servir à fase de inscrição vai ao repositório como veio, e ausente não filtra")]
+    [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(null)]
+    public async Task Handle_FiltroDeInscricao_ConsultaComOFiltro(bool? serveAFaseDeInscricao)
     {
-        Result<ListarModelosFormularioResult> resultado = await ListarAsync(finalidade: finalidade);
-        resultado.Error!.Code.Should().Be(ModeloFormularioErrorCodes.FiltroDeFinalidadeInvalida);
-        await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(default, default, default, default, default, default, default);
-    }
+        await ListarAsync(serveAFaseDeInscricao: serveAFaseDeInscricao);
 
-    [Theory]
-    [InlineData("HABILITACAO", FinalidadeFormulario.Habilitacao)]
-    [InlineData("", null)]
-    [InlineData(null, null)]
-    public async Task Handle_FinalidadeValida_ConsultaComFiltro(string? finalidade, FinalidadeFormulario? esperado)
-    {
-        await ListarAsync(finalidade: finalidade);
         await _repository.Received(1).ListarPaginadoAsync(
-            null, 20, PaginationDirection.Next, null, esperado, null, Arg.Any<CancellationToken>());
+            null, 20, PaginationDirection.Next, null, serveAFaseDeInscricao, null, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia")]
     public async Task Handle_TipoDeProcessoNaoGravavel_DevolvePaginaVaziaSemConsultar()
     {
-        Result<ListarModelosFormularioResult> resultado = await ListarAsync(tipoProcesso: "TIPO\0");
+        ListarModelosFormularioResult resultado = await ListarAsync(tipoProcesso: "TIPO\0");
 
-        resultado.Value!.Items.Should().BeEmpty();
+        resultado.Items.Should().BeEmpty();
         await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(default, default, default, default, default, default, default);
     }
 
@@ -74,15 +64,15 @@ public sealed class ListarModelosFormularioQueryHandlerTests
             null, 20, PaginationDirection.Next, esperado, null, null, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A finalidade conhecida, o estado e a posição da página vão ao repositório")]
+    [Fact(DisplayName = "O filtro de inscrição, o estado e a posição da página vão ao repositório")]
     public async Task Handle_FiltrosEPagina_VaoAoRepositorio()
     {
         Guid ancora = Guid.NewGuid();
 
-        await ListarAsync(finalidade: "HABILITACAO", ativo: false, afterId: ancora, direction: PaginationDirection.Prev);
+        await ListarAsync(serveAFaseDeInscricao: false, ativo: false, afterId: ancora, direction: PaginationDirection.Prev);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            ancora, 20, PaginationDirection.Prev, null, FinalidadeFormulario.Habilitacao, false, Arg.Any<CancellationToken>());
+            ancora, 20, PaginationDirection.Prev, null, false, false, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Os modelos da página saem para manutenção, com os cursores do repositório")]
@@ -93,27 +83,27 @@ public sealed class ListarModelosFormularioQueryHandlerTests
         _repository.ListarPaginadoAsync(default, default, default, default, default, default, default).ReturnsForAnyArgs(
             ((IReadOnlyList<ModeloFormulario>)[modelo], (Guid?)anterior, (Guid?)proximo));
 
-        Result<ListarModelosFormularioResult> resultado = await ListarAsync();
+        ListarModelosFormularioResult resultado = await ListarAsync();
 
-        resultado.Value!.Items.Select(static m => (m.Id, m.Codigo, m.Finalidade.Codigo)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", "HABILITACAO"));
-        (resultado.Value!.AnteriorAfterId, resultado.Value!.ProximoAfterId).Should().Be((anterior, proximo));
+        resultado.Items.Select(static m => (m.Id, m.Codigo, m.Declaracao)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", new DeclaracaoDoModeloDto(false, true)));
+        (resultado.AnteriorAfterId, resultado.ProximoAfterId).Should().Be((anterior, proximo));
     }
 
-    private Task<Result<ListarModelosFormularioResult>> ListarAsync(
+    private Task<ListarModelosFormularioResult> ListarAsync(
         string? tipoProcesso = null,
-        string? finalidade = null,
+        bool? serveAFaseDeInscricao = null,
         bool? ativo = null,
         Guid? afterId = null,
         PaginationDirection direction = PaginationDirection.Next) =>
         ListarModelosFormularioQueryHandler.Handle(
-            new ListarModelosFormularioQuery(afterId, 20, direction, tipoProcesso, finalidade, ativo), _repository, CancellationToken.None);
+            new ListarModelosFormularioQuery(afterId, 20, direction, tipoProcesso, serveAFaseDeInscricao, ativo), _repository, CancellationToken.None);
 
     private static ModeloFormulario Modelo()
     {
         PaginaDoModelo dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
         PaginaDoModelo revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "MODELO_DE_TESTE", "Modelo de teste", null, FinalidadeFormulario.Habilitacao, null,
+            "MODELO_DE_TESTE", "Modelo de teste", null, DeOutraFaseObrigatoria, null,
             new ConteudoDoModelo("Habilitação", [dados, revisao], [], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

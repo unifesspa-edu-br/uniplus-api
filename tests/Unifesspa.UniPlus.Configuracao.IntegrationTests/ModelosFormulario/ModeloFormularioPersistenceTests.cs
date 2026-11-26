@@ -43,7 +43,7 @@ public sealed class ModeloFormularioPersistenceTests
         ConteudoDoModelo conteudo = new(
             "Habilitação", PaginasDaHabilitacao(), ItensDaHabilitacao(), [TermoDeVeracidade()], ["FORMA_CONCLUSAO"], [GrupoDaComposicaoFamiliar()]);
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            codigo, "Habilitação Medicina 2027", "Modelo do PSR", FinalidadeFormulario.Habilitacao, "REGULAR_UNIFICADO", conteudo,
+            codigo, "Habilitação Medicina 2027", "Modelo do PSR", new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), "REGULAR_UNIFICADO", conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
         return modelo.Value!;
@@ -92,7 +92,7 @@ public sealed class ModeloFormularioPersistenceTests
     private static ModeloFormulario NovoDeInscricaoComImpedimento(Impedimento impedimento)
     {
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
-            $"INS_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Inscrição PSIQ 2027", null, FinalidadeFormulario.Inscricao, "INDIGENA_E_QUILOMBOLA",
+            $"INS_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Inscrição PSIQ 2027", null, DeclaracaoDoFormulario.DaInscricao, "INDIGENA_E_QUILOMBOLA",
             ConteudoDaInscricaoComImpedimento(impedimento),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
@@ -120,7 +120,7 @@ public sealed class ModeloFormularioPersistenceTests
 
         ModeloFormulario lido = await LerAsync(modelo.Id);
 
-        lido.Finalidade.Should().Be(FinalidadeFormulario.Habilitacao);
+        lido.Declaracao.Should().Be(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true));
         lido.TipoProcessoCodigo.Should().Be("REGULAR_UNIFICADO");
         lido.Conteudo.Should().BeEquivalentTo(modelo.Conteudo, opcoes => opcoes.ComparingByMembers<JsonElement>()
             .Using<JsonElement>(c => c.Subject.GetRawText().Should().Be(c.Expectation.GetRawText())).WhenTypeIs<JsonElement>());

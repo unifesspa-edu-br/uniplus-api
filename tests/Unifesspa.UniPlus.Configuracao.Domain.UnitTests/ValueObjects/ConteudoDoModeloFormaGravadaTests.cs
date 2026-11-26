@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 /// <summary>O conteúdo do modelo na forma em que é conferido e gravado, e na ordem em que é gravado.</summary>
 public sealed class ConteudoDoModeloFormaGravadaTests
@@ -67,7 +68,7 @@ public sealed class ConteudoDoModeloFormaGravadaTests
             Grupos = grupo ? [Grupo("GRUPO", 0, null, item) with { PaginaCodigo = " DADOS " }] : []
         };
 
-        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
+        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
 
         erros.Should().ContainSingle(erro => erro.Field == campo && erro.Error.Code == EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }

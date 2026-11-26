@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 public sealed class FormatoDosCodigosDoConteudoTests
 {
@@ -62,5 +63,5 @@ public sealed class FormatoDosCodigosDoConteudoTests
     private static List<FieldError> ErrosDoDocumento(string codigo) =>
         Conferir(Vazio with { ConjuntoDeDocumentos = Conjunto(Documento(codigo)) });
     private static List<FieldError> Conferir(ConteudoDoModelo conteudo) =>
-        ConferenciaDoConteudoDoModelo.Conferir(FinalidadeFormulario.Habilitacao, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
+        ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
 }

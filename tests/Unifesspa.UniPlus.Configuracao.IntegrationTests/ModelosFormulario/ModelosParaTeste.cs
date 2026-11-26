@@ -8,10 +8,10 @@ internal static class ModelosParaTeste
 {
     /// <summary>
     /// Um modelo de habilitação com duas perguntas, a segunda exibida a quem respondeu sim à
-    /// primeira, e o bloco de revisão e aceite que a finalidade exige.
+    /// primeira, e o bloco de revisão e aceite que todo formulário exige.
     /// </summary>
     internal static object Habilitacao(string codigo, string fatoDoPrimeiroItem = "QUILOMBOLA") =>
-        Montar(codigo, "Habilitação Medicina 2027", "HABILITACAO", "Habilitação",
+        Montar(codigo, "Habilitação Medicina 2027", DeOutraFaseObrigatoria, "Habilitação",
         [
             Item(fatoDoPrimeiroItem, 0, "Quilombola", "SIM_OU_NAO"),
             Item("BAIXA_RENDA", 1, "Baixa renda", "SIM_OU_NAO", Condicao("QUILOMBOLA", true)),
@@ -22,7 +22,7 @@ internal static class ModelosParaTeste
     /// vem da seção dos dados básicos, que o modelo não declara.
     /// </summary>
     internal static object Inscricao(string codigo) =>
-        Montar(codigo, "Inscrição", "INSCRICAO", "Inscrição",
+        Montar(codigo, "Inscrição", DaInscricao, "Inscrição",
         [
             Item("BAIXA_RENDA", 0, "Baixa renda", "SIM_OU_NAO", Condicao("COR_RACA", "PRETA")),
         ]);
@@ -32,7 +32,7 @@ internal static class ModelosParaTeste
     /// de conclusão do ensino médio admite a EJA só para quem se declarou quilombola.
     /// </summary>
     internal static object InscricaoComOpcoes(string codigo) =>
-        Montar(codigo, "Inscrição com opções", "INSCRICAO", "Inscrição",
+        Montar(codigo, "Inscrição com opções", DaInscricao, "Inscrição",
         [
             Item("QUILOMBOLA", 0, "Quilombola", "SIM_OU_NAO"),
             ItemComRestricoes("FORMA_CONCLUSAO_EM", 1, "Forma de conclusão do ensino médio", "ESCOLHA_UNICA", OpcoesPorQuilombola()),
@@ -40,7 +40,7 @@ internal static class ModelosParaTeste
 
     /// <summary>Um modelo de inscrição que pergunta de qual recurso de acessibilidade o candidato vai precisar.</summary>
     internal static object InscricaoComRecursoDeAcessibilidade(string codigo) =>
-        Montar(codigo, "Inscrição com recurso de acessibilidade", "INSCRICAO", "Inscrição",
+        Montar(codigo, "Inscrição com recurso de acessibilidade", DaInscricao, "Inscrição",
         [
             Item("RECURSO_ACESSIBILIDADE", 0, "De qual recurso de acessibilidade você vai precisar?", "ESCOLHA_MULTIPLA", obrigatoriedade: "NUNCA"),
         ]);
@@ -58,11 +58,29 @@ internal static class ModelosParaTeste
         return campos;
     }
 
-    private static object Montar(string codigo, string nome, string finalidade, string titulo, object[] itens) =>
+    /// <summary>O mesmo corpo com a declaração trocada; sem valor, a declaração sai do corpo.</summary>
+    internal static Dictionary<string, object?> ComDeclaracao(object modelo, JsonNode? declaracao)
+    {
+        Dictionary<string, object?> campos = new(JsonSerializer.SerializeToNode(modelo)!.AsObject()
+            .Select(static p => KeyValuePair.Create(p.Key, (object?)p.Value?.DeepClone())));
+        campos.Remove("declaracao");
+        if (declaracao is not null)
+        {
+            campos["declaracao"] = declaracao;
+        }
+
+        return campos;
+    }
+
+    private static readonly object DaInscricao = new { serveAFaseDeInscricao = true, obrigatorio = true };
+
+    private static readonly object DeOutraFaseObrigatoria = new { serveAFaseDeInscricao = false, obrigatorio = true };
+
+    private static object Montar(string codigo, string nome, object declaracao, string titulo, object[] itens) =>
         new
         {
             codigo,
-            finalidade,
+            declaracao,
             descritivo = new { nome, descricao = (string?)null, tipoProcessoCodigo = (string?)null },
             conteudo = new { titulo, paginas = Paginas(), itens },
         };

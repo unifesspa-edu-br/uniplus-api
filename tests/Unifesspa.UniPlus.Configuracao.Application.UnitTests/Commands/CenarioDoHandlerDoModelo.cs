@@ -27,6 +27,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>Dublês, fatos aprovados e montagem de comandos comuns aos testes do handler do modelo de formulário.</summary>
 internal sealed class CenarioDoHandlerDoModelo
 {
@@ -78,7 +80,7 @@ internal sealed class CenarioDoHandlerDoModelo
 
     public Task<Result<Guid>> CriarAsync(ConteudoDoModeloInput conteudo, string? tipo = null) =>
         CriarModeloFormularioCommandHandler.Handle(
-            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", "HABILITACAO", new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
+            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", EntradaDeOutraFaseObrigatoria, new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
             Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
 
     public Task<Result> AtualizarAsync(ModeloFormulario existente, ConteudoDoModeloInput conteudo, string? tipo)
@@ -96,7 +98,7 @@ internal sealed class CenarioDoHandlerDoModelo
         ItemDoModelo item = new(
             "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, tipo,
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, tipo,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }

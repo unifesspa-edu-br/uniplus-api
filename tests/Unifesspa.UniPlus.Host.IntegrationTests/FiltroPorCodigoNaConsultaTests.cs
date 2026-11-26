@@ -46,7 +46,6 @@ public sealed class FiltroPorCodigoNaConsultaTests : IAsyncLifetime
     [InlineData("/api/selecao/motivos-de-decisao", "tipo", "uniplus.selecao.motivo_de_decisao.filtro_de_tipo_invalido")]
     [InlineData("/api/selecao/motivos-de-decisao", "subclassificacao", "uniplus.selecao.motivo_de_decisao.filtro_de_subclassificacao_invalida")]
     [InlineData("/api/configuracao/admin/fatos-candidato", "origem", "uniplus.configuracao.fato_candidato.filtro_de_origem_invalida")]
-    [InlineData("/api/configuracao/admin/modelos-formulario", "finalidade", "uniplus.configuracao.modelo_formulario.filtro_de_finalidade_invalida")]
     public async Task Listar_FiltroMarcado_RecusaEspacosEAceitaVazio(string rota, string parametro, string codigo)
     {
         ArgumentNullException.ThrowIfNull(rota);
