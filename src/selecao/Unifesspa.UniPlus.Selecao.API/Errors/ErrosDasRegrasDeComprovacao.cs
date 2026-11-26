@@ -63,6 +63,7 @@ internal static class ErrosDasRegrasDeComprovacao
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ConsequenciasDoDocumento() =>
     [
+        new("ConsequenciasDoDescumprimento.SemModalidadeEmQuestao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consequencias_do_descumprimento.sem_modalidade_em_questao", "A retirada exige uma condição que alcance algumas modalidades ofertadas")),
         new("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consequencias_do_descumprimento.acrescimo_nao_oferecido", "O processo não oferece o Fator de Atenuação das Desigualdades de Acesso")),
         new("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga", "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança")),
         new("DocumentoExigido.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao", "A fase não permite complementação — a abertura de prazo para reenvio exige complementação")),

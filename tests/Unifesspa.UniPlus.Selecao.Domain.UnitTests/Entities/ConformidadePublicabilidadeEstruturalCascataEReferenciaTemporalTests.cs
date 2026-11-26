@@ -146,6 +146,22 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_acrescimo_nao_oferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
+    [Fact]
+    public void PreCanon_ExigenciaQueAlcancaTodasAsModalidades_RecusaNoPainelENaPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "RETIRA_A_MODALIDADE", [BaseLegalResolvida()]));
+        AfirmarPendenciaUnicaERecusa(processo, "exigencia_sem_modalidade_em_questao", "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao");
+    }
+
+    [Fact]
+    public void PreCanon_GrupoQueAlcancaTodasAsModalidades_RecusaNoPainelENaPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "RETIRA_A_MODALIDADE");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_sem_modalidade_em_questao", "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao");
+    }
+
     [Fact(DisplayName = "Pré-canonicalização: consequência da exigência deve ser coerente com a ação da vaga")]
     public void PreCanon_ExigenciaConsequenciaIncoerenteComAcaoDaVaga()
     {

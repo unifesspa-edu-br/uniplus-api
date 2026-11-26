@@ -23,7 +23,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [
                 "Chave", "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
-                "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
+                "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento", "AbrePrazoParaReenvio",
                 "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes", "Requisitos",
             ],
@@ -41,7 +41,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         [typeof(RegraDeComprovacao)] = (
             [
                 "RegraQueContemId", "Ordem", "Forma", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Itens",
-                "BasesLegais", "Distincao", "GrupoDoFormularioParaRepeticao",
+                "BasesLegais", "Distincao", "GrupoDoFormularioParaRepeticao", "AbrePrazoParaReenvio",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),

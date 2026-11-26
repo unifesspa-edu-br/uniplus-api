@@ -102,11 +102,9 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
                 "Modalidade QUI forma par cruzado com IND, que não aponta de volta para ela.",
                 "Modalidade IND forma par cruzado com AC, que não aponta de volta para ela.");
 
-    [Fact(DisplayName = "A reclassificação em ampla concorrência sem ampla concorrência ofertada é recusada")]
-    public void ReclassificarSemAmpla_Recusa() =>
-        DeveRecusarSo(
-            Conferir(Modalidade("IND", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")),
-            DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia, "A modalidade IND prevê sua retirada, mas a oferta não inclui ampla concorrência.");
+    [Fact(DisplayName = "A ausência de ampla concorrência não impede a declaração da distribuição")]
+    public void ReclassificarSemAmpla_NaoRecusaNaDistribuicao() =>
+        Conferir(Modalidade("IND", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")).Should().BeEmpty();
 
     [Fact(DisplayName = "A reclassificação em ampla concorrência com ela ofertada passa sem recusa")]
     public void ReclassificarComAmpla_SemRecusa() =>
@@ -127,7 +125,6 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
 
         recusas.Select(static r => r.Error.Code).Should().Equal(
             DistribuicaoDeVagasErrorCodes.ComposicaoOrigemNaoSelecionada,
-            DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia,
             DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco);
     }
 
