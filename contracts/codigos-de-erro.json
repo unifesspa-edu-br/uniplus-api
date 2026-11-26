@@ -5142,6 +5142,11 @@
       "titulo": "A retirada da modalidade exige ampla concorrência na oferta"
     },
     {
+      "codigo": "uniplus.selecao.consequencias_do_descumprimento.sem_modalidade_em_questao",
+      "status": 422,
+      "titulo": "A retirada exige uma condição que alcance algumas modalidades ofertadas"
+    },
+    {
       "codigo": "uniplus.selecao.criterio_desempate.area_invalida",
       "status": 422,
       "titulo": "Código de área do ENEM inválido na ordem de desempate"

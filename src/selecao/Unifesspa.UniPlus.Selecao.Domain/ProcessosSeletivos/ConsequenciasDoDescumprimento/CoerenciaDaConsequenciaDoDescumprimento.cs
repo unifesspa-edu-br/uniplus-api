@@ -17,8 +17,13 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     [
         .. AcrescimoDasExigencias(configuracao),
         .. AcrescimoDosGrupos(configuracao),
+        .. SemModalidadeDasExigencias(configuracao, fatos),
+        .. SemModalidadeDosGrupos(configuracao, fatos),
         .. CoerenciaDasExigencias(configuracao, fatos),
         .. CoerenciaDosGrupos(configuracao, fatos),
+        .. SemAmplaDasExigencias(configuracao, fatos),
+        .. SemAmplaDosGrupos(configuracao, fatos),
+        .. SemAmplaDasModalidades(configuracao),
     ];
 
     internal static IEnumerable<FieldError> AcrescimoDasExigencias(ConfiguracaoDeclarada configuracao) =>
@@ -36,6 +41,55 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     internal static IEnumerable<FieldError> CoerenciaDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
         Grupos(configuracao).SelectMany(par => CoerenciaDoGrupo(configuracao, fatos, par.Grupo, par.Caminho));
+
+    internal static IEnumerable<FieldError> SemModalidadeDasExigencias(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
+        ExigenciasComRetirada(configuracao).Where(par => SemModalidade(configuracao, modalidade => par.Exigencia.PodeAlcancarModalidade(modalidade, fatos)))
+            .Select(par => SemModalidade(par.Caminho));
+
+    internal static IEnumerable<FieldError> SemModalidadeDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
+        GruposComRetirada(configuracao).Where(par => SemModalidade(configuracao, modalidade => par.Grupo.PodeAlcancarModalidade(modalidade, fatos)))
+            .Select(par => SemModalidade($"{par.Caminho}.consequencia"));
+
+    internal static IEnumerable<FieldError> SemAmplaDasExigencias(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
+        ExigenciasComRetirada(configuracao).Where(par => SemAmpla(configuracao, modalidade => par.Exigencia.PodeAlcancarModalidade(modalidade, fatos)))
+            .Select(par => SemAmpla(par.Caminho));
+
+    internal static IEnumerable<FieldError> SemAmplaDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
+        GruposComRetirada(configuracao).Where(par => SemAmpla(configuracao, modalidade => par.Grupo.PodeAlcancarModalidade(modalidade, fatos)))
+            .Select(par => SemAmpla($"{par.Caminho}.consequencia"));
+
+    private static IEnumerable<(DocumentoExigido Exigencia, string Caminho)> ExigenciasComRetirada(ConfiguracaoDeclarada configuracao) =>
+        Posicoes(configuracao, "documentosExigidos.exigencias", configuracao.Exigencias.DocumentosExigidos.Count)
+            .Where(indice => !Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") && !Recusada(configuracao, "distribuicaoVagas"))
+            .Select(indice => (Exigencia: configuracao.Exigencias.DocumentosExigidos[indice], Caminho: $"documentosExigidos.exigencias[{indice}].consequenciaIndeferimento"))
+            .Where(par => par.Exigencia.ConsequenciaIndeferimento == ConsequenciaDoDescumprimento.RetiraAModalidade);
+
+    private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> GruposComRetirada(ConfiguracaoDeclarada configuracao) =>
+        Grupos(configuracao).Where(par => !Recusada(configuracao, par.Caminho) && !Recusada(configuracao, "distribuicaoVagas")
+            && par.Grupo.Consequencia == ConsequenciaDoDescumprimento.RetiraAModalidade);
+
+    private static bool SemModalidade(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca)
+    {
+        string[] modalidades = [.. Modalidades(configuracao).Select(static modalidade => modalidade.Codigo).Distinct(StringComparer.Ordinal)];
+        int alcancadas = modalidades.Count(alcanca);
+        return alcancadas == 0 || alcancadas == modalidades.Length;
+    }
+
+    private static bool SemAmpla(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca) =>
+        configuracao.Vagas.DistribuicaoVagas.Any(oferta => oferta.Modalidades.Any(modalidade => alcanca(modalidade.Codigo))
+            && !oferta.Modalidades.Any(static modalidade => modalidade.Codigo == "AC"));
+
+    internal static IEnumerable<FieldError> SemAmplaDasModalidades(ConfiguracaoDeclarada configuracao) =>
+        Recusada(configuracao, "distribuicaoVagas") ? [] : configuracao.Vagas.DistribuicaoVagas
+            .SelectMany((oferta, indice) => oferta.Modalidades.Any(static modalidade => modalidade.Codigo == "AC") ? []
+                : oferta.Modalidades.Where(static modalidade => modalidade.AcaoQuandoIndeferido == "RETIRA_A_MODALIDADE")
+                    .Select(_ => SemAmpla($"distribuicaoVagas[{indice}].modalidades")));
+
+    private static FieldError SemModalidade(string campo) => new(campo, new DomainError(
+        "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao", "A retirada da modalidade exige uma condição que alcance algumas, mas não todas, as modalidades ofertadas."));
+
+    private static FieldError SemAmpla(string campo) => new(campo, new DomainError(
+        "ConsequenciasDoDescumprimento.RetiraAModalidadeSemAmplaConcorrencia", "A retirada da modalidade exige ampla concorrência na oferta."));
 
     private static IEnumerable<FieldError> CoerenciaDaExigencia(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, int indice)
     {

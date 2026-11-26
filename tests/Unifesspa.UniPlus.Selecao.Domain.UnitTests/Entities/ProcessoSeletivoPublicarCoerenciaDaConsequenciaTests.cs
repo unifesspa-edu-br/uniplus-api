@@ -171,7 +171,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RETIRA_A_MODALIDADE"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "LB_PPI", "RETIRA_A_MODALIDADE"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 

@@ -82,4 +82,12 @@ public sealed class ConferenciaDaConfiguracaoTests
 
         regra.Check(Arquitetura);
     }
+    [Fact(DisplayName = "As consequências do descumprimento não dependem da fase nem da etapa")]
+    public void ConsequenciasDoDescumprimento_NaoDependemDaFaseNemDaEtapa()
+    {
+        IArchRule regra = Types().That().ResideInNamespaceMatching(@"\.ConsequenciasDoDescumprimento(\.|$)")
+            .Should().NotDependOnAnyTypesThat().Are(typeof(FaseCronograma), typeof(EtapaProcesso), typeof(FaseDeclarada), typeof(EtapaDeclarada));
+        regra.Check(Arquitetura);
+    }
+
 }

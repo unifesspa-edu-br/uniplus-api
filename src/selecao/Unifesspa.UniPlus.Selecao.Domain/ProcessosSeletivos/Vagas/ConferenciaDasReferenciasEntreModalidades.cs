@@ -15,9 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class ConferenciaDasReferenciasEntreModalidades
 {
-    /// <summary>Token de contrato da ação que reclassifica na ampla concorrência.</summary>
-    private const string ReclassificarNaAmplaConcorrencia = "RETIRA_A_MODALIDADE";
-
     private static readonly (Func<ModalidadeSelecionada, string?> Citada, string Codigo, string Rotulo)[] Citacoes =
     [
         (static m => m.ComposicaoOrigemCodigo, DistribuicaoDeVagasErrorCodes.ComposicaoOrigemNaoSelecionada, "a origem"),
@@ -39,7 +36,6 @@ public static class ConferenciaDasReferenciasEntreModalidades
     [
         .. CitacoesForaDoConjunto(modalidade, declarada, codigos),
         .. ParCruzadoNaoReciproco(modalidade, declarada.Modalidades),
-        .. ReclassificacaoSemAmplaOfertada(modalidade, declarada, codigos),
     ];
 
     private static IEnumerable<FieldError> CitacoesForaDoConjunto(
@@ -77,18 +73,6 @@ public static class ConferenciaDasReferenciasEntreModalidades
             ? []
             : [Recusa(DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, $"Modalidade {modalidade.Codigo} forma par cruzado com {par}, que não aponta de volta para ela.")];
     }
-
-    // O destino não é declarado pelo operador: está implícito no token. Sem a recusa, um certame que não
-    // oferta ampla concorrência congela no envelope — imutável — uma instrução de reclassificar para
-    // modalidade que ele não tem.
-    private static IEnumerable<FieldError> ReclassificacaoSemAmplaOfertada(
-        ModalidadeSelecionada modalidade, DistribuicaoDeVagasDeclarada declarada, HashSet<string> codigos) =>
-        string.Equals(modalidade.AcaoQuandoIndeferido, ReclassificarNaAmplaConcorrencia, StringComparison.Ordinal)
-        && !codigos.Contains(ModalidadesFederaisLei12711.Ac)
-        && !declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades)
-            ? [Recusa(DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia,
-                $"A modalidade {modalidade.Codigo} prevê sua retirada, mas a oferta não inclui ampla concorrência.")]
-            : [];
 
     private static FieldError Recusa(string codigo, string mensagem) =>
         new("modalidades", new DomainError(codigo, mensagem));

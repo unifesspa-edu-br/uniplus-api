@@ -16991,14 +16991,29 @@
         "UNI-REQ-0501"
       ],
       "oQueAconteceu": [
-        "Uma modalidade prevê sua retirada quando a condição não é comprovada, mas a oferta não inclui ampla concorrência, na qual a pessoa deve poder continuar concorrendo."
+        "Uma exigência, grupo ou modalidade determina a retirada da modalidade, mas a oferta não inclui ampla concorrência."
       ],
       "comoResolver": [
-        "Inclua a ampla concorrência na oferta ou ajuste a modalidade e sua ação de indeferimento."
+        "Inclua a ampla concorrência na oferta ou ajuste a consequência declarada."
       ],
       "ondeAparece": [
-        "Definição de distribuição de vagas do processo seletivo",
-        "Simulação da distribuição de vagas do processo seletivo",
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.consequencias_do_descumprimento.sem_modalidade_em_questao",
+      "requisitos": [
+        "UNI-REQ-0501"
+      ],
+      "oQueAconteceu": [
+        "A exigência ou o grupo determina retirar a modalidade, mas sua condição não alcança nenhuma modalidade ofertada ou alcança todas elas."
+      ],
+      "comoResolver": [
+        "Ajuste a condição para alcançar apenas as modalidades que a exigem ou escolha outra consequência."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
         "Retificação em ato único"
       ]
     },

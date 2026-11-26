@@ -95,27 +95,15 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
             "rol aberto atende o certame institucional que ainda não tem regra própria");
     }
 
-    /// <remarks>
-    /// O formato do PSIQ: certame exclusivo de vagas por acréscimo, sem ampla concorrência.
-    /// Sem esta recusa o destino congela no envelope, que é imutável, e sobrevive à
-    /// retificação — o motor de classificação encontraria instrução de reclassificar para
-    /// uma modalidade que o processo nunca ofertou.
-    /// </remarks>
-    [Fact(DisplayName = "Modalidade que reclassifica na ampla é recusada quando a ampla não é ofertada")]
-    public void Criar_ReclassificaAcSemAcOfertada_Falha()
+    [Fact(DisplayName = "A distribuição sem ampla pode ser declarada como rascunho")]
+    public void Criar_ReclassificaAcSemAcOfertada_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
             ModalidadeComAcao("AC_I", "RETIRA_A_MODALIDADE", quantidadeDeclarada: 2),
             ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
         ];
-
-        Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(4, RegraPsiq(), modalidades);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().Contain(e =>
-            e.Error.Code == "ConfiguracaoDistribuicaoVagas.RetiraAModalidadeSemAmplaConcorrencia"
-            && e.Error.Message.Contains("AC_I", StringComparison.Ordinal));
+        CriarConfiguracao(4, RegraPsiq(), modalidades).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Reclassificar na ampla é aceito quando a ampla está entre as ofertadas")]
