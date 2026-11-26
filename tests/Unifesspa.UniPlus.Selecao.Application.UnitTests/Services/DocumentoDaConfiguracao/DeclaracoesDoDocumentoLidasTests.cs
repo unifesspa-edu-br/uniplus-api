@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -287,6 +288,43 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         DeclaracoesDoDocumento lidas = DeclaracoesDoDocumentoLidas.De(documento);
 
         lidas.Fases.Single().Publicacoes.RegraDeHomologacao!.Alternativas[1].Condicoes.Single().Enquadramento!.Value.GetRawText().Should().Contain("\"IGUAL\"");
+    }
+
+    [Fact(DisplayName = "O cadastro de reserva copia cada chamada na ordem enviada, com a participação como foi escrita, inclusive a desconhecida")]
+    public void CadastroDeReserva_CopiaAsChamadasEACodigoComoEscrito()
+    {
+        DeclaracoesDoDocumento lidas = Lidas("""
+            { "cadastroDeReserva": [
+              { "numeroDaChamada": 2, "pessoasDaReservaPorVaga": 0 },
+              { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 3, "participacaoDaReserva": "ASSUME_NA_MESMA_CHAMADA" },
+              { "numeroDaChamada": 3, "pessoasDaReservaPorVaga": 1, "participacaoDaReserva": "CODIGO_QUE_NAO_EXISTE" } ] }
+            """);
+
+        lidas.CadastroDeReserva.Should().Equal(
+            new CadastroDeReservaInformado(2, 0, null),
+            new CadastroDeReservaInformado(1, 3, "ASSUME_NA_MESMA_CHAMADA"),
+            new CadastroDeReservaInformado(3, 1, "CODIGO_QUE_NAO_EXISTE"));
+    }
+
+    [Fact(DisplayName = "A chamada sem número ou sem quantidade, ou com número fora do inteiro, fica com o campo ausente, para o domínio recusar")]
+    public void CadastroDeReserva_ComCamposAusentesOuForaDoInteiro_FicaAusente()
+    {
+        DeclaracoesDoDocumento lidas = Lidas("""
+            { "cadastroDeReserva": [ { "pessoasDaReservaPorVaga": 1 }, { "numeroDaChamada": 3000000000 } ] }
+            """);
+
+        lidas.CadastroDeReserva.Should().Equal(new CadastroDeReservaInformado(null, 1, null), new CadastroDeReservaInformado(null, null, null));
+    }
+
+    [Fact(DisplayName = "A manifestação de interesse vai como escrita, a desconhecida inclusive, e o documento sem os blocos fica sem cadastro de reserva e sem manifestação")]
+    public void Manifestacao_VaiComoEscritaEOsBlocosAusentesFicamVazios()
+    {
+        Lidas("""{ "manifestacaoDeInteresse": "UMA_VEZ" }""").ManifestacaoDeInteresse.Should().Be("UMA_VEZ");
+        Lidas("""{ "manifestacaoDeInteresse": "CODIGO_QUE_NAO_EXISTE" }""").ManifestacaoDeInteresse.Should().Be("CODIGO_QUE_NAO_EXISTE");
+        DeclaracoesDoDocumento semBlocos = Lidas("{}");
+
+        semBlocos.ManifestacaoDeInteresse.Should().BeNull();
+        semBlocos.CadastroDeReserva.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O documento nulo é defeito de quem chama")]

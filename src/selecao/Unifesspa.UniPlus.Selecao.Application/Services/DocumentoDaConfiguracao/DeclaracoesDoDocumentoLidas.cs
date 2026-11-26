@@ -7,13 +7,14 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Copia o documento que passou pela forma para as declarações do domínio: a identificação e as fases, cada parte de lista com a
-/// posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
+/// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva e a
+/// manifestação de interesse, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
 /// então aqui só se converte; o que falta fica ausente ou no valor de partida do tipo, e quem o confere é o domínio. Não decide regra.
 /// </summary>
 internal static class DeclaracoesDoDocumentoLidas
@@ -24,8 +25,18 @@ internal static class DeclaracoesDoDocumentoLidas
 
         return new(
             Identificacao(Objeto(documento, "identificacao")),
-            [.. Itens(Objeto(documento, "cronograma"), "fases").Select(static item => Fase(item.Posicao, item.Item))]);
+            [.. Itens(Objeto(documento, "cronograma"), "fases").Select(static item => Fase(item.Posicao, item.Item))])
+        {
+            CadastroDeReserva = [.. Itens(documento, "cadastroDeReserva").Select(static item => CadastroDeReserva(item.Item))],
+            ManifestacaoDeInteresse = Texto(documento, "manifestacaoDeInteresse"),
+        };
     }
+
+    // O código da participação segue como texto até o domínio: o desconhecido não vira ausente, porque ausente é a chamada sem opção.
+    private static CadastroDeReservaInformado CadastroDeReserva(JsonObject chamada) => new(
+        Valor<int>(chamada, "numeroDaChamada"),
+        Valor<int>(chamada, "pessoasDaReservaPorVaga"),
+        Texto(chamada, "participacaoDaReserva"));
 
     private static IdentificacaoNoDocumento Identificacao(JsonObject? bloco) => new(
         Texto(bloco, "nome"),

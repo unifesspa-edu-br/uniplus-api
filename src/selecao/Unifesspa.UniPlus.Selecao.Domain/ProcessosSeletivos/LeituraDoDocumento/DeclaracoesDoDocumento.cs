@@ -1,13 +1,21 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 
 /// <summary>
-/// O que o documento da configuração declara, copiado do JSON sem conferir regra: a identificação e as fases do cronograma, com a
-/// posição de cada parte no documento enviado e os códigos de catálogo como foram escritos. Os blocos seguintes entram aqui à medida
-/// que a leitura os alcança.
+/// O que o documento da configuração declara, copiado do JSON sem conferir regra: a identificação, as fases do cronograma, o
+/// cadastro de reserva por chamada e a manifestação de interesse, com a posição de cada parte no documento enviado e os códigos de
+/// catálogo como foram escritos. Os blocos seguintes entram aqui à medida que a leitura os alcança.
 /// </summary>
-public sealed record DeclaracoesDoDocumento(IdentificacaoNoDocumento Identificacao, IReadOnlyList<FaseNoDocumento> Fases);
+public sealed record DeclaracoesDoDocumento(IdentificacaoNoDocumento Identificacao, IReadOnlyList<FaseNoDocumento> Fases)
+{
+    /// <summary>As chamadas do cadastro de reserva na ordem do documento; o bloco ausente é a lista vazia.</summary>
+    public IReadOnlyList<CadastroDeReservaInformado?> CadastroDeReserva { get; init; } = [];
+
+    /// <summary>O código da manifestação de interesse como foi escrito; ausente é nulo, e quer dizer que o edital não a prevê.</summary>
+    public string? ManifestacaoDeInteresse { get; init; }
+}
 
 /// <summary>
 /// A identificação do processo como o documento a traz. O nome e o identificador legível vão como foram escritos, cada código de

@@ -68,6 +68,8 @@ internal sealed class CenarioDoRascunho
 
     public ResolucaoDosModelosCitados Resolucao => new(Modelos);
 
+    public DiagnosticoDoRascunho Diagnostico => new(Resolucao);
+
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     public PreparacaoDoDocumentoDoRascunho Preparacao =>
@@ -78,7 +80,7 @@ internal sealed class CenarioDoRascunho
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
     public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos), new DescricaoDaParticipacaoDaReserva()]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
 
     public CenarioDoRascunho PodeConfigurarEm(UnidadeView unidade)
     {

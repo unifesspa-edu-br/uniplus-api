@@ -205,6 +205,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
         services.AddScoped<BloqueioCompartilhadoDoProcessoSeletivo>();
         services.AddScoped<ResolucaoDosModelosCitados>();
+        services.AddScoped<DiagnosticoDoRascunho>();
         AddExportacaoDoRascunho(services);
     }
 
@@ -215,6 +216,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDocumento>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeMotivosDeDecisao>();
         AddDescricoesDosCadastrosDaConfiguracao(services);
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDaParticipacaoDaReserva>();
         services.AddScoped<DescricaoDoDocumentoDoRascunho>();
         services.AddScoped<DescricaoDaLocalidade>();
         services.AddScoped<ExportacaoDoRascunho>();

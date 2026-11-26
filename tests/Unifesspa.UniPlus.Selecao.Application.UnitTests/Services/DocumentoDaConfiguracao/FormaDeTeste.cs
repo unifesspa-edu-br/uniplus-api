@@ -29,6 +29,15 @@ internal static class FormaDeTeste
         ["motivosDeDecisao"] = Lista(Motivo()),
         ["provaPresencial"] = Objeto(new() { ["municipios"] = Lista(Objeto(new() { ["codigoIbge"] = Valor(), ["nome"] = Valor(true), ["uf"] = Valor() })) }),
         ["documentosExigidos"] = Objeto(new() { ["exigencias"] = Lista(Exigencia()) }),
+        ["cadastroDeReserva"] = Lista(ChamadaDoCadastroDeReserva()),
+    });
+
+    private static FormaDoNo ChamadaDoCadastroDeReserva() => Objeto(new()
+    {
+        ["numeroDaChamada"] = Valor(),
+        ["pessoasDaReservaPorVaga"] = Valor(),
+        ["participacaoDaReserva"] = Valor(),
+        ["participacaoDaReservaRotulo"] = Valor(somenteLeitura: true),
     });
 
     private static FormaDoNo Motivo() => Objeto(new()

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 
 using System.Text.Json.Nodes;
 
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -17,14 +16,6 @@ public sealed class ResolucaoDosModelosCitados(IModeloDeDocumentoRepository mode
             .ListarDoProcessoAsync(donoId, [.. citados.Select(static citado => citado.Id).Distinct()], cancellationToken)
             .ConfigureAwait(false);
         return ResultadoDosModelosCitados.DasCitacoes(citados, encontrados.ToDictionary(static modelo => modelo.Id));
-    }
-
-    public async Task<IReadOnlyList<FieldError>> DiagnosticarAsync(RascunhoDeProcessoSeletivo rascunho, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(rascunho);
-        ResultadoDosModelosCitados resultado = await ResolverAsync(
-            rascunho.Id, JsonNode.Parse(rascunho.Documento)!.AsObject(), cancellationToken).ConfigureAwait(false);
-        return resultado.Causas;
     }
 
     private static List<(int Posicao, Guid Id)> Citacoes(JsonObject documento)

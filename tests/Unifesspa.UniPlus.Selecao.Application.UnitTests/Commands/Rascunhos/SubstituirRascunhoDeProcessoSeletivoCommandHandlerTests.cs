@@ -25,7 +25,7 @@ public sealed class SubstituirRascunhoDeProcessoSeletivoCommandHandlerTests
             _cenario.UnidadesDoDocumento,
             _cenario.Bloqueio,
             _cenario.UnitOfWork,
-            _cenario.Resolucao,
+            _cenario.Diagnostico,
             CancellationToken.None);
 
     private async Task NadaFoiGravado()
@@ -225,7 +225,7 @@ public sealed class SubstituirRascunhoDeProcessoSeletivoCommandHandlerTests
     public async Task ArgumentosNulos_Lancam()
     {
         Func<Task> semComando = () => SubstituirRascunhoDeProcessoSeletivoCommandHandler.Handle(
-            null!, _cenario.Preparacao, _cenario.UnidadesDoDocumento, _cenario.Bloqueio, _cenario.UnitOfWork, _cenario.Resolucao, CancellationToken.None);
+            null!, _cenario.Preparacao, _cenario.UnidadesDoDocumento, _cenario.Bloqueio, _cenario.UnitOfWork, _cenario.Diagnostico, CancellationToken.None);
 
         await semComando.Should().ThrowAsync<ArgumentNullException>();
     }

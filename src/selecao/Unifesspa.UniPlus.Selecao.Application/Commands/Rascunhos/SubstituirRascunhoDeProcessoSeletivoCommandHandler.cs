@@ -24,7 +24,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         UnidadeDoDocumentoDoRascunho unidades,
         BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
         IUnitOfWork unitOfWork,
-        ResolucaoDosModelosCitados resolucao,
+        DiagnosticoDoRascunho diagnostico,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -32,7 +32,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(bloqueio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(resolucao);
+        ArgumentNullException.ThrowIfNull(diagnostico);
 
         Result<SubstituicaoPreparada> preparada = await PrepararAsync(command, preparacao, unidades, bloqueio, cancellationToken).ConfigureAwait(false);
         if (preparada.IsFailure)
@@ -40,7 +40,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
             return Result<RascunhoSalvoDto>.ValidationFailure(preparada.Errors);
         }
 
-        return await SubstituirAsync(preparada.Value!, command.Precondicao, unidades, unitOfWork, resolucao, cancellationToken).ConfigureAwait(false);
+        return await SubstituirAsync(preparada.Value!, command.Precondicao, unidades, unitOfWork, diagnostico, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<SubstituicaoPreparada>> PrepararAsync(
@@ -77,7 +77,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         PrecondicaoIfMatch precondicao,
         UnidadeDoDocumentoDoRascunho unidades,
         IUnitOfWork unitOfWork,
-        ResolucaoDosModelosCitados resolucao,
+        DiagnosticoDoRascunho diagnostico,
         CancellationToken cancellationToken)
     {
         RascunhoDeProcessoSeletivo rascunho = preparada.Rascunho;
@@ -89,7 +89,7 @@ public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<FieldError> diagnosticos = await resolucao.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> diagnosticos = await diagnostico.DiagnosticarAsync(rascunho, cancellationToken).ConfigureAwait(false);
         return Result<RascunhoSalvoDto>.Success(RascunhoSalvoDto.DoRascunho(rascunho, diagnosticos));
     }
 

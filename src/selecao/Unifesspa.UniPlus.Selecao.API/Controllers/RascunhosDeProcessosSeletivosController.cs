@@ -74,7 +74,9 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// O <c>id</c>, a <c>versao</c> e o <c>publicadoEm</c> da raiz e todo campo marcado <c>readOnly</c> no esquema são
     /// ignorados. Toda parte que o esquema exige com <c>chave</c> a traz: a chave é escolhida por quem cria a parte, e o
     /// sistema não a atribui. A parte sem <c>chave</c> recusa o salvamento (422), no ponteiro da chave que falta. O
-    /// diagnóstico aponta modelos citados que não foram enviados ao rascunho ou ainda não foram confirmados.
+    /// diagnóstico aponta modelos citados que não foram enviados ao rascunho ou ainda não foram confirmados, e as recusas do
+    /// cadastro de reserva (no ponteiro do item e do campo recusado) e da manifestação de interesse, que não impedem o salvamento:
+    /// a recusa (422) vem na publicação.
     /// <para>
     /// A resposta não devolve o documento salvo. Os campos somente de leitura da revisão salva obtêm-se relendo a revisão por
     /// <c>GET /rascunhos-de-processos-seletivos/{id}</c> (o <c>Location</c> da resposta). Se o <c>ETag</c> do GET for o
@@ -117,7 +119,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// Exporta o documento do rascunho. Traz o <c>id</c> do rascunho na raiz e, ao lado dos códigos de identificação, os
     /// descritivos só de leitura que o Uni+ já guarda nos cadastros: nomes das unidades, dos tipos, das categorias, das ofertas
     /// de curso, das modalidades, do atendimento e da base legal da FADA, o nome e a UF da localidade e o rótulo de cada valor de
-    /// código. O descritivo cujo cadastro não resolve é omitido. Não traz <c>versao</c> nem <c>publicadoEm</c>, que não existem
+    /// código e da participação da reserva de cada chamada. O descritivo cujo cadastro não resolve é omitido. Não traz <c>versao</c> nem <c>publicadoEm</c>, que não existem
     /// antes da publicação, nem o quadro de vagas calculado, que ainda não é preenchido. O <c>ETag</c> da resposta identifica a
     /// revisão exportada.
     /// </summary>
