@@ -115,13 +115,12 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result.Success();
         }
 
-        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+        return ConferenciaDeVinculoNovo.Conferir(
             fatos.Catalogo,
             ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 [],
                 criterios.Select(static c => c.Parametros).OfType<ParametrosDesempatePredicadoFato>()
                     .Select(static a => (a.Condicao.Fato, a.Condicao.Valor))));
-        return vinculoNovo.IsFailure ? Result.Failure(vinculoNovo.Error!) : vinculoNovo;
     }
 }

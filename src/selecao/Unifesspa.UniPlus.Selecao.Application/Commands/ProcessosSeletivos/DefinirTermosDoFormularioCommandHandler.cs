@@ -122,7 +122,7 @@ public static class DefinirTermosDoFormularioCommandHandler
         Result vinculoNovo = ConferirVinculoNovo(processo, resolvidos);
         if (vinculoNovo.IsFailure)
         {
-            return Result.Failure(vinculoNovo.Error!);
+            return vinculoNovo;
         }
 
         Result definido = Definir(command, processo, resolvidos.Termos);

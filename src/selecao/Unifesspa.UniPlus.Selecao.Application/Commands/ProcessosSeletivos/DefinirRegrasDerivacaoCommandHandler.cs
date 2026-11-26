@@ -80,7 +80,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),
                 configuracoes.SelectMany(static c => c.CodigosContribuidos)));
 
-        return vinculoNovo.IsFailure ? Result.Failure(vinculoNovo.Error!) : processo.DefinirRegrasDerivacao(configuracoes);
+        return vinculoNovo.IsFailure ? vinculoNovo : processo.DefinirRegrasDerivacao(configuracoes);
     }
 }
 
