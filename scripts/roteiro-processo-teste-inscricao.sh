@@ -487,23 +487,23 @@ setup_configuracao() {
 ]
 JSON
     )
-    BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "$(jq -nc \
+    BASE_LEGAL_FADA_ID=$(post_tolerante "/api/configuracao/admin/bases-legais-fada" "$(jq -nc \
         --arg identificacao "$fada_identificacao" --argjson municipios "$municipios_fada" \
         '{tipoInstrumento: "EDITAL", identificacao: $identificacao,
           descricao: "FADA", municipios: $municipios}')")
     if [ -z "$BASE_LEGAL_FADA_ID" ]; then
-        base_legal_fada=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -c --arg i "$fada_identificacao" '[.[] | select(.identificacao == $i)] | if length == 1 then .[0] else null end')
+        base_legal_fada=$(api_get "/api/configuracao/bases-legais-fada?limit=100" | jq -c --arg i "$fada_identificacao" '[.[] | select(.identificacao == $i)] | if length == 1 then .[0] else null end')
         BASE_LEGAL_FADA_ID=$(jq -r '.id // empty' <<< "$base_legal_fada")
         exigir_id "BASE_LEGAL_FADA_ID" "$BASE_LEGAL_FADA_ID"
         if ! municipios_da_base_legal_conferem "$base_legal_fada" "$municipios_fada"; then
             log "Atualizando os municípios da base legal do FADA conforme o Anexo V"
-            if ! (api PUT "/api/configuracao/admin/base-legal-bonus-regional/$BASE_LEGAL_FADA_ID" "$(jq -c \
+            if ! (api PUT "/api/configuracao/admin/bases-legais-fada/$BASE_LEGAL_FADA_ID" "$(jq -c \
                 --argjson municipios "$municipios_fada" \
                 '{id, tipoInstrumento: .tipoInstrumento.codigo, identificacao, descricao,
                   municipios: [$municipios[] | {codigoIbge, nome, uf}]}' <<< "$base_legal_fada")" >/dev/null); then
                 fail "A atualização dos municípios da base legal do FADA foi recusada."
             fi
-            base_legal_fada=$(api_get "/api/configuracao/base-legal-bonus-regional/$BASE_LEGAL_FADA_ID")
+            base_legal_fada=$(api_get "/api/configuracao/bases-legais-fada/$BASE_LEGAL_FADA_ID")
             if ! municipios_da_base_legal_conferem "$base_legal_fada" "$municipios_fada"; then
                 fail "Os municípios da base legal do FADA continuam diferentes dos previstos no Anexo V após a atualização."
             fi
@@ -787,7 +787,7 @@ definir_fada() {
     # residência no período, com as opções da base legal do acréscimo. Recebe
     # o acréscimo quem o pede no formulário (item 1.6): a configuração cita o
     # pedido.
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/fada" "{
         \"aplica\": true, \"regra\": {\"codigo\": \"FADA_MULTIPLICATIVO\", \"versao\": \"v1\"},
         \"fator\": 1.15, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
         \"baseLegal\": {\"id\": \"$BASE_LEGAL_FADA_ID\"}

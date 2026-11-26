@@ -1855,7 +1855,7 @@
           ]
         },
         {
-          "name": "Criar Base Legal de Bônus Regional (smoke)",
+          "name": "Criar Base Legal do Fator de Atenuação das Desigualdades de Acesso (FADA) (smoke)",
           "request": {
             "method": "POST",
             "header": [
@@ -1871,7 +1871,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/configuracao/admin/base-legal-bonus-regional",
+              "raw": "{{base_url}}/api/configuracao/admin/bases-legais-fada",
               "host": [
                 "{{base_url}}"
               ],
@@ -1879,7 +1879,7 @@
                 "api",
                 "configuracao",
                 "admin",
-                "base-legal-bonus-regional"
+                "bases-legais-fada"
               ]
             },
             "auth": {
@@ -1912,7 +1912,7 @@
                   "pm.test('201 Created com Guid', () => {",
                   "  pm.response.to.have.status(201);",
                   "  const id = pm.response.json();",
-                  "  pm.environment.set('base_legal_bonus_regional_id', id);",
+                  "  pm.environment.set('base_legal_do_fada_id', id);",
                   "});"
                 ]
               }
@@ -1920,7 +1920,7 @@
           ]
         },
         {
-          "name": "Definir Bônus Regional",
+          "name": "Definir Fator de Atenuação das Desigualdades de Acesso (FADA)",
           "request": {
             "method": "PUT",
             "header": [
@@ -1936,7 +1936,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/bonus-regional",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fada",
               "host": [
                 "{{base_url}}"
               ],
@@ -1945,7 +1945,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "bonus-regional"
+                "fada"
               ]
             },
             "auth": {
@@ -1960,7 +1960,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"aplica\": true,\n  \"regra\": {\n    \"codigo\": \"FADA_MULTIPLICATIVO\",\n    \"versao\": \"v1\"\n  },\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegal\": {\n    \"id\": \"{{base_legal_bonus_regional_id}}\"\n  }\n}",
+              "raw": "{\n  \"aplica\": true,\n  \"regra\": {\n    \"codigo\": \"FADA_MULTIPLICATIVO\",\n    \"versao\": \"v1\"\n  },\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"baseLegal\": {\n    \"id\": \"{{base_legal_do_fada_id}}\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
