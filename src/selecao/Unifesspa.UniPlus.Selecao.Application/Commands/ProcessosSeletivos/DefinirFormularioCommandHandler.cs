@@ -185,7 +185,7 @@ public static class RemoverFormularioCommandHandler
 
     private static Result Remover(ProcessoSeletivo processo, string formularioCodigo)
     {
-        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(formularioCodigo);
+        Result<CodigoDoFormulario> codigo = RegrasDosFormularios.CodigoDoCaminho(formularioCodigo);
         return codigo.IsFailure ? Result.Failure(codigo.Error!) : processo.RemoverFormulario(codigo.Value!);
     }
 }

@@ -237,10 +237,20 @@ public static class RegrasDosFormularios
     public static DomainError FormularioNaoEncontrado(CodigoDoFormulario codigo)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        return new(
-            FormularioProcessoErrorCodes.NaoEncontrado,
-            $"O processo não tem formulário com o código {codigo.Valor}.");
+        return FormularioNaoEncontrado(codigo.Valor);
     }
+
+    /// <summary>O código do caminho: fora do formato, equivale a formulário inexistente.</summary>
+    public static Result<CodigoDoFormulario> CodigoDoCaminho(string codigo)
+    {
+        Result<CodigoDoFormulario> criado = CodigoDoFormulario.Criar(codigo);
+        return criado.IsSuccess ? criado : Result<CodigoDoFormulario>.Failure(FormularioNaoEncontrado(codigo));
+    }
+
+    private static DomainError FormularioNaoEncontrado(string codigo) =>
+        new(
+            FormularioProcessoErrorCodes.NaoEncontrado,
+            $"O processo não tem formulário com o código {codigo}.");
 
     /// <summary>O código informado na aplicação de modelo não é de nenhum formulário do processo.</summary>
     public static DomainError FormularioInexistente(CodigoDoFormulario codigo)
