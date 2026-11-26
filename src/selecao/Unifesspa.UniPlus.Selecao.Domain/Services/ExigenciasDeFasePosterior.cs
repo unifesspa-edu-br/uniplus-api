@@ -7,6 +7,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using ValueObjects;
 
@@ -29,12 +30,12 @@ public static class ExigenciasDeFasePosterior
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(fatosConhecidos);
 
-        if (FinalidadesAteAInscricao(configuracao) is not { } finalidades)
+        if (FormulariosAteAInscricao(configuracao) is not { } formularios)
         {
             return new HashSet<Guid>();
         }
 
-        ConhecimentoAteAInscricao conhecimento = ConhecimentoAteAInscricao.De(configuracao, finalidades, fatosConhecidos);
+        ConhecimentoAteAInscricao conhecimento = ConhecimentoAteAInscricao.De(configuracao, formularios, fatosConhecidos);
 
         return configuracao.RegrasDeComprovacao.RegrasSemGrupo.SelectMany(regra => Bloqueadas(regra, grupoRepetido: null, conhecimento)).ToHashSet();
     }
@@ -55,27 +56,24 @@ public static class ExigenciasDeFasePosterior
     }
 
     /// <summary>
-    /// As finalidades cujo formulário pergunta numa fase até a da inscrição; nulo quando o processo não
-    /// tem formulário de inscrição com fase, e então não há fase da inscrição de que partir.
+    /// Os formulários que perguntam numa fase até a da inscrição, a mais tardia entre as dos formulários da inscrição;
+    /// nulo quando o processo não tem formulário de inscrição com fase, e então não há fase da inscrição de que partir.
     /// </summary>
-    private static List<FinalidadeFormulario>? FinalidadesAteAInscricao(ConfiguracaoAvaliavel configuracao)
+    private static List<CodigoDoFormulario>? FormulariosAteAInscricao(ConfiguracaoAvaliavel configuracao)
     {
         Dictionary<Guid, FaseCronograma> fasesPorId = configuracao.Fases.ToDictionary(static f => f.Id);
-        if (FaseDaInscricao(configuracao, fasesPorId) is not { } faseDaInscricao)
+        OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Fases);
+        if (FaseDaInscricao(configuracao, fasesPorId, ordem) is not { } faseDaInscricao)
         {
             return null;
         }
 
-        OrdemDoCronograma ordem = OrdemDoCronograma.Do(configuracao.Fases);
-
         return [.. configuracao.Formularios
             .Where(f => f.FaseId is { } fase && fasesPorId.TryGetValue(fase, out FaseCronograma? faseDoFormulario) && !ordem.Posterior(faseDoFormulario, faseDaInscricao))
-            .Select(static f => f.Finalidade)];
+            .Select(static f => f.Codigo)];
     }
 
-    private static FaseCronograma? FaseDaInscricao(ConfiguracaoAvaliavel configuracao, Dictionary<Guid, FaseCronograma> fasesPorId) =>
-        configuracao.Formularios.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao) is { FaseId: { } faseId }
-            && fasesPorId.TryGetValue(faseId, out FaseCronograma? fase)
-                ? fase
-                : null;
+    private static FaseCronograma? FaseDaInscricao(ConfiguracaoAvaliavel configuracao, Dictionary<Guid, FaseCronograma> fasesPorId, OrdemDoCronograma ordem) =>
+        ordem.MaisTardia(configuracao.FormulariosQueServemAInscricao
+            .Select(f => f.FaseId is { } faseId && fasesPorId.TryGetValue(faseId, out FaseCronograma? fase) ? fase : null));
 }

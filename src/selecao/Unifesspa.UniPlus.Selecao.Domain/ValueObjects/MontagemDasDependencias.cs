@@ -5,14 +5,19 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 internal sealed class MontagemDasDependencias
 {
+    private readonly FormularioProcesso[] _formularios;
     private readonly Dictionary<(TipoDeParteDaConfiguracao, string), ParteDaConfiguracao> _partes = [];
     private readonly HashSet<string> _dadosExistentes = new(StringComparer.Ordinal);
     private readonly List<DependenciaEntrePartes> _dependencias = [];
     private readonly Dictionary<ParteDaConfiguracao, long> _posicoes = [];
     private KeyValuePair<string, IReadOnlyList<string>>[] _derivadosDoSistema = [];
+
+    private MontagemDasDependencias(IEnumerable<FormularioProcesso> formularios) =>
+        _formularios = [.. formularios.OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal)];
 
     internal IReadOnlyCollection<ParteDaConfiguracao> Partes => _partes.Values;
     internal IReadOnlyList<DependenciaEntrePartes> Dependencias => _dependencias;
@@ -23,7 +28,7 @@ internal sealed class MontagemDasDependencias
         IReadOnlyCollection<FormularioProcesso> formularios, IReadOnlyCollection<TermoExigidoFormulario> termos,
         IReadOnlyCollection<GrupoColetado> grupos)
     {
-        MontagemDasDependencias montagem = new();
+        MontagemDasDependencias montagem = new(formularios);
         montagem.RegistrarItens(itens, grupos);
         montagem.RegistrarDadosCalculados(itens, regras, documentos, formularios, termos, grupos);
         montagem.LigarItens(itens, grupos);
@@ -44,18 +49,24 @@ internal sealed class MontagemDasDependencias
         return GrafoDeFatos.DetectarCiclo(dependencias) is { } ciclo ? [.. ciclo.Select(id => porIdentidade[id])] : null;
     }
 
-    private static IEnumerable<(FatoColetado Item, FinalidadeFormulario Finalidade, int Ordem)> ItensNaPosicaoDeColeta(
+    private IEnumerable<(FatoColetado Item, int PosicaoDoFormulario, int Ordem)> ItensNaPosicaoDeColeta(
         IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        itens.Select(static i => (i, i.Finalidade!.Value, i.Ordem))
-            .Concat(grupos.SelectMany(static g => g.Subitens.Select(i => (i, g.Finalidade!.Value, g.Ordem))));
+        itens.Select(i => (i, PosicaoDoFormulario(i.FormularioId), i.Ordem))
+            .Concat(grupos.SelectMany(g => g.Subitens.Select(i => (i, PosicaoDoFormulario(g.FormularioId), g.Ordem))));
+
+    private int PosicaoDoFormulario(Guid? formularioId)
+    {
+        int posicao = Array.FindIndex(_formularios, f => f.Id == formularioId);
+        return posicao >= 0 ? posicao : throw new InvalidOperationException("O campo, o grupo ou o termo não pertence a um formulário do processo.");
+    }
 
     private void RegistrarItens(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
     {
-        foreach ((FatoColetado item, FinalidadeFormulario finalidade, int ordem) in ItensNaPosicaoDeColeta(itens, grupos))
+        foreach ((FatoColetado item, int formulario, int ordem) in ItensNaPosicaoDeColeta(itens, grupos))
         {
             _dadosExistentes.Add(item.FatoCodigo);
-            _posicoes[Parte(TipoDeParteDaConfiguracao.Campo, item.FatoCodigo)] = PosicaoNaColeta.DoItem(finalidade, ordem);
-            _posicoes[Parte(TipoDeParteDaConfiguracao.Dado, item.FatoCodigo)] = PosicaoNaColeta.DoItem(finalidade, ordem);
+            _posicoes[Parte(TipoDeParteDaConfiguracao.Campo, item.FatoCodigo)] = PosicaoNaColeta.DoItem(formulario, ordem);
+            _posicoes[Parte(TipoDeParteDaConfiguracao.Dado, item.FatoCodigo)] = PosicaoNaColeta.DoItem(formulario, ordem);
         }
     }
 
@@ -132,8 +143,8 @@ internal sealed class MontagemDasDependencias
 
     private void LigarSecao(FormularioProcesso formulario, PaginaDoFormulario secao, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
     {
-        ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Secao, CodigoNoFormulario(formulario.Finalidade, secao.Codigo));
-        _posicoes[parte] = PosicaoNaColeta.DaSecao(formulario, secao, itens, grupos);
+        ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Secao, CodigoNoFormulario(formulario.Codigo, secao.Codigo));
+        _posicoes[parte] = PosicaoNaColeta.DaSecao(PosicaoDoFormulario(formulario.Id), formulario, secao, itens, grupos);
         LigarCitacoes(MotivoDaDependencia.CondicionaExibicao, secao.FatosCitados, parte);
         foreach (FatoColetado campo in CamposDaSecao(formulario, secao, itens, grupos))
         {
@@ -143,16 +154,17 @@ internal sealed class MontagemDasDependencias
 
     private static IEnumerable<FatoColetado> CamposDaSecao(FormularioProcesso formulario, PaginaDoFormulario secao,
         IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        itens.Where(i => i.Finalidade == formulario.Finalidade && string.Equals(i.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
-            .Concat(grupos.Where(g => g.Finalidade == formulario.Finalidade && string.Equals(g.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
+        itens.Where(i => i.FormularioId == formulario.Id && string.Equals(i.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
+            .Concat(grupos.Where(g => g.FormularioId == formulario.Id && string.Equals(g.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))
                 .SelectMany(static g => g.Subitens));
 
     private void LigarTermos(IEnumerable<TermoExigidoFormulario> termos)
     {
         foreach (TermoExigidoFormulario termo in termos.Where(static t => t.FatosCitados.Count > 0))
         {
-            ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Termo, CodigoNoFormulario(termo.Finalidade!.Value, termo.Codigo));
-            _posicoes[parte] = PosicaoNaColeta.DoTermo(termo.Finalidade!.Value, termo.Ordem);
+            int posicao = PosicaoDoFormulario(termo.FormularioId);
+            ParteDaConfiguracao parte = Parte(TipoDeParteDaConfiguracao.Termo, CodigoNoFormulario(_formularios[posicao].Codigo, termo.Codigo));
+            _posicoes[parte] = PosicaoNaColeta.DoTermo(posicao, termo.Ordem);
             LigarCitacoes(MotivoDaDependencia.CondicionaExibicao, termo.FatosCitados, parte);
         }
     }
@@ -176,7 +188,8 @@ internal sealed class MontagemDasDependencias
         return parte;
     }
 
-    private static string CodigoNoFormulario(FinalidadeFormulario finalidade, string codigo) => $"{finalidade.Codigo()}.{codigo}";
+    private static string CodigoNoFormulario(CodigoDoFormulario formulario, string codigo) => $"{formulario.Valor}/{codigo}";
+
     private static IReadOnlyCollection<string> DadosDasCondicoes(DocumentoExigido documento) =>
         [.. documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal)];
 }

@@ -5,6 +5,7 @@ using Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using ValueObjects;
 
@@ -25,12 +26,12 @@ internal sealed class ConhecimentoAteAInscricao
 
     internal static ConhecimentoAteAInscricao De(
         ConfiguracaoAvaliavel configuracao,
-        IReadOnlyList<FinalidadeFormulario> finalidadesAteAInscricao,
+        IReadOnlyList<CodigoDoFormulario> formulariosAteAInscricao,
         IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos) =>
         new(
             ProducaoDasPaginas.De(
                 configuracao.Definicao,
-                configuracao.Definicao.Paginas.Where(e => finalidadesAteAInscricao.Any(f => DefinicaoDoProcesso.EhDaFinalidade(e.Codigo, f)))),
+                configuracao.Definicao.Paginas.Where(e => formulariosAteAInscricao.Any(f => DefinicaoDoProcesso.EhDoFormulario(e.Codigo, f)))),
             fatosConhecidos);
 
     internal bool ConheceOGrupo(string? grupoRepetido) =>

@@ -5,23 +5,26 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O que os formulários coletaram nas versões publicadas (UNI-REQ-0144): o fato garantido de uma
-/// finalidade é o que o formulário dela coletou em todas as versões em que existia.
+/// O que os formulários coletaram nas versões publicadas (UNI-REQ-0144): o fato garantido de um
+/// formulário é o que ele coletou em todas as versões em que existia.
 /// </summary>
 public sealed class FatosDasVersoesPublicadasTests
 {
-    private static readonly FormularioProcesso Inscricao = Formulario(FinalidadeFormulario.Inscricao);
-    private static readonly FormularioProcesso Habilitacao = Formulario(FinalidadeFormulario.Habilitacao);
+    private static readonly FormularioProcesso Inscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao);
+    private static readonly FormularioProcesso Habilitacao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
+    private static readonly CodigoDoFormulario CodigoDaInscricao = FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao);
+    private static readonly CodigoDoFormulario CodigoDaHabilitacao = FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao);
 
-    private static FormularioProcesso Formulario(FinalidadeFormulario finalidade) =>
-        FormularioProcesso.Criar(finalidade, null, null, FormularioDeTeste.Paginas(finalidade)).Value!;
+    private static FatoColetado Item(string codigo) => Item(codigo, Inscricao);
 
-    private static FatoColetado Item(string codigo, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
-        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).DaFinalidade(finalidade).Construir();
+    private static FatoColetado Item(string codigo, FormularioProcesso formulario) =>
+        FatoColetadoDeTeste.Coletando(codigo, 0).ComObrigatoriedade(Obrigatoriedade.Sempre).Construir().Em(formulario);
 
     [Fact(DisplayName = "Fato coletado em todas as versões é garantido; o que só a versão base coleta, não")]
     public void Garante_SoOQueTodasAsVersoesColetaram()
@@ -32,42 +35,42 @@ public sealed class FatosDasVersoesPublicadasTests
             VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA"), Item("NOVO")]),
         ]);
 
-        fatos.Garante(FinalidadeFormulario.Inscricao, "TEM_RENDA").Should().BeTrue();
-        fatos.Garante(FinalidadeFormulario.Inscricao, "NOVO").Should().BeFalse("quem se inscreveu na primeira versão não o informou");
+        fatos.Garante(CodigoDaInscricao, "TEM_RENDA").Should().BeTrue();
+        fatos.Garante(CodigoDaInscricao, "NOVO").Should().BeFalse("quem se inscreveu na primeira versão não o informou");
     }
 
-    [Fact(DisplayName = "A versão em que a finalidade não tinha formulário não entra no que ela garante")]
-    public void Garante_IgnoraVersaoSemOFormularioDaFinalidade()
+    [Fact(DisplayName = "A versão em que o formulário não existia não entra no que ele garante")]
+    public void Garante_IgnoraVersaoSemOFormulario()
     {
         FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados(
         [
             VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")]),
-            VersoesPublicadasDeTeste.Versao([Inscricao, Habilitacao], [Item("TEM_RENDA"), Item("COMPROVANTE", FinalidadeFormulario.Habilitacao)]),
+            VersoesPublicadasDeTeste.Versao([Inscricao, Habilitacao], [Item("TEM_RENDA"), Item("COMPROVANTE", Habilitacao)]),
         ]);
 
-        fatos.Garante(FinalidadeFormulario.Habilitacao, "COMPROVANTE").Should().BeTrue("ninguém preencheu a habilitação na versão que não a tinha");
+        fatos.Garante(CodigoDaHabilitacao, "COMPROVANTE").Should().BeTrue("ninguém preencheu a habilitação na versão que não a tinha");
     }
 
-    [Fact(DisplayName = "Finalidade sem formulário em nenhuma versão garante o que produz: o formulário nasce na retificação")]
-    public void Garante_FinalidadeSemFormularioPublicado()
+    [Fact(DisplayName = "Formulário que nenhuma versão tinha garante o que produz: o formulário nasce na retificação")]
+    public void Garante_FormularioSemVersaoPublicada()
     {
         FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")])]);
 
-        fatos.Garante(FinalidadeFormulario.Habilitacao, "COMPROVANTE").Should().BeTrue();
+        fatos.Garante(CodigoDaHabilitacao, "COMPROVANTE").Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O código do grupo e os campos dele contam como coletados pela finalidade")]
+    [Fact(DisplayName = "O código do grupo e os campos dele contam como coletados pelo formulário")]
     public void Garante_GrupoECamposDoGrupo()
     {
         GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("FAMILIA", 1)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(FatoColetadoDeTeste.Coletando("MEMBRO_RENDA", 0).ComRotulo("Renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
-            .Construir();
+            .Construir()
+            .Em(Inscricao);
 
         FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")], [grupo])]);
 
-        fatos.Garante(FinalidadeFormulario.Inscricao, "FAMILIA").Should().BeTrue();
-        fatos.Garante(FinalidadeFormulario.Inscricao, "MEMBRO_RENDA").Should().BeTrue();
+        fatos.Garante(CodigoDaInscricao, "FAMILIA").Should().BeTrue();
+        fatos.Garante(CodigoDaInscricao, "MEMBRO_RENDA").Should().BeTrue();
     }
 }

@@ -22,11 +22,13 @@ internal static class DependenciasDaInscricao
     /// fechamento das derivações e das condições de exibição, os de membro pelo grupo que os repete, e o
     /// grupo pelo qual as regras de comprovação se repetem, com o que decide se ele aparece e é exigido.
     /// </summary>
-    internal static DependenciasDaAvaliacao DependenciasDe(DefinicaoFormulario definicao, CitacoesDosGatilhos citacoes)
+    internal static DependenciasDaAvaliacao DependenciasDe(ConfiguracaoAvaliavel configuracao, CitacoesDosGatilhos citacoes)
     {
+        DefinicaoFormulario definicao = configuracao.Definicao;
+        DefinicaoPagina[] paginasDaInscricao = [.. AvaliacaoDaInscricao.PaginasDaInscricao(configuracao)];
         FechamentoDasDependencias fechamento = Fechamento(definicao, AlvosDoFechamento(definicao, citacoes));
-        HashSet<string> camposDaInscricao = CamposDaInscricao(definicao);
-        HashSet<string> gruposDaInscricao = GruposDaInscricao(definicao);
+        HashSet<string> camposDaInscricao = CamposDaInscricao(paginasDaInscricao);
+        HashSet<string> gruposDaInscricao = GruposDaInscricao(paginasDaInscricao);
         DefinicaoAgregado[] agregados = [.. definicao.Agregados
             .Where(a => fechamento.Agregados.Contains(a.Codigo) && gruposDaInscricao.Contains(a.GrupoCodigo))];
         (string Grupo, string Fato)[] deMembro = [.. citacoes.DeMembro.Where(m => gruposDaInscricao.Contains(m.Grupo))];
@@ -42,11 +44,11 @@ internal static class DependenciasDaInscricao
         [.. agregados.Select(static a => a.GrupoCodigo).Concat(deMembro.Select(static m => m.Grupo))
             .Concat(repetidos).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
-    private static HashSet<string> CamposDaInscricao(DefinicaoFormulario definicao) =>
-        new(AvaliacaoDaInscricao.PaginasDaInscricao(definicao).SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
+    private static HashSet<string> CamposDaInscricao(IEnumerable<DefinicaoPagina> paginas) =>
+        new(paginas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
 
-    private static HashSet<string> GruposDaInscricao(DefinicaoFormulario definicao) =>
-        new(AvaliacaoDaInscricao.PaginasDaInscricao(definicao).SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
+    private static HashSet<string> GruposDaInscricao(IEnumerable<DefinicaoPagina> paginas) =>
+        new(paginas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
 
     private static string[] FatosDasDependencias(
         FechamentoDasDependencias fechamento, HashSet<string> camposDaInscricao,

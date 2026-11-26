@@ -27,16 +27,17 @@ internal sealed class PendenciasDaInscricao
         _grupos = new(dependencias.Grupos, StringComparer.Ordinal);
         _itemPorFato = formulario.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
         _grupoPorCodigo = formulario.Grupos.ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
-        _campoPorFato = configuracao.Campos.Where(static c => c.Finalidade == FinalidadeFormulario.Inscricao)
+        HashSet<Guid> formulariosDaInscricao = [.. configuracao.FormulariosQueServemAInscricao.Select(static f => f.Id)];
+        _campoPorFato = configuracao.Campos.Where(c => c.FormularioId is { } id && formulariosDaInscricao.Contains(id))
             .ToDictionary(static c => c.FatoCodigo, StringComparer.Ordinal);
-        _grupoColetado = configuracao.Grupos.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+        _grupoColetado = configuracao.Grupos.Where(g => g.FormularioId is { } id && formulariosDaInscricao.Contains(id))
             .ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
     }
 
     internal List<PendenciaDaAvaliacao> Apurar()
     {
         List<PendenciaDaAvaliacao> pendencias = [];
-        foreach (DefinicaoPagina pagina in AvaliacaoDaInscricao.PaginasDaInscricao(_configuracao.Definicao))
+        foreach (DefinicaoPagina pagina in AvaliacaoDaInscricao.PaginasDaInscricao(_configuracao))
         {
             AdicionarCampos(pagina, pendencias);
             AdicionarGrupos(pagina, pendencias);

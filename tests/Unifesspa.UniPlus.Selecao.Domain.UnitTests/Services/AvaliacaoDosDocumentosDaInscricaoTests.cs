@@ -349,16 +349,20 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         Familia, exibicao, Obrigatoriedade.Sempre, 0, null, [new DefinicaoItem(RendaDoMembro, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false);
 
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
-    private static ConfiguracaoAvaliavel ComRegrasSemGrupo(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, PredicadoDnf? exibicaoDaFamilia = null) =>
-        new(
+    private static ConfiguracaoAvaliavel ComRegrasSemGrupo(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, PredicadoDnf? exibicaoDaFamilia = null)
+    {
+        FormularioProcesso inscricao = Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao);
+
+        return new(
             DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo),
-            [Campo(BaixaRenda), Campo(PediuFator)],
-            [GrupoDaFamilia()],
+            [Campo(BaixaRenda).Em(inscricao), Campo(PediuFator).Em(inscricao)],
+            [GrupoDaFamilia().Em(inscricao)],
             [],
             [FaseDaInscricao, FaseDaHabilitacao],
-            [Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao), Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);
+            [inscricao, Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);
+    }
 
     private static GrupoColetado GrupoDaFamilia() =>
         GrupoColetadoDeTeste.Agrupando(Familia, 1)

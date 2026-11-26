@@ -133,6 +133,36 @@ public sealed class PreenchimentoDoCandidatoTests
             ("aceites[2]", InscricaoErrorCodes.AceiteForaDoFormulario, "O termo 'B' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
     }
 
+    [Fact(DisplayName = "O mesmo código de termo aceito em dois formulários não é aceite repetido, e os dois se mantêm")]
+    public void Aceites_MesmoCodigoEmDoisFormularios_NaoSaoRepetidos()
+    {
+        PreenchimentoDoCandidato valor = Criar(aceites: [new("INSCRICAO", "VERACIDADE", Guid.Empty, "abc"), new("HABILITACAO", "VERACIDADE", Guid.Empty, "abc")]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new()
+        {
+            [new("INSCRICAO", "VERACIDADE")] = new(Guid.Empty, "abc"),
+            [new("HABILITACAO", "VERACIDADE")] = new(Guid.Empty, "abc"),
+        };
+
+        valor.RecusasDosAceites(termos).Should().BeEmpty();
+        valor.ComAceitesAdmitidos(Admitidas with { Termos = termos }).Aceites.Should().Equal(valor.Aceites);
+    }
+
+    [Fact(DisplayName = "O termo aceito duas vezes no mesmo formulário é repetido, mesmo com o aceite de outro formulário no meio")]
+    public void Aceites_MesmoTermoRepetidoNoMesmoFormulario_RecusaSoARepeticao()
+    {
+        PreenchimentoDoCandidato valor = Criar(aceites:
+        [
+            new("INSCRICAO", "VERACIDADE", Guid.Empty, "abc"), new("HABILITACAO", "VERACIDADE", Guid.Empty, "abc"), new("HABILITACAO", "VERACIDADE", Guid.Empty, "abc"),
+        ]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new()
+        {
+            [new("INSCRICAO", "VERACIDADE")] = new(Guid.Empty, "abc"),
+            [new("HABILITACAO", "VERACIDADE")] = new(Guid.Empty, "abc"),
+        };
+
+        valor.RecusasDosAceites(termos).Select(static r => (r.Field, r.Error.Code)).Should().Equal(("aceites[2]", InscricaoErrorCodes.AceiteRepetido));
+    }
+
     [Fact]
     public void ComAceitesAdmitidos_VersaoFixadaOutraVersaoETermoFora_MantemApenasVersaoFixada()
     {
@@ -147,17 +177,15 @@ public sealed class PreenchimentoDoCandidatoTests
         valor.ComAceitesAdmitidos(admitidas).Aceites.Should().Equal(valido);
     }
 
+    private static Dictionary<TermoNoFormulario, TermoAdmitido> TermosAdmitidosDaInscricao(params string[] codigos) =>
+        codigos.ToDictionary(static c => FormularioDeTeste.TermoDaInscricao(c), static _ => new TermoAdmitido(Guid.Empty, "abc"));
+
     [Fact]
     public void ComAceitesAdmitidos_RecusasDeVersao_DescartaRecusadosEMantemApenasNaoRecusados()
     {
         PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "abc"), new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.NewGuid(), "abc"),
             new(FormularioDeTeste.CodigoDaInscricao, "C", Guid.Empty, "ABC"), new(FormularioDeTeste.CodigoDaInscricao, "FORA", Guid.Empty, "abc")]);
-        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new()
-        {
-            [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "abc"),
-            [FormularioDeTeste.TermoDaInscricao("B")] = new(Guid.Empty, "abc"),
-            [FormularioDeTeste.TermoDaInscricao("C")] = new(Guid.Empty, "abc")
-        };
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = TermosAdmitidosDaInscricao("A", "B", "C");
         IReadOnlyList<AceiteDeTermo> mantidos = valor.ComAceitesAdmitidos(Admitidas with { Termos = termos }).Aceites;
         List<FieldError> recusas = valor.RecusasDosAceites(termos).ToList();
 

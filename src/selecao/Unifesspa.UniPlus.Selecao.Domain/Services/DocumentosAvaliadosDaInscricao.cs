@@ -32,7 +32,7 @@ internal static class DocumentosAvaliadosDaInscricao
             {
                 HashSet<Guid> daFase = [.. fase.Select(static d => d.Documento.Id)];
                 DependenciasDaInscricao.CitacoesDosGatilhos citacoes = new ColetorDeCitacoes(configuracao.Definicao, daFase.Contains).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo);
-                return (Fase: fase.Key, Pendencias: new PendenciasDaInscricao(configuracao, formulario, DependenciasDaInscricao.DependenciasDe(configuracao.Definicao, citacoes)).Apurar());
+                return (Fase: fase.Key, Pendencias: new PendenciasDaInscricao(configuracao, formulario, DependenciasDaInscricao.DependenciasDe(configuracao, citacoes)).Apurar());
             })
             .Where(static f => f.Pendencias.Count > 0)
             .ToDictionary(static f => f.Fase, static f => (IReadOnlyList<PendenciaDaAvaliacao>)f.Pendencias);

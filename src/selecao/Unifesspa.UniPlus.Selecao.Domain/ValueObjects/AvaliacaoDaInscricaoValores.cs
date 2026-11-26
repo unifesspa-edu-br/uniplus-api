@@ -11,13 +11,14 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// A configuração do processo que a avaliação da inscrição lê — a congelada na versão que a inscrição
 /// fixou (UNI-REQ-0084) ou, na pré-visualização, a viva do rascunho: a definição avaliável inteira, a
 /// oferta de valores de cada campo, as regras de comprovação, os campos e os grupos que dão o rótulo e a
 /// seção do que falta responder, as modalidades que a distribuição de vagas oferta, com o nome
-/// congelado de cada uma, e as fases e os formulários, que dizem em que fase cada finalidade pergunta.
+/// congelado de cada uma, e as fases e os formulários, que dizem em que fase cada formulário pergunta.
 /// </summary>
 public sealed record ConfiguracaoAvaliavel(
     DefinicaoFormulario Definicao,
@@ -27,7 +28,22 @@ public sealed record ConfiguracaoAvaliavel(
     IReadOnlyCollection<GrupoColetado> Grupos,
     IReadOnlyCollection<ModalidadeSelecionada> ModalidadesOfertadas,
     IReadOnlyCollection<FaseCronograma> Fases,
-    IReadOnlyCollection<FormularioProcesso> Formularios);
+    IReadOnlyCollection<FormularioProcesso> Formularios)
+{
+    /// <summary>
+    /// Os formulários que o candidato responde para se inscrever, na ordem dos códigos: os obrigatórios ligados a uma fase que
+    /// coleta inscrição, pelas fases que a versão congelou.
+    /// </summary>
+    public IReadOnlyList<FormularioProcesso> FormulariosQueServemAInscricao
+    {
+        get
+        {
+            HashSet<CodigoDoFormulario> codigos =
+                [.. FormulariosDaInscricao.De(Formularios.Select(static f => f.Declarado), Fases).Select(static f => f.Codigo)];
+            return [.. Formularios.Where(f => codigos.Contains(f.Codigo)).OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal)];
+        }
+    }
+}
 
 /// <summary>
 /// O que o candidato respondeu e o que se sabe dele de fora do formulário: as respostas e os grupos;
@@ -117,6 +133,13 @@ public sealed record DocumentosDaInscricao(
     IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> PendenciasPorFase,
     IReadOnlyList<DocumentoAusente> Ausentes)
 {
+    /// <summary>Os códigos dos formulários da inscrição de que a avaliação partiu; as exigências ligadas a eles são as da inscrição.</summary>
+    public IReadOnlyList<CodigoDoFormulario> CodigosDosFormulariosDaInscricao { get; init; } = [];
+
+    /// <summary>Os documentos avaliados que as exigências dos formulários da inscrição pedem.</summary>
+    public IEnumerable<DocumentoAvaliado> DaInscricao =>
+        Itens.Where(d => d.Documento.FormularioCodigo is { } formulario && CodigosDosFormulariosDaInscricao.Contains(formulario));
+
     /// <summary>Cada ausência obrigatória recusa o envio; arquivo ainda em verificação pede espera (UNI-REQ-0028).</summary>
     public IEnumerable<FieldError> RecusasDosAusentes(IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao = null) =>
         Ausentes.Select(ausente => RecusaDoAusente(ausente, emVerificacao));

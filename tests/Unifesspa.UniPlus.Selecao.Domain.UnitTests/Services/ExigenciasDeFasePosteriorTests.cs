@@ -41,8 +41,8 @@ public sealed class ExigenciasDeFasePosteriorTests
             .Should().Equal(FinalidadeFormulario.Habilitacao);
     }
 
-    [Fact(DisplayName = "O formulário de inscrição na fase que abre a isenção antes da primeira fase de inscrição vale pela ordem dessa fase")]
-    public void InscricaoEmFaseQueAbreAIsencao_ValePelaOrdemDaFase()
+    [Fact(DisplayName = "O formulário posto numa fase que só abre a isenção não é da inscrição: a fase da inscrição é a que coleta inscrição")]
+    public void FormularioEmFaseQueSoAbreAIsencao_NaoDefineAFaseDaInscricao()
     {
         FaseCronograma abreAIsencao = FaseDeTeste.Criar(1, "ABERTURA_DA_ISENCAO", coletaSolicitacaoIsencao: true);
         FaseCronograma primeiraInscricao = FaseDeTeste.Criar(2, "INSCRICAO", coletaInscricao: true);
@@ -51,7 +51,7 @@ public sealed class ExigenciasDeFasePosteriorTests
             [abreAIsencao, primeiraInscricao],
             (FinalidadeFormulario.Inscricao, abreAIsencao.Id),
             (FinalidadeFormulario.Habilitacao, primeiraInscricao.Id))
-            .Should().Equal(FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao);
+            .Should().Equal(FinalidadeFormulario.IsencaoTaxa);
     }
 
     [Fact(DisplayName = "Havendo várias fases de inscrição, vale a fase do formulário de inscrição")]
@@ -68,6 +68,21 @@ public sealed class ExigenciasDeFasePosteriorTests
             (FinalidadeFormulario.IsencaoTaxa, isencao.Id),
             (FinalidadeFormulario.Habilitacao, habilitacao.Id))
             .Should().Equal(FinalidadeFormulario.Habilitacao);
+    }
+
+    [Fact(DisplayName = "Com formulários obrigatórios em duas fases que coletam inscrição, vale a mais tardia das duas")]
+    public void FormulariosObrigatoriosEmDuasFasesDeInscricao_ValeAMaisTardia()
+    {
+        FaseCronograma primeiraInscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
+        FaseCronograma isencao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
+        FaseCronograma segundaInscricao = FaseDeTeste.Criar(3, "INSCRICAO_COMPLEMENTAR", coletaInscricao: true);
+
+        FinalidadesBloqueadasNa(
+            [primeiraInscricao, isencao, segundaInscricao],
+            (FinalidadeFormulario.Inscricao, primeiraInscricao.Id),
+            (FinalidadeFormulario.IsencaoTaxa, isencao.Id),
+            (FinalidadeFormulario.Habilitacao, segundaInscricao.Id))
+            .Should().BeEmpty("o formulário da isenção, na fase 2, vem antes da fase 3 da segunda inscrição");
     }
 
     [Fact(DisplayName = "O formulário na própria fase da inscrição, ou em outra fase na mesma posição, é conhecido")]

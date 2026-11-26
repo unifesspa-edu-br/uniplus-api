@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -74,18 +75,22 @@ public sealed class ResolvedorEstadoFatosTests
         IReadOnlyDictionary<string, IReadOnlySet<string>> oferta, params (string Fato, JsonElement Valor)[] respostas) =>
         ResolverFatos(TabelaNormativa(), respostas, oferta: oferta);
 
+    /// <summary>Sem formulários dados, os itens são todos de um formulário só, que não tem seção para eles.</summary>
     private static IReadOnlyDictionary<string, FatoResolvido> ResolverFatos(
         IReadOnlyList<FatoColetado> fatos,
         (string Fato, JsonElement Valor)[] respostas,
         IReadOnlyList<FormularioProcesso>? formularios = null,
         IReadOnlyList<DerivacaoDoFato>? derivacoes = null,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? oferta = null) =>
-        ResolvedorEstadoFatos.Resolver(
-            formularios ?? [],
-            fatos,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? oferta = null)
+    {
+        FormularioProcesso unico = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
+        return ResolvedorEstadoFatos.Resolver(
+            formularios ?? [unico],
+            formularios is null ? fatos.Em(unico) : fatos,
             derivacoes ?? [],
             respostas.ToDictionary(static r => r.Fato, static r => r.Valor, StringComparer.Ordinal),
             oferta ?? new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal));
+    }
 
     [Fact(DisplayName = "Valor fora da oferta do processo não vale e nunca satisfaz condição")]
     public void RespostaForaDaOferta_NaoSatisfazCondicao()
@@ -147,10 +152,12 @@ public sealed class ResolvedorEstadoFatosTests
     [Fact(DisplayName = "Seção oculta pela exibição leva os seus campos a não aplicável")]
     public void SecaoOculta_CamposNaoAplicaveis()
     {
+        FormularioProcesso inscricao = FormularioComSecaoDeCotas();
+
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(
-            [CampoNaSecao("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", "DADOS"), CampoNaSecao("CONCORRER_EP", 1, "Concorrer", "COTAS")],
+            [CampoNaSecao("EGRESSO_ESCOLA_PUBLICA", 0, "Egresso", "DADOS").Em(inscricao), CampoNaSecao("CONCORRER_EP", 1, "Concorrer", "COTAS").Em(inscricao)],
             [("EGRESSO_ESCOLA_PUBLICA", Nao), ("CONCORRER_EP", Sim)],
-            formularios: [FormularioComSecaoDeCotas()]);
+            formularios: [inscricao]);
 
         estados["CONCORRER_EP"].Estado.Should().Be(EstadoFato.NaoAplicavel, "a seção de cotas só aparece para quem é egresso de escola pública");
     }
@@ -167,7 +174,7 @@ public sealed class ResolvedorEstadoFatosTests
         PredicadoDnf egresso = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!)]).Value!;
         return FormularioProcesso.Criar(
-            FinalidadeFormulario.Inscricao, null, null,
+            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Inscricao, null), new CronogramaDoProcesso([]), null,
             [
                 PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
                 PaginaDoFormulario.Criar(new PaginaEstrutura("COTAS", 1, TipoPaginaFormulario.Secao, null), "Cotas", null, null, egresso).Value!,
@@ -182,18 +189,22 @@ public sealed class ResolvedorEstadoFatosTests
         .DaFinalidade(FinalidadeFormulario.Habilitacao)
         .Construir();
 
+    private static FatoColetado CorRacaDaInscricao() => FatoColetadoDeTeste.Coletando("COR_RACA", 0)
+        .ComRotulo("Cor ou raça")
+        .DoTipo(TipoDeCampo.EscolhaUnica)
+        .ComObrigatoriedade(Obrigatoriedade.Sempre)
+        .DaFinalidade(FinalidadeFormulario.Inscricao)
+        .Construir();
+
     [Fact(DisplayName = "Itens de dois formulários, com a mesma ordem, resolvem juntos, e o de um cita o fato do outro")]
     public void DoisFormularios_ResolvemJuntos()
     {
-        FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 0)
-            .ComRotulo("Cor ou raça")
-            .DoTipo(TipoDeCampo.EscolhaUnica)
-            .ComObrigatoriedade(Obrigatoriedade.Sempre)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
-            .Construir();
+        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao);
+        FormularioProcesso habilitacao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
 
         IReadOnlyDictionary<string, FatoResolvido> estados = ResolverFatos(
-            [DeclaracaoDePertencimentoDaHabilitacao(), corRaca], [("COR_RACA", Cor("BRANCA"))], oferta: CoresOfertadas);
+            [DeclaracaoDePertencimentoDaHabilitacao().Em(habilitacao), CorRacaDaInscricao().Em(inscricao)], [("COR_RACA", Cor("BRANCA"))],
+            formularios: [inscricao, habilitacao], oferta: CoresOfertadas);
 
         estados["COR_RACA"].Estado.Should().Be(EstadoFato.Resolvido);
         estados["DECLARACAO_PERTENCIMENTO"].Estado.Should().Be(

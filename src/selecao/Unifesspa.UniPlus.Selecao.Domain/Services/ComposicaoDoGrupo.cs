@@ -21,20 +21,20 @@ internal static class ComposicaoDoGrupo
             return [new("itens", new DomainError("RegraDeComprovacao.RegraContemASiMesma",
                 "Este grupo contém uma repetição circular de itens. Organize os grupos sem repetir um item dentro de si."))];
         }
-        return [.. RecusasDasFasesEFinalidades(itens), .. RecusaDaRepeticao(itens, grupoDoFormularioParaRepeticao)];
+        return [.. RecusasDasFasesEDosFormularios(itens), .. RecusaDaRepeticao(itens, grupoDoFormularioParaRepeticao)];
     }
 
     internal static DomainError? RecusaSeVazio(int quantidadeDeItens) => quantidadeDeItens == 0
         ? new("RegraDeComprovacao.GrupoSemItens", "Este grupo não contém itens. Acrescente ao menos um item ao grupo.") : null;
 
-    private static IEnumerable<FieldError> RecusasDasFasesEFinalidades(IReadOnlyList<RegraDeComprovacao> itens)
+    private static IEnumerable<FieldError> RecusasDasFasesEDosFormularios(IReadOnlyList<RegraDeComprovacao> itens)
     {
         if (FaseComumDosItens(itens) is null)
         {
             yield return new("itens", new DomainError("RegraDeComprovacao.GrupoComFasesDiferentes",
                 "Os itens deste grupo pertencem a fases diferentes. Escolha a mesma fase para todos os itens do grupo."));
         }
-        if (!FinalidadeComumDosItens(itens, out _))
+        if (!RegraDeComprovacao.TentarFormularioComumDosItens(itens, out _))
         {
             yield return new("itens", new DomainError("RegraDeComprovacao.GrupoComFormulariosDiferentes",
                 "Os documentos deste grupo pertencem a formulários diferentes. Escolha o mesmo formulário para todos os documentos do grupo."));

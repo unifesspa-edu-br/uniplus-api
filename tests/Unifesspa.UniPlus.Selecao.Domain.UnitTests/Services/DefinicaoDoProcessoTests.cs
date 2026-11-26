@@ -30,6 +30,19 @@ public sealed class DefinicaoDoProcessoTests
             [DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "VERACIDADE"), DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Habilitacao, "VERACIDADE")]);
     }
 
+    [Fact(DisplayName = "As páginas saem na ordem do código do formulário, qualquer que seja a ordem em que os formulários chegam")]
+    public void Montar_FormulariosEmQualquerOrdem_PaginasPelaOrdemDoCodigo()
+    {
+        ProcessoSeletivo processo = ComHabilitacao();
+
+        DefinicaoFormulario definicao = DefinicaoDoProcesso.Montar(
+            [.. processo.Formularios.OrderByDescending(static f => f.Codigo.Valor, StringComparer.Ordinal)],
+            processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos, derivacoes: [], agregados: []);
+
+        List<string> formularios = [.. definicao.Paginas.Select(static p => p.Codigo.Split(':')[0]).Distinct(StringComparer.Ordinal)];
+        formularios.Should().HaveCountGreaterThan(1).And.Equal(formularios.Order(StringComparer.Ordinal));
+    }
+
     private static GrupoColetado ComposicaoFamiliarNaSecaoFamilia() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 0)
         .NaSecao("FAMILIA")
         .ComOcorrencias(1, null)

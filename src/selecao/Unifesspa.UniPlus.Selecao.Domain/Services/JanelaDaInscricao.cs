@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -17,15 +18,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim)
 {
     /// <summary>
-    /// A janela da versão publicada. Sem formulário de inscrição, o processo não recebe inscrição
-    /// pelo sistema, como o de resultado importado.
+    /// A janela da versão publicada. Sem formulário da inscrição — obrigatório e ligado a uma fase que coleta
+    /// inscrição —, o processo não recebe inscrição pelo sistema, como o de resultado importado.
     /// </summary>
     public static Result<JanelaDaInscricao> Da(ConfiguracaoPublicada configuracao, DadosEdital dados)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(dados);
 
-        if (configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is null)
+        if (FormulariosDaInscricao.De(configuracao.Coleta.FormulariosDeclarados, configuracao.Cronograma.CronogramaFases).Count == 0)
         {
             return Result<JanelaDaInscricao>.Failure(new DomainError(
                 InscricaoErrorCodes.ProcessoSemInscricao,

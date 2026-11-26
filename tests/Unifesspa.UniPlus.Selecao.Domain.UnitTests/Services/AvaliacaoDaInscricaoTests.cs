@@ -220,11 +220,13 @@ public sealed class AvaliacaoDaInscricaoTests
         DefinicaoFormulario definicao = municipioNoGrupo
             ? DefinicaoComGrupoDeMunicipios(perguntas, derivacoes)
             : DefinicaoDasPerguntas(perguntas, rendaSoParaBaixaRenda, derivacoes);
-        GrupoColetado[] grupos = municipioNoGrupo ? [GrupoDeMunicipiosColetado()] : [];
+        FaseCronograma fase = LigacaoAoFormulario.FaseQueColetaAInscricao();
+        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNaFase(FinalidadeFormulario.Inscricao, fase);
+        GrupoColetado[] grupos = municipioNoGrupo ? [GrupoDeMunicipiosColetado().Em(inscricao)] : [];
 
         return new ConfiguracaoAvaliavel(
             definicao, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada([]),
-            CamposDe(perguntas), grupos, ofertadas, [], []);
+            CamposDe(perguntas, inscricao), grupos, ofertadas, [fase], [inscricao]);
     }
 
     private static string[] PerguntasDa(bool rendaSoParaBaixaRenda, bool municipioDoFada, bool municipioNoGrupo) =>
@@ -233,15 +235,16 @@ public sealed class AvaliacaoDaInscricaoTests
     private static PredicadoDnf QuandoEIgualATrue(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
         [(1, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
-    private static FatoColetado[] CamposDe(string[] perguntas) =>
-        [.. perguntas.Select(static (f, ordem) => FatoColetadoDeTeste.Coletando(f, ordem)
+    private static FatoColetado[] CamposDe(string[] perguntas, FormularioProcesso formulario) =>
+        [.. perguntas.Select((f, ordem) => FatoColetadoDeTeste.Coletando(f, ordem)
             .ComRotulo($"Rótulo de {f}")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComClassificacao("SENSIVEL")
             .ComOrigem(f == MunicipioDoFada ? OrigemValoresColeta.MunicipiosDoFada : OrigemValoresColeta.Catalogo)
             .NaSecao(Secao)
             .DaFinalidade(FinalidadeFormulario.Inscricao)
-            .Construir())];
+            .Construir()
+            .Em(formulario))];
 
     /// <summary>
     /// Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o egresso pela
