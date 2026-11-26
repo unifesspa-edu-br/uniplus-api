@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
-using System.Reflection;
-
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -41,7 +38,7 @@ public sealed class PageRequestModelBinder : IModelBinder
     /// </summary>
     private static PageRequestReader CreateReader(ModelBindingContext bindingContext)
     {
-        FromCursorAttribute attribute = ResolveAttribute(bindingContext)
+        FromCursorAttribute attribute = FromCursorAttribute.Of(bindingContext.ActionContext.ActionDescriptor)
             ?? throw new InvalidOperationException(
                 $"Parâmetro do tipo {nameof(PageRequest)} requer [FromCursor(\"<recurso>\")].");
 
@@ -50,24 +47,5 @@ public sealed class PageRequestModelBinder : IModelBinder
         CursorPaginationOptions options = services.GetRequiredService<IOptions<CursorPaginationOptions>>().Value;
 
         return new PageRequestReader(bindingContext, attribute, encoder, options);
-    }
-
-    /// <summary>
-    /// Olha a <see cref="ParameterInfo"/> do <see cref="ControllerParameterDescriptor"/>: o
-    /// <c>BindingInfo</c> expõe o <c>BinderType</c>, mas não o <see cref="FromCursorAttribute"/>. Assim o
-    /// binder fica resiliente a renomes do parâmetro.
-    /// </summary>
-    private static FromCursorAttribute? ResolveAttribute(ModelBindingContext bindingContext)
-    {
-        if (bindingContext.ActionContext.ActionDescriptor is not ControllerActionDescriptor descriptor)
-        {
-            return null;
-        }
-
-        return descriptor.Parameters
-            .OfType<ControllerParameterDescriptor>()
-            .Where(parameter => parameter.ParameterType == typeof(PageRequest))
-            .Select(parameter => parameter.ParameterInfo.GetCustomAttribute<FromCursorAttribute>())
-            .FirstOrDefault(attribute => attribute is not null);
     }
 }

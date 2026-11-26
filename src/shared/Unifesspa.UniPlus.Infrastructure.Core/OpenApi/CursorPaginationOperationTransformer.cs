@@ -1,10 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
-using System.Reflection;
 using System.Text.Json.Nodes;
 
-using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -50,7 +47,7 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (ResolveCursorAttribute(context) is null)
+        if (FromCursorAttribute.Of(context.Description.ActionDescriptor) is null)
             return Task.CompletedTask;
 
         RemoveLeakedPageRequestParameters(operation);
@@ -59,32 +56,6 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
         MarkAsPaginated(operation);
 
         return Task.CompletedTask;
-    }
-
-    private static FromCursorAttribute? ResolveCursorAttribute(OpenApiOperationTransformerContext context)
-    {
-        // Espelha a estratégia do PageRequestModelBinder.ResolveAttribute:
-        // ControllerParameterDescriptor.ParameterInfo é o caminho confiável
-        // para chegar ao FromCursorAttribute (BindingInfo.BinderType só guarda
-        // o tipo do binder, não o atributo em si).
-        if (context.Description.ActionDescriptor is not ControllerActionDescriptor descriptor)
-            return null;
-
-        foreach (ParameterDescriptor parameter in descriptor.Parameters)
-        {
-            if (parameter is not ControllerParameterDescriptor controllerParam)
-                continue;
-
-            if (controllerParam.ParameterType != typeof(PageRequest))
-                continue;
-
-            FromCursorAttribute? attribute = controllerParam.ParameterInfo
-                .GetCustomAttribute<FromCursorAttribute>();
-            if (attribute is not null)
-                return attribute;
-        }
-
-        return null;
     }
 
     private static void RemoveLeakedPageRequestParameters(OpenApiOperation operation)
@@ -107,48 +78,54 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
     private static void AddWireParameters(OpenApiOperation operation)
     {
         operation.Parameters ??= [];
-        operation.Parameters.Add(new OpenApiParameter
-        {
-            Name = CursorParam,
-            In = ParameterLocation.Query,
-            Required = false,
-            Description = "Cursor opaco AES-GCM emitido pelo servidor no header Link da página anterior. "
-                + "Ausente na primeira página. Cliente trata como string opaca — não decodificar (ADR-0026, ADR-0031).",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.String,
-            },
-        });
-        operation.Parameters.Add(new OpenApiParameter
-        {
-            Name = LimitParam,
-            In = ParameterLocation.Query,
-            Required = false,
-            Description = "Tamanho máximo da janela de resultados. Limites configurados em "
-                + "CursorPaginationOptions; valores fora do range retornam 422 com "
-                + "code uniplus.pagination.limit_invalido (ADR-0026).",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.Integer,
-                Format = "int32",
-            },
-        });
-        operation.Parameters.Add(new OpenApiParameter
-        {
-            Name = DirectionParam,
-            In = ParameterLocation.Query,
-            Required = false,
-            Description = "Direção de navegação keyset (ADR-0089): 'next' (default) avança, "
-                + "'prev' retrocede. Normalmente o cliente apenas segue o cursor opaco do "
-                + "rel=\"prev\"/rel=\"next\" do header Link — que já inclui o direction correto.",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.String,
-                Enum = [JsonValue.Create("next")!, JsonValue.Create("prev")!],
-                Default = JsonValue.Create("next"),
-            },
-        });
+        operation.Parameters.Add(CursorParameter());
+        operation.Parameters.Add(LimitParameter());
+        operation.Parameters.Add(DirectionParameter());
     }
+
+    private static OpenApiParameter CursorParameter() => new()
+    {
+        Name = CursorParam,
+        In = ParameterLocation.Query,
+        Required = false,
+        Description = "Cursor opaco AES-GCM emitido pelo servidor no header Link da página anterior. "
+            + "Ausente na primeira página. Cliente trata como string opaca — não decodificar (ADR-0026, ADR-0031).",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+        },
+    };
+
+    private static OpenApiParameter LimitParameter() => new()
+    {
+        Name = LimitParam,
+        In = ParameterLocation.Query,
+        Required = false,
+        Description = "Tamanho máximo da janela de resultados. Limites configurados em "
+            + "CursorPaginationOptions; valores fora do range retornam 422 com "
+            + "code uniplus.pagination.limit_invalido (ADR-0026).",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Format = "int32",
+        },
+    };
+
+    private static OpenApiParameter DirectionParameter() => new()
+    {
+        Name = DirectionParam,
+        In = ParameterLocation.Query,
+        Required = false,
+        Description = "Direção de navegação keyset (ADR-0089): 'next' (default) avança, "
+            + "'prev' retrocede. Normalmente o cliente apenas segue o cursor opaco do "
+            + "rel=\"prev\"/rel=\"next\" do header Link — que já inclui o direction correto.",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Enum = [JsonValue.Create("next")!, JsonValue.Create("prev")!],
+            Default = JsonValue.Create("next"),
+        },
+    };
 
     private static void DeclareResponseHeaders(OpenApiOperation operation)
     {
@@ -160,42 +137,46 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
             return;
 
         okResponse.Headers ??= new Dictionary<string, IOpenApiHeader>(StringComparer.Ordinal);
-        okResponse.Headers[LinkHeader] = new OpenApiHeader
-        {
-            Description = "Links de navegação da paginação (RFC 5988/8288). "
-                + "rel=\"self\" sempre presente; rel=\"prev\"/rel=\"next\" quando há página "
-                + "anterior/próxima (ADR-0089). Cada link carrega o cursor opaco no parâmetro "
-                + "`cursor` e o `direction` correspondente (ADR-0026).",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.String,
-            },
-        };
-        okResponse.Headers[PageSizeHeader] = new OpenApiHeader
-        {
-            Description = "Quantidade de itens retornados na página atual (sempre menor ou igual ao limit efetivo).",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.Integer,
-                Format = "int32",
-            },
-        };
+        okResponse.Headers[LinkHeader] = LinkResponseHeader();
+        okResponse.Headers[PageSizeHeader] = PageSizeResponseHeader();
 
-        if (!AcceptsIncludeTotal(operation))
-            return;
-
-        okResponse.Headers[TotalCountHeader] = new OpenApiHeader
-        {
-            Description = "Total de registros que atendem à consulta — filtros e busca inclusive, "
-                + "nunca a tabela inteira. Presente apenas na resposta de quem pediu "
-                + "`include_total=true`; ausente nas demais (ADR-0026).",
-            Schema = new OpenApiSchema
-            {
-                Type = JsonSchemaType.Integer,
-                Format = "int32",
-            },
-        };
+        if (AcceptsIncludeTotal(operation))
+            okResponse.Headers[TotalCountHeader] = TotalCountResponseHeader();
     }
+
+    private static OpenApiHeader LinkResponseHeader() => new()
+    {
+        Description = "Links de navegação da paginação (RFC 5988/8288). "
+            + "rel=\"self\" sempre presente; rel=\"prev\"/rel=\"next\" quando há página "
+            + "anterior/próxima (ADR-0089). Cada link carrega o cursor opaco no parâmetro "
+            + "`cursor` e o `direction` correspondente (ADR-0026).",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+        },
+    };
+
+    private static OpenApiHeader PageSizeResponseHeader() => new()
+    {
+        Description = "Quantidade de itens retornados na página atual (sempre menor ou igual ao limit efetivo).",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Format = "int32",
+        },
+    };
+
+    private static OpenApiHeader TotalCountResponseHeader() => new()
+    {
+        Description = "Total de registros que atendem à consulta — filtros e busca inclusive, "
+            + "nunca a tabela inteira. Presente apenas na resposta de quem pediu "
+            + "`include_total=true`; ausente nas demais (ADR-0026).",
+        Schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Format = "int32",
+        },
+    };
 
     // A contagem exata é opt-in por endpoint, não capacidade automática de toda listagem
     // paginada (ADR-0026). O header só é declarado onde o parâmetro que o liga existe —
