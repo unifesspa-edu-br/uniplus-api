@@ -180,10 +180,17 @@ public sealed class ConsequenciasDosFormulariosTests
     [Fact]
     public void Causas_FormulariosDaMesmaFase_TemConsequenciasIndependentes()
     {
-        ProcessoSeletivo processo = ProcessoCom(PapelDoFormularioDeTeste.Habilitacao, ConsequenciaDoDescumprimento.EliminaDoProcesso);
-        processo.DefinirFormulario(PapelDoFormularioDeTeste.IsencaoTaxa, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoCom(PapelDoFormularioDeTeste.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
+        Guid fase = AcrescentarFaseDaHabilitacao(processo);
+        LigarFormularioAFase(processo, PapelDoFormularioDeTeste.Habilitacao, fase);
+        FormularioDeclarado complementar = new(CodigoDoFormulario.Criar("HABILITACAO_COMPLEMENTAR").Value!, fase, Obrigatorio: true);
+        processo.DefinirFormulario(complementar, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+            .IsSuccess.Should().BeTrue();
 
-        Causas(processo.Declaracao(), processo).Should().BeEmpty();
+        Causas(processo.Declaracao(), processo).Select(static c => (c.Field, c.Error.Code)).Should().Equal(
+            ("formularios[0].consequenciaDaFaltaDeEnvio", "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao"));
+        processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.RetiraAModalidade);
+        processo.FormularioDe(complementar.Codigo)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
     }
 
     [Fact]

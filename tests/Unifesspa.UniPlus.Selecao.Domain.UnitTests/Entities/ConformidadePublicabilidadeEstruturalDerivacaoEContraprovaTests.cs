@@ -27,6 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDasCotasFederaisNaConformidade;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoEnemComCalculoLocal;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosItensAcimaDoTeto;
 
 public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTests
 {
@@ -160,36 +161,17 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         EscalaNotaFinal = 100m,
     }).Value!;
 
-    /// <summary>
-    /// Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o rascunho
-    /// que chega por outro caminho.
-    /// </summary>
-    private static void AdicionarItensAcimaDoTetoDireto(ProcessoSeletivo processo)
-    {
-        FormularioProcesso formulario = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!;
-        FatoColetado[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
-            .ComRotulo("Campo")
-            .ComObrigatoriedade(Obrigatoriedade.Sempre)
-            .NaSecao(FormularioDeTeste.Secao)
-            .Construir())];
-        foreach (FatoColetado item in itens)
-        {
-            item.VincularFormulario(formulario);
-        }
-
-        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!).AddRange(itens);
-    }
-
-    [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e Publicar recusa")]
+    [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e a conferência da publicação recusa")]
     public void PreCanon_ItensAcimaDoTeto()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        AdicionarItensAcimaDoTetoDireto(processo);
+        ConfiguracaoDeclarada configuracao = ComItensAcimaDoTeto(processo);
+        CadastrosDaConfiguracao cadastros = CadastrosDeTeste.Para(processo);
 
-        SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
+        ChecklistDeConformidade.AvaliarConformidade(configuracao, cadastros).Where(static i => !i.Ok).Select(static i => i.Codigo)
+            .Should().BeEquivalentTo("formulario_itens_em_excesso");
+        CondicoesParaRegistrarConfiguracao.Causas(configuracao, cadastros)
+            .Should().ContainSingle(static causa => causa.Error.Code == ItemFormularioErrorCodes.ItensEmExcesso);
     }
 
     private static List<CriterioDesempate> CriteriosDesempateDe(ProcessoSeletivo processo) =>
