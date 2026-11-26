@@ -51,36 +51,31 @@ public sealed record ItemEstrutura(string FatoCodigo, int Ordem, string? PaginaC
 
 /// <summary>
 /// As regras de forma de um formulário, as mesmas no processo e no modelo (ADR-0137): quais blocos
-/// a finalidade admite e exige, a revisão e aceite por último, e os itens em seções, na ordem delas.
+/// a declaração admite e exige, a revisão e aceite por último, e os itens em seções, na ordem delas.
 /// </summary>
 public static class EstruturaFormulario
 {
     /// <summary>Nome da propriedade das páginas nos pedidos que recebem o formulário; muda junto com o nome dela no pedido.</summary>
     public const string CaminhoDasPaginas = "paginas";
 
-    /// <summary>Os blocos que a finalidade admite: as modalidades calculadas só fazem sentido na inscrição.</summary>
-    public static IReadOnlySet<BlocoSistema> BlocosAdmitidos(FinalidadeFormulario finalidade) => finalidade switch
-    {
-        FinalidadeFormulario.Inscricao =>
-            new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.ModalidadesCalculadas, BlocoSistema.RevisaoEAceite },
-        FinalidadeFormulario.IsencaoTaxa or FinalidadeFormulario.Habilitacao =>
-            new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.RevisaoEAceite },
-        _ => [],
-    };
+    /// <summary>Os blocos que a declaração admite: as modalidades calculadas só fazem sentido no formulário que serve à fase de inscrição.</summary>
+    public static IReadOnlySet<BlocoSistema> BlocosAdmitidos(DeclaracaoDoFormulario declaracao) => declaracao.ServeAFaseDeInscricao
+        ? new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.ModalidadesCalculadas, BlocoSistema.RevisaoEAceite }
+        : new HashSet<BlocoSistema> { BlocoSistema.ComprovacaoDocumental, BlocoSistema.RevisaoEAceite };
 
-    /// <summary>Os blocos que todo formulário exige, de qualquer finalidade: ele termina na revisão e aceite.</summary>
+    /// <summary>Os blocos que todo formulário exige, de qualquer declaração: ele termina na revisão e aceite.</summary>
     public static IReadOnlySet<BlocoSistema> BlocosExigidos() =>
         new HashSet<BlocoSistema> { BlocoSistema.RevisaoEAceite };
 
     /// <summary>
-    /// Confere as páginas: código e ordem únicos, seção sem bloco, bloco admitido pela finalidade e
+    /// Confere as páginas: código e ordem únicos, seção sem bloco, bloco admitido pela declaração e
     /// não repetido, os blocos exigidos presentes e a revisão e aceite como última página.
     /// </summary>
-    public static IReadOnlyList<FieldError> ValidarPaginas(FinalidadeFormulario finalidade, IReadOnlyList<PaginaEstrutura> paginas)
+    public static IReadOnlyList<FieldError> ValidarPaginas(DeclaracaoDoFormulario declaracao, IReadOnlyList<PaginaEstrutura> paginas)
     {
         ArgumentNullException.ThrowIfNull(paginas);
 
-        IReadOnlySet<BlocoSistema> admitidos = BlocosAdmitidos(finalidade);
+        IReadOnlySet<BlocoSistema> admitidos = BlocosAdmitidos(declaracao);
         List<FieldError> erros = [.. paginas.SelectMany((_, i) => ConferirPagina(paginas, i, admitidos))];
         erros.AddRange(ConferirBlocosDoFormulario(paginas, admitidos));
 
@@ -116,7 +111,7 @@ public static class EstruturaFormulario
                     ? Recusa(campo, EstruturaFormularioErrorCodes.BlocoRepetido, "O bloco aparece mais de uma vez no formulário.")
                     : null,
             (TipoPaginaFormulario.Bloco, _) =>
-                Recusa(campo, EstruturaFormularioErrorCodes.BlocoNaoAdmitido, "O bloco não é admitido pela finalidade do formulário."),
+                Recusa(campo, EstruturaFormularioErrorCodes.BlocoNaoAdmitido, "O bloco não é admitido pelo formulário."),
             _ => null,
         };
 
