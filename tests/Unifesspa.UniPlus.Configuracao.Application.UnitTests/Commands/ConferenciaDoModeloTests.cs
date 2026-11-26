@@ -40,7 +40,7 @@ public sealed class ConferenciaDoModeloTests
         Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo),
         Declarado("DESATIVADO", desativado: true),
         Declarado("ANTIGO", desativado: true),
-        Declarado("PENDENTE", aprovado: false),
+        Declarado("PENDENTE", aprovado: false, nome: "Renda familiar per capita"),
         Categorico("CONDICAO"),
         Categorico("CONDICAO_DO_MEMBRO", EscopoFato.MembroGrupo),
     ]);
@@ -231,7 +231,9 @@ public sealed class ConferenciaDoModeloTests
     private static Recusa[] RecusasDosVinculos() =>
     [
         (null, VinculoCatalogoErrorCodes.FatoDesativado, "O fato 'DESATIVADO' está desativado no catálogo e não aceita vínculo novo."),
-        (null, VinculoCatalogoErrorCodes.FatoComProtecaoPendente, "O fato 'PENDENTE' aguarda a aprovação da proteção de dados e não aceita vínculo novo."),
+        (null, VinculoCatalogoErrorCodes.FatoComProtecaoPendente, "O dado do candidato 'Renda familiar per capita' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
+            + "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, "
+            + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."),
         (null, VinculoCatalogoErrorCodes.ValorDesativado, "O valor 'B' do fato 'CONDICAO' está desativado no catálogo e não aceita vínculo novo."),
     ];
 
@@ -244,10 +246,10 @@ public sealed class ConferenciaDoModeloTests
     private static Condicoes Citando(string fato) =>
         [[new CondicaoPrecondicaoInput(fato, Operador.Igual.Codigo(), JsonSerializer.SerializeToElement(true))]];
 
-    private static FatoCandidato Declarado(string codigo, EscopoFato escopo = EscopoFato.Candidato, bool desativado = false, bool aprovado = true)
+    private static FatoCandidato Declarado(string codigo, EscopoFato escopo = EscopoFato.Candidato, bool desativado = false, bool aprovado = true, string? nome = null)
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DescritivoDoFato(codigo, nome ?? codigo, "Descrição do fato."),
             new DefinicaoDoFato(TipoDoDado.SimOuNao, QuantidadeDeValores.ValorUnico, null, null, "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, "Verificação dos requisitos do processo seletivo.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         return Preparado(fato, desativado, aprovado);
     }

@@ -172,8 +172,11 @@ public static class ConferenciaNoCatalogo
     private static IEnumerable<FieldError> FatosSemProtecao(
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
         propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? f) && !f.ProtecaoAprovada)
-            .Order(StringComparer.Ordinal).Select(static fato => new FieldError(null, new DomainError(
-                VinculoCatalogoErrorCodes.FatoComProtecaoPendente, $"O fato '{fato}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."), fato));
+            .Order(StringComparer.Ordinal).Select(fato => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
+                $"O dado do candidato '{catalogo[fato].Nome}' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
+                + "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, "
+                + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."), fato));
 
     private static IEnumerable<FieldError> ValoresDesativados(
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
