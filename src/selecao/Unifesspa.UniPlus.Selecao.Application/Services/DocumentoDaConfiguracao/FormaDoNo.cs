@@ -37,6 +37,9 @@ public sealed class FormaDoNo
     /// <summary>Os tipos declarados nos trechos expandidos do ponto.</summary>
     public IReadOnlyList<string> TiposDeclarados { get; }
 
+    /// <summary>Se o esquema declara, abaixo deste ponto, a propriedade de nome dado como só de leitura.</summary>
+    public bool DeclaraSomenteLeitura(string nome) => Propriedades.TryGetValue(nome, out FormaDoNo? declarada) && declarada.SomenteLeitura;
+
     public bool Numerico => TiposDeclarados.Contains("number", StringComparer.Ordinal) || TiposDeclarados.Contains("integer", StringComparer.Ordinal);
 
     public bool AceitaNumeroMasNaoTexto => Numerico && !TiposDeclarados.Contains("string", StringComparer.Ordinal);

@@ -78,7 +78,7 @@ internal sealed class CenarioDoRascunho
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
     public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao, new DescricaoDaLocalidade(Geo));
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
 
     public CenarioDoRascunho PodeConfigurarEm(UnidadeView unidade)
     {
