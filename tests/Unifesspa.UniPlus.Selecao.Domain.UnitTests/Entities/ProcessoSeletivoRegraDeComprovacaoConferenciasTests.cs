@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConsequenciasDoDescumprimento;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -53,7 +54,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao.FatosDeModalidade).FirstOrDefault()?.Error;
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");

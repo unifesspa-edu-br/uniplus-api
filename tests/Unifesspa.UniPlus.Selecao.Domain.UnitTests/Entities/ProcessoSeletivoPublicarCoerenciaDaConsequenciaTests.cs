@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConsequenciasDoDescumprimento;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -175,6 +176,21 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact]
+    public void Causas_DuasFamiliasEmExigenciaEGrupo_AcumulaNaOrdemDoDocumento()
+    {
+        ModalidadeSelecionada modalidade = NovaModalidadeComAcao("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(modalidade);
+        Guid fase = processo.CronogramaFases.Single().Id;
+        DocumentoExigido documento = ExigenciaGeralComConsequencia(fase, "DOC", "Documento", "PESSOAL", "RETIRA_O_ACRESCIMO");
+        RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_O_ACRESCIMO"), 0, [BaseLegalDaComprovacao.Criar("Lei 12.711/2012", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!], [item]).Value!;
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        FieldError[] causas = [.. CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo).FatosDeModalidade)];
+        causas.Select(causa => causa.Error.Code).Should().Equal("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", "RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga");
+        causas.Select(causa => causa.Field).Should().Equal("documentosExigidos.exigencias[0].consequenciaIndeferimento", "documentosExigidos.regrasDeComprovacao[0].consequencia", "documentosExigidos.exigencias[0].consequenciaIndeferimento", "documentosExigidos.regrasDeComprovacao[0].consequencia");
     }
 
     private static DocumentoExigido ExigenciaGeralComConsequencia(

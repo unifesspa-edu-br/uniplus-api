@@ -145,6 +145,7 @@ internal sealed class CenarioDeCongelamentoPorAssunto
         [NomeDoAssunto.CorrecaoIndependente] = new(static c => c.ComEtapaDeUmSoCorretor()),
         [NomeDoAssunto.TiposDeAto] = new(static c => c._tipos = Tipos(unico: true, resultadoSemPapel: true, congelaComPapel: true)),
         [NomeDoAssunto.Cascata] = new(static c => c.ComModalidadeQueSegueACascataSemCascata()),
+        [NomeDoAssunto.ConsequenciasDoDescumprimento] = new(static c => Definir(c._processo.DocumentosExigidos.Single(), nameof(DocumentoExigido.ConsequenciaIndeferimento), ConsequenciaDoDescumprimento.RetiraOAcrescimo)),
         [NomeDoAssunto.CondicoesDaCanonicalizacao] = new(static c => Definir(c._processo.DocumentosExigidos.Single(), nameof(DocumentoExigido.Aplicabilidade), Aplicabilidade.Condicional)),
         [NomeDoAssunto.MotivosDeDecisao] = new(static c => c.ComMotivoDesativadoNaInscricao()),
         [NomeDoAssunto.ProvaPresencial] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ProvaPresencial), null)),
