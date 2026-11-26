@@ -19,22 +19,44 @@ public static class FaseEfetivaDoFato
     /// nenhum documento é pedido antes de o fato ser conhecido. O fato fica conhecido na mais
     /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
     /// formulário que o produz; o derivado por regra, não antes das suas dependências; e o agregado
-    /// sobre grupo repetível (<paramref name="membroPorAgregado"/>), não antes do fato de membro. Fato
-    /// produzido só pelo formulário de isenção só é citado por documento do formulário de isenção: a
-    /// habilitação usa, de outra finalidade, só fatos da inscrição. Inscrição e isenção podem dividir
-    /// a fase, e por isso a regra olha a finalidade da exigência, e não a fase.
+    /// sobre grupo repetível (<paramref name="membroPorAgregado"/>), não antes do fato de membro. O fato só é
+    /// citado por documento cujo formulário alcança a resposta do formulário que o produz
+    /// (<see cref="AlcanceDasRespostas"/>): a habilitação usa, de outro formulário, só fatos dos obrigatórios respondidos antes.
     /// </summary>
     /// <param name="publicadas">
-    /// O que as versões publicadas coletaram, na retificação: o fato de outra finalidade tem de ter sido
+    /// O que as versões publicadas coletaram, na retificação: o fato de outro formulário tem de ter sido
     /// coletado em todas elas. Nula na escrita da exigência e na primeira publicação.
     /// </param>
     /// <remarks>
     /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
     /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
-    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele. A finalidade que falta
-    /// ou que a fase não responde também não é recusada aqui: a recusa que orienta é a da própria
-    /// finalidade, que a definição das exigências confere.
+    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele. O formulário que o processo não tem na fase da
+    /// exigência também não é recusado aqui: a recusa que orienta é a da conferência das exigências do formulário.
     /// </remarks>
+    public static DomainError? RecusaDeFaseDoGatilho(
+        ConfiguracaoDeclarada configuracao,
+        string fato,
+        Guid exigidoNaFaseId,
+        CodigoDoFormulario? formularioDaExigencia,
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        FatosDasVersoesPublicadas? publicadas = null)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fato);
+        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
+        ArgumentNullException.ThrowIfNull(membroPorAgregado);
+
+        if (PontoDaExigencia(configuracao, exigidoNaFaseId, formularioDaExigencia) is not { } ponto)
+        {
+            return null;
+        }
+
+        return RecusaDaFaseEfetiva(configuracao, fato, ponto.Fase, pontoResolucaoPorFato, membroPorAgregado)
+            ?? RecusaDaRespostaNaoAlcancada(configuracao, fato, ponto, membroPorAgregado)
+            ?? RecusaDaCitacaoNaoGarantida(configuracao, fato, ponto, membroPorAgregado, publicadas);
+    }
+
     public static DomainError? RecusaDeFaseDoGatilho(
         ConfiguracaoDeclarada configuracao,
         string fato,
@@ -45,26 +67,33 @@ public static class FaseEfetivaDoFato
         FatosDasVersoesPublicadas? publicadas = null)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
-        ArgumentException.ThrowIfNullOrWhiteSpace(fato);
-        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
-        ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
-        if (FaseDaExigenciaQueAdmiteAFinalidade(configuracao, exigidoNaFaseId, finalidadeDaExigencia) is not { } faseDaExigencia)
+        FormularioProcesso? formulario = configuracao.Coleta.Formularios.FirstOrDefault(f => f.Finalidade == finalidadeDaExigencia);
+        return finalidadeDaExigencia is not null && formulario is null
+            ? null
+            : RecusaDeFaseDoGatilho(configuracao, fato, exigidoNaFaseId, formulario?.Codigo, pontoResolucaoPorFato, membroPorAgregado, publicadas);
+    }
+
+    /// <summary>
+    /// A fase da exigência e o formulário que a entrega, quando o processo tem o formulário nessa fase; sem formulário
+    /// declarado, só a fase. Nulo quando a fase não pertence ao cronograma ou o formulário não está nela.
+    /// </summary>
+    private static PontoDeUso? PontoDaExigencia(ConfiguracaoDeclarada configuracao, Guid exigidoNaFaseId, CodigoDoFormulario? formularioDaExigencia)
+    {
+        if (configuracao.Cronograma.CronogramaFases.FirstOrDefault(fase => fase.Id == exigidoNaFaseId) is not { } faseDaExigencia)
         {
             return null;
         }
 
-        return RecusaDaFaseEfetiva(configuracao, fato, faseDaExigencia, pontoResolucaoPorFato, membroPorAgregado)
-            ?? RecusaDoFatoDaIsencaoEmOutraFinalidade(configuracao, fato, finalidadeDaExigencia, membroPorAgregado)
-            ?? RecusaDaCitacaoNaoGarantida(configuracao, fato, faseDaExigencia, finalidadeDaExigencia, membroPorAgregado, publicadas);
-    }
+        if (formularioDaExigencia is null)
+        {
+            return new PontoDeUso(faseDaExigencia, null);
+        }
 
-    private static FaseCronograma? FaseDaExigenciaQueAdmiteAFinalidade(
-        ConfiguracaoDeclarada configuracao, Guid exigidoNaFaseId, FinalidadeFormulario? finalidadeDaExigencia) =>
-        configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == exigidoNaFaseId) is { } fase
-            && Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(finalidadeDaExigencia, fase) is null
-                ? fase
-                : null;
+        return configuracao.Coleta.FormulariosDeclarados.FirstOrDefault(formulario => formulario.Codigo == formularioDaExigencia && formulario.FaseId == exigidoNaFaseId) is { } formulario
+            ? new PontoDeUso(faseDaExigencia, formulario)
+            : null;
+    }
 
     private static DomainError? RecusaDaFaseEfetiva(
         ConfiguracaoDeclarada configuracao,
@@ -80,26 +109,46 @@ public static class FaseEfetivaDoFato
         return FaseEmQueOFatoFicaConhecido.RecusaDeFasePosterior(fato, conhecida, faseDaExigencia, ordem);
     }
 
-    private static DomainError? RecusaDoFatoDaIsencaoEmOutraFinalidade(
-        ConfiguracaoDeclarada configuracao,
-        string fato,
-        FinalidadeFormulario? finalidadeDaExigencia,
-        IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        finalidadeDaExigencia != FinalidadeFormulario.IsencaoTaxa && DependeDeFatoSoDaIsencao(configuracao, fato, membroPorAgregado, [])
+    private static DomainError? RecusaDaRespostaNaoAlcancada(
+        ConfiguracaoDeclarada configuracao, string fato, PontoDeUso ponto, IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        RespostaNaoAlcancada(configuracao, fato, ponto, membroPorAgregado, [])
             ? new DomainError(
-                DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade,
-                $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido no formulário de isenção.")
+                DocumentoExigidoErrorCodes.FatoDeFormularioNaoAlcancado,
+                $"O fato '{fato}' vem de um formulário cuja resposta o formulário que entrega o documento não alcança.")
             : null;
 
     /// <summary>
-    /// As exigências de uma finalidade seguem a versão do formulário dela; o fato de outra finalidade tem de ter sido
+    /// Se o fato, diretamente ou por uma dependência, é coletado só por formulários que o ponto não alcança; o fato
+    /// que nenhum formulário coleta não tem resposta a alcançar.
+    /// </summary>
+    private static bool RespostaNaoAlcancada(
+        ConfiguracaoDeclarada configuracao, string fato, PontoDeUso ponto, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao)
+    {
+        FormularioDeclarado[] produtores = [.. FormulariosQueColetam(configuracao, fato)];
+        if (produtores.Length > 0)
+        {
+            return !produtores.Any(produtor => AlcanceDasRespostas.Alcanca(ponto, produtor, configuracao.Cronograma.CronogramaFases));
+        }
+
+        return emAvaliacao.Add(fato)
+            && DependenciasDoFato(configuracao, fato, membroPorAgregado).Any(dependencia => RespostaNaoAlcancada(configuracao, dependencia, ponto, membroPorAgregado, emAvaliacao));
+    }
+
+    private static IEnumerable<FormularioDeclarado> FormulariosQueColetam(ConfiguracaoDeclarada configuracao, string fato) =>
+        configuracao.Coleta.Campos
+            .Where(campo => string.Equals(campo.FatoCodigo, fato, StringComparison.Ordinal))
+            .Select(campo => configuracao.Coleta.Formularios.FirstOrDefault(formulario => formulario.Id == campo.FormularioId))
+            .OfType<FormularioProcesso>()
+            .Select(static formulario => formulario.Declarado);
+
+    /// <summary>
+    /// As exigências de um formulário seguem a versão dele; o fato de outro formulário tem de ter sido
     /// coletado em todas as versões publicadas (UNI-REQ-0144).
     /// </summary>
     private static DomainError? RecusaDaCitacaoNaoGarantida(
         ConfiguracaoDeclarada configuracao,
         string fato,
-        FaseCronograma faseDaExigencia,
-        FinalidadeFormulario? finalidadeDaExigencia,
+        PontoDeUso ponto,
         IReadOnlyDictionary<string, string> membroPorAgregado,
         FatosDasVersoesPublicadas? publicadas) =>
         publicadas is null
@@ -107,8 +156,8 @@ public static class FaseEfetivaDoFato
             : CitacoesDosFormularios.CitacaoNaoGarantida(
                 configuracao,
                 publicadas,
-                [($"a condição de aplicação de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
-                finalidadeDaExigencia,
+                [($"a condição de aplicação de um documento exigido na fase '{ponto.Fase.Codigo}'", fato)],
+                ponto.Formulario is { } formulario ? configuracao.Coleta.FormularioDe(formulario.Codigo)?.Finalidade : null,
                 membroPorAgregado);
 
     /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>

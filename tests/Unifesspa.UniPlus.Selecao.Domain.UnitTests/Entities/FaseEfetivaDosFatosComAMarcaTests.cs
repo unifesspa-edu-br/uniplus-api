@@ -62,7 +62,7 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
         (ProcessoSeletivo processo, FaseCronograma isencao) = ProcessoComIsencaoAntesDaInscricao(inscricaoMarcada: false);
 
         DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-            processo.Declaracao(), "TEM_RENDA", isencao.Id, FinalidadeFormulario.IsencaoTaxa, FatoDaInscricaoNoCatalogo, SemAgregados);
+            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados);
 
         recusa.Should().NotBeNull();
         recusa!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
@@ -75,6 +75,6 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
         (ProcessoSeletivo processo, FaseCronograma isencao) = ProcessoComIsencaoAntesDaInscricao(inscricaoMarcada: true);
 
         FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-            processo.Declaracao(), "TEM_RENDA", isencao.Id, FinalidadeFormulario.IsencaoTaxa, FatoDaInscricaoNoCatalogo, SemAgregados).Should().BeNull();
+            processo.Declaracao(), "TEM_RENDA", isencao.Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa), FatoDaInscricaoNoCatalogo, SemAgregados).Should().BeNull();
     }
 }

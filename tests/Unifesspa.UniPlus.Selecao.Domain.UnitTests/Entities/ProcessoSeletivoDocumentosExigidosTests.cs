@@ -20,49 +20,19 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 /// </summary>
 public sealed class ProcessoSeletivoDocumentosExigidosTests
 {
-    private static FaseCronograma FaseQueResponde(bool inscricao, bool isencao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: inscricao, ColetaSolicitacaoIsencao: isencao)),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
-    private static Result DefinirNaFase(FaseCronograma fase, FinalidadeFormulario? finalidade)
-    {
-        ProcessoSeletivo processo = ProcessoComFases(fase);
-        return DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, finalidade: finalidade));
-    }
-
-    [Fact(DisplayName = "O documento de um formulário que a fase não responde é recusado")]
-    public void DefinirDocumentosExigidos_FinalidadeQueAFaseNaoResponde_Recusa()
-    {
-        Result resultado = DefinirNaFase(FaseQueResponde(inscricao: true, isencao: false), FinalidadeFormulario.IsencaoTaxa);
-
-        resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
-    }
-
-    [Theory(DisplayName = "Na fase que responde a inscrição e a isenção, o documento pertence a qualquer dos dois formulários")]
+    [Theory(DisplayName = "Na fase que tem a inscrição e o pedido de isenção, o documento pertence a qualquer dos dois formulários")]
     [InlineData(FinalidadeFormulario.Inscricao)]
     [InlineData(FinalidadeFormulario.IsencaoTaxa)]
-    public void DefinirDocumentosExigidos_FaseCompartilhada_AceitaAsDuasFinalidades(FinalidadeFormulario finalidade)
+    public void DefinirDocumentosExigidos_FaseCompartilhada_AceitaOsDoisFormularios(FinalidadeFormulario finalidade)
     {
-        Result resultado = DefinirNaFase(FaseQueResponde(inscricao: true, isencao: true), finalidade);
+        FaseCronograma fase = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: true);
+        ProcessoSeletivo processo = ProcessoComFases(fase);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.IsencaoTaxa);
+
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, finalidade: finalidade));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-    }
-
-    [Theory(DisplayName = "O formulário do documento é obrigatório só na fase que responde algum formulário")]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public void DefinirDocumentosExigidos_SemFinalidade_SoNaFaseSemFormulario(bool faseRespondeFormulario, bool aceita)
-    {
-        Result resultado = DefinirNaFase(FaseQueResponde(inscricao: faseRespondeFormulario, isencao: false), finalidade: null);
-
-        resultado.IsSuccess.Should().Be(aceita);
-        if (!aceita)
-        {
-            resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FinalidadeObrigatoria);
-        }
     }
 
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]

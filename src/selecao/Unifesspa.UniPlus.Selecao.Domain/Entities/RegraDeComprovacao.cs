@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -214,6 +215,38 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
             return true;
         }
         return ComposicaoDoGrupo.FinalidadeComumDosItens(_itens, out finalidade);
+    }
+
+    /// <summary>
+    /// O formulário que entrega a regra: o do documento, ou o que todos os itens do grupo têm em comum. Falso quando os
+    /// itens do grupo são de formulários diferentes; o formulário é nulo quando a regra não o declara.
+    /// </summary>
+    public bool TentarFormularioComum(out CodigoDoFormulario? formulario)
+    {
+        if (Forma == FormaDeComprovacao.Documento)
+        {
+            formulario = DocumentoExigido?.FormularioCodigo;
+            return true;
+        }
+
+        return TentarFormularioComumDosItens(_itens, out formulario);
+    }
+
+    internal static bool TentarFormularioComumDosItens(IReadOnlyList<RegraDeComprovacao> itens, out CodigoDoFormulario? formulario)
+    {
+        formulario = null;
+        if (itens.Count == 0)
+        {
+            return true;
+        }
+
+        if (!itens[0].TentarFormularioComum(out formulario))
+        {
+            return false;
+        }
+
+        CodigoDoFormulario? comum = formulario;
+        return itens.Skip(1).All(item => item.TentarFormularioComum(out CodigoDoFormulario? doItem) && doItem == comum);
     }
 
     public bool DeterminaResultado() => Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && ConsequenciaDoDescumprimento is not null;

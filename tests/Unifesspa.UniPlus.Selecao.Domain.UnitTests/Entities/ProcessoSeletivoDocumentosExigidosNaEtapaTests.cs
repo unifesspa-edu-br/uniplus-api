@@ -42,6 +42,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
 
         Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
@@ -90,6 +91,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         ExigirDocumentos(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirEtapas([Etapa("Entrevista", "HABILITACAO", 1)]);
@@ -110,6 +112,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         ProcessoSeletivo processo = ProcessoComFases(habilitacao, Fase(2, "AVALIACAO"));
         EtapaProcesso etapa = Etapa("Comprovação de renda", "HABILITACAO", 1);
         AdicionarEtapas(processo, etapa);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         ExigirDocumentos(processo, ExigenciaNaEtapa(habilitacao.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
         // A MESMA etapa, com o MESMO id — só a fase mudou. A guarda de remoção não vê nada,

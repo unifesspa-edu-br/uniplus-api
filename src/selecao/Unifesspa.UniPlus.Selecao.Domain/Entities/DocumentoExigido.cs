@@ -125,16 +125,27 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
     private DocumentoExigido() { }
 
+    /// <summary>
+    /// Acumula as recusas de forma da exigência (ADR-0125): aplicabilidade, consequência e fatos comprovados.
+    /// O formulário é conferido contra os formulários do processo, e não aqui.
+    /// </summary>
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes,
-        FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null)
+        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes, IReadOnlyList<string>? fatosComprovados)
     {
-        List<FieldError> erros = finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [];
+        List<FieldError> erros = [];
         ValidarAplicabilidade(aplicabilidade, quantidadeCondicoes, erros);
         ValidarConsequencia(consequenciaDoDescumprimento, erros);
         ValidarFatos(fatosComprovados, erros);
         return erros;
     }
+
+    public static List<FieldError> ValidarFormaBasica(
+        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes,
+        FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null) =>
+    [
+        .. finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [],
+        .. ValidarFormaBasica(aplicabilidade, consequenciaDoDescumprimento, quantidadeCondicoes, fatosComprovados),
+    ];
 
     private static void ValidarAplicabilidade(Aplicabilidade? aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
     {
@@ -188,7 +199,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ExigirPartes(declarado);
         ExigirIdentificadores(declarado.Tipo, declarado.Momento);
         List<FieldError> erros = ValidarFormaBasica(declarado.Aplicabilidade.Tipo, declarado.Indeferimento.ConsequenciaDoDescumprimento,
-            declarado.Aplicabilidade.Condicoes.Count, declarado.Momento.Finalidade, declarado.FatosComprovados);
+            declarado.Aplicabilidade.Condicoes.Count, declarado.FatosComprovados);
         erros.AddRange(RequisitosDoDocumento.ValidarTamanho(declarado.Requisitos.TamanhoMaximoBytes));
         if (erros.Count > 0)
         {
