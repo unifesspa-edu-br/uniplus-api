@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProce
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
-using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -54,7 +54,7 @@ public static class IncluirMotivoDeDecisaoNoProcessoCommandHandler
 
     private static DomainError? RecusaAntesDeLerOCadastro(ProcessoSeletivo? processo, IncluirMotivoDeDecisaoNoProcessoCommand command) =>
         processo is null
-            ? DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId)
+            ? AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId)
             : EscolhaDosMotivos.RecusaDoLugarOuDoBloqueio(processo, command.Lugar);
 
     private static async Task<Result> IncluirAsync(

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -37,7 +38,7 @@ public static class DefinirFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result definido = processo is null
-            ? Result.Failure(ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
             : await DefinirAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         if (definido.IsSuccess)
         {
@@ -46,9 +47,6 @@ public static class DefinirFormularioCommandHandler
 
         return definido;
     }
-
-    internal static DomainError ProcessoNaoEncontrado(Guid id) =>
-        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado.");
 
     private static async Task<Result> DefinirAsync(
         DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
@@ -173,7 +171,7 @@ public static class RemoverFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result removido = processo is null
-            ? Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
             : Remover(processo, command.FormularioCodigo);
         if (removido.IsSuccess)
         {

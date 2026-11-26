@@ -7,6 +7,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
@@ -34,7 +35,7 @@ public static class AplicarModeloFormularioCommandHandler
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result<AplicacaoDeModeloDto>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            ? Result<AplicacaoDeModeloDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
             : await ConferirEAplicarAsync(command, processo, cadastros, modeloFormularioReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
