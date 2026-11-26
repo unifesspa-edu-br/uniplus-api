@@ -47,6 +47,25 @@ public sealed class GrupoAreaEnemSnapshotTests
         GrupoAreaEnemSnapshot.Criar("TECNOLOGICA", rotulo).Error!.Code.Should().Be("GrupoAreaEnemSnapshot.RotuloObrigatorio");
     }
 
+    [Fact]
+    public void Criar_SemCodigoERotuloComCaractereInvalido_RecusaCodigoObrigatorio()
+    {
+        GrupoAreaEnemSnapshot.Criar(null, "Tecno\0lógica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CodigoObrigatorio");
+    }
+
+    [Fact]
+    public void Criar_CodigoComCaractereInvalidoESemRotulo_RecusaRotuloObrigatorio()
+    {
+        GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", null).Error!.Code.Should().Be("GrupoAreaEnemSnapshot.RotuloObrigatorio");
+    }
+
+    [Fact]
+    public void Criar_CodigoLongoERotuloComCaractereInvalido_RecusaCaractereInvalido()
+    {
+        GrupoAreaEnemSnapshot.Criar(new string('C', 31), "Tecno\0lógica")
+            .Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
+    }
+
     [Fact(DisplayName = "Caractere nulo é recusado na fronteira do domínio")]
     public void Criar_CaractereNulo_Recusa()
     {
