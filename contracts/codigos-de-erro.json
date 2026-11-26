@@ -3494,12 +3494,12 @@
     {
       "codigo": "uniplus.item_formulario.fato_desconhecido",
       "status": 422,
-      "titulo": "O fato do item não pertence ao catálogo de fatos do candidato"
+      "titulo": "O dado do candidato do item não existe no catálogo"
     },
     {
       "codigo": "uniplus.item_formulario.fato_nao_coletavel",
       "status": 422,
-      "titulo": "O fato do item não é coletável num campo"
+      "titulo": "O dado do candidato do item não é coletável num campo"
     },
     {
       "codigo": "uniplus.item_formulario.formato_incoerente",
@@ -8384,12 +8384,12 @@
     {
       "codigo": "uniplus.vinculo_catalogo.fato_desativado",
       "status": 422,
-      "titulo": "O fato está desativado no catálogo e não aceita vínculo novo"
+      "titulo": "O dado do candidato está desativado no catálogo e não aceita vínculo novo"
     },
     {
       "codigo": "uniplus.vinculo_catalogo.valor_desativado",
       "status": 422,
-      "titulo": "O valor está desativado no catálogo e não aceita vínculo novo"
+      "titulo": "O valor de um dado do candidato está desativado no catálogo e não aceita vínculo novo"
     }
   ]
 }

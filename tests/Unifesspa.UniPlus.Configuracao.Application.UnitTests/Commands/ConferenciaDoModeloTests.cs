@@ -36,12 +36,12 @@ public sealed class ConferenciaDoModeloTests
 
     private readonly CatalogoDoModelo _catalogo = CatalogoDoModelo.De(
     [
-        Declarado("CERTIFICADO"),
-        Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo),
-        Declarado("DESATIVADO", desativado: true),
+        Declarado("CERTIFICADO", nome: "Certificado de conclusão"),
+        Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo, nome: "Maioridade do membro"),
+        Declarado("DESATIVADO", desativado: true, nome: "Situação de moradia"),
         Declarado("ANTIGO", desativado: true),
         Declarado("PENDENTE", aprovado: false, nome: "Renda familiar per capita"),
-        Categorico("CONDICAO"),
+        Categorico("CONDICAO", nome: "Condição de moradia"),
         Categorico("CONDICAO_DO_MEMBRO", EscopoFato.MembroGrupo),
     ]);
 
@@ -178,7 +178,7 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasDosItens() =>
     [
-        ("itens[1].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato 'NAO_EXISTE' não pertence ao catálogo de fatos do candidato."),
+        ("itens[1].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O dado do candidato informado não existe no catálogo."),
         ("itens[2].apresentacao.tipoDeCampo", ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio,
             "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do dado 'CERTIFICADO'."),
         FatoInexistenteNoPredicado("itens[2].regras.exibicao"),
@@ -197,7 +197,7 @@ public sealed class ConferenciaDoModeloTests
         FatoInexistenteNoPredicado("grupos[0].regras.exibicao"),
         FatoInexistenteNoPredicado("grupos[0].regras.obrigatoriedade.predicado"),
         ("grupos[0].subitens[0].fatoCodigo", ItemFormularioErrorCodes.FatoNaoColetavel,
-            "O fato 'CERTIFICADO' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido em cada ocorrência — fatos do candidato, derivados e calculados não."),
+            "O dado do candidato 'Certificado de conclusão' não é coletável num campo do grupo: só o dado declarado de membro de grupo é respondido em cada ocorrência — dados do próprio candidato, derivados e calculados não."),
         ("grupos[0].subitens[1].apresentacao.tipoDeCampo", ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio,
             "O tipo de campo 'NUMERO' não é coerente com o tipo do dado 'SIM_OU_NAO', a quantidade de valores 'VALOR_UNICO' e a fonte de valores 'nenhuma' do dado 'MAIOR_IDADE'."),
     ];
@@ -207,7 +207,7 @@ public sealed class ConferenciaDoModeloTests
         FatoInexistenteNoPredicado("conjuntoDeDocumentos.documentosExigidos[1].quando"),
         ("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.fatoCodigo", ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
             "O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara. Informe um fato que atenda a essa condição."),
-        ("conjuntoDeDocumentos.documentosExigidos[2].porOpcao.fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato."),
+        ("conjuntoDeDocumentos.documentosExigidos[2].porOpcao.fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido, "O dado do candidato informado não existe no catálogo."),
         FatoInexistenteNoPredicado("conjuntoDeDocumentos.gruposDeDocumentos[1].documentos[1].quando"),
     ];
 
@@ -223,18 +223,18 @@ public sealed class ConferenciaDoModeloTests
 
     private static Recusa[] RecusasDosPressupostos() =>
     [
-        ("pressupostos[0]", ItemFormularioErrorCodes.FatoDesconhecido, "O fato 'NAO_EXISTE' não pertence ao catálogo de fatos do candidato."),
+        ("pressupostos[0]", ItemFormularioErrorCodes.FatoDesconhecido, "O dado do candidato informado não existe no catálogo."),
         ("pressupostos[3]", ItemFormularioErrorCodes.FatoNaoColetavel,
-            "O fato 'MAIOR_IDADE' não é coletável num campo: só o fato declarado do próprio candidato é respondido no formulário — derivados, calculados e fatos de membro de grupo não."),
+            "O dado do candidato 'Maioridade do membro' não é coletável num campo: só o dado declarado do próprio candidato é respondido no formulário — dados derivados, calculados e de membro de grupo não."),
     ];
 
     private static Recusa[] RecusasDosVinculos() =>
     [
-        (null, VinculoCatalogoErrorCodes.FatoDesativado, "O fato 'DESATIVADO' está desativado no catálogo e não aceita vínculo novo."),
+        (null, VinculoCatalogoErrorCodes.FatoDesativado, "O dado do candidato 'Situação de moradia' está desativado no catálogo e não aceita vínculo novo."),
         (null, VinculoCatalogoErrorCodes.FatoComProtecaoPendente, "O dado do candidato 'Renda familiar per capita' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
             + "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, "
             + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."),
-        (null, VinculoCatalogoErrorCodes.ValorDesativado, "O valor 'B' do fato 'CONDICAO' está desativado no catálogo e não aceita vínculo novo."),
+        (null, VinculoCatalogoErrorCodes.ValorDesativado, "O valor 'Opção B.' do dado do candidato 'Condição de moradia' está desativado no catálogo e não aceita vínculo novo."),
     ];
 
     private static Recusa FatoInexistenteNoPredicado(string campo) =>
@@ -254,10 +254,10 @@ public sealed class ConferenciaDoModeloTests
         return Preparado(fato, desativado, aprovado);
     }
 
-    private static FatoCandidato Categorico(string codigo, EscopoFato escopo = EscopoFato.Candidato)
+    private static FatoCandidato Categorico(string codigo, EscopoFato escopo = EscopoFato.Candidato, string? nome = null)
     {
         FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DescritivoDoFato(codigo, nome ?? codigo, "Descrição do fato."),
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, FonteValoresFato.Catalogo, null, "INSCRICAO", escopo, ClassificacaoDeProtecao.Pessoal, "Verificação dos requisitos do processo seletivo.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal)).Value!;
         fato.AdicionarValorDominio("A", "Opção A.", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.AdicionarValorDominio("B", "Opção B.", 1, ativo: false).IsSuccess.Should().BeTrue();

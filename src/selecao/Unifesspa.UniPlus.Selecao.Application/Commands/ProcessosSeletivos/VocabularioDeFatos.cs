@@ -74,8 +74,8 @@ internal static class VocabularioDeFatos
         return new FatoDoCatalogo(
             fato.Codigo, fato.Nome, fato.DominioValor, fato.CardinalidadeValor, fato.OrigemValor, fato.Binding, fato.FonteValoresValor, fato.EscopoValor, fato.Ativo,
             fato.ValoresDominioDeclarados is { } declarados
-                ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]
-                : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))],
+                ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Descricao, v.Ativo))]
+                : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, null, Ativo: true))],
             fato.ProtecaoAprovada);
     }
 

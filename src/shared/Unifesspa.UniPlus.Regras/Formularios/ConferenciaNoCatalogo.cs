@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>Um valor do domínio de um fato no catálogo; o desativado não aceita vínculo novo.</summary>
-public sealed record ValorDoCatalogo(string Codigo, bool Ativo);
+/// <param name="Nome">O nome da opção como o catálogo a descreve, o que as recusas mostram no lugar do código; ausente quando o catálogo não a descreve.</param>
+public sealed record ValorDoCatalogo(string Codigo, string? Nome, bool Ativo);
 
 /// <summary>
 /// O fato do catálogo como as regras do formulário o conferem, pelos tokens do catálogo. O processo
@@ -59,15 +60,15 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(catalogo);
         if (!catalogo.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
-            return FatoDesconhecido(fatoCodigo);
+            return FatoDesconhecido();
         }
 
         return EhColetavelEmGrupo(fato)
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.FatoNaoColetavel,
-                $"O fato '{fatoCodigo}' não é coletável num campo do grupo: só o fato declarado de membro de grupo é respondido "
-                + "em cada ocorrência — fatos do candidato, derivados e calculados não.");
+                $"O dado do candidato '{fato.Nome}' não é coletável num campo do grupo: só o dado declarado de membro de grupo é respondido "
+                + "em cada ocorrência — dados do próprio candidato, derivados e calculados não.");
     }
 
     private static bool EhRespondidoNoEscopo(FatoDoCatalogo fato, EscopoFato escopo)
@@ -78,8 +79,9 @@ public static class ConferenciaNoCatalogo
             && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.CampoFormulario);
     }
 
-    private static DomainError FatoDesconhecido(string fatoCodigo) =>
-        new(ItemFormularioErrorCodes.FatoDesconhecido, $"O fato '{fatoCodigo}' não pertence ao catálogo de fatos do candidato.");
+    /// <summary>A recusa do dado do candidato que o catálogo não tem; o código informado não é repetido, pois a recusa já aponta o campo.</summary>
+    public static DomainError FatoDesconhecido() =>
+        new(ItemFormularioErrorCodes.FatoDesconhecido, "O dado do candidato informado não existe no catálogo.");
 
     /// <summary>O fato que o item coleta: existe no catálogo e é coletável.</summary>
     public static DomainError? FatoDoItem(string fatoCodigo, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
@@ -87,15 +89,15 @@ public static class ConferenciaNoCatalogo
         ArgumentNullException.ThrowIfNull(catalogo);
         if (!catalogo.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
-            return FatoDesconhecido(fatoCodigo);
+            return FatoDesconhecido();
         }
 
         return EhColetavel(fato)
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.FatoNaoColetavel,
-                $"O fato '{fatoCodigo}' não é coletável num campo: só o fato declarado do próprio candidato é respondido no "
-                + "formulário — derivados, calculados e fatos de membro de grupo não.");
+                $"O dado do candidato '{fato.Nome}' não é coletável num campo: só o dado declarado do próprio candidato é respondido no "
+                + "formulário — dados derivados, calculados e de membro de grupo não.");
     }
 
     /// <summary>
@@ -163,28 +165,39 @@ public static class ConferenciaNoCatalogo
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
+    private static IEnumerable<FatoDoCatalogo> FatosNovosNoCatalogo(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
+        propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato)).Order(StringComparer.Ordinal)
+            .Select(fato => catalogo.GetValueOrDefault(fato)).OfType<FatoDoCatalogo>();
+
     private static IEnumerable<FieldError> FatosDesativados(
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
-        propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? f) && !f.Ativo)
-            .Order(StringComparer.Ordinal).Select(static fato => new FieldError(null, new DomainError(
-                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato));
+        FatosNovosNoCatalogo(catalogo, existentes, propostos).Where(static fato => !fato.Ativo)
+            .Select(static fato => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.FatoDesativado,
+                $"O dado do candidato '{fato.Nome}' está desativado no catálogo e não aceita vínculo novo."), fato.Codigo));
 
     private static IEnumerable<FieldError> FatosSemProtecao(
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
-        propostos.Fatos.Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? f) && !f.ProtecaoAprovada)
-            .Order(StringComparer.Ordinal).Select(fato => new FieldError(null, new DomainError(
+        FatosNovosNoCatalogo(catalogo, existentes, propostos).Where(static fato => !fato.ProtecaoAprovada)
+            .Select(static fato => new FieldError(null, new DomainError(
                 VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
-                $"O dado do candidato '{catalogo[fato].Nome}' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
+                $"O dado do candidato '{fato.Nome}' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
                 + "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, "
-                + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."), fato));
+                + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."), fato.Codigo));
 
     private static IEnumerable<FieldError> ValoresDesativados(
         IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
         propostos.Valores.Where(valor => !existentes.Valores.Contains(valor)
             && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? f) && f.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
             .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal)
-            .Select(static v => new FieldError(null, new DomainError(
-                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."), $"{v.Fato}.{v.Valor}"));
+            .Select(v => new FieldError(null, new DomainError(
+                VinculoCatalogoErrorCodes.ValorDesativado, MensagemDoValorDesativado(catalogo[v.Fato], v.Valor)), $"{v.Fato}.{v.Valor}"));
+
+    private static string MensagemDoValorDesativado(FatoDoCatalogo fato, string codigoDoValor) =>
+        fato.Valores.First(v => v.Codigo == codigoDoValor).Nome is { } nome
+            ? $"O valor '{nome}' do dado do candidato '{fato.Nome}' está desativado no catálogo e não aceita vínculo novo."
+            : $"Um valor do dado do candidato '{fato.Nome}' está desativado no catálogo e não aceita vínculo novo.";
 
     private static IEnumerable<FieldError> Semantica(
         FatoDoCatalogo alvo,

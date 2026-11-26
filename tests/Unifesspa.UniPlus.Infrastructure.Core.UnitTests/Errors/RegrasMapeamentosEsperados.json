@@ -339,13 +339,13 @@
     "chave": "ItemFormulario.FatoDesconhecido",
     "status": 422,
     "codigo": "uniplus.item_formulario.fato_desconhecido",
-    "titulo": "O fato do item não pertence ao catálogo de fatos do candidato"
+    "titulo": "O dado do candidato do item não existe no catálogo"
   },
   {
     "chave": "ItemFormulario.FatoNaoColetavel",
     "status": 422,
     "codigo": "uniplus.item_formulario.fato_nao_coletavel",
-    "titulo": "O fato do item não é coletável num campo"
+    "titulo": "O dado do candidato do item não é coletável num campo"
   },
   {
     "chave": "ItemFormulario.ItensEmExcesso",
@@ -363,7 +363,7 @@
     "chave": "VinculoCatalogo.FatoDesativado",
     "status": 422,
     "codigo": "uniplus.vinculo_catalogo.fato_desativado",
-    "titulo": "O fato está desativado no catálogo e não aceita vínculo novo"
+    "titulo": "O dado do candidato está desativado no catálogo e não aceita vínculo novo"
   },
   {
     "chave": "VinculoCatalogo.FatoComProtecaoPendente",
@@ -375,7 +375,7 @@
     "chave": "VinculoCatalogo.ValorDesativado",
     "status": 422,
     "codigo": "uniplus.vinculo_catalogo.valor_desativado",
-    "titulo": "O valor está desativado no catálogo e não aceita vínculo novo"
+    "titulo": "O valor de um dado do candidato está desativado no catálogo e não aceita vínculo novo"
   },
   {
     "chave": "TermoFormulario.CodigoObrigatorio",

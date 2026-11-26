@@ -87,6 +87,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
         Result resultado = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, new Dictionary<Guid, TipoDocumentoView>(), []);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("DocumentoExigido.TipoDocumentoNaoEncontrado");
+        resultado.Errors[0].Error.Message.Should().Be("O tipo de documento exigido pelo processo não existe mais no cadastro; troque a exigência.");
         resultado.Errors[0].Field.Should().Be($"documentosExigidos.{tipo.Id}");
     }
 

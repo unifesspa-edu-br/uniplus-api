@@ -169,7 +169,7 @@ public static class CriacaoDoFato
     private static (string Codigo, string Mensagem)? RecusaDoFatoDeMembroDesativado(FatoCandidato membro) =>
         membro.Ativo
             ? null
-            : (VinculoCatalogoErrorCodes.FatoDesativado, "O fato de membro está desativado no catálogo e não aceita vínculo novo.");
+            : (VinculoCatalogoErrorCodes.FatoDesativado, $"O dado do candidato '{membro.Nome}', de membro de grupo, está desativado no catálogo e não aceita vínculo novo.");
 
     /// <summary>A quantidade de valores e a fonte que o derivado por regra infere do próprio tipo do dado.</summary>
     internal static (QuantidadeDeValores Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoDerivado(TipoDoDado? tipo) =>

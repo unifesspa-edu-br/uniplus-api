@@ -82,7 +82,7 @@ internal static class ConferenciaDaAprovacaoDaProtecao
     private static FieldError TipoExigidoNaoEncontrado(Guid tipoId) =>
         new($"documentosExigidos.{tipoId}", new DomainError(
             ProcessoSeletivoErrorCodes.TipoDocumentoDoVinculoNaoEncontrado,
-            $"O tipo de documento {tipoId} exigido pelo processo não existe mais no cadastro; troque a exigência."));
+            "O tipo de documento exigido pelo processo não existe mais no cadastro; troque a exigência."));
 
     private static FieldError TipoExigidoPendente(TipoDocumentoView tipo) =>
         new($"documentosExigidos.{tipo.Codigo}", new DomainError(
