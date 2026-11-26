@@ -2581,7 +2581,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
+            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas.",
             "schema": {
               "type": "string"
             }
@@ -2685,7 +2685,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7701,7 +7701,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
+            "description": "Texto pesquisado. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas.",
             "schema": {
               "type": "string"
             }
@@ -7821,7 +7821,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9463,7 +9463,7 @@
           {
             "name": "busca",
             "in": "query",
-            "description": "Trecho do nome ou do c\u00F3digo do item. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
+            "description": "Trecho do nome ou do c\u00F3digo do item. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas.",
             "schema": {
               "type": "string"
             }
@@ -9588,7 +9588,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11060,7 +11060,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Termo de busca livre (caixa-insens\u00EDvel) sobre o Nome do termo de consentimento; ausente/vazio = sem filtro. Mantenha fixo ao navegar prev/next (o cursor n\u00E3o vincula o filtro).",
+            "description": "Termo de busca livre (caixa-insens\u00EDvel) sobre o Nome do termo de consentimento; ausente/vazio = sem filtro. At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas. Mantenha fixo ao navegar prev/next (o cursor n\u00E3o vincula o filtro).",
             "schema": {
               "type": "string"
             }
@@ -11156,7 +11156,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

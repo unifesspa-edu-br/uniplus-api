@@ -408,7 +408,7 @@
           {
             "name": "modalidade",
             "in": "query",
-            "description": "C\u00F3digo da modalidade que o certame precisa ofertar. Sem o par\u00E2metro, n\u00E3o recorta.",
+            "description": "C\u00F3digo da modalidade que o certame precisa ofertar. Sem o par\u00E2metro, n\u00E3o filtra.",
             "schema": {
               "type": "string"
             }
@@ -416,7 +416,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Texto pesquisado no t\u00EDtulo do certame e no n\u00FAmero do edital. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o.",
+            "description": "Texto pesquisado no t\u00EDtulo do certame e no n\u00FAmero do edital. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas.",
             "schema": {
               "type": "string"
             }
@@ -485,7 +485,7 @@
                 }
               },
               "X-Certames-Em-Breve": {
-                "description": "Quantos certames divulgados ainda n\u00E3o abriram a janela de inscri\u00E7\u00E3o, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
+                "description": "Quantos certames divulgados ainda n\u00E3o abriram o per\u00EDodo de inscri\u00E7\u00E3o, no instante da consulta. Presente s\u00F3 quando incluir_contadores=true.",
                 "schema": {
                   "type": "integer",
                   "format": "int32"
@@ -513,7 +513,7 @@
                 }
               },
               "X-Certames-Revisao": {
-                "description": "Revis\u00E3o do recorte percorrido: marcador opaco dos certames que a consulta seleciona (situa\u00E7\u00E3o, modalidade e busca) e do que cada um tem de orden\u00E1vel e exib\u00EDvel \u2014 a vers\u00E3o divulgada e a situa\u00E7\u00E3o da janela de inscri\u00E7\u00E3o \u2014, no instante em que a travessia come\u00E7ou. N\u00E3o depende da ordena\u00E7\u00E3o pedida, que o cursor j\u00E1 fixa. \u00C9 o mesmo em todas as p\u00E1ginas da mesma travessia e muda quando uma publica\u00E7\u00E3o, uma retifica\u00E7\u00E3o ou a passagem do tempo altera esse conjunto. Quem comp\u00F5e a vitrine compara o valor entre p\u00E1ginas para saber que precisa recome\u00E7ar.",
+                "description": "Revis\u00E3o da consulta percorrida: marcador opaco dos certames que a consulta seleciona (situa\u00E7\u00E3o, modalidade e busca) e do que cada um tem de orden\u00E1vel e exib\u00EDvel \u2014 a vers\u00E3o divulgada e a situa\u00E7\u00E3o do per\u00EDodo de inscri\u00E7\u00E3o \u2014, no instante em que a leitura das p\u00E1ginas come\u00E7ou. N\u00E3o depende da ordena\u00E7\u00E3o pedida, que o cursor j\u00E1 fixa. \u00C9 o mesmo em todas as p\u00E1ginas da mesma sequ\u00EAncia de p\u00E1ginas e muda quando uma publica\u00E7\u00E3o, uma retifica\u00E7\u00E3o ou a passagem do tempo altera esse conjunto. Quem monta a lista compara o valor entre p\u00E1ginas para saber que precisa recome\u00E7ar.",
                 "schema": {
                   "type": "string"
                 }
@@ -561,7 +561,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

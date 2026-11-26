@@ -434,6 +434,7 @@
           {
             "name": "q",
             "in": "query",
+            "description": "At\u00E9 200 caracteres, sem contar os espa\u00E7os das pontas.",
             "schema": {
               "type": "string"
             }
@@ -540,7 +541,7 @@
             }
           },
           "422": {
-            "description": "O texto pesquisado excede 200 caracteres (uniplus.consulta.busca_muito_longa).",
+            "description": "Texto pesquisado com mais de 200 caracteres, sem contar os espa\u00E7os das pontas (uniplus.consulta.busca_muito_longa), ou outro par\u00E2metro de consulta inv\u00E1lido.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
