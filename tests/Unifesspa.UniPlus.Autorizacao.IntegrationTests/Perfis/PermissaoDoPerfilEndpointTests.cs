@@ -37,7 +37,6 @@ public sealed class PermissaoDoPerfilEndpointTests : PerfilEndpointTestBase
     public async Task SemPermissao_Devolve403(string metodo, string sufixo)
     {
         using HttpClient isabella = await ClienteComPermissoesAsync("leandro.viana", ConsultarCatalogo);
-
         using HttpResponseMessage resposta = await EnviarAsync(
             isabella, new HttpMethod(metodo), Rota + sufixo, metodo == "POST" ? Corpo(Nome(), [ConsultarCatalogo]) : null);
 

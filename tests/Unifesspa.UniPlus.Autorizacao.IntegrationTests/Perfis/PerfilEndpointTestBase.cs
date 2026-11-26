@@ -61,6 +61,15 @@ public abstract class PerfilEndpointTestBase
         return new Envio(raiz.GetProperty("perfilId").GetGuid(), raiz.GetProperty("versaoId").GetGuid(), raiz.GetProperty("documentoId").GetGuid());
     }
 
+    internal static async Task VerificarRecusaDeVersaoAsync(HttpResponseMessage resposta)
+    {
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.contract.versao_nao_suportada");
+        problema.RootElement.GetProperty("available_versions").EnumerateArray().Select(static v => v.GetInt32()).Should().Equal(1);
+    }
+
     internal sealed record Envio(Guid PerfilId, Guid VersaoId, Guid DocumentoId);
 
     internal Task<Guid> SemearPerfilVigenteAsync(params string[] permissoes) =>

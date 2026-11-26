@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -47,6 +48,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// versão pendente, e a resposta 200 traz o perfil.
     /// </summary>
     [HttpPost("perfis/{id:guid}/versoes")]
+    [EndpointName("CriarVersaoDoPerfil")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
@@ -76,6 +78,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Pede a URL de PUT de outro documento, depois que a verificação recusou o anterior.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
+    [EndpointName("ReservarDocumentoDaVersao")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
@@ -100,6 +103,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Pede outra URL de PUT para o documento que ainda aguarda o envio.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento/envio")]
+    [EndpointName("ReemitirEnvioDoDocumentoDaVersao")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
@@ -121,6 +125,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
 
     /// <summary>Confirma o PUT com o ETag devolvido; o PDF segue para a verificação.</summary>
     [HttpPost("perfis/{id:guid}/versoes/{versaoId:guid}/documento/confirmacao")]
+    [EndpointName("ConfirmarDocumentoDaVersao")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [ProducesResponseType(typeof(DocumentoDaVersaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -145,10 +150,13 @@ public sealed class VersoesDoPerfilController : ControllerBase
     /// acesso entra na trilha.
     /// </summary>
     [HttpGet("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
+    [EndpointName("LerDocumentoDaVersao")]
+    [VendorMediaType(Resource = "documento-da-versao", Versions = [1])]
     [ProducesResponseType(typeof(LeituraDoDocumentoDaVersaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Ler(Guid id, Guid versaoId, CancellationToken cancellationToken)

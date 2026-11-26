@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
 using System.Net;
+using System.Net.Http.Headers;
 
 using AwesomeAssertions;
 
@@ -11,6 +12,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
 {
+    private const string Tipo = "application/vnd.uniplus.documento-da-versao.v1+json";
+
     public DocumentoDaVersaoEndpointTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
     {
@@ -78,7 +81,7 @@ public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
         string rota = $"{Rota}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento";
 
         using HttpResponseMessage novo = await EnviarAsync(diogo, HttpMethod.Post, rota, new { tamanhoDoDocumento = 2048 });
-        using HttpResponseMessage leitura = await diogo.GetAsync(new Uri(rota, UriKind.Relative));
+        using HttpResponseMessage leitura = await LerDocumentoAsync(diogo, rota, Tipo);
 
         novo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await novo.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_recusado");
@@ -93,10 +96,58 @@ public sealed class DocumentoDaVersaoEndpointTests : PerfilEndpointTestBase
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Guid versao = await VersaoVigenteAsync(id);
 
-        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}/{id}/versoes/{versao}/documento", UriKind.Relative));
+        using HttpResponseMessage resposta = await LerDocumentoAsync(diogo, $"{Rota}/{id}/versoes/{versao}/documento", Tipo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be(Tipo);
         resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
         (await ContarLeiturasAsync(id)).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "O documento devolve a versão atual para application/json")]
+    public async Task Documento_JsonSemVersao_DevolveTipoDaVersaoAtual()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid versao = await VersaoVigenteAsync(id);
+        using HttpResponseMessage resposta = await LerDocumentoAsync(diogo, $"{Rota}/{id}/versoes/{versao}/documento", "application/json");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be(Tipo);
+    }
+
+    [Fact(DisplayName = "Versão de mídia inexistente recusa a leitura sem URL nem acesso")]
+    public async Task Documento_VersaoDeMidiaInexistente_Devolve406SemLeitura()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid versao = await VersaoVigenteAsync(id);
+        using HttpResponseMessage resposta = await LerDocumentoAsync(
+            diogo, $"{Rota}/{id}/versoes/{versao}/documento", "application/vnd.uniplus.documento-da-versao.v99+json");
+
+        await VerificarRecusaDeVersaoAsync(resposta);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(id.ToString()).And.NotContain(versao.ToString());
+        (await ContarLeiturasAsync(id)).Should().Be(0);
+    }
+
+    [Theory(DisplayName = "Sem autenticação ou permissão, o documento não é lido")]
+    [InlineData(false, HttpStatusCode.Unauthorized)]
+    [InlineData(true, HttpStatusCode.Forbidden)]
+    public async Task Documento_SemAcesso_RecusaAntesDaLeitura(bool autenticado, HttpStatusCode esperado)
+    {
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid versao = await VersaoVigenteAsync(id);
+        using HttpClient cliente = autenticado ? Cliente("pessoa.sem.permissao") : Fixture.Factory.CreateClient();
+        using HttpResponseMessage resposta = await LerDocumentoAsync(cliente, $"{Rota}/{id}/versoes/{versao}/documento", Tipo);
+
+        resposta.StatusCode.Should().Be(esperado);
+        (await ContarLeiturasAsync(id)).Should().Be(0);
+    }
+
+    private static async Task<HttpResponseMessage> LerDocumentoAsync(HttpClient cliente, string rota, string tipo)
+    {
+        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
+        pedido.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(tipo));
+        return await cliente.SendAsync(pedido);
     }
 }

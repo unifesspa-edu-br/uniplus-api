@@ -466,6 +466,7 @@
         "tags": [
           "AprovacaoDeVersoes"
         ],
+        "operationId": "RemoverPermissoesDoPerfil",
         "parameters": [
           {
             "name": "id",
@@ -607,6 +608,7 @@
         "tags": [
           "AprovacaoDeVersoes"
         ],
+        "operationId": "AprovarVersaoDoPerfil",
         "parameters": [
           {
             "name": "id",
@@ -757,6 +759,7 @@
         "tags": [
           "AprovacaoDeVersoes"
         ],
+        "operationId": "RecusarVersaoDoPerfil",
         "parameters": [
           {
             "name": "id",
@@ -907,6 +910,7 @@
         "tags": [
           "AprovacaoDeVersoes"
         ],
+        "operationId": "CancelarVersaoDoPerfil",
         "parameters": [
           {
             "name": "id",
@@ -1057,6 +1061,7 @@
         "tags": [
           "AprovacaoDeVersoes"
         ],
+        "operationId": "ListarFilaDeVersoes",
         "parameters": [
           {
             "name": "fila",
@@ -1070,23 +1075,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ItemDaFilaDeVersoesDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ItemDaFilaDeVersoesDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.fila-de-versoes.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1108,6 +1097,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7370,6 +7369,7 @@
         "tags": [
           "VersoesDoPerfil"
         ],
+        "operationId": "CriarVersaoDoPerfil",
         "parameters": [
           {
             "name": "id",
@@ -7531,6 +7531,7 @@
         "tags": [
           "VersoesDoPerfil"
         ],
+        "operationId": "ReservarDocumentoDaVersao",
         "parameters": [
           {
             "name": "id",
@@ -7679,6 +7680,7 @@
         "tags": [
           "VersoesDoPerfil"
         ],
+        "operationId": "LerDocumentoDaVersao",
         "parameters": [
           {
             "name": "id",
@@ -7703,17 +7705,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/LeituraDoDocumentoDaVersaoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LeituraDoDocumentoDaVersaoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.documento-da-versao.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/LeituraDoDocumentoDaVersaoDto"
                 }
@@ -7742,6 +7734,16 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7783,6 +7785,7 @@
         "tags": [
           "VersoesDoPerfil"
         ],
+        "operationId": "ReemitirEnvioDoDocumentoDaVersao",
         "parameters": [
           {
             "name": "id",
@@ -7913,6 +7916,7 @@
         "tags": [
           "VersoesDoPerfil"
         ],
+        "operationId": "ConfirmarDocumentoDaVersao",
         "parameters": [
           {
             "name": "id",
