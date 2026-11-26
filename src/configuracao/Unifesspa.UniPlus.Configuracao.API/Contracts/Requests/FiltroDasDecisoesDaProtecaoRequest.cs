@@ -4,6 +4,7 @@ using System.ComponentModel;
 
 using Microsoft.AspNetCore.Mvc;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
@@ -29,7 +30,7 @@ public sealed record FiltroDasDecisoesDaProtecaoRequest
     [Description("Data final da decisão, inclusive (AAAA-MM-DD), no fuso de Belém.")]
     public DateOnly? Ate { get; init; }
 
-    [FromQuery(Name = "busca")]
+    [FromQuery(Name = BuscaPedida.NomePorExtensoDoParametro)]
     [Description("Trecho do nome ou do código do item. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
     public string? Busca { get; init; }
 

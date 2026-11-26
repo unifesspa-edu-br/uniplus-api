@@ -34,15 +34,6 @@ public static class NormalizacaoTextual
             .Replace("_", "\\_", StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Termo pronto para o <c>LIKE</c>: normalizado e com curingas escapados, ou
-    /// <see langword="null"/> quando não há busca. Um termo em branco é o mesmo que
-    /// nenhum — é o que faz uma consulta com <c>q=</c> vazio ter a mesma
-    /// representação canônica de uma sem <c>q</c>, inclusive no que entra no cursor.
-    /// </summary>
-    public static string? PrepararTermoDeBusca(string? termo) =>
-        FormaParaComparacao.Termo(termo) is { } normalizado ? EscaparCuringas(normalizado) : null;
-
     /// <summary>Escapa os curingas do termo validado para uso no <c>LIKE</c>.</summary>
     public static string? PrepararTermoDeBusca(TermoDeBusca? termo) =>
         termo is null ? null : EscaparCuringas(termo.Normalizado);

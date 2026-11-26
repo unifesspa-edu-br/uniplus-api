@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -27,7 +28,7 @@ using Xunit;
 public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
+
 
     /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
     private const string VersaoServida = "1";
@@ -64,7 +65,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task ListarVitrine_QuandoTermoVariaEmAcentoECaixa_DeveEncontrarOMesmoCertame(string termo)
     {
         // Normalizar só um lado faz a busca não achar o que existe.
-        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new RecorteDaVitrine(Busca: termo));
+        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar(termo).Value));
 
         nomes.Should().ContainSingle().Which.Should().Be("Vestibular de Música");
     }
@@ -72,7 +73,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "A busca alcança o número do edital, não só o título")]
     public async Task ListarVitrine_QuandoTermoEONumeroDoEdital_DeveEncontrarOCertame()
     {
-        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new RecorteDaVitrine(Busca: "002/2026"));
+        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("002/2026").Value));
 
         nomes.Should().ContainSingle().Which.Should().Be("SISU 2026.1");
     }
@@ -81,7 +82,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task ListarVitrine_QuandoTermoTemCuringaDoLike_DeveProcuraLoComoTexto()
     {
         // Sem escapar, '%' casaria com tudo.
-        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new RecorteDaVitrine(Busca: "%"));
+        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("%").Value));
 
         nomes.Should().BeEmpty();
     }
@@ -89,7 +90,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "O recorte por modalidade traz só quem a oferta")]
     public async Task ListarVitrine_QuandoRecortaPorModalidade_DeveTrazerSoQuemAOferta()
     {
-        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new RecorteDaVitrine(Modalidade: "AC"));
+        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new FiltroDosCertamesPublicados(Modalidade: "AC"));
 
         nomes.Should().BeEquivalentTo(["Vestibular de Música", "Ingresso à Pós-Graduação"]);
     }
@@ -99,7 +100,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     {
         // Pelo ponto de código o 'à' viria depois de toda letra ASCII.
         IReadOnlyList<string> nomes = await _vitrine.ListarAsync(
-            new RecorteDaVitrine(), [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)]);
+            new FiltroDosCertamesPublicados(), [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)]);
 
         nomes.Should().ContainInOrder("Ingresso à Pós-Graduação", "SISU 2026.1", "Vestibular de Música");
     }
@@ -108,7 +109,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task Ordenacao_Decrescente_Inverte()
     {
         IReadOnlyList<string> nomes = await _vitrine.ListarAsync(
-            new RecorteDaVitrine(), [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)]);
+            new FiltroDosCertamesPublicados(), [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)]);
 
         nomes.Should().ContainInOrder("Vestibular de Música", "SISU 2026.1", "Ingresso à Pós-Graduação");
     }
@@ -116,7 +117,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Sem ordenação pedida, vale a ordem por urgência")]
     public async Task ListarVitrine_QuandoNaoPedeOrdenacao_DeveValerAOrdemPorUrgencia()
     {
-        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new RecorteDaVitrine());
+        IReadOnlyList<string> nomes = await _vitrine.ListarAsync(new FiltroDosCertamesPublicados());
 
         nomes.Should().ContainInOrder("Ingresso à Pós-Graduação", "SISU 2026.1", "Vestibular de Música");
     }
@@ -126,13 +127,13 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     {
         // A âncora é posição dentro de um conjunto: sob outro recorte, a página volta vazia —
         // indistinguível de fim de coleção.
-        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new RecorteDaVitrine(Busca: "a"), limite: 1);
+        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("a").Value), limite: 1);
 
         emitido.Should().NotBeNull("a busca precisa ter mais de uma página para o cursor existir");
         (string SortKey, Guid Id) ancora = emitido!.Value;
 
         Func<Task> continuarSobOutroRecorte = () => _vitrine.ListarAsync(
-            new RecorteDaVitrine(Busca: "sisu"), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("sisu").Value), [], ancora.SortKey, ancora.Id);
 
         await continuarSobOutroRecorte.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -140,7 +141,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Cursor emitido antes de uma retificação é recusado depois dela")]
     public async Task ListarVitrine_QuandoAColecaoAvancaNoMeioDoPercurso_DeveRecusarAContinuacao()
     {
-        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1);
+        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1);
 
         emitido.Should().NotBeNull();
         (string SortKey, Guid Id) ancora = emitido!.Value;
@@ -148,7 +149,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await RetificarDivulgacaoAsync();
 
         Func<Task> continuarDepoisDaMudanca = () => _vitrine.ListarAsync(
-            new RecorteDaVitrine(), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(), [], ancora.SortKey, ancora.Id);
 
         await continuarDepoisDaMudanca.Should().ThrowAsync<CursorAnchorMismatchException>(
             "a âncora é uma posição na coleção que a emitiu, e essa coleção mudou");
@@ -157,7 +158,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     [Fact(DisplayName = "Cursor é recusado quando entra certame divulgado antes do mais recente")]
     public async Task ListarVitrine_QuandoEntraCertameComInstanteAnterior_DeveRecusarAContinuacao()
     {
-        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1);
+        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1);
 
         emitido.Should().NotBeNull();
         (string SortKey, Guid Id) ancora = emitido!.Value;
@@ -165,7 +166,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await InserirDivulgacaoAnteriorAsync();
 
         Func<Task> continuarDepoisDaEntrada = () => _vitrine.ListarAsync(
-            new RecorteDaVitrine(), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(), [], ancora.SortKey, ancora.Id);
 
         await continuarDepoisDaEntrada.Should().ThrowAsync<CursorAnchorMismatchException>(
             "um certame a mais desloca as posições seguintes, mesmo trazendo instante anterior ao máximo");
@@ -175,13 +176,13 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task ListarVitrine_QuandoCursorVemDeOutraOrdenacao_DeveRecusarAContinuacao()
     {
         SortField[] porNome = [new(CamposOrdenacaoDaVitrine.Nome, SortDirection.Ascending)];
-        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new RecorteDaVitrine(), limite: 1, ordenacao: porNome);
+        (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1, ordenacao: porNome);
 
         emitido.Should().NotBeNull();
         (string SortKey, Guid Id) ancora = emitido!.Value;
 
         Func<Task> continuarNoutraOrdem = () => _vitrine.ListarAsync(
-            new RecorteDaVitrine(),
+            new FiltroDosCertamesPublicados(),
             [new SortField(CamposOrdenacaoDaVitrine.Nome, SortDirection.Descending)],
             ancora.SortKey,
             ancora.Id);
@@ -243,8 +244,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         // alvo que satisfaz os três e vizinhos que falham em exatamente um.
         await SemearCertamesParaRecortesCombinadosAsync();
 
-        IReadOnlyList<string> numeros = await _vitrine.ListarNumerosAsync(new RecorteDaVitrine(
-            Situacao: SituacaoDoCertame.UltimosDias, Modalidade: "PCD", Busca: "seletivo especial"));
+        IReadOnlyList<string> numeros = await _vitrine.ListarNumerosAsync(new FiltroDosCertamesPublicados(
+            Situacao: SituacaoDoCertame.UltimosDias, Modalidade: "PCD", Busca: TermoDeBusca.Criar("seletivo especial").Value));
 
         numeros.Should().Equal(
             ["010/2026"],
@@ -258,9 +259,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
-            Agora, new RecorteDaVitrine(Busca: "sisu"), [], Limiar, null, null, 20, PaginationDirection.Next,
-            incluirContadores: true, VersaoServida, CancellationToken.None)).Contadores!.Value;
+        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("sisu").Value), [], true), null, null, 20, PaginationDirection.Next, CancellationToken.None)).Contadores!.Value;
 
         (contadores.EmBreve + contadores.InscricoesAbertas + contadores.UltimosDias + contadores.Encerrados)
             .Should().Be(1);
@@ -356,4 +355,8 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
             new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, nome, numero, modalidades, Agora.AddDays(-1), inscricoesAte),
             """{"nome":"documento"}""",
             divulgadoEm ?? Agora);
+    private static ConsultaDosCertamesPublicados Consulta(
+        DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>
+        new(instante, filtro, ordenacao, contadores, VersaoServida);
+
 }

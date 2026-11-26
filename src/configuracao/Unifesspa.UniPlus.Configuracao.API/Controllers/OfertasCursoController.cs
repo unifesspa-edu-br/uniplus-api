@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
@@ -84,7 +85,7 @@ public sealed class OfertasCursoController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
-        [FromQuery(Name = "q")]
+        [FromQuery(Name = BuscaPedida.NomeDoParametro)]
         [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
         string? q,
         [FromQuery(Name = "sort")]

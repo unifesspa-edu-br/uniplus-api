@@ -297,9 +297,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
-                Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                Arg.Any<ConsultaDosCertamesPublicados>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
+                Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
             .Returns(new PaginaDaVitrine([certame], Agora, null, null, null, RevisaoDoRecorte));
         return repository;
     }
@@ -319,26 +318,22 @@ public sealed class LeituraPublicaDoCertameTests
 
     private const string RevisaoDoRecorte = "revisao-do-recorte";
 
-    /// <summary>Posição de <c>incluirContadores</c> na chamada ao repositório.</summary>
-    private const int PosicaoDoSinalizadorDeContadores = 8;
-
     private static ListarCertamesPublicadosQuery Consulta(bool incluirContadores = false) =>
-        new(Agora, new RecorteDaVitrine(), [], null, null, 20, PaginationDirection.Next, incluirContadores);
+        new(Agora, new FiltroDosCertamesPublicados(), [], null, null, 20, PaginationDirection.Next, incluirContadores);
 
     private static ICertameDivulgadoRepository RepositorioComVitrine(params Guid[] processoIds)
     {
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         CertameDivulgado[] linhas = [.. processoIds.Select(id => Divulgado(id, Projecao(id)))];
         repository.ListarVitrineAsync(
-                Arg.Any<DateTimeOffset>(), Arg.Any<RecorteDaVitrine>(), Arg.Any<IReadOnlyList<SortField>>(),
-                Arg.Any<TimeSpan>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
-                Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                Arg.Any<ConsultaDosCertamesPublicados>(), Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(),
+                Arg.Any<PaginationDirection>(), Arg.Any<CancellationToken>())
             .Returns(chamada => new PaginaDaVitrine(
                 linhas,
                 Agora,
                 null,
                 ("ancora", processoIds[^1]),
-                chamada.ArgAt<bool>(PosicaoDoSinalizadorDeContadores) ? new ContadoresDaVitrine(5, 12, 3, 40) : null,
+                chamada.ArgAt<ConsultaDosCertamesPublicados>(0).IncluirContadores ? new ContadoresDaVitrine(5, 12, 3, 40) : null,
                 RevisaoDoRecorte));
         return repository;
     }

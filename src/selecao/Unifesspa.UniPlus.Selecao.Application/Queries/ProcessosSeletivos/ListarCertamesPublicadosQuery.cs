@@ -16,13 +16,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// seguintes: sem isso, um prazo que vence no meio do percurso moveria o certame de segmento, e ele
 /// apareceria duas vezes ou sumiria.
 /// </param>
-/// <param name="Recorte">O que reduz a vitrine: situação da janela, modalidade e texto pesquisado.</param>
+/// <param name="Filtro">O que reduz a vitrine: situação da janela, modalidade e texto pesquisado.</param>
 /// <param name="Ordenacao">
 /// Campos pedidos pela consulta, na ordem de prioridade. Vazio é a ordem canônica por urgência.
 /// </param>
 public sealed record ListarCertamesPublicadosQuery(
     DateTimeOffset Instante,
-    RecorteDaVitrine Recorte,
+    FiltroDosCertamesPublicados Filtro,
     IReadOnlyList<SortField> Ordenacao,
     string? AfterSortKey,
     Guid? AfterId,

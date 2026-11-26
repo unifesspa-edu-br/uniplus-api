@@ -146,7 +146,7 @@ public sealed class CertamePublicadoController : ControllerBase
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
-        Result<SituacaoDoCertame?> filtro = FiltroDeSituacaoDosCertamesPublicados.Ler(situacao);
+        Result<FiltroDosCertamesPublicados> filtro = FiltroPedidoDosCertamesPublicados.Resolver(situacao, modalidade, q);
         if (filtro.IsFailure)
         {
             return filtro.ToActionResult(_mapper);
@@ -156,7 +156,7 @@ public sealed class CertamePublicadoController : ControllerBase
             return erro.ParaResposta(_mapper);
         }
         var consulta = new ListarCertamesPublicadosQuery(
-            _relogio.GetUtcNow(), new RecorteDaVitrine(filtro.Value, modalidade, q), ordenacao,
+            _relogio.GetUtcNow(), filtro.Value!, ordenacao,
             page.AfterSortKey, page.AfterId, page.Limit, page.Direction, incluirContadores);
         return await ServirVitrineAsync(consulta, page, cancellationToken).ConfigureAwait(false);
     }

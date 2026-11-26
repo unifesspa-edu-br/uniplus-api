@@ -90,6 +90,17 @@ public sealed class RecusaDeParametroDaVitrineTests
         corpo.Should().Contain("inscricoesAte", "a recusa precisa dizer o que vale, não só que errou");
     }
 
+    [Fact(DisplayName = "Busca longa precede ordenação mal escrita")]
+    public async Task Listar_BuscaLongaEOrdenacaoMalEscrita_RecusaBusca()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/selecao/certames?q={new string('a', 201)}&sort=,", UriKind.Relative), CancellationToken.None);
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        string corpo = await resposta.Content.ReadAsStringAsync(CancellationToken.None);
+        corpo.Should().Contain("uniplus.consulta.busca_muito_longa");
+    }
+
     [Fact(DisplayName = "Toda resposta da vitrine traz a revisão do recorte, sem precisar pedi-la")]
     public async Task Listar_DeveEmitirARevisaoDoRecorte()
     {

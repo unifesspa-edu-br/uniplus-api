@@ -18,14 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.Ordenaca
 
 internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICertameDivulgadoRepository
 {
-    /// <summary>
-    /// Escape do <c>LIKE</c>. Explícito porque o padrão já chega com os curingas escapados por
-    /// barra invertida, e o Postgres só a reconhece como escape quando ela é declarada.
-    /// </summary>
-    private const string EscapeDoLike = "\\";
-
-    /// <summary>Quantas partes o recorte da vitrine acrescenta à assinatura da ordenação.</summary>
-    private const int PartesDoRecorte = 5;
+    private const int PartesDaConsultaNaAssinatura = 5;
 
     /// <summary>Quantas colunas a ordem canônica por urgência tem, antes do identificador.</summary>
     private const int ColunasDaOrdemCanonica = 2;
@@ -55,260 +48,94 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         await _context.CertamesDivulgados.AddAsync(divulgado, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <remarks>O instante é preservado no cursor e as leituras compartilham o mesmo instantâneo.</remarks>
     public async Task<PaginaDaVitrine> ListarVitrineAsync(
-        DateTimeOffset instanteSeForAPrimeiraPagina,
-        RecorteDaVitrine recorte,
-        IReadOnlyList<SortField> ordenacao,
-        TimeSpan limiarDosUltimosDias,
-        string? afterSortKey,
-        Guid? afterId,
-        int limit,
-        PaginationDirection direction,
-        bool incluirContadores,
-        string versaoDaProjecaoServida,
-        CancellationToken cancellationToken = default)
+        ConsultaDosCertamesPublicados consulta, string? afterSortKey, Guid? afterId, int limit,
+        PaginationDirection direction, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(recorte);
-        ArgumentNullException.ThrowIfNull(ordenacao);
-
-        // O instante que segmenta é congelado na PRIMEIRA página e viaja na âncora: sem isso, um
-        // prazo que vence no meio do percurso mudaria o item de segmento, e ele apareceria duas
-        // vezes ou sumiria.
-        DateTimeOffset instanteUtc =
-            (InstanteDaAncora(afterSortKey, ordenacao.Count) ?? instanteSeForAPrimeiraPagina).ToUniversalTime();
-
-        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(recorte.Busca);
-
-        // As três leituras seguintes descrevem o MESMO conjunto, e sob read committed cada uma
-        // enxerga o banco no instante em que começou: uma publicação que confirma entre a página e
-        // a contagem faz os quatro números somarem um a mais do que a lista mostra, e a revisão
-        // assinada no cursor passa a descrever um estado que não é o da página. O instantâneo
-        // repetível dá às três a mesma visão. É leitura pura: não toma bloqueio nem falha por
-        // serialização.
+        ArgumentNullException.ThrowIfNull(consulta);
+        DateTimeOffset instanteUtc = (InstanteDaAncora(afterSortKey, consulta.Ordenacao.Count)
+            ?? consulta.InstanteSeForAPrimeiraPagina).ToUniversalTime();
         IDbContextTransaction instantaneo = await _context.Database
-            .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
+            .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken).ConfigureAwait(false);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable descarte = instantaneo.ConfigureAwait(false);
+        PaginaDaVitrine pagina = await LerPaginaAsync(consulta, instanteUtc, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-
-        await using (instantaneo.ConfigureAwait(false))
-        {
-            string revisao = await RevisaoDoRecorteAsync(
-                    instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
-                .ConfigureAwait(false);
-
-            IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
-                .Select(c => new CertameNaVitrine
-                {
-                    Id = c.Id,
-                    Encerrado = c.InscricoesAte < instanteUtc,
-                    NomeOrdenacao = EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade),
-                    InscricoesDe = c.InscricoesDe,
-                    InscricoesAte = c.InscricoesAte,
-                    DivulgadoEm = c.DivulgadoEm,
-                    Entidade = c,
-                });
-
-            OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor
-                .ApplyAsync(
-                    query,
-                    OrdenacaoDaVitrine.Montar(ordenacao, AssinaturaDoRecorte(instanteUtc, recorte, termo, revisao)),
-                    afterSortKey,
-                    afterId,
-                    limit,
-                    direction,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            ContadoresDaVitrine? contadores = incluirContadores
-                ? await ContarPorSituacaoAsync(
-                    instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
-                    .ConfigureAwait(false)
-                : null;
-
-            await instantaneo.CommitAsync(cancellationToken).ConfigureAwait(false);
-
-            return new PaginaDaVitrine(
-                [.. page.Items.Select(static linha => linha.Entidade)], instanteUtc, page.Previous, page.Next, contadores, revisao);
-        }
+        await instantaneo.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return pagina;
     }
 
-    private async Task<ContadoresDaVitrine> ContarPorSituacaoAsync(
-        DateTimeOffset instanteUtc,
-        RecorteDaVitrine recorte,
-        string? termo,
-        TimeSpan limiarDosUltimosDias,
-        string versaoDaProjecaoServida,
-        CancellationToken cancellationToken)
+    private async Task<PaginaDaVitrine> LerPaginaAsync(
+        ConsultaDosCertamesPublicados consulta, DateTimeOffset instanteUtc, string? afterSortKey,
+        Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken)
     {
-        DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
-
-        // Os contadores alimentam o próprio filtro de situação, então correm sobre o recorte SEM
-        // ela — aplicá-la deixaria todos zerados menos um. A busca e a modalidade, ao contrário,
-        // entram: o número exibido promete quantos itens aquele filtro traz sobre o que está na tela.
-        var contagem = await Recortar(
-                instanteUtc, recorte with { Situacao = null }, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
-            .GroupBy(static _ => 1)
-            .Select(g => new
-            {
-                EmBreve = g.Count(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
-                Abertas = g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
-                UltimosDias = g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
-                Encerrados = g.Count(c => c.InscricoesAte < instanteUtc),
-            })
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return contagem is null
-            ? new ContadoresDaVitrine(0, 0, 0, 0)
-            : new ContadoresDaVitrine(contagem.EmBreve, contagem.Abertas, contagem.UltimosDias, contagem.Encerrados);
+        string revisao = await RevisaoDosCertamesAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
+        OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor.ApplyAsync(
+            LinhasParaOrdenar(consulta, instanteUtc),
+            OrdenacaoDaVitrine.Montar(consulta.Ordenacao, AssinaturaDaConsulta(consulta.Filtro, instanteUtc, revisao)),
+            afterSortKey, afterId, limit, direction, cancellationToken).ConfigureAwait(false);
+        ContadoresDaVitrine? contadores = await ContadoresSePedidosAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
+        return new PaginaDaVitrine([.. page.Items.Select(static linha => linha.Entidade)],
+            instanteUtc, page.Previous, page.Next, contadores, revisao);
     }
 
-    /// <summary>
-    /// Aplica o que reduz a coleção antes de ordenar: a situação da janela, a modalidade e a busca.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Um lugar só para os três porque a listagem e os contadores precisam correr sobre exatamente o
-    /// mesmo conjunto — duas escritas do mesmo recorte é como o número ao lado do filtro passa a
-    /// prometer uma lista diferente da que o filtro traz.
-    /// </para>
-    /// <para>
-    /// Os quatro recortes de situação particionam o conjunto divulgado: cada certame cai em
-    /// exatamente um. São o predicado traduzível da regra que <see cref="SituacaoDaVitrine.Classificar"/>
-    /// enuncia — o banco não pode chamá-la. A conferência de que as duas concordam é obrigação de
-    /// teste, contra Postgres real: divergirem em silêncio é o defeito que este recorte pode ter.
-    /// </para>
-    /// </remarks>
-    private IQueryable<CertameDivulgado> Recortar(
-        DateTimeOffset instanteUtc,
-        RecorteDaVitrine recorte,
-        string? termo,
-        TimeSpan limiarDosUltimosDias,
-        string versaoDaProjecaoServida)
+    private IQueryable<CertameDivulgado> CertamesServidos(string versao) =>
+        _context.CertamesDivulgados.AsNoTracking().Where(c => c.VersaoProjecao == versao);
+
+    private IQueryable<CertameDivulgado> CertamesDaConsulta(ConsultaDosCertamesPublicados consulta, DateTimeOffset instanteUtc) =>
+        CertamesServidos(consulta.VersaoDaProjecaoServida).Filtrados(consulta.Filtro, instanteUtc);
+
+    private IQueryable<CertameNaVitrine> LinhasParaOrdenar(ConsultaDosCertamesPublicados consulta, DateTimeOffset instanteUtc) =>
+        CertamesDaConsulta(consulta, instanteUtc).Select(c => new CertameNaVitrine
+        {
+            Id = c.Id,
+            Encerrado = c.InscricoesAte < instanteUtc,
+            NomeOrdenacao = EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade),
+            InscricoesDe = c.InscricoesDe,
+            InscricoesAte = c.InscricoesAte,
+            DivulgadoEm = c.DivulgadoEm,
+            Entidade = c,
+        });
+
+    /// <remarks>A contagem exclui a situação para informar o resultado de cada opção do filtro.</remarks>
+    private async Task<ContadoresDaVitrine?> ContadoresSePedidosAsync(
+        ConsultaDosCertamesPublicados consulta, DateTimeOffset instanteUtc, CancellationToken cancellationToken) =>
+        consulta.IncluirContadores
+            ? await ContagemPorSituacao(CertamesServidos(consulta.VersaoDaProjecaoServida)
+                .FiltradosSemSituacao(consulta.Filtro), instanteUtc, cancellationToken).ConfigureAwait(false)
+            : null;
+
+    private static async Task<ContadoresDaVitrine> ContagemPorSituacao(
+        IQueryable<CertameDivulgado> certames, DateTimeOffset instanteUtc, CancellationToken cancellationToken)
     {
-        DateTimeOffset limiar = instanteUtc + limiarDosUltimosDias;
-
-        // Documento de outra versão não é servível por quem consulta, e a coluna espelha a versão
-        // gravada dentro do documento. Recortar por ela aqui é o que mantém a contagem e a página
-        // falando do mesmo conjunto: contar a linha que a página não pode mostrar faz o número ao
-        // lado do filtro prometer item que filtro nenhum alcança.
-        IQueryable<CertameDivulgado> query = _context.CertamesDivulgados.AsNoTracking()
-            .Where(c => c.VersaoProjecao == versaoDaProjecaoServida);
-
-        query = recorte.Situacao switch
-        {
-            SituacaoDoCertame.EmBreve => query.Where(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
-            SituacaoDoCertame.InscricoesAbertas => query.Where(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
-            SituacaoDoCertame.UltimosDias => query.Where(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
-            SituacaoDoCertame.Encerradas => query.Where(c => c.InscricoesAte < instanteUtc),
-            _ => query,
-        };
-
-        if (recorte.Modalidade is { Length: > 0 } modalidade)
-        {
-            // Pertinência ao arranjo, servida pelo índice GIN. Comparar o código como veio é o
-            // correto aqui: modalidade é vocabulário fechado, não texto que alguém digita.
-            query = query.Where(c => c.ModalidadesOfertadas.Contains(modalidade));
-        }
-
-        if (termo is not null)
-        {
-            // O título compara contra a mesma coluna normalizada que ordena, então acento e caixa já
-            // não participam dele. O número do edital é normalizado na consulta, pelo banco.
-            string padrao = "%" + termo + "%";
-            query = query.Where(c =>
-                EF.Functions.ILike(
-                    EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade), padrao, EscapeDoLike)
-                || (c.Numero != null
-                    && EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(c.Numero), padrao, EscapeDoLike)));
-        }
-
-        return query;
+        DateTimeOffset limiar = instanteUtc + SituacaoDaVitrine.LimiarDosUltimosDias;
+        return await certames.GroupBy(static _ => 1).Select(g => new ContadoresDaVitrine(
+            g.Count(c => c.InscricoesAte >= instanteUtc && c.InscricoesDe > instanteUtc),
+            g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= limiar),
+            g.Count(c => c.InscricoesDe <= instanteUtc && c.InscricoesAte >= instanteUtc && c.InscricoesAte < limiar),
+            g.Count(c => c.InscricoesAte < instanteUtc))).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Identifica o RECORTE sobre o qual a travessia corre, e o instante em que ela foi congelada.
-    /// Viaja na chave da âncora para que um cursor só continue a consulta que o emitiu.
-    /// </summary>
-    /// <remarks>
-    /// A âncora é uma posição <b>dentro de um conjunto</b>. Sem esta assinatura, o cursor emitido na
-    /// lista dos encerrados seria aceito de volta com outra situação, ou sob outra busca, e o seek
-    /// partiria de um valor que não existe naquele conjunto: a página voltaria vazia e sem
-    /// continuação, indistinguível de fim de coleção.
-    /// </remarks>
-    private static IReadOnlyList<string> AssinaturaDoRecorte(
-        DateTimeOffset instanteUtc,
-        RecorteDaVitrine recorte,
-        string? termo,
-        string revisao) =>
-    [
-        Instante(instanteUtc),
-        recorte.Situacao?.ToString() ?? string.Empty,
-        recorte.Modalidade ?? string.Empty,
-        termo ?? string.Empty,
-        revisao,
-    ];
-
-    /// <summary>
-    /// A revisão do recorte: um marcador opaco dos certames que a consulta seleciona e do que cada
-    /// um tem de ordenável e exibível, no instante congelado da travessia. A ordenação pedida não
-    /// entra: ela já é fixada pela assinatura do cursor, junto com esta revisão.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Entra na assinatura do cursor porque a âncora guarda uma POSIÇÃO, e o que a define muda: uma
-    /// publicação ou retificação no meio do percurso reposiciona um certame em relação à âncora, e
-    /// quem a cruza num sentido aparece duas vezes, quem cruza no outro desaparece. Com a revisão na
-    /// assinatura, a continuação sob recorte diferente é recusada e o cliente recomeça — que é o que
-    /// a ADR-0131 exige em vez de uma lista silenciosamente inconsistente. É também o valor servido
-    /// no cabeçalho da vitrine, para que quem compõe a coleção (a Portal) detecte o avanço.
-    /// </para>
-    /// <para>
-    /// Deriva, para cada linha do recorte, do identificador, do ato que criou a versão divulgada —
-    /// que muda a cada publicação ou retificação e, com ele, tudo o que ordena e o que se mostra — e
-    /// da situação classificada no instante congelado. A situação entra porque depende do relógio:
-    /// cruzar a fronteira da janela muda o item de grupo e de posição sem que linha alguma mude.
-    /// Como o instante viaja na âncora, todas as páginas da mesma travessia enxergam a mesma
-    /// revisão.
-    /// </para>
-    /// <para>
-    /// Custo: uma leitura de quatro colunas (identificador, ato criador e as duas pontas da janela)
-    /// de cada linha do recorte, sem limite, dentro do mesmo
-    /// instantâneo da página. A vitrine tem da ordem de dezenas a centenas de certames; o que isto
-    /// compra é a correção que a contagem mais o instante máximo não alcançavam — a retificação que
-    /// confirma fora de ordem. O resumo não expõe nada além do que a própria vitrine já mostra.
-    /// </para>
-    /// </remarks>
-    private async Task<string> RevisaoDoRecorteAsync(
-        DateTimeOffset instanteUtc,
-        RecorteDaVitrine recorte,
-        string? termo,
-        TimeSpan limiarDosUltimosDias,
-        string versaoDaProjecaoServida,
-        CancellationToken cancellationToken)
+    private async Task<string> RevisaoDosCertamesAsync(
+        ConsultaDosCertamesPublicados consulta, DateTimeOffset instanteUtc, CancellationToken cancellationToken)
     {
-        var linhas = await Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
-            .OrderBy(static c => c.Id)
+        var linhas = await CertamesDaConsulta(consulta, instanteUtc).OrderBy(static c => c.Id)
             .Select(static c => new { c.Id, c.AtoCriadorId, c.InscricoesDe, c.InscricoesAte })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        StringBuilder texto = new();
-        foreach (var linha in linhas)
-        {
-            SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
-                linha.InscricoesDe, linha.InscricoesAte, instanteUtc, limiarDosUltimosDias);
-
-            texto.Append(linha.Id.ToString("N", CultureInfo.InvariantCulture))
-                .Append(':')
-                .Append(linha.AtoCriadorId.ToString("N", CultureInfo.InvariantCulture))
-                .Append(':')
-                .Append((int)situacao)
-                .Append(';');
-        }
-
-        byte[] resumo = SHA256.HashData(Encoding.UTF8.GetBytes(texto.ToString()));
-        return Convert.ToHexStringLower(resumo.AsSpan(0, 16));
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        string texto = string.Concat(linhas.Select(c => ParteDaRevisao(c.Id, c.AtoCriadorId,
+            SituacaoDaVitrine.Classificar(c.InscricoesDe, c.InscricoesAte, instanteUtc, SituacaoDaVitrine.LimiarDosUltimosDias))));
+        return ResumoDaRevisao(texto);
     }
+
+    private static string ParteDaRevisao(Guid id, Guid atoCriadorId, SituacaoDoCertame situacao) =>
+        $"{id:N}:{atoCriadorId:N}:{(int)situacao};";
+
+    private static string ResumoDaRevisao(string texto) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(texto)).AsSpan(0, 16));
+
+    private static IReadOnlyList<string> AssinaturaDaConsulta(FiltroDosCertamesPublicados filtro, DateTimeOffset instanteUtc, string revisao) =>
+        [Instante(instanteUtc), filtro.Situacao?.ToString() ?? string.Empty, filtro.Modalidade ?? string.Empty,
+            NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca) ?? string.Empty, revisao];
 
     private static string Instante(DateTimeOffset valor) =>
         valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture);
@@ -334,7 +161,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         int colunas = colunasPedidas == 0 ? ColunasDaOrdemCanonica : colunasPedidas;
 
         if (!CompositeSortKey.TryDeserialize(sortKey, colunas + 1, out IReadOnlyList<string> partes)
-            || !CompositeSortKey.TryDeserialize(partes[0], (colunas * 2) + PartesDoRecorte, out IReadOnlyList<string> assinatura)
+            || !CompositeSortKey.TryDeserialize(partes[0], (colunas * 2) + PartesDaConsultaNaAssinatura, out IReadOnlyList<string> assinatura)
             || !TentarLerInstante(assinatura[colunas * 2], out DateTimeOffset instante))
         {
             return null;
