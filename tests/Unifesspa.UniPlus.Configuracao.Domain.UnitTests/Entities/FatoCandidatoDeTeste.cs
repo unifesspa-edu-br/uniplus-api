@@ -39,7 +39,7 @@ internal static class FatoCandidatoDeTeste
     internal static Result<FatoCandidato> Criar(
         DescritivoDoFato? descritivo = null,
         DefinicaoDoFato? definicao = null,
-        OrigemFato? origem = OrigemFato.Declarado,
+        OrigemFato origem = OrigemFato.Declarado,
         string binding = BindingCorRaca,
         bool sistema = false) =>
         CriacaoDoFato.Criar(descritivo ?? Descritivo, origem, binding, definicao ?? Definicao, sistema: sistema);

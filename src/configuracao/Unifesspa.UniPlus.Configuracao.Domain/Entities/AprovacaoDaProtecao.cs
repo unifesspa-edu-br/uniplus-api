@@ -26,6 +26,10 @@ public sealed class AprovacaoDaProtecao
         ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
         "O ajuste exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.");
 
+    private static readonly FieldError RecomendacaoInvalida = RecusaDaRecomendacao(
+        ProtecaoDoCatalogoErrorCodes.RecomendacaoInvalida,
+        "A classificação recomendada não pertence ao vocabulário de proteção de dados.");
+
     private static readonly FieldError RecomendacaoIgualAAtual = RecusaDaRecomendacao(
         ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual,
         "A classificação recomendada é a que o item já tem: aprove o item, ou recomende a classificação correta.");
@@ -240,7 +244,7 @@ public sealed class AprovacaoDaProtecao
     public static Result ConferirClassificacaoRecomendada(CodigoInformado<ClassificacaoDeProtecao> recomendada) =>
         recomendada.Valor is not null
             ? Result.Success()
-            : Result.ValidationFailure([RecomendacaoAusente]);
+            : Result.ValidationFailure([recomendada.Desconhecido ? RecomendacaoInvalida : RecomendacaoAusente]);
 
     // O circuito recomeça e o registro do ciclo anterior sai dele; os atos e as manifestações continuam nos registros
     // próprios. Só o item que já entrou numa solicitação abre um ciclo novo.

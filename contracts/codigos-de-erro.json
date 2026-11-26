@@ -1427,6 +1427,11 @@
       "titulo": "Eixo que o tipo do fato não permite alterar"
     },
     {
+      "codigo": "uniplus.configuracao.fato_candidato.escopo_invalido",
+      "status": 422,
+      "titulo": "Escopo do fato fora do vocabulário fechado"
+    },
+    {
       "codigo": "uniplus.configuracao.fato_candidato.escopo_obrigatorio",
       "status": 422,
       "titulo": "Escopo do fato é obrigatório"
@@ -1457,6 +1462,11 @@
       "titulo": "Só fato categórico declara a fonte dos seus valores"
     },
     {
+      "codigo": "uniplus.configuracao.fato_candidato.fonte_valores_invalida",
+      "status": 422,
+      "titulo": "Fonte dos valores do fato fora do vocabulário fechado"
+    },
+    {
       "codigo": "uniplus.configuracao.fato_candidato.fonte_valores_obrigatoria",
       "status": 422,
       "titulo": "Fato categórico precisa declarar a fonte dos seus valores"
@@ -1465,6 +1475,11 @@
       "codigo": "uniplus.configuracao.fato_candidato.formato_fora_de_texto",
       "status": 422,
       "titulo": "Só fato de domínio texto declara formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.fato_candidato.formato_invalido",
+      "status": 422,
+      "titulo": "Formato do fato fora do vocabulário fechado"
     },
     {
       "codigo": "uniplus.configuracao.fato_candidato.formato_obrigatorio",
@@ -1510,16 +1525,6 @@
       "codigo": "uniplus.configuracao.fato_candidato.nome_tamanho",
       "status": 422,
       "titulo": "Tamanho do nome do fato inválido"
-    },
-    {
-      "codigo": "uniplus.configuracao.fato_candidato.origem_invalida",
-      "status": 422,
-      "titulo": "Origem do fato fora do vocabulário fechado"
-    },
-    {
-      "codigo": "uniplus.configuracao.fato_candidato.origem_obrigatoria",
-      "status": 422,
-      "titulo": "Origem do fato é obrigatória"
     },
     {
       "codigo": "uniplus.configuracao.fato_candidato.ponto_resolucao_anterior_a_dependencia",
@@ -2385,6 +2390,11 @@
       "codigo": "uniplus.configuracao.protecao_do_catalogo.recomendacao_incompativel_com_a_hipotese_legal",
       "status": 422,
       "titulo": "A hipótese legal do item não cabe na classificação recomendada"
+    },
+    {
+      "codigo": "uniplus.configuracao.protecao_do_catalogo.recomendacao_invalida",
+      "status": 422,
+      "titulo": "A classificação recomendada não pertence ao vocabulário de proteção de dados"
     },
     {
       "codigo": "uniplus.configuracao.protecao_do_catalogo.recomendacao_obrigatoria",

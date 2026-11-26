@@ -24,14 +24,14 @@ using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinic
 public static class CriacaoDoFato
 {
     /// <summary>
-    /// Factory canônica: valida o código, o nome, o domínio, a origem, a cardinalidade, a fonte
+    /// Factory canônica: valida o código, o nome, o domínio, a cardinalidade, a fonte
     /// dos valores, o formato, o ponto de resolução, o vínculo, o escopo e a proteção de dados. As
     /// violações independentes são acumuladas (ADR-0125); a que depende de outro campo só é
     /// conferida quando esse campo é válido.
     /// </summary>
     public static Result<FatoCandidato> Criar(
         DescritivoDoFato descritivo,
-        OrigemFato? origem,
+        OrigemFato origem,
         string binding,
         DefinicaoDoFato definicao,
         bool sistema)

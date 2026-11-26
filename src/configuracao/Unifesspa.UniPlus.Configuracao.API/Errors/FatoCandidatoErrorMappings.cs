@@ -66,18 +66,6 @@ internal static class FatoCandidatoErrorMappings
                 "uniplus.configuracao.fato_candidato.dominio_invalido",
                 "Domínio do fato fora do vocabulário fechado")),
 
-        new(FatoCandidatoErrorCodes.OrigemObrigatoria,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.origem_obrigatoria",
-                "Origem do fato é obrigatória")),
-
-        new(FatoCandidatoErrorCodes.OrigemInvalida,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.origem_invalida",
-                "Origem do fato fora do vocabulário fechado")),
-
         new(FatoCandidatoErrorCodes.CardinalidadeObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

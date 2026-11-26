@@ -28,6 +28,12 @@ internal static class ProtecaoDoCatalogoErrorMappings
                 "uniplus.configuracao.protecao_do_catalogo.item_fora_de_solicitacao",
                 "O item não está numa solicitação da proteção de dados")),
 
+        new(ProtecaoDoCatalogoErrorCodes.RecomendacaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.recomendacao_invalida",
+                "A classificação recomendada não pertence ao vocabulário de proteção de dados")),
+
         new(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Regras.Services;
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
 
 /// <summary>
-/// As conferências do fato novo, na ordem do cadastro: código, apresentação, eixos de valor, origem, ponto de
+/// As conferências do fato novo, na ordem do cadastro: código, apresentação, eixos de valor, ponto de
 /// resolução, vínculo, escopo e proteção de dados. As violações independentes acumulam (ADR-0125); a que depende de
 /// outro campo só é conferida quando esse campo é válido. Não grava nada: devolve o fato montado ou as recusas.
 /// </summary>
 internal sealed class ConferenciaDoNovoFato(
-    DescritivoDoFato descritivo, OrigemFato? origem, string binding, DefinicaoDoFato definicao, bool sistema)
+    DescritivoDoFato descritivo, OrigemFato origem, string binding, DefinicaoDoFato definicao, bool sistema)
 {
     // O fato do administrador não tem código que calcule ou traga o valor: é declarado, ou calculado
     // pela regra que ele mesmo cadastra. Atributo do candidato, classificação e integração só existem
@@ -33,9 +33,8 @@ internal sealed class ConferenciaDoNovoFato(
         Result<CodigoFatoCandidato> codigo = ConferirCodigo();
         Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> apresentacao = ConferirApresentacao();
         ConferirEixosDeValor(_erros, definicao.Dominio, definicao.Cardinalidade, definicao.FonteValores, definicao.Formato);
-        bool origemValida = ConferirOrigem();
         Result<string> ponto = ConferirPontoDeResolucao();
-        string? vinculo = codigo.IsSuccess && origemValida ? ConferirVinculo(codigo.Value!.Valor) : null;
+        string? vinculo = codigo.IsSuccess ? ConferirVinculo(codigo.Value!.Valor) : null;
         ConferirEscopo(_erros, definicao.Escopo);
         Result<ProtecaoDeDados> protecao = ConferirProtecao();
 
@@ -74,21 +73,9 @@ internal sealed class ConferenciaDoNovoFato(
         return codigo;
     }
 
-    private bool ConferirOrigem()
-    {
-        (string Codigo, string Mensagem)? recusa = origem switch
-        {
-            null => (FatoCandidatoErrorCodes.OrigemObrigatoria, "Origem do fato é obrigatória."),
-            { } informada when !Enum.IsDefined(informada) => (FatoCandidatoErrorCodes.OrigemInvalida, "Origem do fato fora do vocabulário fechado."),
-            _ => null,
-        };
-
-        return RegistrarRecusa(_erros, "origem", recusa);
-    }
-
     private string? ConferirVinculo(string codigo)
     {
-        Result<string> resultado = ValidarBinding(binding, origem!.Value, codigo);
+        Result<string> resultado = ValidarBinding(binding, origem, codigo);
         if (resultado.IsFailure)
         {
             _erros.Add(new("binding", resultado.Error!));
@@ -114,7 +101,7 @@ internal sealed class ConferenciaDoNovoFato(
         ProtecaoDeDados protecao) =>
         new(
             new DescritivoDoFato(codigo, apresentacao.Nome, apresentacao.Descricao, apresentacao.Componente),
-            origem!.Value,
+            origem,
             vinculo,
             new EixosDaDefinicao(
                 definicao.Dominio.Valor!.Value, definicao.Cardinalidade.Valor!.Value, definicao.FonteValores.Valor, definicao.Formato.Valor, ponto,

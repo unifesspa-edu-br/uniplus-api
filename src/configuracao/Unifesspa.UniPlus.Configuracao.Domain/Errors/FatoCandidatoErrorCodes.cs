@@ -23,8 +23,6 @@ public static class FatoCandidatoErrorCodes
     public const string ComponenteExibicaoInvalido = "FatoCandidato.ComponenteExibicaoInvalido";
     public const string DominioObrigatorio = "FatoCandidato.DominioObrigatorio";
     public const string DominioInvalido = "FatoCandidato.DominioInvalido";
-    public const string OrigemObrigatoria = "FatoCandidato.OrigemObrigatoria";
-    public const string OrigemInvalida = "FatoCandidato.OrigemInvalida";
     public const string CardinalidadeObrigatoria = "FatoCandidato.CardinalidadeObrigatoria";
     public const string CardinalidadeInvalida = "FatoCandidato.CardinalidadeInvalida";
     public const string FonteValoresObrigatoria = "FatoCandidato.FonteValoresObrigatoria";

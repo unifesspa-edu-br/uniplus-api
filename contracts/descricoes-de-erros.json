@@ -4966,30 +4966,6 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.fato_candidato.origem_invalida",
-      "requisitos": [
-        "UNI-REQ-0143"
-      ],
-      "oQueAconteceu": [
-        "A origem declarada para o valor do fato não é uma das opções do catálogo."
-      ],
-      "comoResolver": [
-        "Selecione no cadastro a origem que corresponde à forma como o valor é obtido."
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.fato_candidato.origem_obrigatoria",
-      "requisitos": [
-        "UNI-REQ-0143"
-      ],
-      "oQueAconteceu": [
-        "A definição ficou sem indicar de onde vem o valor do fato."
-      ],
-      "comoResolver": [
-        "Preencha a origem do fato antes de gravar a definição."
-      ]
-    },
-    {
       "codigo": "uniplus.configuracao.fato_candidato.ponto_resolucao_anterior_a_dependencia",
       "requisitos": [
         "UNI-REQ-0075",
@@ -7698,6 +7674,21 @@
       ],
       "ondeAparece": [
         "Aceite da recomendação do Representante do controlador pelo administrador do cadastro"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.protecao_do_catalogo.recomendacao_invalida",
+      "requisitos": [
+        "UNI-REQ-0205"
+      ],
+      "oQueAconteceu": [
+        "A classificação recomendada não pertence ao vocabulário de proteção de dados. A comparação é exata: códigos com espaços nas pontas são recusados."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos publicados para a classificação de proteção de dados."
+      ],
+      "ondeAparece": [
+        "Decisão da proteção de dados (aprovação, ajuste recomendado ou devolução)"
       ]
     },
     {
