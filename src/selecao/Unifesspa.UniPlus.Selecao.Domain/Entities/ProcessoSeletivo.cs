@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -162,6 +163,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; private set; }
 
+    private readonly List<CadastroDeReservaDaChamada> _cadastroDeReserva = [];
+
+    /// <summary>O cadastro de reserva por chamada (UNI-REQ-0354, UNI-REQ-0355); sem declaração, o processo não tem reserva em nenhuma chamada.</summary>
+    public CadastroDeReservaPorChamada CadastroDeReserva => CadastroDeReservaPorChamada.DeItensConferidos(_cadastroDeReserva);
+
     /// <summary>Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="BonusRegional"/>.</summary>
     public bool? AplicaBonusRegional { get; private set; }
 
@@ -275,6 +281,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirProvaPresencial(bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios) =>
         Editar(() => DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial, municipios, limiteDeMunicipios),
             declaracao => ProvaPresencial = declaracao);
+
+    /// <summary>Substitui o cadastro de reserva por chamada inteiro; a lista vazia deixa o processo sem reserva em nenhuma chamada.</summary>
+    public Result DefinirCadastroDeReserva(IReadOnlyList<CadastroDeReservaInformado?> chamadas) =>
+        Editar(() => CadastroDeReservaPorChamada.Declarar(chamadas), SubstituirCadastroDeReserva);
 
     /// <summary>Define ou remove a divulgação pública (UNI-REQ-0050); nula volta ao padrão minimizado, que é publicável.</summary>
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>
@@ -544,6 +554,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             parte.VincularProcesso(Id);
             lista.Add(parte);
         }
+    }
+
+    private void SubstituirCadastroDeReserva(CadastroDeReservaPorChamada declarado)
+    {
+        _cadastroDeReserva.Clear();
+        _cadastroDeReserva.AddRange(declarado.Chamadas);
     }
 
     private T? Vincular<T>(T? parte)

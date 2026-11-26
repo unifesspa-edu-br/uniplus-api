@@ -370,6 +370,14 @@ só, o atual, editado no lugar.
 de homologação são recriados. Versões já publicadas em produção manteriam seus bytes e seu resumo,
 mas ainda não existem versões publicadas em produção.
 
-## Emenda (2026-11-25) — consequências do descumprimento
+## Emenda 9 (2026-11-25) — consequências do descumprimento
 
 Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), o documento congelado inclui as consequências declaradas na exigência, no grupo de comprovação, na banca e no formulário, e a propriedade `abrePrazoParaReenvio` da exigência e do grupo. Até a primeira publicação em produção, esses campos entram no documento e no resumo editados no lugar, sem versão nova.
+
+## Emenda 10 (2026-11-26) — o cadastro de reserva por chamada no documento congelado
+
+O documento congelado guarda o bloco `cadastroDeReserva`, com o cadastro de reserva que o processo declara (UNI-REQ-0354, UNI-REQ-0355). O bloco é uma lista, sempre presente, ordenada pelo número da chamada. Cada item tem `numeroDaChamada` e `pessoasDaReservaPorVaga`. A chamada declarada com zero pessoas é a chamada sem reserva e consta na lista. O processo que não declara cadastro de reserva grava a lista vazia.
+
+O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio processo ao congelar e, na recodificação, da configuração publicada. A leitura exige as duas chaves de cada item e aplica de novo a declaração do domínio: a quantidade ausente ou negativa, o número menor que 1 e a chamada repetida recusam o documento, com o caminho do item. É um bloco interno, registrado em `ClassificacaoDosBlocosDoCertame`: a página pública do certame não o mostra. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o cadastro de reserva muda o resumo da versão.

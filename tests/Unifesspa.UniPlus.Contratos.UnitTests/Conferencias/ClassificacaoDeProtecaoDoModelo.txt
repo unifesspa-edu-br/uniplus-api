@@ -1301,6 +1301,10 @@ selecao.bases_legais_da_comprovacao.referencia: Interno
 selecao.bases_legais_da_comprovacao.regra_de_comprovacao_id: Interno
 selecao.bases_legais_da_comprovacao.situacao: Interno
 selecao.bases_legais_da_comprovacao.updated_at: Interno
+selecao.cadastros_de_reserva.id: Publico
+selecao.cadastros_de_reserva.numero_da_chamada: Publico
+selecao.cadastros_de_reserva.pessoas_da_reserva_por_vaga: Publico
+selecao.cadastros_de_reserva.processo_seletivo_id: Publico
 selecao.calculos_dos_dados.codigo_do_dado: Interno
 selecao.calculos_dos_dados.created_at: Interno
 selecao.calculos_dos_dados.id: Interno

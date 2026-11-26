@@ -132,3 +132,7 @@ códigos cada caminho reconhece.
 **Correção da Emenda 1.** A Emenda 1 listava como terceira regra de quadro fixo a de código `DISTRIB-VAGAS-COM-PCD-PURO`. O código vigente do catálogo é `DISTRIBUICAO_COM_AMPLA_CONCORRENCIA_E_PESSOA_COM_DEFICIENCIA`, e a regra não é "PcD puro": o rol fechado é ampla concorrência e pessoa com deficiência, e a montagem é a do quadro fixado no edital, como a das outras duas.
 
 **Consequências.** O recálculo na leitura continua provando o quadro a partir dos insumos congelados; a distinção por ramo evita campo sem sentido no envelope e torna a divergência detectável por ramo.
+
+## Emenda 4 (2026-11-26) — o cadastro de reserva entra no resumo da versão como bloco próprio
+
+A emenda 2 afirma que o cadastro de reserva por chamada não altera o bloco `vagas` nem o hash do congelamento. Isso vale para o quadro: o cadastro não é insumo nem saída dele, e mudá-lo não muda o bloco `vagas`. Mas o cadastro de reserva é declaração do processo e, como toda declaração, vai ao documento congelado no bloco próprio `cadastroDeReserva` (ADR-0109, emenda 10). Por ser bloco do documento, ele entra nos bytes e no resumo da versão: alterar o cadastro de reserva muda o resumo da versão, e o quadro de vagas segue sem depender dele.

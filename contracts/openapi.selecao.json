@@ -8725,6 +8725,148 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/cadastro-reserva": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "operationId": "DefinirCadastroDeReserva",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirCadastroDeReservaRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirCadastroDeReservaRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirCadastroDeReservaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/opcoes-de-curso": {
       "put": {
         "tags": [
@@ -14164,6 +14306,46 @@
         "type": "string",
         "description": "Os blocos que o sistema monta no formul\u00E1rio a partir da configura\u00E7\u00E3o do processo seletivo.\n\n- \u0060COMPROVACAO_DOCUMENTAL\u0060: Comprova\u00E7\u00E3o documental \u2014 Os documentos que o candidato envia, conforme a exig\u00EAncia de cada situa\u00E7\u00E3o dele.\n- \u0060MODALIDADES_CALCULADAS\u0060: Modalidades calculadas \u2014 As modalidades de concorr\u00EAncia em que o candidato se enquadra, calculadas pelas respostas dele.\n- \u0060REVISAO_E_ACEITE\u0060: Revis\u00E3o e aceite \u2014 A confer\u00EAncia das respostas e o aceite dos termos, sempre a \u00FAltima p\u00E1gina do formul\u00E1rio."
       },
+      "CadastroDeReservaDaChamadaDto": {
+        "required": [
+          "numeroDaChamada",
+          "pessoasDaReservaPorVaga"
+        ],
+        "type": "object",
+        "properties": {
+          "numeroDaChamada": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pessoasDaReservaPorVaga": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CadastroDeReservaInformado": {
+        "required": [
+          "numeroDaChamada",
+          "pessoasDaReservaPorVaga"
+        ],
+        "type": "object",
+        "properties": {
+          "numeroDaChamada": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "pessoasDaReservaPorVaga": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CampoApresentado": {
         "required": [
           "fatoCodigo",
@@ -16200,6 +16382,20 @@
           }
         }
       },
+      "DefinirCadastroDeReservaRequest": {
+        "required": [
+          "chamadas"
+        ],
+        "type": "object",
+        "properties": {
+          "chamadas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CadastroDeReservaInformado"
+            }
+          }
+        }
+      },
       "DefinirCascataRemanejamentoRequest": {
         "required": [
           "regraCodigo",
@@ -16972,6 +17168,14 @@
             "description": "Declara\u00E7\u00E3o de que o processo tem ou n\u00E3o prova presencial e, se tem, dos munic\u00EDpios de prova. Ausente no rascunho que ainda n\u00E3o a declarou.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoProvaPresencial"
           },
+          "cadastroDeReserva": {
+            "title": "Cadastro de reserva por chamada",
+            "description": "O cadastro de reserva de cada chamada do processo, no m\u00E1ximo um por n\u00FAmero de chamada. A chamada que n\u00E3o consta na lista n\u00E3o tem reserva. Lista vazia ou ausente \u00E9 v\u00E1lida: h\u00E1 processos sem cadastro de reserva.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaConfiguracaoCadastroDeReserva"
+            }
+          },
           "motivosDeDecisao": {
             "title": "Motivos de decis\u00E3o",
             "description": "Motivos do cat\u00E1logo que o processo escolheu para as decis\u00F5es das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo c\u00F3digo.",
@@ -17243,6 +17447,29 @@
             "description": "R\u00F3tulo do resultado quando n\u00E3o h\u00E1 unanimidade. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
             "type": "string",
             "readOnly": true
+          }
+        }
+      },
+      "DocumentoDaConfiguracaoCadastroDeReserva": {
+        "title": "Cadastro de reserva de uma chamada",
+        "description": "O cadastro de reserva de uma chamada do processo: quantas pessoas da reserva a chamada convoca por vaga, al\u00E9m de quem ocupa a vaga. A chamada que n\u00E3o consta na lista do processo n\u00E3o tem reserva. O esquema descreve s\u00F3 a forma: o n\u00FAmero a partir de 1, declarado uma s\u00F3 vez, e a quantidade n\u00E3o negativa s\u00E3o regras do dom\u00EDnio.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "numeroDaChamada"
+        ],
+        "properties": {
+          "numeroDaChamada": {
+            "title": "N\u00FAmero da chamada",
+            "description": "N\u00FAmero da chamada do processo, a partir de 1 e declarado uma s\u00F3 vez. O limite superior \u00E9 o do inteiro de 32 bits; a confer\u00EAncia do menor valor e da repeti\u00E7\u00E3o \u00E9 do dom\u00EDnio.",
+            "type": "integer",
+            "maximum": 2147483647
+          },
+          "pessoasDaReservaPorVaga": {
+            "title": "Pessoas da reserva por vaga",
+            "description": "Quantas pessoas da reserva a chamada convoca por vaga, al\u00E9m de quem ocupa a vaga. Zero \u00E9 a chamada sem reserva. O limite superior \u00E9 o do inteiro de 32 bits; a confer\u00EAncia de que a quantidade n\u00E3o \u00E9 negativa \u00E9 do dom\u00EDnio.",
+            "type": "integer",
+            "maximum": 2147483647
           }
         }
       },
@@ -27583,6 +27810,7 @@
           "aplicaBonusRegional",
           "opcoesDeCurso",
           "provaPresencial",
+          "cadastroDeReserva",
           "cascata",
           "criteriosDesempate",
           "classificacao",
@@ -27685,6 +27913,12 @@
                 "$ref": "#/components/schemas/ProvaPresencialDto"
               }
             ]
+          },
+          "cadastroDeReserva": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CadastroDeReservaDaChamadaDto"
+            }
           },
           "cascata": {
             "oneOf": [

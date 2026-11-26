@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.CadastroDeReserva;
 using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ValueObjects;
 
@@ -23,7 +24,8 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado), ProjecaoDasVagas.ProjetarDistribuicoes(processo),
         ProjecaoDasVagas.ProjetarBonusRegional(processo.BonusRegional), processo.AplicaBonusRegional,
         processo.NumeroDeOpcoesDeCurso is { } opcoesDeCurso ? new OpcoesDeCursoDto(opcoesDeCurso) : null,
-        ProjetarProvaPresencial(processo.ProvaPresencial), ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
+        ProjetarProvaPresencial(processo.ProvaPresencial), ProjetarCadastroDeReserva(processo.CadastroDeReserva),
+        ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
         ProjecaoDaClassificacao.ProjetarCriteriosDeDesempate(processo), ProjecaoDaClassificacao.Projetar(processo),
         ProjecaoDaFaseDoCronograma.ProjetarCronograma(processo),
         ProjecaoDaColeta.ProjetarDocumentosExigidos(processo), ProjecaoDaColeta.ProjetarRegrasDeComprovacaoSemGrupo(processo),
@@ -48,6 +50,9 @@ internal static class ProjecaoDoProcessoSeletivo
         declaracao is null ? null : new ProvaPresencialDto(
             declaracao.TemProvaPresencial,
             [.. declaracao.Municipios.Select(static m => new MunicipioDeProvaDto(m.CodigoIbge, m.Uf, m.Nome))]);
+
+    private static IReadOnlyList<CadastroDeReservaDaChamadaDto> ProjetarCadastroDeReserva(CadastroDeReservaPorChamada cadastro) =>
+        [.. cadastro.Chamadas.Select(static c => new CadastroDeReservaDaChamadaDto(c.Chamada.Valor, c.PessoasDaReservaPorVaga))];
 
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,

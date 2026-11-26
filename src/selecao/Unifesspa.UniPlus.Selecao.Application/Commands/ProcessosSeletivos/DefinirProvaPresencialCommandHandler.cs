@@ -38,7 +38,7 @@ public static class DefinirProvaPresencialCommandHandler
         return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : await SalvarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> SalvarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    internal static async Task<Result> SalvarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

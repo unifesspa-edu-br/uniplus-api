@@ -45,6 +45,15 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
         dto.ProvaPresencial.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Quem não configura não recebe o cadastro de reserva da configuração viva, só a identificação")]
+    public async Task QuemNaoConfigura_NaoRecebeOCadastroDeReserva()
+    {
+        (ProcessoSeletivoDto? dto, ProcessoSeletivo processo) = await LerSemConfigurarAsync(Localidade);
+
+        processo.CadastroDeReserva.Chamadas.Should().NotBeEmpty();
+        dto!.CadastroDeReserva.Should().BeEmpty();
+    }
+
     private static async Task<(ProcessoSeletivoDto? Dto, ProcessoSeletivo Processo)> LerSemConfigurarAsync(string envelope)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
@@ -52,6 +61,7 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirProvaPresencial(true, [new("1504208", "PA")], 100).IsSuccess.Should().BeTrue();
+        processo.DefinirCadastroDeReserva([new(1, 2)]).IsSuccess.Should().BeTrue();
         (IProcessoSeletivoRepository repositorio, ICertameDivulgadoRepository divulgacoes) = Repositorios(processo, envelope);
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
         verificador.PodeAsync(default!, default, default).ReturnsForAnyArgs(ResultadoDoAcesso.IdentidadeIncompleta);

@@ -163,6 +163,14 @@
       "description": "Declaração de que o processo tem ou não prova presencial e, se tem, dos municípios de prova. Ausente no rascunho que ainda não a declarou.",
       "$ref": "prova-presencial.schema.json"
     },
+    "cadastroDeReserva": {
+      "title": "Cadastro de reserva por chamada",
+      "description": "O cadastro de reserva de cada chamada do processo, no máximo um por número de chamada. A chamada que não consta na lista não tem reserva. Lista vazia ou ausente é válida: há processos sem cadastro de reserva.",
+      "type": "array",
+      "items": {
+        "$ref": "cadastro-de-reserva.schema.json"
+      }
+    },
     "motivosDeDecisao": {
       "title": "Motivos de decisão",
       "description": "Motivos do catálogo que o processo escolheu para as decisões das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo código.",

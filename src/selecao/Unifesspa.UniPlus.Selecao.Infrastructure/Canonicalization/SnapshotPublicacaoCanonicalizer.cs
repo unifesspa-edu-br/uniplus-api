@@ -67,6 +67,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProjetarVagas(payload, entrada.Processo);
         ProjetarClassificacao(payload, entrada.Processo);
         ProjetarExigenciasEFormularios(payload, entrada);
+        ProjetarDeclaracoesDoProcesso(payload, entrada);
         ProjetarFatos(payload, entrada);
         payload["motivosDeDecisao"] = SerializacaoDosMotivosDeDecisao.Serializar(entrada.ConfiguracaoPublicada?.MotivosDeDecisao ?? (entrada.Configuracao ?? entrada.Processo.Declaracao()).MotivosDeDecisao);
 
@@ -142,7 +143,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         payload["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo);
         payload["divulgacao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao(processo);
         payload["taxaInscricao"] = SerializacaoDaDivulgacaoEDaTaxa.SerializarTaxaInscricao(processo);
-        payload["provaPresencial"] = SerializacaoDaProvaPresencial.Serializar(entrada.ConfiguracaoPublicada is { } publicada ? publicada.ProvaPresencial : processo.ProvaPresencial);
+    }
+
+    private static void ProjetarDeclaracoesDoProcesso(JsonObject payload, EntradaCanonicalizacao entrada)
+    {
+        ProcessoSeletivo processo = entrada.Processo;
+        ConfiguracaoPublicada? publicada = entrada.ConfiguracaoPublicada;
+        payload["provaPresencial"] = SerializacaoDaProvaPresencial.Serializar(publicada is null ? processo.ProvaPresencial : publicada.ProvaPresencial);
+        payload["cadastroDeReserva"] = SerializacaoDoCadastroDeReserva.Serializar(publicada?.CadastroDeReserva ?? processo.CadastroDeReserva);
     }
 
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)

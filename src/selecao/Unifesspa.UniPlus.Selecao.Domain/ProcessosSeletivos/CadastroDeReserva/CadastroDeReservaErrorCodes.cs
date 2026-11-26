@@ -9,6 +9,6 @@ public static class CadastroDeReservaErrorCodes
     /// <summary>A chamada já tem cadastro de reserva declarado no processo.</summary>
     public const string ChamadaRepetida = "CadastroDeReserva.ChamadaRepetida";
 
-    /// <summary>A chamada com cadastro de reserva não informa a quantidade de pessoas da reserva por vaga, ou informa menos de uma.</summary>
+    /// <summary>A chamada não informa a quantidade de pessoas da reserva por vaga, ou informa uma quantidade negativa.</summary>
     public const string PessoasDaReservaPorVagaInvalida = "CadastroDeReserva.PessoasDaReservaPorVagaInvalida";
 }
