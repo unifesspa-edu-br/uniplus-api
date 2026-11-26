@@ -115,9 +115,26 @@ public sealed class ParametrosDeclaradosDoRecursoTests
         Recusas(Valido with { PrazoDeInterposicao = new PrazoDeclarado(-5m, "DIAS") })
             .Should().Equal((MotivoDaRecusaDosParametros.PrazoNaoPositivo, "prazoValor"));
 
+    private const string OpcoesDeEfeito =
+        "efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso.";
+
+    public static TheoryData<string, bool, string?> CombinacoesAceitas()
+    {
+        TheoryData<string, bool, string?> combinacoes = [];
+        foreach (string efeito in new[] { "PARA_TODOS_OS_RECURSOS", "SEM_EFEITO_SUSPENSIVO", "UNIDADE_DECIDE_EM_CADA_RECURSO" })
+        {
+            combinacoes.Add(efeito, false, "ATE_O_RESULTADO_DEFINITIVO");
+            combinacoes.Add(efeito, false, "NAO_GUARDA");
+            combinacoes.Add(efeito, true, "ATE_O_RESULTADO_DEFINITIVO");
+            combinacoes.Add(efeito, true, null);
+        }
+
+        return combinacoes;
+    }
+
     [Theory(DisplayName = "Efeito suspensivo ausente ou desconhecido é recusado, cada um com a mensagem própria")]
-    [InlineData(null, "Declare o efeito suspensivo do recurso na 1ª instância. Opção aceita: sem efeito suspensivo.")]
-    [InlineData("comEfeitoSuspensivo", "O efeito suspensivo declarado não é uma das opções aceitas. Opção aceita: sem efeito suspensivo.")]
+    [InlineData(null, "Declare o efeito suspensivo do recurso na 1ª instância. Opções aceitas: " + OpcoesDeEfeito)]
+    [InlineData("comEfeitoSuspensivo", "O efeito suspensivo declarado não é uma das opções aceitas: " + OpcoesDeEfeito)]
     public void EfeitoSuspensivoNaoDeclarado(string? codigo, string mensagem)
     {
         RecusaDosParametrosDoRecurso recusa = (Valido with { EfeitoSuspensivo = codigo }).Conferir().Recusas.Single();
@@ -126,6 +143,43 @@ public sealed class ParametrosDeclaradosDoRecursoTests
         recusa.Campo.Should().Be("efeitoSuspensivo");
         recusa.Mensagem.Should().Be(mensagem);
     }
+
+    [Theory(DisplayName = "Cada código de efeito suspensivo é conferido no membro correspondente")]
+    [InlineData("PARA_TODOS_OS_RECURSOS", EfeitoSuspensivo.ParaTodosOsRecursos)]
+    [InlineData("SEM_EFEITO_SUSPENSIVO", EfeitoSuspensivo.SemEfeitoSuspensivo)]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO", EfeitoSuspensivo.UnidadeDecideEmCadaRecurso)]
+    public void EfeitoSuspensivo_ConferidoPeloCodigo(string codigo, EfeitoSuspensivo esperado) =>
+        (Valido with { EfeitoSuspensivo = codigo }).Conferir().Conferidos!.EfeitoSuspensivo.Should().Be(esperado);
+
+    [Theory(DisplayName = "As três opções de efeito suspensivo valem com e sem instância superior e com cada guarda permitida")]
+    [MemberData(nameof(CombinacoesAceitas))]
+    public void EfeitoSuspensivo_AceitoComQualquerCombinacaoPermitida(string efeito, bool admiteInstanciaSuperior, string? guarda)
+    {
+        ParametrosDeclaradosDoRecurso declarados = (admiteInstanciaSuperior ? ComInstanciaSuperior : Valido) with
+        {
+            EfeitoSuspensivo = efeito,
+            GuardaDaVaga = guarda,
+        };
+
+        Recusas(declarados).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Não guardar a vaga com instância superior é recusado só pela guarda, igual nas três opções de efeito")]
+    [InlineData("PARA_TODOS_OS_RECURSOS")]
+    [InlineData("SEM_EFEITO_SUSPENSIVO")]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO")]
+    public void NaoGuardaComInstanciaSuperior_RecusadoIgualEmCadaEfeito(string efeito) =>
+        Recusas(ComInstanciaSuperior with { EfeitoSuspensivo = efeito, GuardaDaVaga = "NAO_GUARDA" })
+            .Should().Equal((MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior, "guardaDaVaga"));
+
+    [Theory(DisplayName = "Código de efeito suspensivo vazio, em minúsculas, com espaço ou numérico é recusado")]
+    [InlineData("")]
+    [InlineData("para_todos_os_recursos")]
+    [InlineData(" SEM_EFEITO_SUSPENSIVO")]
+    [InlineData("2")]
+    public void EfeitoSuspensivo_ForaDoFormatoDoCodigo_Recusado(string codigo) =>
+        Recusas(Valido with { EfeitoSuspensivo = codigo })
+            .Should().Equal((MotivoDaRecusaDosParametros.EfeitoSuspensivoNaoDeclarado, "efeitoSuspensivo"));
 
     [Theory(DisplayName = "Guarda declarada com código desconhecido é recusada; a ausente não é recusa")]
     [InlineData("")]

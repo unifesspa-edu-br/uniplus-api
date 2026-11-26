@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Application.Services.ExportacaoDaVersaoPublicada;
 using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 
 /// <summary>
@@ -31,6 +32,41 @@ public sealed class ParametrosDoRecursoNoDocumentoTests
         recurso["guardaDaVaga"] = "ATE_O_RESULTADO_DEFINITIVO";
 
         Esquema.Avaliar(Documento(naFase, recurso)).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "O documento aceita cada uma das três opções de efeito suspensivo, na fase e na etapa")]
+    [InlineData("PARA_TODOS_OS_RECURSOS", false)]
+    [InlineData("SEM_EFEITO_SUSPENSIVO", false)]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO", false)]
+    [InlineData("PARA_TODOS_OS_RECURSOS", true)]
+    [InlineData("SEM_EFEITO_SUSPENSIVO", true)]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO", true)]
+    public void EfeitoSuspensivo_CadaOpcao_Aceita(string efeito, bool naFase)
+    {
+        JsonObject recurso = Recurso();
+        recurso["efeitoSuspensivo"] = efeito;
+
+        Esquema.Avaliar(Documento(naFase, recurso)).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "A exportação da versão publicada mantém a opção de efeito suspensivo escolhida")]
+    [InlineData("PARA_TODOS_OS_RECURSOS")]
+    [InlineData("SEM_EFEITO_SUSPENSIVO")]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO")]
+    public void EfeitoSuspensivo_CadaOpcao_SobreviveAExportacao(string efeito)
+    {
+        string modelo = """
+            {"tiposDeAto":[{"codigo":"RESULTADO","nome":"Resultado"}],"cronogramaFases":{"fases":[{"chave":"fase","codigo":"INSCRICAO","bancasRequeridas":[],
+            "publicacoesPrevistas":[{"id":"produto","atoCodigo":"RESULTADO","papel":"PRELIMINAR"}],
+            "regraRecurso":{"regra":{"codigo":"PRAZO","versao":"v1","hash":"hash"},"publicacaoDeReferenciaId":"produto",
+            "parametros":{"prazoValor":"2.0000","prazoUnidade":"DIAS_UTEIS","admiteInstanciaSuperior":false,"efeitoSuspensivo":"EFEITO_DECLARADO","guardaDaVaga":"NAO_GUARDA"},
+            "procedimentos":[]}}]}}
+            """;
+        string congelado = modelo.Replace("EFEITO_DECLARADO", efeito, StringComparison.Ordinal);
+
+        JsonObject documento = new ProjecaoDaVersaoPublicada(Esquema).Projetar(new(Guid.Empty, 1, DateTimeOffset.UnixEpoch, congelado));
+
+        documento["cronograma"]!["fases"]![0]!["regraRecurso"]!["efeitoSuspensivo"]!.GetValue<string>().Should().Be(efeito);
     }
 
     [Theory(DisplayName = "O documento aceita o código de dias corridos, para o domínio recusá-lo com a causa própria")]

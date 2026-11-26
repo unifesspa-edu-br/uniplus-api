@@ -84,6 +84,12 @@ A ordem é só de construção: o trabalho vai inteiro à produção, sem trava 
 5. O comportamento da guarda da vaga e o bloqueio dos atos das chamadas do Ingresso, que dependem do passo 4 e das chamadas.
 6. A opção "a unidade decide", com a decisão caso a caso e o bloqueio decorrente. Depende do passo 3, do recurso contra o resultado da habilitação e da espera do definitivo do passo 4.
 
+> **Emenda (2026-11-26) — a configuração aceita as três opções desde o passo 1.**
+>
+> O passo 1 previa só a opção "sem efeito suspensivo", e as outras entravam com os passos 3 e 6. As issues de execução leem a escolha gravada e o edital precisa declará-la antes de publicar; por isso a configuração passa a aceitar, desde já, as três opções: "para todos os recursos", "sem efeito suspensivo" e "a unidade responsável pela fase de origem do ato recorrido decide em cada recurso". Os códigos de contrato são `PARA_TODOS_OS_RECURSOS`, `SEM_EFEITO_SUSPENSIVO` e `UNIDADE_DECIDE_EM_CADA_RECURSO`.
+>
+> A configuração com as três opções vai à produção. A execução (passos 3 e 6) tem de estar em produção antes de abrir o primeiro período de recurso de um processo que declare "para todos os recursos" ou "a unidade decide". Não há trava nem regra provisória no código. As issues dos passos 3 a 6 passam a depender desta configuração.
+
 Cada código de erro novo ganha a página no portal junto com o passo que o produz; do mesmo modo, os requisitos novos entram junto com o passo a que pertencem, e os de funcionamento vêm com a parte da API que os usa.
 
 ### Judicial

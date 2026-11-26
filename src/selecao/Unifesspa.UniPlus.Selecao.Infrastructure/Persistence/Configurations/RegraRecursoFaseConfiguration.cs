@@ -23,7 +23,11 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("recursos_configurados_da_fase", tabela => tabela.HasComment("Configuração dos recursos de uma fase do cronograma."));
+        builder.ToTable("recursos_configurados_da_fase", tabela =>
+        {
+            tabela.HasComment("Configuração dos recursos de uma fase do cronograma.");
+            ParametrosDoRecursoOwnedConfiguration.RestringirCodigosDosParametrosDoRecurso(tabela, "recursos_configurados_da_fase");
+        });
         builder.Property(r => r.FaseCronogramaId).HasComment("Identificador do registro ao qual esta configuração pertence.");
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasComment("Identificador do registro.").ValueGeneratedNever();

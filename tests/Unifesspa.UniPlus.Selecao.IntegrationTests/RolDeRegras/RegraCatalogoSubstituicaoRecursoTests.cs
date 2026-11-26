@@ -25,7 +25,7 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
 
     /// <summary>Hash da regra vigente: amarra a definição do seed ao hash gravado.</summary>
     private const string HashRegraNova =
-        "cffb7c530a7664cfd44d4750daa2974a1800cf0b73ff084039f701e2b453b2dc";
+        "17872c0f3bd0fd3a1cf35702c17b45149479f386a125e30a42d82d98691435ae";
 
     private static RegraCatalogoSeedItem RegraNova() =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoNovo);

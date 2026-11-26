@@ -86,6 +86,10 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("eventos_de_bloqueio_do_perfil", "ck_eventos_de_bloqueio_do_perfil_tipo", "tipo IN ('SUSPENSAO', 'RETOMADA', 'DESATIVACAO', 'REATIVACAO')"),
         new("liberacoes_da_reclassificacao", "ck_liberacoes_da_reclassificacao_motivo", "(resultado = 'MANTIDA') = (motivo IS NOT NULL) AND resultado IN ('LIBERADA', 'MANTIDA')"),
         new("migracoes_da_concessao", "ck_migracoes_da_concessao_situacao", "situacao IN ('RETIDA', 'AGUARDANDO_PROTECAO_DE_DADOS', 'MIGRADA', 'RECUSADA', 'NAO_MIGRADA', 'FORA_DA_LISTA')"),
+        new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')"),
+        new("recursos_configurados_da_fase", "ck_recursos_configurados_da_fase_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')"),
+        new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')"),
+        new("recursos_configurados_da_etapa", "ck_recursos_configurados_da_etapa_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')"),
     ];
 
     public static TheoryData<string, string, string> RestricoesEsperadas()
@@ -99,9 +103,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 70 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 74 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(70);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(74);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

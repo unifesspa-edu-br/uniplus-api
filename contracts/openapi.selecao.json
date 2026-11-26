@@ -18039,9 +18039,11 @@
           },
           "efeitoSuspensivo": {
             "title": "Efeito suspensivo na 1\u00AA inst\u00E2ncia",
-            "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital. A \u00FAnica op\u00E7\u00E3o aceita \u00E9 sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
+            "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital entre tr\u00EAs op\u00E7\u00F5es: efeito suspensivo para todos os recursos (PARA_TODOS_OS_RECURSOS), sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO) ou a unidade respons\u00E1vel pela fase de origem do ato recorrido decide em cada recurso (UNIDADE_DECIDE_EM_CADA_RECURSO). A declara\u00E7\u00E3o \u00E9 obrigat\u00F3ria para o cadastro e n\u00E3o tem valor padr\u00E3o. A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
             "enum": [
-              "SEM_EFEITO_SUSPENSIVO"
+              "PARA_TODOS_OS_RECURSOS",
+              "SEM_EFEITO_SUSPENSIVO",
+              "UNIDADE_DECIDE_EM_CADA_RECURSO"
             ]
           },
           "efeitoSuspensivoRotulo": {
@@ -21839,10 +21841,12 @@
       },
       "EfeitoSuspensivoCodigo": {
         "enum": [
-          "SEM_EFEITO_SUSPENSIVO"
+          "PARA_TODOS_OS_RECURSOS",
+          "SEM_EFEITO_SUSPENSIVO",
+          "UNIDADE_DECIDE_EM_CADA_RECURSO"
         ],
         "type": "string",
-        "description": "- \u0060SEM_EFEITO_SUSPENSIVO\u0060: Sem efeito suspensivo \u2014 O recurso n\u00E3o suspende o processo: as fases seguintes come\u00E7am nas datas do cronograma, mesmo com recurso em an\u00E1lise."
+        "description": "- \u0060PARA_TODOS_OS_RECURSOS\u0060: Efeito suspensivo para todos os recursos \u2014 Todo recurso da 1\u00AA inst\u00E2ncia tem efeito suspensivo. Enquanto o prazo para recorrer est\u00E1 aberto e, havendo recurso, at\u00E9 que todos tenham decis\u00E3o e o resultado definitivo esteja publicado, ficam suspensos os atos que n\u00E3o podem ser desfeitos e o in\u00EDcio das fases posteriores.\n- \u0060SEM_EFEITO_SUSPENSIVO\u0060: Sem efeito suspensivo \u2014 O recurso da 1\u00AA inst\u00E2ncia n\u00E3o suspende nenhum ato do processo enquanto \u00E9 analisado.\n- \u0060UNIDADE_DECIDE_EM_CADA_RECURSO\u0060: A unidade respons\u00E1vel pela fase de origem do ato recorrido decide em cada recurso \u2014 Em cada recurso da 1\u00AA inst\u00E2ncia, essa unidade decide se concede o efeito suspensivo e registra a fundamenta\u00E7\u00E3o. S\u00F3 o recurso com a concess\u00E3o suspende os atos que n\u00E3o podem ser desfeitos e o in\u00EDcio das fases posteriores."
       },
       "EfeitoSuspensivoComDescricao": {
         "required": [

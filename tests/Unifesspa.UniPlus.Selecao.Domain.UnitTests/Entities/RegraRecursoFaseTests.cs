@@ -103,6 +103,19 @@ public sealed class RegraRecursoFaseTests
         resultado.Value.Parametros.GuardaDaVaga.Should().Be(GuardaDaVaga.AteOResultadoDefinitivo);
     }
 
+    [Theory(DisplayName = "A regra da fase aceita cada uma das três opções de efeito suspensivo")]
+    [InlineData("PARA_TODOS_OS_RECURSOS", EfeitoSuspensivo.ParaTodosOsRecursos)]
+    [InlineData("SEM_EFEITO_SUSPENSIVO", EfeitoSuspensivo.SemEfeitoSuspensivo)]
+    [InlineData("UNIDADE_DECIDE_EM_CADA_RECURSO", EfeitoSuspensivo.UnidadeDecideEmCadaRecurso)]
+    public void EfeitoSuspensivoDeclarado_Cria(string codigo, EfeitoSuspensivo esperado)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ParametrosDoRecursoDeTeste.Declarados(efeitoSuspensivo: codigo), ProdutoAncoraId);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Parametros.EfeitoSuspensivo.Should().Be(esperado);
+    }
+
     [Fact(DisplayName = "Sem instância superior e sem prazo da 2ª instância, a regra é criada sem prazo da 2ª instância")]
     public void SemInstanciaSuperior_SemPrazoDaSegundaInstancia()
     {

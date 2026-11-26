@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CenarioDoRecursoPorVersao;
@@ -49,6 +51,7 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         versao.Should().Be(1);
         parametros.Should().Be(CongeladosNaPrimeira);
         parametros.PrazoDaSegundaInstancia.Should().NotBe(CongeladosNaSegunda.PrazoDaSegundaInstancia);
+        parametros.EfeitoSuspensivo.Should().Be(EfeitoSuspensivo.SemEfeitoSuspensivo);
     }
 
     [Fact(DisplayName = "Exatamente no instante em que a segunda versão passa a valer, a leitura devolve o prazo da 2ª instância congelado nela")]
@@ -61,6 +64,7 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         versao.Should().Be(2);
         parametros.Should().Be(CongeladosNaSegunda);
         parametros.PrazoDaSegundaInstancia.Should().NotBe(CongeladosNaPrimeira.PrazoDaSegundaInstancia);
+        parametros.EfeitoSuspensivo.Should().Be(EfeitoSuspensivo.ParaTodosOsRecursos);
     }
 
     [Fact(DisplayName = "Depois da vigência da segunda versão, a leitura continua devolvendo os parâmetros do recurso congelados nela")]
@@ -96,6 +100,7 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         versao.Should().Be(1);
         parametros.Should().Be(CongeladosDaEtapaNaPrimeira);
         parametros.Should().NotBe(CongeladosDaEtapaNaSegunda);
+        parametros.EfeitoSuspensivo.Should().Be(EfeitoSuspensivo.SemEfeitoSuspensivo);
     }
 
     [Fact(DisplayName = "Exatamente no instante em que a segunda versão passa a valer, a leitura devolve os parâmetros do recurso da etapa congelados nela")]
@@ -108,6 +113,7 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         versao.Should().Be(2);
         parametros.Should().Be(CongeladosDaEtapaNaSegunda);
         parametros.Should().NotBe(CongeladosDaEtapaNaPrimeira);
+        parametros.EfeitoSuspensivo.Should().Be(EfeitoSuspensivo.UnidadeDecideEmCadaRecurso);
     }
 
     [Fact(DisplayName = "Depois da vigência da segunda versão, a leitura continua devolvendo os parâmetros do recurso da etapa congelados nela")]
@@ -121,6 +127,25 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         parametros.Should().Be(CongeladosDaEtapaNaSegunda);
     }
 
+    [Fact(DisplayName = "Antes da vigência da segunda versão, o envelope vigente grava o código e o rótulo do efeito suspensivo da primeira, na fase e na etapa")]
+    public async Task EnvelopeVigente_AntesDaSegunda_GravaCodigoERotuloDaPrimeira()
+    {
+        Guid processoId = await _cenario.PublicarAberturaEGravarSegundaVersaoAsync(nameof(EnvelopeVigente_AntesDaSegunda_GravaCodigoERotuloDaPrimeira));
+        DateTimeOffset instante = VigenciaDaSegunda.AddTicks(-UmMicrossegundoEmTicks);
+
+        (await _cenario.LerOEfeitoGravadoDaFaseAsync(processoId, instante)).Should().Be(CodigoERotuloDe(CongeladosNaPrimeira.EfeitoSuspensivo));
+        (await _cenario.LerOEfeitoGravadoDaEtapaAsync(processoId, instante)).Should().Be(CodigoERotuloDe(CongeladosDaEtapaNaPrimeira.EfeitoSuspensivo));
+    }
+
+    [Fact(DisplayName = "Na vigência da segunda versão, o envelope vigente grava o código e o rótulo do efeito suspensivo da segunda, na fase e na etapa")]
+    public async Task EnvelopeVigente_NaSegunda_GravaCodigoERotuloDaSegunda()
+    {
+        Guid processoId = await _cenario.PublicarAberturaEGravarSegundaVersaoAsync(nameof(EnvelopeVigente_NaSegunda_GravaCodigoERotuloDaSegunda));
+
+        (await _cenario.LerOEfeitoGravadoDaFaseAsync(processoId, VigenciaDaSegunda)).Should().Be(CodigoERotuloDe(CongeladosNaSegunda.EfeitoSuspensivo));
+        (await _cenario.LerOEfeitoGravadoDaEtapaAsync(processoId, VigenciaDaSegunda)).Should().Be(CodigoERotuloDe(CongeladosDaEtapaNaSegunda.EfeitoSuspensivo));
+    }
+
     [Fact(DisplayName = "Um microssegundo antes da primeira versão, não há versão vigente e nenhum parâmetro do recurso, da fase ou da etapa, é devolvido")]
     public async Task Ler_AntesDaPrimeiraVersao_NaoTemVersaoVigente()
     {
@@ -131,4 +156,6 @@ public sealed class ConfiguracaoDoRecursoNaVersaoVigenteTests
         lida.IsFailure.Should().BeTrue("antes da primeira publicação nenhuma configuração vigora, e a leitura não recorre a versão posterior");
         lida.Error!.Code.Should().Be("Snapshot.VigenteAusente");
     }
+
+    private static (string Codigo, string Rotulo) CodigoERotuloDe(EfeitoSuspensivo efeito) => (efeito.Codigo(), efeito.Rotulo());
 }

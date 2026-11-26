@@ -27,7 +27,9 @@ public sealed class CodigosDeContratoDoRecursoTests
         Enum.GetValues<EfeitoSuspensivo>().ToDictionary(static v => v, static v => v.Codigo())
             .Should().Equal(new Dictionary<EfeitoSuspensivo, string>
             {
+                [EfeitoSuspensivo.ParaTodosOsRecursos] = "PARA_TODOS_OS_RECURSOS",
                 [EfeitoSuspensivo.SemEfeitoSuspensivo] = "SEM_EFEITO_SUSPENSIVO",
+                [EfeitoSuspensivo.UnidadeDecideEmCadaRecurso] = "UNIDADE_DECIDE_EM_CADA_RECURSO",
             });
 
     [Fact(DisplayName = "Cada guarda da vaga tem o código que o contrato publica")]
@@ -66,8 +68,12 @@ public sealed class CodigosDeContratoDoRecursoTests
     [Fact(DisplayName = "As descrições das opções são as que o operador lê, sem citar código nem termo interno")]
     public void Descricao_DeCadaOpcao_EhOTextoConfirmado()
     {
+        EfeitoSuspensivo.ParaTodosOsRecursos.Descricao().Should().Be(
+            "Todo recurso da 1ª instância tem efeito suspensivo. Enquanto o prazo para recorrer está aberto e, havendo recurso, até que todos tenham decisão e o resultado definitivo esteja publicado, ficam suspensos os atos que não podem ser desfeitos e o início das fases posteriores.");
         EfeitoSuspensivo.SemEfeitoSuspensivo.Descricao().Should().Be(
-            "O recurso não suspende o processo: as fases seguintes começam nas datas do cronograma, mesmo com recurso em análise.");
+            "O recurso da 1ª instância não suspende nenhum ato do processo enquanto é analisado.");
+        EfeitoSuspensivo.UnidadeDecideEmCadaRecurso.Descricao().Should().Be(
+            "Em cada recurso da 1ª instância, essa unidade decide se concede o efeito suspensivo e registra a fundamentação. Só o recurso com a concessão suspende os atos que não podem ser desfeitos e o início das fases posteriores.");
         GuardaDaVaga.AteOResultadoDefinitivo.Descricao().Should().Be(
             "Se quem recorre seria chamado para a vaga, ela fica guardada até a publicação do resultado definitivo.");
         GuardaDaVaga.NaoGuarda.Descricao().Should().Be(

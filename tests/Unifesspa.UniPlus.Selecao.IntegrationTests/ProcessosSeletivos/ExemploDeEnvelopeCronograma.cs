@@ -60,7 +60,7 @@ internal static class ExemploDeEnvelopeCronograma
     /// resultado, atos distintos com o mesmo papel — e o definitivo de cada um, promete parecer
     /// individual, exige quatro bancas — duas do MESMO tipo, separadas pelos candidatos atendidos pela banca, de
     /// competência, e a de análise de recursos — e admite recurso, sem instância superior,
-    /// sem efeito suspensivo e sem guardar a vaga. É o ramo mais rico do bloco <c>cronogramaFases</c>.
+    /// com a unidade decidindo o efeito suspensivo em cada recurso e sem guardar a vaga. É o ramo mais rico do bloco <c>cronogramaFases</c>.
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
@@ -173,7 +173,8 @@ internal static class ExemploDeEnvelopeCronograma
     internal static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(
             Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), '9'),
-            ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas, guardaDaVaga: "NAO_GUARDA"),
+            ParametrosDoRecursoDeTeste.Declarados(
+                48m, UnidadePrazo.Horas, efeitoSuspensivo: "UNIDADE_DECIDE_EM_CADA_RECURSO", guardaDaVaga: "NAO_GUARDA"),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
             ProdutoId(2, 2, variante),

@@ -161,9 +161,11 @@
         },
         "efeitoSuspensivo": {
           "title": "Efeito suspensivo na 1ª instância",
-          "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital. A única opção aceita é sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2ª instância sempre tem efeito suspensivo, sem escolha.",
+          "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital entre três opções: efeito suspensivo para todos os recursos (PARA_TODOS_OS_RECURSOS), sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO) ou a unidade responsável pela fase de origem do ato recorrido decide em cada recurso (UNIDADE_DECIDE_EM_CADA_RECURSO). A declaração é obrigatória para o cadastro e não tem valor padrão. A 2ª instância sempre tem efeito suspensivo, sem escolha.",
           "enum": [
-            "SEM_EFEITO_SUSPENSIVO"
+            "PARA_TODOS_OS_RECURSOS",
+            "SEM_EFEITO_SUSPENSIVO",
+            "UNIDADE_DECIDE_EM_CADA_RECURSO"
           ]
         },
         "efeitoSuspensivoRotulo": {
