@@ -248,6 +248,35 @@ public sealed class DeclaracoesDoDocumentoLidasTests
         condicoes[1].Enquadramento!.Value.GetRawText().Should().Contain("MODALIDADE");
     }
 
+    [Theory(DisplayName = "O número que não cabe no inteiro de 32 bits, ou que não é inteiro, fica ausente na condição, sem exceção")]
+    [InlineData("3000000000")]
+    [InlineData("-3000000000")]
+    [InlineData("1.0")]
+    [InlineData("2025.5")]
+    public void EdicaoDoExame_ComNumeroQueOInteiroNaoComporta_FicaAusente(string numero)
+    {
+        CondicaoNoDocumento condicao = UnicaFase($$"""
+            { "cronograma": { "fases": [ { "chave": "homologacao", "tipoFaseCodigo": "HOMOLOGACAO", "regraDeHomologacao": { "alternativas": [
+              { "condicoes": [ { "tipo": "RESULTADO_NO_RETORNO_DO_INEP", "edicaoDoExame": {{numero}} } ] } ] } } ] } }
+            """).Publicacoes.RegraDeHomologacao!.Alternativas.Single().Condicoes.Single();
+
+        condicao.EdicaoDoExame.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "A data mal escrita fica ausente no período da fase, e a bem escrita do outro limite é mantida, sem exceção")]
+    [InlineData("amanhã")]
+    [InlineData("2027-13-45T00:00:00Z")]
+    [InlineData("")]
+    public void Periodo_ComDataMalEscrita_FicaAusente(string data)
+    {
+        JanelaDeTempo periodo = UnicaFase($$"""
+            { "cronograma": { "fases": [ { "chave": "analise", "tipoFaseCodigo": "ANALISE", "inicio": "{{data}}", "fim": "2027-01-12T15:30:00Z" } ] } }
+            """).Janela;
+
+        periodo.Inicio.Should().BeNull();
+        periodo.Fim.Should().Be(new DateTimeOffset(2027, 1, 12, 15, 30, 0, TimeSpan.Zero));
+    }
+
     [Fact(DisplayName = "O enquadramento é copiado como JSON, sem montar o predicado: a recusa dele é do domínio")]
     public void Enquadramento_ECopiadoSemRegra()
     {

@@ -139,9 +139,10 @@ internal static class DeclaracoesDoDocumentoLidas
     private static string[] Textos(JsonObject pai, string propriedade) =>
         pai[propriedade] is JsonArray lista ? [.. lista.Select(static texto => texto!.GetValue<string>())] : [];
 
+    // O valor que o tipo não comporta (número fora do inteiro de 32 bits, data mal escrita) fica ausente, e o domínio o recusa.
     private static T? Valor<T>(JsonObject? pai, string propriedade)
         where T : struct =>
-        pai?[propriedade] is JsonValue valor ? valor.GetValue<T>() : null;
+        pai?[propriedade] is JsonValue valor && valor.TryGetValue(out T convertido) ? convertido : null;
 
     // O esquema só deixa passar um dos códigos do catálogo; o que o domínio não conhece fica ausente, e o domínio o recusa.
     private static T? CodigoDoCatalogo<T>(string? codigo)
