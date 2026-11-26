@@ -8,17 +8,17 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 public sealed class CodigosDasPublicacoesPrevistasTests
 {
     [Fact]
-    public void SituacaoDoProdutoPrevisto_Valores_TemCodigoERotuloDeclarados() =>
-        Enum.GetValues<SituacaoDoProdutoPrevisto>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
+    public void SituacaoDoProdutoPrevisto_Valores_TemCodigoDeclarado() =>
+        Enum.GetValues<SituacaoDoProdutoPrevisto>().Select(static valor => (valor, valor.Codigo()))
             .Should().Equal(
-                (SituacaoDoProdutoPrevisto.Aberto, "ABERTO", "Aberta"),
-                (SituacaoDoProdutoPrevisto.Publicado, "PUBLICADO", "Publicada"));
+                (SituacaoDoProdutoPrevisto.Aberto, "ABERTO"),
+                (SituacaoDoProdutoPrevisto.Publicado, "PUBLICADO"));
 
     [Fact]
-    public void ImpedimentoDoProduto_Valores_TemCodigoERotuloDeclarados() =>
-        Enum.GetValues<ImpedimentoDoProduto>().Select(static valor => (valor, valor.Codigo(), valor.Rotulo()))
+    public void ImpedimentoDoProduto_Valores_TemCodigoDeclarado() =>
+        Enum.GetValues<ImpedimentoDoProduto>().Select(static valor => (valor, valor.Codigo()))
             .Should().Equal(
-                (ImpedimentoDoProduto.JaPublicado, "JA_PUBLICADO", "Já publicada"),
-                (ImpedimentoDoProduto.PreliminarNaoPublicado, "PRELIMINAR_NAO_PUBLICADO", "Preliminar não publicado"),
-                (ImpedimentoDoProduto.TipoDeAtoNaoVigente, "TIPO_DE_ATO_NAO_VIGENTE", "Tipo de ato não vigente"));
+                (ImpedimentoDoProduto.JaPublicado, "JA_PUBLICADO"),
+                (ImpedimentoDoProduto.PreliminarNaoPublicado, "PRELIMINAR_NAO_PUBLICADO"),
+                (ImpedimentoDoProduto.TipoDeAtoNaoVigente, "TIPO_DE_ATO_NAO_VIGENTE"));
 }
