@@ -12,6 +12,12 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class PerfilEndpointTests : PerfilEndpointTestBase
 {
+    private const string AcompanharProcessos = "selecao:processos:acompanhar";
+    private const string ConfigurarProcessos = "selecao:processos:configurar";
+    private const string PublicarProcessos = "selecao:processos:publicar";
+    private const string ConsultarModelosNaUnidade = "configuracao:modelos-formulario:consultar-na-unidade";
+    private const string ManterModelos = "configuracao:modelos-formulario:manter";
+
     public PerfilEndpointTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
     {
@@ -93,6 +99,29 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
 
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [OperarInscricoes, ManterMotivos]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");
+    }
+
+    [Fact(DisplayName = "Perfil que reúne só permissões de unidade, inclusive a de consultar os modelos de formulário, é aceito")]
+    public async Task Criar_ConsultaDosModelosJuntoComPermissoesDeUnidade_Devolve201()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [AcompanharProcessos, ConfigurarProcessos, PublicarProcessos, ConsultarModelosNaUnidade]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "Perfil que junta a consulta dos modelos de formulário na unidade com a manutenção institucional devolve 422")]
+    public async Task Criar_ConsultaDosModelosJuntoComManutencaoDosModelos_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarModelosNaUnidade, ManterModelos]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");

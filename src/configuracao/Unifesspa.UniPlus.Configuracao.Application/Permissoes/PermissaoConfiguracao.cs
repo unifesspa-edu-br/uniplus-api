@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -251,4 +252,13 @@ public enum PermissaoConfiguracao
         "Cria, altera e remove os tipos de conceito da avaliação, numéricos ou categóricos.",
         ClassificacaoDeProtecao.Interno)]
     TiposConceitoManter = 29,
+
+    /// <summary>Consultar os modelos de formulário para escolher e aplicar o modelo no processo da unidade.</summary>
+    [Permissao(
+        "configuracao:modelos-formulario:consultar-na-unidade",
+        "Consultar modelos de formulário para os processos da unidade",
+        "Consulta os modelos de formulário, a apresentação, a pré-visualização e a avaliação simulada, para escolher e aplicar o modelo no processo da unidade da concessão, sem alterar modelo.",
+        ClassificacaoDeProtecao.Interno,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    ModelosFormularioConsultarNaUnidade = 30,
 }
