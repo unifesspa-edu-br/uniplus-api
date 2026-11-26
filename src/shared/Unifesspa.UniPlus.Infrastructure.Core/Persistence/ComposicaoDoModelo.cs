@@ -16,13 +16,32 @@ internal static class ComposicaoDoModelo
             Aplicar(modelBuilder, modulo.Esquema, () => modulo.AplicarAoModelo(modelBuilder));
         }
 
+        AplicarAPlataforma(modelBuilder);
+        AplicarEsquemaAosTiposPertencentes(modelBuilder);
+        AplicarConvencoesDoModeloCompleto(modelBuilder);
+    }
+
+    private static void AplicarAPlataforma(ModelBuilder modelBuilder)
+    {
         Aplicar(
             modelBuilder,
             UniPlusDbContext.EsquemaDaPlataforma,
             () => modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly));
         RegistrarFuncoesDaPlataforma(modelBuilder);
+    }
 
-        AplicarConvencoesDoModeloCompleto(modelBuilder);
+    private static void AplicarEsquemaAosTiposPertencentes(ModelBuilder modelBuilder)
+    {
+        foreach (IMutableEntityType tipo in modelBuilder.Model.GetEntityTypes().Where(static tipo => tipo.IsOwned()))
+        {
+            IMutableForeignKey posse = tipo.FindOwnership()!;
+            while (posse.PrincipalEntityType.IsOwned())
+            {
+                posse = posse.PrincipalEntityType.FindOwnership()!;
+            }
+
+            tipo.SetSchema(posse.PrincipalEntityType.GetSchema());
+        }
     }
 
     // As convenções varrem todos os tipos do modelo, então rodam depois que os módulos e a plataforma registraram os seus.
@@ -64,7 +83,8 @@ internal static class ComposicaoDoModelo
 
         foreach (IMutableEntityType tipo in modelBuilder.Model.GetEntityTypes())
         {
-            if (!anteriores.Contains(tipo.Name) && tipo.BaseType is null)
+            // O pertencente segue o esquema do dono; ao ganhar outro dono em módulo posterior, o EF renomeia o primeiro e seu novo nome receberia o esquema seguinte.
+            if (!anteriores.Contains(tipo.Name) && tipo.BaseType is null && !tipo.IsOwned())
             {
                 tipo.SetSchema(esquema);
             }
