@@ -5,6 +5,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -68,15 +69,19 @@ internal sealed record CenarioDaConsultaDeConformidadeLegal(
         ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
             consulta,
             Processos,
+            ConferenciaDeConformidade(),
+            Fuso,
+            CadastrosVivos.CatalogoDeFatos(),
+            CancellationToken.None);
+
+    private ConferenciaDeConformidadeLegal ConferenciaDeConformidade() =>
+        new(
             Obrigatoriedades,
             Modalidades,
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            Fuso,
-            CadastrosVivos.CatalogoDeFatos(),
-            CancellationToken.None);
+            CadastrosVivos.RegrasDesempate());
 
     private static CenarioDaConsultaDeConformidadeLegal SobRepositorio(IProcessoSeletivoRepository processos) =>
         new(processos, Substitute.For<IObrigatoriedadeLegalRepository>(), CadastrosVivos.Modalidades(), new ResolvedorFusoDeTeste());

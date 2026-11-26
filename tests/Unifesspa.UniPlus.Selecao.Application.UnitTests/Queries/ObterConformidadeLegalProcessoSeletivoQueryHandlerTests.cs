@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -121,6 +122,21 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "404 diria que o processo não existe, quando o que falta é a base de fusos do ambiente");
     }
 
+    [Fact(DisplayName = "Com a data de referência informada, a consulta responde por ela e não consulta o fuso institucional")]
+    public async Task Consulta_ComDataDeReferenciaInformada_NaoConsultaOFuso()
+    {
+        ProcessoSeletivo processo = ProcessoBase();
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
+        CenarioDaConsultaDeConformidadeLegal cenario = ComOProcesso(processo).ComRegrasVigentesEmQualquerData() with { Fuso = fuso };
+
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await cenario.ConsultarAsync(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id, new DateOnly(2026, 1, 1)));
+
+        resultadoDaConsulta.IsSuccess.Should().BeTrue();
+        resultadoDaConsulta.Value!.DataReferencia.Should().Be(new DateOnly(2026, 1, 1));
+        _ = fuso.DidNotReceive().Resolver();
+    }
+
     [Fact(DisplayName = "Processo inexistente recusa com NaoEncontrado (404), sem consultar o catálogo de obrigatoriedades")]
     public async Task ProcessoInexistente_RecusaComNaoEncontrado()
     {
@@ -161,7 +177,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 
     /// <summary>
     /// A ordem das recusas é a da verificação, e não é detalhe de apresentação: `PendenciaDoCronograma` recusa este estado
-    /// (`ProcessoSeletivo.cs:2106-2110`) ANTES de a resolução do período ser consultada. Devolver o código do período
+    /// ANTES de a resolução do período ser consultada. Devolver o código do período
     /// mandaria o operador preencher um campo no ato, quando o que falta é CRIAR a fase que coleta inscrição no
     /// cronograma. A consulta leva um período informado, que neste ramo a verificação nem chega a olhar.
     /// </summary>
