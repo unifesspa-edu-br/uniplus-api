@@ -60,9 +60,8 @@ internal sealed record ReferenciasDoNovoProcesso(
     /// <summary>
     /// A cidade da Unidade administradora descreve onde ela fica, e é copiada para o snapshot dela — não é a
     /// localidade que rege a contagem de prazos, que o processo declara por conta própria (UNI-REQ-0111). A
-    /// exigência de a Unidade ter cidade permanece como regra do cadastro dela, e é avaliada aqui porque o
-    /// snapshot a carrega; a justificativa original, que a apoiava na contagem de prazo, deixou de valer quando
-    /// a localidade passou a ser declarada.
+    /// cidade é opcional no cadastro da Unidade e exigida aqui, ao usá-la como administradora do processo,
+    /// porque o snapshot a carrega (UNI-REQ-0119).
     /// </summary>
     private static async Task<Result<UnidadeView>> UnidadeVivaComCidadeAsync(
         Guid unidadeId, IUnidadeReader unidadeReader, CancellationToken cancellationToken)
