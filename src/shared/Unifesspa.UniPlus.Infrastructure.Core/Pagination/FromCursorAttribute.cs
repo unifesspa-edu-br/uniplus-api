@@ -2,8 +2,13 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 using System.Diagnostics.CodeAnalysis;
 
+using System.Reflection;
+
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Routing;
 
 /// <summary>
 /// Sinaliza que um parâmetro <see cref="PageRequest"/> da action deve ser
@@ -61,4 +66,35 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
         "CA1819:Properties should not return arrays",
         Justification = "Argumento nomeado de atributo — a linguagem só admite array aqui.")]
     public string[] ScopeRouteValues { get; init; } = [];
+
+    /// <summary>
+    /// Acha a declaração do cursor da ação: olha a <see cref="ParameterInfo"/> do
+    /// <see cref="ControllerParameterDescriptor"/>, porque o <c>BindingInfo</c> expõe o
+    /// <c>BinderType</c>, mas não o <see cref="FromCursorAttribute"/>. Assim quem lê fica resiliente a
+    /// renomes do parâmetro. Devolve <c>null</c> quando a ação não é de controller ou não declara o cursor.
+    /// </summary>
+    internal static FromCursorAttribute? Of(ActionDescriptor descriptor)
+    {
+        if (descriptor is not ControllerActionDescriptor controllerAction)
+        {
+            return null;
+        }
+
+        return controllerAction.Parameters
+            .OfType<ControllerParameterDescriptor>()
+            .Where(parameter => parameter.ParameterType == typeof(PageRequest))
+            .Select(parameter => parameter.ParameterInfo.GetCustomAttribute<FromCursorAttribute>())
+            .FirstOrDefault(attribute => attribute is not null);
+    }
+
+    /// <summary>
+    /// A etiqueta do cursor inclui os valores de rota que escopam a coleção (ADR-0026): sem eles, um cursor
+    /// emitido na coleção de uma entidade retomaria a paginação na coleção de outra, numa âncora que não é dela.
+    /// </summary>
+    internal string ResourceTagFor(RouteData routeData) => CursorResourceTag.Compose(
+        Resource,
+        ScopeRouteValues.Select(name => ReadRouteValue(routeData, name)));
+
+    private static string? ReadRouteValue(RouteData routeData, string name) =>
+        routeData.Values.TryGetValue(name, out object? value) ? value?.ToString() : null;
 }

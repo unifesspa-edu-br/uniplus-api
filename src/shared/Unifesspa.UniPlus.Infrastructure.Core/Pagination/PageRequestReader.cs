@@ -118,7 +118,7 @@ internal sealed class PageRequestReader
 
     private PageRequest? Accept(CursorPayload payload, PaginationDirection direction)
     {
-        string resourceTag = ExpectedResourceTag();
+        string resourceTag = _attribute.ResourceTagFor(_context.ActionContext.RouteData);
         if (!Guid.TryParse(payload.After, out Guid anchor) || !CursorMatches(payload, resourceTag, direction))
         {
             RejectAsInvalid();
@@ -141,17 +141,6 @@ internal sealed class PageRequestReader
         && payload.Direction == direction
         && UserMatches(payload)
         && (!_attribute.RequireSortKey || !string.IsNullOrWhiteSpace(payload.SortKey));
-
-    /// <summary>
-    /// A etiqueta esperada inclui os valores de rota que escopam a coleção (ADR-0026): sem eles, um cursor
-    /// emitido na coleção de uma entidade retomaria a paginação na coleção de outra, numa âncora que não é dela.
-    /// </summary>
-    private string ExpectedResourceTag() => CursorResourceTag.Compose(
-        _attribute.Resource,
-        _attribute.ScopeRouteValues.Select(ReadRouteValue));
-
-    private string? ReadRouteValue(string name) =>
-        _context.ActionContext.RouteData.Values.TryGetValue(name, out object? value) ? value?.ToString() : null;
 
     /// <summary>
     /// Vínculo ao usuário (ADR-0026): usuário autenticado e com identificador; cursor com identificador de
