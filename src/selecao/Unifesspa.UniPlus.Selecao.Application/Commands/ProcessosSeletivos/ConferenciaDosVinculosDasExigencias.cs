@@ -18,13 +18,12 @@ internal static class ConferenciaDosVinculosDasExigencias
             .SelectMany(static r => r.EnumerarRegraEItens())
             .Select(static n => n.DocumentoExigido)
             .OfType<DocumentoExigido>()];
-        Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
+        return ConferenciaDeVinculoNovo.Conferir(
             fatos.Catalogo,
             VinculosExistentes(processo),
             VinculosDeFatos.De(
                 documentos.SelectMany(static d => d.FatosComprovados),
                 documentos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Valor))));
-        return vinculoNovo.IsFailure ? Result.Failure(vinculoNovo.Error!) : vinculoNovo;
     }
 
     private static VinculosDeFatos VinculosExistentes(ProcessoSeletivo processo)

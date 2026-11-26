@@ -115,7 +115,7 @@ public static class DefinirFatosColetadosCommandHandler
         Result vinculoNovo = ConferirVinculoNovo(processo, resolvida);
         if (vinculoNovo.IsFailure)
         {
-            return Result.Failure(vinculoNovo.Error!);
+            return vinculoNovo;
         }
 
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.

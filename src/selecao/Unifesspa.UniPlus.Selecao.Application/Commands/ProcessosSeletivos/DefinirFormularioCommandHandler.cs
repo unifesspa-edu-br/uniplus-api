@@ -131,7 +131,7 @@ public static class DefinirFormularioCommandHandler
         Result vinculoNovo = ConferirVinculoNovo(processo, lido);
         if (vinculoNovo.IsFailure)
         {
-            return Result.Failure(vinculoNovo.Error!);
+            return vinculoNovo;
         }
 
         Result definido = processo.DefinirFormulario(declarado, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);

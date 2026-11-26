@@ -188,6 +188,28 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
     }
 
+    private static DefinirFatosColetadosCommand ColetaDeCorRacaEBaixaRenda(ProcessoSeletivo processo) => new(
+        processo.Id,
+        PapelDoFormularioDeTeste.Habilitacao.Codigo(),
+        [
+            EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 0).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
+            EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir(),
+        ]);
+
+    [Fact(DisplayName = "Dois dados pendentes de aprovação na mesma coleta devolvem uma recusa por dado, na ordem dos códigos")]
+    public async Task Handle_DoisFatosPendentes_DevolveUmaRecusaPorFato()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
+            [.. VocabularioSeed().Select(static f => f.Codigo is "BAIXA_RENDA" or "COR_RACA" ? f with { ProtecaoAprovada = false } : f)]));
+
+        Result resultado = await HandleAsync(mocks, ColetaDeCorRacaEBaixaRenda(processo));
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(VinculoCatalogoErrorCodes.FatoComProtecaoPendente, VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
+        resultado.Errors.Select(static e => e.Origem).Should().Equal("BAIXA_RENDA", "COR_RACA");
+    }
+
     [Fact(DisplayName = "Coletar um fato derivado (MODALIDADE) é recusado como não coletável")]
     public async Task Handle_FatoDerivado_RetornaNaoColetavel()
     {
