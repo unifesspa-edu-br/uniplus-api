@@ -237,3 +237,7 @@ A exportação descreve cada modelo resolvido com o nome do arquivo, o formato e
 **Confirmação:** o teste de contrato do esquema admite como referência por identificador somente o caminho `exigencias.schema.json/exigencia/modeloId`, exige igualdade com esse caminho e falha se a propriedade mudar de lugar.
 
 **Consequências:** qualquer outra referência por identificador continua proibida e exige nova emenda e mudança do teste.
+
+## Emenda (2026-11-25) — consequências do descumprimento
+
+Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), o esquema declara `consequenciaIndeferimento` na exigência e `consequencia` no grupo de comprovação, `consequenciaDaAusencia` na banca, `consequenciaDaFaltaDeEnvio` no formulário e `abrePrazoParaReenvio` na exigência e no grupo. Até a primeira publicação em produção, o esquema é editado no lugar, sem versão nova.

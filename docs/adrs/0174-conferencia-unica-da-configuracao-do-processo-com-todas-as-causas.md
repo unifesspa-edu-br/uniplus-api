@@ -102,3 +102,7 @@ Consequência: as primeiras causas não mudam para quem já declarava tudo, porq
 ## Emenda (2026-11-23) — cidade de prova nos formulários
 
 A prova presencial é o último assunto da conferência, depois dos motivos de decisão. Após a conferência da declaração e dos municípios, a conferência exige a cidade de prova no formulário de inscrição quando há prova presencial e recusa o campo em qualquer formulário quando não há prova presencial. Enquanto a prova estiver por declarar, somente a falta da declaração é apontada. O painel usa a mesma regra no item `cidade_de_prova_nos_formularios`.
+
+## Emenda (2026-11-25) — consequências do descumprimento
+
+Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), a conferência ganha o assunto «consequências do descumprimento», imediatamente antes das condições que a canonicalização exige. Suas conferências acumulam as causas na mesma ordem única.
