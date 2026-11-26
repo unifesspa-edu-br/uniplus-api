@@ -35,6 +35,7 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("motivo.schema.json", "properties/versaoDoEditalDeEntrada")]
     [InlineData("formulario.schema.json", "properties/modeloOrigemCodigo")]
     [InlineData("formulario.schema.json", "properties/modeloOrigemNome")]
+    [InlineData("formulario.schema.json", "properties/consequenciaDaFaltaDeEnvioRotulo")]
     [InlineData("cronograma.schema.json", "$defs/fase/properties/tipoFaseNome")]
     [InlineData("comuns.schema.json", "$defs/publicacaoPrevista/properties/atoNome")]
     [InlineData("bancas.schema.json", "properties/categoriasDocumentoNomes")]

@@ -8,6 +8,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
@@ -81,9 +82,10 @@ public static class DefinirFormularioCommandHandler
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto)];
+        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, command.Finalidade);
+        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto), .. consequencia.Errors];
         List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
-        return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros);
+        return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros, consequencia.Value);
     }
 
     private static List<FatoColetado> ResolverItensDaCriacao(ContextoDoCatalogo contexto, List<FieldError> erros)
@@ -114,7 +116,8 @@ public static class DefinirFormularioCommandHandler
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definido = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao);
+        Result definido = processo.DefinirFormulario(
+            command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
@@ -132,7 +135,8 @@ public static class DefinirFormularioCommandHandler
     /// recusas da leitura; as páginas estão completas quando nenhuma entrada foi recusada.
     /// </summary>
     private sealed record FormularioLido(
-        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros)
+        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros,
+        ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio)
     {
         public bool PaginasCompletas => Paginas.Count == QuantidadeEnviada;
     }

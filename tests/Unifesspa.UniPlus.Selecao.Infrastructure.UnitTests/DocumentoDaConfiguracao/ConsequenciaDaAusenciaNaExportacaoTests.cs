@@ -22,4 +22,17 @@ public sealed class ConsequenciaDaAusenciaNaExportacaoTests
         bancaProjetada["consequenciaDaAusencia"]!.GetValue<string>().Should().Be("ELIMINA_DO_PROCESSO");
         bancaProjetada["consequenciaDaAusenciaRotulo"]!.GetValue<string>().Should().Be("Rótulo congelado");
     }
+
+    [Fact]
+    public void Projetar_FormularioPublicado_UsaCodigoERotuloCongelados()
+    {
+        string formulario = """{"finalidade":"HABILITACAO","consequenciaDaFaltaDeEnvio":"RETIRA_O_ACRESCIMO","contexto":{"consequenciaDaFaltaDeEnvioRotulo":"Rótulo congelado"}}""";
+        string congelado = $"{{\"formularios\":[{formulario}]}}";
+
+        JsonObject documento = new ProjecaoDaVersaoPublicada(new EsquemaDoDocumentoDaConfiguracao()).Projetar(new(Guid.Empty, 1, DateTimeOffset.UnixEpoch, congelado));
+
+        JsonNode projetado = documento["formularios"]![0]!;
+        projetado["consequenciaDaFaltaDeEnvio"]!.GetValue<string>().Should().Be("RETIRA_O_ACRESCIMO");
+        projetado["consequenciaDaFaltaDeEnvioRotulo"]!.GetValue<string>().Should().Be("Rótulo congelado");
+    }
 }

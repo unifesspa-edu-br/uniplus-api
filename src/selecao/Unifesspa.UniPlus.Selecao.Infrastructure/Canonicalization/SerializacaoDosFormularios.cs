@@ -33,6 +33,7 @@ internal static class SerializacaoDosFormularios
     {
         JsonObject objeto = DadosDoFormulario(processo, formulario);
         ContextoDosRotulos.Acrescentar(objeto, "finalidade", (FinalidadeFormulario?)formulario.Finalidade);
+        ContextoDosRotulos.Acrescentar(objeto, "consequenciaDaFaltaDeEnvio", formulario.ConsequenciaDaFaltaDeEnvio);
         return objeto;
     }
 
@@ -41,6 +42,7 @@ internal static class SerializacaoDosFormularios
         ["finalidade"] = formulario.Finalidade.Codigo(),
         ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
         ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
+        ["consequenciaDaFaltaDeEnvio"] = formulario.ConsequenciaDaFaltaDeEnvio?.Codigo(),
         ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
         ["paginas"] = new JsonArray([.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(SerializarPagina)]),
         ["termos"] = new JsonArray([.. processo.TermosExigidos

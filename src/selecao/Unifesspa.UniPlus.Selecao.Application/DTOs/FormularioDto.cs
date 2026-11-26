@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
@@ -38,4 +39,8 @@ public sealed record FormularioDto(
     ModeloDeOrigemDto? ModeloOrigem,
     IReadOnlyList<PaginaDoFormularioDto> Paginas,
     ColetaDoFormularioDto Coleta,
-    IReadOnlyList<TermoExigidoDto> Termos);
+    IReadOnlyList<TermoExigidoDto> Termos)
+{
+    /// <summary>O que acontece com quem não envia o formulário; nulo quando a falta de envio não tem consequência própria.</summary>
+    public CodigoComRotulo<ConsequenciaDoDescumprimento>? ConsequenciaDaFaltaDeEnvio { get; init; }
+}

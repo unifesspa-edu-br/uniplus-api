@@ -40,7 +40,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
         // A regra de documento referencia a exigência já presente no envelope.
         [typeof(RegraDeComprovacao)] = (
             [
-                "RegraQueContemId", "Ordem", "Forma", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Itens",
+                "RegraQueContemId", "Ordem", "Forma", "DocumentoExigidoId", "QuantidadeMinima", "ConsequenciaDoDescumprimento", "Itens",
                 "BasesLegais", "Distincao", "GrupoDoFormularioParaRepeticao", "AbrePrazoParaReenvio",
             ],
             [
@@ -112,7 +112,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
 
         [typeof(FormularioProcesso)] = (
-            ["Finalidade", "FaseId", "Titulo", "ModeloOrigemId", "ModeloOrigemCodigo", "Paginas"],
+            ["Finalidade", "FaseId", "Titulo", "ConsequenciaDaFaltaDeEnvio", "ModeloOrigemId", "ModeloOrigemCodigo", "Paginas"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("ModeloOrigemNome", "Nome copiado do cadastro, ainda não incluído no documento congelado."),

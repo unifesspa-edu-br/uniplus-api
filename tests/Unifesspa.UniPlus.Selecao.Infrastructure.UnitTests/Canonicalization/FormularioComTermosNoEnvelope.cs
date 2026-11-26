@@ -14,6 +14,7 @@ internal static class FormularioComTermosNoEnvelope
         ["finalidade"] = finalidade,
         ["faseId"] = null,
         ["titulo"] = "Formulário fictício",
+        ["consequenciaDaFaltaDeEnvio"] = null,
         ["modeloOrigem"] = null,
         ["paginas"] = new JsonArray(PaginaDeRevisao()),
         ["termos"] = new JsonArray(termos),

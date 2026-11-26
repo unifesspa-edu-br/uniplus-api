@@ -6,16 +6,20 @@ using Application.Commands.ProcessosSeletivos;
 
 using Controllers;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e a finalidade vêm da
-/// rota. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite.
+/// rota. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite. A consequência da
+/// falta de envio é opcional, e a ausência dela retira a que o formulário tinha.
 /// </summary>
 public sealed record DefinirFormularioRequest(
     Guid? FaseId,
     string? Titulo,
-    [property: JsonRequired] IReadOnlyList<PaginaDoFormularioInput> Paginas);
+    [property: JsonRequired] IReadOnlyList<PaginaDoFormularioInput> Paginas,
+    [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDaFaltaDeEnvio = null);
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirItens"/>. A lista de itens é obrigatória: só a

@@ -140,6 +140,30 @@ public sealed class ConsequenciasDasBancasTests
         ItemDoPainel(configuracao, processo, item).Ok.Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("fases[0].unidadeResponsavel")]
+    [InlineData("etapas[0].itensDeAvaliacao")]
+    public void Painel_ParteRecusadaForaDasBancas_AprovaOsItensDaBanca(string recusada)
+    {
+        ProcessoSeletivo processo = ProcessoComBanca(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        ConfiguracaoDeclarada configuracao = Lida([.. processo.CronogramaFases], [.. processo.Etapas], ComPartesRecusadas(recusada), processo.Declaracao());
+
+        ItensDoPainel(configuracao, processo).Where(static item => item.Codigo.StartsWith("banca_", StringComparison.Ordinal))
+            .Should().HaveCount(3).And.OnlyContain(static item => item.Ok);
+    }
+
+    [Theory]
+    [InlineData("fases[0].bancasRequeridas")]
+    [InlineData("etapas[0].bancas")]
+    public void Painel_ListaDeBancasRecusada_MantemOsItensDaBancaPendentes(string recusada)
+    {
+        ProcessoSeletivo processo = ProcessoComBanca(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        ConfiguracaoDeclarada configuracao = Lida([.. processo.CronogramaFases], [.. processo.Etapas], ComPartesRecusadas(recusada), processo.Declaracao());
+
+        ItensDoPainel(configuracao, processo).Where(static item => item.Codigo.StartsWith("banca_", StringComparison.Ordinal))
+            .Should().HaveCount(3).And.OnlyContain(static item => !item.Ok);
+    }
+
     [Fact]
     public void Painel_BancaQueRetiraAModalidadeSemAmpla_PendeOItemDeAmpla()
     {

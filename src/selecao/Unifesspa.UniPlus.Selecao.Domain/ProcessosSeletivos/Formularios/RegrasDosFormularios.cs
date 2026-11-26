@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
@@ -16,7 +17,8 @@ public static class RegrasDosFormularios
         Guid? faseId,
         string? titulo,
         IReadOnlyList<PaginaDoFormulario> paginas,
-        IReadOnlyList<FatoColetado>? itensDaCriacao)
+        IReadOnlyList<FatoColetado>? itensDaCriacao,
+        ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
@@ -28,15 +30,16 @@ public static class RegrasDosFormularios
             return Result<PlanoDoFormulario>.ValidationFailure(recusas);
         }
 
-        return MontarPlano(configuracao, finalidade, faseId, titulo, paginas, existente, itensIniciais);
+        // A conferência anterior já recusou o que a fábrica recusaria.
+        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, paginas).Value!;
+        novo.DeclararConsequenciaDaFaltaDeEnvio(consequenciaDaFaltaDeEnvio);
+        return MontarPlano(configuracao, novo, existente, itensIniciais);
     }
 
     private static Result<PlanoDoFormulario> MontarPlano(
-        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid? faseId, string? titulo,
-        IReadOnlyList<PaginaDoFormulario> paginas, FormularioProcesso? existente, IReadOnlyList<FatoColetado>? itensIniciais)
+        ConfiguracaoDeclarada configuracao, FormularioProcesso novo, FormularioProcesso? existente, IReadOnlyList<FatoColetado>? itensIniciais)
     {
-        // A conferência anterior já recusou o que a fábrica recusaria.
-        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, paginas).Value!;
+        FinalidadeFormulario finalidade = novo.Finalidade;
         Result itens = itensIniciais is null
             ? Result.Success()
             : RegrasDaColeta.ConferirFatosColetados(configuracao, novo, finalidade, itensIniciais, []);

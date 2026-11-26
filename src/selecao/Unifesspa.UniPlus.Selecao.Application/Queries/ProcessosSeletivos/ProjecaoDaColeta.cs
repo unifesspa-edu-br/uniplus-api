@@ -51,7 +51,10 @@ internal static class ProjecaoDaColeta
         formulario.ModeloOrigemId is { } modeloId ? new ModeloDeOrigemDto(modeloId, formulario.ModeloOrigemCodigo!) : null,
         [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(ProjetarPagina)],
         ProjetarColeta(processo, formulario.Finalidade),
-        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())]);
+        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())])
+    {
+        ConsequenciaDaFaltaDeEnvio = formulario.ConsequenciaDaFaltaDeEnvio is { } consequencia ? CodigoComRotulo<ConsequenciaDoDescumprimento>.De(consequencia) : null,
+    };
 
     private static PaginaDoFormularioDto ProjetarPagina(PaginaDoFormulario pagina) => new(
         pagina.Codigo,

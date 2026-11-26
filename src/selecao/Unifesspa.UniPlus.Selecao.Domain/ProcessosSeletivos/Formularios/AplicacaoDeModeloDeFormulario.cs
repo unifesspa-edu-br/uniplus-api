@@ -30,6 +30,8 @@ internal static class AplicacaoDeModeloDeFormulario
             return Result<PlanoDaCopiaDoModelo>.ValidationFailure(formulario.Errors);
         }
 
+        // O modelo não traz a consequência da falta de envio: a declaração que o processo já tem se mantém.
+        formulario.Value!.DeclararConsequenciaDaFaltaDeEnvio(existente?.ConsequenciaDaFaltaDeEnvio);
         return ConferirCopia(configuracao, copia, formulario.Value!, existente);
     }
 

@@ -6034,7 +6034,7 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_desconhecida",
+      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_do_descumprimento_desconhecida",
       "requisitos": [],
       "oQueAconteceu": [
         "Consequência do indeferimento desconhecida. A resposta indica o campo e acumula as demais recusas da leitura. Nada é gravado."
@@ -6067,9 +6067,9 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `conteudo` enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`) tem uma parte que não pode ser lida. Dois casos têm este código.",
-        "No primeiro, um elemento de uma das listas do conteúdo é `null`: uma página em `paginas`, um item em `itens`, um campo em `subitens` de um grupo, um grupo em `grupos`, um termo em `termos`, um documento em `documentosExigidos` ou uma base legal em `basesLegais`. No segundo, o documento exigido chegou com `faseCodigo`, `tipoDocumentoCodigo` ou `consequenciaDoDescumprimento` vazio ou só com espaços, com `porOpcao` cujo `fatoCodigo` está vazio ou só com espaços, ou com uma opção em branco (ou nula) em `porOpcao.exceto`.",
+        "No primeiro, um elemento de uma das listas do conteúdo é `null`: uma página em `paginas`, um item em `itens`, um campo em `subitens` de um grupo, um grupo em `grupos`, um termo em `termos`, um documento em `documentosExigidos` ou uma base legal em `basesLegais`. No segundo, o documento exigido chegou com `faseCodigo` ou `tipoDocumentoCodigo` vazio ou só com espaços, com `porOpcao` cujo `fatoCodigo` está vazio ou só com espaços, ou com uma opção em branco (ou nula) em `porOpcao.exceto`.",
         "A recusa vem na lista `errors` da resposta, com `field` apontando a posição, por exemplo `conteudo.itens[2]` ou `conteudo.documentosExigidos[0].faseCodigo`. Cada elemento nulo e cada campo em branco gera a própria entrada, com duas exceções que não trazem índice individual: se há uma ou mais bases legais nulas em um documento, a resposta traz uma única entrada, com `field` igual a `conteudo.documentosExigidos[i].basesLegais`; e se há uma ou mais opções em branco em `exceto`, uma única entrada, com `field` igual a `conteudo.documentosExigidos[i].porOpcao.exceto`. Aqui o `i` é a posição original do documento em `documentosExigidos`. Enquanto o conteúdo tem recusa de leitura como esta, as regras que dependem do conteúdo inteiro, como os pressupostos e a estrutura do formulário, não são conferidas; as recusas do cadastro (código, nome, descrição, tipo de processo) saem junto. Nada é gravado.",
-        "Os campos de texto que não são anuláveis na declaração do corpo, como `faseCodigo`, `tipoDocumentoCodigo` e `consequenciaDoDescumprimento` do documento, e o `fatoCodigo` dentro de `porOpcao`, recusam a ausência, ou o valor `null`, com 400, antes das regras do Uni+, e essa recusa não tem código do catálogo. Só o campo presente e em branco chega aqui. O mesmo vale para o `nome` do modelo. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). A recusa de 400 por campo não anulável ausente ou nulo vem antes da busca, mesmo com `{id}` inexistente."
+        "Os campos de texto que não são anuláveis na declaração do corpo, como `faseCodigo` e `tipoDocumentoCodigo` do documento, e o `fatoCodigo` dentro de `porOpcao`, recusam a ausência, ou o valor `null`, com 400, antes das regras do Uni+, e essa recusa não tem código do catálogo. Só o campo presente e em branco chega aqui. O mesmo vale para o `nome` do modelo. A `consequenciaDoDescumprimento` fica dentro de `indeferimento`, do documento ou do grupo, e é anulável: ausente ou `null` é aceita, e a falta tem então consequência nenhuma. Um código que não é uma das consequências conhecidas, inclusive em branco, não é recusado aqui: a resposta é [consequência do descumprimento desconhecida](/erros/uniplus.configuracao.modelo_formulario.consequencia_do_descumprimento_desconhecida). Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). A recusa de 400 por campo não anulável ausente ou nulo vem antes da busca, mesmo com `{id}` inexistente."
       ],
       "comoResolver": [
         "Retire do conteúdo o elemento `null` ou preencha o campo indicado em `field` e repita o pedido."
@@ -17001,10 +17001,10 @@
         "UNI-REQ-0502"
       ],
       "oQueAconteceu": [
-        "Uma exigência ou grupo determina retirar o acréscimo do Fator de Atenuação das Desigualdades de Acesso, mas o processo não oferece esse acréscimo."
+        "Uma exigência, um grupo de comprovação, uma banca ou um formulário determina retirar o acréscimo do Fator de Atenuação das Desigualdades de Acesso, mas o processo não oferece esse acréscimo. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio. A mensagem e o campo da resposta indicam qual deles declarou a retirada."
       ],
       "comoResolver": [
-        "Configure o Fator no processo, se for oferecido, ou escolha outra consequência para a exigência ou o grupo."
+        "Configure o Fator no processo, se for oferecido, ou escolha outra consequência para a exigência, o grupo, a banca ou o formulário indicado."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -17017,10 +17017,10 @@
         "UNI-REQ-0501"
       ],
       "oQueAconteceu": [
-        "Uma exigência, grupo ou modalidade determina a retirada da modalidade, mas a oferta não inclui ampla concorrência."
+        "Uma exigência, um grupo de comprovação, uma banca, um formulário ou uma modalidade determina a retirada da modalidade, mas a oferta que ela alcança não inclui ampla concorrência. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio; a modalidade, a ação quando o indeferimento ocorre. A mensagem e o campo da resposta indicam qual deles declarou a retirada. Uma oferta sem ampla concorrência é apontada uma única vez, mesmo quando mais de uma modalidade dela declara a retirada."
       ],
       "comoResolver": [
-        "Inclua a ampla concorrência na oferta ou ajuste a consequência declarada."
+        "Inclua a ampla concorrência na oferta ou ajuste a consequência declarada na exigência, no grupo, na banca, no formulário ou na ação da modalidade."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -17033,10 +17033,10 @@
         "UNI-REQ-0501"
       ],
       "oQueAconteceu": [
-        "A exigência ou o grupo determina retirar a modalidade, mas sua condição não alcança nenhuma modalidade ofertada ou alcança todas elas."
+        "Uma exigência, um grupo de comprovação, uma banca ou um formulário determina retirar a modalidade, mas a condição dele não alcança nenhuma modalidade ofertada ou alcança todas elas. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio. A mensagem e o campo da resposta indicam qual deles declarou a retirada."
       ],
       "comoResolver": [
-        "Ajuste a condição para alcançar apenas as modalidades que a exigem ou escolha outra consequência."
+        "Ajuste a condição da exigência ou do grupo para alcançar apenas as modalidades que a exigem, ou escolha outra consequência para a exigência, o grupo, a banca ou o formulário indicado."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -18106,24 +18106,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Quando uma modalidade de vaga declara o que acontece com o candidato indeferido (a ação de\nindeferimento), a consequência de indeferimento do documento exigido tem de ser a mesma. O\ndocumento apontado declara uma consequência diferente da ação de uma modalidade que ele pode\nalcançar.",
-        "A comparação considera as modalidades ofertadas que a exigência pode alcançar pelas condições\ndela, e só as que declaram ação de indeferimento. A consequência da exigência e a ação da\nmodalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A mensagem de detalhe indica o documento e a modalidade em conflito.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga)).\nA primeira violação encontrada interrompe a conferência."
-      ],
-      "comoResolver": [
-        "Alinhe a consequência do documento à ação de indeferimento da modalidade apontada, ou revise\na ação dessa modalidade, se for ela que está errada. Depois, repita a operação."
-      ],
-      "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
       "requisitos": [
         "UNI-REQ-0070"
@@ -18136,6 +18118,24 @@
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "Quando uma modalidade de vaga declara o que acontece com o candidato indeferido (a ação de\nindeferimento), a consequência de indeferimento do documento exigido tem de ser a mesma. O\ndocumento apontado declara uma consequência diferente da ação de uma modalidade que ele pode\nalcançar.",
+        "A comparação considera as modalidades ofertadas que a exigência pode alcançar pelas condições\ndela, e só as que declaram ação de indeferimento. A consequência da exigência e a ação da\nmodalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A consequência `RETIRA_O_ACRESCIMO` não entra nesta comparação: ela retira só o acréscimo, não decide o destino da modalidade e pode ser declarada em qualquer exigência. A mensagem de detalhe indica o documento e a modalidade em conflito.",
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga)).\nA conferência reúne todas as violações encontradas, sem parar na primeira."
+      ],
+      "comoResolver": [
+        "Alinhe a consequência do documento à ação de indeferimento da modalidade apontada, ou revise\na ação dessa modalidade, se for ela que está errada. Depois, repita a operação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
       ]
     },
     {
@@ -19103,7 +19103,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A etapa pode requerer bancas (`bancas`), e cada banca é de um tipo do cadastro do\nmódulo Configuração. O pedido de definição de etapas\n(`PUT .../processos-seletivos/{id}/etapas`) citou, em `tipoBancaId`, um\nidentificador que não corresponde a nenhum tipo de banca ativo. A mensagem da resposta\ndiz: \"O tipo de banca indicado não existe ou está desativado no cadastro.\" Ela não repete\no identificador enviado.",
-        "O tipo de banca é copiado por valor para a etapa, e sem ele a banca não pode ser\nmontada. A conferência é feita etapa por etapa, na ordem do pedido, depois da\ndeclaração dos atos e do período de cada etapa; a primeira banca cujo tipo não\né encontrado interrompe a conferência, e a resposta traz só esta recusa, sem\nindicar qual é a etapa nem a banca. Nada é gravado."
+        "O tipo de banca é copiado por valor para a etapa, e sem ele a banca não pode ser\nmontada. A conferência é feita etapa por etapa, na ordem do pedido, depois da\ndeclaração dos atos e do período de cada etapa; o tipo não encontrado não\nesconde as demais recusas da mesma banca (regra de deliberação e consequência da\nausência) nem as das outras bancas, que se somam a esta no array `errors[]`; em `field`\nvem a posição da banca na lista. Só a verificação que depende do tipo, como a\nconsequência da ausência exigir banca que avalia o mérito, não é feita. Nada é gravado."
       ],
       "comoResolver": [
         "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi desativado no cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição das etapas."
@@ -19298,7 +19298,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A fase do cronograma declara as bancas que atuam nela (`bancasRequeridas`), e\ncada banca é de um tipo do cadastro do módulo Configuração. O pedido de definição\ndo cronograma (`PUT .../cronograma-fases`) citou, em\n`fases[n].bancasRequeridas[m].tipoBancaId`, um identificador que não corresponde a\nnenhum tipo de banca, ou que corresponde a um tipo desativado no cadastro. A mensagem da\nresposta diz: \"O tipo de banca indicado não existe ou está desativado no cadastro.\" Ela não\nrepete o identificador enviado.",
-        "O tipo de banca é copiado por valor para o cronograma, e sem ele a banca não pode\nser montada. A conferência segue pelas demais bancas da mesma fase, e as recusas\ndelas se somam a esta no array `errors[]`; em seguida a **montagem do cronograma\né interrompida** nessa fase: as fases anteriores da lista, com as violações que já\ntiveram, saem na mesma resposta, e as seguintes não chegam a ser conferidas. Nada\né gravado."
+        "O tipo de banca é copiado por valor para o cronograma, e sem ele a banca não pode\nser montada. A conferência segue pelas demais recusas da mesma banca (candidatos atendidos, regra de\ndeliberação e consequência da ausência) e pelas demais bancas da mesma fase, e as recusas\ndelas se somam a esta no array `errors[]`; só a verificação que depende do tipo, como a\nconsequência da ausência exigir banca que avalia o mérito, não é feita. Em seguida a **montagem do cronograma\né interrompida** nessa fase: as fases anteriores da lista, com as violações que já\ntiveram, saem na mesma resposta, e as seguintes não chegam a ser conferidas. Nada\né gravado."
       ],
       "comoResolver": [
         "Confira, no cadastro de tipos de banca do módulo Configuração, o identificador do\ntipo pretendido e use-o em `tipoBancaId`. Se o tipo foi desativado no cadastro e\nainda deve existir, peça a quem o gere que o restabeleça antes de repetir a\ndefinição do cronograma. Corrija também as demais violações que a resposta trouxer."
@@ -19555,6 +19555,53 @@
         "Consulta administrativa da inscrição e dos documentos dela",
         "Publicação de produto do edital e listagem de produtos previstos do processo",
         "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida",
+      "requisitos": [
+        "UNI-REQ-0501"
+      ],
+      "oQueAconteceu": [
+        "A consequência da falta de envio informada para o formulário não corresponde a uma das opções disponíveis: eliminar do processo, retirar a modalidade ou retirar o acréscimo do Fator de Atenuação das Desigualdades de Acesso."
+      ],
+      "comoResolver": [
+        "Informe um dos códigos do vocabulário de consequências do descumprimento (`ELIMINA_DO_PROCESSO`, `RETIRA_A_MODALIDADE` ou `RETIRA_O_ACRESCIMO`) ou deixe o campo `consequenciaDaFaltaDeEnvio` fora do corpo para que a falta de envio não tenha consequência própria."
+      ],
+      "ondeAparece": [
+        "Gravação do formulário do processo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_em_formulario_da_inscricao",
+      "requisitos": [
+        "UNI-REQ-0501"
+      ],
+      "oQueAconteceu": [
+        "O formulário que coleta a inscrição declarou consequência para a falta de envio. Quem não se inscreve não chega a ter o que perder, e por isso esse formulário não declara consequência."
+      ],
+      "comoResolver": [
+        "Retire a consequência da falta de envio do formulário que coleta a inscrição. Se a consequência vale para outro formulário do processo, declare-a nele."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_em_formulario_facultativo",
+      "requisitos": [
+        "UNI-REQ-0501"
+      ],
+      "oQueAconteceu": [
+        "O formulário facultativo, o pedido de isenção da taxa, declarou consequência para a falta de envio. Como o envio não é obrigatório, a falta dele não tem consequência."
+      ],
+      "comoResolver": [
+        "Retire a consequência da falta de envio do pedido de isenção da taxa."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
       ]
     },
     {
@@ -26089,8 +26136,8 @@
       ],
       "oQueAconteceu": [
         "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. Quando uma\nmodalidade de vaga declara o que acontece com o candidato indeferido (a ação de indeferimento),\na consequência do grupo tem de ser a mesma. O grupo apontado declara uma consequência\ndiferente da ação de uma modalidade que ele pode alcançar.",
-        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A consequência\ndo grupo e a ação da modalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga)),\ne a primeira violação encontrada interrompe a conferência."
+        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A consequência\ndo grupo e a ação da modalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A consequência `RETIRA_O_ACRESCIMO` não entra nesta comparação: ela retira só o acréscimo, não decide o destino da modalidade e pode ser declarada em qualquer grupo. A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
+        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga)),\ne a conferência reúne todas as violações encontradas, sem parar na primeira."
       ],
       "comoResolver": [
         "Alinhe a consequência do grupo à ação de indeferimento da modalidade apontada, ou revise a\nação dessa modalidade, se for ela que está errada. Depois, repita a operação."
@@ -26424,6 +26471,22 @@
       ],
       "comoResolver": [
         "Retire a quantidade mínima."
+      ],
+      "ondeAparece": [
+        "Definição dos documentos exigidos do processo seletivo."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.reenvio_proibido_em_regra_de_documento",
+      "requisitos": [
+        "UNI-REQ-0070"
+      ],
+      "oQueAconteceu": [
+        "Uma regra de documento declarou `indeferimento.abrePrazoParaReenvio` como verdadeiro. A regra de documento não tem indeferimento próprio: o reenvio pertence à exigência do documento, em `documento.indeferimento.abrePrazoParaReenvio`, e o grupo de comprovação declara o reenvio no `indeferimento` dele. Sem a recusa, a declaração seria descartada e a leitura seguinte não a traria de volta.",
+        "O campo da resposta é `regrasDeComprovacao[i].indeferimento.abrePrazoParaReenvio`, com a posição da regra, e as demais recusas do pedido vêm na mesma resposta. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Retire `abrePrazoParaReenvio` do `indeferimento` da regra de documento. Para abrir prazo de reenvio dessa exigência, declare `abrePrazoParaReenvio` em `documento.indeferimento`."
       ],
       "ondeAparece": [
         "Definição dos documentos exigidos do processo seletivo."

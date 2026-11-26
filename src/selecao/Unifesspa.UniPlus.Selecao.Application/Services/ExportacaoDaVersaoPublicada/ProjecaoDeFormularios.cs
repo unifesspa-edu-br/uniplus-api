@@ -25,7 +25,7 @@ internal static class ProjecaoDeFormularios
         {
             origem["faseChave"] = chaves.Fase(fase.ToString());
         }
-        TransferirModeloDeOrigem(origem, formulario);
+        TransferirParaOsNomesDoEsquema(origem, formulario);
         origem["itens"] = DaFinalidade(congelado["dadosDosFormularios"] as JsonArray, formulario);
         origem["grupos"] = DaFinalidade(congelado["gruposDosFormularios"] as JsonArray, formulario);
         PrepararItens(origem["itens"] as JsonArray);
@@ -35,10 +35,11 @@ internal static class ProjecaoDeFormularios
         }
         return origem;
     }
-    private static void TransferirModeloDeOrigem(JsonObject origem, JsonObject formulario)
+    private static void TransferirParaOsNomesDoEsquema(JsonObject origem, JsonObject formulario)
     {
         ProjecaoDeParte.Transferir(origem, "modeloOrigemCodigo", formulario["modeloOrigem"]?["codigo"]);
         ProjecaoDeParte.Transferir(origem, "modeloOrigemNome", formulario["modeloOrigem"]?["nome"]);
+        ProjecaoDeParte.Transferir(origem, "consequenciaDaFaltaDeEnvioRotulo", formulario["contexto"]?["consequenciaDaFaltaDeEnvioRotulo"]);
     }
     private static JsonArray DaFinalidade(JsonArray? itens, JsonObject formulario) => new([.. (itens ?? []).OfType<JsonObject>()
         .Where(item => item["finalidade"]?.ToString() == formulario["finalidade"]?.ToString())

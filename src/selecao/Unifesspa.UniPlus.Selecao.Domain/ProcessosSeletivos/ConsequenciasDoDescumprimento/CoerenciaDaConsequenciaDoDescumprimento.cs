@@ -17,18 +17,38 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 {
     internal static IEnumerable<FieldError> Causas(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
+        .. ConsequenciasDosFormularios.Facultativos(configuracao),
+        .. ConsequenciasDosFormularios.DaInscricao(configuracao, cronograma),
+        .. AcrescimosNaoOferecidos(configuracao, cronograma, etapas),
+        .. RetiradasSemModalidadeEmQuestao(configuracao, fatos, cronograma, etapas),
+        .. CoerenciaDasExigencias(configuracao, fatos),
+        .. CoerenciaDosGrupos(configuracao, fatos),
+        .. RetiradasSemAmpla(configuracao, fatos, cronograma, etapas),
+        .. SemAmplaDasModalidades(configuracao),
+    ];
+
+    private static IEnumerable<FieldError> AcrescimosNaoOferecidos(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    [
+        .. ConsequenciasDosFormularios.Acrescimo(configuracao, cronograma),
         .. ConsequenciasDasBancas.Acrescimo(configuracao, cronograma, etapas),
         .. AcrescimoDasExigencias(configuracao),
         .. AcrescimoDosGrupos(configuracao),
+    ];
+
+    private static IEnumerable<FieldError> RetiradasSemModalidadeEmQuestao(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    [
+        .. ConsequenciasDosFormularios.SemModalidade(configuracao, fatos, cronograma),
         .. ConsequenciasDasBancas.SemModalidade(configuracao, fatos, cronograma, etapas),
         .. SemModalidadeDasExigencias(configuracao, fatos),
         .. SemModalidadeDosGrupos(configuracao, fatos),
-        .. CoerenciaDasExigencias(configuracao, fatos),
-        .. CoerenciaDosGrupos(configuracao, fatos),
+    ];
+
+    private static IEnumerable<FieldError> RetiradasSemAmpla(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    [
+        .. ConsequenciasDosFormularios.SemAmpla(configuracao, fatos, cronograma),
         .. ConsequenciasDasBancas.SemAmpla(configuracao, fatos, cronograma, etapas),
         .. SemAmplaDasExigencias(configuracao, fatos),
         .. SemAmplaDosGrupos(configuracao, fatos),
-        .. SemAmplaDasModalidades(configuracao),
     ];
 
     internal static IEnumerable<FieldError> AcrescimoDasExigencias(ConfiguracaoDeclarada configuracao) =>
@@ -86,9 +106,10 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     internal static IEnumerable<FieldError> SemAmplaDasModalidades(ConfiguracaoDeclarada configuracao) =>
         Recusada(configuracao, "distribuicaoVagas") ? [] : configuracao.Vagas.DistribuicaoVagas
-            .SelectMany((oferta, indice) => oferta.Modalidades.Any(static modalidade => modalidade.Codigo == "AC") ? []
-                : oferta.Modalidades.Where(static modalidade => modalidade.AcaoQuandoIndeferido == "RETIRA_A_MODALIDADE")
-                    .Select(_ => SemAmpla($"distribuicaoVagas[{indice}].modalidades")));
+            .Select(static (oferta, indice) => (Oferta: oferta, Indice: indice))
+            .Where(static par => !par.Oferta.Modalidades.Any(static modalidade => modalidade.Codigo == "AC")
+                && par.Oferta.Modalidades.Any(static modalidade => modalidade.AcaoQuandoIndeferido == "RETIRA_A_MODALIDADE"))
+            .Select(static par => SemAmpla($"distribuicaoVagas[{par.Indice}].modalidades"));
 
     internal static FieldError SemModalidade(string campo) => new(campo, new DomainError(
         "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao", "A retirada da modalidade exige uma condição que alcance algumas, mas não todas, as modalidades ofertadas."));
@@ -152,8 +173,10 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     private static IEnumerable<ModalidadeSelecionada> Modalidades(ConfiguracaoDeclarada configuracao) =>
         configuracao.Vagas.DistribuicaoVagas.SelectMany(static distribuicao => distribuicao.Modalidades);
 
+    // Retirar só o acréscimo não disputa o destino da modalidade: pode ser declarada em qualquer exigência.
     private static bool Incoerente(ConsequenciaDoDescumprimento consequencia, ModalidadeSelecionada modalidade) =>
-        modalidade.AcaoQuandoIndeferido is { } acao && !string.Equals(acao, consequencia.Codigo(), StringComparison.Ordinal);
+        consequencia != ConsequenciaDoDescumprimento.RetiraOAcrescimo
+        && modalidade.AcaoQuandoIndeferido is { } acao && !string.Equals(acao, consequencia.Codigo(), StringComparison.Ordinal);
 
     internal static FieldError Acrescimo(string campo, string sujeito) => new(campo, new DomainError(
         "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", $"{sujeito} determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido."));

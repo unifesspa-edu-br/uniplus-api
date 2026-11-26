@@ -64,7 +64,7 @@ internal static class LeituraDosFormularios
     private static FormularioComTermosExigidos? LerFormulario(
         LeitorEnvelope leitor, JsonObject bloco, string path, FinalidadeFormulario? finalidadeAnterior)
     {
-        leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "modeloOrigem", "paginas", "termos");
+        leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "consequenciaDaFaltaDeEnvio", "modeloOrigem", "paginas", "termos");
         DeclaracaoFormulario declaracao = LerDeclaracaoDoFormulario(leitor, bloco, path);
         if (leitor.Falhou)
         {
@@ -82,12 +82,13 @@ internal static class LeituraDosFormularios
         (Guid? modeloId, string? modeloCodigo, string? modeloNome) = LerModeloDeOrigem(leitor, bloco, path);
         List<PaginaDoFormulario> paginas = LerPaginasDoFormulario(leitor, bloco, path);
         JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
-        return new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, paginas, itensDeTermo);
+        ConsequenciaDoDescumprimento? consequencia = leitor.CodigoDeContratoOpcional<ConsequenciaDoDescumprimento>(bloco, "consequenciaDaFaltaDeEnvio", path);
+        return new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, paginas, itensDeTermo, consequencia);
     }
 
     private sealed record DeclaracaoFormulario(
         FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
-        IReadOnlyList<PaginaDoFormulario> Paginas, JsonArray Termos);
+        IReadOnlyList<PaginaDoFormulario> Paginas, JsonArray Termos, ConsequenciaDoDescumprimento? Consequencia);
 
     private static FormularioComTermosExigidos? CriarFormulario(
         LeitorEnvelope leitor, string path, FinalidadeFormulario? finalidadeAnterior, DeclaracaoFormulario declaracao)
@@ -102,6 +103,7 @@ internal static class LeituraDosFormularios
         {
             return leitor.Propagar<FormularioComTermosExigidos?>(formulario.Errors, path);
         }
+        formulario.Value!.DeclararConsequenciaDaFaltaDeEnvio(declaracao.Consequencia);
         List<TermoExigidoFormulario> termos = LerTermos(leitor, declaracao.Termos, path, finalidade);
         return leitor.Falhou ? null : new FormularioComTermosExigidos(formulario.Value!, termos);
     }
