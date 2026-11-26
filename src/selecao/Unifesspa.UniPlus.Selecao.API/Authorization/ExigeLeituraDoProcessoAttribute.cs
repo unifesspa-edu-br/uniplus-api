@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.API.Authorization;
 
+using System.Security.Claims;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,13 +39,16 @@ public sealed class ExigeLeituraDoProcessoAttribute : Attribute, IAsyncAuthoriza
                 processoId,
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
-
-        // O anônimo nunca é desafiado: a recusa dele é o 404 do processo inexistente.
-        if (resultado == ResultadoDoAcesso.IdentidadeIncompleta && context.HttpContext.User.Identity?.IsAuthenticated != true)
-        {
-            resultado = ResultadoDoAcesso.Negado;
-        }
-
+        resultado = AnonimoComoInexistente(resultado, context.HttpContext.User);
         context.Result = RespostaDoAcesso.Para(resultado, () => RotaDoProcesso.NaoEncontrado(servicos));
     }
+
+    /// <summary>
+    /// O anônimo nunca é desafiado: a identidade incompleta de quem não se autenticou vira <see cref="ResultadoDoAcesso.Negado"/>,
+    /// o <c>404</c> do processo inexistente. Quem se autenticou com identidade incompleta continua recebendo o <c>401</c>.
+    /// </summary>
+    private static ResultadoDoAcesso AnonimoComoInexistente(ResultadoDoAcesso resultado, ClaimsPrincipal usuario) =>
+        resultado == ResultadoDoAcesso.IdentidadeIncompleta && usuario.Identity?.IsAuthenticated != true
+            ? ResultadoDoAcesso.Negado
+            : resultado;
 }

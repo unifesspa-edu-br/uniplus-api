@@ -98,6 +98,17 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         depois.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact(DisplayName = "O rascunho lido com token autenticado de identidade incompleta responde 401, e não o 404 do anônimo")]
+    public async Task Rascunho_IdentidadeIncompleta_Responde401()
+    {
+        Guid processoId = await SemearRascunhoAsync(nameof(Rascunho_IdentidadeIncompleta_Responde401));
+        await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(processoId));
+
+        using HttpResponseMessage resposta = await EnviarSemIdentificadorDeSessaoAsync(Betina, $"{Rota}/{processoId}");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     [Fact(DisplayName = "A listagem traz os rascunhos só das unidades em que a pessoa configura; o anônimo vê só os publicados")]
     public async Task Listagem_RascunhoSoNaUnidadeQueConfigura()
     {
@@ -353,6 +364,16 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
 
         AdicionarChaveDeIdempotencia(request, metodo);
 
+        return await client.SendAsync(request);
+    }
+
+    /// <summary>O token é aceito pela validação, mas dele não se monta o sujeito da decisão de acesso.</summary>
+    private async Task<HttpResponseMessage> EnviarSemIdentificadorDeSessaoAsync(string contaId, string rota)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
+        AdicionarAutenticacao(request, contaId, papel: null);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.SemJtiHeader, "1");
         return await client.SendAsync(request);
     }
 
