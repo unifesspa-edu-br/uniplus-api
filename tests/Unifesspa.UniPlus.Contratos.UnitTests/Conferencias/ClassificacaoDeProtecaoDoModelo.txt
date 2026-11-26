@@ -1165,6 +1165,7 @@ publicacoes.vinculos_do_ato_com_entidade.ato_id: Interno
 publicacoes.vinculos_do_ato_com_entidade.entidade_id: Interno
 publicacoes.vinculos_do_ato_com_entidade.entidade_tipo: Interno
 publicacoes.vinculos_do_ato_com_entidade.id: Interno
+selecao.aceites_da_inscricao.formulario_codigo: Interno
 selecao.aceites_da_inscricao.hash_versao: Interno
 selecao.aceites_da_inscricao.id: Interno
 selecao.aceites_da_inscricao.inscricao_id: Interno
@@ -1483,9 +1484,9 @@ selecao.dados_dos_formularios.codigo_do_dado: Interno
 selecao.dados_dos_formularios.componente_exibicao: Interno
 selecao.dados_dos_formularios.created_at: Interno
 selecao.dados_dos_formularios.descricao: Interno
-selecao.dados_dos_formularios.finalidade: Interno
 selecao.dados_dos_formularios.finalidade_tratamento: Interno
 selecao.dados_dos_formularios.formato: Interno
+selecao.dados_dos_formularios.formulario_id: Interno
 selecao.dados_dos_formularios.grupo_coletado_id: Interno
 selecao.dados_dos_formularios.hipotese_legal: Interno
 selecao.dados_dos_formularios.id: Interno
@@ -1537,10 +1538,10 @@ selecao.documentos_exigidos.created_at: Interno
 selecao.documentos_exigidos.dados_comprovados: Interno
 selecao.documentos_exigidos.exigido_na_etapa_id: Interno
 selecao.documentos_exigidos.exigido_na_fase_id: Interno
-selecao.documentos_exigidos.finalidade: Interno
 selecao.documentos_exigidos.finalidade_tratamento: Interno
 selecao.documentos_exigidos.formatos_permitidos_lista: Interno
 selecao.documentos_exigidos.formatos_permitidos_qualquer: Interno
+selecao.documentos_exigidos.formulario_codigo: Interno
 selecao.documentos_exigidos.hipotese_legal: Interno
 selecao.documentos_exigidos.id: Interno
 selecao.documentos_exigidos.modelo_formato: Interno
@@ -1646,14 +1647,15 @@ selecao.fases_cronograma.unidade_responsavel_nome: Interno
 selecao.fases_cronograma.unidade_responsavel_origem_id: Interno
 selecao.fases_cronograma.unidade_responsavel_sigla: Interno
 selecao.fases_cronograma.updated_at: Interno
+selecao.formularios_processo.codigo: Interno
 selecao.formularios_processo.consequencia_da_falta_de_envio: Publico
 selecao.formularios_processo.created_at: Interno
 selecao.formularios_processo.fase_id: Interno
-selecao.formularios_processo.finalidade: Interno
 selecao.formularios_processo.id: Interno
 selecao.formularios_processo.modelo_origem_codigo: Interno
 selecao.formularios_processo.modelo_origem_id: Interno
 selecao.formularios_processo.modelo_origem_nome: Interno
+selecao.formularios_processo.obrigatorio: Interno
 selecao.formularios_processo.processo_seletivo_id: Interno
 selecao.formularios_processo.titulo: Interno
 selecao.formularios_processo.updated_at: Interno
@@ -1683,7 +1685,7 @@ selecao.grupos_do_quadro_de_pesos.updated_at: Interno
 selecao.grupos_dos_formularios.codigo: Interno
 selecao.grupos_dos_formularios.created_at: Interno
 selecao.grupos_dos_formularios.exibicao: Interno
-selecao.grupos_dos_formularios.finalidade: Interno
+selecao.grupos_dos_formularios.formulario_id: Interno
 selecao.grupos_dos_formularios.id: Interno
 selecao.grupos_dos_formularios.inclui_candidato: Interno
 selecao.grupos_dos_formularios.maximo: Interno
@@ -2032,8 +2034,8 @@ selecao.termos_exigidos_formulario.base_legal: Interno
 selecao.termos_exigidos_formulario.codigo: Interno
 selecao.termos_exigidos_formulario.created_at: Interno
 selecao.termos_exigidos_formulario.exibicao: Interno
-selecao.termos_exigidos_formulario.finalidade: Interno
 selecao.termos_exigidos_formulario.forma_aceite: Interno
+selecao.termos_exigidos_formulario.formulario_id: Interno
 selecao.termos_exigidos_formulario.hash_versao: Interno
 selecao.termos_exigidos_formulario.id: Interno
 selecao.termos_exigidos_formulario.nome: Interno
