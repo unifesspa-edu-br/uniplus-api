@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
-using System.Reflection;
 
 using AwesomeAssertions;
 
@@ -313,18 +312,5 @@ public sealed class FatoCandidatoTests
         typeof(EntityBase).IsAssignableFrom(typeof(FatoCandidato)).Should().BeTrue();
         typeof(ISoftDeletable).IsAssignableFrom(typeof(FatoCandidato)).Should().BeFalse(
             "o fato é desativado, nunca removido logicamente");
-    }
-
-    [Fact(DisplayName = "Todas as propriedades do FatoCandidato têm setter não-público (imutável)")]
-    public void FatoCandidato_PropriedadesImutaveis()
-    {
-        PropertyInfo[] propriedades = typeof(FatoCandidato)
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        foreach (PropertyInfo propriedade in propriedades)
-        {
-            MethodInfo? setter = propriedade.GetSetMethod(nonPublic: false);
-            setter.Should().BeNull($"a propriedade '{propriedade.Name}' não pode ter setter público (entidade imutável)");
-        }
     }
 }

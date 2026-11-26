@@ -41,6 +41,7 @@ public sealed class PedidoDeDecisaoTests
     [InlineData("DEVOLUCAO", null, "   ", "justificativa", "JustificativaObrigatoria")]
     [InlineData("AJUSTE_RECOMENDADO", null, null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
     [InlineData("AJUSTE_RECOMENDADO", "SECRETISSIMO", null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
+    [InlineData("APROVACAO", " SENSIVEL ", null, "classificacaoRecomendada", "RecomendacaoObrigatoria")]
     public void Ler_DadoDaDecisaoInvalido_RecusaNoCampo(string decisao, string? recomendada, string? justificativa, string campo, string codigo) =>
         PedidoDeDecisao.Ler(Comando(decisao, recomendada: recomendada, justificativa: justificativa)).Errors
             .Should().ContainSingle(e => e.Field == campo).Which.Error.Code.Should().Be($"ProtecaoDoCatalogo.{codigo}");

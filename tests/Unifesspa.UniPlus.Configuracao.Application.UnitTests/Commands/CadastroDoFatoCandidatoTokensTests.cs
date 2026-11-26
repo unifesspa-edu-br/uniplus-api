@@ -117,13 +117,17 @@ public sealed class CadastroDoFatoCandidatoTokensTests
         desconhecida.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeInvalida);
     }
 
-    [Fact(DisplayName = "Token com espaços nas pontas é o token aparado")]
-    public async Task Declarado_TokenComEspacos_Aceito()
+    [Fact(DisplayName = "Códigos com espaços nas pontas são recusados em cada campo")]
+    public async Task Declarado_CodigosComEspacos_Recusa()
     {
         Result<Guid> resultado = await CriarDeclaradoAsync(
             Declarado() with { Dominio = " SIM_OU_NAO ", Cardinalidade = " VALOR_UNICO ", Escopo = " CANDIDATO ", ClassificacaoProtecao = " PESSOAL " });
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("dominio", FatoCandidatoErrorCodes.DominioInvalido),
+            ("cardinalidade", FatoCandidatoErrorCodes.CardinalidadeInvalida),
+            ("escopo", FatoCandidatoErrorCodes.EscopoInvalido),
+            ("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida));
     }
 
     [Fact(DisplayName = "Declarado: fonte e formato vazios são não informados, e escopo vazio ou desconhecido é recusado")]

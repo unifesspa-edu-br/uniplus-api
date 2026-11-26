@@ -1,13 +1,11 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
-using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// A decisão pedida, conferida na forma antes de qualquer leitura do item (ADR-0125): o item, a decisão com os seus
@@ -73,8 +71,8 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
     // (a mesma que a transição aplica); nas demais decisões, ela não cabe.
     private static ClassificacaoDeProtecao? LerRecomendacao(AtoDaProtecao? ato, string? token, List<FieldError> erros)
     {
-        CodigoInformado<ClassificacaoDeProtecao> lida = TokensDoFato.Classificacao(token);
-        if (ato == AtoDaProtecao.AjusteRecomendado)
+        CodigoInformado<ClassificacaoDeProtecao> lida = CodigoInformado<ClassificacaoDeProtecao>.Ler(token);
+        if (lida.Desconhecido || ato == AtoDaProtecao.AjusteRecomendado)
         {
             Result conferida = AprovacaoDaProtecao.ConferirClassificacaoRecomendada(lida);
             erros.AddRange(conferida.Errors);
@@ -91,8 +89,8 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
 
     private static ProtecaoDeDados? LerProtecaoConferida(ProtecaoInformada informada, List<FieldError> erros)
     {
-        CodigoInformado<ClassificacaoDeProtecao> classificacao = TokensDoFato.Classificacao(informada.ClassificacaoProtecao);
-        CodigoInformado<HipoteseLegalTratamento> hipotese = TokensDoFato.HipoteseLegal(informada.HipoteseLegal);
+        CodigoInformado<ClassificacaoDeProtecao> classificacao = CodigoInformado<ClassificacaoDeProtecao>.Ler(informada.ClassificacaoProtecao);
+        CodigoInformado<HipoteseLegalTratamento> hipotese = CodigoInformado<HipoteseLegalTratamento>.Ler(informada.HipoteseLegal);
         string? finalidade = string.IsNullOrWhiteSpace(informada.FinalidadeTratamento) ? null : informada.FinalidadeTratamento.Trim();
         int antes = erros.Count;
         ExigirConferida("classificacaoProtecao", classificacao.Valor is not null, erros);

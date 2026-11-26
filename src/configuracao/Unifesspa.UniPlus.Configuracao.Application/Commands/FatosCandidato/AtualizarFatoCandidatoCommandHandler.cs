@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class AtualizarFatoCandidatoCommandHandler
 {
@@ -17,6 +19,6 @@ public static class AtualizarFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         return MutacaoDoFato.AplicarAsync(
-            command.Id, fato => fato.AlterarDescritivo(command.Nome, command.Descricao, TokensDoFato.Componente(command.ComponenteExibicao)), repository, unitOfWork, cancellationToken);
+            command.Id, fato => fato.AlterarDescritivo(command.Nome, command.Descricao, CodigoInformado<ComponenteDeExibicao>.Ler(command.ComponenteExibicao)), repository, unitOfWork, cancellationToken);
     }
 }

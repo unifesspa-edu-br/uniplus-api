@@ -5,7 +5,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class CriarFatoAgregadoCommandHandler
 {
@@ -35,7 +37,7 @@ public static class CriarFatoAgregadoCommandHandler
     // O agregado infere o domínio, a cardinalidade, a fonte e o escopo do fato de membro: a definição traz só o resto.
     private static Result<FatoCandidato> Montar(CriarFatoAgregadoCommand command, CatalogoDeFatos catalogo) =>
         CriacaoDoFato.CriarAgregadoDoAdministrador(
-            new DescritivoDoFato(command.Codigo, command.Nome, command.Descricao, TokensDoFato.Componente(command.ComponenteExibicao)),
+            new DescritivoDoFato(command.Codigo, command.Nome, command.Descricao, CodigoInformado<ComponenteDeExibicao>.Ler(command.ComponenteExibicao)),
             command.FatoDeMembro,
             catalogo,
             new DefinicaoDoFato(
@@ -45,7 +47,7 @@ public static class CriarFatoAgregadoCommandHandler
                 Formato: null,
                 command.PontoResolucao,
                 Escopo: null,
-                TokensDoFato.Classificacao(command.ClassificacaoProtecao),
+                CodigoInformado<ClassificacaoDeProtecao>.Ler(command.ClassificacaoProtecao),
                 command.FinalidadeTratamento,
-                TokensDoFato.HipoteseLegal(command.HipoteseLegal)));
+                CodigoInformado<HipoteseLegalTratamento>.Ler(command.HipoteseLegal)));
 }

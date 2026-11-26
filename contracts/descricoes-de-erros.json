@@ -4227,7 +4227,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O administrador cadastrou um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) com uma `cardinalidade` que não pertence ao vocabulário fechado. A cardinalidade diz se o fato aceita uma resposta ou várias (UNI-REQ-0143 e UNI-REQ-0159). A comparação diferencia maiúsculas de minúsculas, e os espaços nas pontas são desconsiderados.",
+        "O administrador cadastrou um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) com uma `cardinalidade` que não pertence ao vocabulário fechado. A cardinalidade diz se o fato aceita uma resposta ou várias (UNI-REQ-0143 e UNI-REQ-0159). A comparação é exata, diferencia maiúsculas de minúsculas e recusa códigos com espaços nas pontas.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `cardinalidade`. Nada é gravado. Um campo vazio ou só com espaços não cai aqui: no cadastro e na alteração de um fato declarado, ele recebe [a recusa de cardinalidade obrigatória](/erros/uniplus.configuracao.fato_candidato.cardinalidade_obrigatoria); na alteração de um fato derivado ou resumo de grupo, o vazio é tratado como não informado e não é recusado.",
         "No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, a cardinalidade fora do vocabulário também recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
       ],
@@ -4328,7 +4328,7 @@
       "oQueAconteceu": [
         "O administrador cadastrou um fato do catálogo (declarado, derivado ou resumo de grupo) ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) com uma classificação de proteção de dados (`classificacaoProtecao`) que não pertence ao vocabulário fechado. A classificação define como o dado é tratado e protegido, e só as cinco abaixo existem (a escala está na ADR-0136 da uniplus-api).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `classificacaoProtecao`. Nada é gravado.",
-        "Um campo vazio ou só com espaços não cai aqui: ele recebe [a recusa de classificação obrigatória](/erros/uniplus.configuracao.fato_candidato.classificacao_protecao_obrigatoria). O campo ausente do corpo é recusado antes, como erro de requisição (400). Espaços nas pontas são desconsiderados."
+        "Um campo vazio ou só com espaços não cai aqui: ele recebe [a recusa de classificação obrigatória](/erros/uniplus.configuracao.fato_candidato.classificacao_protecao_obrigatoria). O campo ausente do corpo é recusado antes, como erro de requisição (400). A comparação é exata: códigos com espaços nas pontas são recusados."
       ],
       "comoResolver": [
         "Envie de novo o cadastro ou a definição com uma destas classificações, escrita exatamente assim, em maiúsculas:",
@@ -4531,7 +4531,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O administrador cadastrou um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`), ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), com um `dominio` que não pertence ao vocabulário fechado. O domínio é o tipo de dado do fato (UNI-REQ-0143). A comparação diferencia maiúsculas de minúsculas, e os espaços nas pontas são desconsiderados.",
+        "O administrador cadastrou um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`), ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), com um `dominio` que não pertence ao vocabulário fechado. O domínio é o tipo de dado do fato (UNI-REQ-0143). A comparação é exata, diferencia maiúsculas de minúsculas e recusa códigos com espaços nas pontas.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o domínio recusado, a coerência da fonte e do formato com ele não é conferida; códigos desconhecidos desses campos continuam sendo recusados. Nada é gravado. Um `dominio` vazio recebe [a recusa de domínio obrigatório](/erros/uniplus.configuracao.fato_candidato.dominio_obrigatorio). No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, o domínio fora do vocabulário recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
       ],
       "comoResolver": [
@@ -4603,7 +4603,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O campo `escopo` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "O campo `escopo` foi preenchido com um código que não pertence ao vocabulário aceito. A comparação é exata: códigos com espaços nas pontas são recusados.",
         "A recusa aparece em `errors`, no campo `escopo`. Nada é gravado."
       ],
       "comoResolver": [
@@ -4641,7 +4641,7 @@
       "codigo": "uniplus.configuracao.fato_candidato.filtro_de_origem_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para origem do dado do candidato. A consulta não foi realizada."
+        "O filtro da consulta recebeu um valor que não é um dos códigos publicados para origem do dado do candidato. A comparação é exata: códigos com espaços nas pontas são recusados. A consulta não foi realizada."
       ],
       "comoResolver": [
         "Informe um dos códigos publicados para origem do dado do candidato ou retire o filtro para consultar sem esse recorte."
@@ -4728,11 +4728,11 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O campo `fonteValores` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "O campo `fonteValores` foi preenchido com um código que não pertence ao vocabulário aceito. A comparação é exata: códigos com espaços nas pontas são recusados.",
         "A recusa aparece em `errors`, no campo `fonteValores`. Nada é gravado."
       ],
       "comoResolver": [
-        "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS` ou `TIPOS_DE_DEFICIENCIA`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
+        "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS`, `TIPOS_DE_DEFICIENCIA` ou `MUNICIPIOS_PROVA_PRESENCIAL`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
       ],
       "ondeAparece": [
         "Cadastro de um fato declarado do catálogo",
@@ -4751,7 +4751,7 @@
         "Um código desconhecido recebe [a recusa própria](/erros/uniplus.configuracao.fato_candidato.fonte_valores_invalida)."
       ],
       "comoResolver": [
-        "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS` ou `TIPOS_DE_DEFICIENCIA`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
+        "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS`, `TIPOS_DE_DEFICIENCIA` ou `MUNICIPIOS_PROVA_PRESENCIAL`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
       ],
       "ondeAparece": [
         "Cadastro de um fato declarado do catálogo",
@@ -4783,7 +4783,7 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O campo `formato` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "O campo `formato` foi preenchido com um código que não pertence ao vocabulário aceito. A comparação é exata: códigos com espaços nas pontas são recusados.",
         "A recusa aparece em `errors`, no campo `formato`. Nada é gravado."
       ],
       "comoResolver": [
@@ -4841,7 +4841,7 @@
       "oQueAconteceu": [
         "O administrador cadastrou um fato do catálogo (declarado, derivado ou resumo de grupo) ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) com uma hipótese legal de tratamento (`hipoteseLegal`) que não pertence ao vocabulário fechado. A hipótese legal é a base da LGPD que autoriza o tratamento do dado (UNI-REQ-0143 e UNI-REQ-0159).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `hipoteseLegal`. Nada é gravado.",
-        "Um campo vazio ou só com espaços não cai aqui: ele recebe [a recusa de hipótese legal obrigatória](/erros/uniplus.configuracao.fato_candidato.hipotese_legal_obrigatoria). O campo ausente do corpo é recusado antes, como erro de requisição (400). Espaços nas pontas são desconsiderados."
+        "Um campo vazio ou só com espaços não cai aqui: ele recebe [a recusa de hipótese legal obrigatória](/erros/uniplus.configuracao.fato_candidato.hipotese_legal_obrigatoria). O campo ausente do corpo é recusado antes, como erro de requisição (400). A comparação é exata: códigos com espaços nas pontas são recusados."
       ],
       "comoResolver": [
         "Envie de novo o cadastro ou a definição com uma destas hipóteses, escrita exatamente assim, em maiúsculas e com sublinhado (a comparação diferencia maiúsculas de minúsculas):",

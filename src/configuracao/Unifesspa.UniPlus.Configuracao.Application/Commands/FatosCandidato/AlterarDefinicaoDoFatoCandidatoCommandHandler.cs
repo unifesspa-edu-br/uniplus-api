@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Valida a definição nova no agregado e a confere contra o que cita o fato (ADR-0136); só então
@@ -24,13 +26,13 @@ public static class AlterarDefinicaoDoFatoCandidatoCommandHandler
 
     private static DefinicaoDoFato Ler(DefinicaoDoFatoInput entrada) =>
         new(
-            TokensDoFato.Dominio(entrada.Dominio),
-            TokensDoFato.Cardinalidade(entrada.Cardinalidade),
-            TokensDoFato.Fonte(entrada.FonteValores),
-            TokensDoFato.Formato(entrada.Formato),
+            CodigoInformado<TipoDoDado>.Ler(entrada.Dominio),
+            CodigoInformado<QuantidadeDeValores>.Ler(entrada.Cardinalidade),
+            CodigoInformado<FonteValoresFato>.Ler(entrada.FonteValores),
+            CodigoInformado<FormatoTexto>.Ler(entrada.Formato),
             entrada.PontoResolucao,
-            TokensDoFato.Escopo(entrada.Escopo),
-            TokensDoFato.Classificacao(entrada.ClassificacaoProtecao),
+            CodigoInformado<EscopoFato>.Ler(entrada.Escopo),
+            CodigoInformado<ClassificacaoDeProtecao>.Ler(entrada.ClassificacaoProtecao),
             entrada.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(entrada.HipoteseLegal));
+            CodigoInformado<HipoteseLegalTratamento>.Ler(entrada.HipoteseLegal));
 }
