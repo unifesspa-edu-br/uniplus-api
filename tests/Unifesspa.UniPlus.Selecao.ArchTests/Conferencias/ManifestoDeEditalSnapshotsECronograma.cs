@@ -128,7 +128,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["Chave", "Tipo", "PosicaoNoTipo", "CandidatosAtendidos", "RegraDeDeliberacao"],
+            ["Chave", "Tipo", "PosicaoNoTipo", "CandidatosAtendidos", "ConsequenciaDaAusencia", "RegraDeDeliberacao"],
             [("FaseCronogramaId", "FK interna.")]),
 
         // A cópia do tipo de banca que a banca da fase e a da etapa guardam, congelada na publicação. Sem Id no

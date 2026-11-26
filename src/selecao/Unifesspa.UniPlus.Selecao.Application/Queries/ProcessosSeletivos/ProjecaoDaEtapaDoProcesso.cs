@@ -71,7 +71,8 @@ internal static class ProjecaoDaEtapaDoProcesso
         banca.Tipo.ExigeDuasOuMaisBancas,
         banca.Tipo.EncerraRecursoNaPrimeiraInstancia,
         [.. banca.Tipo.TiposDeDecisaoJulgados.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
-        ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao));
+        ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
+        banca.ConsequenciaDaAusencia is { } consequencia ? CodigoComRotulo<ConsequenciaDoDescumprimento>.De(consequencia) : null);
 
     private static NivelDeAtendimentoDto[]? ProjetarEscala(EtapaProcesso etapa) =>
         etapa.EscalaDeAtendimento is { } escala

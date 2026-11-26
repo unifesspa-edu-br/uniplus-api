@@ -39,7 +39,7 @@ public sealed record BancaRequeridaDto(
     bool EncerraRecursoNaPrimeiraInstancia,
     IReadOnlyList<CodigoComRotulo<TipoMotivoDeDecisao>> TiposDeDecisaoJulgados,
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
-    IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos);
+    IReadOnlyList<CategoriaJulgadaDto> CandidatosAtendidos, CodigoComRotulo<ConsequenciaDoDescumprimento>? ConsequenciaDaAusencia = null);
 
 /// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c>.</summary>
 /// <param name="PrazoValor">Valor do prazo de interposição do recurso na 1ª instância.</param>

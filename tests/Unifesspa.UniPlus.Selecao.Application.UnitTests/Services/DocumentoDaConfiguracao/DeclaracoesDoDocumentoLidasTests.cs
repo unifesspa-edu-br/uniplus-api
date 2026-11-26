@@ -81,6 +81,13 @@ public sealed class DeclaracoesDoDocumentoLidasTests
 
     private static FaseNoDocumento UnicaFase(string texto) => Lidas(texto).Fases.Should().ContainSingle().Subject;
 
+    [Fact]
+    public void De_ConsequenciaERotuloDaBanca_LeSomenteOCodigo()
+    {
+        JsonObject documento = JsonNode.Parse("""{"cronograma":{"fases":[{"chave":"fase","tipoFaseCodigo":"FASE","bancasRequeridas":[{"chave":"banca","tipoBancaCodigo":"BANCA","consequenciaDaAusencia":"ELIMINA_DO_PROCESSO","consequenciaDaAusenciaRotulo":"Texto ignorado"}]}]}}""")!.AsObject();
+        DeclaracoesDoDocumentoLidas.De(documento).Fases.Single().Bancas.Single().ConsequenciaDaAusencia.Should().Be("ELIMINA_DO_PROCESSO");
+    }
+
     [Fact(DisplayName = "A identificação copia o nome e cada código como foi escrito e a origem dos candidatos pelo nome")]
     public void Identificacao_CopiaOsCodigosEAOrigem()
     {

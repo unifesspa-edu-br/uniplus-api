@@ -46,6 +46,7 @@ internal static class SerializacaoDasExigencias
     {
         JsonObject objeto = DadosDaRegra(regra);
         ContextoDosRotulos.Acrescentar(objeto, "forma", (FormaDeComprovacao?)regra.Forma);
+        ContextoDosRotulos.Acrescentar(objeto, "consequencia", regra.Consequencia);
         ContextoDosRotulos.Acrescentar(objeto, "criterioDeDistincao", regra.Distincao?.Criterio);
         return objeto;
     }
@@ -68,7 +69,7 @@ internal static class SerializacaoDasExigencias
         ["exigenciaId"] = regra.Forma == FormaDeComprovacao.Documento ? regra.DocumentoExigidoId : null,
         ["quantidadeMinima"] = regra.QuantidadeMinima,
         ["abrePrazoParaReenvio"] = regra.AbrePrazoParaReenvio,
-        ["consequencia"] = regra.Consequencia is { } consequencia ? consequencia.Codigo() : null,
+        ["consequencia"] = regra.Consequencia?.Codigo(),
         ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
         ["criterioDeDistincao"] = regra.Distincao?.Criterio?.Codigo(),
     };
@@ -150,9 +151,8 @@ internal static class SerializacaoDasExigencias
     {
         item["obrigatorio"] = exigencia.Obrigatorio;
         item["abrePrazoParaReenvio"] = exigencia.AbrePrazoParaReenvio;
-        item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
-            ? consequencia.Codigo()
-            : null;
+        item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento?.Codigo();
+        ContextoDosRotulos.Acrescentar(item, "consequenciaIndeferimento", exigencia.ConsequenciaIndeferimento);
         item["condicoes"] = SerializarCondicaoGatilho(exigencia.Condicoes);
         item["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas());
     }

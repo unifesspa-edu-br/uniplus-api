@@ -112,7 +112,7 @@ public sealed class VocabulariosDaComprovacaoController(IQueryBus queryBus) : Co
         return Ok(opcoes);
     }
 
-    /// <summary>Lista as consequências do indeferimento de um documento exigido.</summary>
+    /// <summary>Lista as consequências do descumprimento de uma exigência, de um grupo ou da ausência à banca.</summary>
     [HttpGet("vocabularios/consequencias-descumprimento")]
     [EndpointName("ListarConsequenciasDoDescumprimento")]
     [AllowAnonymous]

@@ -64,6 +64,16 @@ public sealed class EsquemaDoDocumentoDaConfiguracaoTests
         causas[0].Error.Message.Should().NotContain("5");
     }
 
+    [Theory]
+    [InlineData("cronograma", "fases", "bancasRequeridas", "/cronograma/fases/0/bancasRequeridas/0/consequenciaDaAusencia")]
+    [InlineData("etapas", null, "bancas", "/etapas/0/bancas/0/consequenciaDaAusencia")]
+    public void ConsequenciaDaAusencia_ValorDesconhecido_RecusadoNoCaminho(string parte, string? fases, string bancas, string caminho)
+    {
+        string lista = $"[{{\"chave\":\"parte\",\"{bancas}\":[{{\"chave\":\"banca\",\"tipoBancaCodigo\":\"BANCA\",\"consequenciaDaAusencia\":\"DESCONHECIDA\"}}]}}]";
+        string valor = fases is null ? lista : $"{{\"{fases}\":{lista}}}";
+        AvaliarComCabecalho($"\"{parte}\":{valor}").Select(Resumo).Should().Contain((caminho, DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
+    }
+
     [Fact(DisplayName = "A chave fora do padrão é recusada como valor inválido")]
     public void ChaveForaDoPadrao_EValorInvalido() =>
         AvaliarComCabecalho("""

@@ -81,7 +81,7 @@ public sealed record BancaRequeridaInput(
     Guid TipoBancaId,
     IReadOnlyList<Guid> CategoriasDocumentoIds,
     RegraDeDeliberacaoInput? RegraDeDeliberacao = null,
-    Guid? Id = null);
+    Guid? Id = null, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDaAusencia = null);
 
 /// <summary>
 /// Entrada de uma fase do cronograma, usada por

@@ -15,6 +15,8 @@ internal static class ErrosDaBanca
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaIdentificacaoDaBanca() =>
     [
+        new(BancaErrorCodes.ConsequenciaDaAusenciaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.consequencia_da_ausencia_invalida", "A consequência da ausência não é uma opção conhecida")),
+        new(BancaErrorCodes.ConsequenciaDaAusenciaSoEmBancaQueAvaliaOMerito, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.consequencia_da_ausencia_so_em_banca_que_avalia_o_merito", "A consequência da ausência só pode ser declarada em banca que avalia o mérito")),
         new(BancaErrorCodes.IdDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.id_duplicado", "Duas bancas da mesma fase ou etapa têm o mesmo identificador")),
     ];
 

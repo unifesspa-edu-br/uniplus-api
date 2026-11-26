@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConsequenciasDoDescumprimento;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -95,13 +97,21 @@ public sealed class ConsequenciasDaRetiradaDaModalidadeTests
         ProcessoSeletivo processo = ProcessoComExigencia("LB_PPI", "OUTRO_FATO");
         RetirarAmplaDaOferta(processo);
         AdicionarExigenciaDeAcrescimo(processo);
-        FieldError[] causas = [.. CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo).FatosDeModalidade)];
+        FieldError[] causas = [.. CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo).FatosDeModalidade, CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))];
         causas.Select(static causa => causa.Error.Code).Should().Equal(
             "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido",
             "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao",
-            "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
             "ConsequenciasDoDescumprimento.RetiraAModalidadeSemAmplaConcorrencia",
             "ConsequenciasDoDescumprimento.RetiraAModalidadeSemAmplaConcorrencia");
+    }
+
+    [Fact]
+    public void SemAmplaDasModalidades_DuasModalidadesQueRetiramNaMesmaOferta_RecusaUmaVezPorOferta()
+    {
+        ProcessoSeletivo processo = ProcessoComExigencia("LB_PPI");
+        RetirarAmplaDaOferta(processo, acaoDaOutraModalidade: "RETIRA_A_MODALIDADE");
+        FieldError[] causas = [.. CoerenciaDaConsequenciaDoDescumprimento.SemAmplaDasModalidades(processo.Declaracao())];
+        causas.Select(static causa => causa.Field).Should().Equal("distribuicaoVagas[0].modalidades");
     }
 
     [Fact]
@@ -116,7 +126,7 @@ public sealed class ConsequenciasDaRetiradaDaModalidadeTests
             .Where(static item => item.Codigo.EndsWith("retira_a_modalidade_sem_ampla_concorrencia", StringComparison.Ordinal) && !item.Ok)
             .Select(static item => item.Codigo)];
         pendentes.Should().Equal("exigencia_retira_a_modalidade_sem_ampla_concorrencia", "grupo_retira_a_modalidade_sem_ampla_concorrencia", "modalidade_retira_a_modalidade_sem_ampla_concorrencia");
-        CoerenciaDaConsequenciaDoDescumprimento.Causas(declaracao, cadastros.FatosDeModalidade)
+        CoerenciaDaConsequenciaDoDescumprimento.Causas(declaracao, cadastros.FatosDeModalidade, CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))
             .Count(static causa => causa.Error.Code == "ConsequenciasDoDescumprimento.RetiraAModalidadeSemAmplaConcorrencia").Should().Be(3);
     }
 
@@ -137,12 +147,12 @@ public sealed class ConsequenciasDaRetiradaDaModalidadeTests
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
     }
 
-    private static void RetirarAmplaDaOferta(ProcessoSeletivo processo)
+    internal static void RetirarAmplaDaOferta(ProcessoSeletivo processo, string? acaoDaOutraModalidade = null)
     {
         ModalidadeSelecionada modalidade = NovaModalidadeComAcao("LB_PPI", NaturezaLegalModalidade.AcaoAfirmativa,
             ComposicaoVagasModalidade.SuplementarAoTotal, "RETIRA_A_MODALIDADE");
-        ModalidadeSelecionada restante = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("OUTRA",
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas), 40).Value!;
+        ModalidadeNoCadastro outra = ModalidadesNoCadastroDeTeste.Da("OUTRA", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { AcaoQuandoIndeferido = acaoDaOutraModalidade };
+        ModalidadeSelecionada restante = ModalidadeSelecionada.Criar(outra, 40).Value!;
         var declarada = new DistribuicaoDeVagasDeclarada
         {
             VagasOfertadasBase = 50,

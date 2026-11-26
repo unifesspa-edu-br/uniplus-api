@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -38,27 +39,31 @@ public sealed class BancaDaEtapa : EntityBase, IBancaDoLugar<BancaDaEtapa>
     /// <summary>Como a banca é composta e delibera; ausente enquanto o rascunho não a declara.</summary>
     public RegraDeDeliberacao? RegraDeDeliberacao { get; private set; }
 
+    /// <summary>Consequência própria da ausência do candidato, quando declarada.</summary>
+    public ConsequenciaDoDescumprimento? ConsequenciaDaAusencia { get; private set; }
+
     private BancaDaEtapa() { }
 
     public static BancaDaEtapa Criar(
         ChaveLocal chave,
         TipoDeBancaCopiado tipo,
         RegraDeDeliberacao? regraDeDeliberacao = null,
-        Guid? idDaBancaQueSubstitui = null) =>
-        Montar(chave, Guid.CreateVersion7(), tipo, regraDeDeliberacao, idDaBancaQueSubstitui);
+        Guid? idDaBancaQueSubstitui = null,
+        ConsequenciaDoDescumprimento? consequenciaDaAusencia = null) =>
+        Montar(chave, Guid.CreateVersion7(), tipo, regraDeDeliberacao, idDaBancaQueSubstitui, consequenciaDaAusencia);
 
     /// <summary>Reconstrói a banca dos dados salvos no envelope, preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static BancaDaEtapa ReconstruirDosDadosSalvos(ChaveLocal chave, Guid id, TipoDeBancaCopiado tipo, RegraDeDeliberacao? regraDeDeliberacao = null)
+    public static BancaDaEtapa ReconstruirDosDadosSalvos(ChaveLocal chave, Guid id, TipoDeBancaCopiado tipo, RegraDeDeliberacao? regraDeDeliberacao = null, ConsequenciaDoDescumprimento? consequenciaDaAusencia = null)
     {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A banca reconstruída deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return Montar(chave, id, tipo, regraDeDeliberacao, id);
+        return Montar(chave, id, tipo, regraDeDeliberacao, id, consequenciaDaAusencia);
     }
 
-    private static BancaDaEtapa Montar(ChaveLocal chave, Guid id, TipoDeBancaCopiado tipo, RegraDeDeliberacao? regraDeDeliberacao, Guid? idDaBancaQueSubstitui)
+    private static BancaDaEtapa Montar(ChaveLocal chave, Guid id, TipoDeBancaCopiado tipo, RegraDeDeliberacao? regraDeDeliberacao, Guid? idDaBancaQueSubstitui, ConsequenciaDoDescumprimento? consequenciaDaAusencia)
     {
         ArgumentNullException.ThrowIfNull(tipo);
 
@@ -68,6 +73,7 @@ public sealed class BancaDaEtapa : EntityBase, IBancaDoLugar<BancaDaEtapa>
             Chave = chave,
             Tipo = tipo,
             RegraDeDeliberacao = regraDeDeliberacao,
+            ConsequenciaDaAusencia = consequenciaDaAusencia,
             IdDaBancaQueSubstitui = idDaBancaQueSubstitui,
         };
     }
@@ -82,6 +88,7 @@ public sealed class BancaDaEtapa : EntityBase, IBancaDoLugar<BancaDaEtapa>
 
         Tipo = Tipo.OrigemId == declarada.Tipo.OrigemId ? Tipo : declarada.Tipo;
         RegraDeDeliberacao = declarada.RegraDeDeliberacao;
+        ConsequenciaDaAusencia = declarada.ConsequenciaDaAusencia;
         PosicaoNoTipo = declarada.PosicaoNoTipo;
     }
 

@@ -67,7 +67,8 @@ internal static class DeclaracoesDoDocumentoLidas
         Texto(banca, "chave")!,
         Texto(banca, "tipoBancaCodigo")!,
         Textos(banca, "categoriasDocumentoCodigos"),
-        Deliberacao(Objeto(banca, "regraDeDeliberacao")));
+        Deliberacao(Objeto(banca, "regraDeDeliberacao")),
+        Texto(banca, "consequenciaDaAusencia"));
 
     private static DeclaracaoDaDeliberacao? Deliberacao(JsonObject? bloco) => bloco is null
         ? null

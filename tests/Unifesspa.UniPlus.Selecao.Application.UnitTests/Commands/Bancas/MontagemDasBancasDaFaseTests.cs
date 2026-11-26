@@ -80,6 +80,19 @@ public sealed class MontagemDasBancasDaFaseTests
         recusa.Error.Code.Should().Be("FaseCronograma.TipoBancaNaoEncontrado");
     }
 
+    [Fact(DisplayName = "O tipo ausente do cadastro não esconde a categoria ausente, a regra inválida nem a consequência desconhecida")]
+    public async Task Montar_ComTipoAusenteERecusasIndependentes_AcumulaTodas()
+    {
+        BancaRequeridaInput desconhecida = new(Guid.CreateVersion7(), [Guid.CreateVersion7()], RegrasDeDeliberacaoDeTeste.ComTresViolacoes(), ConsequenciaDaAusencia: "INVALIDA");
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(desconhecida), 0, [], CancellationToken.None);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().BeEquivalentTo(
+            "fases[0].bancasRequeridas[0].tipoBancaId", "fases[0].bancasRequeridas[0].categoriasDocumentoIds[0]",
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.integrantes", "fases[0].bancasRequeridas[0].regraDeDeliberacao.criterio",
+            "fases[0].bancasRequeridas[0].regraDeDeliberacao.encerramento", "fases[0].bancasRequeridas[0].consequenciaDaAusencia");
+    }
+
     [Fact(DisplayName = "A categoria ausente do cadastro é recusada no campo dos candidatos atendidos")]
     public async Task Montar_ComCategoriaAusenteDoCadastro_RecusaNoCampoDosCandidatosAtendidos()
     {
@@ -90,6 +103,18 @@ public sealed class MontagemDasBancasDaFaseTests
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0].categoriasDocumentoIds[0]");
         recusa.Error.Code.Should().Be("FaseCronograma.CategoriaDocumentoNaoEncontrada");
+    }
+
+    [Fact(DisplayName = "A categoria ausente e a consequência desconhecida da mesma banca são recusadas juntas")]
+    public async Task Montar_ComCategoriaAusenteEConsequenciaDesconhecida_AcumulaAsDuasRecusas()
+    {
+        BancaRequeridaInput declarada = new(TipoDocumental.Id, [Guid.CreateVersion7()], null, ConsequenciaDaAusencia: "CONSEQUENCIA_INEXISTENTE");
+
+        Result<List<BancaRequerida>> resultado = await Montagem().MontarAsync(Fase(declarada), 0, [], CancellationToken.None);
+
+        resultado.Errors.Select(recusa => recusa.Field).Should().BeEquivalentTo(
+            "fases[0].bancasRequeridas[0].categoriasDocumentoIds[0]",
+            "fases[0].bancasRequeridas[0].consequenciaDaAusencia");
     }
 
     [Fact(DisplayName = "A categoria ausente do cadastro é recusada na posição que ela ocupa na lista")]

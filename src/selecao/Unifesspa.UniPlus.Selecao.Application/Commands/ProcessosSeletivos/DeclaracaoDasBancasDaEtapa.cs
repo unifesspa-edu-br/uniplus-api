@@ -10,6 +10,7 @@ using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Declara as bancas de uma etapa e acumula as violações da regra de deliberação de todas elas. A banca nova ou que troca de
@@ -47,18 +48,24 @@ internal sealed class DeclaracaoDasBancasDaEtapa(LeituraMemoizada<Guid, TipoBanc
         BancaDaEtapaInput declarada, IReadOnlyCollection<BancaDaEtapa> gravadas, int posicao, CancellationToken cancellationToken)
     {
         TipoDeBancaCopiado? tipo = await TipoAsync(declarada, gravadas, cancellationToken).ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return InterrupcaoDaEdicao.Com<BancaDaEtapa>($"{EtapaDeclarada.ListaDasBancas}[{posicao}].tipoBancaId", new DomainError(
-                EtapaProcessoErrorCodes.TipoBancaNaoEncontradoOuInativo,
-                "O tipo de banca indicado não existe ou está desativado no cadastro."));
-        }
-
-        Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, $"{EtapaDeclarada.ListaDasBancas}[{posicao}]");
-        return regra.IsFailure
-            ? Result<BancaDaEtapa>.ValidationFailure(regra.Errors)
-            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(gravadas.FirstOrDefault(banca => banca.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo()), tipo, regra.Value, declarada.Id));
+        string banca = $"{EtapaDeclarada.ListaDasBancas}[{posicao}]";
+        Result<RegraDeDeliberacao?> regra = MontagemDaRegraDeDeliberacao.Montar(declarada.RegraDeDeliberacao, banca);
+        Result<ConsequenciaDoDescumprimento?> consequencia = ConsequenciaDaAusenciaNaBanca.Ler(declarada.ConsequenciaDaAusencia, $"{banca}.consequenciaDaAusencia");
+        FieldError[] erros = [.. TipoNaoEncontrado(tipo, banca), .. regra.Errors, .. consequencia.Errors, .. ViolacaoDaConsequencia(tipo, consequencia.Value, banca)];
+        return tipo is null || erros.Length > 0
+            ? Result<BancaDaEtapa>.ValidationFailure(erros)
+            : Result<BancaDaEtapa>.Success(BancaDaEtapa.Criar(gravadas.FirstOrDefault(gravada => gravada.Id == declarada.Id)?.Chave ?? chaves.Formar(tipo.Codigo.Codigo()), tipo, regra.Value, declarada.Id, consequencia.Value));
     }
+
+    private static FieldError[] TipoNaoEncontrado(TipoDeBancaCopiado? tipo, string banca) => tipo is not null ? [] :
+    [
+        new($"{banca}.tipoBancaId", new DomainError(
+            EtapaProcessoErrorCodes.TipoBancaNaoEncontradoOuInativo,
+            "O tipo de banca indicado não existe ou está desativado no cadastro.")),
+    ];
+
+    private static IReadOnlyList<FieldError> ViolacaoDaConsequencia(TipoDeBancaCopiado? tipo, ConsequenciaDoDescumprimento? consequencia, string banca) =>
+        tipo is null ? [] : ConsequenciaDaAusenciaNaBanca.Violacao(tipo, consequencia, $"{banca}.consequenciaDaAusencia");
 
     private async Task<TipoDeBancaCopiado?> TipoAsync(
         BancaDaEtapaInput declarada, IReadOnlyCollection<BancaDaEtapa> gravadas, CancellationToken cancellationToken)

@@ -378,6 +378,7 @@
         {
           "chave": "banca_correcao_redacoes",
           "tipoBancaCodigo": "BANCA_CORRECAO_REDACOES",
+          "consequenciaDaAusencia": "ELIMINA_DO_PROCESSO",
           "regraDeDeliberacao": {
             "modo": "ATO_INDIVIDUAL",
             "integrantes": 1,

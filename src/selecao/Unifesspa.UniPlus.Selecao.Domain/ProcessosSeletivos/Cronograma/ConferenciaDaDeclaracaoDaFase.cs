@@ -91,6 +91,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. ViolacoesDasPublicacoes(publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
+        .. ConsequenciaDaAusenciaNaBanca.Violacoes(bancasRequeridas.Select(static banca => (banca.Tipo, banca.ConsequenciaDaAusencia)), FaseDeclarada.ListaDasBancasRequeridas),
         .. CandidatosAtendidosPelasBancas.Violacoes(bancasRequeridas),
         .. CandidatosAtendidosEmBancaDeRecursos(bancasRequeridas),
         .. IdentificadorDasBancas.Repetidos(bancasRequeridas, FaseDeclarada.ListaDasBancasRequeridas, IdentificadorDasBancas.DaFase),

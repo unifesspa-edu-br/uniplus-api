@@ -6,7 +6,7 @@ internal static class ProjecaoDeBancas
 {
     public static void PrepararDaFase(JsonObject origem) => Preparar(origem, "bancasRequeridas", PrepararBancaDaFase);
 
-    public static void PrepararDaEtapa(JsonObject origem) => Preparar(origem, "bancas", PrepararBancaDaEtapa);
+    public static void PrepararDaEtapa(JsonObject origem) => Preparar(origem, "bancas", PrepararBanca);
 
     private static void Preparar(JsonObject origem, string campo, Func<JsonObject, JsonNode> preparar)
     {
@@ -16,23 +16,9 @@ internal static class ProjecaoDeBancas
         }
     }
 
-    private static void TransferirTipoDeBanca(JsonObject copia, JsonObject banca)
-    {
-        ProjecaoDeParte.Transferir(copia, "tipoBancaCodigo", banca["codigo"]);
-        ProjecaoDeParte.Transferir(copia, "tipoBancaNome", banca["nome"]);
-    }
-
-    private static JsonNode PrepararBancaDaEtapa(JsonObject banca)
-    {
-        JsonObject copia = (JsonObject)banca.DeepClone();
-        TransferirTipoDeBanca(copia, banca);
-        return copia;
-    }
-
     private static JsonNode PrepararBancaDaFase(JsonObject banca)
     {
-        JsonObject copia = (JsonObject)banca.DeepClone();
-        TransferirTipoDeBanca(copia, banca);
+        JsonObject copia = PrepararBanca(banca);
         if (banca["candidatosAtendidos"] is JsonArray candidatos)
         {
             if (candidatos.OfType<JsonObject>().All(candidato => candidato["codigo"] is not null))
@@ -44,6 +30,15 @@ internal static class ProjecaoDeBancas
                 copia["categoriasDocumentoNomes"] = Valores(candidatos, "nome");
             }
         }
+        return copia;
+    }
+
+    private static JsonObject PrepararBanca(JsonObject banca)
+    {
+        JsonObject copia = (JsonObject)banca.DeepClone();
+        ProjecaoDeParte.Transferir(copia, "tipoBancaCodigo", banca["codigo"]);
+        ProjecaoDeParte.Transferir(copia, "tipoBancaNome", banca["nome"]);
+        ProjecaoDeParte.Transferir(copia, "consequenciaDaAusenciaRotulo", banca["contexto"]?["consequenciaDaAusenciaRotulo"]);
         return copia;
     }
 

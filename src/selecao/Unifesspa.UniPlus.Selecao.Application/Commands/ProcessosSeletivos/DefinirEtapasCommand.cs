@@ -133,7 +133,7 @@ public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao, stri
 /// O id da banca que a leitura devolveu. Com ele, a banca é a mesma e mantém a identidade ao mudar de tipo, de regra ou de
 /// posição; sem ele, ou com id que não é de banca da etapa, a banca é criada de novo.
 /// </param>
-public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null, Guid? Id = null);
+public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null, Guid? Id = null, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDaAusencia = null);
 
 /// <summary>
 /// Um recurso da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na referência de

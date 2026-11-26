@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -27,11 +29,13 @@ internal static class LeituraDasBancasDaFase
         TipoDeBancaCopiado? tipo = cadastros.TipoDeBanca(banca.TipoBancaCodigo);
         CategoriaDeDocumentoCitada?[] categorias = [.. banca.CategoriasDocumentoCodigos.Select(cadastros.Categoria)];
         (RegraDeDeliberacao? regra, IReadOnlyList<FieldError> violacoes) = Deliberacao(banca.RegraDeDeliberacao);
-        RecusaDaParte[] recusas = [.. DoTipo(banca, tipo), .. DasCategorias(banca, categorias), .. DaDeliberacao(banca, violacoes)];
+        Result<ConsequenciaDoDescumprimento?> consequencia = ConsequenciaDaAusenciaNaBanca.Ler(banca.ConsequenciaDaAusencia, $"bancasRequeridas[{banca.PosicaoNoDocumento}].consequenciaDaAusencia");
+        RecusaDaParte[] recusas = [.. DoTipo(banca, tipo), .. DasCategorias(banca, categorias), .. DaDeliberacao(banca, violacoes),
+            .. consequencia.Errors.Select(erro => Recusa(banca, erro.Field!, erro.Error))];
 
         return recusas.Length > 0
             ? new(null, recusas)
-            : new(BancaRequerida.Criar(ChaveLocal.Criar(banca.Chave).Value, tipo!, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo, categoria.Nome))], regra), []);
+            : new(BancaRequerida.Criar(ChaveLocal.Criar(banca.Chave).Value, tipo!, [.. categorias.Select(static categoria => CategoriaJulgada.Criar(categoria!.OrigemId, categoria.Codigo, categoria.Nome))], regra, consequenciaDaAusencia: consequencia.Value), []);
     }
 
     private static (RegraDeDeliberacao? Regra, IReadOnlyList<FieldError> Violacoes) Deliberacao(DeclaracaoDaDeliberacao? declarada)

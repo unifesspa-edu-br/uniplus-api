@@ -8,19 +8,24 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>As causas das consequências declaradas, compartilhadas pela conferência e pelo painel.</summary>
 internal static class CoerenciaDaConsequenciaDoDescumprimento
 {
-    internal static IEnumerable<FieldError> Causas(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
+    internal static IEnumerable<FieldError> Causas(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
+        .. ConsequenciasDasBancas.Acrescimo(configuracao, cronograma, etapas),
         .. AcrescimoDasExigencias(configuracao),
         .. AcrescimoDosGrupos(configuracao),
+        .. ConsequenciasDasBancas.SemModalidade(configuracao, fatos, cronograma, etapas),
         .. SemModalidadeDasExigencias(configuracao, fatos),
         .. SemModalidadeDosGrupos(configuracao, fatos),
         .. CoerenciaDasExigencias(configuracao, fatos),
         .. CoerenciaDosGrupos(configuracao, fatos),
+        .. ConsequenciasDasBancas.SemAmpla(configuracao, fatos, cronograma, etapas),
         .. SemAmplaDasExigencias(configuracao, fatos),
         .. SemAmplaDosGrupos(configuracao, fatos),
         .. SemAmplaDasModalidades(configuracao),
@@ -68,14 +73,14 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
         Grupos(configuracao).Where(par => !Recusada(configuracao, par.Caminho) && !Recusada(configuracao, "distribuicaoVagas")
             && par.Grupo.Consequencia == ConsequenciaDoDescumprimento.RetiraAModalidade);
 
-    private static bool SemModalidade(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca)
+    internal static bool SemModalidade(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca)
     {
         string[] modalidades = [.. Modalidades(configuracao).Select(static modalidade => modalidade.Codigo).Distinct(StringComparer.Ordinal)];
         int alcancadas = modalidades.Count(alcanca);
         return alcancadas == 0 || alcancadas == modalidades.Length;
     }
 
-    private static bool SemAmpla(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca) =>
+    internal static bool SemAmpla(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca) =>
         configuracao.Vagas.DistribuicaoVagas.Any(oferta => oferta.Modalidades.Any(modalidade => alcanca(modalidade.Codigo))
             && !oferta.Modalidades.Any(static modalidade => modalidade.Codigo == "AC"));
 
@@ -85,10 +90,10 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
                 : oferta.Modalidades.Where(static modalidade => modalidade.AcaoQuandoIndeferido == "RETIRA_A_MODALIDADE")
                     .Select(_ => SemAmpla($"distribuicaoVagas[{indice}].modalidades")));
 
-    private static FieldError SemModalidade(string campo) => new(campo, new DomainError(
+    internal static FieldError SemModalidade(string campo) => new(campo, new DomainError(
         "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao", "A retirada da modalidade exige uma condição que alcance algumas, mas não todas, as modalidades ofertadas."));
 
-    private static FieldError SemAmpla(string campo) => new(campo, new DomainError(
+    internal static FieldError SemAmpla(string campo) => new(campo, new DomainError(
         "ConsequenciasDoDescumprimento.RetiraAModalidadeSemAmplaConcorrencia", "A retirada da modalidade exige ampla concorrência na oferta."));
 
     private static IEnumerable<FieldError> CoerenciaDaExigencia(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, int indice)
@@ -115,21 +120,24 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     }
 
     private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> Grupos(ConfiguracaoDeclarada configuracao) =>
-        Percorrer(configuracao.Exigencias.RegrasDeComprovacao.Where(static regra => regra.RegraQueContemId is null), "documentosExigidos.regrasDeComprovacao");
+        Percorrer(configuracao, configuracao.Exigencias.RegrasDeComprovacao.Where(static regra => regra.RegraQueContemId is null), "documentosExigidos.regrasDeComprovacao");
 
-    private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> Percorrer(IEnumerable<RegraDeComprovacao> regras, string lista) =>
-        regras.OrderBy(static regra => regra.Ordem).SelectMany((regra, indice) => DoGrupo(regra, $"{lista}[{indice}]"));
+    private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> Percorrer(ConfiguracaoDeclarada configuracao, IEnumerable<RegraDeComprovacao> regras, string lista)
+    {
+        RegraDeComprovacao[] ordenadas = [.. regras.OrderBy(static regra => regra.Ordem)];
+        return Posicoes(configuracao, lista, ordenadas.Length).SelectMany(indice => DoGrupo(configuracao, ordenadas[indice], $"{lista}[{indice}]"));
+    }
 
-    private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> DoGrupo(RegraDeComprovacao regra, string caminho) =>
+    private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> DoGrupo(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra, string caminho) =>
     [
         .. regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.Consequencia is not null ? new[] { (regra, caminho) } : [],
-        .. Percorrer(regra.Itens, $"{caminho}.itens"),
+        .. Percorrer(configuracao, regra.Itens, $"{caminho}.itens"),
     ];
 
     private static IEnumerable<int> Posicoes(ConfiguracaoDeclarada configuracao, string lista, int quantidade) =>
         Enumerable.Range(0, quantidade).OrderBy(indice => configuracao.Origem.PosicaoDeOrigem(lista, indice));
 
-    private static bool Recusada(ConfiguracaoDeclarada configuracao, string caminho) =>
+    internal static bool Recusada(ConfiguracaoDeclarada configuracao, string caminho) =>
         configuracao.Origem.PartesRecusadas.Any(parte => parte.Caminho == caminho || caminho.StartsWith(parte.Caminho + ".", StringComparison.Ordinal) || caminho.StartsWith(parte.Caminho + "[", StringComparison.Ordinal) || parte.Caminho.StartsWith(caminho + ".", StringComparison.Ordinal) || parte.Caminho.StartsWith(caminho + "[", StringComparison.Ordinal));
 
     internal static bool PodeAvaliarAcrescimo(ConfiguracaoDeclarada configuracao, string lista) =>
@@ -138,7 +146,7 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     internal static bool PodeAvaliarCoerencia(ConfiguracaoDeclarada configuracao, string lista) =>
         !Recusada(configuracao, lista) && !Recusada(configuracao, "distribuicaoVagas");
 
-    private static bool AcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao, ConsequenciaDoDescumprimento? consequencia) =>
+    internal static bool AcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao, ConsequenciaDoDescumprimento? consequencia) =>
         !Recusada(configuracao, "bonusRegional") && consequencia == ConsequenciaDoDescumprimento.RetiraOAcrescimo && configuracao.Vagas.BonusRegional is null;
 
     private static IEnumerable<ModalidadeSelecionada> Modalidades(ConfiguracaoDeclarada configuracao) =>
@@ -147,7 +155,7 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     private static bool Incoerente(ConsequenciaDoDescumprimento consequencia, ModalidadeSelecionada modalidade) =>
         modalidade.AcaoQuandoIndeferido is { } acao && !string.Equals(acao, consequencia.Codigo(), StringComparison.Ordinal);
 
-    private static FieldError Acrescimo(string campo, string sujeito) => new(campo, new DomainError(
+    internal static FieldError Acrescimo(string campo, string sujeito) => new(campo, new DomainError(
         "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", $"{sujeito} determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido."));
 
     private static FieldError Incoerencia(string campo, string origem, ModalidadeSelecionada modalidade) => new(campo, new DomainError(

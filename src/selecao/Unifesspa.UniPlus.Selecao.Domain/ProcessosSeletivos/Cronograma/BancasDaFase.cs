@@ -9,7 +9,8 @@ public sealed record BancasDaFase
 {
     internal BancasDaFase(IReadOnlyList<BancaRequerida> bancas)
     {
-        Declaradas = BancaDeclarada.De([.. bancas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao))]);
+        Declaradas = [.. BancaDeclarada.De([.. bancas.Select(static banca => (banca.Tipo, banca.RegraDeDeliberacao, banca.ConsequenciaDaAusencia))])
+            .Select(banca => banca with { CandidatosAtendidos = [.. bancas[banca.Posicao].CandidatosAtendidos.Select(static categoria => categoria.Codigo)] })];
 
         IReadOnlySet<TipoDeBanca> recusados = CandidatosAtendidosPelasBancas.TiposRecusados(bancas);
         Grupos = [.. CandidatosAtendidosPelasBancas.Grupos(bancas).Where(grupo => !recusados.Contains(grupo.Tipo))];

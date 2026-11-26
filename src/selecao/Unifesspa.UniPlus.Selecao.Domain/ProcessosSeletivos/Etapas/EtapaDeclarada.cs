@@ -146,7 +146,7 @@ public sealed record EtapaDeclarada
             avaliacao,
             janela,
             (new AtosDaEtapa(publicacoes), new BancasDaEtapa(bancas)),
-            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, suspensas)],
+            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, suspensas), .. ConsequenciaDaAusenciaNaBanca.Violacoes(bancas.Select(static banca => (banca.Tipo, banca.ConsequenciaDaAusencia)), ListaDasBancas)],
             suspensas);
     }
 

@@ -160,6 +160,12 @@
           "description": "O que acontece quando o documento é indeferido.",
           "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
         },
+        "consequenciaIndeferimentoRotulo": {
+          "title": "Rótulo da consequência do indeferimento",
+          "description": "Rótulo registrado na publicação, só de leitura e ignorado na importação.",
+          "type": "string",
+          "readOnly": true
+        },
         "condicoes": {
           "title": "Condição de gatilho",
           "description": "Predicado que torna a exigência aplicável, quando ela é condicional.",
