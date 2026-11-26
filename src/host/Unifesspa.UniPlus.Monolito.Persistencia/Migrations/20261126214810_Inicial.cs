@@ -674,7 +674,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     remanejamento_par = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade que participa do remanejamento cruzado."),
                     remanejamento_destino_final = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da modalidade que recebe as vagas restantes ao fim do remanejamento cruzado."),
                     regra_de_aplicabilidade = table.Column<string>(type: "jsonb", nullable: false, comment: "Condições que determinam a aplicação da modalidade, em JSON; lista vazia indica aplicação incondicional."),
-                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Ação aplicada quando a candidatura é indeferida, quando definida. Códigos: RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL."),
+                    acao_quando_indeferido = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Ação aplicada quando a candidatura é indeferida, quando definida. Código: RETIRA_A_MODALIDADE."),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Fundamento legal da modalidade, quando informado."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela criação, quando disponível."),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Identificador do responsável pela última alteração, quando disponível."),
@@ -687,7 +687,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_modalidades", x => x.id);
-                    table.CheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICA_AC', 'RECLASSIFICA_CONFORME_EDITAL')");
+                    table.CheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RETIRA_A_MODALIDADE')");
                     table.CheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
                     table.CheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
@@ -735,7 +735,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica o modelo de formulário."),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do modelo de formulário."),
                     descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição do modelo de formulário."),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
+                    serve_a_fase_de_inscricao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o modelo serve à fase que coleta a inscrição e traz o conjunto básico de dados do candidato."),
+                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o modelo é obrigatório no processo em que for aplicado."),
                     tipo_processo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true, comment: "Código do tipo de processo ao qual o modelo se aplica."),
                     conteudo = table.Column<string>(type: "jsonb", nullable: false, comment: "Conteúdo do modelo de formulário, com páginas, itens, termos e pressupostos."),
                     ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o modelo está disponível para uso."),
@@ -749,7 +750,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_modelos_formulario", x => x.id);
                     table.CheckConstraint("ck_modelos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-                    table.CheckConstraint("ck_modelos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
                     table.CheckConstraint("ck_modelos_formulario_tipo_processo_codigo_formato", "tipo_processo_codigo IS NULL OR tipo_processo_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                 },
                 comment: "Modelos de formulário e seu conteúdo para processos seletivos.");
@@ -946,6 +946,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     referencia_temporal_dados_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data escolhida quando a referência para apurar os dados do candidato é uma data específica."),
                     referencia_temporal_dados_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase escolhida quando a referência para apurar os dados do candidato é o início ou o fim de uma fase."),
                     tem_prova_presencial = table.Column<bool>(type: "boolean", nullable: true, comment: "Declara se o processo tem prova presencial. Nulo = ainda não declarado."),
+                    manifestacao_de_interesse = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Manifestação de interesse declarada pelo edital. Nulo = não prevista. Códigos: UMA_VEZ, CONFIRMA_A_CADA_CHAMADA."),
                     aplica_fada = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado."),
                     numero_de_opcoes_de_curso = table.Column<int>(type: "integer", nullable: true, comment: "Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -957,6 +958,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_processos_seletivos", x => x.id);
+                    table.CheckConstraint("ck_processos_seletivos_manifestacao_de_interesse", "manifestacao_de_interesse IS NULL OR manifestacao_de_interesse IN ('UMA_VEZ', 'CONFIRMA_A_CADA_CHAMADA')");
                     table.CheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
                     table.CheckConstraint("ck_processos_seletivos_origem_candidatos", "origem_candidatos IN ('INSCRICAO_PROPRIA', 'IMPORTACAO_EXTERNA')");
                     table.CheckConstraint("ck_processos_seletivos_situacao", "situacao IN ('RASCUNHO', 'PUBLICADO', 'ENCERRADO', 'CANCELADO')");
@@ -1758,6 +1760,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
+                    formulario_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     termo_codigo = table.Column<string>(type: "text", nullable: false),
                     versao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     hash_versao = table.Column<string>(type: "text", nullable: false)
@@ -1765,6 +1768,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_aceites_da_inscricao", x => x.id);
+                    table.CheckConstraint("ck_aceites_da_inscricao_formulario_codigo_formato", "formulario_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
                         name: "fk_aceites_da_inscricao_inscricao_record_inscricao_id",
                         column: x => x.inscricao_id,
@@ -2276,6 +2280,35 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "cadastros_de_reserva",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador técnico da linha, substituída com a declaração.")
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    numero_da_chamada = table.Column<int>(type: "integer", nullable: false, comment: "Número da chamada do processo, a partir de 1."),
+                    pessoas_da_reserva_por_vaga = table.Column<int>(type: "integer", nullable: false, comment: "Quantas pessoas da reserva a chamada convoca por vaga, além de quem ocupa a vaga; zero é a chamada sem reserva."),
+                    participacao_da_reserva = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a reserva faz quando a chamada a convoca; vazio na chamada sem reserva. Códigos: ANTECIPA_A_HABILITACAO, ASSUME_NA_MESMA_CHAMADA."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que declara o cadastro de reserva.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_cadastros_de_reserva", x => x.id);
+                    table.CheckConstraint("ck_cadastros_de_reserva_numero_da_chamada", "numero_da_chamada >= 1");
+                    table.CheckConstraint("ck_cadastros_de_reserva_participacao_da_reserva", "participacao_da_reserva IS NULL OR participacao_da_reserva IN ('ANTECIPA_A_HABILITACAO', 'ASSUME_NA_MESMA_CHAMADA')");
+                    table.CheckConstraint("ck_cadastros_de_reserva_participacao_e_quantidade", "(pessoas_da_reserva_por_vaga = 0) = (participacao_da_reserva IS NULL)");
+                    table.CheckConstraint("ck_cadastros_de_reserva_pessoas_da_reserva_por_vaga", "pessoas_da_reserva_por_vaga >= 0");
+                    table.ForeignKey(
+                        name: "fk_cadastros_de_reserva_processo_seletivo",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Cadastro de reserva por chamada declarado pelo processo seletivo: quantas pessoas da reserva cada chamada convoca por vaga e o que a reserva faz na chamada.");
+
+            migrationBuilder.CreateTable(
                 name: "calculos_dos_dados",
                 schema: "selecao",
                 columns: table => new
@@ -2639,19 +2672,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica o formulário no processo; único no processo."),
+                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o candidato é obrigado a enviar o formulário."),
                     fase_id = table.Column<Guid>(type: "uuid", nullable: true),
                     titulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    modelo_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    modelo_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    modelo_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do modelo de formulário de origem, nulo quando não há modelo."),
+                    modelo_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código copiado do modelo de formulário de origem, nulo quando não há modelo."),
                     modelo_origem_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome copiado do modelo de formulário de origem, nulo quando não há modelo."),
+                    consequencia_da_falta_de_envio = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_formularios_processo", x => x.id);
-                    table.CheckConstraint("ck_formularios_processo_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
+                    table.UniqueConstraint("ux_formularios_processo_processo_codigo", x => new { x.processo_seletivo_id, x.codigo });
+                    table.CheckConstraint("ck_formularios_processo_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_formularios_processo_consequencia_da_falta_de_envio", "consequencia_da_falta_de_envio IS NULL OR consequencia_da_falta_de_envio IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+                    table.CheckConstraint("ck_formularios_processo_modelo_origem_completo", "(modelo_origem_id IS NULL AND modelo_origem_codigo IS NULL AND modelo_origem_nome IS NULL) OR (modelo_origem_id IS NOT NULL AND modelo_origem_codigo IS NOT NULL AND modelo_origem_nome IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_formularios_processo_processo_seletivo",
                         column: x => x.processo_seletivo_id,
@@ -2692,42 +2730,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         onDelete: ReferentialAction.Restrict);
                 },
                 comment: "O registro de que o arquivo de envio ao INEP foi gerado para uma edição do ENEM. Append-only; o arquivo e os CPFs não são guardados.");
-
-            migrationBuilder.CreateTable(
-                name: "grupos_dos_formularios",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica o item no processo."),
-                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
-                    pagina_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da página do formulário, quando houver."),
-                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
-                    minimo = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade mínima de ocorrências do grupo."),
-                    maximo = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade máxima de ocorrências do grupo, quando limitada."),
-                    exibicao = table.Column<string>(type: "jsonb", nullable: true, comment: "Condições para exibir o grupo, em JSON, quando houver."),
-                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
-                    inclui_candidato = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o grupo inclui a própria pessoa candidata."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_grupos_dos_formularios", x => x.id);
-                    table.CheckConstraint("ck_grupos_dos_formularios_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-                    table.CheckConstraint("ck_grupos_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
-                    table.CheckConstraint("ck_grupos_dos_formularios_pagina_codigo_formato", "pagina_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-                    table.ForeignKey(
-                        name: "fk_grupos_dos_formularios_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                },
-                comment: "Grupos repetíveis de dados solicitados nos formulários.");
 
             migrationBuilder.CreateTable(
                 name: "municipios_de_prova",
@@ -2783,44 +2785,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         onDelete: ReferentialAction.Cascade);
                 },
                 comment: "Opções de resposta declaradas pelo processo para um dado.");
-
-            migrationBuilder.CreateTable(
-                name: "termos_exigidos_formulario",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
-                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    termo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    versao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    termo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
-                    versao_numero = table.Column<int>(type: "integer", nullable: false),
-                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    texto = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    forma_aceite = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP."),
-                    hash_versao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    exibicao = table.Column<string>(type: "jsonb", nullable: true),
-                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_termos_exigidos_formulario", x => x.id);
-                    table.CheckConstraint("ck_termos_exigidos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
-                    table.CheckConstraint("ck_termos_exigidos_formulario_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
-                    table.ForeignKey(
-                        name: "fk_termos_exigidos_formulario_processo_seletivo",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
 
             migrationBuilder.CreateTable(
                 name: "versoes_configuracao",
@@ -3792,6 +3756,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_deliberacao_desempate = table.Column<string>(type: "text", nullable: true, comment: "Regra de desempate da deliberação. Códigos: VOTO_DA_PRESIDENCIA, NOVA_VOTACAO."),
                     regra_deliberacao_encerramento = table.Column<string>(type: "text", nullable: true, comment: "Regra de encerramento da deliberação. Códigos: TODOS_OS_TITULARES, PRESIDENCIA_NO_QUORUM."),
                     regra_deliberacao_sem_unanimidade = table.Column<string>(type: "text", nullable: true, comment: "Regra aplicada quando não há unanimidade. Códigos: FAVORAVEL, DESFAVORAVEL, NOVA_VOTACAO."),
+                    consequencia_da_ausencia = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Consequência própria da ausência do candidato à banca. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a banca pertence."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
@@ -3799,6 +3764,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_bancas_da_etapa", x => x.id);
+                    table.CheckConstraint("ck_bancas_da_etapa_consequencia_da_ausencia", "consequencia_da_ausencia IS NULL OR consequencia_da_ausencia IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
                     table.ForeignKey(
                         name: "fk_bancas_da_etapa_etapa",
                         columns: x => new { x.etapa_processo_id, x.processo_seletivo_id },
@@ -3902,12 +3868,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra aplicada ao prazo de recurso."),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo do conteúdo da regra aplicada ao prazo de recurso."),
                     prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false, comment: "Duração do prazo de recurso na unidade informada."),
-                    prazo_unidade = table.Column<string>(type: "text", nullable: false, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
+                    prazo_unidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
                     admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se há recurso à instância superior."),
                     prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Duração do prazo de recurso na unidade informada."),
-                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
-                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false, comment: "Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO."),
-                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false, comment: "Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA."),
+                    prazo_segunda_instancia_unidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
+                    efeito_suspensivo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Efeito suspensivo do recurso na 1ª instância. Códigos: PARA_TODOS_OS_RECURSOS, SEM_EFEITO_SUSPENSIVO, UNIDADE_DECIDE_EM_CADA_RECURSO."),
+                    guarda_da_vaga = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA."),
                     publicacao_de_referencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da publicação usada como referência para o início do prazo."),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -3916,7 +3882,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_recursos_configurados_da_etapa", x => x.id);
+                    table.CheckConstraint("ck_recursos_configurados_da_etapa_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')");
                     table.CheckConstraint("ck_recursos_configurados_da_etapa_evento_inicial_do_prazo", "evento_inicial_do_prazo IN ('PUBLICACAO_DO_ATO', 'CIENCIA_INDIVIDUAL')");
+                    table.CheckConstraint("ck_recursos_configurados_da_etapa_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')");
+                    table.CheckConstraint("ck_recursos_configurados_da_etapa_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
+                    table.CheckConstraint("ck_recursos_configurados_da_etapa_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
                     table.ForeignKey(
                         name: "fk_recursos_configurados_da_etapa_etapa",
                         column: x => x.etapa_processo_id,
@@ -3951,6 +3921,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_deliberacao_desempate = table.Column<string>(type: "text", nullable: true, comment: "Regra de desempate da deliberação. Códigos: VOTO_DA_PRESIDENCIA, NOVA_VOTACAO."),
                     regra_deliberacao_encerramento = table.Column<string>(type: "text", nullable: true, comment: "Regra de encerramento da deliberação. Códigos: TODOS_OS_TITULARES, PRESIDENCIA_NO_QUORUM."),
                     regra_deliberacao_sem_unanimidade = table.Column<string>(type: "text", nullable: true, comment: "Regra aplicada quando não há unanimidade. Códigos: FAVORAVEL, DESFAVORAVEL, NOVA_VOTACAO."),
+                    consequencia_da_ausencia = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Consequência própria da ausência do candidato à banca. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a banca pertence."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
@@ -3958,6 +3929,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_bancas_requeridas", x => x.id);
+                    table.CheckConstraint("ck_bancas_requeridas_consequencia_da_ausencia", "consequencia_da_ausencia IS NULL OR consequencia_da_ausencia IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
                     table.ForeignKey(
                         name: "fk_bancas_requeridas_fase",
                         columns: x => new { x.fase_cronograma_id, x.processo_seletivo_id },
@@ -3966,89 +3938,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumns: new[] { "id", "processo_seletivo_id" },
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateTable(
-                name: "documentos_exigidos",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exigência de documento."),
-                    chave_local = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Identificador que a parte guarda dentro da configuração publicada; único no processo."),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que faz a exigência."),
-                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Fase do cronograma do processo em que o documento é exigido."),
-                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira."),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Formulário a que o documento pertence; vazio quando a fase não responde formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
-                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência."),
-                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de documento, copiado do catálogo ao gravar a exigência."),
-                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de documento, copiado do catálogo ao gravar a exigência."),
-                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Categoria do tipo de documento, copiada do catálogo ao gravar a exigência."),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade do tratamento dos dados do documento, copiada do tipo de documento."),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento."),
-                    dados_comprovados = table.Column<string[]>(type: "text[]", nullable: false, comment: "Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados."),
-                    aplicabilidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. Códigos: GERAL, CONDICIONAL."),
-                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a falta do documento impede a inscrição de seguir."),
-                    consequencia_indeferimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado."),
-                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o documento pode ser enviado em qualquer formato de arquivo."),
-                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true, comment: "Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito."),
-                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true, comment: "Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite."),
-                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo."),
-                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, comment: "Nome do arquivo do modelo de documento, copiado ao gravar a exigência."),
-                    modelo_formato = table.Column<string>(type: "character varying(4)", maxLength: 4, nullable: true, comment: "Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: DOCX, ODT, PDF."),
-                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência."),
-                    prazo_emissao_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita. Códigos: SEM_PRAZO, COM_PRAZO."),
-                    prazo_emissao_valor = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO."),
-                    prazo_emissao_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true, comment: "Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: DIAS, MESES, ANOS."),
-                    prazo_emissao_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
-                    prazo_emissao_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência do prazo de emissão; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
-                    prazo_emissao_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência do prazo de emissão; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
-                    prazo_emissao_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
-                    validade_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita. Códigos: NAO_EXIGE_DOCUMENTO_VALIDO, EXIGE_DOCUMENTO_VALIDO."),
-                    validade_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência da validade; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
-                    validade_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência da validade; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
-                    validade_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência da validade; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
-                    validade_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_documentos_exigidos", x => x.id);
-                    table.CheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
-                    table.CheckConstraint("ck_documentos_exigidos_consequencia_indeferimento", "consequencia_indeferimento IS NULL OR consequencia_indeferimento IN ('ELIMINA', 'RECLASSIFICA_AC', 'REMOVE_VANTAGEM', 'ABRE_PRAZO_PARA_REENVIO')");
-                    table.CheckConstraint("ck_documentos_exigidos_finalidade", "finalidade IS NULL OR finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
-                    table.CheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
-                    table.CheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_efeito", "prazo_emissao_efeito IS NULL OR prazo_emissao_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_escolha", "prazo_emissao_escolha IS NULL OR prazo_emissao_escolha IN ('SEM_PRAZO', 'COM_PRAZO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_referencia_tipo", "prazo_emissao_referencia_tipo IS NULL OR prazo_emissao_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_unidade", "prazo_emissao_unidade IS NULL OR prazo_emissao_unidade IN ('DIAS', 'MESES', 'ANOS')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_efeito", "validade_efeito IS NULL OR validade_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_escolha", "validade_escolha IS NULL OR validade_escolha IN ('NAO_EXIGE_DOCUMENTO_VALIDO', 'EXIGE_DOCUMENTO_VALIDO')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_referencia_tipo", "validade_referencia_tipo IS NULL OR validade_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_etapa_processo_exigido_na_etapa_id",
-                        column: x => x.exigido_na_etapa_id,
-                        principalSchema: "selecao",
-                        principalTable: "etapas_processo",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_fase_cronograma_exigido_na_fase_id",
-                        column: x => x.exigido_na_fase_id,
-                        principalSchema: "selecao",
-                        principalTable: "fases_cronograma",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                },
-                comment: "Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
 
             migrationBuilder.CreateTable(
                 name: "publicacoes_previstas_da_fase",
@@ -4087,12 +3976,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra aplicada ao prazo de recurso."),
                     regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Resumo do conteúdo da regra aplicada ao prazo de recurso."),
                     prazo_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false, comment: "Duração do prazo de recurso na unidade informada."),
-                    prazo_unidade = table.Column<string>(type: "text", nullable: false, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
+                    prazo_unidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
                     admite_instancia_superior = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se há recurso à instância superior."),
                     prazo_segunda_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Duração do prazo de recurso na unidade informada."),
-                    prazo_segunda_instancia_unidade = table.Column<string>(type: "text", nullable: true, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
-                    efeito_suspensivo = table.Column<string>(type: "text", nullable: false, comment: "Efeito do recurso sobre o andamento do processo. Código: SEM_EFEITO_SUSPENSIVO."),
-                    guarda_da_vaga = table.Column<string>(type: "text", nullable: false, comment: "Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA."),
+                    prazo_segunda_instancia_unidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Unidade do prazo. Códigos: HORAS, DIAS, DIAS_UTEIS."),
+                    efeito_suspensivo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Efeito suspensivo do recurso na 1ª instância. Códigos: PARA_TODOS_OS_RECURSOS, SEM_EFEITO_SUSPENSIVO, UNIDADE_DECIDE_EM_CADA_RECURSO."),
+                    guarda_da_vaga = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Guarda da vaga durante o recurso. Códigos: ATE_O_RESULTADO_DEFINITIVO, NAO_GUARDA."),
                     publicacao_de_referencia_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da publicação usada como referência para o início do prazo."),
                     procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
@@ -4101,6 +3990,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_recursos_configurados_da_fase", x => x.id);
+                    table.CheckConstraint("ck_recursos_configurados_da_fase_efeito_suspensivo", "efeito_suspensivo IN ('PARA_TODOS_OS_RECURSOS', 'SEM_EFEITO_SUSPENSIVO', 'UNIDADE_DECIDE_EM_CADA_RECURSO')");
+                    table.CheckConstraint("ck_recursos_configurados_da_fase_guarda_da_vaga", "guarda_da_vaga IN ('ATE_O_RESULTADO_DEFINITIVO', 'NAO_GUARDA')");
+                    table.CheckConstraint("ck_recursos_configurados_da_fase_prazo_unidade", "prazo_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
+                    table.CheckConstraint("ck_recursos_configurados_da_fase_unidade_da_segunda_instancia", "prazo_segunda_instancia_unidade IN ('HORAS', 'DIAS', 'DIAS_UTEIS')");
                     table.ForeignKey(
                         name: "fk_recursos_configurados_da_fase_fase",
                         column: x => x.fase_cronograma_id,
@@ -4110,6 +4003,137 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         onDelete: ReferentialAction.Cascade);
                 },
                 comment: "Configuração dos recursos de uma fase do cronograma.");
+
+            migrationBuilder.CreateTable(
+                name: "documentos_exigidos",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exigência de documento."),
+                    chave_local = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Identificador que a parte guarda dentro da configuração publicada; único no processo."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que faz a exigência."),
+                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Fase do cronograma do processo em que o documento é exigido."),
+                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira."),
+                    formulario_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do formulário a que o documento pertence, entre os do processo."),
+                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência."),
+                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de documento, copiado do catálogo ao gravar a exigência."),
+                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de documento, copiado do catálogo ao gravar a exigência."),
+                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Categoria do tipo de documento, copiada do catálogo ao gravar a exigência."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade do tratamento dos dados do documento, copiada do tipo de documento."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento."),
+                    dados_comprovados = table.Column<string[]>(type: "text[]", nullable: false, comment: "Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados."),
+                    aplicabilidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. Códigos: GERAL, CONDICIONAL."),
+                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a falta do documento impede a inscrição de seguir."),
+                    abre_prazo_para_reenvio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a exigência abre prazo para reenvio do documento."),
+                    consequencia_do_descumprimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
+                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o documento pode ser enviado em qualquer formato de arquivo."),
+                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true, comment: "Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito."),
+                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true, comment: "Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite."),
+                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo."),
+                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, comment: "Nome do arquivo do modelo de documento, copiado ao gravar a exigência."),
+                    modelo_formato = table.Column<string>(type: "character varying(4)", maxLength: 4, nullable: true, comment: "Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: DOCX, ODT, PDF."),
+                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência."),
+                    prazo_emissao_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita. Códigos: SEM_PRAZO, COM_PRAZO."),
+                    prazo_emissao_valor = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO."),
+                    prazo_emissao_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true, comment: "Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: DIAS, MESES, ANOS."),
+                    prazo_emissao_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
+                    prazo_emissao_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência do prazo de emissão; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
+                    prazo_emissao_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência do prazo de emissão; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
+                    prazo_emissao_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
+                    validade_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita. Códigos: NAO_EXIGE_DOCUMENTO_VALIDO, EXIGE_DOCUMENTO_VALIDO."),
+                    validade_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência da validade; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
+                    validade_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência da validade; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
+                    validade_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência da validade; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
+                    validade_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_documentos_exigidos", x => x.id);
+                    table.CheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
+                    table.CheckConstraint("ck_documentos_exigidos_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+                    table.CheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+                    table.CheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_efeito", "prazo_emissao_efeito IS NULL OR prazo_emissao_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_escolha", "prazo_emissao_escolha IS NULL OR prazo_emissao_escolha IN ('SEM_PRAZO', 'COM_PRAZO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_referencia_tipo", "prazo_emissao_referencia_tipo IS NULL OR prazo_emissao_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_unidade", "prazo_emissao_unidade IS NULL OR prazo_emissao_unidade IN ('DIAS', 'MESES', 'ANOS')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_efeito", "validade_efeito IS NULL OR validade_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_escolha", "validade_escolha IS NULL OR validade_escolha IN ('NAO_EXIGE_DOCUMENTO_VALIDO', 'EXIGE_DOCUMENTO_VALIDO')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_referencia_tipo", "validade_referencia_tipo IS NULL OR validade_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_etapa_processo_exigido_na_etapa_id",
+                        column: x => x.exigido_na_etapa_id,
+                        principalSchema: "selecao",
+                        principalTable: "etapas_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_fase_cronograma_exigido_na_fase_id",
+                        column: x => x.exigido_na_fase_id,
+                        principalSchema: "selecao",
+                        principalTable: "fases_cronograma",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_formulario",
+                        columns: x => new { x.processo_seletivo_id, x.formulario_codigo },
+                        principalSchema: "selecao",
+                        principalTable: "formularios_processo",
+                        principalColumns: new[] { "processo_seletivo_id", "codigo" });
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_processo_seletivo_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
+
+            migrationBuilder.CreateTable(
+                name: "grupos_dos_formularios",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do formulário em que o grupo é solicitado."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código que identifica o item no processo."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
+                    pagina_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da página do formulário, quando houver."),
+                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
+                    minimo = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade mínima de ocorrências do grupo."),
+                    maximo = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade máxima de ocorrências do grupo, quando limitada."),
+                    exibicao = table.Column<string>(type: "jsonb", nullable: true, comment: "Condições para exibir o grupo, em JSON, quando houver."),
+                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
+                    inclui_candidato = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o grupo inclui a própria pessoa candidata."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_grupos_dos_formularios", x => x.id);
+                    table.CheckConstraint("ck_grupos_dos_formularios_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_grupos_dos_formularios_pagina_codigo_formato", "pagina_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.ForeignKey(
+                        name: "fk_grupos_dos_formularios_formulario_processo",
+                        column: x => x.formulario_id,
+                        principalSchema: "selecao",
+                        principalTable: "formularios_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_grupos_dos_formularios_processo_seletivo",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Grupos repetíveis de dados solicitados nos formulários.");
 
             migrationBuilder.CreateTable(
                 name: "paginas_do_formulario",
@@ -4145,56 +4169,48 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "dados_dos_formularios",
+                name: "termos_exigidos_formulario",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
-                    grupo_coletado_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do grupo repetível ao qual o dado pertence, quando houver."),
-                    codigo_do_dado = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
-                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
-                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
-                    tipo_de_campo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO."),
-                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
-                    ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Orientação adicional exibida junto ao campo, quando houver."),
-                    pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a resposta deve ser confirmada pela pessoa candidata."),
-                    restricoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Restrições aplicadas à resposta, em JSON."),
-                    origem_valores = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Origem das opções. Códigos: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_FADA, UNIDADES_FEDERATIVAS, MUNICIPIOS_DA_PROVA_PRESENCIAL."),
-                    formato = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Formato esperado da resposta, quando especificado."),
-                    classificacao_protecao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Classificação de proteção do dado coletado."),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal que fundamenta o tratamento do dado."),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade informada para o tratamento do dado."),
-                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição do dado solicitado."),
-                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Componente usado para exibir o dado, quando especificado."),
-                    impedimento = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de impedimento associada à resposta, em JSON, quando houver."),
-                    finalidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Finalidade do formulário. Códigos: INSCRICAO, ISENCAO_TAXA, HABILITACAO."),
-                    pagina_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da página do formulário, quando houver."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do formulário em que o termo é exigido."),
+                    codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    termo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    versao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    termo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    versao_numero = table.Column<int>(type: "integer", nullable: false),
+                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    texto = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    forma_aceite = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Códigos: A_DEFINIR, REGISTRO_SEM_ENDERECO_IP, REGISTRO_COM_ENDERECO_IP."),
+                    hash_versao = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    exibicao = table.Column<string>(type: "jsonb", nullable: true),
+                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_dados_dos_formularios", x => x.id);
-                    table.CheckConstraint("ck_dados_dos_formularios_finalidade", "finalidade IN ('INSCRICAO', 'ISENCAO_TAXA', 'HABILITACAO')");
-                    table.CheckConstraint("ck_dados_dos_formularios_origem_valores", "origem_valores IN ('CATALOGO', 'OPCOES_DO_PROCESSO', 'MUNICIPIOS_DO_FADA', 'UNIDADES_FEDERATIVAS', 'MUNICIPIOS_DA_PROVA_PRESENCIAL')");
-                    table.CheckConstraint("ck_dados_dos_formularios_pagina_codigo_formato", "pagina_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.PrimaryKey("pk_termos_exigidos_formulario", x => x.id);
+                    table.CheckConstraint("ck_termos_exigidos_formulario_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
-                        name: "fk_dados_dos_formularios_grupo_formulario",
-                        column: x => x.grupo_coletado_id,
+                        name: "fk_termos_exigidos_formulario_formulario_processo",
+                        column: x => x.formulario_id,
                         principalSchema: "selecao",
-                        principalTable: "grupos_dos_formularios",
+                        principalTable: "formularios_processo",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_dados_dos_formularios_processo_seletivo_processo_seletivo_id",
+                        name: "fk_termos_exigidos_formulario_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                },
-                comment: "Dados solicitados nos formulários de um processo seletivo.");
+                });
 
             migrationBuilder.CreateTable(
                 name: "importacoes_de_notas_do_enem",
@@ -4589,7 +4605,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     forma = table.Column<string>(type: "text", nullable: false, comment: "Códigos: DOCUMENTO, TODOS_OS_ITENS, QUANTIDADE_MINIMA_DE_ITENS."),
                     documento_exigido_id = table.Column<Guid>(type: "uuid", nullable: true),
                     quantidade_minima = table.Column<int>(type: "integer", nullable: true),
-                    consequencia = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    consequencia_do_descumprimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
+                    abre_prazo_para_reenvio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o grupo abre prazo para reenvio dos documentos."),
                     criterio_de_distincao = table.Column<string>(type: "character varying(18)", maxLength: 18, nullable: true, comment: "Códigos: COMPETENCIA_MENSAL, EXERCICIO_ANUAL, OCORRENCIA."),
                     data_referencia = table.Column<DateOnly>(type: "date", nullable: true),
                     ocorrencias_esperadas = table.Column<string>(type: "jsonb", nullable: true),
@@ -4600,8 +4617,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_regras_de_comprovacao", x => x.id);
+                    table.CheckConstraint("ck_regras_de_comprovacao_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
                     table.CheckConstraint("ck_regras_de_comprovacao_criterio_de_distincao_coerente", "(criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao IN ('COMPETENCIA_MENSAL', 'EXERCICIO_ANUAL') AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (criterio_de_distincao IS NOT NULL AND criterio_de_distincao = 'OCORRENCIA' AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
-                    table.CheckConstraint("ck_regras_de_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+                    table.CheckConstraint("ck_regras_de_comprovacao_forma_coerente", "(forma = 'DOCUMENTO' AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia_do_descumprimento IS NULL) OR (forma = 'TODOS_OS_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia_do_descumprimento IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (forma = 'QUANTIDADE_MINIMA_DE_ITENS' AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
                     table.CheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
                     table.CheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
                     table.CheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
@@ -4629,31 +4647,62 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "condicoes_de_exibicao_do_dado",
+                name: "dados_dos_formularios",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    dado_do_formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do dado do formulário ao qual a condição pertence."),
-                    alternativa = table.Column<int>(type: "integer", nullable: false, comment: "Número da alternativa que reúne condições atendidas em conjunto."),
-                    codigo_do_dado = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
-                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Comparação aplicada ao valor. Códigos: IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE."),
-                    valor = table.Column<string>(type: "jsonb", nullable: false, comment: "Valor de comparação da condição, em JSON."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo ao qual pertence."),
+                    grupo_coletado_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador do grupo repetível ao qual o dado pertence, quando houver."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    ordem = table.Column<int>(type: "integer", nullable: false, comment: "Posição de apresentação ou avaliação no conjunto."),
+                    rotulo = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Texto apresentado à pessoa candidata."),
+                    tipo_de_campo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Tipo de campo: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO ou MUNICIPIO. Códigos: NUMERO, SIM_OU_NAO, ESCOLHA_UNICA, ESCOLHA_MULTIPLA, TEXTO, DATA, ENDERECO, MUNICIPIO."),
+                    obrigatoriedade = table.Column<string>(type: "jsonb", nullable: false, comment: "Regra que determina quando a resposta é obrigatória, em JSON."),
+                    ajuda = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Orientação adicional exibida junto ao campo, quando houver."),
+                    pedir_confirmacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a resposta deve ser confirmada pela pessoa candidata."),
+                    restricoes = table.Column<string>(type: "jsonb", nullable: false, comment: "Restrições aplicadas à resposta, em JSON."),
+                    origem_valores = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Origem das opções. Códigos: CATALOGO, OPCOES_DO_PROCESSO, MUNICIPIOS_DO_FADA, UNIDADES_FEDERATIVAS, MUNICIPIOS_DA_PROVA_PRESENCIAL."),
+                    formato = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Formato esperado da resposta, quando especificado."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Classificação de proteção do dado coletado."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal que fundamenta o tratamento do dado."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade informada para o tratamento do dado."),
+                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false, comment: "Descrição do dado solicitado."),
+                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Componente usado para exibir o dado, quando especificado."),
+                    impedimento = table.Column<string>(type: "jsonb", nullable: true, comment: "Regra de impedimento associada à resposta, em JSON, quando houver."),
+                    formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do formulário em que o dado é solicitado."),
+                    pagina_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Código da página do formulário, quando houver."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_condicoes_de_exibicao_do_dado", x => x.id);
+                    table.PrimaryKey("pk_dados_dos_formularios", x => x.id);
+                    table.CheckConstraint("ck_dados_dos_formularios_origem_valores", "origem_valores IN ('CATALOGO', 'OPCOES_DO_PROCESSO', 'MUNICIPIOS_DO_FADA', 'UNIDADES_FEDERATIVAS', 'MUNICIPIOS_DA_PROVA_PRESENCIAL')");
+                    table.CheckConstraint("ck_dados_dos_formularios_pagina_codigo_formato", "pagina_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
-                        name: "fk_condicoes_de_exibicao_do_dado_dado_formulario",
-                        column: x => x.dado_do_formulario_id,
+                        name: "fk_dados_dos_formularios_formulario_processo",
+                        column: x => x.formulario_id,
                         principalSchema: "selecao",
-                        principalTable: "dados_dos_formularios",
+                        principalTable: "formularios_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_dados_dos_formularios_grupo_formulario",
+                        column: x => x.grupo_coletado_id,
+                        principalSchema: "selecao",
+                        principalTable: "grupos_dos_formularios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_dados_dos_formularios_processo_seletivo_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 },
-                comment: "Condições que determinam a exibição de um dado no formulário.");
+                comment: "Dados solicitados nos formulários de um processo seletivo.");
 
             migrationBuilder.CreateTable(
                 name: "avaliacoes_da_etapa",
@@ -5035,6 +5084,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "condicoes_de_exibicao_do_dado",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    dado_do_formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do dado do formulário ao qual a condição pertence."),
+                    alternativa = table.Column<int>(type: "integer", nullable: false, comment: "Número da alternativa que reúne condições atendidas em conjunto."),
+                    codigo_do_dado = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do dado do candidato usado na condição. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA."),
+                    operador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Comparação aplicada ao valor. Códigos: IGUAL, ALGUM_DE, MAIOR_IGUAL, MENOR_IGUAL, DIFERENTE, NENHUM_DE."),
+                    valor = table.Column<string>(type: "jsonb", nullable: false, comment: "Valor de comparação da condição, em JSON."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_condicoes_de_exibicao_do_dado", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_condicoes_de_exibicao_do_dado_dado_formulario",
+                        column: x => x.dado_do_formulario_id,
+                        principalSchema: "selecao",
+                        principalTable: "dados_dos_formularios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Condições que determinam a exibição de um dado no formulário.");
+
+            migrationBuilder.CreateTable(
                 name: "lancamentos_de_nota",
                 schema: "selecao",
                 columns: table => new
@@ -5366,10 +5442,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     { new Guid("fa700000-0000-7000-8000-000000000015"), true, "CAMPO_FORMULARIO:CONCORRER_PPI", "VALOR_UNICO", "INTERNO", "CONCORRER_PPI", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Opção do candidato por concorrer às vagas reservadas a pretos, pardos e indígenas.", "SIM_OU_NAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000016"), true, "CAMPO_FORMULARIO:CONCORRER_Q", "VALOR_UNICO", "INTERNO", "CONCORRER_Q", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Opção do candidato por concorrer às vagas reservadas a quilombolas.", "SIM_OU_NAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Deseja concorrer às vagas reservadas a quilombolas", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000017"), true, "CAMPO_FORMULARIO:CONCORRER_RENDA", "VALOR_UNICO", "INTERNO", "CONCORRER_RENDA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Opção do candidato por concorrer às vagas reservadas por renda familiar per capita.", "SIM_OU_NAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Deseja concorrer às vagas reservadas por renda familiar per capita", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
-                    { new Guid("fa700000-0000-7000-8000-000000000018"), true, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", "VALOR_UNICO", "PESSOAL", "ENDERECO_RESIDENCIAL", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Endereço em que o candidato reside, usado para verificar os requisitos regionais do processo.", "ENDERECO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Endereço residencial", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
+                    { new Guid("fa700000-0000-7000-8000-000000000018"), true, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", "VALOR_UNICO", "PESSOAL", "ENDERECO_RESIDENCIAL", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Endereço em que o candidato reside, usado para verificar os requisitos regionais do processo.", "ENDERECO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Endereço residencial", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000019"), true, "CAMPO_FORMULARIO:DATA_NASCIMENTO", "VALOR_UNICO", "PESSOAL", "DATA_NASCIMENTO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Data de nascimento do candidato, usada para verificar a idade e os requisitos de participação.", "DATA", "CANDIDATO", "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Data de nascimento", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
-                    { new Guid("fa700000-0000-7000-8000-000000000020"), true, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "VALOR_UNICO", "PESSOAL", "UF_RESIDENCIA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new[] { "ENDERECO_RESIDENCIAL" }, "Unidade da Federação em que o candidato reside, derivada do endereço residencial.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.", "UNIDADES_FEDERATIVAS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "UF de residência", "CALCULADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
-                    { new Guid("fa700000-0000-7000-8000-000000000021"), true, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "VALOR_UNICO", "PESSOAL", "MUNICIPIO_RESIDENCIA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new[] { "ENDERECO_RESIDENCIAL" }, "Município em que o candidato reside, derivado do endereço residencial.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.", "MUNICIPIOS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Município de residência", "CALCULADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
+                    { new Guid("fa700000-0000-7000-8000-000000000020"), true, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA", "VALOR_UNICO", "PESSOAL", "UF_RESIDENCIA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new[] { "ENDERECO_RESIDENCIAL" }, "Unidade da Federação em que o candidato reside, derivada do endereço residencial.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.", "UNIDADES_FEDERATIVAS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "UF de residência", "CALCULADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
+                    { new Guid("fa700000-0000-7000-8000-000000000021"), true, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA", "VALOR_UNICO", "PESSOAL", "MUNICIPIO_RESIDENCIA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new[] { "ENDERECO_RESIDENCIAL" }, "Município em que o candidato reside, derivado do endereço residencial.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.", "MUNICIPIOS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Município de residência", "CALCULADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000022"), true, "CLASSIFICACAO:MODALIDADE_CONVOCACAO", "VALOR_UNICO", "INTERNO", "MODALIDADE_CONVOCACAO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Grupo de vagas em que o candidato foi convocado, conhecido só depois do resultado final. Os documentos da habilitação seguem a convocação.", "OPCAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", "MODALIDADE", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Modalidade da convocação", "CALCULADO", "RESULTADO_FINAL", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000023"), true, "CAMPO_FORMULARIO:MAIOR_IDADE", "VALOR_UNICO", "PESSOAL", "MAIOR_IDADE", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Se o membro da composição familiar é maior de idade.", "SIM_OU_NAO", "MEMBRO_GRUPO", "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Maior de idade", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000024"), true, "CAMPO_FORMULARIO:SEM_RENDA", "VALOR_UNICO", "PESSOAL", "SEM_RENDA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Se o membro da composição familiar não tem renda.", "SIM_OU_NAO", "MEMBRO_GRUPO", "Comprovação documental dos membros da composição familiar do candidato no processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Sem renda", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
@@ -5390,8 +5466,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     { new Guid("fa700000-0000-7000-8000-000000000041"), true, "CAMPO_FORMULARIO:RG_UF", "VALOR_UNICO", "PESSOAL", "RG_UF", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Unidade da Federação que emitiu o RG do candidato.", "OPCAO", "CANDIDATO", "Identificação do candidato no processo seletivo.", "UNIDADES_FEDERATIVAS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "UF de emissão do RG", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000042"), true, "CAMPO_FORMULARIO:NATURALIDADE_UF", "VALOR_UNICO", "PESSOAL", "NATURALIDADE_UF", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Unidade da Federação em que o candidato nasceu.", "OPCAO", "CANDIDATO", "Identificação do candidato no processo seletivo.", "UNIDADES_FEDERATIVAS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "UF de nascimento", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000043"), true, "CAMPO_FORMULARIO:NATURALIDADE_MUNICIPIO", "VALOR_UNICO", "PESSOAL", "NATURALIDADE_MUNICIPIO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Município em que o candidato nasceu.", "OPCAO", "CANDIDATO", "Identificação do candidato no processo seletivo.", "MUNICIPIOS", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Município de nascimento", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
-                    { new Guid("fa700000-0000-7000-8000-000000000044"), true, "CAMPO_FORMULARIO:TIPO_ENDERECO", "VALOR_UNICO", "PESSOAL", "TIPO_ENDERECO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Tipo de localidade em que o candidato reside, perguntado antes do endereço.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.", "CATALOGO", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Tipo de localidade", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
-                    { new Guid("fa700000-0000-7000-8000-000000000045"), true, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "VALOR_UNICO", "PESSOAL", "NOME_COMUNIDADE", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.", "TEXTO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o bônus regional do processo seletivo.", null, "LIVRE", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Nome da aldeia, comunidade ou quilombo", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
+                    { new Guid("fa700000-0000-7000-8000-000000000044"), true, "CAMPO_FORMULARIO:TIPO_ENDERECO", "VALOR_UNICO", "PESSOAL", "TIPO_ENDERECO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Tipo de localidade em que o candidato reside, perguntado antes do endereço.", "OPCAO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.", "CATALOGO", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Tipo de localidade", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
+                    { new Guid("fa700000-0000-7000-8000-000000000045"), true, "CAMPO_FORMULARIO:NOME_COMUNIDADE", "VALOR_UNICO", "PESSOAL", "NOME_COMUNIDADE", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.", "TEXTO", "CANDIDATO", "Verificação da residência do candidato para os requisitos regionais e o Fator de Atenuação das Desigualdades de Acesso do processo seletivo.", null, "LIVRE", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Nome da aldeia, comunidade ou quilombo", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000046"), true, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "VALOR_UNICO", "PESSOAL", "FORMA_CONCLUSAO_EM", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM.", "OPCAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", "CATALOGO", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Forma de conclusão do ensino médio", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000047"), true, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "VALOR_UNICO", "PESSOAL", "ONDE_CURSOU_EM", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo.", "OPCAO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", "CATALOGO", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Onde cursou o ensino médio", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
                     { new Guid("fa700000-0000-7000-8000-000000000048"), true, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "VALOR_UNICO", "PESSOAL", "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Se a renda familiar per capita do candidato é igual ou inferior a um salário mínimo e meio, como ele declara no pedido de isenção da taxa.", "SIM_OU_NAO", "CANDIDATO", "Análise do pedido de isenção da taxa de inscrição do processo seletivo.", null, null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Renda familiar per capita de até um salário mínimo e meio", "DECLARADO", "SOLICITACAO_ISENCAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },
@@ -5474,7 +5550,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     { new Guid("d0a00000-0000-7000-8000-000000000013"), "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª", "ALOCACAO_PRIMEIRA_OPCAO_PRIORITARIA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "9b08764b327434401de25cf5be209f031cf5d7f9b2044cb43b5fd2d9ca95f15a", "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]", "REGRA_ORDEM_ALOCACAO", null, "v1" },
                     { new Guid("d0a00000-0000-7000-8000-000000000014"), "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias", "RENDA-PER-CAPITA-LEI-12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "3300f396d5f99b257bb5ada2b919d7749e3ad9babc097f63d7c99e3ce641e99a", "[\"média mensal da renda familiar bruta no período considerado, após exclusões, dividida pelo número de membros da família deve ser menor ou igual ao limite em salários mínimos multiplicado pelo valor de referência do salário mínimo\"]", "REGRA_ELEGIBILIDADE", null, "v1" },
                     { new Guid("d0a00000-0000-7000-8000-000000000017"), "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — reserva limitada às vagas da oferta e prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)", "AJUSTE_VAGAS_ARTIGO_11_PARAGRAFO_UNICO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "6929fffe7c5164b48f8c05867dffe296c72baa029dfdbfafb873757dc85ad3fc", "[\"a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"na falta de vagas, as modalidades de baixa renda têm prioridade sobre as demais (art. 11 §único II)\",\"a reserva pode superar o mínimo legal de 50%, reduzindo as vagas da ampla concorrência (art. 10 II)\",\"a distribuição em cursos com poucas vagas segue o limite previsto em lei, sem impedir a oferta\"]", "REGRA_AJUSTE_DISTRIBUICAO_VAGAS", null, "v1" },
-                    { new Guid("d0a00000-0000-7000-8000-000000000018"), "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo, efeito suspensivo e guarda da vaga configuráveis por edital", "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "cffb7c530a7664cfd44d4750daa2974a1800cf0b73ff084039f701e2b453b2dc", "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara explicitamente que não há efeito suspensivo, e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de uma publicação prevista preliminar da própria fase, identificada por ela e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]", "REGRA_PRAZO_RECURSO", null, "v1" },
+                    { new Guid("d0a00000-0000-7000-8000-000000000018"), "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo, efeito suspensivo e guarda da vaga configuráveis por edital", "RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "17872c0f3bd0fd3a1cf35702c17b45149479f386a125e30a42d82d98691435ae", "[\"o recurso corre em duas instâncias no Uni+; a 2ª instância existe quando o recurso admite instância superior, e o julgamento do recurso fica registrado como ato publicado\",\"o efeito suspensivo do recurso na 1ª instância vem da escolha do edital, e a escolha é obrigatória: o edital declara uma das três opções (efeito suspensivo para todos os recursos, sem efeito suspensivo, ou a unidade decide em cada recurso), e a falta da declaração é recusada\",\"o recurso na 2ª instância sempre tem efeito suspensivo, sem configuração\",\"a guarda da vaga em disputa é uma declaração separada do efeito suspensivo: a vaga fica guardada até o resultado definitivo ou não fica guardada, e, sem declaração, vale guardar até o resultado definitivo\",\"com instância superior, o edital não pode declarar que a vaga não fica guardada\",\"interposição só é aceita durante o período da fase de recurso\",\"não cabe recurso contra resultado definitivo\",\"o prazo de interposição na 1ª instância começa no instante da publicação do ato: se a publicação atrasa, o prazo acompanha o atraso, sem retificação\",\"o prazo da 2ª instância é próprio, é declarado quando o recurso admite instância superior, é recusado quando não admite, e começa na publicação do indeferimento ao candidato\",\"o evento que inicia o prazo é a publicação de uma publicação prevista preliminar da própria fase, identificada por ela e não pelo código do tipo de ato — a publicação do mesmo tipo por outra fase do cronograma não inicia o prazo desta\",\"o evento que inicia o prazo nunca é um ato que registra a configuração da versão publicada\",\"os prazos correm exclusivamente em dia útil e admitem apenas dias úteis em valor inteiro ou horas — dias corridos são recusados, e fração de dia útil também, cada um com causa própria; nunca aproximado em silêncio\",\"contagem sobre dia útil depende de duas declarações do processo, o calendário de dias úteis vigente da localidade regente e a convenção de contagem — vale para todo prazo de recurso, nas duas unidades e nas duas instâncias\",\"julgamento e retificação são novos fatos e não sobrescrevem os registros anteriores\"]", "REGRA_PRAZO_RECURSO", null, "v1" },
                     { new Guid("d0a00000-0000-7000-8000-000000000019"), "Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 2º e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 21/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)", "REMANEJAMENTO_ORDEM_LEI_12711", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"destinoFinalCodigo\":\"AC\",\"ordens\":[\n  {\"origem\":\"LB_PPI\",\"destinos\":[\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_Q\",\"destinos\":[\"LB_PPI\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LB_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PPI\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_Q\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"]},\n  {\"origem\":\"LI_PCD\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_EP\"]},\n  {\"origem\":\"LI_EP\",\"destinos\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\"]}\n]}", "1dfcb5775510b09c7698fd743a8b7c2d01f4a6f13c3c34942034ffc6f407b6e5", "[\"oito origens federais, ordem fixa por origem e ampla concorrência como modalidade final — a ordem é aplicada sem recálculo\"]", "CRITERIO_REMANEJAMENTO", null, "v1" },
                     { new Guid("d0a00000-0000-7000-8000-000000000020"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM_PRAZO_EXCLUI_DIA_INICIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "ae056fe1463054f24b56768b6fbe43741f7834e2befbf9cea03f523f689f2057", "[\"evento que inicia o prazo fora da meia-noite: a hora do evento que inicia o prazo não influencia o fechamento — o dia civil do evento que inicia o prazo é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"evento que inicia o prazo em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia do evento que inicia o prazo, útil ou não, nunca conta (1 dia útil iniciado domingo às 18h, sem feriado no intervalo, fecha no fim de segunda)\",\"em dias úteis: N dias úteis inteiros contados após o dia excluído; o prazo termina à meia-noite que inicia o dia seguinte ao N-ésimo dia útil; esse instante não está incluído no prazo, conforme o fuso horário registrado na versão publicada\",\"em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia do evento que inicia o prazo e consome apenas horas situadas em dia útil (48h iniciadas sexta às 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)\"]", "CONVENCAO_CONTAGEM_PRAZO", null, "v1" },
                     { new Guid("d0a00000-0000-7000-8000-000000000021"), "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria (UNI-REQ-0117).", "CONTAGEM_PRAZO_HORAS_UTEIS_DESDE_O_EVENTO_INICIAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{}", "c2d80dcb4e20f527568a740ce272c0cdab8b620ab21a8170a57160af5a001203", "[\"evento que inicia o prazo fora da meia-noite: a contagem parte do instante exato do evento que inicia o prazo — a hora do fechamento deriva da hora do evento que inicia o prazo, sem deslocamento para o início de outro dia (48h iniciadas sexta às 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)\",\"evento que inicia o prazo em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h iniciadas domingo às 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)\",\"em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera\",\"em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde o evento que inicia o prazo; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil iniciado sexta às 18h, sem feriado no intervalo, fecha segunda 18h)\"]", "CONVENCAO_CONTAGEM_PRAZO", null, "v1" },
@@ -6059,6 +6135,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
+                name: "ux_cadastros_de_reserva_processo_chamada",
+                schema: "selecao",
+                table: "cadastros_de_reserva",
+                columns: new[] { "processo_seletivo_id", "numero_da_chamada" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_calculos_dos_dados_processo_dado",
                 schema: "selecao",
                 table: "calculos_dos_dados",
@@ -6332,6 +6415,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ux_dados_dos_formularios_formulario_ordem",
+                schema: "selecao",
+                table: "dados_dos_formularios",
+                columns: new[] { "formulario_id", "ordem" },
+                unique: true,
+                filter: "grupo_coletado_id IS NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "ux_dados_dos_formularios_grupo_ordem",
                 schema: "selecao",
                 table: "dados_dos_formularios",
@@ -6344,14 +6435,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "dados_dos_formularios",
                 columns: new[] { "processo_seletivo_id", "codigo_do_dado" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_dados_dos_formularios_processo_finalidade_ordem",
-                schema: "selecao",
-                table: "dados_dos_formularios",
-                columns: new[] { "processo_seletivo_id", "finalidade", "ordem" },
-                unique: true,
-                filter: "grupo_coletado_id IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_decisoes_da_migracao_perfil_id_concessao_id",
@@ -6519,6 +6602,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "exigido_na_fase_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_documentos_exigidos_formulario",
+                schema: "selecao",
+                table: "documentos_exigidos",
+                columns: new[] { "processo_seletivo_id", "formulario_codigo" });
+
+            migrationBuilder.CreateIndex(
                 name: "ux_documentos_exigidos_processo_chave_local",
                 schema: "selecao",
                 table: "documentos_exigidos",
@@ -6662,13 +6751,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_formularios_processo_processo_finalidade",
-                schema: "selecao",
-                table: "formularios_processo",
-                columns: new[] { "processo_seletivo_id", "finalidade" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_geracoes_de_envio_ao_inep_escopo",
                 schema: "selecao",
                 table: "geracoes_de_envio_ao_inep",
@@ -6687,6 +6769,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "grupos_do_quadro_de_pesos",
                 column: "configuracao_classificacao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_grupos_dos_formularios_formulario_id",
+                schema: "selecao",
+                table: "grupos_dos_formularios",
+                column: "formulario_id");
 
             migrationBuilder.CreateIndex(
                 name: "ux_grupos_dos_formularios_processo_codigo",
@@ -6946,10 +7034,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_modelos_formulario_tipo_finalidade_ativo",
+                name: "ix_modelos_formulario_tipo_serve_inscricao_ativo",
                 schema: "configuracao",
                 table: "modelos_formulario",
-                columns: new[] { "tipo_processo_codigo", "finalidade", "ativo" });
+                columns: new[] { "tipo_processo_codigo", "serve_a_fase_de_inscricao", "ativo" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_modelos_formulario_codigo",
@@ -7455,17 +7543,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "versao_vigente_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_termos_exigidos_formulario_processo_finalidade_codigo",
+                name: "ix_termos_exigidos_formulario_processo_seletivo_id",
                 schema: "selecao",
                 table: "termos_exigidos_formulario",
-                columns: new[] { "processo_seletivo_id", "finalidade", "codigo" },
+                column: "processo_seletivo_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_termos_exigidos_formulario_formulario_codigo",
+                schema: "selecao",
+                table: "termos_exigidos_formulario",
+                columns: new[] { "formulario_id", "codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_termos_exigidos_formulario_processo_finalidade_ordem",
+                name: "ux_termos_exigidos_formulario_formulario_ordem",
                 schema: "selecao",
                 table: "termos_exigidos_formulario",
-                columns: new[] { "processo_seletivo_id", "finalidade", "ordem" },
+                columns: new[] { "formulario_id", "ordem" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7911,6 +8005,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "bases_legais_da_comprovacao",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "cadastros_de_reserva",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8382,10 +8480,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "formularios_processo",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
                 name: "concessoes",
                 schema: "autorizacao");
 
@@ -8467,6 +8561,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "fases_cronograma",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "formularios_processo",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
