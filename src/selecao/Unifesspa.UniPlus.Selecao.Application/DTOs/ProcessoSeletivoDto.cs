@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.Text.Json.Serialization;
 
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Manifestacao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 
@@ -38,6 +39,8 @@ public sealed record ProcessoSeletivoDto(
     ProvaPresencialDto? ProvaPresencial,
     // Cadastro de reserva por chamada: lista vazia é o processo sem reserva em nenhuma chamada, na ordem crescente do número da chamada, com a participação da reserva só na chamada que tem reserva.
     IReadOnlyList<CadastroDeReservaDaChamadaDto> CadastroDeReserva,
+    // Como o edital prevê a manifestação de interesse: null é a manifestação não prevista, e o rótulo é só de leitura.
+    CodigoComRotulo<ManifestacaoDeInteresse>? ManifestacaoDeInteresse,
     ConfiguracaoCascataRemanejamentoDto? Cascata,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,

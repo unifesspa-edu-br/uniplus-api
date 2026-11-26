@@ -14,6 +14,7 @@ internal static class ConfiguracaoPublicadaDoEnvelope
             MotivosDeDecisao = blocos.Configuracao.MotivosDeDecisao,
             ProvaPresencial = blocos.Configuracao.ProvaPresencial,
             CadastroDeReserva = blocos.Configuracao.CadastroDeReserva,
+            ManifestacaoDeInteresse = blocos.Configuracao.ManifestacaoDeInteresse,
         };
 
     private static CronogramaDeclarado Cronograma(BlocosDoEnvelope blocos) => new(

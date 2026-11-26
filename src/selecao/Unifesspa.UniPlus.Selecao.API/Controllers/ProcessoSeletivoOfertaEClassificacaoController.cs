@@ -135,6 +135,27 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
+    /// Declara como o edital prevê a manifestação de interesse depois da 1ª chamada: <c>UMA_VEZ</c> ou <c>CONFIRMA_A_CADA_CHAMADA</c>, que prevê a
+    /// manifestação e a exige, a segunda com confirmação a cada chamada. O código nulo diz que o edital não prevê a manifestação, e a declaração não é
+    /// obrigatória para publicar. O prazo da manifestação é da publicação de cada chamada, não desta declaração.
+    /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
+    [HttpPut("{id:guid}/manifestacao-interesse")]
+    [EndpointName("DefinirManifestacaoDeInteresse")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirManifestacaoDeInteresse(Guid id, [FromBody] DefinirManifestacaoDeInteresseRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result resultado = await _commandBus.Send(new DefinirManifestacaoDeInteresseCommand(id, request.ManifestacaoDeInteresse), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). A declaração é obrigatória
     /// para publicar, e o número não pode superar o de ofertas da distribuição de vagas.
     /// </summary>

@@ -6397,6 +6397,11 @@
       "titulo": "Tipo do filtro de leiautes do INEP inválido"
     },
     {
+      "codigo": "uniplus.selecao.manifestacao_de_interesse.codigo_desconhecido",
+      "status": 422,
+      "titulo": "Manifestação de interesse desconhecida"
+    },
+    {
       "codigo": "uniplus.selecao.modalidade_selecionada.base_legal_obrigatoria",
       "status": 422,
       "titulo": "Base legal da modalidade é obrigatória"

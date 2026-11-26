@@ -21244,6 +21244,21 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.manifestacao_de_interesse.codigo_desconhecido",
+      "requisitos": [
+        "UNI-REQ-0503"
+      ],
+      "oQueAconteceu": [
+        "A manifestação de interesse informada não é uma das duas opções que o sistema oferece."
+      ],
+      "comoResolver": [
+        "Informe uma das duas opções: \"Manifesta interesse uma só vez\" (UMA_VEZ) ou \"Confirma o interesse a cada chamada\" (CONFIRMA_A_CADA_CHAMADA). Se o edital não prevê a manifestação de interesse, deixe a declaração sem valor."
+      ],
+      "ondeAparece": [
+        "Definição da manifestação de interesse do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.modalidade_selecionada.base_legal_obrigatoria",
       "requisitos": [],
       "oQueAconteceu": [

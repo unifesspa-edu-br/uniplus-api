@@ -61,6 +61,7 @@ public static class ClassificacaoDosBlocosDoCertame
     {
         "motivosDeDecisao",
         "cadastroDeReserva",
+        "manifestacaoDeInteresse",
         "classificacao",
         "criteriosDesempate",
         "fada",

@@ -33,7 +33,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     /// atendimento povoado, bônus com teto, <b>as quatro</b> variantes de desempate,
     /// classificação local com regras de eliminação de <b>todas</b> as variantes — duas delas do
     /// <b>mesmo</b> código — e duas ofertas de curso, uma sob a Lei 12.711 (com
-    /// referência demográfica e as nove modalidades federais) e outra institucional, e o cadastro de reserva das chamadas 1 (sem reserva) e 2.
+    /// referência demográfica e as nove modalidades federais) e outra institucional, o cadastro de reserva das chamadas 1 (sem reserva) e 2, e a manifestação de interesse com confirmação a cada chamada.
     /// </summary>
     /// <remarks>
     /// A multiplicidade é deliberada: um decoder que indexasse as regras <b>por código</b>
@@ -66,6 +66,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         DefinirCascataEDocumentos(processo, variante, permutar, comRegrasDeComprovacao);
         DefinirTaxaEOpcoesDeCurso(processo, permutar);
         DefinirCadastroDeReservaDoExemplo(processo, permutar);
+        processo.DefinirManifestacaoDeInteresse("CONFIRMA_A_CADA_CHAMADA").IsSuccess.Should().BeTrue();
         return processo;
     }
 

@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 
 /// <summary>
 /// Cada enumeração do esquema da configuração tem os mesmos valores do vocabulário que o domínio aceita: um valor novo num
@@ -67,6 +68,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Exigencias, "/$defs/dataDeReferenciaDoDocumento/properties/tipo", () => CatalogoDe<TipoDaDataDeReferencia>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/formatosPermitidos/properties/lista/items/properties/formato", () => CatalogoDe<FormatoPermitido>.Todos().Select(static c => c.Codigo)),
         ("cadastro-de-reserva.schema.json", "/properties/participacaoDaReserva", () => Codigos<ParticipacaoDaReserva>(static v => v.Codigo())),
+        ("manifestacao-de-interesse.schema.json", "", () => Codigos<ManifestacaoDeInteresse>(static v => v.Codigo())),
         ("identificacao.schema.json", "/properties/origemCandidatos", () => Codigos<OrigemCandidatos>(static v => v.Codigo())),
         ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => CatalogoDe<FundamentoIsencao>.Todos().Select(static v => v.Codigo).ToArray()),
         ("formulario.schema.json", "/properties/finalidade", () => CatalogoDe<FinalidadeFormulario>.Todos().Select(static c => c.Codigo)),

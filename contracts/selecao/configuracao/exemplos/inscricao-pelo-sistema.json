@@ -626,6 +626,7 @@
       "participacaoDaReserva": "ANTECIPA_A_HABILITACAO"
     }
   ],
+  "manifestacaoDeInteresse": "UMA_VEZ",
   "motivosDeDecisao": [
     {
       "faseChave": "fase_inscricao",

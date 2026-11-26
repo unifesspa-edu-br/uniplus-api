@@ -251,3 +251,13 @@ A `v1` ganha a propriedade `cadastroDeReserva` em `documento.schema.json`, na pr
 - A propriedade ausente equivale à lista vazia: o processo sem cadastro de reserva.
 
 **Confirmação:** o teste de contrato valida o exemplo publicado e os três envelopes de referência convertidos contra a `v1`, que agora inclui o cadastro de reserva.
+
+## Emenda (2026-11-26) — a manifestação de interesse na `v1`
+
+A `v1` ganha a propriedade `manifestacaoDeInteresse` em `documento.schema.json`, na própria `v1`, pelo mesmo motivo das emendas anteriores: a `v1` ainda não congelou. A propriedade é um texto, definido em `manifestacao-de-interesse.schema.json`, com o mesmo nome do bloco do documento congelado (ADR-0109, emenda 10).
+
+- O valor é `UMA_VEZ` ou `CONFIRMA_A_CADA_CHAMADA` (UNI-REQ-0503). Os dois preveem a manifestação e a exigem; o segundo exige ainda a confirmação a cada chamada. Não há propriedade separada para "prevista", "exigida" ou "confirmação a cada chamada", nem para o prazo da manifestação, que é da publicação de cada chamada.
+- A propriedade ausente é a manifestação não prevista. Não existe valor para "não prevista", e a ausência não impede a publicação.
+- O código fora da lista é recusado pelo esquema na forma e, pelo domínio, com o erro `uniplus.selecao.manifestacao_de_interesse.codigo_desconhecido`, no caminho `manifestacaoDeInteresse` e sem repetir o valor.
+
+**Confirmação:** o teste de contrato valida o exemplo publicado e os três envelopes de referência convertidos contra a `v1`, que agora inclui a manifestação de interesse, e o teste de paridade confere que a lista do esquema é a do catálogo do domínio.

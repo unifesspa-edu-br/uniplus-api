@@ -22,6 +22,8 @@ public sealed class ProjecaoDasPartesPublicadasTests
     [InlineData("divulgacao", """{"divulgacao":{"camposPublicos":["NUMERO_INSCRICAO"],"regraNomeAbreviado":null,"justificativa":null}}""", """{"camposPublicos":["NUMERO_INSCRICAO"]}""")]
     [InlineData("provaPresencial", """{"provaPresencial":{"temProvaPresencial":false,"municipios":[]}}""", """{"temProvaPresencial":false,"municipios":[]}""")]
     [InlineData("cadastroDeReserva", """{"cadastroDeReserva":[]}""", """[]""")]
+    [InlineData("manifestacaoDeInteresse", """{"manifestacaoDeInteresse":"UMA_VEZ"}""", "\"UMA_VEZ\"")]
+    [InlineData("manifestacaoDeInteresse", """{"manifestacaoDeInteresse":"CONFIRMA_A_CADA_CHAMADA"}""", "\"CONFIRMA_A_CADA_CHAMADA\"")]
     [InlineData("tiposDeAto", """{"tiposDeAto":[{"codigo":"INSCRICAO","unicoPorObjeto":false,"ehResultado":true,"congelaConfiguracao":false}]}""", """[{"codigo":"INSCRICAO","unicoPorObjeto":false,"ehResultado":true,"congelaConfiguracao":false}]""")]
     [InlineData("coleta", """{"calculosDosDados":[{"codigoDoDado":"REGIME","regras":[{"ordem":0,"contribui":"AC","quando":null}]}]}""", """{"calculosDosDados":[{"codigoDoDado":"REGIME","regras":[{"ordem":0,"contribui":"AC","quando":null}]}]}""")]
     [InlineData("identificacao", """{"tipoProcesso":{"origemId":"11111111-1111-1111-1111-111111111111","codigo":"SISU","nome":"Seleção"},"identidadesUnidade":{"administradora":{"origemId":"11111111-1111-1111-1111-111111111111","codigo":"CEPS","nome":"Centro","sigla":"CEPS","identificadorNoEnderecoWeb":"ceps","tipo":"ADMINISTRATIVA","cidadeCodigoIbge":null,"cidadeNome":null,"cidadeUf":null}},"localidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA","fusoHorario":"America/Belem"},"identificadorLegivel":"certame-2026","algoritmoContagemPrazo":{"presente":false}}""", """{"tipoProcessoCodigo":"SISU","tipoProcessoNome":"Seleção","unidadeAdministradoraCodigo":"CEPS","unidadeAdministradoraNome":"Centro","unidadeAdministradoraSigla":"CEPS","localidadeCodigoIbge":"1504208","localidadeNome":"Marabá","localidadeUf":"PA","identificadorLegivel":"certame-2026"}""")]
@@ -84,6 +86,7 @@ public sealed class ProjecaoDasPartesPublicadasTests
     [Theory]
     [InlineData("taxaDeInscricao", """{"taxaInscricao":{"presente":false}}""")]
     [InlineData("ordemDeRemanejamento", """{"ordemDeRemanejamento":{"presente":false}}""")]
+    [InlineData("manifestacaoDeInteresse", """{"manifestacaoDeInteresse":null}""")]
     public void Projetar_BlocoNaoPresente_OmiteAParte(string nome, string congelado)
     {
         JsonObject documento = new ProjecaoDaVersaoPublicada(Esquema).Projetar(new(Guid.Empty, 1, DateTimeOffset.UnixEpoch, congelado));
