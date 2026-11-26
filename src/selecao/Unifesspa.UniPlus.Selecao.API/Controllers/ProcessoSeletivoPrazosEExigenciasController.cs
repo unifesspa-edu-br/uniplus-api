@@ -44,21 +44,16 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo:
     /// período, produtos publicados com o papel de cada um, fase que conclui o ciclo
-    /// recursal, parecer individual, bancas requeridas, regra de recurso e regra de homologação das inscrições, por fase. A
-    /// regra de homologação ausente remove a que a fase tinha, e a fase que não a declara não homologa: o cliente devolve a
-    /// regra que leu. As recusas da regra se acumulam, cada uma no campo da fase, da alternativa, da condição e do campo
-    /// da condição que a causou. O
-    /// <c>GET</c> vem do endpoint agregado
-    /// (<see cref="ProcessoSeletivoController.ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
-    /// do recurso — não há rota aninhada própria de leitura. A fase mantém a chave pelo tipo de origem; cada banca
-    /// mantém a identidade quando o cliente devolve o seu id. As chaves da fase e da banca novas
-    /// vêm na releitura pelo GET. A fase que sai leva junto as etapas dela e os motivos de decisão pendentes; motivo já publicado recusa
-    /// com 422.
+    /// recursal, parecer individual, bancas requeridas, regra de recurso e regra de homologação das inscrições, por fase. As
+    /// recusas da regra se acumulam, cada uma no campo da fase, da alternativa, da condição e do campo da condição que a
+    /// causou. O <c>GET</c> vem do endpoint agregado (<see cref="ProcessoSeletivoController.ObterPorId"/>), que devolve
+    /// <c>CronogramaFases</c> como parte do recurso — não há rota aninhada própria de leitura. O efeito da substituição
+    /// sobre fases, etapas, motivos de decisão e regra de homologação está na descrição da operação, que chega ao contrato.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
     [EndpointName("DefinirCronogramaDeFases")]
-    [EndpointDescription("Devolva consequenciaDaAusencia em cada banca para preservá-la; se omitida, ela é apagada. Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
+    [EndpointDescription("Substitui o cronograma de fases do processo por inteiro: cada fase enviada toma o lugar da que existia, e a fase que não for enviada sai, junto com as etapas dela, os motivos de decisão escolhidos na fase e nas etapas e os documentos exigidos nela, com as regras de comprovação que ficarem sem documento. A gravação é recusada (422) quando a fase que sai é usada como referência por outra exigência, tem etapa usada na classificação ou tem formulário configurado para ser respondido nela. Em cada fase, a regra de homologação das inscrições ausente ou nula apaga a que a fase tinha, e a fase sem regra não homologa: quem grava devolve a regra lida na consulta. Devolva consequenciaDaAusencia em cada banca para preservá-la; se omitida, ela é apagada. Para preservar as chaves, devolva o tipo de cada fase e o id de cada banca que permanece. As chaves da fase e da banca novas vêm na releitura pelo GET.")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
