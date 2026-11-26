@@ -30,7 +30,7 @@ public sealed class CamposPublicosGravadosTests
     public void Conversor_JsonInvalido_RecusaJson(string json)
     {
         Action leitura = () => Conversor.ConvertFromProvider(json);
-        leitura.Should().Throw<JsonException>();
+        leitura.DeveRecusarComoDocumentoInvalido(nameof(ConfiguracaoDivulgacao.CamposPublicos));
     }
 
     [Fact(DisplayName = "Campos públicos válidos são lidos")]

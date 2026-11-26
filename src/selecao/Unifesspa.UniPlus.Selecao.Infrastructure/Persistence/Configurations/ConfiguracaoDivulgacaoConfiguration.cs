@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -62,7 +63,9 @@ internal sealed class ConfiguracaoDivulgacaoConfiguration : IEntityTypeConfigura
 
     private static List<string> DeserializeCampos(string json)
     {
-        List<string>? campos = JsonSerializer.Deserialize<List<string>>(json, JsonOptions);
+        List<string>? campos = ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<List<string>>(json, JsonOptions),
+            nameof(ConfiguracaoDivulgacao.CamposPublicos));
         return campos is { Count: > 0 }
             ? campos
             : throw new InvalidOperationException("Dado gravado inválido na coluna campos_publicos.");

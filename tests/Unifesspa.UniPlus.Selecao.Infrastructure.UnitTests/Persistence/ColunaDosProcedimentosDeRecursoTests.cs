@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class ColunaDosProcedimentosDeRecursoTests
 {
@@ -40,7 +41,7 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
         json[0]!["alvoTipo"] = tipo;
 
         Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider(json.ToJsonString());
-        leitura.Should().Throw<JsonException>();
+        leitura.DeveRecusarComoDocumentoInvalido("procedimentos_de_recurso");
     }
 
     [Fact]
@@ -51,7 +52,23 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
         json[0]!["alvoTipo"] = 1;
 
         Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider(json.ToJsonString());
-        leitura.Should().Throw<JsonException>();
+        leitura.DeveRecusarComoDocumentoInvalido("procedimentos_de_recurso");
+    }
+
+    [Fact(DisplayName = "Alvo de item com identificador inválido é recusado sem repetir o valor gravado")]
+    public void Conversor_ComIdentificadorDeItemInvalido_RecusaSemRepetirOValor()
+    {
+        const string valorGravado = "valor-sigiloso-gravado";
+        string documento = (string)ColunaDosProcedimentosDeRecurso.Conversor.ConvertToProvider(Procedimentos())!;
+        JsonNode json = JsonNode.Parse(documento)!;
+        json[0]!["alvoValor"] = valorGravado;
+
+        Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider(json.ToJsonString());
+
+        InvalidOperationException erro = leitura.Should().Throw<InvalidOperationException>().Which;
+        erro.Message.Should().Contain("procedimentos_de_recurso").And.Contain("valor fora do formato esperado")
+            .And.NotContain(valorGravado);
+        erro.InnerException.Should().BeNull();
     }
 
     [Fact(DisplayName = "Procedimentos nulos são recusados na leitura")]
@@ -73,14 +90,14 @@ public sealed class ColunaDosProcedimentosDeRecursoTests
     {
         const string documento = """[{"TipoDeDecisao":"CLASSIFICACAO","alvoTipo":null,"alvoValor":null,"regraCodigo":"RECALCULO","regraVersao":"v1","regraHash":"abc"}]""";
         Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider(documento);
-        leitura.Should().Throw<JsonException>();
+        leitura.DeveRecusarComoDocumentoInvalido("procedimentos_de_recurso");
     }
 
     [Fact(DisplayName = "JSON malformado de procedimentos é recusado")]
     public void Conversor_JsonMalformado_RecusaJson()
     {
         Action leitura = () => ColunaDosProcedimentosDeRecurso.Conversor.ConvertFromProvider("[");
-        leitura.Should().Throw<JsonException>();
+        leitura.DeveRecusarComoDocumentoInvalido("procedimentos_de_recurso");
     }
 
     internal static ProcedimentosDeRecurso Procedimentos() => ProcedimentosDeRecurso.De([

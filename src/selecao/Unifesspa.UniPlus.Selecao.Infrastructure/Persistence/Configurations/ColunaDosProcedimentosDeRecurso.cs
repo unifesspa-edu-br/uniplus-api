@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
@@ -53,8 +54,11 @@ internal static class ColunaDosProcedimentosDeRecurso
         JsonSerializer.Serialize(procedimentos.Itens.Select(Persistido), Opcoes);
 
     private static ProcedimentosDeRecurso Ler(string documento) =>
-        ProcedimentosDeRecurso.De((JsonSerializer.Deserialize<List<ProcedimentoPersistido>>(documento, Opcoes)
-            ?? throw new InvalidOperationException("Dado gravado inválido na coluna procedimentos_de_recurso.")).Select(Declarado));
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => ProcedimentosDeRecurso.De(
+                (JsonSerializer.Deserialize<List<ProcedimentoPersistido>>(documento, Opcoes) ?? throw new JsonException("documento nulo"))
+                    .Select(Declarado)),
+            "procedimentos_de_recurso");
 
     private static ProcedimentoPersistido Persistido(ProcedimentoDeRecursoDeclarado procedimento) => new(
         procedimento.TipoDeDecisao,

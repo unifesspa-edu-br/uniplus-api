@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -132,7 +133,7 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
     /// <see cref="JsonDocument"/> de origem (<see cref="JsonElement.Clone"/>).
     /// </summary>
     private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
-        new(element => element.GetRawText(), json => Parse(json));
+        new(element => element.GetRawText(), json => Ler(json));
 
     /// <summary>
     /// ValueComparer por texto bruto — suficiente para o change-tracker de uma
@@ -143,6 +144,9 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             (a, b) => a.GetRawText() == b.GetRawText(),
             v => v.GetRawText().GetHashCode(StringComparison.Ordinal),
             v => Parse(v.GetRawText()));
+
+    private static JsonElement Ler(string json) =>
+        ObjetoDeValorGravado.DesserializarDocumento(() => Parse(json), nameof(RegraCatalogo));
 
     private static JsonElement Parse(string json)
     {
