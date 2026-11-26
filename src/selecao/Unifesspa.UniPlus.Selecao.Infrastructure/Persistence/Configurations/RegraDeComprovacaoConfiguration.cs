@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<RegraDeComprovacao>
 {
@@ -39,6 +40,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
             $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.Documento)} AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
             $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.TodosOsItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
             $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.QuantidadeMinimaDeItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+        t.HasCheckConstraint("ck_regras_de_comprovacao_consequencia", $"consequencia IS NULL OR consequencia IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
         t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
         t.HasCheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
         t.HasCheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
@@ -56,6 +58,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
 
         builder.Property(n => n.Ordem).IsRequired();
         builder.Property(n => n.Forma).HasColumnName("forma").IsRequired();
+        builder.Property(n => n.AbrePrazoParaReenvio).HasComment("Indica se o grupo abre prazo para reenvio dos documentos.");
         builder.Property(n => n.Consequencia).HasMaxLength(ConsequenciaMaxLength);
 
         builder.OwnsOne(n => n.Distincao, ConfigurarDistincao);

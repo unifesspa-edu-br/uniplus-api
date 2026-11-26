@@ -5452,11 +5452,10 @@
       "codigo": "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A **ação quando indeferido** informada não é um dos dois códigos aceitos: `RECLASSIFICA_AC` ou `RECLASSIFICA_CONFORME_EDITAL`.",
-        "Esta ação é opcional (a modalidade pode não declarar nenhuma). Este erro só\ndispara quando um código é informado e não é um dos dois válidos."
+        "A ação de indeferimento informada não é reconhecida. A ação é opcional; quando declarada, o código aceito é `RETIRA_A_MODALIDADE`."
       ],
       "comoResolver": [
-        "Informe um dos dois códigos válidos — `RECLASSIFICA_AC` ou\n`RECLASSIFICA_CONFORME_EDITAL` — ou omita o campo se a modalidade não declara\nação para o candidato indeferido."
+        "Informe `RETIRA_A_MODALIDADE` ou omita a ação quando a modalidade não declarar uma ação."
       ],
       "ondeAparece": [
         "Criação de uma modalidade de concorrência",
@@ -16088,26 +16087,6 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.reclassificacao_para_ampla_sem_ampla_ofertada",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Uma modalidade selecionada na oferta tem como ação para o candidato indeferido a\nreclassificação na ampla concorrência (`RECLASSIFICA_AC`), mas a ampla concorrência (`AC`) não\nestá entre as modalidades selecionadas da mesma oferta. A ação de reclassificar leva o\ncandidato para a ampla concorrência da própria oferta; sem ela, o processo congelaria uma\ninstrução de reclassificar para uma modalidade que ele não tem. A mensagem do erro traz o\ncódigo da modalidade que reclassifica.",
-        "Diferente das demais referências entre modalidades, o destino não é declarado no cadastro: está\nimplícito na própria ação.",
-        "A recusa vem no campo `distribuicaoVagas[i].modalidades` e acumula, no array `errors[]`, com as\ndemais violações da mesma distribuição que o domínio confere em conjunto. A conferência de\nreferências entre modalidades devolve só a primeira violação encontrada, na ordem das\nmodalidades da oferta. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada.",
-        "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Conforme a intenção:",
-        "- **A oferta tem ampla concorrência:** inclua a modalidade `AC` em `modalidadeIds` e envie a\n  distribuição de novo.\n- **A oferta não tem ampla concorrência:** retire de `modalidadeIds` a modalidade que\n  reclassifica nela, ou corrija, no cadastro de modalidades de Configuração, a ação aplicada\n  quando o candidato é indeferido.",
-        "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Definição de distribuição de vagas do processo seletivo",
-        "Simulação da distribuição de vagas do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_indevida",
       "requisitos": [],
       "oQueAconteceu": [
@@ -16988,6 +16967,39 @@
         "Consulta administrativa da inscrição e dos documentos dela",
         "Publicação de produto do edital e listagem de produtos previstos do processo",
         "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.consequencias_do_descumprimento.acrescimo_nao_oferecido",
+      "requisitos": [
+        "UNI-REQ-0502"
+      ],
+      "oQueAconteceu": [
+        "Uma exigência ou grupo determina retirar o acréscimo do Fator de Atenuação das Desigualdades de Acesso, mas o processo não oferece esse acréscimo."
+      ],
+      "comoResolver": [
+        "Configure o Fator no processo, se for oferecido, ou escolha outra consequência para a exigência ou o grupo."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.consequencias_do_descumprimento.retira_a_modalidade_sem_ampla_concorrencia",
+      "requisitos": [
+        "UNI-REQ-0501"
+      ],
+      "oQueAconteceu": [
+        "Uma modalidade prevê sua retirada quando a condição não é comprovada, mas a oferta não inclui ampla concorrência, na qual a pessoa deve poder continuar concorrendo."
+      ],
+      "comoResolver": [
+        "Inclua a ampla concorrência na oferta ou ajuste a modalidade e sua ação de indeferimento."
+      ],
+      "ondeAparece": [
+        "Definição de distribuição de vagas do processo seletivo",
+        "Simulação da distribuição de vagas do processo seletivo",
+        "Retificação em ato único"
       ]
     },
     {
@@ -18059,7 +18071,7 @@
       ],
       "oQueAconteceu": [
         "Quando uma modalidade de vaga declara o que acontece com o candidato indeferido (a ação de\nindeferimento), a consequência de indeferimento do documento exigido tem de ser a mesma. O\ndocumento apontado declara uma consequência diferente da ação de uma modalidade que ele pode\nalcançar.",
-        "A comparação considera as modalidades ofertadas que a exigência pode alcançar pelas condições\ndela, e só as que declaram ação de indeferimento. A consequência da exigência e a ação da\nmodalidade usam o mesmo código (`RECLASSIFICA_AC`). A mensagem de detalhe indica o documento e a modalidade em conflito.",
+        "A comparação considera as modalidades ofertadas que a exigência pode alcançar pelas condições\ndela, e só as que declaram ação de indeferimento. A consequência da exigência e a ação da\nmodalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A mensagem de detalhe indica o documento e a modalidade em conflito.",
         "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga)).\nA primeira violação encontrada interrompe a conferência."
       ],
       "comoResolver": [
@@ -18076,12 +18088,10 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "A consequência de indeferimento de um documento exigido só aceita quatro valores: `ELIMINA`,\n`RECLASSIFICA_AC`, `REMOVE_VANTAGEM` ou `ABRE_PRAZO_PARA_REENVIO`. A definição trouxe um documento\ncom uma consequência que não é nenhum deles.",
-        "É uma conferência de forma, feita antes de o sistema consultar o tipo de documento, as fases ou\nas demais configurações do processo. Ela examina as exigências na ordem recebida e para na\nprimeira que tem defeito; dentro dessa exigência, os defeitos de forma aparecem juntos.",
-        "A consequência é opcional: o documento que não carrega consequência de indeferimento não a\ninforma. Para a consequência de um grupo de alternativas (OU), o erro correspondente é\n[`uniplus.selecao.regra_de_comprovacao.consequencia_invalida`](/erros/uniplus.selecao.regra_de_comprovacao.consequencia_invalida)."
+        "A consequência do documento não é reconhecida. Os valores aceitos são `ELIMINA_DO_PROCESSO`, `RETIRA_A_MODALIDADE` e `RETIRA_O_ACRESCIMO`. A declaração é opcional."
       ],
       "comoResolver": [
-        "Informe uma das quatro consequências previstas ou omita o campo, se o documento não carrega\nconsequência de indeferimento. Depois, envie a definição de novo."
+        "Informe uma consequência válida ou omita o campo. Para abrir prazo de reenvio, use a propriedade `abrePrazoParaReenvio`."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
@@ -18278,17 +18288,10 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "A consequência `ABRE_PRAZO_PARA_REENVIO` só faz sentido numa fase que admite complementação de\ndocumentos. A definição trouxe um documento exigido, ou um grupo de alternativas (OU), com essa\nconsequência numa fase do cronograma que não permite complementação. A fase de um grupo é a\nfase comum dos documentos que estão nele. A mensagem de detalhe nomeia a fase, mas não diz se\na consequência é do documento ou do grupo.",
-        "A permissão de complementar não é escolhida no cronograma do processo: o pedido que define o\ncronograma não tem esse campo. A fase do cronograma herda a permissão do cadastro da fase\ncanônica e guarda uma cópia dela no momento em que o cronograma é definido; mudar o cadastro\ndepois não altera um cronograma já definido. No cadastro, só a fase canônica de homologação das\ninscrições aceita a permissão\n([`complementacao_apenas_fases_permitidas`](/erros/uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas)).",
-        "A aplicação de um modelo de formulário também define exigências, e a consequência vem do modelo:\num documento do modelo com `ABRE_PRAZO_PARA_REENVIO` numa fase do processo que não permite\ncomplementação recebe esta mesma recusa.",
-        "A conferência acontece depois das de vínculo com fase, formulário e etapa, da repetição por\ngrupo e da idade máxima de emissão: é a última da definição das exigências.",
-        "Esta é a conferência \"de ida\", ao escrever a exigência. A \"de volta\" é a que impede retirar a\ncomplementação de uma fase que já tem exigência com essa consequência\n(`uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao`)."
+        "Uma exigência ou grupo abre prazo para reenvio, mas a fase correspondente não permite complementação de documentos."
       ],
       "comoResolver": [
-        "Primeiro, descubra quem declara `ABRE_PRAZO_PARA_REENVIO` na fase nomeada: um documento exigido ou um\ngrupo de alternativas (OU) com consequência própria. Trocar só a consequência dos documentos não\ncorrige o caso em que a consequência é do grupo, e vice-versa. Escolha um dos caminhos:",
-        "- permita a complementação na fase, o que resolve os dois casos. A permissão não se configura no\n  cronograma: se a fase é a de homologação das inscrições, habilite a complementação no\n  cadastro da fase canônica e redefina o cronograma do processo, para que a fase do cronograma\n  receba a permissão atual do cadastro. Em qualquer outra fase o cadastro não aceita a permissão,\n  e restam os dois caminhos seguintes;\n- troque a consequência de quem a declara (o documento ou o grupo) por outra das previstas;\n- passe a exigência para uma fase que permita complementação; no caso do grupo, isso vale para\n  todos os documentos dele, que precisam ficar na mesma fase.",
-        "Na aplicação de um modelo de formulário, a consequência é a do modelo: resolva pelo primeiro\ncaminho ou ajuste o modelo de formulário no cadastro de Configuração.",
-        "Depois, envie a definição de novo."
+        "Habilite a complementação na fase permitida e redefina o cronograma, desative a abertura de prazo no documento ou grupo, ou mova a exigência para uma fase que permita complementação. Se a declaração veio de um modelo de formulário, ajuste o modelo."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
@@ -18312,23 +18315,6 @@
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo",
         "Aplicação de modelo de formulário",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "A consequência `REMOVE_VANTAGEM` tira do candidato uma vantagem que ele teria. Um documento\nexigido declara essa consequência, mas o processo não tem vantagem para ser removida: a\nconferência reconhece como vantagem apenas o bônus regional, e o processo não o aplica.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Os documentos exigidos são conferidos\nprimeiro e, depois deles, os grupos de alternativas (OU) com consequência própria (ver\n[`uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada`](/erros/uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada)).\nA primeira violação encontrada interrompe a conferência."
-      ],
-      "comoResolver": [
-        "Configure o bônus regional do processo, se a intenção é que o documento remova essa vantagem,\nou troque a consequência do documento por outra das previstas. Depois, repita a operação."
-      ],
-      "ondeAparece": [
         "Publicação inicial do processo seletivo",
         "Retificação em ato único"
       ]
@@ -19230,12 +19216,10 @@
         "UNI-REQ-0070"
       ],
       "oQueAconteceu": [
-        "A consequência `ABRE_PRAZO_PARA_REENVIO` de um documento exigido, ou de um grupo de\nalternativas (OU), só faz sentido numa fase que permite complementação de\ndocumentos. A fase já estava no cronograma do processo com a permissão de\ncomplementar, e a definição do cronograma a deixaria sem ela, mas ainda há, nessa\nfase, exigência com essa consequência. A mensagem traz o código da fase e a\nordem dela.",
-        "A permissão de complementar não é digitada no pedido: a cada definição do\ncronograma ela é copiada da fase canônica do cadastro do módulo Configuração. A\nrecusa aparece, portanto, quando o cadastro deixou de permitir a complementação\nnessa fase depois de o processo ter gravado a exigência. É o lado \"de volta\" da\nconferência feita ao gravar a exigência\n([`uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao`](/erros/uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao)).",
-        "A conferência é feita fase por fase, na ordem em que o processo as tem, e para na\nprimeira recusa. Para a fase mantida, esta vem antes da conferência do extremo do\nperíodo usado como referência de idade máxima de emissão. Nada é gravado."
+        "A fase deixaria de permitir complementação, mas uma exigência ou grupo nela ainda abre prazo para reenvio."
       ],
       "comoResolver": [
-        "Troque a consequência das exigências da fase por outra das previstas, nos\ndocumentos e nos grupos que a declaram (definição de documentos exigidos), ou\nmude-as para uma fase que permite complementação, e repita a definição do\ncronograma. Se a fase deve continuar permitindo a complementação, o ajuste é no\ncadastro de fases canônicas, feito por quem o gere."
+        "Desative a abertura de prazo nas exigências e grupos da fase, mova-os para uma fase que permita complementação ou ajuste a permissão no cadastro da fase canônica."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo"
@@ -26064,7 +26048,7 @@
       ],
       "oQueAconteceu": [
         "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. Quando uma\nmodalidade de vaga declara o que acontece com o candidato indeferido (a ação de indeferimento),\na consequência do grupo tem de ser a mesma. O grupo apontado declara uma consequência\ndiferente da ação de uma modalidade que ele pode alcançar.",
-        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A consequência\ndo grupo e a ação da modalidade usam o mesmo código (`RECLASSIFICA_AC`). A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
+        "O grupo alcança as modalidades que qualquer um dos documentos dele pode alcançar pelas\ncondições. Só entram na comparação as modalidades que declaram ação de indeferimento. A consequência\ndo grupo e a ação da modalidade usam o mesmo código (`RETIRA_A_MODALIDADE`). A mensagem de detalhe indica o grupo e a modalidade\nem conflito.",
         "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.consequencia_incoerente_com_acao_da_vaga`](/erros/uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga)),\ne a primeira violação encontrada interrompe a conferência."
       ],
       "comoResolver": [
@@ -26084,7 +26068,7 @@
         "A consequência informada para o grupo não é reconhecida. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
       ],
       "comoResolver": [
-        "Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio."
+        "Informe `ELIMINA_DO_PROCESSO`, `RETIRA_A_MODALIDADE` ou `RETIRA_O_ACRESCIMO`, ou omita a consequência. Para abrir prazo de reenvio, use `abrePrazoParaReenvio`."
       ],
       "ondeAparece": [
         "Definição dos documentos exigidos do processo seletivo."
@@ -26417,23 +26401,6 @@
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada",
-      "requisitos": [
-        "UNI-REQ-0070"
-      ],
-      "oQueAconteceu": [
-        "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. O grupo apontado\ndeclara `REMOVE_VANTAGEM`, que tira do candidato uma vantagem que ele teria, mas o processo não\ntem vantagem para remover: a conferência reconhece como vantagem apenas o bônus regional, e o\nprocesso não o aplica.",
-        "A conferência acontece quando a configuração vai ser congelada, na publicação ou na retificação em ato único. Ela vem depois da dos documentos\nexigidos (ver\n[`documento_exigido.remove_vantagem_sem_vantagem_viva`](/erros/uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva)),\ne a primeira violação encontrada interrompe a conferência."
-      ],
-      "comoResolver": [
-        "Configure o bônus regional do processo, se a intenção é que o grupo remova essa vantagem, ou\ntroque a consequência do grupo por outra das previstas. Depois, repita a operação."
-      ],
-      "ondeAparece": [
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
       ]
     },
     {

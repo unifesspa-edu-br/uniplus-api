@@ -34,11 +34,11 @@ public sealed class ModalidadeValidacaoDosCamposTests
             CodigoDaNaturezaLegal = "ampla",
             CodigoDaComposicaoDeVagas = " DENTRO_DA_RESERVA_LEGAL",
             CodigoDaRegraDeRemanejamento = "CRUZADO ",
-            CodigoDaAcaoQuandoIndeferido = "ELIMINA",
+            CodigoDaAcaoQuandoIndeferido = "ELIMINA_DO_PROCESSO",
         });
 
         r.Errors.Select(erro => erro.Field).Should().Equal("naturezaLegal", "composicaoVagas", "remanejamento.regra", "acaoQuandoIndeferido");
-        r.Errors.Select(erro => erro.Error.Message).Should().NotContain(mensagem => mensagem.Contains("ELIMINA", StringComparison.Ordinal));
+        r.Errors.Select(erro => erro.Error.Message).Should().NotContain(mensagem => mensagem.Contains("ELIMINA_DO_PROCESSO", StringComparison.Ordinal));
         r.Errors[0].Error.Message.Should().Be("Natureza legal deve ser uma de: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
     }
 

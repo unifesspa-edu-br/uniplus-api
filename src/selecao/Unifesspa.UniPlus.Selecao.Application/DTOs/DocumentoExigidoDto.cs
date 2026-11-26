@@ -54,7 +54,7 @@ public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, CodigoCom
 /// <param name="Condicoes">As condições do gatilho.</param>
 public sealed record AplicabilidadeDaExigenciaDto(CodigoComRotulo<Aplicabilidade> Tipo, IReadOnlyList<CondicaoGatilhoDto> Condicoes);
 
-public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, CodigoComRotulo<ConsequenciaDoIndeferimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
+public sealed record IndeferimentoDoDocumentoDto(bool Obrigatorio, CodigoComRotulo<ConsequenciaDoDescumprimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais, bool AbrePrazoParaReenvio = false);
 
 /// <summary>
 /// O que restringe o arquivo enviado. <see cref="FormatosPermitidos"/> é o mesmo valor JSON polimórfico do
@@ -110,4 +110,4 @@ public sealed record CardinalidadeQualificadaDto(int? QuantidadeMinima, Distinca
 public sealed record DistincaoDasApresentacoesDto(CodigoComRotulo<CriterioDeDistincaoDasApresentacoes>? CriterioDeDistincao, DateOnly? DataReferencia, IReadOnlyList<string>? OcorrenciasEsperadas);
 
 /// <summary>A consequência do indeferimento do grupo e as bases legais dela.</summary>
-public sealed record IndeferimentoDoGrupoDto(CodigoComRotulo<ConsequenciaDoIndeferimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais);
+public sealed record IndeferimentoDoGrupoDto(CodigoComRotulo<ConsequenciaDoDescumprimento>? Consequencia, IReadOnlyList<BaseLegalDto> BasesLegais, bool AbrePrazoParaReenvio = false);

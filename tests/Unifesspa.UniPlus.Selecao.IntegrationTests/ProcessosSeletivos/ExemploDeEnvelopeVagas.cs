@@ -107,7 +107,7 @@ internal static class ExemploDeEnvelopeVagas
     /// a ordem de ENTRADA em vez de ler a canônica já gravada produziria bytes distintos dos congelados.
     /// </summary>
     internal static ModalidadeSelecionada ModalidadeFederal(string codigo, int sufixo) =>
-        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Id = new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"), Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, RegraDeAplicabilidade = codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda, AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Id = new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"), Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, RegraDeAplicabilidade = codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda, AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
     /// <summary>
     /// Oferta institucional: quadro fixo, <b>sem</b> referência demográfica — e com as
@@ -133,7 +133,7 @@ internal static class ExemploDeEnvelopeVagas
     private static ModalidadeSelecionada[] ModalidadesDaOfertaInstitucional() =>
     [
         AmplaDaOfertaInstitucional(),
-        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { Id = new Guid("3333cccc-0000-4000-8000-000000000002"), Descricao = "PcD em ampla concorrência", RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 13.146/2015" }, 5).Value!,
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { Id = new Guid("3333cccc-0000-4000-8000-000000000002"), Descricao = "PcD em ampla concorrência", RegraRemanejamento = RegraRemanejamentoModalidade.DestinoUnico, RemanejamentoDestino = "AC", AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Lei 13.146/2015" }, 5).Value!,
         RetiradaCruzadaDaAmpla(3, "IND", "Indígena", "QUI"),
         RetiradaCruzadaDaAmpla(4, "QUI", "Quilombola", "IND"),
     ];
@@ -143,5 +143,5 @@ internal static class ExemploDeEnvelopeVagas
 
     /// <summary>Ação afirmativa que tira as vagas da ampla concorrência e remaneja em cruz com o par.</summary>
     private static ModalidadeSelecionada RetiradaCruzadaDaAmpla(int sufixo, string codigo, string nome, string par) =>
-        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Id = new Guid($"3333cccc-0000-4000-8000-00000000000{sufixo}"), Descricao = nome, ComposicaoOrigemCodigo = "AC", RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = par, RemanejamentoFallback = "AC", AcaoQuandoIndeferido = "RECLASSIFICA_CONFORME_EDITAL", BaseLegal = "Res. Unifesspa 326/2019" }, 10).Value!;
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade) with { Id = new Guid($"3333cccc-0000-4000-8000-00000000000{sufixo}"), Descricao = nome, ComposicaoOrigemCodigo = "AC", RegraRemanejamento = RegraRemanejamentoModalidade.Cruzado, RemanejamentoPar = par, RemanejamentoFallback = "AC", AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Res. Unifesspa 326/2019" }, 10).Value!;
 }

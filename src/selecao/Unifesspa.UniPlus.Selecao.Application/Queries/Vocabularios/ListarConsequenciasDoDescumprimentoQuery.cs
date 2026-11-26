@@ -5,4 +5,4 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Consulta o vocabulário das consequências do indeferimento de um documento exigido.</summary>
-public sealed record ListarConsequenciasDoIndeferimentoQuery : IQuery<IReadOnlyList<CodigoComRotulo<ConsequenciaDoIndeferimento>>>;
+public sealed record ListarConsequenciasDoDescumprimentoQuery : IQuery<IReadOnlyList<CodigoComRotulo<ConsequenciaDoDescumprimento>>>;

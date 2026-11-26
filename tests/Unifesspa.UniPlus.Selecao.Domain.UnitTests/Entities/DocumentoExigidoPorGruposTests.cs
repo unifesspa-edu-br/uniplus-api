@@ -69,13 +69,13 @@ public sealed class DocumentoExigidoPorGruposTests
     {
         DocumentoExigido exigencia = Reidratada(Declarada() with
         {
-            Indeferimento = new(false, "ELIMINA", []),
+            Indeferimento = new(false, "ELIMINA_DO_PROCESSO", []),
             Requisitos = new(FormatosPermitidos.Criar(true, null).Value!, 2048, null, null, null),
         });
 
         exigencia.Aplicabilidade.Should().Be(Aplicabilidade.Geral);
         exigencia.Obrigatorio.Should().BeFalse();
-        exigencia.ConsequenciaIndeferimento.Should().Be("ELIMINA");
+        exigencia.ConsequenciaIndeferimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         exigencia.TamanhoMaximoBytes.Should().Be(2048);
     }
 
@@ -102,7 +102,7 @@ public sealed class DocumentoExigidoPorGruposTests
     {
         DocumentoExigido exigencia = Reidratada(Declarada() with { Indeferimento = new(true, "  ", []) });
 
-        exigencia.ConsequenciaIndeferimento.Should().Be("  ");
+        exigencia.ConsequenciaIndeferimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "Reidratar recusa a aplicabilidade ausente")]

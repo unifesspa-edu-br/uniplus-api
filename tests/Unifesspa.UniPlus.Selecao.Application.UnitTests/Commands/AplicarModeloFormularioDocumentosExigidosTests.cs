@@ -39,14 +39,14 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []),
             PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
 
     private static DocumentoExigidoDoModeloInput LaudoQueDependeDeUmFatoDerivado() =>
         new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
+            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
 
     private static string MotivosDaRecusa(Result<AplicacaoDeModeloDto> resultado) =>
         string.Join("; ", resultado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}"));
@@ -76,7 +76,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
     {
         DocumentoExigido laudo = _cenario.Processo.DocumentosExigidos.First(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO");
         laudo.ExigidoNaFaseId.Should().Be(fase.Id);
-        laudo.ConsequenciaIndeferimento.Should().Be("REMOVE_VANTAGEM");
+        laudo.ConsequenciaIndeferimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
         laudo.Condicoes.Select(static c => (c.Fato, c.Clausula)).Should().BeEquivalentTo(
             [("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 0), ("CONDICAO_ATENDIMENTO", 0)]);
     }
@@ -126,7 +126,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.DeclararAtendimentoEspecializado();
         DocumentoExigidoDoModeloInput documento = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with
         {
-            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)]),
+            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)]),
         };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(documento));

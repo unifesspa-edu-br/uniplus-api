@@ -66,7 +66,7 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     }
 
     [Theory]
-    [InlineData("TODOS_OS_ITENS", "ELIMINA", false, "consequencia", "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos")]
+    [InlineData("TODOS_OS_ITENS", "ELIMINA_DO_PROCESSO", false, "consequencia", "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos")]
     [InlineData("TODOS_OS_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", "INVALIDA", false, "consequencia", "RegraDeComprovacao.ConsequenciaInvalida")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalSemConsequencia")]
@@ -81,12 +81,12 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     [Fact]
     public void Interpretar_GrupoComDadosValidos_GuardaOsDados()
     {
-        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("QUANTIDADE_MINIMA_DE_ITENS", false, 1, null, "ELIMINA");
+        DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar("QUANTIDADE_MINIMA_DE_ITENS", false, 1, null, "ELIMINA_DO_PROCESSO");
 
         declaracao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         declaracao.QuantidadeDeItens.Should().Be(1);
         declaracao.QuantidadeMinima.Should().Be(1);
-        declaracao.Consequencia.Should().Be("ELIMINA");
+        declaracao.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
         declaracao.Recusas.Should().BeEmpty();
     }
 

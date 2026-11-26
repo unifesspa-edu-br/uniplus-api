@@ -36,12 +36,12 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 
     internal static DocumentoExigido Exigencia(
         Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null,
-        FinalidadeFormulario? finalidade = null) =>
+        FinalidadeFormulario? finalidade = null, bool abrePrazoParaReenvio = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, finalidade))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaIndeferimento is null, consequenciaIndeferimento, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaIndeferimento is null, consequenciaIndeferimento, [], abrePrazoParaReenvio))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;
@@ -120,7 +120,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static void ExigirGrupoDeQuantidadeMinimaComDocumento(ProcessoSeletivo processo, string consequencia)
     {
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, consequencia), 0, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
     }

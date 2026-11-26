@@ -101,7 +101,7 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
             [(0, CondicaoDnf.Criar(fatoCitado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         ConteudoDoModelo conteudo = Conteudo([Item("CERTIFICADO", 0)]) with
         {
-            ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)),
+            ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", quando, new IndeferimentoDoDocumentoDoModelo(false, "RETIRA_O_ACRESCIMO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)),
         };
 
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, conteudo);

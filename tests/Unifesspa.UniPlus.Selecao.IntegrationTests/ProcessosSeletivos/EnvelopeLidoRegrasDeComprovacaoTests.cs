@@ -103,7 +103,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
         BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
         return RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [regraDeRg, regraDeRenda]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [baseLegalDoGrupo], [regraDeRg, regraDeRenda]).Value!;
     }
     private static void ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(
         EnvelopeReidratado reidratado, DocumentoExigido comprovanteRenda) =>
@@ -114,7 +114,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
     {
         RegraDeComprovacao regraSemGrupo = processo.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
         regraSemGrupo.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
-        regraSemGrupo.Consequencia.Should().Be("ELIMINA");
+        regraSemGrupo.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         regraSemGrupo.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
         regraSemGrupo.Itens.Should().HaveCount(2);
         ConferirRegraDeRgRecarregada(regraSemGrupo.Itens.Should().ContainSingle(static f => f.Distincao != null).Which);

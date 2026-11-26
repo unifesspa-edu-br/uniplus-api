@@ -29,11 +29,11 @@ public sealed class CombinacaoDoGrupoTests
     [Fact]
     public void Declarar_GrupoDeQuantidadeMinimaSemCardinalidade_AplicaPadrao()
     {
-        CombinacaoDoGrupo combinacao = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, null, "ELIMINA", 1, true).Value!;
+        CombinacaoDoGrupo combinacao = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, null, "ELIMINA_DO_PROCESSO", 1, true).Value!;
 
         combinacao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         combinacao.QuantidadeMinima.Should().Be(1);
-        combinacao.Consequencia.Should().Be("ELIMINA");
+        combinacao.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
     }
     [Theory]
     [InlineData(" ELIMINA ")]

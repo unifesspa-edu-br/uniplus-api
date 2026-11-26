@@ -196,7 +196,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             ? null
             : new IndeferimentoDoGrupoInput(
                 indeferimento.Consequencia,
-                [.. (indeferimento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))]);
+                [.. (indeferimento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))], indeferimento.AbrePrazoParaReenvio);
 
     // O documento sem nenhuma cláusula que valha sai da cópia, junto com elas.
     private static DocumentoExigidoDoModeloInput? ComClausulasOfertadas(
@@ -265,7 +265,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
                 JsonSerializer.SerializeToElement("QUALQUER"), null, prazoEValidade.Prazo, prazoEValidade.Validade, null));
 
     private static IndeferimentoDoDocumentoInput IndeferimentoDoModelo(IndeferimentoDoDocumentoDoModeloInput? indeferimento) =>
-        new(indeferimento?.Obrigatorio ?? false, indeferimento?.Consequencia, BasesLegaisDoModelo(indeferimento));
+        new(indeferimento?.Obrigatorio ?? false, indeferimento?.Consequencia, BasesLegaisDoModelo(indeferimento), indeferimento?.AbrePrazoParaReenvio ?? false);
 
     private static List<BaseLegalInput> BasesLegaisDoModelo(IndeferimentoDoDocumentoDoModeloInput? indeferimento) =>
         [.. (indeferimento?.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>()

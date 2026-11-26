@@ -27,15 +27,15 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaPublicac
 
 public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
 {
-    [Fact(DisplayName = "CA-05 (1/5 — heteroidentificação/indígena): ELIMINA é incoerente com RECLASSIFICA_AC da modalidade PPI")]
+    [Fact(DisplayName = "CA-05 (1/5 — heteroidentificação/indígena): ELIMINA é incoerente com RETIRA_A_MODALIDADE da modalidade PPI")]
     public void Publicar_HeteroidentificacaoElimina_IncoerenteComAcaoDaModalidadePpi()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA_DO_PROCESSO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -43,15 +43,15 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
-    [Fact(DisplayName = "CA-05 (2/5 — modalidade de cota): ELIMINA é incoerente com RECLASSIFICA_AC de uma cota reservada (comprovante de renda)")]
+    [Fact(DisplayName = "CA-05 (2/5 — modalidade de cota): ELIMINA é incoerente com RETIRA_A_MODALIDADE de uma cota reservada (comprovante de renda)")]
     public void Publicar_ComprovanteRendaElimina_IncoerenteComAcaoDaModalidadeDeCota()
     {
         ModalidadeSelecionada cota = NovaModalidadeComAcao(
-            "LB_Q", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_Q", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(cota);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA_DO_PROCESSO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -63,11 +63,11 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     public void Publicar_LaudoMedicoElimina_IncoerenteComAcaoDaModalidadeAlcancadaPorGatilho()
     {
         ModalidadeSelecionada suplementar = NovaModalidadeComAcao(
-            "PSIQ_INDIGENA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, "ABRE_PRAZO_PARA_REENVIO");
+            "PSIQ_INDIGENA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(suplementar);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA_DO_PROCESSO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -76,31 +76,31 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
-    [Fact(DisplayName = "CA-05 (4/5 — REMOVE_VANTAGEM sem vantagem viva): recusado quando o processo não tem bônus regional configurado")]
-    public void Publicar_RemoveVantagemSemVantagemViva_Recusa()
+    [Fact(DisplayName = "CA-05 (4/5 — RETIRA_O_ACRESCIMO sem acréscimo oferecido): recusado quando o processo não tem bônus regional configurado")]
+    public void Publicar_AcrescimoNaoOferecido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
         // O processo declara que não aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015): sem configuração do bônus
-        // não há "vantagem viva" para a consequência REMOVE_VANTAGEM remover.
+        // não há "acréscimo oferecido" para a consequência RETIRA_O_ACRESCIMO remover.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigido.RemoveVantagemSemVantagemViva");
+        resultado.Error!.Code.Should().Be("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
-    [Fact(DisplayName = "CA-05: REMOVE_VANTAGEM com bônus regional configurado é aceito (contraprova)")]
-    public void Publicar_RemoveVantagemComVantagemViva_Aceita()
+    [Fact(DisplayName = "CA-05: RETIRA_O_ACRESCIMO com bônus regional configurado é aceito (contraprova)")]
+    public void Publicar_AcrescimoOferecido_Aceita()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         processo.DefinirBonusRegional(
             aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraDeBonus.Multiplicativo.Codigo(), "v1", HashFixo), fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "RETIRA_O_ACRESCIMO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -110,11 +110,11 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     private static ProcessoSeletivo ProcessoQueEliminaPorFaixaEtariaNaModalidadeQueReclassifica()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA_DO_PROCESSO"), 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!)
             .IsSuccess.Should().BeTrue();
@@ -127,7 +127,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     // com um dicionário de fatos só com MODALIDADE; a condição de FAIXA_ETARIA (fato
     // ausente) avaliava como falsa (PredicadoDnf.Avaliar), reprovando a cláusula
     // inteira e escondendo QUALQUER modalidade da conferência CA-05 — publicaria incoerente.
-    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICA_AC")]
+    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RETIRA_A_MODALIDADE")]
     public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
     {
         ProcessoSeletivo processo = ProcessoQueEliminaPorFaixaEtariaNaModalidadeQueReclassifica();
@@ -143,7 +143,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     // A ausência de AcaoQuandoIndeferido é declaração, não omissão: a modalidade não
     // reclassifica, e quem responde pelo destino do candidato indeferido é a consequência
     // da exigência documental. Nenhuma das treze modalidades semeadas declara ação — se
-    // null passasse a ser lido como RECLASSIFICA_AC, toda exigência ELIMINA do catálogo
+    // null passasse a ser lido como RETIRA_A_MODALIDADE, toda exigência ELIMINA do catálogo
     // real deixaria de publicar. Este teste é o que segura essa leitura.
     [Fact(DisplayName = "CA-05: modalidade sem ação de indeferimento declarada não é confrontada — a consequência da exigência decide sozinha")]
     public void Publicar_ModalidadeSemAcaoDeclarada_NaoDisparaCa05()
@@ -153,7 +153,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(semAcao);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA_DO_PROCESSO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
@@ -166,11 +166,11 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     public void Publicar_ReclassificaAcComAcaoRealReclassificaAc_Aceita()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC"), 0).Value!]).IsSuccess.Should().BeTrue();
+            [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RETIRA_A_MODALIDADE"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 

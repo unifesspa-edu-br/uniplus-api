@@ -28,7 +28,7 @@ internal static class LeituraDasModalidades
 
     // O envelope congela as ações aceitas para impedir a restauração de instruções desconhecidas.
     internal static readonly string[] AcoesQuandoIndeferido =
-        ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"];
+        ["RETIRA_A_MODALIDADE"];
 
 
     internal static ModalidadeSelecionada? LerModalidade(LeitorEnvelope leitor, JsonObject item, string path)

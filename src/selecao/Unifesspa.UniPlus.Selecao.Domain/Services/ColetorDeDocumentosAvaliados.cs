@@ -4,6 +4,7 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -51,7 +52,7 @@ internal sealed class ColetorDeDocumentosAvaliados(
     [
         .. ancestrais,
         new GrupoDeComprovacao(regra.Id, regra.Forma, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao : null,
-            regra.GrupoDoFormularioParaRepeticao, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.Consequencia : null),
+            regra.GrupoDoFormularioParaRepeticao, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.Consequencia?.Codigo() : null),
     ];
 
     private DocumentoAvaliado Avaliado(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string? repetido,

@@ -35,9 +35,9 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido cin = DocumentoGeral();
         RegraDeComprovacao regraDeRg = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!;
         RegraDeComprovacao regraDeCpf = RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!;
-        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeRg, regraDeCpf]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeRg, regraDeCpf]).Value!;
         RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [grupoDeTodos, regraDeCin]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(rg, cpf));
 
@@ -52,9 +52,9 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido cpf = DocumentoGeral();
         DocumentoExigido cin = DocumentoGeral();
         RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
         RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [grupoDeTodos, regraDeCin]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(cin));
 
@@ -68,9 +68,9 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido cpf = DocumentoGeral();
         DocumentoExigido cin = DocumentoGeral();
         RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
         RegraDeComprovacao regraDeCin = RegraDeComprovacao.CriarRegraDeDocumento(cin, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, regraDeCin]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [grupoDeTodos, regraDeCin]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(rg));
 
@@ -84,8 +84,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido certidao = DocumentoGeral();
         DocumentoExigido declaracao = DocumentoGeral();
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(declaracao, 1).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(declaracao, 1).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(declaracao));
 
@@ -100,8 +99,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido b = DocumentoGeral();
         DocumentoExigido c = DocumentoGeral();
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(a, b));
 
@@ -115,8 +113,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido b = DocumentoGeral();
         DocumentoExigido c = DocumentoGeral();
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 2).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), apresentacoes: Apresenta(a));
 
@@ -130,7 +127,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido a = DocumentoCondicional("FATO_X");
         DocumentoExigido b = DocumentoCondicional("FATO_X");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos("FATO_X", false));
 
@@ -144,8 +141,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido naoAplicavel1 = DocumentoCondicional("FATO_X");
         DocumentoExigido naoAplicavel2 = DocumentoCondicional("FATO_X");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!,
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!,
              RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel1, 1).Value!,
              RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel2, 2).Value!]).Value!;
 
@@ -160,7 +156,7 @@ public sealed class AvaliadorDaComprovacaoTests
     {
         DocumentoExigido indeterminada = DocumentoCondicional("FATO_X");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(indeterminada, 0).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(indeterminada, 0).Value!]).Value!;
 
         // FATO_X ausente do dicionário de fatos resolvidos — Ternario.Indeterminado.
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo));
@@ -193,7 +189,7 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido a = DocumentoGeral();
         DocumentoExigido b = DocumentoCondicional("FATO_X");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a));
 
@@ -229,10 +225,9 @@ public sealed class AvaliadorDaComprovacaoTests
         DocumentoExigido cumprida = DocumentoGeral();
         DocumentoExigido naoAplicavel = DocumentoCondicional("FATO_X");
         RegraDeComprovacao grupoSemPossibilidadeDeCumprimento = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(cumprida, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!]).Value!;
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, grupoSemPossibilidadeDeCumprimento]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, grupoSemPossibilidadeDeCumprimento]).Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
             Regras(regraSemGrupo), fatos: Fatos("FATO_X", false), apresentacoes: Apresenta(a, cumprida));
@@ -248,7 +243,7 @@ public sealed class AvaliadorDaComprovacaoTests
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
             })]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, "REMOVE_VANTAGEM", []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
@@ -256,7 +251,7 @@ public sealed class AvaliadorDaComprovacaoTests
         new(StringComparer.Ordinal) { [codigo] = FatoResolvido.NaoAplicavel() };
 
     private static RegraDeComprovacao GrupoComDocumentoCondicional(string fato) =>
-        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional(fato), 0).Value!]).Value!;
+        RegraDeComprovacao.CriarGrupo(
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional(fato), 0).Value!]).Value!;
 
 }

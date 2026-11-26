@@ -31,9 +31,9 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
     [Fact(DisplayName = "RG e CPF são pedidos de cada membro, e a certidão de guarda só do membro sob guarda")]
     public void RepeticaoPorGrupo_DocumentosPorMembroECertidaoDoMenorSobGuarda()
     {
-        DocumentoExigido rg = DocumentoGeral("ELIMINA");
-        DocumentoExigido cpf = DocumentoGeral("ELIMINA");
-        DocumentoExigido certidaoDeGuarda = DocumentoCondicional("SOB_GUARDA", "ELIMINA");
+        DocumentoExigido rg = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido cpf = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido certidaoDeGuarda = DocumentoCondicional("SOB_GUARDA", "ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraSemGrupo = GrupoFamiliar(rg, cpf, certidaoDeGuarda);
 
         Result<ResultadoDaComprovacao> resultado = Resolver(
@@ -64,7 +64,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
     [Fact(DisplayName = "Documento associado à ocorrência correspondente: RG do membro 2 satisfaz só (RG, COMPOSICAO_FAMILIAR, membro_2)")]
     public void RepeticaoPorGrupo_DocumentoAssociadoAOcorrenciaCorrespondente()
     {
-        DocumentoExigido rg = DocumentoGeral("ELIMINA");
+        DocumentoExigido rg = DocumentoGeral("ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
@@ -75,7 +75,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
 
         resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
         resultado.Value.ConsequenciasVigentes.Select(static c => (c.OcorrenciaId, c.Consequencia))
-            .Should().BeEquivalentTo([("membro_1", "ELIMINA"), ("membro_3", "ELIMINA")]);
+            .Should().BeEquivalentTo([("membro_1", "ELIMINA_DO_PROCESSO"), ("membro_3", "ELIMINA_DO_PROCESSO")]);
         ConferirStatusDosMembros(resultado.Value, rg.Id, "membro_2", ["membro_1", "membro_3"]);
     }
 
@@ -113,14 +113,14 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
 
         resultado.Value!.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.PendenteDeComprovacao);
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
-            c => c.OcorrenciaId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
+            c => c.OcorrenciaId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA_DO_PROCESSO");
     }
 
     [Fact(DisplayName = "PF + PJ vinculada repete por empresa: extrato da PJ 1 satisfaz só essa PJ — PJ 2 continua com extrato e IRPJ pendentes")]
     public void RepeticaoPorGrupo_PessoaJuridicaVinculada_CorrelacaoPorPj()
     {
-        DocumentoExigido extrato = DocumentoGeral("ELIMINA");
-        DocumentoExigido irpj = DocumentoGeral("ELIMINA");
+        DocumentoExigido extrato = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido irpj = DocumentoGeral("ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraDeExtrato = RegraDeComprovacao.CriarRegraDeDocumento(extrato, 0).Value!;
         RegraDeComprovacao regraDeImposto = RegraDeComprovacao.CriarRegraDeDocumento(irpj, 1).Value!;
         RegraDeComprovacao grupo = GrupoJuridico(regraDeExtrato, regraDeImposto);
@@ -138,7 +138,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
     [Fact(DisplayName = "Repetição sem ocorrências declaradas não é exigida")]
     public void RepeticaoPorGrupo_SemOcorrenciasDeclaradas_NaoAplicavel()
     {
-        DocumentoExigido documento = DocumentoGeral("ELIMINA");
+        DocumentoExigido documento = DocumentoGeral("ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
         Result<ResultadoDaComprovacao> resultado = Resolver(Regras(regraSemGrupo));
@@ -150,7 +150,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
     [Fact(DisplayName = "Repetição com todas as ocorrências cumpridas não aplica consequências")]
     public void RepeticaoPorGrupo_TodasSatisfeitas_Suprime()
     {
-        DocumentoExigido rg = DocumentoGeral("ELIMINA");
+        DocumentoExigido rg = DocumentoGeral("ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarRegraDeDocumento(rg, 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> ocorrencias = OcorrenciasDe(
@@ -245,18 +245,18 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
                 CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
             ]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA", []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
     private static RegraDeComprovacao GrupoFamiliar(params DocumentoExigido[] documentos) => RegraDeComprovacao.CriarGrupo(
-        FormaDeComprovacao.TodosOsItens, 0, null, null, [], [.. documentos.Select(static (d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
+        new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [.. documentos.Select(static (d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)], "COMPOSICAO_FAMILIAR").Value!;
 
     private static RegraDeComprovacao GrupoJuridico(params RegraDeComprovacao[] itens) =>
-        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], itens, "PESSOAS_JURIDICAS").Value!;
+        RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], itens, "PESSOAS_JURIDICAS").Value!;
 
     private static RegraDeComprovacao GrupoDeQuantidadeMinimaJuridico(params RegraDeComprovacao[] itens) =>
-        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, "ELIMINA", [BaseLegalResolvida()], itens, "PESSOAS_JURIDICAS").Value!;
+        RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, "ELIMINA_DO_PROCESSO"), 0, [BaseLegalResolvida()], itens, "PESSOAS_JURIDICAS").Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentacoesDosMembros(DocumentoExigido documento, params string[] membros) =>
         new() { [documento.Id] = [.. membros.Select(static membro => new ApresentacaoDocumento(Guid.CreateVersion7(), OcorrenciaId: membro))] };

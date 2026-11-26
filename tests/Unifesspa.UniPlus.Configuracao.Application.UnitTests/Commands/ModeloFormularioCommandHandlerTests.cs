@@ -148,7 +148,7 @@ public sealed class ModeloFormularioCommandHandlerTests
     {
         ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0)) with
         {
-            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("NAO_EXISTE", true), new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []))),
+            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("NAO_EXISTE", true), new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []))),
         };
 
         Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
@@ -247,7 +247,7 @@ public sealed class ModeloFormularioCommandHandlerTests
         _cenario.Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_cenario.Certificado, condicao]);
         return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "ESCOLHA_MULTIPLA")) with
         {
-            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO", true), new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []), PorOpcao: new ExigenciaPorOpcaoInput(fato, []))),
+            ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO", true), new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []), PorOpcao: new ExigenciaPorOpcaoInput(fato, []))),
         };
 
     }

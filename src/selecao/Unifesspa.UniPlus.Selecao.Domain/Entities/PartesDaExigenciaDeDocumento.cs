@@ -10,7 +10,7 @@ public sealed record MomentoDaExigencia(Guid FaseId, Guid? EtapaId, FinalidadeFo
 
 public sealed record AplicabilidadeDaExigencia(Aplicabilidade? Tipo, IReadOnlyList<CondicaoGatilho> Condicoes);
 
-public sealed record IndeferimentoDoDocumento(bool Obrigatorio, string? Consequencia, IReadOnlyList<DocumentoExigidoBaseLegal> BasesLegais);
+public sealed record IndeferimentoDoDocumento(bool Obrigatorio, string? Consequencia, IReadOnlyList<DocumentoExigidoBaseLegal> BasesLegais, bool AbrePrazoParaReenvio = false);
 
 public sealed record DocumentoExigidoDeclarado(
     CopiaDoTipoDeDocumento Tipo, MomentoDaExigencia Momento, AplicabilidadeDaExigencia Aplicabilidade,

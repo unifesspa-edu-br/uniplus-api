@@ -93,12 +93,14 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
     public bool Obrigatorio { get; private set; }
 
+    public bool AbrePrazoParaReenvio { get; private set; }
+
     /// <summary>
-    /// ∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, ABRE_PRAZO_PARA_REENVIO} quando presente
+    /// Consequência do descumprimento, quando declarada
     /// (ADR-0074). Campo de transporte — a coerência com <c>ModalidadeSelecionada.AcaoQuandoIndeferido</c>
     /// é validada na conformidade legal (CA-05), sem duplicar campo.
     /// </summary>
-    public string? ConsequenciaIndeferimento { get; private set; }
+    public ConsequenciaDoDescumprimento? ConsequenciaIndeferimento { get; private set; }
 
     public RequisitosDoDocumento Requisitos { get; private set; } = null!;
     public PrazoDeEmissao? PrazoDeEmissao => Requisitos.PrazoDeEmissao;
@@ -148,10 +150,10 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private static void ValidarConsequencia(string? consequencia, List<FieldError> erros)
     {
         string? normalizada = NormalizarConsequencia(consequencia);
-        if (normalizada is not null && !CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(normalizada, out _))
+        if (normalizada is not null && !CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(normalizada, out _))
         {
             erros.Add(new("consequenciaIndeferimento", new DomainError("DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()))}.")));
+                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(static valor => valor.Codigo()))}.")));
         }
     }
 
@@ -173,6 +175,9 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// </summary>
     private static string? NormalizarConsequencia(string? consequenciaIndeferimento) =>
         string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento;
+
+    private static ConsequenciaDoDescumprimento? ObterConsequencia(string? codigo) =>
+        CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(codigo, out ConsequenciaDoDescumprimento valor) ? valor : null;
 
     public static Result<DocumentoExigido> Criar(ChaveLocal chave, DocumentoExigidoDeclarado declarado)
     {
@@ -200,7 +205,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         }
 
         DocumentoExigido documento = new(chave, declarado) { Id = id };
-        documento.ConsequenciaIndeferimento = declarado.Indeferimento.Consequencia;
+        documento.ConsequenciaIndeferimento = ObterConsequencia(declarado.Indeferimento.Consequencia);
         documento.VincularPartes(declarado.Aplicabilidade, declarado.Indeferimento);
         return documento;
     }
@@ -216,7 +221,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         Aplicabilidade = declarado.Aplicabilidade.Tipo
             ?? throw new ArgumentException("A exigência deve declarar a aplicabilidade.", nameof(declarado));
         Obrigatorio = declarado.Indeferimento.Obrigatorio;
-        ConsequenciaIndeferimento = NormalizarConsequencia(declarado.Indeferimento.Consequencia);
+        AbrePrazoParaReenvio = declarado.Indeferimento.AbrePrazoParaReenvio;
+        ConsequenciaIndeferimento = ObterConsequencia(declarado.Indeferimento.Consequencia);
         Requisitos = declarado.Requisitos;
     }
 

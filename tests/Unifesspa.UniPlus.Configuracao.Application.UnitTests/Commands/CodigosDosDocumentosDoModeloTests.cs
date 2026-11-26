@@ -15,12 +15,12 @@ public sealed class CodigosDosDocumentosDoModeloTests
 
     [Fact]
     public void Ler_AbrangenciaDesconhecida_RecusaOCampo() =>
-        Recusas("ELIMINA", "DESCONHECIDO", "RESOLVIDO").Should().ContainSingle()
+        Recusas("ELIMINA_DO_PROCESSO", "DESCONHECIDO", "RESOLVIDO").Should().ContainSingle()
             .Which.Should().Be(("conjuntoDeDocumentos.documentosExigidos[0].indeferimento.basesLegais[0].abrangencia", ModeloFormularioErrorCodes.AbrangenciaDesconhecida));
 
     [Fact]
     public void Ler_SituacaoDesconhecida_RecusaOCampo() =>
-        Recusas("ELIMINA", "FEDERAL", "DESCONHECIDO").Should().ContainSingle()
+        Recusas("ELIMINA_DO_PROCESSO", "FEDERAL", "DESCONHECIDO").Should().ContainSingle()
             .Which.Should().Be(("conjuntoDeDocumentos.documentosExigidos[0].indeferimento.basesLegais[0].situacao", ModeloFormularioErrorCodes.SituacaoDaBaseLegalDesconhecida));
 
     [Fact]

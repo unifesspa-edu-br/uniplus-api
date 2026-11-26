@@ -31,7 +31,7 @@ internal static class ConteudosDoModeloDeTeste
 
     public static DocumentoExigidoDoModelo Documento(
         string tipo, PredicadoDnf? quando = null, ExigenciaPorOpcao? porOpcao = null, RequisitosDoDocumentoDoModelo? requisitos = null) =>
-        new("INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []),
+        new("INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "RETIRA_O_ACRESCIMO", []),
             requisitos ?? RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos, porOpcao);
 
     public static ConjuntoDeDocumentosDoModelo Conjunto(params DocumentoExigidoDoModelo[] documentos) => new(documentos, []);

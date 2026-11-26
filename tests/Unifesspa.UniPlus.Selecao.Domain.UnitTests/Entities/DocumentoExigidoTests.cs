@@ -55,7 +55,7 @@ public sealed class DocumentoExigidoTests
         documento.Id.Should().Be(id);
         documento.ExigidoNaFaseId.Should().Be(Guid.Empty);
         documento.TipoDocumentoOrigemId.Should().Be(Guid.Empty);
-        documento.ConsequenciaIndeferimento.Should().Be(consequencia);
+        documento.ConsequenciaIndeferimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "CA-01: aplicabilidade ausente é recusada")]
@@ -101,10 +101,9 @@ public sealed class DocumentoExigidoTests
     }
 
     [Theory(DisplayName = "Consequências válidas são aceitas")]
-    [InlineData("ELIMINA")]
-    [InlineData("RECLASSIFICA_AC")]
-    [InlineData("REMOVE_VANTAGEM")]
-    [InlineData("ABRE_PRAZO_PARA_REENVIO")]
+    [InlineData("ELIMINA_DO_PROCESSO")]
+    [InlineData("RETIRA_A_MODALIDADE")]
+    [InlineData("RETIRA_O_ACRESCIMO")]
     public void Criar_ConsequenciaValida_Aceita(string consequencia) =>
         Exigencia(consequenciaIndeferimento: consequencia).IsSuccess.Should().BeTrue();
 
@@ -160,7 +159,7 @@ public sealed class DocumentoExigidoTests
 
     [Fact(DisplayName = "DeterminaResultado: com consequência determina resultado")]
     public void DeterminaResultado_ComConsequencia_RetornaTrue() =>
-        Exigencia(consequenciaIndeferimento: "ELIMINA").Value!.DeterminaResultado().Should().BeTrue();
+        Exigencia(consequenciaIndeferimento: "ELIMINA_DO_PROCESSO").Value!.DeterminaResultado().Should().BeTrue();
 
     [Fact(DisplayName = "DeterminaResultado: facultativa e sem consequência não determina resultado (contraprova)")]
     public void DeterminaResultado_FacultativaSemConsequencia_RetornaFalse() =>

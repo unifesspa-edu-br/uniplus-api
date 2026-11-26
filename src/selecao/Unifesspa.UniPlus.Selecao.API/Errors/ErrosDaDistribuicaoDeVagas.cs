@@ -25,7 +25,7 @@ internal static class ErrosDaDistribuicaoDeVagas
         new("ProcessoSeletivo.DistribuicaoVagasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.distribuicao_vagas_vazia", "O processo deve ter ao menos uma distribuição de vagas configurada")),
         new("ProcessoSeletivo.OfertaCursoDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.oferta_curso_duplicada", "Cada oferta de curso só pode ter uma distribuição de vagas no processo")),
         new("ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.par_cruzado_nao_reciproco", "Par de remanejamento cruzado não aponta de volta")),
-        new("ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.reclassificacao_para_ampla_sem_ampla_ofertada", "Modalidade reclassifica na ampla concorrência, que não está ofertada")),
+        new("ConfiguracaoDistribuicaoVagas.RetiraAModalidadeSemAmplaConcorrencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consequencias_do_descumprimento.retira_a_modalidade_sem_ampla_concorrencia", "A retirada da modalidade exige ampla concorrência na oferta")),
     ];
 
     /// <summary>Regra de distribuição, rol de modalidades que ela admite e ajuste do quadro.</summary>

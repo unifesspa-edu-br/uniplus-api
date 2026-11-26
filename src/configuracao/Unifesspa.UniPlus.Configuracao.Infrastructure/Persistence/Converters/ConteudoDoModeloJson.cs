@@ -100,6 +100,7 @@ internal static class ConteudoDoModeloJson
     {
         ["quantidadeMinima"] = grupo.QuantidadeMinima,
         ["consequenciaIndeferimento"] = grupo.Indeferimento?.Consequencia,
+        ["abrePrazoParaReenvio"] = grupo.Indeferimento?.AbrePrazoParaReenvio ?? false,
         ["basesLegais"] = new JsonArray([.. (grupo.Indeferimento?.BasesLegais ?? []).Select(BaseLegalParaJson)]),
         ["documentos"] = new JsonArray([.. grupo.Documentos.Select(DocumentoParaJson)]),
     };
@@ -111,6 +112,7 @@ internal static class ConteudoDoModeloJson
         ["obrigatorio"] = documento.Indeferimento.Obrigatorio,
         ["quando"] = PredicadoOpcionalParaJson(documento.Quando),
         ["consequenciaIndeferimento"] = documento.Indeferimento.Consequencia,
+        ["abrePrazoParaReenvio"] = documento.Indeferimento.AbrePrazoParaReenvio,
         ["basesLegais"] = new JsonArray([.. documento.Indeferimento.BasesLegais.Select(BaseLegalParaJson)]),
         ["prazoDeEmissao"] = PrazoParaJson(documento.Requisitos.PrazoDeEmissao),
         ["validade"] = ValidadeParaJson(documento.Requisitos.Validade),
@@ -243,10 +245,17 @@ internal static class ConteudoDoModeloJson
 
     private static GrupoDeDocumentosDoModelo GrupoDeDocumentosDeJson(JsonElement grupo) => new(
         InteiroOuNulo(grupo.GetProperty("quantidadeMinima")),
-        Texto(grupo, "consequenciaIndeferimento") is { } consequencia
-            ? new IndeferimentoDoGrupoDeDocumentosDoModelo(consequencia, [.. grupo.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)])
-            : null,
+        IndeferimentoDoGrupoDeJson(grupo),
         [.. grupo.GetProperty("documentos").EnumerateArray().Select(DocumentoDeJson)]);
+
+    private static IndeferimentoDoGrupoDeDocumentosDoModelo? IndeferimentoDoGrupoDeJson(JsonElement grupo)
+    {
+        string? consequencia = Texto(grupo, "consequenciaIndeferimento");
+        bool abrePrazo = grupo.GetProperty("abrePrazoParaReenvio").GetBoolean();
+        IReadOnlyList<BaseLegalDoModelo> basesLegais = [.. grupo.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)];
+        return consequencia is null && !abrePrazo && basesLegais.Count == 0
+            ? null : new IndeferimentoDoGrupoDeDocumentosDoModelo(consequencia, basesLegais, abrePrazo);
+    }
 
     private static DocumentoExigidoDoModelo DocumentoDeJson(JsonElement documento) => new(
         documento.GetProperty("faseCodigo").GetString()!,
@@ -254,8 +263,8 @@ internal static class ConteudoDoModeloJson
         Predicado(documento, "quando"),
         new IndeferimentoDoDocumentoDoModelo(
             documento.GetProperty("obrigatorio").GetBoolean(),
-            documento.GetProperty("consequenciaIndeferimento").GetString()!,
-            [.. documento.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)]),
+            Texto(documento, "consequenciaIndeferimento"),
+            [.. documento.GetProperty("basesLegais").EnumerateArray().Select(BaseLegalDeJson)], documento.GetProperty("abrePrazoParaReenvio").GetBoolean()),
         new RequisitosDoDocumentoDoModelo(PrazoDeJson(documento), ValidadeDeJson(documento)),
         PorOpcaoDeJson(documento));
 

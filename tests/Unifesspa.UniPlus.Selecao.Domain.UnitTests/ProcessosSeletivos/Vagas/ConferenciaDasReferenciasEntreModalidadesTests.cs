@@ -105,12 +105,12 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
     [Fact(DisplayName = "A reclassificação em ampla concorrência sem ampla concorrência ofertada é recusada")]
     public void ReclassificarSemAmpla_Recusa() =>
         DeveRecusarSo(
-            Conferir(Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICA_AC")),
-            DistribuicaoDeVagasErrorCodes.ReclassificacaoParaAmplaSemAmplaOfertada, "IND reclassifica em AC");
+            Conferir(Modalidade("IND", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")),
+            DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia, "A modalidade IND prevê sua retirada, mas a oferta não inclui ampla concorrência.");
 
     [Fact(DisplayName = "A reclassificação em ampla concorrência com ela ofertada passa sem recusa")]
     public void ReclassificarComAmpla_SemRecusa() =>
-        Conferir(Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICA_AC"), Modalidade("AC")).Should().BeEmpty();
+        Conferir(Modalidade("IND", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE"), Modalidade("AC")).Should().BeEmpty();
 
     [Fact(DisplayName = "O par e o fallback fora do conjunto, na mesma modalidade, são recusados os dois, nessa ordem")]
     public void ParEFallbackForaDoConjunto_RecusaOsDois() =>
@@ -122,12 +122,12 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
     public void Recusas_Acumulam_NaOrdemDasModalidades()
     {
         IReadOnlyList<FieldError> recusas = Conferir(
-            Modalidade("PCD", ComposicaoVagasModalidade.RetiradaDeOutraModalidade, origem: "AC", acaoQuandoIndeferido: "RECLASSIFICA_AC"),
+            Modalidade("PCD", ComposicaoVagasModalidade.RetiradaDeOutraModalidade, origem: "AC", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE"),
             Cruzada("QUI", par: "QUI"));
 
         recusas.Select(static r => r.Error.Code).Should().Equal(
             DistribuicaoDeVagasErrorCodes.ComposicaoOrigemNaoSelecionada,
-            DistribuicaoDeVagasErrorCodes.ReclassificacaoParaAmplaSemAmplaOfertada,
+            DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia,
             DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco);
     }
 
@@ -141,7 +141,7 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
 
     [Fact(DisplayName = "Com uma modalidade recusada, a reclassificação sem a ampla concorrência entre as aceitas não é recusada")]
     public void ModalidadeRecusada_ReclassificarSemAmpla_NaoRecusa() =>
-        ConferirComUmaRecusada(Modalidade("IND", acaoQuandoIndeferido: "RECLASSIFICA_AC")).Should().BeEmpty();
+        ConferirComUmaRecusada(Modalidade("IND", acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")).Should().BeEmpty();
 
     [Fact(DisplayName = "Com uma modalidade recusada, o par cruzado consigo mesmo continua recusado")]
     public void ModalidadeRecusada_ParConsigoMesmo_Recusa() =>

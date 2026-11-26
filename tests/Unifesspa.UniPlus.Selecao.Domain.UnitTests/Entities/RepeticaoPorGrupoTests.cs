@@ -137,7 +137,7 @@ public sealed class RepeticaoPorGrupoTests
         DocumentoExigido certidao = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
         DocumentoExigido avulso = Documento(habilitacao.Id, FinalidadeFormulario.Habilitacao);
         RegraDeComprovacao repetido = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!], grupoDoFormularioParaRepeticao: Composicao).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(certidao, 0).Value!], grupoDoFormularioParaRepeticao: Composicao).Value!;
         processo.DefinirDocumentosExigidos([repetido, RegraDeComprovacao.CriarRegraDeDocumento(avulso, 1).Value!])
             .IsSuccess.Should().BeTrue();
 

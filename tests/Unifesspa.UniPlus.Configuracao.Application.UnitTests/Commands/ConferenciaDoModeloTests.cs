@@ -169,7 +169,7 @@ public sealed class ConferenciaDoModeloTests
         new("INSCRICAO", "LAUDO_MEDICO", null, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput("NAO_EXISTE", [])),
     ];
 
-    private static IndeferimentoDoDocumentoDoModeloInput Indeferimento() => new(true, "REMOVE_VANTAGEM", []);
+    private static IndeferimentoDoDocumentoDoModeloInput Indeferimento() => new(true, "RETIRA_O_ACRESCIMO", []);
 
     private static Recusa[] RecusasEsperadas() =>
     [

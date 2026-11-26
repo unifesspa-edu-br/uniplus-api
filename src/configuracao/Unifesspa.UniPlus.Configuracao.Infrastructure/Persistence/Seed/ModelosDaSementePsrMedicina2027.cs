@@ -44,7 +44,7 @@ internal static class ModelosDaSementePsrMedicina2027
 
     private const string Lactante = "LACTANTE";
     private const string PessoaIdosa = "PESSOA_IDOSA";
-    private const string RemoveVantagem = "REMOVE_VANTAGEM";
+    private const string RetiraOAcrescimo = "RETIRA_O_ACRESCIMO";
     private const string Federal = "FEDERAL";
     private const string Resolvido = "RESOLVIDO";
     private const string ReferenciaDeConcurso = "Norma de concurso público adotada como referência; o edital exige o documento na inscrição.";
@@ -236,7 +236,7 @@ internal static class ModelosDaSementePsrMedicina2027
     /// </summary>
     private static DocumentoExigidoDoModelo LaudoMedicoDeCadaCondicao() =>
         new("INSCRICAO", "LAUDO_MEDICO", SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true)]),
-            new IndeferimentoDoDocumentoDoModelo(Obrigatorio: true, RemoveVantagem, BasesLegaisDoLaudo()),
+            new IndeferimentoDoDocumentoDoModelo(Obrigatorio: true, RetiraOAcrescimo, BasesLegaisDoLaudo()),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
             new ExigenciaPorOpcao(CondicaoAtendimento, [Lactante, PessoaIdosa]));
 
@@ -244,7 +244,7 @@ internal static class ModelosDaSementePsrMedicina2027
         new("INSCRICAO", "CERTIDAO_NASCIMENTO",
             SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true), Condicao(CondicaoAtendimento, Operador.Igual, Lactante)]),
             new IndeferimentoDoDocumentoDoModelo(
-                Obrigatorio: true, RemoveVantagem, [new("Lei nº 13.872/2019, art. 2º, § 2º", Federal, Resolvido, ReferenciaDeConcurso)]),
+                Obrigatorio: true, RetiraOAcrescimo, [new("Lei nº 13.872/2019, art. 2º, § 2º", Federal, Resolvido, ReferenciaDeConcurso)]),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
 
     private static BaseLegalDoModelo[] BasesLegaisDoLaudo() =>

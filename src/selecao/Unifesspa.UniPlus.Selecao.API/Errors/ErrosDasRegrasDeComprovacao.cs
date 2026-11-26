@@ -63,9 +63,9 @@ internal static class ErrosDasRegrasDeComprovacao
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ConsequenciasDoDocumento() =>
     [
-        new("DocumentoExigido.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva", "A exigência declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
+        new("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.consequencias_do_descumprimento.acrescimo_nao_oferecido", "O processo não oferece o Fator de Atenuação das Desigualdades de Acesso")),
         new("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga", "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança")),
-        new("DocumentoExigido.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao", "A fase não permite complementação — consequência ABRE_PRAZO_PARA_REENVIO exige PermiteComplementacao")),
+        new("DocumentoExigido.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao", "A fase não permite complementação — a abertura de prazo para reenvio exige complementação")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EstruturaDasRegras() =>
@@ -106,7 +106,6 @@ internal static class ErrosDasRegrasDeComprovacao
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ConsequenciasERepeticao() =>
     [
-        new("RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_de_comprovacao.remove_vantagem_sem_vantagem_configurada", "O grupo determina retirar vantagem, mas nenhuma está configurada")),
         new("RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga", "A consequência não corresponde à ação de indeferimento da modalidade alcançada")),
         new("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_de_comprovacao.grupo_para_repeticao_nao_declarado", "O grupo para repetição não existe no formulário do processo")),
         new("RegraDeComprovacao.RepeticaoDentroDeRepeticao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_de_comprovacao.repeticao_dentro_de_repeticao", "Uma regra repetida não pode conter outra regra de repetição")),

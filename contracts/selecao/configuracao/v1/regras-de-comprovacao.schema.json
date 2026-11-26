@@ -35,15 +35,15 @@
       "type": "integer",
       "minimum": 1
     },
+    "abrePrazoParaReenvio": {
+      "title": "Prazo para reenvio",
+      "description": "Indica se será aberto prazo para reenvio.",
+      "type": "boolean"
+    },
     "consequencia": {
       "title": "Consequência",
       "description": "Consequência quando a regra não é cumprida.",
-      "enum": [
-        "ELIMINA",
-        "RECLASSIFICA_AC",
-        "REMOVE_VANTAGEM",
-        "ABRE_PRAZO_PARA_REENVIO"
-      ]
+      "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
     },
     "basesLegais": {
       "title": "Bases legais",

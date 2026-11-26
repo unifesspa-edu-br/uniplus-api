@@ -30,7 +30,7 @@ public sealed class ConjuntoLidoDeDocumentosTests
 
     private static DocumentoExigidoDoModeloInput Documento(string tipo = "RG") =>
         new("INSCRICAO", tipo, [[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []));
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []));
 
     private static Grupo GrupoQueIndefere(string consequencia, params DocumentoExigidoDoModeloInput[] documentos) =>
         new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]), documentos);
@@ -38,12 +38,12 @@ public sealed class ConjuntoLidoDeDocumentosTests
     [Fact(DisplayName = "O grupo lido guarda a quantidade mínima como veio, o indeferimento e os documentos, sem recusa")]
     public void Ler_GrupoValido_GuardaQuantidadeIndeferimentoEDocumentos()
     {
-        ConteudoLido lido = Ler(ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(GrupoQueIndefere("REMOVE_VANTAGEM", Documento("RG"), Documento("CPF"))).Construir(), out LeituraDoConteudo leitura);
+        ConteudoLido lido = Ler(ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(GrupoQueIndefere("RETIRA_O_ACRESCIMO", Documento("RG"), Documento("CPF"))).Construir(), out LeituraDoConteudo leitura);
 
         leitura.Recusas.Should().BeEmpty();
         GrupoDeDocumentosDoModelo grupo = lido.ParaConteudo().Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
         grupo.QuantidadeMinima.Should().Be(2);
-        grupo.Indeferimento!.Consequencia.Should().Be("REMOVE_VANTAGEM");
+        grupo.Indeferimento!.Consequencia.Should().Be("RETIRA_O_ACRESCIMO");
         grupo.Indeferimento.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Lei 12.711/2012");
         grupo.Documentos.Select(static d => d.TipoDocumentoCodigo).Should().Equal("RG", "CPF");
     }

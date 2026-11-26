@@ -61,10 +61,10 @@ public static class RegrasDasExigencias
     {
         foreach (RegraDeComprovacao regra in todasAsRegras)
         {
-            string? consequenciaDaRegra = regra.Forma == FormaDeComprovacao.Documento
-                ? regra.DocumentoExigido!.ConsequenciaIndeferimento
-                : regra.Consequencia;
-            if (consequenciaDaRegra == ConsequenciaDoIndeferimento.AbrePrazoParaReenvio.Codigo()
+            bool abrePrazo = regra.Forma == FormaDeComprovacao.Documento
+                ? regra.DocumentoExigido!.AbrePrazoParaReenvio
+                : regra.AbrePrazoParaReenvio;
+            if (abrePrazo
                 && regra.FaseComum() is { } faseId
                 && ConferirConsequenciaPendenciaReenvio(configuracao, faseId) is { } erro)
             {
@@ -92,13 +92,13 @@ public static class RegrasDasExigencias
             ? null
             : new DomainError(
                 "DocumentoExigido.PendenciaReenvioExigeComplementacao",
-                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — consequência ABRE_PRAZO_PARA_REENVIO exige PermiteComplementacao.");
+                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — a abertura de prazo para reenvio exige complementação.");
     }
 
     /// <summary>Verifica se uma fase possui consequência de reenvio declarada.</summary>
     internal static bool ExisteConsequenciaPendenciaReenvioNaFase(ConfiguracaoDeclarada configuracao, Guid faseId) =>
-        configuracao.Exigencias.DocumentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == ConsequenciaDoIndeferimento.AbrePrazoParaReenvio.Codigo())
-        || configuracao.Exigencias.RegrasDeComprovacao.Any(n => n.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && n.Consequencia == ConsequenciaDoIndeferimento.AbrePrazoParaReenvio.Codigo() && n.FaseComum() == faseId);
+        configuracao.Exigencias.DocumentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.AbrePrazoParaReenvio)
+        || configuracao.Exigencias.RegrasDeComprovacao.Any(n => n.AbrePrazoParaReenvio && n.FaseComum() == faseId);
 
     /// <summary>
     /// A repetição nomeia um grupo do formulário do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)

@@ -150,15 +150,15 @@
           "description": "Se a entrega do documento é obrigatória.",
           "type": "boolean"
         },
+        "abrePrazoParaReenvio": {
+          "title": "Prazo para reenvio",
+          "description": "Indica se será aberto prazo para reenvio.",
+          "type": "boolean"
+        },
         "consequenciaIndeferimento": {
           "title": "Consequência do indeferimento",
           "description": "O que acontece quando o documento é indeferido.",
-          "enum": [
-            "ELIMINA",
-            "RECLASSIFICA_AC",
-            "REMOVE_VANTAGEM",
-            "ABRE_PRAZO_PARA_REENVIO"
-          ]
+          "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
         },
         "condicoes": {
           "title": "Condição de gatilho",

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -27,7 +28,7 @@ internal static class LeituraDasRegrasDeComprovacao
     {
         leitor.ExigirChaves(
             item, caminho,
-            "id", "ordem", "forma", "exigenciaId", "quantidadeMinima", "consequencia", "basesLegais",
+            "id", "ordem", "forma", "exigenciaId", "quantidadeMinima", "consequencia", "abrePrazoParaReenvio", "basesLegais",
             "criterioDeDistincao", "dataReferencia", "ocorrenciasEsperadas", "grupoDoFormularioParaRepeticao", "itens");
 
         return leitor.Falhou ? null : LerConteudoDaRegra(leitor, item, caminho, exigenciasPorId);
@@ -37,7 +38,7 @@ internal static class LeituraDasRegrasDeComprovacao
         LeitorEnvelope leitor, JsonObject item, string caminho, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
     {
         DeclaracaoDaRegraLida declaracao = LerDeclaracao(leitor, item, caminho);
-        if (leitor.Falhou || !LerColecoesDaRegra(leitor, item, caminho, declaracao)
+        if (!ConsequenciaReconhecida(leitor, declaracao.Consequencia) || leitor.Falhou || !LerColecoesDaRegra(leitor, item, caminho, declaracao)
             || !ResolverReferencias(leitor, declaracao, exigenciasPorId, out FormaDeComprovacao forma, out CriterioDeDistincaoDasApresentacoes? criterio, out DocumentoExigido? documento))
         {
             return null;
@@ -49,12 +50,16 @@ internal static class LeituraDasRegrasDeComprovacao
             : ReidratarRegra(declaracao, forma, criterio, documento, itens);
     }
 
+    private static bool ConsequenciaReconhecida(LeitorEnvelope leitor, string? codigo) =>
+        codigo is null || CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(codigo, out _)
+        || RecusarSemRetorno(leitor, "A consequência da regra não é reconhecida.");
+
     private static RegraDeComprovacao ReidratarRegra(
         DeclaracaoDaRegraLida declaracao, FormaDeComprovacao forma, CriterioDeDistincaoDasApresentacoes? criterio, DocumentoExigido? documento, IReadOnlyList<RegraDeComprovacao> itens) =>
         forma == FormaDeComprovacao.Documento
             ? RegraDeComprovacao.ReidratarRegraDeDocumento(declaracao.Id, declaracao.Ordem, documento!, declaracao.QuantidadeMinima,
                 DistincaoDasApresentacoes.Reidratar(criterio, declaracao.DataReferencia, declaracao.OcorrenciasEsperadas), declaracao.GrupoDoFormularioParaRepeticaoCodigo)
-            : RegraDeComprovacao.ReidratarGrupo(declaracao.Id, declaracao.Ordem, new CombinacaoDoGrupo(forma, declaracao.QuantidadeMinima, declaracao.Consequencia),
+            : RegraDeComprovacao.ReidratarGrupo(declaracao.Id, declaracao.Ordem, new CombinacaoDoGrupo(forma, declaracao.QuantidadeMinima, declaracao.Consequencia, declaracao.AbrePrazoParaReenvio),
                 declaracao.BasesLegais, itens, declaracao.GrupoDoFormularioParaRepeticaoCodigo);
 
     private static bool LerColecoesDaRegra(LeitorEnvelope leitor, JsonObject item, string caminho, DeclaracaoDaRegraLida declaracao)
@@ -105,6 +110,7 @@ internal static class LeituraDasRegrasDeComprovacao
         ExigenciaId = leitor.IdentificadorOpcional(item, "exigenciaId", caminho),
         QuantidadeMinima = leitor.InteiroOpcional(item, "quantidadeMinima", caminho),
         Consequencia = leitor.TextoOpcional(item, "consequencia", caminho, LimitesDoEnvelope.Token),
+        AbrePrazoParaReenvio = leitor.Booleano(item, "abrePrazoParaReenvio", caminho),
         CodigoDoCriterioDeDistincao = leitor.TextoOpcional(item, "criterioDeDistincao", caminho),
         DataReferencia = leitor.DataOpcional(item, "dataReferencia", caminho),
         GrupoDoFormularioParaRepeticaoCodigo = leitor.TextoOpcional(item, "grupoDoFormularioParaRepeticao", caminho),
@@ -224,6 +230,8 @@ internal static class LeituraDasRegrasDeComprovacao
         public int? QuantidadeMinima { get; init; }
 
         public string? Consequencia { get; init; }
+
+        public bool AbrePrazoParaReenvio { get; init; }
 
         public string? CodigoDoCriterioDeDistincao { get; init; }
 

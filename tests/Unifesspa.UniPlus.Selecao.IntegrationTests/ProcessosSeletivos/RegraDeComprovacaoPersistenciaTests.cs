@@ -74,13 +74,13 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
     private static RegraDeComprovacao RegraSemGrupoComQuantidadeMinimaETodosOsItens(Guid faseId)
     {
         RegraDeComprovacao grupoDeTodosOsItens = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_2"), 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_2"), 1).Value!]).Value!;
         BaseLegalDaComprovacao baseLegalDoGrupo = BaseLegalDaComprovacao.Criar(
             "Res. Unifesspa 532/2021", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
         return RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [baseLegalDoGrupo], [grupoDeTodosOsItens, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_3"), 1).Value!]).Value!;
+
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [baseLegalDoGrupo], [grupoDeTodosOsItens, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, "exigencia_identidade_3"), 1).Value!]).Value!;
     }
 
     private async Task PersistirAsync(ProcessoSeletivo processo)
@@ -96,7 +96,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
 
         RegraDeComprovacao regraSemGrupoRecarregada = recarregado.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
         regraSemGrupoRecarregada.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
-        regraSemGrupoRecarregada.Consequencia.Should().Be("ELIMINA");
+        regraSemGrupoRecarregada.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         regraSemGrupoRecarregada.BasesLegais.Should().ContainSingle().Which.Situacao.Should().Be(StatusBaseLegal.Resolvido);
         regraSemGrupoRecarregada.Itens.Should().HaveCount(2, "grupo de todos os itens e regra de documento");
 
@@ -186,8 +186,7 @@ ConsultaDasRestricoesDeOrdem,
     private static RegraDeComprovacao GrupoComDoisDocumentos(Guid faseId, int tentativa)
     {
         RegraDeComprovacao grupoDeTodosOsItens = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_2"), 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_1"), 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, $"exigencia_identidade_{tentativa}_2"), 1).Value!]).Value!;
 
         return grupoDeTodosOsItens;
     }

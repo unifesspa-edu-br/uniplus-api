@@ -298,9 +298,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             Condicao(0, "COR_RACA", Operador.Igual, "INDIGENA")), 0).Value!,
         RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "TRABALHADOR_RURAL", Condicao(0, "CATEGORIAS_RENDA_FAMILIA", Operador.AlgumDe, new[] { "RURAL" })), 1).Value!,
         RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "CERTIDAO_GUARDA", Condicao(0, "MENOR_SOB_GUARDA", Operador.Igual, true)), 2, grupoDoFormularioParaRepeticao: Composicao).Value!,
-        RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 3, quantidadeMinima: 1, consequencia: null, basesLegais: [],
-        [
-            RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, quantidadeMinima: null, consequencia: null, basesLegais: [],
+        RegraDeComprovacao.CriarGrupo(
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 3, [], [
+            RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [],
                 [RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "RG", Condicao(0, "NACIONALIDADE", Operador.Diferente, "ESTRANGEIRO")), 0).Value!]).Value!,
             RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase, "PASSAPORTE", Condicao(0, "NACIONALIDADE", Operador.Igual, "ESTRANGEIRO")), 1).Value!,
         ]).Value!,

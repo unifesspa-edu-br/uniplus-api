@@ -28,13 +28,13 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
     public void AvaliarConformidade_GatilhoPeloGrupoDaConvocacao_SoAlcancaEsseGrupo()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
             [RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalPorModalidadeComConsequencia(
                 faseId, "CERTIFICADO_ENSINO_MEDIO", "Certificado de conclusão do ensino médio", "ESCOLAR",
-                ModalidadesFederaisLei12711.Ac, "ELIMINA", fatoDeModalidade: "MODALIDADE_CONVOCACAO"), 0).Value!]).IsSuccess.Should().BeTrue();
+                ModalidadesFederaisLei12711.Ac, "ELIMINA_DO_PROCESSO", fatoDeModalidade: "MODALIDADE_CONVOCACAO"), 0).Value!]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok
@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
                 CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("LB_PPI")).Value!,
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
             ]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA", [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", [BaseLegalResolvidaQualquer()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
@@ -57,7 +57,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
     public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         DocumentoExigido exigencia = ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(processo.CronogramaFases.Single().Id);
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();

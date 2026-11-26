@@ -117,8 +117,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     {
         DocumentoExigido rg = Geral(), cnh = Geral(), comprovante = Geral();
         RegraDeComprovacao conjunto = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 1, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(comprovante, 1).Value!]).Value!;
-        RegraDeComprovacao identidade = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, conjunto]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 1, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(comprovante, 1).Value!]).Value!;
+        RegraDeComprovacao identidade = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, conjunto]).Value!;
 
         Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> grupos = GruposPorDocumento(ComRegrasSemGrupo([identidade]));
 
@@ -132,8 +132,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     {
         DocumentoExigido a = Geral(), b = Geral(), c = Geral();
         RegraDeComprovacao interno = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(b, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 1).Value!]).Value!;
-        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, interno]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 1, [], [RegraDeComprovacao.CriarRegraDeDocumento(b, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(c, 1).Value!]).Value!;
+        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!, interno]).Value!;
 
         Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> grupos = GruposPorDocumento(ComRegrasSemGrupo([externo]));
 
@@ -187,13 +187,11 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static RegraDeComprovacao GrupoRepetidoPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
         RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1).Value!],
-            grupoDoFormularioParaRepeticao: Familia).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1).Value!], grupoDoFormularioParaRepeticao: Familia).Value!;
 
     private static RegraDeComprovacao GrupoDeRegrasRepetidasPorMembro(DocumentoExigido primeiro, DocumentoExigido segundo) =>
         RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0, grupoDoFormularioParaRepeticao: Familia).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 1, [], [RegraDeComprovacao.CriarRegraDeDocumento(primeiro, 0, grupoDoFormularioParaRepeticao: Familia).Value!, RegraDeComprovacao.CriarRegraDeDocumento(segundo, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
 
     private static Dictionary<Guid, IReadOnlyList<GrupoDeComprovacao>> GruposPorDocumento(ConfiguracaoAvaliavel configuracao) =>
         Avaliar(configuracao, Respostas()).Documentos.Itens.ToDictionary(static d => d.Documento.Id, static d => d.Grupos);
@@ -216,8 +214,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     {
         DocumentoExigido rg = Geral(), cnh = Geral(), passaporte = Geral();
         RegraDeComprovacao interno = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(passaporte, 1).Value!]).Value!;
-        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, interno]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 1, [], [RegraDeComprovacao.CriarRegraDeDocumento(cnh, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(passaporte, 1).Value!]).Value!;
+        RegraDeComprovacao externo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, interno]).Value!;
 
         List<DocumentoAvaliado> comRg = [.. Avaliar(ComRegrasSemGrupo([externo]), Respostas(), apresentacoes: Enviados(rg)).Documentos.Itens];
         List<DocumentoAvaliado> semNada = [.. Avaliar(ComRegrasSemGrupo([externo]), Respostas()).Documentos.Itens];
@@ -232,8 +230,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     {
         DocumentoExigido cadUnico = Geral(), renda = Geral();
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(cadUnico, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(renda, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(cadUnico, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(renda, 1, grupoDoFormularioParaRepeticao: Familia).Value!]).Value!;
 
         List<DocumentoAvaliado> documentos = [.. Avaliar(
             ComRegrasSemGrupo([grupo]), Respostas(), Membros(("m1", true), ("m2", true)), apresentacoes: Enviados(cadUnico)).Documentos.Itens];

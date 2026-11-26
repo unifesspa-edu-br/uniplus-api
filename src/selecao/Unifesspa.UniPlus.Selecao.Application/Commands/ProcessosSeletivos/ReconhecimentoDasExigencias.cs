@@ -6,6 +6,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 internal sealed class ReconhecimentoDasExigencias
 {
     private readonly Dictionary<string, DocumentoExigido> _reconhecidas;
@@ -45,7 +47,7 @@ internal sealed class ReconhecimentoDasExigencias
         {
             return criado;
         }
-        IndeferimentoDoDocumento indeferimento = declarado.Indeferimento with { Consequencia = criado.Value!.ConsequenciaIndeferimento };
+        IndeferimentoDoDocumento indeferimento = declarado.Indeferimento with { Consequencia = criado.Value!.ConsequenciaIndeferimento?.Codigo() };
         return Result<DocumentoExigido>.Success(DocumentoExigido.Reidratar(chave, existente.Id, declarado with { Indeferimento = indeferimento }));
     }
 }

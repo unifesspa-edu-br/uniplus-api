@@ -27,8 +27,8 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
     private static RegraDeComprovacao GrupoDaFaseComItens(FaseCronograma fase)
     {
         RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [RegraDeDocumentoDaFase(fase.Id, 0), RegraDeDocumentoDaFase(fase.Id, 1)]).Value!;
-        return RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 1, null, null, [], [grupoInterno, RegraDeDocumentoDaFase(fase.Id, 2)]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [RegraDeDocumentoDaFase(fase.Id, 0), RegraDeDocumentoDaFase(fase.Id, 1)]).Value!;
+        return RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 1, [], [grupoInterno, RegraDeDocumentoDaFase(fase.Id, 2)]).Value!;
     }
 
     /// <summary>

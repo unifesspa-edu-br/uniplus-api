@@ -254,7 +254,7 @@ internal static class EnvelopeDeReferencia
             .ComTipo(new CopiaDoTipoDeDocumento(TipoDocumentoFixo, "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [GatilhoDaModalidade(), GatilhoDaCorRaca()]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, "ELIMINA", [BaseLegalDaResolucao()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, "ELIMINA_DO_PROCESSO", [BaseLegalDaResolucao()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPdfComTetoEJpegSemTeto(), 5_000_000, ModeloDeDeclaracaoDeResidencia(), PrazoDeNoventaDias(), ValidadeNoFimDasInscricoes()))
             .ComFatos(null)
             .Criar().Value!;

@@ -136,7 +136,7 @@ public sealed class ConteudoLidoTests
     [Fact(DisplayName = "O documento sem bases legais e com a exigência por opção sem exceções é lido sem recusa, com as duas listas vazias")]
     public void Ler_DocumentoSemBasesLegaisNemExcecoes_LeSemRecusa()
     {
-        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", null), PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", null), PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
 
         LeituraDoConteudo leitura = new(Formatos);
         ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
@@ -144,6 +144,18 @@ public sealed class ConteudoLidoTests
         leitura.Recusas.Should().BeEmpty();
         lido.Documentos.DocumentosExigidos.Single().Documento.Indeferimento.BasesLegais.Should().BeEmpty();
         lido.Documentos.DocumentosExigidos.Single().Documento.PorOpcao!.Exceto.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Ler_DocumentoEGrupoSemConsequencia_PreservaReenvio()
+    {
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new(true, null, null, true) };
+        GrupoDeDocumentosDoModeloInput grupo = new(1, new(null, null, true), [documento]);
+        LeituraDoConteudo leitura = new(Formatos);
+        ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, new([documento], [grupo])));
+        leitura.Recusas.Should().BeEmpty();
+        lido.Documentos.DocumentosExigidos.Single().Documento.Indeferimento.Consequencia.Should().BeNull();
+        lido.Documentos.GruposDeDocumentos.Single().Grupo.Grupo.Indeferimento!.AbrePrazoParaReenvio.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Os requisitos do documento são lidos com a fase de cada referência pelo código")]
@@ -268,7 +280,7 @@ public sealed class ConteudoLidoTests
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
     [
         ElementoNulo<DocumentoExigidoDoModeloInput>(),
-        new(string.Empty, " ", PredicadoSemCondicao, new IndeferimentoDoDocumentoDoModeloInput(true, string.Empty, [ElementoNulo<BaseLegalDoModeloInput>()]), PorOpcao: new ExigenciaPorOpcaoInput(string.Empty, [" "])),
+        new(string.Empty, " ", PredicadoSemCondicao, new IndeferimentoDoDocumentoDoModeloInput(true, null, [ElementoNulo<BaseLegalDoModeloInput>()]), PorOpcao: new ExigenciaPorOpcaoInput(string.Empty, [" "])),
     ];
 
     private static Recusa[] RecusasDosDocumentos() =>
@@ -278,7 +290,6 @@ public sealed class ConteudoLidoTests
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].indeferimento.basesLegais", EntradaNula),
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].faseCodigo", "O documento exigido do modelo precisa informar a fase."),
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].tipoDocumentoCodigo", "O documento exigido do modelo precisa informar o tipo de documento."),
-        Malformada("conjuntoDeDocumentos.documentosExigidos[1].indeferimento.consequencia", "O documento exigido do modelo precisa informar a consequência do indeferimento."),
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.fatoCodigo", "A exigência por opção precisa informar o fato cujas opções a multiplicam."),
         Malformada("conjuntoDeDocumentos.documentosExigidos[1].porOpcao.exceto", "A opção excetuada precisa ser um código."),
     ];
@@ -329,12 +340,12 @@ public sealed class ConteudoLidoTests
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),
-            new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
             PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
     private static DocumentoExigidoDoModelo DocumentoEsperado() =>
         new("INSCRICAO", "LAUDO_MEDICO", Predicado("CERTIFICADO"),
-            new IndeferimentoDoDocumentoDoModelo(true, "REMOVE_VANTAGEM", [new BaseLegalDoModelo("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
+            new IndeferimentoDoDocumentoDoModelo(true, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModelo("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
             new ExigenciaPorOpcao("CONDICAO", ["OUTRA", "TERCEIRA"]));
 

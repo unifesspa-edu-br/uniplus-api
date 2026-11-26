@@ -182,5 +182,5 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId)
             .Condicional(new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true"))
             .Facultativa()
-            .ComConsequencia("ELIMINA");
+            .ComConsequencia("ELIMINA_DO_PROCESSO");
 }

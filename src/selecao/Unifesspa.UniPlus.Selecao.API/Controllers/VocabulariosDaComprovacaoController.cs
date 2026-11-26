@@ -113,16 +113,16 @@ public sealed class VocabulariosDaComprovacaoController(IQueryBus queryBus) : Co
     }
 
     /// <summary>Lista as consequências do indeferimento de um documento exigido.</summary>
-    [HttpGet("vocabularios/consequencias-indeferimento")]
-    [EndpointName("ListarConsequenciasDoIndeferimento")]
+    [HttpGet("vocabularios/consequencias-descumprimento")]
+    [EndpointName("ListarConsequenciasDoDescumprimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "consequencia-indeferimento", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ConsequenciaDoIndeferimento>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ConsequenciaDoDescumprimento>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ListarConsequenciasDoIndeferimento(CancellationToken cancellationToken)
+    public async Task<IActionResult> ListarConsequenciasDoDescumprimento(CancellationToken cancellationToken)
     {
-        IReadOnlyList<CodigoComRotulo<ConsequenciaDoIndeferimento>> opcoes = await queryBus
-            .Send(new ListarConsequenciasDoIndeferimentoQuery(), cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<CodigoComRotulo<ConsequenciaDoDescumprimento>> opcoes = await queryBus
+            .Send(new ListarConsequenciasDoDescumprimentoQuery(), cancellationToken).ConfigureAwait(false);
         return Ok(opcoes);
     }
 }

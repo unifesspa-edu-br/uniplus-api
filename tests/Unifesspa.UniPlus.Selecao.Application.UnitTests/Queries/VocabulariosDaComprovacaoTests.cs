@@ -26,10 +26,10 @@ public sealed class VocabulariosDaComprovacaoTests
     }
 
     [Fact]
-    public void ListarConsequenciasDoIndeferimento_Consulta_DevolveCodigosNaOrdem()
+    public void ListarConsequenciasDoDescumprimento_Consulta_DevolveCodigosNaOrdem()
     {
-        IReadOnlyList<CodigoComRotulo<ConsequenciaDoIndeferimento>> opcoes = ListarConsequenciasDoIndeferimentoQueryHandler.Handle(new());
-        opcoes.Select(static opcao => opcao.Codigo).Should().Equal("ELIMINA", "RECLASSIFICA_AC", "REMOVE_VANTAGEM", "ABRE_PRAZO_PARA_REENVIO");
+        IReadOnlyList<CodigoComRotulo<ConsequenciaDoDescumprimento>> opcoes = ListarConsequenciasDoDescumprimentoQueryHandler.Handle(new());
+        opcoes.Select(static opcao => opcao.Codigo).Should().Equal("ELIMINA_DO_PROCESSO", "RETIRA_A_MODALIDADE", "RETIRA_O_ACRESCIMO");
         opcoes.Should().OnlyContain(static opcao => !string.IsNullOrWhiteSpace(opcao.Rotulo));
     }
 }

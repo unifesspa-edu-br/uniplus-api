@@ -56,7 +56,7 @@ public sealed class ModalidadeSelecionadaTests
     [Fact(DisplayName = "Criar modalidade de cota reservada com SEGUE_ORDEM_DE_REMANEJAMENTO tem sucesso")]
     public void Criar_CotaReservadaComCascata_Sucesso()
     {
-        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = "Baixa renda PPI", AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 12.711/2012 art. 3º" });
+        Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = "Baixa renda PPI", AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Lei 12.711/2012 art. 3º" });
 
         resultado.IsSuccess.Should().BeTrue();
     }

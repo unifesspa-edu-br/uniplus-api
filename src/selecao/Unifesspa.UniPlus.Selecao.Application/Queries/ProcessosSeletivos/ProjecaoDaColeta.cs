@@ -152,7 +152,7 @@ internal static class ProjecaoDaColeta
             CodigoComRotulo<Aplicabilidade>.De(documento.Aplicabilidade),
             [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjetarCondicaoDoGatilho)]),
         new IndeferimentoDoDocumentoDto(
-            documento.Obrigatorio, ProjetarConsequencia(documento.ConsequenciaIndeferimento), [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)]),
+            documento.Obrigatorio, ProjetarConsequencia(documento.ConsequenciaIndeferimento), [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjetarBaseLegal)], documento.AbrePrazoParaReenvio),
         ProjetarRequisitos(documento),
         [.. documento.FatosComprovados])
     { Chave = documento.Chave.Valor };
@@ -177,12 +177,12 @@ internal static class ProjecaoDaColeta
         CodigoComRotulo<FormaDeComprovacao>.De(regra.Forma),
         regra.Forma == FormaDeComprovacao.Documento ? ProjetarDocumento(regra.DocumentoExigido!) : null,
         new CardinalidadeQualificadaDto(regra.QuantidadeMinima, ProjetarDistincao(regra.Distincao)),
-        new IndeferimentoDoGrupoDto(ProjetarConsequencia(regra.Consequencia), [.. regra.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDaRegra)]),
+        new IndeferimentoDoGrupoDto(ProjetarConsequencia(regra.Consequencia), [.. regra.BasesLegais.OrderBy(static b => b.Id).Select(ProjetarBaseLegalDaRegra)], regra.AbrePrazoParaReenvio),
         [.. regra.Itens.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjetarRegra)],
         regra.GrupoDoFormularioParaRepeticao);
 
-    private static CodigoComRotulo<ConsequenciaDoIndeferimento>? ProjetarConsequencia(string? codigo) =>
-        codigo is null ? null : CodigoComRotulo<ConsequenciaDoIndeferimento>.De(CatalogoDe<ConsequenciaDoIndeferimento>.Obter(codigo));
+    private static CodigoComRotulo<ConsequenciaDoDescumprimento>? ProjetarConsequencia(ConsequenciaDoDescumprimento? valor) =>
+        valor is null ? null : CodigoComRotulo<ConsequenciaDoDescumprimento>.De(valor.Value);
 
     private static DistincaoDasApresentacoesDto? ProjetarDistincao(DistincaoDasApresentacoes? distincao) =>
         distincao is null ? null : new DistincaoDasApresentacoesDto(distincao.Criterio is { } criterio ? CodigoComRotulo<CriterioDeDistincaoDasApresentacoes>.De(criterio) : null, distincao.DataReferencia, distincao.OcorrenciasEsperadas);

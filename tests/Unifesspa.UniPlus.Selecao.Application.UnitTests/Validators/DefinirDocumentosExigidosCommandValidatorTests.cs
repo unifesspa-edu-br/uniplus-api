@@ -187,7 +187,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     [Fact(DisplayName = "Regra de documento não admite consequência própria de grupo")]
     public void Rejeita_IndeferimentoDeGrupoEmRegraDeDocumento()
     {
-        RegraDeComprovacaoInformada regraDeDocumento = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComIndeferimento("ELIMINA").Construir();
+        RegraDeComprovacaoInformada regraDeDocumento = RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).ComIndeferimento("ELIMINA_DO_PROCESSO").Construir();
 
         ValidarRegra(regraDeDocumento).Errors.Should().Contain(e => e.ErrorMessage.Contains("consequência própria", StringComparison.Ordinal));
     }
@@ -207,7 +207,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     {
         RegraDeComprovacaoInformada grupoDeQuantidadeMinima = RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(ItemCom()).Construir())
             .ComQuantidadeMinima(1)
-            .ComIndeferimento("ELIMINA", new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
+            .ComIndeferimento("ELIMINA_DO_PROCESSO", new BaseLegalInput("Lei X", "FEDERAL", "RESOLVIDO", null))
             .Construir();
 
         ValidarRegra(grupoDeQuantidadeMinima).IsValid.Should().BeTrue();

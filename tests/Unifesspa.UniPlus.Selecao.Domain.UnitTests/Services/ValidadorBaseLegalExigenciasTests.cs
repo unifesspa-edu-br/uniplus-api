@@ -61,7 +61,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     [Fact(DisplayName = "Exigência que determina resultado por consequência (não por Obrigatorio) também exige base resolvida")]
     public void TodasResolvidas_ComConsequenciaSemBase_RetornaFalse()
     {
-        DocumentoExigido exigencia = Exigencia(obrigatorio: false, consequenciaIndeferimento: "ELIMINA");
+        DocumentoExigido exigencia = Exigencia(obrigatorio: false, consequenciaIndeferimento: "ELIMINA_DO_PROCESSO");
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeFalse();
     }
