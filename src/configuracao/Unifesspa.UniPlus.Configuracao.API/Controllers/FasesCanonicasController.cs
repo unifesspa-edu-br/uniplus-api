@@ -80,7 +80,7 @@ public sealed class FasesCanonicasController : ControllerBase
             [.. resultado.Items.Select(f => f with { Links = _linksBuilder.Build(f) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

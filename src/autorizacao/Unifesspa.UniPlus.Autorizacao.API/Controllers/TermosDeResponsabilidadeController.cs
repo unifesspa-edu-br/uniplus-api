@@ -118,7 +118,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedOrdenadoAsync(
-                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag,
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

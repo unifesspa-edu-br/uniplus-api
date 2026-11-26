@@ -5,13 +5,13 @@ using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
+
+using static CursorBinderTestSupport;
 
 public sealed class PaginationControllerExtensionsTests
 {
@@ -125,35 +125,24 @@ public sealed class PaginationControllerExtensionsTests
     private static async Task<string> LinkDaListagemAsync(string consulta, Guid? anterior, Guid? seguinte)
     {
         DefaultHttpContext contexto = ContextoDaRequisicao(consulta);
-        ListagemController controller = new() { ControllerContext = new ControllerContext { HttpContext = contexto } };
+        ListagemController controller = new()
+        {
+            ControllerContext = ControllerContextOfAction(contexto, nameof(CursorDeTesteController.Listar)),
+        };
 
         await controller.OkPaginatedAsync(
-            Array.Empty<string>(), anterior, seguinte, new PageRequest(null, 20, PaginationDirection.Next), "cursos");
+            Array.Empty<string>(), anterior, seguinte, new PageRequest(null, 20, PaginationDirection.Next));
 
         return contexto.Response.Headers["Link"].ToString();
     }
 
     private static DefaultHttpContext ContextoDaRequisicao(string consulta)
     {
-        DefaultHttpContext contexto = new() { RequestServices = ServicosDaPaginacao() };
+        DefaultHttpContext contexto = new() { RequestServices = CreateCursorServices().BuildServiceProvider() };
         contexto.Request.Scheme = "https";
         contexto.Request.Host = new HostString("uniplus.test");
         contexto.Request.Path = "/api/cursos";
         contexto.Request.QueryString = new QueryString(consulta);
         return contexto;
-    }
-
-    private static ServiceProvider ServicosDaPaginacao()
-    {
-        IOptions<CursorPaginationOptions> opcoes = Options.Create(new CursorPaginationOptions());
-        IOptions<EncryptionOptions> opcoesDaCifra = Options.Create(
-            new EncryptionOptions { Provider = "local", LocalKey = Convert.ToBase64String(new byte[32]) });
-        LocalAesEncryptionService cifra = new(opcoesDaCifra, NullLogger<LocalAesEncryptionService>.Instance);
-
-        return new ServiceCollection()
-            .AddSingleton(TimeProvider.System)
-            .AddSingleton(opcoes)
-            .AddSingleton(new CursorEncoder(cifra, opcoes, TimeProvider.System))
-            .BuildServiceProvider();
     }
 }

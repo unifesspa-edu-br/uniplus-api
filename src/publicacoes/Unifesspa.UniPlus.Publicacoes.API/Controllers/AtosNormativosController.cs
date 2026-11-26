@@ -84,7 +84,7 @@ public sealed class AtosNormativosController : ControllerBase
             .ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            ComLinks(resultado.Items), resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            ComLinks(resultado.Items), resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -131,7 +131,7 @@ public sealed class AtosNormativosController : ControllerBase
             .ConfigureAwait(false);
 
         return await this.OkPaginatedOrdenadoAsync(
-            ComLinks(resultado.Items), resultado.Anterior, resultado.Proximo, page, EtiquetaDaEntidade(entidadeTipo, entidadeId),
+            ComLinks(resultado.Items), resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -204,12 +204,12 @@ public sealed class AtosNormativosController : ControllerBase
 
     /// <summary>
     /// A recusa que a fronteira dá a uma consulta dos atos de uma entidade antes de enviá-la, ou
-    /// <c>null</c>: primeiro o tipo de entidade, depois a âncora do cursor.
+    /// <c>null</c>: primeiro o tipo de entidade, depois a chave de ordenação do cursor.
     /// </summary>
     /// <remarks>
     /// A forma do rótulo é conferida, o valor jamais: sem a recusa, um rótulo fora da grafia canônica
     /// (minúsculo, com hífen) devolveria a mesma coleção vazia de uma entidade sem atos, e o erro de
-    /// digitação passaria por resultado legítimo. A âncora é o par (instante da divulgação, Id) e o
+    /// digitação passaria por resultado legítimo. O ponto de continuação do cursor é o par (instante da divulgação, Id) e o
     /// instante chega como texto: decodificar o wire é da fronteira (ADR-0031); sem a recusa, o cursor
     /// adulterado viraria 500. O código é o que o binder dá ao cursor que não decodifica.
     /// </remarks>
@@ -223,23 +223,14 @@ public sealed class AtosNormativosController : ControllerBase
                 .ToActionResult(_mapper);
         }
 
-        return AncoraEhInstante(page.AfterSortKey)
+        return ChaveEhInstante(page.AfterSortKey)
             ? null
             : Result.Failure(new DomainError(CursorBindingErrorCodes.Invalido, "O cursor informado é inválido."))
                 .ToActionResult(_mapper);
     }
 
-    /// <summary>A âncora desta coleção é o instante da divulgação no formato <c>O</c>; sem âncora, é a primeira página.</summary>
-    private static bool AncoraEhInstante(string? ancora) =>
-        ancora is null
-        || DateTimeOffset.TryParseExact(ancora, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
-
-    /// <summary>
-    /// Etiqueta do cursor da coleção desta entidade. Composta pelo mesmo utilitário que
-    /// o binder usa para conferi-la — se cada lado a montasse à sua maneira, nenhum
-    /// cursor emitido aqui passaria na leitura.
-    /// </summary>
-    private static string EtiquetaDaEntidade(string entidadeTipo, Guid entidadeId) =>
-        CursorResourceTag.Compose(
-            ResourceTagEntidade, [entidadeTipo, entidadeId.ToString()]);
+    /// <summary>A chave de ordenação desta coleção é o instante da divulgação no formato <c>O</c>; sem chave, é a primeira página.</summary>
+    private static bool ChaveEhInstante(string? chaveDeOrdenacao) =>
+        chaveDeOrdenacao is null
+        || DateTimeOffset.TryParseExact(chaveDeOrdenacao, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
 }

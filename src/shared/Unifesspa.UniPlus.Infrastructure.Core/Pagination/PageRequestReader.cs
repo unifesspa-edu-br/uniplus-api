@@ -65,7 +65,7 @@ internal sealed class PageRequestReader
             ? FirstPage(requestedLimit)
             : await ReadPageFromCursorAsync(rawCursor, direction, requestedLimit).ConfigureAwait(false);
 
-    /// <summary>Sem âncora não há o que navegar para trás: a primeira página é sempre para a frente.</summary>
+    /// <summary>Sem ponto de continuação não há o que navegar para trás: a primeira página é sempre para a frente.</summary>
     private PageRequest FirstPage(int? requestedLimit) =>
         new(null, requestedLimit ?? _options.LimitDefault, PaginationDirection.Next, null);
 
@@ -125,7 +125,7 @@ internal sealed class PageRequestReader
             return null;
         }
 
-        // O limite do cursor é a memória do tamanho da janela: ajustado se a configuração apertou o intervalo.
+        // O limite do cursor é a memória do tamanho da página: ajustado se a configuração apertou o intervalo.
         int limit = Math.Clamp(payload.Limit, _options.LimitMin, _options.LimitMax);
         return new PageRequest(anchor, limit, direction, payload.SortKey);
     }
@@ -134,7 +134,7 @@ internal sealed class PageRequestReader
     /// A ordem das conferências é a da recusa: etiqueta da coleção (ADR-0026), direção emitida (ADR-0089),
     /// usuário do cursor e chave de ordenação (ADR-0094). O usuário só é resolvido depois de etiqueta e
     /// direção certas. Direção diferente da emitida é tratada como adulteração; um cursor só com o
-    /// identificador não pode cair em silêncio para a primeira página quando a ordenação exige a âncora completa.
+    /// identificador não pode cair em silêncio para a primeira página quando a ordenação exige o ponto de continuação completo.
     /// </summary>
     private bool CursorMatches(CursorPayload payload, string resourceTag, PaginationDirection direction) =>
         string.Equals(payload.ResourceTag, resourceTag, StringComparison.Ordinal)

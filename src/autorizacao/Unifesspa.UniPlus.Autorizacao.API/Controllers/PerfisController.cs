@@ -79,7 +79,7 @@ public sealed class PerfisController : ControllerBase
     }
 
     private Task<IActionResult> PaginaAsync(ListarPerfisResult pagina, PageRequest page, CancellationToken cancellationToken) =>
-        this.OkPaginatedAsync(pagina.Items, pagina.AnteriorAfterId, pagina.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken);
+        this.OkPaginatedAsync(pagina.Items, pagina.AnteriorAfterId, pagina.ProximoAfterId, page, cancellationToken: cancellationToken);
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]

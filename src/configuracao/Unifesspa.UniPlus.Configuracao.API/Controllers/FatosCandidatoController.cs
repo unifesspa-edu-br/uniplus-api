@@ -111,7 +111,7 @@ public sealed class FatosCandidatoController : ControllerBase
         }
 
         return await this.OkPaginatedAsync(
-            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTagAdmin, cancellationToken: cancellationToken)
+            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

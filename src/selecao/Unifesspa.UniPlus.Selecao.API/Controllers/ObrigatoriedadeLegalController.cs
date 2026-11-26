@@ -96,7 +96,6 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
             resultado.AnteriorAfterId,
             resultado.ProximoAfterId,
             page,
-            ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

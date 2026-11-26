@@ -104,7 +104,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             new ListarProcessosSeletivosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken);
     }
 

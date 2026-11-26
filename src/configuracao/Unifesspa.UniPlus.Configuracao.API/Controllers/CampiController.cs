@@ -79,7 +79,7 @@ public sealed class CampiController : ControllerBase
         CampusDto[] comLinks = [.. resultado.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

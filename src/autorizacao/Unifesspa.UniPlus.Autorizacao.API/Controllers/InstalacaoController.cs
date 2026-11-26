@@ -244,7 +244,6 @@ public sealed class InstalacaoController : ControllerBase
             resultado.AnteriorAfterId,
             resultado.ProximoAfterId,
             page,
-            ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

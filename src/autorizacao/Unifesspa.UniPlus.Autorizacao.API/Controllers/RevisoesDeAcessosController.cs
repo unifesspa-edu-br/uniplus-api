@@ -102,7 +102,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedAsync(
-                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTag,
+                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

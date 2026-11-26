@@ -80,7 +80,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
             [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

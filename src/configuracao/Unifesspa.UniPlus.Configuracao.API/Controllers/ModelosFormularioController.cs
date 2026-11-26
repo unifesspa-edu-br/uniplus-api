@@ -79,7 +79,7 @@ public sealed class ModelosFormularioController : ControllerBase
         }
 
         return await this.OkPaginatedAsync(
-            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken)
+            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

@@ -174,7 +174,7 @@ public sealed class CertamePublicadoController : ControllerBase
         ListarCertamesPublicadosResult resultado = saida.Value!;
         AplicarCabecalhosDaVitrine(resultado);
         return await this.OkPaginatedOrdenadoAsync(
-            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceDaVitrine,
+            resultado.Items, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

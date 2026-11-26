@@ -103,7 +103,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedOrdenadoAsync(
-                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, DecisoesResourceTag,
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
