@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -33,13 +34,14 @@ internal static class LeituraDosGrupos
         LeitorEnvelope leitor,
         JsonObject payload,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
-        List<DefinicaoAgregado> agregados)
+        List<DefinicaoAgregado> agregados,
+        FormulariosDoDocumento formularios)
     {
         JsonArray array = leitor.Array(payload, "gruposDosFormularios", "$");
         List<GrupoColetado> grupos = [];
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
-            if (LerGrupo(leitor, leitor.ItemObjeto(array, i, "gruposDosFormularios"), $"gruposDosFormularios[{i}]", valoresSelecionaveis, agregados) is not { } grupo)
+            if (LerGrupo(leitor, leitor.ItemObjeto(array, i, "gruposDosFormularios"), $"gruposDosFormularios[{i}]", valoresSelecionaveis, agregados, formularios) is not { } grupo)
             {
                 return [];
             }
@@ -55,26 +57,27 @@ internal static class LeituraDosGrupos
         JsonObject item,
         string path,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
-        List<DefinicaoAgregado> agregados)
+        List<DefinicaoAgregado> agregados,
+        FormulariosDoDocumento formularios)
     {
-        if (LerDeclaracaoDoGrupo(leitor, item, path) is not { } declaracao)
+        if (LerDeclaracaoDoGrupo(leitor, item, path, formularios) is not { } declaracao)
         {
             return null;
         }
 
-        GrupoColetado? grupo = CriarGrupo(leitor, declaracao, item, path, valoresSelecionaveis);
+        GrupoColetado? grupo = CriarGrupo(leitor, declaracao, item, path, valoresSelecionaveis, formularios);
         return grupo is not null && LerAgregadosDoGrupo(leitor, item, path, grupo, agregados) ? grupo : null;
     }
 
-    /// <summary>A declaração do grupo lida das chaves exatas do envelope; recusa a finalidade fora do vocabulário.</summary>
-    private static DeclaracaoDoGrupo? LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path)
+    /// <summary>A declaração do grupo lida das chaves exatas do envelope; recusa o código de formulário que o documento não traz.</summary>
+    private static DeclaracaoDoGrupo? LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios)
     {
         leitor.ExigirChaves(
-            item, path, "codigo", "finalidade", "paginaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
-        DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path);
+            item, path, "codigo", "formularioCodigo", "paginaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
+        DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path, formularios);
         return leitor.Falhou ? null
-            : declaracao.Finalidade is null
-                ? leitor.Recusar<DeclaracaoDoGrupo?>($"'{path}.finalidade' fora do vocabulário de finalidades.")
+            : declaracao.Formulario is null
+                ? leitor.Recusar<DeclaracaoDoGrupo?>($"'{path}.formularioCodigo' não é o código de um formulário do documento.")
                 : declaracao;
     }
 
@@ -83,10 +86,11 @@ internal static class LeituraDosGrupos
         DeclaracaoDoGrupo d,
         JsonObject item,
         string path,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
+        FormulariosDoDocumento formularios)
     {
         if (LerRegrasDoGrupo(leitor, d, item, path) is not { } regras
-            || LerCamposDoGrupo(leitor, d, path, valoresSelecionaveis) is not { } campos)
+            || LerCamposDoGrupo(leitor, d, path, valoresSelecionaveis, formularios) is not { } campos)
         {
             return null;
         }
@@ -118,24 +122,25 @@ internal static class LeituraDosGrupos
         LeitorEnvelope leitor,
         DeclaracaoDoGrupo d,
         string path,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
+        FormulariosDoDocumento formularios)
     {
-        IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, d.Subitens, $"{path}.subitens", valoresSelecionaveis);
+        IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, d.Subitens, $"{path}.subitens", valoresSelecionaveis, formularios);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.PaginaCodigo is not null) is { } foraDoGrupo
+        return campos.FirstOrDefault(c => c.FormularioId != d.Formulario!.Id || c.PaginaCodigo is not null) is { } foraDoGrupo
             ? leitor.Recusar<IReadOnlyList<FatoColetado>?>(
-                $"'{path}.subitens': um campo tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")
+                $"'{path}.subitens': um campo tem formulário ou seção própria, mas o campo do grupo segue o grupo.")
             : campos;
     }
 
-    private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios) => new()
     {
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, FormaDoGrupo.CodigoMaxLength),
-        Finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(item, "finalidade", path)),
+        Formulario = formularios.De(leitor.TextoNaoVazio(item, "formularioCodigo", path, CodigoDoFormulario.TamanhoMaximo)),
         PaginaCodigo = leitor.TextoOpcional(item, "paginaCodigo", path, LimitesDoEnvelope.CodigoPaginaFormulario),
         Ordem = leitor.Inteiro(item, "ordem", path),
         Rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro),
@@ -150,7 +155,7 @@ internal static class LeituraDosGrupos
     {
         public string Codigo { get; init; } = string.Empty;
 
-        public FinalidadeFormulario? Finalidade { get; init; }
+        public FormularioProcesso? Formulario { get; init; }
 
         public string? PaginaCodigo { get; init; }
 

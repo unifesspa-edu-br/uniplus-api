@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class NomesDeOrigemNoEnvelopeTests
@@ -63,12 +64,13 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     public void ModeloDeOrigem_NomeDecomposto_GravaEmNfcERestaura()
     {
         ProcessoSeletivo processo = ExemploDeConfiguracao.Entrada().Processo;
+        DeclararOFormularioDaHabilitacao(processo);
         CopiaDeModeloDeFormulario copia = CopiaDoModelo("Formula\u0301rio");
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
         JsonObject documento = JsonNode.Parse(new JsonObject { ["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo) }.ToJsonString())!.AsObject();
         LeitorEnvelope leitor = new();
 
-        (IReadOnlyList<FormularioProcesso> formularios, _) = LeituraDosFormularios.LerFormularios(leitor, documento);
+        (IReadOnlyList<FormularioProcesso> formularios, _) = LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
         documento["formularios"]![0]!["modeloOrigem"]!["nome"]!.GetValue<string>().Should().Be("Formulário");
@@ -94,6 +96,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     private static EntradaCanonicalizacao EntradaComModelo()
     {
         EntradaCanonicalizacao entrada = ExemploDeConfiguracao.Entrada();
+        DeclararOFormularioDaHabilitacao(entrada.Processo);
         entrada.Processo.AplicarModeloDeFormulario(CopiaDoModelo("Formulário")).IsSuccess.Should().BeTrue();
         entrada.Processo.DefinirTaxaInscricao(ConfiguracaoTaxaInscricao.Criar(false, null, null).Value!).IsSuccess.Should().BeTrue();
         TipoDeAtoCongelado ato = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", true, true, false);
@@ -164,9 +167,18 @@ public sealed class NomesDeOrigemNoEnvelopeTests
         ["cronogramaFases"] = new JsonObject { ["origemCandidatos"] = OrigemCandidatos.ImportacaoExterna.Codigo(), ["fases"] = new JsonArray(fase) },
     };
 
+    /// <summary>O modelo só se aplica a formulário que o processo já tem.</summary>
+    private static void DeclararOFormularioDaHabilitacao(ProcessoSeletivo processo) =>
+        processo.DefinirFormulario(
+            new FormularioDeclarado(CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, null, Obrigatorio: true), null, PaginasDoModelo())
+            .IsSuccess.Should().BeTrue();
+
+    private static PaginaDoFormulario[] PaginasDoModelo() =>
+    [
+        PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
+    ];
+
     private static CopiaDeModeloDeFormulario CopiaDoModelo(string nome) => new(
-        CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, "Formulário", [
-            PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
-            PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
-        ], [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));
+        CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, "Formulário", PaginasDoModelo(), [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));
 }

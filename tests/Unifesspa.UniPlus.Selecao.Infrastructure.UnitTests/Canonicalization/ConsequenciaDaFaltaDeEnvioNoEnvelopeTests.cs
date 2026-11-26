@@ -7,11 +7,15 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class ConsequenciaDaFaltaDeEnvioNoEnvelopeTests
 {
+    private const string CodigoDoFormularioDeTeste = "HABILITACAO";
+
     [Fact]
     public void Formulario_ConsequenciaDeclarada_GravaCodigoERotuloELeOCodigo()
     {
@@ -22,10 +26,10 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoEnvelopeTests
         formulario["contexto"]!["consequenciaDaFaltaDeEnvioRotulo"] = "Rótulo alterado";
         LeitorEnvelope leitor = new();
 
-        (IReadOnlyList<FormularioProcesso> lidos, _) = LeituraDosFormularios.LerFormularios(leitor, documento);
+        (IReadOnlyList<FormularioProcesso> lidos, _) = LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
-        lidos.Single(static f => f.Finalidade == FinalidadeFormulario.Habilitacao).ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.RetiraAModalidade);
+        lidos.Single(static f => f.Codigo.Valor == CodigoDoFormularioDeTeste).ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.RetiraAModalidade);
     }
 
     [Fact]
@@ -34,13 +38,13 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoEnvelopeTests
         JsonObject documento = DocumentoComConsequencia(null);
         JsonObject formulario = documento["formularios"]![0]!.AsObject();
         formulario["consequenciaDaFaltaDeEnvio"].Should().BeNull();
-        formulario["contexto"]!.AsObject().ContainsKey("consequenciaDaFaltaDeEnvioRotulo").Should().BeFalse();
+        formulario["contexto"]?["consequenciaDaFaltaDeEnvioRotulo"].Should().BeNull();
         LeitorEnvelope leitor = new();
 
-        (IReadOnlyList<FormularioProcesso> lidos, _) = LeituraDosFormularios.LerFormularios(leitor, documento);
+        (IReadOnlyList<FormularioProcesso> lidos, _) = LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
-        lidos.Single(static f => f.Finalidade == FinalidadeFormulario.Habilitacao).ConsequenciaDaFaltaDeEnvio.Should().BeNull();
+        lidos.Single(static f => f.Codigo.Valor == CodigoDoFormularioDeTeste).ConsequenciaDaFaltaDeEnvio.Should().BeNull();
     }
 
     [Fact]
@@ -50,7 +54,7 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoEnvelopeTests
         documento["formularios"]![0]!["consequenciaDaFaltaDeEnvio"] = "ABRE_PRAZO_PARA_REENVIO";
         LeitorEnvelope leitor = new();
 
-        LeituraDosFormularios.LerFormularios(leitor, documento);
+        LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeTrue();
     }
@@ -85,11 +89,12 @@ public sealed class ConsequenciaDaFaltaDeEnvioNoEnvelopeTests
     private static JsonObject DocumentoComConsequencia(ConsequenciaDoDescumprimento? consequencia)
     {
         ProcessoSeletivo processo = ExemploDeConfiguracao.Entrada().Processo;
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, Paginas(), null, consequencia).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(new FormularioDeclarado(CodigoDoFormulario.Criar(CodigoDoFormularioDeTeste).Value!, null, true), null, Paginas(), null, consequencia)
+            .IsSuccess.Should().BeTrue();
         JsonObject documento = new() { ["formularios"] = SerializacaoDosFormularios.SerializarFormularios(processo) };
         JsonObject copia = JsonNode.Parse(PerfilCanonicoV1.Instancia.Serializar(documento))!.AsObject();
         JsonArray formularios = copia["formularios"]!.AsArray();
-        JsonNode habilitacao = formularios.Single(static f => f!["finalidade"]!.GetValue<string>() == "HABILITACAO")!;
+        JsonNode habilitacao = formularios.Single(static f => f!["codigo"]!.GetValue<string>() == CodigoDoFormularioDeTeste)!;
         formularios.Clear();
         formularios.Add(habilitacao);
         return copia;

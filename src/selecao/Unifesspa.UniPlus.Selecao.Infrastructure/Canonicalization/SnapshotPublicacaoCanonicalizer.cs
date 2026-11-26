@@ -157,8 +157,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)
     {
         ProcessoSeletivo processo = entrada.Processo;
-        payload["dadosDosFormularios"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados);
-        payload["gruposDosFormularios"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios = SerializacaoDosFormularios.CodigosPorIdentificador(processo);
+        payload["dadosDosFormularios"] = SerializacaoDosFatos.SerializarFatosColetados(processo.FatosColetados, codigosDosFormularios, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados);
+        payload["gruposDosFormularios"] = SerializacaoDosFatos.SerializarGruposColetados(processo.GruposColetados, codigosDosFormularios, entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, entrada.DadosDeCatalogo.AgregadosDosGrupos);
         payload["calculosDosDados"] = SerializacaoDosFatos.SerializarRegrasDerivacao(processo.RegrasDerivacao);
         payload["dependenciasEntreItens"] = SerializacaoDosFatos.SerializarGrafoDependencia(processo);
         payload["versaoDasRegrasDeCalculo"] = CalculoDosFatosDerivados.VersaoSemantica;

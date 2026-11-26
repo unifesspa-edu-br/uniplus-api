@@ -100,6 +100,7 @@ internal sealed class SincronizacaoDasLinhasDaInscricao
 
     private static void CopiarAceite(AceiteDaInscricaoRecord de, AceiteDaInscricaoRecord para)
     {
+        para.FormularioCodigo = de.FormularioCodigo;
         para.TermoCodigo = de.TermoCodigo;
         para.VersaoId = de.VersaoId;
         para.HashVersao = de.HashVersao;

@@ -97,12 +97,13 @@ internal static class SerializacaoDosFatos
 
     internal static JsonArray SerializarFatosColetados(
         IEnumerable<FatoColetado> fatos,
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
         JsonArray array = [];
         foreach (FatoColetado fato in OrdemCanonicaDaConfiguracao.Campos(fatos))
         {
-            array.Add(SerializarFatoColetado(fato, ValoresSelecionaveisDoFato(fato, valoresSelecionaveisCongelados)));
+            array.Add(SerializarFatoColetado(fato, codigosDosFormularios, ValoresSelecionaveisDoFato(fato, valoresSelecionaveisCongelados)));
         }
 
         return array;
@@ -145,21 +146,21 @@ internal static class SerializacaoDosFatos
 
     private static JsonObject SerializarFatoColetado(
         FatoColetado fato,
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato)
     {
-        JsonObject objeto = IdentificacaoDoFato(fato);
+        JsonObject objeto = IdentificacaoDoFato(fato, codigosDosFormularios);
         AdicionarRegrasDaResposta(objeto, fato);
         AdicionarTratamentoDoDado(objeto, fato);
         AdicionarApresentacaoEOpcoes(objeto, fato, valoresDoFato);
-        ContextoDosRotulos.Acrescentar(objeto, "finalidade", fato.Finalidade);
         ContextoDosRotulos.Acrescentar(objeto, "tipoDeCampo", (TipoDeCampo?)fato.TipoDeCampo);
         return objeto;
     }
 
-    private static JsonObject IdentificacaoDoFato(FatoColetado fato) => new()
+    private static JsonObject IdentificacaoDoFato(FatoColetado fato, IReadOnlyDictionary<Guid, string> codigosDosFormularios) => new()
     {
         ["codigoDoDado"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
-        ["finalidade"] = fato.Finalidade!.Value.Codigo(),
+        ["formularioCodigo"] = SerializacaoDosFormularios.CodigoDoFormularioDoItem(fato.FormularioId, codigosDosFormularios),
         ["paginaCodigo"] = fato.PaginaCodigo is { } pagina ? HashCanonicalComputer.NormalizeNfc(pagina) : null,
         ["ordem"] = fato.Ordem,
         ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
@@ -209,25 +210,26 @@ internal static class SerializacaoDosFatos
 
     internal static JsonArray SerializarGruposColetados(
         IEnumerable<GrupoColetado> grupos,
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados) =>
-        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => SerializarGrupo(g, valoresSelecionaveisCongelados, agregados))];
+        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => SerializarGrupo(g, codigosDosFormularios, valoresSelecionaveisCongelados, agregados))];
 
     private static JsonObject SerializarGrupo(
         GrupoColetado g,
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados)
     {
-        JsonObject objeto = IdentificacaoDoGrupo(g);
-        AdicionarRegrasEComposicaoDoGrupo(objeto, g, valoresSelecionaveisCongelados, agregados);
-        ContextoDosRotulos.Acrescentar(objeto, "finalidade", g.Finalidade);
+        JsonObject objeto = IdentificacaoDoGrupo(g, codigosDosFormularios);
+        AdicionarRegrasEComposicaoDoGrupo(objeto, g, codigosDosFormularios, valoresSelecionaveisCongelados, agregados);
         return objeto;
     }
 
-    private static JsonObject IdentificacaoDoGrupo(GrupoColetado g) => new()
+    private static JsonObject IdentificacaoDoGrupo(GrupoColetado g, IReadOnlyDictionary<Guid, string> codigosDosFormularios) => new()
     {
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
-        ["finalidade"] = g.Finalidade!.Value.Codigo(),
+        ["formularioCodigo"] = SerializacaoDosFormularios.CodigoDoFormularioDoItem(g.FormularioId, codigosDosFormularios),
         ["paginaCodigo"] = g.PaginaCodigo is { } pagina ? HashCanonicalComputer.NormalizeNfc(pagina) : null,
         ["ordem"] = g.Ordem,
         ["rotulo"] = HashCanonicalComputer.NormalizeNfc(g.Rotulo),
@@ -239,12 +241,13 @@ internal static class SerializacaoDosFatos
     private static void AdicionarRegrasEComposicaoDoGrupo(
         JsonObject objeto,
         GrupoColetado g,
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados)
     {
         objeto["exibicao"] = g.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null;
         objeto["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(g.Obrigatoriedade);
-        objeto["subitens"] = SerializarFatosColetados(g.Subitens, valoresSelecionaveisCongelados);
+        objeto["subitens"] = SerializarFatosColetados(g.Subitens, codigosDosFormularios, valoresSelecionaveisCongelados);
         objeto["agregados"] = SerializarAgregadosDoGrupo(g, agregados);
     }
 

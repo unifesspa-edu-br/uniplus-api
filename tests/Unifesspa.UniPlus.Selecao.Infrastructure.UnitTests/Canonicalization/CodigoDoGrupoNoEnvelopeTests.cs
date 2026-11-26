@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class CodigoDoGrupoNoEnvelopeTests
 {
@@ -16,7 +17,7 @@ public sealed class CodigoDoGrupoNoEnvelopeTests
     {
         LeitorEnvelope leitor = new();
         string codigo = new('A', tamanho);
-        IReadOnlyList<GrupoColetado> grupos = LeituraDosGrupos.LerGruposColetados(leitor, Envelope(codigo), new(StringComparer.Ordinal), []);
+        IReadOnlyList<GrupoColetado> grupos = LeituraDosGrupos.LerGruposColetados(leitor, Envelope(codigo), new(StringComparer.Ordinal), [], FormulariosDoDocumentoDeTeste.ComFormularios());
 
         leitor.Falhou.Should().Be(recusado, leitor.Falhou ? leitor.Falha<object>().Error!.Message : "");
         if (!recusado)
@@ -27,25 +28,30 @@ public sealed class CodigoDoGrupoNoEnvelopeTests
 
     private static JsonObject Envelope(string codigo) => new()
     {
-        ["gruposDosFormularios"] = new JsonArray(new JsonObject
+        ["gruposDosFormularios"] = new JsonArray(ComRegrasEItens(new JsonObject
         {
             ["codigo"] = codigo,
-            ["finalidade"] = "INSCRICAO",
+            ["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaInscricao,
             ["paginaCodigo"] = "DADOS",
             ["ordem"] = 0,
             ["rotulo"] = "Grupo",
             ["minimo"] = 1,
             ["maximo"] = 2,
             ["incluiCandidato"] = false,
-            ["exibicao"] = null,
-            ["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE", ["quando"] = null },
-            ["subitens"] = new JsonArray(Campo()),
-            ["agregados"] = new JsonArray(),
-        }),
+        })),
     };
 
+    private static JsonObject ComRegrasEItens(JsonObject grupo)
+    {
+        grupo["exibicao"] = null;
+        grupo["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE", ["quando"] = null };
+        grupo["subitens"] = new JsonArray(Campo());
+        grupo["agregados"] = new JsonArray();
+        return grupo;
+    }
+
     private static JsonObject Campo() => JsonNode.Parse("""
-        {"codigoDoDado":"DADO","finalidade":"INSCRICAO","paginaCodigo":null,"ordem":0,"rotulo":"Dado",
+        {"codigoDoDado":"DADO","formularioCodigo":"INSCRICAO","paginaCodigo":null,"ordem":0,"rotulo":"Dado",
          "tipoDeCampo":"TEXTO","obrigatoriedade":{"tipo":"SEMPRE","quando":null},"ajuda":null,
          "pedirConfirmacao":false,"restricoes":[],"impedimento":null,"origemValores":"CATALOGO","formato":"LIVRE",
          "classificacaoProtecao":"PESSOAL","hipoteseLegal":"CUMPRIMENTO_OBRIGACAO_LEGAL",

@@ -13,23 +13,25 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.Enums.Operador Operador, System.Text.Json.JsonElement Valor);
 
 /// <summary>
-/// Leitura do bloco de formulários de inscrição: páginas, termos exigidos e modelo de origem.
+/// Leitura do bloco de formulários do processo: código, obrigatoriedade, páginas, termos exigidos e modelo de origem.
 /// </summary>
 internal static class LeituraDosFormularios
 {
     /// <summary>
-    /// Os formulários por finalidade (UNI-REQ-0144), em ordem de finalidade e sem repetição, cada um
-    /// remontado pelas factories do domínio — que reconferem a estrutura das páginas — com os seus
-    /// termos, em ordem crescente e com código único no formulário.
+    /// Os formulários do processo (UNI-REQ-0144), pela ordem ordinal do código e sem repetição, cada um
+    /// remontado pelas factories do domínio — que reconferem a estrutura das páginas contra as fases que o
+    /// documento congelou — com os seus termos, em ordem crescente e com código único no formulário.
     /// </summary>
     internal static (IReadOnlyList<FormularioProcesso> Formularios, IReadOnlyList<TermoExigidoFormulario> Termos) LerFormularios(
-        LeitorEnvelope leitor, JsonObject payload)
+        LeitorEnvelope leitor, JsonObject payload, CronogramaDoProcesso cronograma)
     {
         JsonArray blocos = leitor.Array(payload, "formularios", "$");
         if (leitor.Falhou)
@@ -37,17 +39,17 @@ internal static class LeituraDosFormularios
             return ([], []);
         }
 
-        return LerBlocosDeFormulario(leitor, blocos);
+        return LerBlocosDeFormulario(leitor, blocos, cronograma);
     }
 
     private static (IReadOnlyList<FormularioProcesso> Formularios, IReadOnlyList<TermoExigidoFormulario> Termos) LerBlocosDeFormulario(
-        LeitorEnvelope leitor, JsonArray blocos)
+        LeitorEnvelope leitor, JsonArray blocos, CronogramaDoProcesso cronograma)
     {
         List<FormularioComTermosExigidos> formularios = [];
         for (int indice = 0; indice < blocos.Count; indice++)
         {
             FormularioComTermosExigidos? formulario = LerFormulario(leitor, leitor.ItemObjeto(blocos, indice, "formularios"),
-                $"formularios[{indice}]", formularios.LastOrDefault()?.Formulario.Finalidade);
+                $"formularios[{indice}]", formularios.LastOrDefault()?.Formulario.Codigo, cronograma);
             if (formulario is null)
             {
                 return ([], []);
@@ -62,60 +64,64 @@ internal static class LeituraDosFormularios
     private sealed record FormularioComTermosExigidos(FormularioProcesso Formulario, IReadOnlyList<TermoExigidoFormulario> Termos);
 
     private static FormularioComTermosExigidos? LerFormulario(
-        LeitorEnvelope leitor, JsonObject bloco, string path, FinalidadeFormulario? finalidadeAnterior)
+        LeitorEnvelope leitor, JsonObject bloco, string path, CodigoDoFormulario? codigoAnterior, CronogramaDoProcesso cronograma)
     {
-        leitor.ExigirChaves(bloco, path, "finalidade", "faseId", "titulo", "consequenciaDaFaltaDeEnvio", "modeloOrigem", "paginas", "termos");
+        leitor.ExigirChaves(bloco, path, "codigo", "faseId", "obrigatorio", "titulo", "consequenciaDaFaltaDeEnvio", "modeloOrigem", "paginas", "termos");
         DeclaracaoFormulario declaracao = LerDeclaracaoDoFormulario(leitor, bloco, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return CriarFormulario(leitor, path, finalidadeAnterior, declaracao);
+        return CriarFormulario(leitor, path, codigoAnterior, cronograma, declaracao);
     }
 
     private static DeclaracaoFormulario LerDeclaracaoDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
-        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(bloco, "finalidade", path));
+        CodigoDoFormulario? codigo = CodigoDoFormulario.Criar(leitor.TextoNaoVazio(bloco, "codigo", path, CodigoDoFormulario.TamanhoMaximo)).Value;
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
+        bool obrigatorio = leitor.Booleano(bloco, "obrigatorio", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
         ModeloDeOrigem? modeloDeOrigem = LerModeloDeOrigem(leitor, bloco, path);
         List<PaginaDoFormulario> paginas = LerPaginasDoFormulario(leitor, bloco, path);
         JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
         ConsequenciaDoDescumprimento? consequencia = leitor.CodigoDeContratoOpcional<ConsequenciaDoDescumprimento>(bloco, "consequenciaDaFaltaDeEnvio", path);
-        return new DeclaracaoFormulario(finalidade, faseId, titulo, modeloDeOrigem, paginas, itensDeTermo, consequencia);
+        return new DeclaracaoFormulario(codigo, faseId, obrigatorio, titulo, modeloDeOrigem, paginas, itensDeTermo, consequencia);
     }
 
     private sealed record DeclaracaoFormulario(
-        FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, ModeloDeOrigem? ModeloDeOrigem,
+        CodigoDoFormulario? Codigo, Guid? FaseId, bool Obrigatorio, string? Titulo, ModeloDeOrigem? ModeloDeOrigem,
         IReadOnlyList<PaginaDoFormulario> Paginas, JsonArray Termos, ConsequenciaDoDescumprimento? Consequencia);
 
     private static FormularioComTermosExigidos? CriarFormulario(
-        LeitorEnvelope leitor, string path, FinalidadeFormulario? finalidadeAnterior, DeclaracaoFormulario declaracao)
+        LeitorEnvelope leitor, string path, CodigoDoFormulario? codigoAnterior, CronogramaDoProcesso cronograma, DeclaracaoFormulario declaracao)
     {
-        if (declaracao.Finalidade is not { } finalidade || finalidade <= finalidadeAnterior)
+        if (declaracao.Codigo is not { } codigo || !EmOrdemCrescente(codigo, codigoAnterior))
         {
-            return leitor.Recusar<FormularioComTermosExigidos?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
+            return leitor.Recusar<FormularioComTermosExigidos?>($"'{path}.codigo' fora do formato, repetido ou fora da ordem ordinal.");
         }
-        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(declaracao.Finalidade, declaracao.FaseId, declaracao.Titulo,
-            declaracao.Paginas, declaracao.ModeloDeOrigem);
+        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(new FormularioDeclarado(codigo, declaracao.FaseId, declaracao.Obrigatorio),
+            cronograma, declaracao.Titulo, declaracao.Paginas, declaracao.ModeloDeOrigem);
         if (formulario.IsFailure)
         {
             return leitor.Propagar<FormularioComTermosExigidos?>(formulario.Errors, path);
         }
         formulario.Value!.DeclararConsequenciaDaFaltaDeEnvio(declaracao.Consequencia);
-        List<TermoExigidoFormulario> termos = LerTermos(leitor, declaracao.Termos, path, finalidade);
+        List<TermoExigidoFormulario> termos = LerTermos(leitor, declaracao.Termos, path, formulario.Value!);
         return leitor.Falhou ? null : new FormularioComTermosExigidos(formulario.Value!, termos);
     }
 
+    private static bool EmOrdemCrescente(CodigoDoFormulario codigo, CodigoDoFormulario? anterior) =>
+        anterior is null || CodigoDoFormulario.OrdemOrdinal.Compare(anterior, codigo) < 0;
+
     private static List<TermoExigidoFormulario> LerTermos(
-        LeitorEnvelope leitor, JsonArray itens, string path, FinalidadeFormulario finalidade)
+        LeitorEnvelope leitor, JsonArray itens, string path, FormularioProcesso formulario)
     {
         List<TermoExigidoFormulario> termos = [];
         for (int indice = 0; indice < itens.Count; indice++)
         {
             TermoExigidoFormulario? termo = LerTermoSeguinte(leitor, leitor.ItemObjeto(itens, indice, $"{path}.termos"),
-                $"{path}.termos[{indice}]", finalidade, termos);
+                $"{path}.termos[{indice}]", formulario, termos);
             if (termo is null)
             {
                 return [];
@@ -128,9 +134,9 @@ internal static class LeituraDosFormularios
     }
 
     private static TermoExigidoFormulario? LerTermoSeguinte(
-        LeitorEnvelope leitor, JsonObject item, string pathTermo, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> anteriores)
+        LeitorEnvelope leitor, JsonObject item, string pathTermo, FormularioProcesso formulario, IReadOnlyList<TermoExigidoFormulario> anteriores)
     {
-        TermoExigidoFormulario? termo = LerTermoExigido(leitor, item, pathTermo, finalidade);
+        TermoExigidoFormulario? termo = LerTermoExigido(leitor, item, pathTermo, formulario);
         return termo is null || SegueOsTermosAnteriores(termo, anteriores)
             ? termo
             : leitor.Recusar<TermoExigidoFormulario?>($"'{pathTermo}' repete código ou quebra a ordem crescente dos termos.");
@@ -242,7 +248,7 @@ internal static class LeituraDosFormularios
     }
 
     private static TermoExigidoFormulario? LerTermoExigido(
-        LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade)
+        LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario)
     {
         if (leitor.Falhou)
         {
@@ -253,7 +259,7 @@ internal static class LeituraDosFormularios
             "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
 
         DeclaracaoTermo declaracao = LerDeclaracaoDoTermo(leitor, item, path);
-        return leitor.Falhou ? null : CriarTermo(leitor, item, path, finalidade, declaracao);
+        return leitor.Falhou ? null : CriarTermo(leitor, item, path, formulario, declaracao);
     }
 
     private sealed record DeclaracaoTermo(string Codigo, int Ordem, VersaoTermoEscolhida Versao, IReadOnlyList<LinhaDoPredicado> Exibicao);
@@ -265,7 +271,7 @@ internal static class LeituraDosFormularios
         LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path));
 
     private static TermoExigidoFormulario? CriarTermo(
-        LeitorEnvelope leitor, JsonObject item, string path, FinalidadeFormulario finalidade, DeclaracaoTermo declaracao)
+        LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario, DeclaracaoTermo declaracao)
     {
         Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(declaracao.Exibicao);
         if (exibicaoLida.IsFailure)
@@ -279,7 +285,7 @@ internal static class LeituraDosFormularios
         }
 
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
-            declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicaoLida.Value, obrigatoriedade, finalidade);
+            declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicaoLida.Value, obrigatoriedade, formulario);
         return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Errors, path);
     }
 

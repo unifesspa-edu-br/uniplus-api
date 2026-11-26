@@ -107,13 +107,13 @@ internal static class CoerenciaEntreBlocos
     private static DomainError? ItensForaDosFormularios(
         IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
     {
-        Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
-        IEnumerable<(FinalidadeFormulario Finalidade, ItemEstrutura Item)> itensEGrupos = fatos
-            .Select(static f => (f.Finalidade!.Value, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.PaginaCodigo)))
-            .Concat(grupos.Select(static g => (g.Finalidade!.Value, g.ParaEstrutura())));
-        foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
+        Dictionary<Guid, FormularioProcesso> porIdentificador = formularios.ToDictionary(static f => f.Id);
+        IEnumerable<(Guid? FormularioId, ItemEstrutura Item)> itensEGrupos = fatos
+            .Select(static f => (f.FormularioId, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.PaginaCodigo)))
+            .Concat(grupos.Select(static g => (g.FormularioId, g.ParaEstrutura())));
+        foreach (IGrouping<Guid?, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.FormularioId, static p => p.Item))
         {
-            if (ConferirItensDaFinalidade(porFinalidade, itens) is { } recusa)
+            if (ConferirItensDoFormulario(porIdentificador, itens) is { } recusa)
             {
                 return recusa;
             }
@@ -121,13 +121,14 @@ internal static class CoerenciaEntreBlocos
 
         return null;
     }
-    private static DomainError? ConferirItensDaFinalidade(Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade,
-        IGrouping<FinalidadeFormulario, ItemEstrutura> itens)
+
+    private static DomainError? ConferirItensDoFormulario(Dictionary<Guid, FormularioProcesso> porIdentificador,
+        IGrouping<Guid?, ItemEstrutura> itens)
     {
-        if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
+        if (itens.Key is not { } identificador || !porIdentificador.TryGetValue(identificador, out FormularioProcesso? formulario))
         {
             return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                "'dadosDosFormularios' tem itens de uma finalidade que não tem formulário no envelope.");
+                "'dadosDosFormularios' tem itens de um formulário que não está no envelope.");
         }
         return EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..]
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': os itens não correspondem à estrutura do formulário.") : null;

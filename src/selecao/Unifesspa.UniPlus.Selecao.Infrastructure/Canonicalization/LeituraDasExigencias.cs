@@ -25,7 +25,7 @@ internal static class LeituraDasExigencias
     [
         "exigenciaId", "chave", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
         "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "dadosComprovados", "exigidoNaFaseId",
-        "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaDoDescumprimento", "abrePrazoParaReenvio",
+        "exigidoNaEtapaId", "formularioCodigo", "aplicabilidade", "obrigatorio", "consequenciaDoDescumprimento", "abrePrazoParaReenvio",
         "condicoes", "basesLegais", "prazoDeEmissao", "validade", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
     ];
 
@@ -85,20 +85,20 @@ internal static class LeituraDasExigencias
             return null;
         }
 
-        FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(campos.FinalidadeToken);
-        if (RecusaDaFinalidadeOuDoTamanho(campos, finalidade, path) is { } recusa)
+        CodigoDoFormulario? formulario = CodigoDoFormulario.Criar(campos.FormularioCodigo).Value;
+        if (RecusaDoFormularioOuDoTamanho(campos, formulario, path) is { } recusa)
         {
             return Recusar(leitor, recusa);
         }
 
-        return Reidratar(campos, classificacaoProtecao, CodigoDoFormulario.Criar(campos.FinalidadeToken).Value, complementos);
+        return Reidratar(campos, classificacaoProtecao, formulario, complementos);
     }
 
-    private static string? RecusaDaFinalidadeOuDoTamanho(CamposDaExigenciaNoEnvelope campos, FinalidadeFormulario? finalidade, string path)
+    private static string? RecusaDoFormularioOuDoTamanho(CamposDaExigenciaNoEnvelope campos, CodigoDoFormulario? formulario, string path)
     {
-        if (campos.FinalidadeToken is not null && finalidade is null)
+        if (formulario is null)
         {
-            return $"'{path}.finalidade' fora do vocabulário de finalidades.";
+            return $"'{path}.formularioCodigo' fora do formato do código de formulário.";
         }
 
         return campos.TamanhoMaximoBytes is <= 0
@@ -152,7 +152,7 @@ internal static class LeituraDasExigencias
         {
             ExigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path),
             ExigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path),
-            FinalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token),
+            FormularioCodigo = leitor.TextoNaoVazio(item, "formularioCodigo", path, CodigoDoFormulario.TamanhoMaximo),
             Aplicabilidade = leitor.CodigoDeContrato<Aplicabilidade>(item, "aplicabilidade", path),
             Obrigatorio = leitor.Booleano(item, "obrigatorio", path),
             AbrePrazoParaReenvio = leitor.Booleano(item, "abrePrazoParaReenvio", path),
@@ -197,7 +197,7 @@ internal static class LeituraDasExigencias
 
         public Guid? ExigidoNaEtapaId { get; init; }
 
-        public string? FinalidadeToken { get; init; }
+        public string FormularioCodigo { get; init; } = string.Empty;
 
         public Aplicabilidade Aplicabilidade { get; init; }
 

@@ -301,7 +301,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.GruposColetados)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Formulários por finalidade (UNI-REQ-0144) — mesma disciplina de FatosColetados.
+        // Formulários do processo, cada um com o seu código (UNI-REQ-0144) — mesma disciplina de FatosColetados.
         builder.HasMany(p => p.Formularios)
             .WithOne()
             .HasForeignKey(f => f.ProcessoSeletivoId)

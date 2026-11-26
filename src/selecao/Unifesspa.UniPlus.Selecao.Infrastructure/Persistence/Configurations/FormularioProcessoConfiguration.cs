@@ -17,7 +17,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FormularioProcesso"/> (UNI-REQ-0144): filho de
-/// <c>ProcessoSeletivo</c>, no máximo um por finalidade, com as páginas em cascata.
+/// <c>ProcessoSeletivo</c>, identificado no processo pelo código, com as páginas em cascata. A chave alternativa
+/// (processo, código) é a que a exigência de documento cita.
 /// </summary>
 public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<FormularioProcesso>
 {
@@ -33,14 +34,12 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
             t.HasCheckConstraint("ck_formularios_processo_modelo_origem_completo",
                 "(modelo_origem_id IS NULL AND modelo_origem_codigo IS NULL AND modelo_origem_nome IS NULL) "
                 + "OR (modelo_origem_id IS NOT NULL AND modelo_origem_codigo IS NOT NULL AND modelo_origem_nome IS NOT NULL)");
-            t.HasCheckConstraint("ck_formularios_processo_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
             t.HasCheckConstraint("ck_formularios_processo_consequencia_da_falta_de_envio",
                 $"consequencia_da_falta_de_envio IS NULL OR consequencia_da_falta_de_envio IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
         });
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
-        builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
         builder.Property(f => f.Codigo)
             .HasConversion<CodigoDoFormularioValueConverter>()
@@ -54,13 +53,10 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
             .HasComment("Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara.");
         builder.Ignore(f => f.Estrutura);
         builder.Ignore(f => f.Declarado);
+        builder.Ignore(f => f.Finalidade);
 
-        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade })
-            .IsUnique()
-            .HasDatabaseName("ux_formularios_processo_processo_finalidade");
-        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Codigo })
-            .IsUnique()
-            .HasDatabaseName("ux_formularios_processo_processo_codigo");
+        builder.HasAlternateKey(f => new { f.ProcessoSeletivoId, f.Codigo })
+            .HasName("ux_formularios_processo_processo_codigo");
 
         builder.HasMany(f => f.Paginas)
             .WithOne()

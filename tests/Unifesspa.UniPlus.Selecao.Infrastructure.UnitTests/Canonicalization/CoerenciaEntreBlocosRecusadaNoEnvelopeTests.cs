@@ -12,24 +12,36 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Conferencias;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class CoerenciaEntreBlocosRecusadaNoEnvelopeTests
 {
-    [Theory]
-    [InlineData(false, "INSCRICAO", "finalidade que não tem formulário")]
-    [InlineData(true, "EXEMPLO_FATO_FORA_DA_SECAO", "itens não correspondem à estrutura")]
-    public void Conferir_ItemForaDoFormulario_NaoRepeteValor(bool temFormulario, string valor, string trecho)
+    [Fact]
+    public void Conferir_ItemForaDaEstruturaDoFormulario_NaoRepeteValor()
     {
-        JsonObject documento = Documento(temFormulario, valor);
-        LeitorEnvelope leitor = new();
-        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento);
-        (IReadOnlyList<FormularioProcesso> formularios, _) = LeituraDosFormularios.LerFormularios(leitor, documento);
+        const string valor = "EXEMPLO_FATO_FORA_DA_SECAO";
+        JsonObject documento = Documento(valor);
+        (IReadOnlyList<FormularioProcesso> formularios, FormulariosDoDocumento doDocumento, LeitorEnvelope leitor) = LerFormularios(documento);
+        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento, doDocumento);
         leitor.Falhou.Should().BeFalse();
         documento.ToJsonString().Should().Contain(valor);
         Result<EnvelopeReidratado> resultado = CoerenciaEntreBlocos.Conferir(Blocos(fatos, valores, formularios), null!, documento);
-        FieldError causa = resultado.Errors.Should().ContainSingle().Subject;
+        ConferirErroSemExporValor(resultado, valor, "itens não correspondem à estrutura");
+    }
+
+    [Fact]
+    public void Ler_ItemDeFormularioQueOEnvelopeNaoTraz_RecusaSemRepetirOCodigo()
+    {
+        const string valor = "INSCRICAO";
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento();
+        documento["dadosDosFormularios"] = new JsonArray(ConferenciaDoVocabularioRecusadaNoEnvelopeTests.Fato("EXEMPLO_FATO", 0));
+        (_, FormulariosDoDocumento doDocumento, LeitorEnvelope leitor) = LerFormularios(documento);
+
+        LeituraDosFatos.LerFatosColetados(leitor, documento, doDocumento);
+
+        FieldError causa = leitor.Falha<object>().Errors.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
-        causa.Error.Message.Should().Contain(trecho).And.NotContainEquivalentOf(valor);
+        causa.Error.Message.Should().Be("'dadosDosFormularios[0].formularioCodigo' não é o código de um formulário do documento.").And.NotContainEquivalentOf(valor);
         causa.Field.Should().BeNull();
     }
 
@@ -64,8 +76,8 @@ public sealed class CoerenciaEntreBlocosRecusadaNoEnvelopeTests
     {
         documento.ToJsonString().Should().Contain(valor);
         LeitorEnvelope leitor = new();
-        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento);
-        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) = LeituraDosFormularios.LerFormularios(leitor, documento);
+        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) = LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
+        (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) = LeituraDosFatos.LerFatosColetados(leitor, documento, FormulariosDoDocumentoDeTeste.De(formularios));
         leitor.Falhou.Should().BeFalse();
         PrepararTestemunhos(documento, fatos, formularios, termos);
         BlocosDoEnvelope blocos = Blocos(fatos, valores, formularios) with { Configuracao = Configuracao() };
@@ -119,12 +131,18 @@ public sealed class CoerenciaEntreBlocosRecusadaNoEnvelopeTests
         CronogramaFases = [],
     };
 
-    private static JsonObject Documento(bool temFormulario, string valor)
+    private static JsonObject Documento(string codigoDoFato)
     {
-        JsonObject fato = ConferenciaDoVocabularioRecusadaNoEnvelopeTests.Fato(temFormulario ? valor : "EXEMPLO_FATO", 0);
-        JsonObject documento = FormularioComTermosNoEnvelope.Documento(temFormulario ? [FormularioComTermosNoEnvelope.Formulario("INSCRICAO")] : []);
-        documento["dadosDosFormularios"] = new JsonArray(fato);
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO"));
+        documento["dadosDosFormularios"] = new JsonArray(ConferenciaDoVocabularioRecusadaNoEnvelopeTests.Fato(codigoDoFato, 0));
         return documento;
+    }
+
+    private static (IReadOnlyList<FormularioProcesso> Formularios, FormulariosDoDocumento DoDocumento, LeitorEnvelope Leitor) LerFormularios(JsonObject documento)
+    {
+        LeitorEnvelope leitor = new();
+        (IReadOnlyList<FormularioProcesso> formularios, _) = LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
+        return (formularios, FormulariosDoDocumentoDeTeste.De(formularios), leitor);
     }
 
     private static BlocosDoEnvelope Blocos(IReadOnlyList<FatoColetado> fatos,

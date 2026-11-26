@@ -9,10 +9,11 @@ internal static class FormularioComTermosNoEnvelope
         ["formularios"] = new JsonArray(formularios),
     };
 
-    internal static JsonObject Formulario(string finalidade, params JsonObject[] termos) => new()
+    internal static JsonObject Formulario(string codigo, params JsonObject[] termos) => new()
     {
-        ["finalidade"] = finalidade,
+        ["codigo"] = codigo,
         ["faseId"] = null,
+        ["obrigatorio"] = true,
         ["titulo"] = "Formulário fictício",
         ["consequenciaDaFaltaDeEnvio"] = null,
         ["modeloOrigem"] = null,

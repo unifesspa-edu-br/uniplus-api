@@ -4,9 +4,9 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class TermosDoFormularioNoEnvelopeTests
 {
@@ -18,7 +18,7 @@ public sealed class TermosDoFormularioNoEnvelopeTests
             FormularioComTermosNoEnvelope.Termo("TERCEIRO", 3)));
         LeitorEnvelope leitor = new();
         (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) =
-            LeituraDosFormularios.LerFormularios(leitor, documento);
+            LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
         formularios.Should().ContainSingle();
@@ -64,7 +64,7 @@ public sealed class TermosDoFormularioNoEnvelopeTests
             FormularioComTermosNoEnvelope.Termo("PRIMEIRO", 0)));
         LeitorEnvelope leitor = new();
         (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) =
-            LeituraDosFormularios.LerFormularios(leitor, documento);
+            LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
         formularios.Should().ContainSingle();
@@ -77,7 +77,7 @@ public sealed class TermosDoFormularioNoEnvelopeTests
         JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO"));
         LeitorEnvelope leitor = new();
         (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) =
-            LeituraDosFormularios.LerFormularios(leitor, documento);
+            LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
         formularios.Should().ContainSingle();
@@ -88,15 +88,15 @@ public sealed class TermosDoFormularioNoEnvelopeTests
     public void LerFormularios_MesmoTermoEmFormulariosDistintos_Aceita()
     {
         JsonObject documento = FormularioComTermosNoEnvelope.Documento(
-            FormularioComTermosNoEnvelope.Formulario("INSCRICAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1)),
-            FormularioComTermosNoEnvelope.Formulario("HABILITACAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1)));
+            FormularioComTermosNoEnvelope.Formulario("HABILITACAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1)),
+            FormularioComTermosNoEnvelope.Formulario("INSCRICAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1)));
         LeitorEnvelope leitor = new();
         (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) =
-            LeituraDosFormularios.LerFormularios(leitor, documento);
+            LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeFalse();
-        formularios.Select(formulario => formulario.Finalidade).Should().Equal(FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao);
-        termos.Select(termo => termo.Finalidade).Should().Equal(FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao);
+        formularios.Select(formulario => formulario.Codigo.Valor).Should().Equal("HABILITACAO", "INSCRICAO");
+        termos.Select(termo => termo.FormularioId).Should().Equal(formularios.Select(formulario => (Guid?)formulario.Id));
         termos.Select(termo => termo.Codigo).Should().Equal("TERMO", "TERMO");
         termos.Select(termo => termo.Ordem).Should().Equal(1, 1);
     }
@@ -150,13 +150,71 @@ public sealed class TermosDoFormularioNoEnvelopeTests
     }
 
     [Fact]
-    public void LerFormularios_FinalidadeForaDeOrdemETermoRepetido_RecusaAFinalidadePrimeiro()
+    public void LerFormularios_CodigoForaDeOrdemETermoRepetido_RecusaOCodigoPrimeiro()
     {
-        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("HABILITACAO"),
-            FormularioComTermosNoEnvelope.Formulario("INSCRICAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1),
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO"),
+            FormularioComTermosNoEnvelope.Formulario("HABILITACAO", FormularioComTermosNoEnvelope.Termo("TERMO", 1),
                 FormularioComTermosNoEnvelope.Termo("TERMO", 2)));
 
-        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "'formularios[1].finalidade' fora do vocabulário, repetida ou fora de ordem.");
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "'formularios[1].codigo' fora do formato, repetido ou fora da ordem ordinal.");
+    }
+
+    [Fact]
+    public void LerFormularios_CodigoRepetido_Recusa()
+    {
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO"),
+            FormularioComTermosNoEnvelope.Formulario("INSCRICAO"));
+
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "'formularios[1].codigo' fora do formato, repetido ou fora da ordem ordinal.");
+    }
+
+    [Theory]
+    [InlineData("inscricao")]
+    [InlineData("INSCRICAO__DADOS")]
+    [InlineData("1INSCRICAO")]
+    public void LerFormularios_CodigoForaDoFormato_Recusa(string codigo)
+    {
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario(codigo));
+
+        ConferirRecusa(documento, "EnvelopeCodec.EnvelopeMalformado", "'formularios[0].codigo' fora do formato, repetido ou fora da ordem ordinal.");
+    }
+
+    [Fact]
+    public void LerFormularios_CodigoComMaisDeSessentaCaracteres_Recusa()
+    {
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario(new string('A', 61)));
+
+        LeitorEnvelope leitor = new();
+        LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
+
+        leitor.Falhou.Should().BeTrue();
+        leitor.Erro.Message.Should().Contain("formularios[0].codigo");
+    }
+
+    [Fact]
+    public void LerFormularios_ObrigatorioEFase_ChegamAoFormularioLido()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("HABILITACAO");
+        formulario["obrigatorio"] = false;
+        formulario["faseId"] = "44444444-4444-4444-8444-444444444444";
+        LeitorEnvelope leitor = new();
+
+        (IReadOnlyList<FormularioProcesso> formularios, _) =
+            LeituraDosFormularios.LerFormularios(leitor, FormularioComTermosNoEnvelope.Documento(formulario), FormulariosDoDocumentoDeTeste.SemFases);
+
+        FormularioProcesso lido = formularios.Should().ContainSingle().Subject;
+        lido.Obrigatorio.Should().BeFalse();
+        lido.FaseId.Should().Be(new Guid("44444444-4444-4444-8444-444444444444"));
+    }
+
+    [Fact]
+    public void LerFormularios_ObrigatorioAusente_Recusa()
+    {
+        JsonObject formulario = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
+        formulario.Remove("obrigatorio");
+
+        ConferirRecusa(FormularioComTermosNoEnvelope.Documento(formulario), "EnvelopeCodec.EnvelopeMalformado",
+            "Envelope malformado em 'formularios[0]': a chave 'obrigatorio' está ausente.");
     }
 
     [Theory]
@@ -174,7 +232,7 @@ public sealed class TermosDoFormularioNoEnvelopeTests
     {
         LeitorEnvelope leitor = new();
         (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) =
-            LeituraDosFormularios.LerFormularios(leitor, documento);
+            LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
 
         leitor.Falhou.Should().BeTrue();
         leitor.Erro.Code.Should().Be(codigo);

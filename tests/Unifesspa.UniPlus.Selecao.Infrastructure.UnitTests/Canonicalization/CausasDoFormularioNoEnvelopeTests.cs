@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class CausasDoFormularioNoEnvelopeTests
 {
@@ -37,9 +38,9 @@ public sealed class CausasDoFormularioNoEnvelopeTests
     [Fact]
     public void LerFormularios_SegundoFormularioSemRevisao_SituaCausaNoFormulario()
     {
-        JsonObject segundo = FormularioComTermosNoEnvelope.Formulario("HABILITACAO");
+        JsonObject segundo = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
         segundo["paginas"] = new JsonArray();
-        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("INSCRICAO"), segundo);
+        JsonObject documento = FormularioComTermosNoEnvelope.Documento(FormularioComTermosNoEnvelope.Formulario("HABILITACAO"), segundo);
 
         LerCausas(documento).Should().Equal(BlocoExigido("formularios[1].paginas"));
     }
@@ -115,8 +116,8 @@ public sealed class CausasDoFormularioNoEnvelopeTests
     [Fact]
     public void LerFormularios_DoisFormulariosSemRevisao_ParaNoPrimeiro()
     {
-        JsonObject primeiro = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
-        JsonObject segundo = FormularioComTermosNoEnvelope.Formulario("HABILITACAO");
+        JsonObject primeiro = FormularioComTermosNoEnvelope.Formulario("HABILITACAO");
+        JsonObject segundo = FormularioComTermosNoEnvelope.Formulario("INSCRICAO");
         primeiro["paginas"] = new JsonArray();
         segundo["paginas"] = new JsonArray();
 
@@ -154,7 +155,7 @@ public sealed class CausasDoFormularioNoEnvelopeTests
     private static IReadOnlyList<FieldError> LerCausas(JsonObject documento)
     {
         LeitorEnvelope leitor = new();
-        LeituraDosFormularios.LerFormularios(leitor, documento);
+        LeituraDosFormularios.LerFormularios(leitor, documento, FormulariosDoDocumentoDeTeste.SemFases);
         leitor.Falhou.Should().BeTrue();
         return leitor.Falha<object>().Errors;
     }

@@ -5,7 +5,6 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -25,7 +24,7 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.Property(g => g.ProcessoSeletivoId).HasComment("Identificador do processo seletivo ao qual pertence.");
-        builder.Property(g => g.FormularioId).HasComment("Identificador do formulário em que o grupo é solicitado; nulo enquanto o grupo só se liga ao formulário pela finalidade.");
+        builder.Property(g => g.FormularioId).IsRequired().HasComment("Identificador do formulário em que o grupo é solicitado.");
         builder.Property(g => g.Codigo).HasComment("Código que identifica o item no processo.");
         builder.Property(g => g.Ordem).HasComment("Posição de apresentação ou avaliação no conjunto.");
         builder.Property(g => g.PaginaCodigo).HasComment("Código da página do formulário, quando houver.");
@@ -41,12 +40,11 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
             t.HasCheckConstraint("ck_grupos_dos_formularios_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasCheckConstraint("ck_grupos_dos_formularios_pagina_codigo_formato", $"pagina_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             t.HasComment("Grupos repetíveis de dados solicitados nos formulários.");
-            t.HasCheckConstraint("ck_grupos_dos_formularios_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
         });
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).ValueGeneratedNever();
 
-        builder.Property(g => g.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
+        builder.Ignore(g => g.Finalidade);
         builder.Property(g => g.Codigo).HasMaxLength(FormaDoGrupo.CodigoMaxLength).IsRequired();
         builder.Property(g => g.Ordem).IsRequired();
         builder.Property(g => g.PaginaCodigo).HasColumnName("pagina_codigo").HasMaxLength(FormaDaPagina.CodigoMaxLength);

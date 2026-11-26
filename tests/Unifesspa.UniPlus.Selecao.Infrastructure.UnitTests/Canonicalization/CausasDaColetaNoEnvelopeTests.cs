@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class CausasDaColetaNoEnvelopeTests
 {
@@ -16,7 +17,7 @@ public sealed class CausasDaColetaNoEnvelopeTests
         JsonObject fato = Fato();
         JsonObject documento = new() { ["dadosDosFormularios"] = new JsonArray(fato) };
         LeitorEnvelope leitor = new();
-        LeituraDosFatos.LerFatosColetados(leitor, documento);
+        LeituraDosFatos.LerFatosColetados(leitor, documento, FormulariosDoDocumentoDeTeste.ComFormularios());
         ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "dadosDosFormularios[0].ordem",
             "ItemFormulario.OrdemInvalida", "A ordem do item não pode ser negativa.");
     }
@@ -29,7 +30,7 @@ public sealed class CausasDaColetaNoEnvelopeTests
         fato["exibicao"] = new JsonArray(new JsonArray(CondicoesNoEnvelope.Condicao("IGUAL", JsonValue.Create("SIM"))));
         JsonObject documento = new() { ["dadosDosFormularios"] = new JsonArray(fato) };
         LeitorEnvelope leitor = new();
-        LeituraDosFatos.LerFatosColetados(leitor, documento);
+        LeituraDosFatos.LerFatosColetados(leitor, documento, FormulariosDoDocumentoDeTeste.ComFormularios());
         ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "dadosDosFormularios[0]", "ItemFormulario.RegraAutorreferente", "A exibição cita o próprio fato.");
     }
 
@@ -40,7 +41,7 @@ public sealed class CausasDaColetaNoEnvelopeTests
         JsonObject documento = new() { ["gruposDosFormularios"] = new JsonArray(grupo) };
         LeitorEnvelope leitor = new();
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(StringComparer.Ordinal);
-        LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, []);
+        LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, [], FormulariosDoDocumentoDeTeste.ComFormularios());
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
         ConferirCausaNoDocumento.Conferir(documento, causas[0], "gruposDosFormularios[0]", "GrupoFormulario.ContagemIncoerente",
@@ -69,7 +70,7 @@ public sealed class CausasDaColetaNoEnvelopeTests
         JsonObject documento = new() { ["gruposDosFormularios"] = new JsonArray(grupo) };
         LeitorEnvelope leitor = new();
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(StringComparer.Ordinal);
-        LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, []);
+        LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, [], FormulariosDoDocumentoDeTeste.ComFormularios());
         ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "gruposDosFormularios[0].subitens", "GrupoFormulario.SubitensForaDoLimite", "O grupo tem de um a 30 campos por ocorrência.");
     }
 
@@ -90,7 +91,7 @@ public sealed class CausasDaColetaNoEnvelopeTests
         fato["formato"] = null;
         JsonObject documento = new() { ["dadosDosFormularios"] = new JsonArray(fato) };
         LeitorEnvelope leitor = new();
-        LeituraDosFatos.LerFatosColetados(leitor, documento);
+        LeituraDosFatos.LerFatosColetados(leitor, documento, FormulariosDoDocumentoDeTeste.ComFormularios());
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
         ConferirCausaNoDocumento.Conferir(documento, causas[0], "dadosDosFormularios[0].ordem", "ItemFormulario.OrdemInvalida", "A ordem do item não pode ser negativa.");
@@ -99,14 +100,14 @@ public sealed class CausasDaColetaNoEnvelopeTests
 
     private static JsonObject Fato() => JsonNode.Parse("""
         {"ajuda":null,"classificacaoProtecao":"PESSOAL","codigoDoDado":"DADO","componenteExibicao":null,
-        "descricao":"Descrição","exibicao":null,"finalidade":"INSCRICAO","finalidadeTratamento":"Finalidade",
+        "descricao":"Descrição","exibicao":null,"formularioCodigo":"INSCRICAO","finalidadeTratamento":"Finalidade",
         "formato":"LIVRE","hipoteseLegal":"CUMPRIMENTO_OBRIGACAO_LEGAL","impedimento":null,
         "obrigatoriedade":{"quando":null,"tipo":"SEMPRE"},"ordem":-1,"origemValores":"CATALOGO",
         "paginaCodigo":"PAGINA","pedirConfirmacao":false,"restricoes":[],"rotulo":"Dado","tipoDeCampo":"TEXTO","valoresSelecionaveis":null}
         """)!.AsObject();
 
     private static JsonObject Grupo() => JsonNode.Parse("""
-        {"agregados":[],"codigo":"GRUPO","exibicao":null,"finalidade":"INSCRICAO","incluiCandidato":false,
+        {"agregados":[],"codigo":"GRUPO","exibicao":null,"formularioCodigo":"INSCRICAO","incluiCandidato":false,
         "maximo":null,"minimo":-1,"obrigatoriedade":{"quando":null,"tipo":"NUNCA"},"ordem":0,
         "paginaCodigo":"PAGINA","rotulo":"Grupo","subitens":[]}
         """)!.AsObject();

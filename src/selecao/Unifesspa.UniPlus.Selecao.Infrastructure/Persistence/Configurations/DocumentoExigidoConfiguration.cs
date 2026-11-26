@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
@@ -105,11 +105,12 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
         // A etapa que coleta o documento, quando a fase se subdivide — opcional.
         builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
-        // O formulário a que o documento pertence — nulo fora de fase de formulário. A coerência com a fase é do domínio.
-        builder.Property(d => d.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
-            .HasComment("Formulário a que o documento pertence; vazio quando a fase não responde formulário.");
-        // Provisório até o formulário ser gravado pelo código: por ora a finalidade é a que se grava.
-        builder.Ignore(d => d.FormularioCodigo);
+        // O formulário a que o documento pertence, citado pelo código; a coerência com a fase é do domínio.
+        builder.Property(d => d.FormularioCodigo)
+            .HasConversion<CodigoDoFormularioValueConverter>()
+            .HasMaxLength(CodigoDoFormulario.TamanhoMaximo).IsRequired()
+            .HasComment("Código do formulário a que o documento pertence, entre os do processo.");
+        builder.Ignore(d => d.Finalidade);
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)
@@ -161,13 +162,30 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.Navigation(d => d.BasesLegais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        ConfigurarFormulario(builder);
+    }
+
+    // Chave estrangeira composta para a chave alternativa (processo, código) do formulário. NO ACTION, e não RESTRICT: a exclusão
+    // do processo apaga formulários e exigências no mesmo comando, e RESTRICT a recusaria. A remoção de um formulário que
+    // ainda tem exigência é recusada antes, no domínio.
+    private static void ConfigurarFormulario(EntityTypeBuilder<DocumentoExigido> builder)
+    {
+        builder.HasOne<FormularioProcesso>()
+            .WithMany()
+            .HasForeignKey(d => new { d.ProcessoSeletivoId, d.FormularioCodigo })
+            .HasPrincipalKey(f => new { f.ProcessoSeletivoId, f.Codigo })
+            .HasConstraintName("fk_documentos_exigidos_formulario")
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasIndex(d => new { d.ProcessoSeletivoId, d.FormularioCodigo })
+            .HasDatabaseName("ix_documentos_exigidos_formulario");
     }
 
     // Os códigos gravados nas colunas dos enums; as colunas do prazo de emissão e da validade são anuláveis.
     private static void RestringirCodigosDosEnums(TableBuilder<DocumentoExigido> tabela)
     {
         tabela.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", $"aplicabilidade IN ({SqlDosCodigosDeContrato.Lista<Aplicabilidade>()})");
-        RestringirCodigoOpcional<FinalidadeFormulario>(tabela, "finalidade");
         RestringirCodigoOpcional<ConsequenciaDoDescumprimento>(tabela, "consequencia_do_descumprimento");
         RestringirCodigoOpcional<FormatoDeDocumento>(tabela, "modelo_formato");
         RestringirCodigoOpcional<EscolhaDoPrazoDeEmissao>(tabela, "prazo_emissao_escolha");

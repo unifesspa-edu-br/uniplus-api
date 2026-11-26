@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Registra na configuração publicada os formulários de inscrição, com páginas e termos exigidos, e as regras de valor
-/// (obrigatoriedade, impedimento e restrições) que o formulário e as exigências compartilham.
+/// Registra na configuração publicada os formulários do processo, cada um pelo seu código, com páginas e termos exigidos, e as
+/// regras de valor (obrigatoriedade, impedimento e restrições) que o formulário e as exigências compartilham.
 /// </summary>
 internal static class SerializacaoDosFormularios
 {
@@ -32,24 +32,39 @@ internal static class SerializacaoDosFormularios
     private static JsonObject SerializarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario)
     {
         JsonObject objeto = DadosDoFormulario(processo, formulario);
-        ContextoDosRotulos.Acrescentar(objeto, "finalidade", (FinalidadeFormulario?)formulario.Finalidade);
         ContextoDosRotulos.Acrescentar(objeto, "consequenciaDaFaltaDeEnvio", formulario.ConsequenciaDaFaltaDeEnvio);
         return objeto;
     }
 
     private static JsonObject DadosDoFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new()
     {
-        ["finalidade"] = formulario.Finalidade.Codigo(),
+        ["codigo"] = formulario.Codigo.Valor,
         ["faseId"] = formulario.FaseId is { } fase ? JsonValue.Create(fase) : null,
+        ["obrigatorio"] = formulario.Obrigatorio,
         ["titulo"] = formulario.Titulo is { } titulo ? HashCanonicalComputer.NormalizeNfc(titulo) : null,
         ["consequenciaDaFaltaDeEnvio"] = formulario.ConsequenciaDaFaltaDeEnvio?.Codigo(),
         ["modeloOrigem"] = SerializarModeloDeOrigem(formulario),
         ["paginas"] = new JsonArray([.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(SerializarPagina)]),
         ["termos"] = new JsonArray([.. processo.TermosExigidos
-            .Where(t => t.Finalidade == formulario.Finalidade)
+            .Where(t => t.FormularioId == formulario.Id)
             .OrderBy(static t => t.Ordem)
             .Select(SerializarTermoExigido)]),
     };
+
+    /// <summary>
+    /// Os códigos dos formulários do processo, pelo identificador: é por ele que cada campo, grupo e termo se liga ao
+    /// formulário, e o documento o cita pelo código.
+    /// </summary>
+    internal static IReadOnlyDictionary<Guid, string> CodigosPorIdentificador(ProcessoSeletivo processo) =>
+        processo.Formularios.ToDictionary(static formulario => formulario.Id, static formulario => formulario.Codigo.Valor);
+
+    /// <exception cref="InvalidOperationException">O item não pertence a nenhum dos formulários do processo.</exception>
+    internal static string CodigoDoFormularioDoItem(Guid? formularioId, IReadOnlyDictionary<Guid, string> codigos) =>
+        formularioId is { } id && codigos.TryGetValue(id, out string? codigo)
+            ? codigo
+            : throw new InvalidOperationException(
+                "Canonicalização de item que não pertence a nenhum formulário do processo — a verificação de publicação "
+                + "deveria tê-lo recusado antes deste ponto.");
 
     private static JsonObject? SerializarModeloDeOrigem(FormularioProcesso formulario) =>
         formulario.ModeloDeOrigem is { } modelo ? new JsonObject
