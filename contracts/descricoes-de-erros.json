@@ -6067,9 +6067,9 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O `conteudo` enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`) tem uma parte que não pode ser lida. Dois casos têm este código.",
-        "No primeiro, um elemento de uma das listas do conteúdo é `null`: uma página em `paginas`, um item em `itens`, um campo em `subitens` de um grupo, um grupo em `grupos`, um termo em `termos`, um documento em `documentosExigidos` ou uma base legal em `basesLegais`. No segundo, o documento exigido chegou com `faseCodigo`, `tipoDocumentoCodigo` ou `consequenciaIndeferimento` vazio ou só com espaços, com `porOpcao` cujo `fatoCodigo` está vazio ou só com espaços, ou com uma opção em branco (ou nula) em `porOpcao.exceto`.",
+        "No primeiro, um elemento de uma das listas do conteúdo é `null`: uma página em `paginas`, um item em `itens`, um campo em `subitens` de um grupo, um grupo em `grupos`, um termo em `termos`, um documento em `documentosExigidos` ou uma base legal em `basesLegais`. No segundo, o documento exigido chegou com `faseCodigo`, `tipoDocumentoCodigo` ou `consequenciaDoDescumprimento` vazio ou só com espaços, com `porOpcao` cujo `fatoCodigo` está vazio ou só com espaços, ou com uma opção em branco (ou nula) em `porOpcao.exceto`.",
         "A recusa vem na lista `errors` da resposta, com `field` apontando a posição, por exemplo `conteudo.itens[2]` ou `conteudo.documentosExigidos[0].faseCodigo`. Cada elemento nulo e cada campo em branco gera a própria entrada, com duas exceções que não trazem índice individual: se há uma ou mais bases legais nulas em um documento, a resposta traz uma única entrada, com `field` igual a `conteudo.documentosExigidos[i].basesLegais`; e se há uma ou mais opções em branco em `exceto`, uma única entrada, com `field` igual a `conteudo.documentosExigidos[i].porOpcao.exceto`. Aqui o `i` é a posição original do documento em `documentosExigidos`. Enquanto o conteúdo tem recusa de leitura como esta, as regras que dependem do conteúdo inteiro, como os pressupostos e a estrutura do formulário, não são conferidas; as recusas do cadastro (código, nome, descrição, tipo de processo) saem junto. Nada é gravado.",
-        "Os campos de texto que não são anuláveis na declaração do corpo, como `faseCodigo`, `tipoDocumentoCodigo` e `consequenciaIndeferimento` do documento, e o `fatoCodigo` dentro de `porOpcao`, recusam a ausência, ou o valor `null`, com 400, antes das regras do Uni+, e essa recusa não tem código do catálogo. Só o campo presente e em branco chega aqui. O mesmo vale para o `nome` do modelo. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). A recusa de 400 por campo não anulável ausente ou nulo vem antes da busca, mesmo com `{id}` inexistente."
+        "Os campos de texto que não são anuláveis na declaração do corpo, como `faseCodigo`, `tipoDocumentoCodigo` e `consequenciaDoDescumprimento` do documento, e o `fatoCodigo` dentro de `porOpcao`, recusam a ausência, ou o valor `null`, com 400, antes das regras do Uni+, e essa recusa não tem código do catálogo. Só o campo presente e em branco chega aqui. O mesmo vale para o `nome` do modelo. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). A recusa de 400 por campo não anulável ausente ou nulo vem antes da busca, mesmo com `{id}` inexistente."
       ],
       "comoResolver": [
         "Retire do conteúdo o elemento `null` ou preencha o campo indicado em `field` e repita o pedido."
@@ -18124,7 +18124,7 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.consequencia_indeferimento_invalida",
+      "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
       "requisitos": [
         "UNI-REQ-0070"
       ],

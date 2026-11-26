@@ -18,7 +18,7 @@ public sealed record DocumentoExigidoDoModeloDto(
 public sealed record RequisitosDoDocumentoDoModeloDto(PrazoDeEmissaoDoModeloDto? PrazoDeEmissao, ValidadeDoDocumentoDoModeloDto? Validade);
 
 /// <summary>O indeferimento do documento exigido do modelo: a obrigatoriedade, a consequência e as bases legais.</summary>
-public sealed record IndeferimentoDoDocumentoDoModeloDto(bool Obrigatorio, string? Consequencia, IReadOnlyList<BaseLegalDoModeloDto> BasesLegais, bool AbrePrazoParaReenvio = false);
+public sealed record IndeferimentoDoDocumentoDoModeloDto(bool Obrigatorio, string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloDto> BasesLegais, bool AbrePrazoParaReenvio = false);
 
 /// <summary>Uma base legal de uma exigência do modelo, com abrangência e situação em token canônico.</summary>
 public sealed record BaseLegalDoModeloDto(string Referencia, string Abrangencia, string Situacao, string? Observacao);
@@ -30,7 +30,7 @@ public sealed record ExigenciaPorOpcaoDto(string FatoCodigo, IReadOnlyList<strin
 /// O indeferimento de um grupo de documentos do modelo: a consequência de a quantidade mínima não ser
 /// atingida e as bases legais.
 /// </summary>
-public sealed record IndeferimentoDoGrupoDeDocumentosDoModeloDto(string? Consequencia, IReadOnlyList<BaseLegalDoModeloDto> BasesLegais, bool AbrePrazoParaReenvio = false);
+public sealed record IndeferimentoDoGrupoDeDocumentosDoModeloDto(string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloDto> BasesLegais, bool AbrePrazoParaReenvio = false);
 
 /// <summary>
 /// Um grupo de documentos do modelo: o candidato apresenta ao menos a quantidade mínima — nula vale um —, e o

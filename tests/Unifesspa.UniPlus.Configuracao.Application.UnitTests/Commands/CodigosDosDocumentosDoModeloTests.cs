@@ -11,7 +11,7 @@ public sealed class CodigosDosDocumentosDoModeloTests
     [Fact]
     public void Ler_ConsequenciaDoDocumentoDesconhecida_RecusaOCampo() =>
         Recusas("DESCONHECIDO", "FEDERAL", "RESOLVIDO").Should().ContainSingle()
-            .Which.Should().Be(("conjuntoDeDocumentos.documentosExigidos[0].indeferimento.consequencia", ModeloFormularioErrorCodes.ConsequenciaDesconhecida));
+            .Which.Should().Be(("conjuntoDeDocumentos.documentosExigidos[0].indeferimento.consequenciaDoDescumprimento", ModeloFormularioErrorCodes.ConsequenciaDoDescumprimentoDesconhecida));
 
     [Fact]
     public void Ler_AbrangenciaDesconhecida_RecusaOCampo() =>
@@ -34,17 +34,17 @@ public sealed class CodigosDosDocumentosDoModeloTests
         leitura.Recusas.Select(static r => r.Field).Should().Equal(
             "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.basesLegais[0].abrangencia",
             "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.basesLegais[0].situacao",
-            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequencia");
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequenciaDoDescumprimento");
         leitura.Recusas.Select(static r => r.Error.Code).Should().Equal(
             ModeloFormularioErrorCodes.AbrangenciaDesconhecida,
             ModeloFormularioErrorCodes.SituacaoDaBaseLegalDesconhecida,
-            ModeloFormularioErrorCodes.ConsequenciaDesconhecida);
+            ModeloFormularioErrorCodes.ConsequenciaDoDescumprimentoDesconhecida);
     }
 
-    private static IEnumerable<(string? Field, string Code)> Recusas(string consequencia, string abrangencia, string situacao)
+    private static IEnumerable<(string? Field, string Code)> Recusas(string consequenciaDoDescumprimento, string abrangencia, string situacao)
     {
         BaseLegalDoModeloInput baseLegal = new("Lei de referência", abrangencia, situacao, null);
-        DocumentoExigidoDoModeloInput documento = new("INSCRICAO", "DOCUMENTO", null, new(true, consequencia, [baseLegal]));
+        DocumentoExigidoDoModeloInput documento = new("INSCRICAO", "DOCUMENTO", null, new(true, consequenciaDoDescumprimento, [baseLegal]));
         LeituraDoConteudo leitura = new(new Dictionary<string, string>(StringComparer.Ordinal));
         leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, new([documento], null)));
         return leitura.Recusas.Select(static r => (r.Field, r.Error.Code));

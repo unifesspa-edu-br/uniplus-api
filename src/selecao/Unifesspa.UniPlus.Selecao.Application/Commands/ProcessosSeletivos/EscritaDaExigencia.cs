@@ -16,7 +16,7 @@ internal static class EscritaDaExigencia
     {
         ["aplicabilidade"] = AplicabilidadeDaExigenciaInput.CaminhoDoTipo,
         ["condicoes"] = AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes,
-        ["consequenciaIndeferimento"] = IndeferimentoDoDocumentoInput.CaminhoDaConsequencia,
+        ["consequenciaDoDescumprimento"] = IndeferimentoDoDocumentoInput.CaminhoDaConsequencia,
         ["tamanhoMaximoBytes"] = RequisitosDoDocumentoInput.CaminhoDoTamanhoMaximo,
         ["finalidade"] = MomentoDaExigenciaInput.CaminhoDaFinalidade,
     };

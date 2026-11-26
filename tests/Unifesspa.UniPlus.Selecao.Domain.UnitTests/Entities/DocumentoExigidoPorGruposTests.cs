@@ -75,7 +75,7 @@ public sealed class DocumentoExigidoPorGruposTests
 
         exigencia.Aplicabilidade.Should().Be(Aplicabilidade.Geral);
         exigencia.Obrigatorio.Should().BeFalse();
-        exigencia.ConsequenciaIndeferimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        exigencia.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         exigencia.TamanhoMaximoBytes.Should().Be(2048);
     }
 
@@ -102,7 +102,7 @@ public sealed class DocumentoExigidoPorGruposTests
     {
         DocumentoExigido exigencia = Reidratada(Declarada() with { Indeferimento = new(true, "  ", []) });
 
-        exigencia.ConsequenciaIndeferimento.Should().BeNull();
+        exigencia.ConsequenciaDoDescumprimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "Reidratar recusa a aplicabilidade ausente")]
@@ -150,15 +150,15 @@ public sealed class DocumentoExigidoPorGruposTests
     }
 
     [Theory]
-    [InlineData(" ELIMINA ")]
-    [InlineData("elimina")]
+    [InlineData(" ELIMINA_DO_PROCESSO ")]
+    [InlineData("elimina_do_processo")]
     public void Criar_ConsequenciaComEspacosOuMinuscula_Recusa(string consequencia)
     {
         DocumentoExigidoDeclarado declarada = Declarada() with { Indeferimento = new(true, consequencia, []) };
 
         Result<DocumentoExigido> resultado = DocumentoExigido.Criar(Chave, declarada);
 
-        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIndeferimentoInvalida");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaDoDescumprimentoInvalida");
         resultado.Error.Message.Should().NotContain(consequencia);
     }
 

@@ -33,12 +33,12 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     internal static IEnumerable<FieldError> AcrescimoDasExigencias(ConfiguracaoDeclarada configuracao) =>
         Posicoes(configuracao, "documentosExigidos.exigencias", configuracao.Exigencias.DocumentosExigidos.Count)
-            .Where(indice => !Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") && AcrescimoNaoOferecido(configuracao, configuracao.Exigencias.DocumentosExigidos[indice].ConsequenciaIndeferimento))
-            .Select(indice => Acrescimo($"documentosExigidos.exigencias[{indice}].consequenciaIndeferimento", "A exigência"));
+            .Where(indice => !Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") && AcrescimoNaoOferecido(configuracao, configuracao.Exigencias.DocumentosExigidos[indice].ConsequenciaDoDescumprimento))
+            .Select(indice => Acrescimo($"documentosExigidos.exigencias[{indice}].consequenciaDoDescumprimento", "A exigência"));
 
     internal static IEnumerable<FieldError> AcrescimoDosGrupos(ConfiguracaoDeclarada configuracao) =>
-        Grupos(configuracao).Where(par => !Recusada(configuracao, par.Caminho) && AcrescimoNaoOferecido(configuracao, par.Grupo.Consequencia))
-            .Select(par => Acrescimo($"{par.Caminho}.consequencia", "O grupo"));
+        Grupos(configuracao).Where(par => !Recusada(configuracao, par.Caminho) && AcrescimoNaoOferecido(configuracao, par.Grupo.ConsequenciaDoDescumprimento))
+            .Select(par => Acrescimo($"{par.Caminho}.consequenciaDoDescumprimento", "O grupo"));
 
     internal static IEnumerable<FieldError> CoerenciaDasExigencias(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
         Posicoes(configuracao, "documentosExigidos.exigencias", configuracao.Exigencias.DocumentosExigidos.Count)
@@ -53,7 +53,7 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     internal static IEnumerable<FieldError> SemModalidadeDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
         GruposComRetirada(configuracao).Where(par => SemModalidade(configuracao, modalidade => par.Grupo.PodeAlcancarModalidade(modalidade, fatos)))
-            .Select(par => SemModalidade($"{par.Caminho}.consequencia"));
+            .Select(par => SemModalidade($"{par.Caminho}.consequenciaDoDescumprimento"));
 
     internal static IEnumerable<FieldError> SemAmplaDasExigencias(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
         ExigenciasComRetirada(configuracao).Where(par => SemAmpla(configuracao, modalidade => par.Exigencia.PodeAlcancarModalidade(modalidade, fatos)))
@@ -61,17 +61,17 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     internal static IEnumerable<FieldError> SemAmplaDosGrupos(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos) =>
         GruposComRetirada(configuracao).Where(par => SemAmpla(configuracao, modalidade => par.Grupo.PodeAlcancarModalidade(modalidade, fatos)))
-            .Select(par => SemAmpla($"{par.Caminho}.consequencia"));
+            .Select(par => SemAmpla($"{par.Caminho}.consequenciaDoDescumprimento"));
 
     private static IEnumerable<(DocumentoExigido Exigencia, string Caminho)> ExigenciasComRetirada(ConfiguracaoDeclarada configuracao) =>
         Posicoes(configuracao, "documentosExigidos.exigencias", configuracao.Exigencias.DocumentosExigidos.Count)
             .Where(indice => !Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") && !Recusada(configuracao, "distribuicaoVagas"))
-            .Select(indice => (Exigencia: configuracao.Exigencias.DocumentosExigidos[indice], Caminho: $"documentosExigidos.exigencias[{indice}].consequenciaIndeferimento"))
-            .Where(par => par.Exigencia.ConsequenciaIndeferimento == ConsequenciaDoDescumprimento.RetiraAModalidade);
+            .Select(indice => (Exigencia: configuracao.Exigencias.DocumentosExigidos[indice], Caminho: $"documentosExigidos.exigencias[{indice}].consequenciaDoDescumprimento"))
+            .Where(par => par.Exigencia.ConsequenciaDoDescumprimento == ConsequenciaDoDescumprimento.RetiraAModalidade);
 
     private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> GruposComRetirada(ConfiguracaoDeclarada configuracao) =>
         Grupos(configuracao).Where(par => !Recusada(configuracao, par.Caminho) && !Recusada(configuracao, "distribuicaoVagas")
-            && par.Grupo.Consequencia == ConsequenciaDoDescumprimento.RetiraAModalidade);
+            && par.Grupo.ConsequenciaDoDescumprimento == ConsequenciaDoDescumprimento.RetiraAModalidade);
 
     internal static bool SemModalidade(ConfiguracaoDeclarada configuracao, Func<string, bool> alcanca)
     {
@@ -99,24 +99,24 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
     private static IEnumerable<FieldError> CoerenciaDaExigencia(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, int indice)
     {
         DocumentoExigido exigencia = configuracao.Exigencias.DocumentosExigidos[indice];
-        if (exigencia.ConsequenciaIndeferimento is not { } consequencia || Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") || Recusada(configuracao, "distribuicaoVagas"))
+        if (exigencia.ConsequenciaDoDescumprimento is not { } consequencia || Recusada(configuracao, $"documentosExigidos.exigencias[{indice}]") || Recusada(configuracao, "distribuicaoVagas"))
         {
             return [];
         }
         return Modalidades(configuracao).Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo, fatos))
             .Where(modalidade => Incoerente(consequencia, modalidade))
-            .Select(modalidade => Incoerencia($"documentosExigidos.exigencias[{indice}].consequenciaIndeferimento", "DocumentoExigido", modalidade));
+            .Select(modalidade => Incoerencia($"documentosExigidos.exigencias[{indice}].consequenciaDoDescumprimento", "DocumentoExigido", modalidade));
     }
 
     private static IEnumerable<FieldError> CoerenciaDoGrupo(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, RegraDeComprovacao grupo, string caminho)
     {
-        if (grupo.Consequencia is not { } consequencia || Recusada(configuracao, caminho) || Recusada(configuracao, "distribuicaoVagas"))
+        if (grupo.ConsequenciaDoDescumprimento is not { } consequencia || Recusada(configuracao, caminho) || Recusada(configuracao, "distribuicaoVagas"))
         {
             return [];
         }
         return Modalidades(configuracao).Where(modalidade => grupo.PodeAlcancarModalidade(modalidade.Codigo, fatos))
             .Where(modalidade => Incoerente(consequencia, modalidade))
-            .Select(modalidade => Incoerencia($"{caminho}.consequencia", "RegraDeComprovacao", modalidade));
+            .Select(modalidade => Incoerencia($"{caminho}.consequenciaDoDescumprimento", "RegraDeComprovacao", modalidade));
     }
 
     private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> Grupos(ConfiguracaoDeclarada configuracao) =>
@@ -130,7 +130,7 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
 
     private static IEnumerable<(RegraDeComprovacao Grupo, string Caminho)> DoGrupo(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra, string caminho) =>
     [
-        .. regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.Consequencia is not null ? new[] { (regra, caminho) } : [],
+        .. regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && regra.ConsequenciaDoDescumprimento is not null ? new[] { (regra, caminho) } : [],
         .. Percorrer(configuracao, regra.Itens, $"{caminho}.itens"),
     ];
 

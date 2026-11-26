@@ -33,11 +33,11 @@ public sealed class CombinacaoDoGrupoTests
 
         combinacao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         combinacao.QuantidadeMinima.Should().Be(1);
-        combinacao.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
+        combinacao.ConsequenciaDoDescumprimento.Should().Be("ELIMINA_DO_PROCESSO");
     }
     [Theory]
-    [InlineData(" ELIMINA ")]
-    [InlineData("elimina")]
+    [InlineData(" ELIMINA_DO_PROCESSO ")]
+    [InlineData("elimina_do_processo")]
     public void Declarar_ConsequenciaNaoExata_Recusa(string consequencia)
     {
         Result<CombinacaoDoGrupo> resultado = CombinacaoDoGrupo.Declarar(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, consequencia, 1, false);

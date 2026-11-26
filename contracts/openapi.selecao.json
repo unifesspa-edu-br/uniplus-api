@@ -19303,7 +19303,7 @@
             "description": "Se a entrega do documento \u00E9 obrigat\u00F3ria.",
             "type": "boolean"
           },
-          "consequenciaIndeferimento": {
+          "consequenciaDoDescumprimento": {
             "title": "Consequ\u00EAncia do indeferimento",
             "description": "O que acontece quando o documento \u00E9 indeferido.",
             "enum": [

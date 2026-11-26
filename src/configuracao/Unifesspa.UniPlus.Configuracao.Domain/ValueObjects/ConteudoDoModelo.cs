@@ -179,13 +179,13 @@ public sealed record ConteudoDoModelo(
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoIndeferimentoDoGrupo(string caminho, IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento) =>
         indeferimento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.basesLegais[{j}]", b))
-            .Prepend(($"{caminho}.consequencia", (string?)indeferimento.Consequencia));
+            .Prepend(($"{caminho}.consequenciaDoDescumprimento", (string?)indeferimento.ConsequenciaDoDescumprimento));
 
     private static IEnumerable<(string Campo, string? Texto)> TextosDoDocumento(DocumentoExigidoDoModelo documento, string caminho) =>
         new (string, string?)[]
         {
             ($"{caminho}.faseCodigo", documento.FaseCodigo), ($"{caminho}.tipoDocumentoCodigo", documento.TipoDocumentoCodigo),
-            ($"{caminho}.indeferimento.consequencia", documento.Indeferimento.Consequencia),
+            ($"{caminho}.indeferimento.consequenciaDoDescumprimento", documento.Indeferimento.ConsequenciaDoDescumprimento),
         }
         .Concat(TextosDosPredicados(caminho, documento.Predicados()))
         .Concat(documento.Requisitos.TextosDasReferencias(caminho))

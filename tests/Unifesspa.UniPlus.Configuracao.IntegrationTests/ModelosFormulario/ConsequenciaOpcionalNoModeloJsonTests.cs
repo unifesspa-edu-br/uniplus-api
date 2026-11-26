@@ -17,9 +17,9 @@ public sealed class ConsequenciaOpcionalNoModeloJsonTests
         GrupoDeDocumentosDoModelo grupo = new(1, new IndeferimentoDoGrupoDeDocumentosDoModelo(null, [], abrePrazo), [documento]);
         ConteudoDoModelo original = new(null, [], [], [], [], [], new([documento], [grupo]));
         ConteudoDoModelo lido = ConteudoDoModeloJson.Desserializar(ConteudoDoModeloJson.Serializar(original));
-        lido.Documentos.DocumentosExigidos.Single().Indeferimento.Consequencia.Should().BeNull();
+        lido.Documentos.DocumentosExigidos.Single().Indeferimento.ConsequenciaDoDescumprimento.Should().BeNull();
         lido.Documentos.DocumentosExigidos.Single().Indeferimento.AbrePrazoParaReenvio.Should().Be(abrePrazo);
-        lido.Documentos.GruposDeDocumentos.Single().Indeferimento?.Consequencia.Should().BeNull();
+        lido.Documentos.GruposDeDocumentos.Single().Indeferimento?.ConsequenciaDoDescumprimento.Should().BeNull();
         (lido.Documentos.GruposDeDocumentos.Single().Indeferimento?.AbrePrazoParaReenvio ?? false).Should().Be(abrePrazo);
     }
 }

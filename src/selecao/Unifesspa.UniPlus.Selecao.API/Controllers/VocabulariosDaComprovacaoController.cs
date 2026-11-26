@@ -113,10 +113,10 @@ public sealed class VocabulariosDaComprovacaoController(IQueryBus queryBus) : Co
     }
 
     /// <summary>Lista as consequências do descumprimento de uma exigência, de um grupo ou da ausência à banca.</summary>
-    [HttpGet("vocabularios/consequencias-descumprimento")]
+    [HttpGet("vocabularios/consequencias-do-descumprimento")]
     [EndpointName("ListarConsequenciasDoDescumprimento")]
     [AllowAnonymous]
-    [VendorMediaType(Resource = "consequencia-indeferimento", Versions = [1])]
+    [VendorMediaType(Resource = "consequencias-do-descumprimento", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<CodigoComRotulo<ConsequenciaDoDescumprimento>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ListarConsequenciasDoDescumprimento(CancellationToken cancellationToken)

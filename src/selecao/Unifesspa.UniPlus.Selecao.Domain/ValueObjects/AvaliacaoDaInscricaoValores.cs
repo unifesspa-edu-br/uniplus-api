@@ -188,7 +188,7 @@ public sealed record DocumentoAvaliado(
 /// <summary>
 /// Grupo que exige todos os itens ou uma quantidade mínima, com repetição e consequência quando declaradas.
 /// </summary>
-public sealed record GrupoDeComprovacao(Guid GrupoId, FormaDeComprovacao Forma, int? Minimo, string? GrupoDoFormularioParaRepeticao, string? Consequencia = null);
+public sealed record GrupoDeComprovacao(Guid GrupoId, FormaDeComprovacao Forma, int? Minimo, string? GrupoDoFormularioParaRepeticao, string? ConsequenciaDoDescumprimento = null);
 
 /// <summary>
 /// Os códigos que o formulário pergunta e de que a avaliação depende: os campos — os subitens de grupo

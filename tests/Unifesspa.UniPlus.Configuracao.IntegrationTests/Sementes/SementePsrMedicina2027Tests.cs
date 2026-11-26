@@ -228,7 +228,7 @@ public sealed class SementePsrMedicina2027Tests
     private static void ConferirExigenciaDeTodosOsDocumentos(ModeloFormulario inscricao)
     {
         inscricao.Conteudo.Documentos.DocumentosExigidos.Should().HaveCount(2);
-        inscricao.Conteudo.Documentos.DocumentosExigidos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.Indeferimento.Consequencia == "RETIRA_O_ACRESCIMO" && d.Indeferimento.Obrigatorio);
+        inscricao.Conteudo.Documentos.DocumentosExigidos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.Indeferimento.ConsequenciaDoDescumprimento == "RETIRA_O_ACRESCIMO" && d.Indeferimento.Obrigatorio);
         inscricao.Conteudo.Documentos.DocumentosExigidos.SelectMany(static d => d.Indeferimento.BasesLegais).Should().OnlyContain(static b => b.Situacao == "RESOLVIDO" && b.Abrangencia == "FEDERAL");
     }
 

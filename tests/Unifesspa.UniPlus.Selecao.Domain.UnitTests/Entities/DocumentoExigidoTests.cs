@@ -21,7 +21,7 @@ public sealed class DocumentoExigidoTests
     private static Result<DocumentoExigido> Exigencia(
         Aplicabilidade? aplicabilidade = Aplicabilidade.Geral,
         bool obrigatorio = false,
-        string? consequenciaIndeferimento = null,
+        string? consequenciaDoDescumprimento = null,
         IReadOnlyList<CondicaoGatilho>? condicoes = null,
         IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null,
         int? tamanhoMaximoBytes = null) =>
@@ -29,7 +29,7 @@ public sealed class DocumentoExigidoTests
             new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
             new AplicabilidadeDaExigencia(aplicabilidade, condicoes ?? []),
-            new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais ?? []),
+            new IndeferimentoDoDocumento(obrigatorio, consequenciaDoDescumprimento, basesLegais ?? []),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes, null, null, null),
             null));
 
@@ -37,7 +37,7 @@ public sealed class DocumentoExigidoTests
         0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
 
     [Theory]
-    [InlineData("  ELIMINA  ")]
+    [InlineData("  ELIMINA_DO_PROCESSO  ")]
     [InlineData("  ")]
     [InlineData(null)]
     public void Reidratar_IdentificadoresVaziosEConsequenciaOriginal_PreservaOsValores(string? consequencia)
@@ -55,7 +55,7 @@ public sealed class DocumentoExigidoTests
         documento.Id.Should().Be(id);
         documento.ExigidoNaFaseId.Should().Be(Guid.Empty);
         documento.TipoDocumentoOrigemId.Should().Be(Guid.Empty);
-        documento.ConsequenciaIndeferimento.Should().BeNull();
+        documento.ConsequenciaDoDescumprimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "CA-01: aplicabilidade ausente é recusada")]
@@ -83,21 +83,21 @@ public sealed class DocumentoExigidoTests
         Exigencia(Aplicabilidade.Condicional).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Consequência de indeferimento fora do domínio é recusada")]
+    [Fact(DisplayName = "Consequência do descumprimento fora do vocabulário é recusada")]
     public void Criar_ConsequenciaInvalida_Recusa()
     {
-        Result<DocumentoExigido> resultado = Exigencia(consequenciaIndeferimento: "REPROVA_TUDO");
+        Result<DocumentoExigido> resultado = Exigencia(consequenciaDoDescumprimento: "REPROVA_TUDO");
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIndeferimentoInvalida");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaDoDescumprimentoInvalida");
     }
 
     [Fact(DisplayName = "ADR-0023: a mensagem de consequência inválida não ecoa o valor rejeitado")]
     public void Criar_ConsequenciaInvalida_MensagemNaoEcoaValorRejeitado()
     {
-        Result<DocumentoExigido> resultado = Exigencia(consequenciaIndeferimento: "REPROVA_TUDO");
+        Result<DocumentoExigido> resultado = Exigencia(consequenciaDoDescumprimento: "REPROVA_TUDO");
 
-        resultado.Error!.Message.Should().NotContain("REPROVA_TUDO");
+        resultado.Error!.Message.Should().Be("A consequência do descumprimento da exigência não é uma das consequências cadastradas.").And.NotContain("REPROVA_TUDO");
     }
 
     [Theory(DisplayName = "Consequências válidas são aceitas")]
@@ -105,7 +105,7 @@ public sealed class DocumentoExigidoTests
     [InlineData("RETIRA_A_MODALIDADE")]
     [InlineData("RETIRA_O_ACRESCIMO")]
     public void Criar_ConsequenciaValida_Aceita(string consequencia) =>
-        Exigencia(consequenciaIndeferimento: consequencia).IsSuccess.Should().BeTrue();
+        Exigencia(consequenciaDoDescumprimento: consequencia).IsSuccess.Should().BeTrue();
 
     [Fact(DisplayName = "CA-01: GERAL com condição viva é recusada")]
     public void GarantirCoerenciaAplicabilidade_GeralComCondicaoViva_Recusa()
@@ -159,7 +159,7 @@ public sealed class DocumentoExigidoTests
 
     [Fact(DisplayName = "DeterminaResultado: com consequência determina resultado")]
     public void DeterminaResultado_ComConsequencia_RetornaTrue() =>
-        Exigencia(consequenciaIndeferimento: "ELIMINA_DO_PROCESSO").Value!.DeterminaResultado().Should().BeTrue();
+        Exigencia(consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO").Value!.DeterminaResultado().Should().BeTrue();
 
     [Fact(DisplayName = "DeterminaResultado: facultativa e sem consequência não determina resultado (contraprova)")]
     public void DeterminaResultado_FacultativaSemConsequencia_RetornaFalse() =>
@@ -168,9 +168,9 @@ public sealed class DocumentoExigidoTests
     [Fact(DisplayName = "Consequência composta só de espaços é normalizada para null (não determina resultado)")]
     public void Criar_ConsequenciaSoDeEspacos_NormalizaParaNull()
     {
-        DocumentoExigido exigencia = Exigencia(consequenciaIndeferimento: "   ").Value!;
+        DocumentoExigido exigencia = Exigencia(consequenciaDoDescumprimento: "   ").Value!;
 
-        exigencia.ConsequenciaIndeferimento.Should().BeNull();
+        exigencia.ConsequenciaDoDescumprimento.Should().BeNull();
         exigencia.DeterminaResultado().Should().BeFalse();
     }
 
@@ -187,13 +187,13 @@ public sealed class DocumentoExigidoTests
     public void Criar_TresViolacoesIndependentes_AcumulaAsTresViolacoes()
     {
         Result<DocumentoExigido> resultado = Exigencia(
-            null, consequenciaIndeferimento: "REPROVA_TUDO", tamanhoMaximoBytes: -1);
+            null, consequenciaDoDescumprimento: "REPROVA_TUDO", tamanhoMaximoBytes: -1);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
             "DocumentoExigido.AplicabilidadeObrigatoria",
-            "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
+            "DocumentoExigido.ConsequenciaDoDescumprimentoInvalida",
             "DocumentoExigido.TamanhoMaximoBytesInvalido",
         ]);
     }
@@ -202,7 +202,7 @@ public sealed class DocumentoExigidoTests
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaIndeferimento: null, quantidadeCondicoes: 0);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0);
 
         erros.Should().BeEmpty();
     }
@@ -211,7 +211,7 @@ public sealed class DocumentoExigidoTests
     public void ValidarFormaBasica_GeralComQuantidadeCondicoes_ReportaGeralComCondicao()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaIndeferimento: null, quantidadeCondicoes: 1);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 1);
 
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.GeralComCondicao"]);
     }

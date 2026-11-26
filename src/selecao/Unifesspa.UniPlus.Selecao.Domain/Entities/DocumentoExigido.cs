@@ -100,7 +100,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// (ADR-0074). Campo de transporte — a coerência com <c>ModalidadeSelecionada.AcaoQuandoIndeferido</c>
     /// é validada na conformidade legal (CA-05), sem duplicar campo.
     /// </summary>
-    public ConsequenciaDoDescumprimento? ConsequenciaIndeferimento { get; private set; }
+    public ConsequenciaDoDescumprimento? ConsequenciaDoDescumprimento { get; private set; }
 
     public RequisitosDoDocumento Requisitos { get; private set; } = null!;
     public PrazoDeEmissao? PrazoDeEmissao => Requisitos.PrazoDeEmissao;
@@ -122,12 +122,12 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private DocumentoExigido() { }
 
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade? aplicabilidade, string? consequenciaIndeferimento, int quantidadeCondicoes,
+        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes,
         FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null)
     {
         List<FieldError> erros = finalidade is { } declarada ? FormaDoCabecalho.ValidarFinalidade(declarada) : [];
         ValidarAplicabilidade(aplicabilidade, quantidadeCondicoes, erros);
-        ValidarConsequencia(consequenciaIndeferimento, erros);
+        ValidarConsequencia(consequenciaDoDescumprimento, erros);
         ValidarFatos(fatosComprovados, erros);
         return erros;
     }
@@ -147,13 +147,13 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         }
     }
 
-    private static void ValidarConsequencia(string? consequencia, List<FieldError> erros)
+    private static void ValidarConsequencia(string? consequenciaDoDescumprimento, List<FieldError> erros)
     {
-        string? normalizada = NormalizarConsequencia(consequencia);
+        string? normalizada = NormalizarConsequencia(consequenciaDoDescumprimento);
         if (normalizada is not null && !CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(normalizada, out _))
         {
-            erros.Add(new("consequenciaIndeferimento", new DomainError("DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento inválida — esperado um de: {string.Join(", ", CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(static valor => valor.Codigo()))}.")));
+            erros.Add(new("consequenciaDoDescumprimento", new DomainError("DocumentoExigido.ConsequenciaDoDescumprimentoInvalida",
+                "A consequência do descumprimento da exigência não é uma das consequências cadastradas.")));
         }
     }
 
@@ -173,8 +173,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// " " escapa da checagem de domínio (não é "presente" o bastante para reprovar, nem
     /// null o bastante para <see cref="DeterminaResultado"/> ignorar) e é persistido cru.
     /// </summary>
-    private static string? NormalizarConsequencia(string? consequenciaIndeferimento) =>
-        string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento;
+    private static string? NormalizarConsequencia(string? consequenciaDoDescumprimento) =>
+        string.IsNullOrWhiteSpace(consequenciaDoDescumprimento) ? null : consequenciaDoDescumprimento;
 
     private static ConsequenciaDoDescumprimento? ObterConsequencia(string? codigo) =>
         CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(codigo, out ConsequenciaDoDescumprimento valor) ? valor : null;
@@ -183,7 +183,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     {
         ExigirPartes(declarado);
         ExigirIdentificadores(declarado.Tipo, declarado.Momento);
-        List<FieldError> erros = ValidarFormaBasica(declarado.Aplicabilidade.Tipo, declarado.Indeferimento.Consequencia,
+        List<FieldError> erros = ValidarFormaBasica(declarado.Aplicabilidade.Tipo, declarado.Indeferimento.ConsequenciaDoDescumprimento,
             declarado.Aplicabilidade.Condicoes.Count, declarado.Momento.Finalidade, declarado.FatosComprovados);
         erros.AddRange(RequisitosDoDocumento.ValidarTamanho(declarado.Requisitos.TamanhoMaximoBytes));
         if (erros.Count > 0)
@@ -205,7 +205,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         }
 
         DocumentoExigido documento = new(chave, declarado) { Id = id };
-        documento.ConsequenciaIndeferimento = ObterConsequencia(declarado.Indeferimento.Consequencia);
+        documento.ConsequenciaDoDescumprimento = ObterConsequencia(declarado.Indeferimento.ConsequenciaDoDescumprimento);
         documento.VincularPartes(declarado.Aplicabilidade, declarado.Indeferimento);
         return documento;
     }
@@ -222,7 +222,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
             ?? throw new ArgumentException("A exigência deve declarar a aplicabilidade.", nameof(declarado));
         Obrigatorio = declarado.Indeferimento.Obrigatorio;
         AbrePrazoParaReenvio = declarado.Indeferimento.AbrePrazoParaReenvio;
-        ConsequenciaIndeferimento = ObterConsequencia(declarado.Indeferimento.Consequencia);
+        ConsequenciaDoDescumprimento = ObterConsequencia(declarado.Indeferimento.ConsequenciaDoDescumprimento);
         Requisitos = declarado.Requisitos;
     }
 
@@ -313,7 +313,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// qualquer consequência de indeferimento declarada. Usado pela trava CA-01 (<c>CONDICIONAL</c> vazia que determina resultado bloqueia
     /// publicação) e pelo gate de base legal.
     /// </summary>
-    public bool DeterminaResultado() => Obrigatorio || ConsequenciaIndeferimento is not null;
+    public bool DeterminaResultado() => Obrigatorio || ConsequenciaDoDescumprimento is not null;
 
     /// <summary>
     /// Projeção "somente <see cref="StatusBaseLegal.Resolvido"/>" (CA-06)

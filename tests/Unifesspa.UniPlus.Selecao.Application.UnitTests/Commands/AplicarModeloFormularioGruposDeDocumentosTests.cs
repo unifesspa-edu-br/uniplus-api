@@ -54,7 +54,7 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
         resultado.IsSuccess.Should().BeTrue(Recusas(resultado));
         RegraDeComprovacao regra = RegraDoGrupoCopiado();
         regra.QuantidadeMinima.Should().Be(2);
-        regra.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
+        regra.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
         regra.Itens.Select(static i => i.DocumentoExigido!.TipoDocumentoCodigo).Should().BeEquivalentTo("LAUDO_MEDICO", "CERTIDAO_NASCIMENTO");
     }
 

@@ -66,9 +66,9 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
     }
 
     [Theory]
-    [InlineData("TODOS_OS_ITENS", "ELIMINA_DO_PROCESSO", false, "consequencia", "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos")]
+    [InlineData("TODOS_OS_ITENS", "ELIMINA_DO_PROCESSO", false, "consequenciaDoDescumprimento", "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos")]
     [InlineData("TODOS_OS_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos")]
-    [InlineData("QUANTIDADE_MINIMA_DE_ITENS", "INVALIDA", false, "consequencia", "RegraDeComprovacao.ConsequenciaInvalida")]
+    [InlineData("QUANTIDADE_MINIMA_DE_ITENS", "INVALIDA", false, "consequenciaDoDescumprimento", "RegraDeComprovacao.ConsequenciaInvalida")]
     [InlineData("QUANTIDADE_MINIMA_DE_ITENS", null, true, "basesLegais", "RegraDeComprovacao.BaseLegalSemConsequencia")]
     public void Interpretar_ConsequenciaOuBaseInvalida_Recusa(string forma, string? consequencia, bool temBaseLegal, string campo, string codigo)
     {
@@ -86,7 +86,7 @@ public sealed class DeclaracaoDaRegraDeComprovacaoTests
         declaracao.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
         declaracao.QuantidadeDeItens.Should().Be(1);
         declaracao.QuantidadeMinima.Should().Be(1);
-        declaracao.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
+        declaracao.ConsequenciaDoDescumprimento.Should().Be("ELIMINA_DO_PROCESSO");
         declaracao.Recusas.Should().BeEmpty();
     }
 

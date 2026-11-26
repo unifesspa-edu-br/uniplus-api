@@ -39,6 +39,9 @@ internal sealed record RegraDeComprovacaoDeTeste
     public RegraDeComprovacaoDeTeste ComIndeferimento(string? consequencia, params BaseLegalInput[] basesLegais) =>
         this with { Indeferimento = new(consequencia, basesLegais) };
 
+    public RegraDeComprovacaoDeTeste ComReenvio() =>
+        this with { Indeferimento = (Indeferimento ?? new()) with { AbrePrazoParaReenvio = true } };
+
     public RegraDeComprovacaoDeTeste RepetidoPor(string grupo) => this with { GrupoDoFormularioParaRepeticao = grupo };
 
     public RegraDeComprovacaoInformada Construir() =>

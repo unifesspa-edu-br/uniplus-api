@@ -28,7 +28,7 @@ internal static class LeituraDasRegrasDeComprovacao
     {
         leitor.ExigirChaves(
             item, caminho,
-            "id", "ordem", "forma", "exigenciaId", "quantidadeMinima", "consequencia", "abrePrazoParaReenvio", "basesLegais",
+            "id", "ordem", "forma", "exigenciaId", "quantidadeMinima", "consequenciaDoDescumprimento", "abrePrazoParaReenvio", "basesLegais",
             "criterioDeDistincao", "dataReferencia", "ocorrenciasEsperadas", "grupoDoFormularioParaRepeticao", "itens");
 
         return leitor.Falhou ? null : LerConteudoDaRegra(leitor, item, caminho, exigenciasPorId);
@@ -38,7 +38,7 @@ internal static class LeituraDasRegrasDeComprovacao
         LeitorEnvelope leitor, JsonObject item, string caminho, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)
     {
         DeclaracaoDaRegraLida declaracao = LerDeclaracao(leitor, item, caminho);
-        if (!ConsequenciaReconhecida(leitor, declaracao.Consequencia) || leitor.Falhou || !LerColecoesDaRegra(leitor, item, caminho, declaracao)
+        if (!ConsequenciaReconhecida(leitor, declaracao.ConsequenciaDoDescumprimento) || leitor.Falhou || !LerColecoesDaRegra(leitor, item, caminho, declaracao)
             || !ResolverReferencias(leitor, declaracao, exigenciasPorId, out FormaDeComprovacao forma, out CriterioDeDistincaoDasApresentacoes? criterio, out DocumentoExigido? documento))
         {
             return null;
@@ -59,7 +59,7 @@ internal static class LeituraDasRegrasDeComprovacao
         forma == FormaDeComprovacao.Documento
             ? RegraDeComprovacao.ReidratarRegraDeDocumento(declaracao.Id, declaracao.Ordem, documento!, declaracao.QuantidadeMinima,
                 DistincaoDasApresentacoes.Reidratar(criterio, declaracao.DataReferencia, declaracao.OcorrenciasEsperadas), declaracao.GrupoDoFormularioParaRepeticaoCodigo)
-            : RegraDeComprovacao.ReidratarGrupo(declaracao.Id, declaracao.Ordem, new CombinacaoDoGrupo(forma, declaracao.QuantidadeMinima, declaracao.Consequencia, declaracao.AbrePrazoParaReenvio),
+            : RegraDeComprovacao.ReidratarGrupo(declaracao.Id, declaracao.Ordem, new CombinacaoDoGrupo(forma, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, declaracao.AbrePrazoParaReenvio),
                 declaracao.BasesLegais, itens, declaracao.GrupoDoFormularioParaRepeticaoCodigo);
 
     private static bool LerColecoesDaRegra(LeitorEnvelope leitor, JsonObject item, string caminho, DeclaracaoDaRegraLida declaracao)
@@ -78,7 +78,7 @@ internal static class LeituraDasRegrasDeComprovacao
 
     private static string? CampoIncompativelDaRegraDeDocumento(DeclaracaoDaRegraLida declaracao, IReadOnlyList<RegraDeComprovacao> itens)
     {
-        if (declaracao.Consequencia is not null)
+        if (declaracao.ConsequenciaDoDescumprimento is not null)
         {
             return "A regra de documento não pode ter consequência própria. Remova a consequência.";
         }
@@ -109,7 +109,7 @@ internal static class LeituraDasRegrasDeComprovacao
         FormaCodigo = leitor.TextoNaoVazio(item, "forma", caminho),
         ExigenciaId = leitor.IdentificadorOpcional(item, "exigenciaId", caminho),
         QuantidadeMinima = leitor.InteiroOpcional(item, "quantidadeMinima", caminho),
-        Consequencia = leitor.TextoOpcional(item, "consequencia", caminho, LimitesDoEnvelope.Token),
+        ConsequenciaDoDescumprimento = leitor.TextoOpcional(item, "consequenciaDoDescumprimento", caminho, LimitesDoEnvelope.Token),
         AbrePrazoParaReenvio = leitor.Booleano(item, "abrePrazoParaReenvio", caminho),
         CodigoDoCriterioDeDistincao = leitor.TextoOpcional(item, "criterioDeDistincao", caminho),
         DataReferencia = leitor.DataOpcional(item, "dataReferencia", caminho),
@@ -229,7 +229,7 @@ internal static class LeituraDasRegrasDeComprovacao
 
         public int? QuantidadeMinima { get; init; }
 
-        public string? Consequencia { get; init; }
+        public string? ConsequenciaDoDescumprimento { get; init; }
 
         public bool AbrePrazoParaReenvio { get; init; }
 

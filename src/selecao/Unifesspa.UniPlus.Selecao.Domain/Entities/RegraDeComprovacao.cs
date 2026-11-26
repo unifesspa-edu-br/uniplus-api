@@ -24,7 +24,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
     public Guid? DocumentoExigidoId { get; private set; }
     public DocumentoExigido? DocumentoExigido { get; private set; }
     public int? QuantidadeMinima { get; private set; }
-    public ConsequenciaDoDescumprimento? Consequencia { get; private set; }
+    public ConsequenciaDoDescumprimento? ConsequenciaDoDescumprimento { get; private set; }
     public bool AbrePrazoParaReenvio { get; private set; }
     public DistincaoDasApresentacoes? Distincao { get; private set; }
 
@@ -90,7 +90,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         {
             return Result<RegraDeComprovacao>.Failure(recusa);
         }
-        Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(declaracao.Forma, declaracao.QuantidadeMinima, declaracao.Consequencia, itens.Count, basesLegais.Count > 0, declaracao.AbrePrazoParaReenvio);
+        Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(declaracao.Forma, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, itens.Count, basesLegais.Count > 0, declaracao.AbrePrazoParaReenvio);
         return combinacao.IsFailure ? Result<RegraDeComprovacao>.Failure(combinacao.Error!)
             : Result<RegraDeComprovacao>.Success(NovoGrupo(ordem, combinacao.Value!, basesLegais, itens, grupoDoFormularioParaRepeticao?.Trim()));
     }
@@ -119,7 +119,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
             Forma = combinacao.Forma,
             Ordem = ordem,
             QuantidadeMinima = combinacao.QuantidadeMinima,
-            Consequencia = CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(combinacao.Consequencia, out ConsequenciaDoDescumprimento valor) ? valor : null,
+            ConsequenciaDoDescumprimento = CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(combinacao.ConsequenciaDoDescumprimento, out ConsequenciaDoDescumprimento valor) ? valor : null,
             AbrePrazoParaReenvio = combinacao.AbrePrazoParaReenvio,
             GrupoDoFormularioParaRepeticao = grupoDoFormularioParaRepeticao,
         };
@@ -216,7 +216,7 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         return ComposicaoDoGrupo.FinalidadeComumDosItens(_itens, out finalidade);
     }
 
-    public bool DeterminaResultado() => Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && Consequencia is not null;
+    public bool DeterminaResultado() => Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && ConsequenciaDoDescumprimento is not null;
 
     public IEnumerable<BaseLegalDaComprovacao> BasesLegaisResolvidas() => _basesLegais.Where(static b => b.Situacao == StatusBaseLegal.Resolvido);
 

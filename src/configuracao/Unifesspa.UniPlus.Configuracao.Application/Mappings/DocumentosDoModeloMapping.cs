@@ -28,14 +28,14 @@ internal static class DocumentosDoModeloMapping
     private static GrupoDeDocumentosDoModeloDto GrupoParaLeitura(GrupoDeDocumentosDoModelo grupo) => new(
         grupo.QuantidadeMinima,
         grupo.Indeferimento is { } indeferimento
-            ? new IndeferimentoDoGrupoDeDocumentosDoModeloDto(indeferimento.Consequencia, [.. indeferimento.BasesLegais.Select(BaseLegalParaLeitura)], indeferimento.AbrePrazoParaReenvio)
+            ? new IndeferimentoDoGrupoDeDocumentosDoModeloDto(indeferimento.ConsequenciaDoDescumprimento, [.. indeferimento.BasesLegais.Select(BaseLegalParaLeitura)], indeferimento.AbrePrazoParaReenvio)
             : null,
         [.. grupo.Documentos.Select(DocumentoParaLeitura)]);
 
     private static GrupoDeDocumentosDoModeloInput GrupoParaEntrada(GrupoDeDocumentosDoModelo grupo) => new(
         grupo.QuantidadeMinima,
         grupo.Indeferimento is { } indeferimento
-            ? new IndeferimentoDoGrupoDeDocumentosDoModeloInput(indeferimento.Consequencia, [.. indeferimento.BasesLegais.Select(BaseLegalParaEntrada)], indeferimento.AbrePrazoParaReenvio)
+            ? new IndeferimentoDoGrupoDeDocumentosDoModeloInput(indeferimento.ConsequenciaDoDescumprimento, [.. indeferimento.BasesLegais.Select(BaseLegalParaEntrada)], indeferimento.AbrePrazoParaReenvio)
             : null,
         [.. grupo.Documentos.Select(DocumentoParaEntrada)]);
 
@@ -44,7 +44,7 @@ internal static class DocumentosDoModeloMapping
         IndeferimentoParaLeitura(documento.Indeferimento), RequisitosParaLeitura(documento.Requisitos), PorOpcaoParaLeitura(documento.PorOpcao));
 
     private static IndeferimentoDoDocumentoDoModeloDto IndeferimentoParaLeitura(IndeferimentoDoDocumentoDoModelo indeferimento) =>
-        new(indeferimento.Obrigatorio, indeferimento.Consequencia, [.. indeferimento.BasesLegais.Select(BaseLegalParaLeitura)], indeferimento.AbrePrazoParaReenvio);
+        new(indeferimento.Obrigatorio, indeferimento.ConsequenciaDoDescumprimento, [.. indeferimento.BasesLegais.Select(BaseLegalParaLeitura)], indeferimento.AbrePrazoParaReenvio);
 
     private static BaseLegalDoModeloDto BaseLegalParaLeitura(BaseLegalDoModelo baseLegal) =>
         new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);
@@ -78,7 +78,7 @@ internal static class DocumentosDoModeloMapping
         IndeferimentoParaEntrada(documento.Indeferimento), RequisitosParaEntrada(documento.Requisitos), PorOpcaoParaEntrada(documento.PorOpcao));
 
     private static IndeferimentoDoDocumentoDoModeloInput IndeferimentoParaEntrada(IndeferimentoDoDocumentoDoModelo indeferimento) =>
-        new(indeferimento.Obrigatorio, indeferimento.Consequencia, [.. indeferimento.BasesLegais.Select(BaseLegalParaEntrada)], indeferimento.AbrePrazoParaReenvio);
+        new(indeferimento.Obrigatorio, indeferimento.ConsequenciaDoDescumprimento, [.. indeferimento.BasesLegais.Select(BaseLegalParaEntrada)], indeferimento.AbrePrazoParaReenvio);
 
     private static BaseLegalDoModeloInput BaseLegalParaEntrada(BaseLegalDoModelo baseLegal) =>
         new(baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Situacao, baseLegal.Observacao);

@@ -36,9 +36,9 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     public void Reidratar_RegraDeDocumentoComConsequencia_RecusaEnvelopeMalformado()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
-            envelope => PrimeiraRegra(envelope, "DOCUMENTO")["consequencia"] = "ELIMINA_DO_PROCESSO", comRegrasDeComprovacao: true);
+            envelope => PrimeiraRegra(envelope, "DOCUMENTO")["consequenciaDoDescumprimento"] = "ELIMINA_DO_PROCESSO", comRegrasDeComprovacao: true);
 
-        ConferirRecusa(resultado, "consequencia");
+        ConferirRecusa(resultado, "consequenciaDoDescumprimento");
     }
 
     [Fact]
@@ -55,8 +55,8 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     }
 
     [Theory]
-    [InlineData("consequencia", "basesLegais")]
-    [InlineData("consequencia", "itens")]
+    [InlineData("consequenciaDoDescumprimento", "basesLegais")]
+    [InlineData("consequenciaDoDescumprimento", "itens")]
     [InlineData("basesLegais", "itens")]
     [InlineData("itens", null)]
     public void Reidratar_RegraDeDocumentoComAtributosIncompativeis_RecusaPrimeiroCampo(string primeiro, string? segundo)
@@ -103,10 +103,10 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         {
             JsonObject grupo = PrimeiraRegra(envelope, "QUANTIDADE_MINIMA_DE_ITENS");
             grupo["dataReferencia"] = "2026-10-10";
-            grupo["itens"]![0]!["consequencia"] = "ELIMINA_DO_PROCESSO";
+            grupo["itens"]![0]!["consequenciaDoDescumprimento"] = "ELIMINA_DO_PROCESSO";
         }, comRegrasDeComprovacao: true);
 
-        ConferirRecusa(resultado, "consequencia");
+        ConferirRecusa(resultado, "consequenciaDoDescumprimento");
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         {
             JsonObject regraDeDocumento = PrimeiraRegra(envelope, "DOCUMENTO");
             regraDeDocumento["exigenciaId"] = Guid.CreateVersion7().ToString();
-            regraDeDocumento["consequencia"] = "ELIMINA_DO_PROCESSO";
+            regraDeDocumento["consequenciaDoDescumprimento"] = "ELIMINA_DO_PROCESSO";
         }, comRegrasDeComprovacao: true);
 
         ConferirRecusa(resultado, "exigenciaId");
@@ -146,7 +146,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         regraDeDocumento[campo] = campo switch
         {
-            "consequencia" => JsonValue.Create("ELIMINA_DO_PROCESSO"),
+            "consequenciaDoDescumprimento" => JsonValue.Create("ELIMINA_DO_PROCESSO"),
             "basesLegais" => JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO","observacao":null}]"""),
             "itens" => new JsonArray(RegraDeDocumentoSemAtributosIncompativeis(regraDeDocumento)),
             _ => throw new ArgumentOutOfRangeException(nameof(campo)),
@@ -156,7 +156,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     private static JsonObject RegraDeDocumentoSemAtributosIncompativeis(JsonObject regraDeDocumento)
     {
         JsonObject copia = regraDeDocumento.DeepClone().AsObject();
-        copia["consequencia"] = null;
+        copia["consequenciaDoDescumprimento"] = null;
         copia["basesLegais"] = new JsonArray();
         copia["itens"] = new JsonArray();
         return copia;
@@ -179,7 +179,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         string mensagem = campo switch
         {
-            "consequencia" => "A regra de documento não pode ter consequência própria. Remova a consequência.",
+            "consequenciaDoDescumprimento" => "A regra de documento não pode ter consequência própria. Remova a consequência.",
             "basesLegais" => "A regra de documento não pode ter base legal própria. Remova a base legal.",
             "itens" => "A regra de documento não pode conter outros itens. Remova os itens.",
             "criterioDeDistincao" => "A forma de distinguir apresentações só pode ser informada em uma regra de documento. Remova-a deste item.",

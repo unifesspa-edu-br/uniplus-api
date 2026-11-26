@@ -36,9 +36,9 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         }
 
         List<BaseLegalDoModelo> basesLegais = LerBasesLegais(entrada.BasesLegais, $"{campo}.indeferimento");
-        LerConsequencia(entrada.Consequencia, $"{campo}.indeferimento.consequencia");
+        LerConsequencia(entrada.ConsequenciaDoDescumprimento, $"{campo}.indeferimento.consequenciaDoDescumprimento");
 
-        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.Consequencia, basesLegais, entrada.AbrePrazoParaReenvio);
+        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.ConsequenciaDoDescumprimento, basesLegais, entrada.AbrePrazoParaReenvio);
     }
 
     /// <summary>
@@ -63,9 +63,9 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
     {
         List<BaseLegalDoModelo> basesLegais = LerBasesLegais(entrada.Indeferimento?.BasesLegais, $"{campo}.indeferimento");
         RecusarCodigosAusentes(entrada, campo);
-        LerConsequencia(entrada.Indeferimento?.Consequencia, $"{campo}.indeferimento.consequencia");
+        LerConsequencia(entrada.Indeferimento?.ConsequenciaDoDescumprimento, $"{campo}.indeferimento.consequenciaDoDescumprimento");
         return new IndeferimentoDoDocumentoDoModelo(
-            entrada.Indeferimento?.Obrigatorio ?? false, entrada.Indeferimento?.Consequencia, basesLegais, entrada.Indeferimento?.AbrePrazoParaReenvio ?? false);
+            entrada.Indeferimento?.Obrigatorio ?? false, entrada.Indeferimento?.ConsequenciaDoDescumprimento, basesLegais, entrada.Indeferimento?.AbrePrazoParaReenvio ?? false);
     }
 
     private RequisitosDoDocumentoDoModelo? LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)
@@ -101,12 +101,12 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 
     }
 
-    private void LerConsequencia(string? consequencia, string campo)
+    private void LerConsequencia(string? consequenciaDoDescumprimento, string campo)
     {
-        if (consequencia is not null)
+        if (consequenciaDoDescumprimento is not null)
         {
-            ConferirCodigo<ConsequenciaDoDescumprimento>(consequencia, campo,
-                ModeloFormularioErrorCodes.ConsequenciaDesconhecida, "A consequência do descumprimento é desconhecida.");
+            ConferirCodigo<ConsequenciaDoDescumprimento>(consequenciaDoDescumprimento, campo,
+                ModeloFormularioErrorCodes.ConsequenciaDoDescumprimentoDesconhecida, "A consequência do descumprimento do modelo de formulário não é uma das consequências cadastradas.");
         }
     }
 

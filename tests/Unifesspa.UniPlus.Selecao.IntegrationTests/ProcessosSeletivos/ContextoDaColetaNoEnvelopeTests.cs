@@ -183,7 +183,7 @@ public sealed class ContextoDaColetaNoEnvelopeTests
             new CombinacaoDoGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), [baseLegal], [.. original.Itens], null);
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
-        Conferir<ConsequenciaDoDescumprimento>(SerializacaoDasExigencias.SerializarRegrasDeComprovacao(processo)[0]!, "consequencia");
+        Conferir<ConsequenciaDoDescumprimento>(SerializacaoDasExigencias.SerializarRegrasDeComprovacao(processo)[0]!, "consequenciaDoDescumprimento");
     }
 
     [Fact]

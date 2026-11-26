@@ -53,9 +53,9 @@ public sealed class ModeloFormularioMappingTests
         ConjuntoDeDocumentosDoModeloInput entrada = conteudo.ParaEntrada().ConjuntoDeDocumentos!;
         ConjuntoDeDocumentosDoModeloDto leitura = conteudo.ToDto().ConjuntoDeDocumentos;
 
-        entrada.GruposDeDocumentos!.Select(static g => (g.QuantidadeMinima, g.Indeferimento?.Consequencia, g.Documentos!.Count)).Should().Equal((2, "PERDA_DA_VAGA", 2), (null, null, 1));
+        entrada.GruposDeDocumentos!.Select(static g => (g.QuantidadeMinima, g.Indeferimento?.ConsequenciaDoDescumprimento, g.Documentos!.Count)).Should().Equal((2, "RETIRA_A_MODALIDADE", 2), (null, null, 1));
         entrada.GruposDeDocumentos![0].Indeferimento!.BasesLegais!.Should().ContainSingle().Which!.Referencia.Should().Be("Lei 12.711/2012");
-        leitura.GruposDeDocumentos.Select(static g => (g.QuantidadeMinima, g.Indeferimento?.Consequencia, g.Documentos.Count)).Should().Equal((2, "PERDA_DA_VAGA", 2), (null, null, 1));
+        leitura.GruposDeDocumentos.Select(static g => (g.QuantidadeMinima, g.Indeferimento?.ConsequenciaDoDescumprimento, g.Documentos.Count)).Should().Equal((2, "RETIRA_A_MODALIDADE", 2), (null, null, 1));
         leitura.GruposDeDocumentos[0].Indeferimento!.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Lei 12.711/2012");
     }
 
@@ -149,7 +149,7 @@ public sealed class ModeloFormularioMappingTests
         [new GrupoDoModelo(
             "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         new ConjuntoDeDocumentosDoModelo(
-            [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "INDEFERIMENTO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
+            [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "ELIMINA_DO_PROCESSO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
 
     private static ConteudoDoModelo ConteudoComRequisitosEscolhidos() =>
         ConteudoMinimo() with { ConjuntoDeDocumentos = new([ConteudoMinimo().Documentos.DocumentosExigidos.Single() with { Requisitos = RequisitosEscolhidos() }], []) };
@@ -189,14 +189,14 @@ public sealed class ModeloFormularioMappingTests
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", Quando("QUILOMBOLA", true),
         new IndeferimentoDoDocumentoDoModelo(
-            false, "PERDA_DA_VAGA",
+            false, "RETIRA_A_MODALIDADE",
             [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)]),
         RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos,
         new ExigenciaPorOpcao("OPCAO_DE_CURSO", ["MEDICINA"]));
 
     private static GrupoDeDocumentosDoModelo GrupoDeDocumentosCompleto() => new(
         2,
-        new IndeferimentoDoGrupoDeDocumentosDoModelo("PERDA_DA_VAGA", [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")]),
+        new IndeferimentoDoGrupoDeDocumentosDoModelo("RETIRA_A_MODALIDADE", [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")]),
         [DocumentoCompleto(), DocumentoCompleto() with { TipoDocumentoCodigo = "RG" }]);
 
     private static GrupoDeDocumentosDoModelo GrupoDeDocumentosSemIndeferimento() => new(null, null, [DocumentoCompleto()]);
@@ -225,7 +225,7 @@ public sealed class ModeloFormularioMappingTests
         [EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA").ComRotulo("Família").ComOcorrencias(1)
             .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0)).Construir()],
         ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(
-            new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModeloInput(true, "INDEFERIMENTO", []), NenhumaEscolha)));
+            new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModeloInput(true, "ELIMINA_DO_PROCESSO", []), NenhumaEscolha)));
 
     private static PaginaDoFormularioInput PaginaCompletaNaEntrada() =>
         EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
@@ -252,14 +252,14 @@ public sealed class ModeloFormularioMappingTests
     private static DocumentoExigidoDoModeloInput DocumentoCompletoNaEntrada() => new(
         "HABILITACAO", "CERTIDAO", QuandoNaEntrada("QUILOMBOLA", true),
         new IndeferimentoDoDocumentoDoModeloInput(
-            false, "PERDA_DA_VAGA",
+            false, "RETIRA_A_MODALIDADE",
             [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModeloInput("Portaria 18/2012", "NACIONAL", "VIGENTE", null)]),
         NenhumaEscolha,
         new ExigenciaPorOpcaoInput("OPCAO_DE_CURSO", ["MEDICINA"]));
 
     private static GrupoDeDocumentosDoModeloInput GrupoDeDocumentosCompletoNaEntrada() => new(
         2,
-        new IndeferimentoDoGrupoDeDocumentosDoModeloInput("PERDA_DA_VAGA", [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")]),
+        new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_A_MODALIDADE", [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")]),
         [DocumentoCompletoNaEntrada(), DocumentoCompletoNaEntrada() with { TipoDocumentoCodigo = "RG" }]);
 
     private static PredicadoDnf Quando(string fato, bool valor) =>

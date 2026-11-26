@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// só o que o identifica sem o revelar. Entra no hash de integridade do comprovante.
 /// </summary>
 /// <param name="Situacao">O token de <see cref="Enums.SituacaoDoDocumento"/> (<c>SATISFEITA</c>, <c>PENDENTE</c>, ...) ou <c>DISPENSADA</c>: a alternativa que um grupo "um ou outro" já atendido dispensou.</param>
-/// <param name="Consequencia">O que acontece a quem não atende; nulo quando a exigência não declara consequência.</param>
+/// <param name="ConsequenciaDoDescumprimento">O que acontece a quem não atende; nulo quando a exigência não declara consequência.</param>
 public sealed record DocumentoDoComprovante(
     Guid ExigenciaId,
     string TipoDocumentoCodigo,
@@ -14,7 +14,7 @@ public sealed record DocumentoDoComprovante(
     bool Obrigatorio,
     string Situacao,
     string? OcorrenciaId,
-    string? Consequencia,
+    string? ConsequenciaDoDescumprimento,
     IReadOnlyList<ArquivoDoComprovante> Arquivos);
 
 /// <summary>

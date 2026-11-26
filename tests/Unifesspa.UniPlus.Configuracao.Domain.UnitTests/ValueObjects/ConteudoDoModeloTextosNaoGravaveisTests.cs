@@ -169,7 +169,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
         CamposRecusados(Vazio with { ConjuntoDeDocumentos = ConjuntoComGrupos(grupo) }).Should().Equal(
             "conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[1].tipoDocumentoCodigo",
             "conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[1].quando",
-            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequencia",
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequenciaDoDescumprimento",
             "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.basesLegais[0].observacao");
     }
 

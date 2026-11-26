@@ -23,7 +23,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             [
                 "Chave", "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
-                "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento", "AbrePrazoParaReenvio",
+                "Aplicabilidade", "Obrigatorio", "ConsequenciaDoDescumprimento", "AbrePrazoParaReenvio",
                 "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes", "Requisitos",
             ],

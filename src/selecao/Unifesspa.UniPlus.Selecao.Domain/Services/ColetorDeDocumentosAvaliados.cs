@@ -52,7 +52,7 @@ internal sealed class ColetorDeDocumentosAvaliados(
     [
         .. ancestrais,
         new GrupoDeComprovacao(regra.Id, regra.Forma, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.QuantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao : null,
-            regra.GrupoDoFormularioParaRepeticao, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.Consequencia?.Codigo() : null),
+            regra.GrupoDoFormularioParaRepeticao, regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens ? regra.ConsequenciaDoDescumprimento?.Codigo() : null),
     ];
 
     private DocumentoAvaliado Avaliado(RegraDeComprovacao regra, IReadOnlyList<GrupoDeComprovacao> ancestrais, string? repetido,

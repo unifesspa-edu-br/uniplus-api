@@ -189,7 +189,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("regrasDeComprovacao[0].documento.indeferimento.consequencia", "DocumentoExigido.ConsequenciaIndeferimentoInvalida"),
+            ("regrasDeComprovacao[0].documento.indeferimento.consequenciaDoDescumprimento", "DocumentoExigido.ConsequenciaDoDescumprimentoInvalida"),
             ("regrasDeComprovacao[0].documento.requisitos.tamanhoMaximoBytes", "DocumentoExigido.TamanhoMaximoBytesInvalido"),
         ]);
     }
@@ -293,6 +293,16 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [new("DOCUMENTO", item), segunda]));
         resultado.Errors.Select(e => e.Field).Should().Equal("regrasDeComprovacao[1].cardinalidade.quantidadeMinima", "regrasDeComprovacao[0].documento", "regrasDeComprovacao[1].documento");
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida");
+    }
+
+    [Fact]
+    public async Task Handle_ReenvioDeclaradoNaRegraDeDocumento_RecusaEAcumulaComAsDemais()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFaseSemLeitoresConfigurados();
+        RegraDeComprovacaoInformada regra = RegraDeComprovacaoDeTeste.DeDocumento(cenario.ItemGeral().Construir()).ComQuantidadeMinima(0).ComReenvio().Construir();
+        Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [regra]));
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain(["RegraDeComprovacao.ReenvioProibidoEmRegraDeDocumento", "RegraDeComprovacao.QuantidadeMinimaDeApresentacoesInvalida"]);
+        resultado.Errors.Single(e => e.Error.Code == "RegraDeComprovacao.ReenvioProibidoEmRegraDeDocumento").Field.Should().Be("regrasDeComprovacao[0].indeferimento.abrePrazoParaReenvio");
     }
 
     [Fact]

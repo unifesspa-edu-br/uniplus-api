@@ -1867,9 +1867,9 @@
       "titulo": "Modelo de formulário alterado concorrentemente"
     },
     {
-      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_desconhecida",
+      "codigo": "uniplus.configuracao.modelo_formulario.consequencia_do_descumprimento_desconhecida",
       "status": 422,
-      "titulo": "Consequência do indeferimento desconhecida"
+      "titulo": "Consequência do descumprimento do modelo de formulário desconhecida"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.descricao_tamanho",
@@ -5484,12 +5484,12 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
       "status": 422,
-      "titulo": "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança"
+      "titulo": "A consequência do descumprimento da exigência é incoerente com a ação declarada na modalidade que ela alcança"
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.consequencia_indeferimento_invalida",
+      "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
       "status": 422,
-      "titulo": "Consequência de indeferimento fora do domínio conhecido"
+      "titulo": "Consequência do descumprimento da exigência inválida"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase",

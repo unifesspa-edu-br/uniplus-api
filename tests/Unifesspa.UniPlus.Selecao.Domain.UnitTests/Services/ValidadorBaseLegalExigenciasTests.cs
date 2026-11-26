@@ -18,12 +18,12 @@ public sealed class ValidadorBaseLegalExigenciasTests
         DocumentoExigidoBaseLegal.Criar("Referência qualquer", abrangencia, status, null).Value!;
 
     private static DocumentoExigido Exigencia(
-        bool obrigatorio, string? consequenciaIndeferimento, params DocumentoExigidoBaseLegal[] basesLegais) =>
+        bool obrigatorio, string? consequenciaDoDescumprimento, params DocumentoExigidoBaseLegal[] basesLegais) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, null))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequenciaIndeferimento, basesLegais))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequenciaDoDescumprimento, basesLegais))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
@@ -31,7 +31,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     [Fact(DisplayName = "CA-03: processo sem exigência que determina resultado é trivialmente satisfeito (semântica vazia)")]
     public void TodasResolvidas_SemExigenciaQueDeterminaResultado_RetornaTrue()
     {
-        DocumentoExigido facultativa = Exigencia(obrigatorio: false, consequenciaIndeferimento: null);
+        DocumentoExigido facultativa = Exigencia(obrigatorio: false, consequenciaDoDescumprimento: null);
 
         ValidadorBaseLegalExigencias.TodasResolvidas([facultativa]).Should().BeTrue();
     }
@@ -44,7 +44,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     public void TodasResolvidas_ObrigatoriaComBaseResolvida_RetornaTrue()
     {
         DocumentoExigido exigencia = Exigencia(
-            obrigatorio: true, consequenciaIndeferimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Resolvido));
+            obrigatorio: true, consequenciaDoDescumprimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Resolvido));
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeTrue();
     }
@@ -53,7 +53,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     public void TodasResolvidas_InternaEditalResolvida_RetornaTrue()
     {
         DocumentoExigido exigencia = Exigencia(
-            obrigatorio: true, consequenciaIndeferimento: null, Base(TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido));
+            obrigatorio: true, consequenciaDoDescumprimento: null, Base(TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido));
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeTrue();
     }
@@ -61,7 +61,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     [Fact(DisplayName = "Exigência que determina resultado por consequência (não por Obrigatorio) também exige base resolvida")]
     public void TodasResolvidas_ComConsequenciaSemBase_RetornaFalse()
     {
-        DocumentoExigido exigencia = Exigencia(obrigatorio: false, consequenciaIndeferimento: "ELIMINA_DO_PROCESSO");
+        DocumentoExigido exigencia = Exigencia(obrigatorio: false, consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO");
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeFalse();
     }
@@ -69,7 +69,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     [Fact(DisplayName = "Exigência que determina resultado sem nenhuma base legal reprova o gate")]
     public void TodasResolvidas_SemBaseLegal_RetornaFalse()
     {
-        DocumentoExigido exigencia = Exigencia(obrigatorio: true, consequenciaIndeferimento: null);
+        DocumentoExigido exigencia = Exigencia(obrigatorio: true, consequenciaDoDescumprimento: null);
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeFalse();
     }
@@ -78,7 +78,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     public void TodasResolvidas_SoBasePendente_RetornaFalse()
     {
         DocumentoExigido exigencia = Exigencia(
-            obrigatorio: true, consequenciaIndeferimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Pendente));
+            obrigatorio: true, consequenciaDoDescumprimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Pendente));
 
         ValidadorBaseLegalExigencias.TodasResolvidas([exigencia]).Should().BeFalse();
     }
@@ -88,7 +88,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
     {
         DocumentoExigido exigencia = Exigencia(
             obrigatorio: true,
-            consequenciaIndeferimento: null,
+            consequenciaDoDescumprimento: null,
             Base(TipoAbrangencia.Federal, StatusBaseLegal.Pendente),
             Base(TipoAbrangencia.Estadual, StatusBaseLegal.Resolvido));
 
@@ -99,8 +99,8 @@ public sealed class ValidadorBaseLegalExigenciasTests
     public void TodasResolvidas_UmaExigenciaSemBaseEntreVarias_RetornaFalse()
     {
         DocumentoExigido comBase = Exigencia(
-            obrigatorio: true, consequenciaIndeferimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Resolvido));
-        DocumentoExigido semBase = Exigencia(obrigatorio: true, consequenciaIndeferimento: null);
+            obrigatorio: true, consequenciaDoDescumprimento: null, Base(TipoAbrangencia.Federal, StatusBaseLegal.Resolvido));
+        DocumentoExigido semBase = Exigencia(obrigatorio: true, consequenciaDoDescumprimento: null);
 
         ValidadorBaseLegalExigencias.TodasResolvidas([comBase, semBase]).Should().BeFalse();
     }

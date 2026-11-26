@@ -51,7 +51,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         GrupoDeDocumentosDoModelo gravada = gravado!.Conteudo.Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
         gravada.QuantidadeMinima.Should().Be(2);
-        gravada.Indeferimento!.Consequencia.Should().Be("RETIRA_O_ACRESCIMO");
+        gravada.Indeferimento!.ConsequenciaDoDescumprimento.Should().Be("RETIRA_O_ACRESCIMO");
         gravada.Documentos.Should().ContainSingle().Which.TipoDocumentoCodigo.Should().Be("LAUDO_MEDICO");
     }
 

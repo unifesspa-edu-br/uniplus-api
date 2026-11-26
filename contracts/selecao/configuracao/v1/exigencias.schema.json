@@ -155,13 +155,13 @@
           "description": "Indica se será aberto prazo para reenvio.",
           "type": "boolean"
         },
-        "consequenciaIndeferimento": {
-          "title": "Consequência do indeferimento",
-          "description": "O que acontece quando o documento é indeferido.",
+        "consequenciaDoDescumprimento": {
+          "title": "Consequência do descumprimento",
+          "description": "O que acontece quando o documento não é cumprido.",
           "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
         },
-        "consequenciaIndeferimentoRotulo": {
-          "title": "Rótulo da consequência do indeferimento",
+        "consequenciaDoDescumprimentoRotulo": {
+          "title": "Rótulo da consequência do descumprimento",
           "description": "Rótulo registrado na publicação, só de leitura e ignorado na importação.",
           "type": "string",
           "readOnly": true

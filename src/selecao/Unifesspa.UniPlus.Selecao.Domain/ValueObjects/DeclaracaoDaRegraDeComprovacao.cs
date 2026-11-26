@@ -9,21 +9,21 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 /// <summary>Dados entendidos e recusas da declaração de um item de exigência.</summary>
 public sealed record DeclaracaoDaRegraDeComprovacao(
     FormaDeComprovacao? Forma, bool TemDocumento, int QuantidadeDeItens, int? QuantidadeMinima,
-    string? Consequencia, DistincaoDeclarada? Distincao, IReadOnlyList<FieldError> Recusas)
+    string? ConsequenciaDoDescumprimento, DistincaoDeclarada? Distincao, IReadOnlyList<FieldError> Recusas)
 {
     public static DeclaracaoDaRegraDeComprovacao Interpretar(string? forma, bool temDocumento, int quantidadeDeItens, int? quantidadeMinima,
-        string? consequencia = null, bool temBaseLegal = false, DistincaoDeclarada? distincao = null)
+        string? consequenciaDoDescumprimento = null, bool temBaseLegal = false, DistincaoDeclarada? distincao = null)
     {
         FormaDeComprovacao? entendido = CatalogoDe<FormaDeComprovacao>.TentarObter(forma, out FormaDeComprovacao formaReconhecida) ? formaReconhecida : null;
         List<FieldError> recusas = RecusarDeclaracao(entendido, temDocumento, quantidadeDeItens, quantidadeMinima);
-        recusas.AddRange(RecusarConsequenciaEBase(entendido, consequencia, temBaseLegal));
+        recusas.AddRange(RecusarConsequenciaEBase(entendido, consequenciaDoDescumprimento, temBaseLegal));
         if (entendido == FormaDeComprovacao.Documento && distincao is not null)
         {
             recusas.AddRange(ConferenciaDaDistincao.Conferir(distincao, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao));
         }
         int? quantidade = entendido is FormaDeComprovacao.Documento or FormaDeComprovacao.QuantidadeMinimaDeItens
             ? quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao : quantidadeMinima;
-        return new(entendido, temDocumento, quantidadeDeItens, quantidade, CombinacaoDoGrupo.NormalizarConsequencia(consequencia), distincao, recusas);
+        return new(entendido, temDocumento, quantidadeDeItens, quantidade, CombinacaoDoGrupo.NormalizarConsequencia(consequenciaDoDescumprimento), distincao, recusas);
     }
 
     private static List<FieldError> RecusarDeclaracao(FormaDeComprovacao? forma, bool temDocumento, int quantidadeDeItens, int? quantidadeMinima)
@@ -44,18 +44,18 @@ public sealed record DeclaracaoDaRegraDeComprovacao(
         return recusas;
     }
 
-    private static IEnumerable<FieldError> RecusarConsequenciaEBase(FormaDeComprovacao? forma, string? consequencia, bool temBaseLegal)
+    private static IEnumerable<FieldError> RecusarConsequenciaEBase(FormaDeComprovacao? forma, string? consequenciaDoDescumprimento, bool temBaseLegal)
     {
         if (forma is not { } formaValida)
         {
             yield break;
         }
 
-        if (CombinacaoDoGrupo.RecusaDaConsequencia(formaValida, consequencia) is { } consequenciaRecusada)
+        if (CombinacaoDoGrupo.RecusaDaConsequencia(formaValida, consequenciaDoDescumprimento) is { } consequenciaRecusada)
         {
-            yield return new("consequencia", consequenciaRecusada);
+            yield return new("consequenciaDoDescumprimento", consequenciaRecusada);
         }
-        if (CombinacaoDoGrupo.RecusaDaBaseLegal(formaValida, consequencia, temBaseLegal) is { } baseRecusada)
+        if (CombinacaoDoGrupo.RecusaDaBaseLegal(formaValida, consequenciaDoDescumprimento, temBaseLegal) is { } baseRecusada)
         {
             yield return new("basesLegais", baseRecusada);
         }

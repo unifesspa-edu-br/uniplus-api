@@ -64,7 +64,7 @@ public sealed class VocabulariosEndpointTests
     [Theory(DisplayName = "As leituras de vocabulário devolvem código e rótulo, na ordem do enum, sem exigir autenticação")]
     [InlineData("/api/selecao/vocabularios/formatos-permitidos", "formato-permitido", new[] { "PDF", "JPEG", "PNG" })]
     [InlineData("/api/selecao/vocabularios/criterios-distincao-apresentacoes", "criterio-distincao-apresentacoes", new[] { "COMPETENCIA_MENSAL", "EXERCICIO_ANUAL", "OCORRENCIA" })]
-    [InlineData("/api/selecao/vocabularios/consequencias-descumprimento", "consequencia-indeferimento", new[] { "ELIMINA_DO_PROCESSO", "RETIRA_A_MODALIDADE", "RETIRA_O_ACRESCIMO", "ABRE_PRAZO_PARA_REENVIO" })]
+    [InlineData("/api/selecao/vocabularios/consequencias-do-descumprimento", "consequencias-do-descumprimento", new[] { "ELIMINA_DO_PROCESSO", "RETIRA_A_MODALIDADE", "RETIRA_O_ACRESCIMO" })]
     [InlineData("/api/selecao/vocabularios/formas-comprovacao", "forma-de-comprovacao", new[] { "DOCUMENTO", "TODOS_OS_ITENS", "QUANTIDADE_MINIMA_DE_ITENS" })]
     [InlineData("/api/selecao/unidades-do-prazo-de-recurso", "unidade-do-prazo-de-recurso", new[] { "HORAS", "DIAS_UTEIS" })]
     [InlineData("/api/selecao/efeitos-suspensivos", "efeito-suspensivo", new[] { "SEM_EFEITO_SUSPENSIVO" })]

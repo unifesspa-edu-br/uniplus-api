@@ -139,7 +139,7 @@ public sealed class ConteudoDoComprovanteTests
             "Atendido", "Pendente", "Dispensado", "Pode ser exigido, conforme uma fase posterior do processo",
             "Pode ser exigido, conforme as respostas", "A confirmar");
         dto.Formulario.Documentos[0].Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF"));
-        dto.Formulario.Documentos[0].Consequencia.Should().Be("Sem o documento, a vantagem não é concedida.");
+        dto.Formulario.Documentos[0].ConsequenciaDoDescumprimento.Should().Be("Sem o documento, a vantagem não é concedida.");
     }
 
     [Fact(DisplayName = "O termo sai com o nome da versão da inscrição; o termo que a versão não tem sai pelo código")]

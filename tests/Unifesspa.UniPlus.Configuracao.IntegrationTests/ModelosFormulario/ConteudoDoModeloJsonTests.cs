@@ -88,7 +88,7 @@ public sealed class ConteudoDoModeloJsonTests
 
         GrupoDeDocumentosDoModelo grupo = conteudo.Documentos.GruposDeDocumentos.Single();
         grupo.QuantidadeMinima.Should().Be(2);
-        grupo.Indeferimento!.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
+        grupo.Indeferimento!.ConsequenciaDoDescumprimento.Should().Be("ELIMINA_DO_PROCESSO");
         grupo.Documentos.Should().ContainSingle().Which.TipoDocumentoCodigo.Should().Be("CERTIDAO");
     }
 
@@ -97,7 +97,7 @@ public sealed class ConteudoDoModeloJsonTests
     {
         string json = JsonDocumentoLegadoRegravado.Replace(
             "\"gruposDeDocumentos\":[]",
-            $"\"gruposDeDocumentos\":[{{\"quantidadeMinima\":null,\"consequenciaIndeferimento\":null,\"basesLegais\":[],\"documentos\":[{DocumentoMinimoJson}]}}]",
+            $"\"gruposDeDocumentos\":[{{\"quantidadeMinima\":null,\"consequenciaDoDescumprimento\":null,\"abrePrazoParaReenvio\":false,\"basesLegais\":[],\"documentos\":[{DocumentoMinimoJson}]}}]",
             StringComparison.Ordinal);
 
         ConteudoDoModelo conteudo = ConteudoDoModeloJson.Desserializar(json);
@@ -288,7 +288,7 @@ public sealed class ConteudoDoModeloJsonTests
         """{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2027-02-01","faseCodigo":null},"efeitoDoVencimento":"ACEITAR_COM_AVISO"}""";
 
     private const string DocumentoCertidaoJson =
-        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaIndeferimento":"PERDA_DA_VAGA","basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
+        $$$"""{"faseCodigo":"HABILITACAO","tipoDocumentoCodigo":"CERTIDAO","obrigatorio":false,"quando":[[{"codigoDoDado":"QUILOMBOLA","operador":"IGUAL","valor":true}]],"consequenciaDoDescumprimento":"RETIRA_A_MODALIDADE","abrePrazoParaReenvio":true,"basesLegais":[{"referencia":"Lei 12.711/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":"Art. 3"},{"referencia":"Portaria 18/2012","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":{{{PrazoCompletoJson}}},"validade":{{{ValidadeCompletaJson}}},"porOpcao":{"codigoDoDado":"OPCAO_DE_CURSO","exceto":["MEDICINA","ODONTOLOGIA"]}}""";
 
     private const string ItemQuilombolaJson =
         """{"codigoDoDado":"QUILOMBOLA","ordem":0,"paginaCodigo":null,"rotulo":"Pergunta","tipoDeCampo":"SIM_OU_NAO","formato":null,"ajuda":null,"obrigatoriedade":{"tipo":"SEMPRE","predicado":null},"exibicao":null,"restricoes":[],"pedirConfirmacao":false,"impedimento":null}""";
@@ -309,10 +309,10 @@ public sealed class ConteudoDoModeloJsonTests
         """{"escolha":"NAO_EXIGE_DOCUMENTO_VALIDO","referencia":null,"efeitoDoVencimento":null}""";
 
     private const string DocumentoMinimoJson =
-        """{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[],"prazoDeEmissao":null,"validade":null,"porOpcao":null}""";
+        """{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaDoDescumprimento":"ELIMINA_DO_PROCESSO","abrePrazoParaReenvio":false,"basesLegais":[],"prazoDeEmissao":null,"validade":null,"porOpcao":null}""";
 
     private const string GrupoDeDocumentosJson =
-        $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA_DO_PROCESSO","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
+        $$"""{"quantidadeMinima":2,"consequenciaDoDescumprimento":"ELIMINA_DO_PROCESSO","abrePrazoParaReenvio":true,"basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
 
     private const string JsonCompleto =
         $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","paginas":[{{PaginaDadosJson}},{{PaginaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
@@ -327,10 +327,10 @@ public sealed class ConteudoDoModeloJsonTests
         $$"""{"titulo":"Legado","paginas":[{"codigo":"DADOS","ordem":0,"tipo":"SECAO","bloco":null,"titulo":"Dados","descricao":null,"aviso":null,"exibicao":null}],"itens":[{{ItemQuilombolaJson}}],"termos":[],"pressupostos":[],"grupos":[{"codigo":"FAMILIA","ordem":0,"paginaCodigo":null,"rotulo":"Fam\u00EDlia","minimo":1,"maximo":null,"incluiCandidato":false,"exibicao":null,"obrigatoriedade":{"tipo":"NUNCA","predicado":null},"subitens":[]}],"documentosExigidos":[],"gruposDeDocumentos":[]}""";
 
     private const string JsonDocumentoLegado =
-        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
+        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"consequenciaDoDescumprimento":"ELIMINA_DO_PROCESSO","abrePrazoParaReenvio":false,"basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE"}],"porOpcao":null}]}""";
 
     private const string JsonDocumentoLegadoRegravado =
-        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":null,"validade":null,"porOpcao":null}],"gruposDeDocumentos":[]}""";
+        """{"titulo":null,"paginas":[],"itens":[],"termos":[],"pressupostos":[],"grupos":[],"documentosExigidos":[{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaDoDescumprimento":"ELIMINA_DO_PROCESSO","abrePrazoParaReenvio":false,"basesLegais":[{"referencia":"Lei 1","abrangencia":"NACIONAL","situacao":"VIGENTE","observacao":null}],"prazoDeEmissao":null,"validade":null,"porOpcao":null}],"gruposDeDocumentos":[]}""";
 
     private static ConteudoDoModelo ConteudoCompleto() => new(
         "Inscrição \"Medicina\" <2027>",
@@ -342,7 +342,7 @@ public sealed class ConteudoDoModeloJsonTests
         ["COR_RACA"],
         [GrupoCompleto()],
         new ConjuntoDeDocumentosDoModelo(
-            [DocumentoCompleto()], [new GrupoDeDocumentosDoModelo(2, new IndeferimentoDoGrupoDeDocumentosDoModelo("ELIMINA_DO_PROCESSO", []), [DocumentoCompleto()])]));
+            [DocumentoCompleto()], [new GrupoDeDocumentosDoModelo(2, new IndeferimentoDoGrupoDeDocumentosDoModelo("ELIMINA_DO_PROCESSO", [], true), [DocumentoCompleto()])]));
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,
@@ -353,7 +353,7 @@ public sealed class ConteudoDoModeloJsonTests
         [new GrupoDoModelo(
             "FAMILIA", 0, null, "Família", new OcorrenciasDoGrupo(1, null, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [ItemMinimo("PARENTESCO", 0)])],
         new ConjuntoDeDocumentosDoModelo(
-            [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "INDEFERIMENTO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
+            [new DocumentoExigidoDoModelo("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModelo(true, "ELIMINA_DO_PROCESSO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos)], []));
 
     private static PaginaDoModelo PaginaCompleta() => new(
         "DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", "Dados do candidato", "Confira os dados", Quando("QUILOMBOLA", true));
@@ -381,8 +381,9 @@ public sealed class ConteudoDoModeloJsonTests
     private static DocumentoExigidoDoModelo DocumentoCompleto() => new(
         "HABILITACAO", "CERTIDAO", Quando("QUILOMBOLA", true),
         new IndeferimentoDoDocumentoDoModelo(
-            false, "PERDA_DA_VAGA",
-            [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)]),
+            false, "RETIRA_A_MODALIDADE",
+            [new BaseLegalDoModelo("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModelo("Portaria 18/2012", "NACIONAL", "VIGENTE", null)],
+            AbrePrazoParaReenvio: true),
         RequisitosCompletos(),
         new ExigenciaPorOpcao("OPCAO_DE_CURSO", ["MEDICINA", "ODONTOLOGIA"]));
 
