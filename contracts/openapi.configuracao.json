@@ -22036,7 +22036,6 @@
       },
       "FormularioApresentado": {
         "required": [
-          "finalidade",
           "titulo",
           "paginas",
           "termos",
@@ -22046,9 +22045,6 @@
         ],
         "type": "object",
         "properties": {
-          "finalidade": {
-            "type": "string"
-          },
           "titulo": {
             "type": [
               "null",
