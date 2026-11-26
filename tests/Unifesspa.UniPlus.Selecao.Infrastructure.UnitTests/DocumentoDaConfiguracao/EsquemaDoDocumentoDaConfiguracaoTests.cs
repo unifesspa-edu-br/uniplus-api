@@ -30,6 +30,18 @@ public sealed class EsquemaDoDocumentoDaConfiguracaoTests
     [Fact(DisplayName = "O documento incompleto, só com formato e versão do formato, é válido")]
     public void DocumentoIncompleto_EValido() => Avaliar($"{{ {Cabecalho} }}").Should().BeEmpty();
 
+    [Fact(DisplayName = "A chamada do cadastro de reserva sem número é válida pela forma, porque a conferência do número é do domínio")]
+    public void ChamadaDoCadastroDeReservaSemNumero_EValidaPelaForma() =>
+        AvaliarComCabecalho("""
+            "cadastroDeReserva": [ { "pessoasDaReservaPorVaga": 0 }, { } ]
+            """).Should().BeEmpty();
+
+    [Fact(DisplayName = "O número da chamada com tipo errado continua recusado no ponteiro do número")]
+    public void NumeroDaChamadaComTipoErrado_ApontaONumero() =>
+        AvaliarComCabecalho("""
+            "cadastroDeReserva": [ { "numeroDaChamada": "primeira" } ]
+            """).Select(Resumo).Should().Contain(("/cadastroDeReserva/0/numeroDaChamada", DocumentoDaConfiguracaoErrorCodes.TipoInvalido));
+
     [Fact(DisplayName = "O campo que o esquema não declara é recusado no ponteiro do próprio campo")]
     public void CampoDesconhecido_ApontaOProprioCampo() =>
         AvaliarComCabecalho("""
