@@ -112,6 +112,7 @@ public sealed record InscricaoDto
 /// <para>CanceladaEm: O instante do cancelamento, quando cancelada.</para>
 /// <para>MotivoDoCancelamento: O motivo do cancelamento, quando cancelada.</para>
 /// <para>Acoes: O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</para>
+/// <para>MotivoDasInscricoesFechadas: Por que as inscrições do processo não estão abertas agora, com o código e o rótulo do motivo; nulo com as inscrições abertas. A tela escreve o texto que explica o motivo ao candidato.</para>
 /// <para>NumeroDoUltimoComprovante: O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes e na inscrição cancelada, cujo comprovante a rota recusa.</para>
 /// </remarks>
 public sealed record MinhaInscricaoDto
@@ -125,22 +126,23 @@ public sealed record MinhaInscricaoDto
     public required DateTimeOffset? CanceladaEm { get; init; }
     public required string? MotivoDoCancelamento { get; init; }
     public required AcoesDaInscricaoDto Acoes { get; init; }
+    public required CodigoComRotulo<MotivoDasInscricoesFechadas>? MotivoDasInscricoesFechadas { get; init; }
     public required int? NumeroDoUltimoComprovante { get; init; }
 
-    /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
+    /// <param name="motivoDoFechamento">Por que as inscrições do processo estão fechadas neste instante; nulo com as inscrições abertas.</param>
     /// <param name="emissoes">Os instantes de emissão dos comprovantes da inscrição, em ordem de emissão.</param>
     /// <param name="ofertasDaVersao">As ofertas de curso da versão em que a inscrição está, com o nome congelado na publicação.</param>
     public static MinhaInscricaoDto De(
-        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
+        Inscricao inscricao, string? nomeDoProcesso, MotivoDasInscricoesFechadas? motivoDoFechamento, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(emissoes);
 
-        return MontarItemDaLista(inscricao, nomeDoProcesso, inscricoesAbertas, emissoes, ofertasDaVersao);
+        return MontarItemDaLista(inscricao, nomeDoProcesso, motivoDoFechamento, emissoes, ofertasDaVersao);
     }
 
     private static MinhaInscricaoDto MontarItemDaLista(
-        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao) =>
+        Inscricao inscricao, string? nomeDoProcesso, MotivoDasInscricoesFechadas? motivoDoFechamento, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao) =>
         new()
         {
             InscricaoId = inscricao.Id,
@@ -151,13 +153,14 @@ public sealed record MinhaInscricaoDto
             OpcoesDeCurso = OpcoesDe(inscricao, ofertasDaVersao),
             CanceladaEm = inscricao.Estado.Cancelamento?.CanceladaEm,
             MotivoDoCancelamento = inscricao.Estado.Cancelamento?.MotivoDoCancelamento,
-            Acoes = AcoesDa(inscricao, inscricoesAbertas),
+            Acoes = AcoesDa(inscricao, motivoDoFechamento),
+            MotivoDasInscricoesFechadas = motivoDoFechamento is { } motivo ? CodigoComRotulo<MotivoDasInscricoesFechadas>.De(motivo) : null,
             NumeroDoUltimoComprovante = UltimoComprovanteLegivel(inscricao, emissoes),
         };
 
-    private static AcoesDaInscricaoDto AcoesDa(Inscricao inscricao, bool inscricoesAbertas)
+    private static AcoesDaInscricaoDto AcoesDa(Inscricao inscricao, MotivoDasInscricoesFechadas? motivoDoFechamento)
     {
-        AcoesDaInscricao acoes = inscricao.AcoesPermitidas(inscricoesAbertas);
+        AcoesDaInscricao acoes = inscricao.AcoesPermitidas(motivoDoFechamento is null);
 
         return new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar);
     }

@@ -95,6 +95,7 @@ internal static class ExemplosDoContratoDeInscricao
         CanceladaEm = null,
         MotivoDoCancelamento = null,
         Acoes = new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
+        MotivoDasInscricoesFechadas = null,
         NumeroDoUltimoComprovante = 1,
     };
 }

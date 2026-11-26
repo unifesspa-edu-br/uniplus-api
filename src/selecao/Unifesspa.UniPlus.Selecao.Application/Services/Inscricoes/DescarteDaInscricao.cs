@@ -17,7 +17,7 @@ public sealed class DescarteDaInscricao(
     public async Task<Result> DescartarAsync(Inscricao inscricao, PrecondicaoIfMatch precondicao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(inscricao.ProcessoSeletivoId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        DomainError? foraDoPeriodo = (await periodo.ConferirAsync(inscricao.ProcessoSeletivoId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false))?.Recusa;
         if (foraDoPeriodo is not null)
         {
             return Result.Failure(foraDoPeriodo);

@@ -26,7 +26,7 @@ public sealed class AcessoAoDocumentoDaInscricao(
         {
             return doDono;
         }
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(processoSeletivoId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        DomainError? foraDoPeriodo = (await periodo.ConferirAsync(processoSeletivoId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false))?.Recusa;
         return foraDoPeriodo is not null ? Result<Inscricao>.Failure(foraDoPeriodo) : doDono;
     }
 

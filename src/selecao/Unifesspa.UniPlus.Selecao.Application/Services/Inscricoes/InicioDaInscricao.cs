@@ -24,7 +24,7 @@ public sealed class InicioDaInscricao(
         {
             return Result<Inscricao>.Failure(divulgada.Error!);
         }
-        return periodo.Conferir(divulgada.Value!.Versao, timeProvider.GetUtcNow()) is { } recusa
+        return periodo.Conferir(divulgada.Value!.Versao, timeProvider.GetUtcNow())?.Recusa is { } recusa
             ? Result<Inscricao>.Failure(recusa)
             : await CriarAsync(processoId, cpf, divulgada.Value!.Versao.Id, cancellationToken).ConfigureAwait(false);
     }

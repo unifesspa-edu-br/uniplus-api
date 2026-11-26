@@ -30,7 +30,7 @@ public sealed class ConsultaDaAvaliacaoDaInscricao(
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(query);
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(query.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? foraDoPeriodo = (await periodo.ConferirAsync(query.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false))?.Recusa;
         if (foraDoPeriodo is not null)
         {
             return Result<AvaliacaoDaInscricaoDto>.Failure(foraDoPeriodo);

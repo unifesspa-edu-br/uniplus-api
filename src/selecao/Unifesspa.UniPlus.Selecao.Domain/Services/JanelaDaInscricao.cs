@@ -5,6 +5,7 @@ using System.Globalization;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -34,21 +35,24 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
         return Result<JanelaDaInscricao>.Success(new JanelaDaInscricao(dados.PeriodoInscricaoInicio, dados.PeriodoInscricaoFim));
     }
 
-    /// <summary>Recusa o instante fora da janela, com início e fim inclusivos.</summary>
-    public DomainError? Conferir(DateTimeOffset agora, TimeZoneInfo fuso)
+    /// <summary>
+    /// Fecha as inscrições para o instante fora da janela, com início e fim inclusivos, informando o motivo e a
+    /// recusa; nulo quando as inscrições estão abertas.
+    /// </summary>
+    public InscricoesFechadas? Conferir(DateTimeOffset agora, TimeZoneInfo fuso)
     {
         ArgumentNullException.ThrowIfNull(fuso);
 
         if (agora < Inicio)
         {
-            return new DomainError(
-                InscricaoErrorCodes.ForaDoPeriodo,
+            return Fechadas(
+                MotivoDasInscricoesFechadas.PeriodoNaoIniciado,
                 $"As inscrições deste processo seletivo começam em {Formatar(Inicio, fuso)} e vão até {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.");
         }
 
         return Encerrou(agora)
-            ? new DomainError(
-                InscricaoErrorCodes.ForaDoPeriodo,
+            ? Fechadas(
+                MotivoDasInscricoesFechadas.PeriodoEncerrado,
                 $"As inscrições deste processo seletivo se encerraram em {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.")
             : null;
     }
@@ -69,6 +73,9 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
                 codigo,
                 $"As inscrições deste processo seletivo terminam em {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}. {consequencia}");
     }
+
+    private static InscricoesFechadas Fechadas(MotivoDasInscricoesFechadas motivo, string mensagem) =>
+        new(motivo, new DomainError(InscricaoErrorCodes.ForaDoPeriodo, mensagem));
 
     private bool Encerrou(DateTimeOffset agora) => agora > Fim;
 

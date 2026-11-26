@@ -18,7 +18,7 @@ public sealed class CancelamentoDaInscricaoPeloTitular(
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(command);
         DateTimeOffset instante = timeProvider.GetUtcNow();
-        DomainError? foraDoPeriodo = await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? foraDoPeriodo = (await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false))?.Recusa;
         if (foraDoPeriodo is not null)
         {
             return Result.Failure(foraDoPeriodo);

@@ -67,7 +67,7 @@ public sealed class RascunhoDoCandidato(
         }
 
         DateTimeOffset instante = relogio.GetUtcNow();
-        DomainError? recusa = await periodo.ConferirAsync(processoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = (await periodo.ConferirAsync(processoSeletivoId, instante, cancellationToken).ConfigureAwait(false))?.Recusa;
         recusa ??= inscricao.Value!.ConferirAindaEmRascunho();
         return recusa is null ? Result<InscricaoNoPeriodo>.Success(new InscricaoNoPeriodo(inscricao.Value!, instante)) : Result<InscricaoNoPeriodo>.Failure(recusa);
     }
