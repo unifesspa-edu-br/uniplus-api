@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -118,14 +119,43 @@ public static class OrdemCanonicaDaConfiguracao
         return finalidades.Distinct().Order();
     }
 
-    /// <summary>Os formulários do processo, pela finalidade.</summary>
+    /// <summary>Os formulários do processo, pela ordem ordinal do código.</summary>
     public static IOrderedEnumerable<FormularioProcesso> Formularios(IEnumerable<FormularioProcesso> formularios)
     {
         ArgumentNullException.ThrowIfNull(formularios);
 
-        return formularios.OrderBy(static formulario => formulario.Finalidade);
+        return formularios.OrderBy(static formulario => formulario.Codigo, CodigoDoFormulario.OrdemOrdinal);
     }
 
+    /// <summary>Os campos coletados, pela ordem do código do formulário que os coleta e pela ordem dentro dele.</summary>
+    public static IOrderedEnumerable<FatoColetado> Campos(IEnumerable<FatoColetado> campos, IEnumerable<FormularioProcesso> formularios)
+    {
+        ArgumentNullException.ThrowIfNull(campos);
+        ArgumentNullException.ThrowIfNull(formularios);
+
+        Dictionary<Guid, string> codigos = CodigosPorFormulario(formularios);
+        return campos.OrderBy(campo => CodigoDoDono(codigos, campo.FormularioId), StringComparer.Ordinal).ThenBy(static campo => campo.Ordem);
+    }
+
+    /// <summary>Os grupos repetíveis, pela ordem do código do formulário que os coleta e pela ordem dentro dele.</summary>
+    public static IOrderedEnumerable<GrupoColetado> Grupos(IEnumerable<GrupoColetado> grupos, IEnumerable<FormularioProcesso> formularios)
+    {
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(formularios);
+
+        Dictionary<Guid, string> codigos = CodigosPorFormulario(formularios);
+        return grupos.OrderBy(grupo => CodigoDoDono(codigos, grupo.FormularioId), StringComparer.Ordinal).ThenBy(static grupo => grupo.Ordem);
+    }
+
+    /// <summary>Os campos de um mesmo grupo repetível, pela ordem dentro dele.</summary>
+    public static IOrderedEnumerable<FatoColetado> CamposDoGrupo(IEnumerable<FatoColetado> campos)
+    {
+        ArgumentNullException.ThrowIfNull(campos);
+
+        return campos.OrderBy(static campo => campo.Ordem);
+    }
+
+    // Provisório até a retirada da finalidade: quem ainda não passa os formulários ordena pela finalidade do campo.
     /// <summary>Os campos coletados, pela finalidade e pela ordem dentro dela.</summary>
     public static IOrderedEnumerable<FatoColetado> Campos(IEnumerable<FatoColetado> campos)
     {
@@ -134,6 +164,7 @@ public static class OrdemCanonicaDaConfiguracao
         return campos.OrderBy(static campo => campo.Finalidade).ThenBy(static campo => campo.Ordem);
     }
 
+    // Provisório até a retirada da finalidade: quem ainda não passa os formulários ordena pela finalidade do grupo.
     /// <summary>Os grupos repetíveis, pela finalidade e pela ordem dentro dela.</summary>
     public static IOrderedEnumerable<GrupoColetado> Grupos(IEnumerable<GrupoColetado> grupos)
     {
@@ -141,6 +172,12 @@ public static class OrdemCanonicaDaConfiguracao
 
         return grupos.OrderBy(static grupo => grupo.Finalidade).ThenBy(static grupo => grupo.Ordem);
     }
+
+    private static Dictionary<Guid, string> CodigosPorFormulario(IEnumerable<FormularioProcesso> formularios) =>
+        formularios.ToDictionary(static formulario => formulario.Id, static formulario => formulario.Codigo.Valor);
+
+    private static string CodigoDoDono(Dictionary<Guid, string> codigos, Guid? formularioId) =>
+        formularioId is { } id ? codigos.GetValueOrDefault(id, string.Empty) : string.Empty;
 
     private static string ChaveDoAto(string atoCodigo) => HashCanonicalComputer.NormalizeNfc(atoCodigo);
 

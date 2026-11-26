@@ -2,73 +2,79 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Coleta;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// No processo com inscrição pelo sistema, o conjunto básico de dados do candidato está em formulário
-/// obrigatório da fase que coleta inscrição (UNI-REQ-0151); só em formulário facultativo é recusado.
+/// Com mais de um formulário na inscrição, o conjunto básico de dados do candidato fica em um só: o que já tem
+/// dado básico, e, se nenhum tem, o primeiro pela ordem do código, contado o formulário que está sendo declarado.
 /// </summary>
 public sealed class ConjuntoBasicoNaInscricaoTests
 {
-    private static readonly string[] ConjuntoBasico = [.. ConjuntoBasicoDaInscricao.Fatos];
+    private readonly ProcessoSeletivo _processo = ProcessoConformeFactory.Criar();
 
-    private readonly FaseCronograma _inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
-    private readonly FaseCronograma _isencao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
+    private Guid FaseDaInscricao => _processo.CronogramaFases.Single(static fase => fase.ColetaInscricao).Id;
 
-    private static ProcessoDosFormularios PeloSistema => new(InscricaoPeloSistema: true, CobraTaxa: false, PrimeiraFaseDepoisDaImportacaoId: null);
+    private static FormularioDeclarado Declarado(string codigo, Guid? faseId, bool obrigatorio = true) =>
+        new(CodigoDoFormulario.Criar(codigo).Value!, faseId, obrigatorio);
 
-    private IReadOnlyList<string> Codigos(ProcessoDosFormularios processo, params ColetaDoFormulario[] coletas) =>
-        [.. ConjuntoBasicoNaInscricao.Conferir(processo, coletas, [_inscricao, _isencao]).Select(static recusa => recusa.Error.Code)];
+    private bool Guarda(FormularioDeclarado declarado) => ConjuntoBasicoNaInscricao.Guarda(_processo.Declaracao(), declarado);
 
-    [Fact(DisplayName = "O conjunto básico no formulário obrigatório da inscrição é aceito")]
-    public void ConjuntoBasicoNoObrigatorio_Aceita() =>
-        Codigos(PeloSistema, ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), ConjuntoBasico)).Should().BeEmpty();
+    private static IReadOnlyList<PaginaDoFormulario> PaginasSemDadosBasicos() =>
+    [
+        PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
+        PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
+    ];
 
-    [Fact(DisplayName = "O conjunto básico dividido entre dois formulários obrigatórios da inscrição é aceito")]
-    public void ConjuntoBasicoDivididoEntreObrigatorios_Aceita() =>
-        Codigos(
-            PeloSistema,
-            ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO_A", _inscricao), [.. ConjuntoBasico.Take(2)]),
-            ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO_B", _inscricao), [.. ConjuntoBasico.Skip(2)])).Should().BeEmpty();
+    private void DefinirSemDadosBasicos(string codigo) =>
+        _processo.DefinirFormulario(Declarado(codigo, FaseDaInscricao), null, PaginasSemDadosBasicos()).IsSuccess.Should().BeTrue();
 
-    [Fact(DisplayName = "O conjunto básico só em formulário facultativo é recusado")]
-    public void ConjuntoBasicoSoNoFacultativo_Recusa() =>
-        Codigos(
-            PeloSistema,
-            ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "origem_escolar"),
-            ColetaDeTeste.Coleta(ColetaDeTeste.Facultativo("EXTRA", _inscricao), ConjuntoBasico)).Should().Equal(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
-
-    [Fact(DisplayName = "O conjunto básico em formulário de fora da fase de inscrição é recusado")]
-    public void ConjuntoBasicoForaDaInscricao_Recusa() =>
-        Codigos(
-            PeloSistema,
-            ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "origem_escolar"),
-            ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("PEDIDO", _isencao), ConjuntoBasico)).Should().Equal(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
-
-    [Fact(DisplayName = "O conjunto básico em campos de grupo repetível não conta como dados do candidato")]
-    public void ConjuntoBasicoEmGrupoRepetivel_Recusa() =>
-        Codigos(
-            PeloSistema,
-            ColetaDeTeste.ColetaComGrupo(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "dependentes", ConjuntoBasico)).Should().Equal(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
-
-    [Fact(DisplayName = "O processo de resultado importado não é conferido")]
-    public void ResultadoImportado_NaoEConferido() =>
-        Codigos(PeloSistema with { InscricaoPeloSistema = false }, ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "origem_escolar")).Should().BeEmpty();
-
-    [Fact(DisplayName = "Sem formulário obrigatório na inscrição, a recusa é só a da obrigatoriedade")]
-    public void SemObrigatorioNaInscricao_NaoDuplicaARecusa() =>
-        Codigos(PeloSistema, ColetaDeTeste.Coleta(ColetaDeTeste.Facultativo("EXTRA", _inscricao), "origem_escolar")).Should().BeEmpty();
-
-    [Fact(DisplayName = "A recusa não lista os campos que faltam")]
-    public void Recusa_NaoListaOsCampos()
+    private void ReterSomenteFormulariosSemDadosBasicos(params string[] codigos)
     {
-        IReadOnlyList<Unifesspa.UniPlus.Kernel.Results.FieldError> recusas = ConjuntoBasicoNaInscricao.Conferir(
-            PeloSistema, [ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "origem_escolar")], [_inscricao, _isencao]);
+        _processo.RemoverFormulario(CodigoDoFormulario.Criar(FormularioDeTeste.CodigoDaInscricao).Value!).IsSuccess.Should().BeTrue();
+        foreach (string codigo in codigos)
+        {
+            DefinirSemDadosBasicos(codigo);
+        }
+    }
 
-        recusas.Should().ContainSingle().Which.Error.Message.Should().NotContain(ConjuntoBasico[0]);
+    [Fact(DisplayName = "O formulário da inscrição que já tem os dados básicos continua guardando o conjunto")]
+    public void FormularioComDadosBasicos_ContinuaGuardando() =>
+        Guarda(Declarado(FormularioDeTeste.CodigoDaInscricao, FaseDaInscricao)).Should().BeTrue();
+
+    [Fact(DisplayName = "Outro formulário da inscrição não guarda o conjunto, mesmo antes na ordem do código")]
+    public void OutroFormularioDaInscricao_AntesNaOrdem_NaoGuarda() =>
+        Guarda(Declarado("A_ANTES_DA_INSCRICAO", FaseDaInscricao)).Should().BeFalse();
+
+    [Fact(DisplayName = "O formulário sem fase não guarda o conjunto")]
+    public void FormularioSemFase_NaoGuarda() =>
+        Guarda(Declarado(FormularioDeTeste.CodigoDaInscricao, faseId: null)).Should().BeFalse();
+
+    [Fact(DisplayName = "O formulário facultativo não guarda o conjunto")]
+    public void FormularioFacultativo_NaoGuarda() =>
+        Guarda(Declarado(FormularioDeTeste.CodigoDaInscricao, FaseDaInscricao, obrigatorio: false)).Should().BeFalse();
+
+    [Fact(DisplayName = "Sem dado básico em nenhum formulário, guarda o primeiro da inscrição pela ordem do código")]
+    public void SemDadosBasicos_GuardaOPrimeiroPelaOrdemDoCodigo()
+    {
+        ReterSomenteFormulariosSemDadosBasicos("DADOS_B", "DADOS_A");
+
+        Guarda(Declarado("DADOS_A", FaseDaInscricao)).Should().BeTrue();
+        Guarda(Declarado("DADOS_B", FaseDaInscricao)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O formulário declarado conta na ordem: o que vem antes dos gravados passa a guardar o conjunto")]
+    public void FormularioDeclaradoAntesDosGravados_Guarda()
+    {
+        ReterSomenteFormulariosSemDadosBasicos("DADOS_B");
+
+        Guarda(Declarado("DADOS_A", FaseDaInscricao)).Should().BeTrue();
+        Guarda(Declarado("DADOS_C", FaseDaInscricao)).Should().BeFalse();
     }
 }

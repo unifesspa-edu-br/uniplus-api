@@ -157,7 +157,7 @@ internal static class RegrasDoCronograma
         configuracao.Coleta.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
             ? new DomainError(
                 FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {formularioDaFase.Finalidade.Codigo()} é respondido nela — troque a fase do formulário antes.")
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {formularioDaFase.Codigo.Valor} é respondido nela — troque a fase do formulário antes.")
             : null;
 
     private static DomainError? ComplementacaoQueAPendenciaDeReenvioExige(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova) =>

@@ -90,25 +90,11 @@ public sealed class VinculoAoFormularioTests
         processo.TermosExigidos.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
     }
 
-    [Fact(DisplayName = "Aplicar o modelo num processo sem o formulário liga itens, grupos e termos ao formulário novo")]
-    public void AplicarModeloDeFormulario_SemFormulario_LigaAoFormularioNovo()
-    {
-        ProcessoSeletivo processo = Processo();
-
-        Result aplicado = processo.AplicarModeloDeFormulario(CopiaDoModelo(FinalidadeFormulario.Habilitacao));
-
-        aplicado.IsSuccess.Should().BeTrue(aplicado.Error?.Message);
-        Guid formularioId = processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.Id;
-        processo.Campos.Should().NotBeEmpty().And.OnlyContain(f => f.FormularioId == formularioId);
-        processo.GruposColetados.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
-        processo.TermosExigidos.Should().ContainSingle().Which.FormularioId.Should().Be(formularioId);
-    }
-
     [Fact(DisplayName = "A aplicação recusada deixa os itens do processo ligados ao formulário de antes")]
     public void AplicarModeloDeFormulario_Recusada_MantemOVinculoDosItens()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "QUILOMBOLA")], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         Guid inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Id;
 

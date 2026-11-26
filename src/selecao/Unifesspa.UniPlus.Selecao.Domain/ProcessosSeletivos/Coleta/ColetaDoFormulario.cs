@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A visão da coleta de um formulário do processo (UNI-REQ-0144, UNI-REQ-0145, UNI-REQ-0146): o formulário
@@ -18,6 +20,20 @@ public sealed record ColetaDoFormulario(
     IReadOnlyCollection<TermoDoGrafo> Termos,
     string? FatoDaEscolhaDeFundamentos = null)
 {
+    /// <summary>A coleta do formulário na configuração: os campos, os grupos, as seções e os termos que pertencem a ele.</summary>
+    internal static ColetaDoFormulario De(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        return new(
+            formulario.Declarado,
+            [.. configuracao.Coleta.ItensDo(formulario).Select(static item => item.ParaGrafo())],
+            [.. configuracao.Coleta.GruposDo(formulario).Select(static grupo => grupo.ParaGrafo())],
+            [.. formulario.Paginas.Select(static pagina => pagina.ParaGrafo())],
+            [.. configuracao.Coleta.TermosDo(formulario).Select(static termo => termo.ParaGrafo())]);
+    }
+
     /// <summary>Os fatos dos campos de resposta única do formulário, sem os campos dos grupos repetíveis, que têm uma resposta por ocorrência.</summary>
     public IEnumerable<string> FatosDosItens => Itens.Select(static item => item.FatoCodigo);
 

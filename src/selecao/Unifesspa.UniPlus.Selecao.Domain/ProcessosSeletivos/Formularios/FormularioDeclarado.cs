@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
@@ -26,4 +27,10 @@ public sealed record FormularioDeclarado(CodigoDoFormulario Codigo, Guid? FaseId
 
     public static FinalidadeFormulario FinalidadeProvisoriaDe(string codigo, bool obrigatorio) =>
         EstruturaFormulario.FinalidadeDoCodigo(codigo) ?? CorrespondenciaDaFinalidade.FinalidadeDa(new(false, obrigatorio));
+
+    // Provisório até a retirada da finalidade: as operações que ainda recebem a finalidade declaram o formulário pelo código dela.
+    public static FormularioDeclarado DaFinalidade(FinalidadeFormulario finalidade, Guid? faseId) => new(
+        CodigoDoFormulario.Criar(finalidade.Codigo()).Value!,
+        faseId is { } fase && fase != Guid.Empty ? fase : null,
+        CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade).Obrigatorio);
 }

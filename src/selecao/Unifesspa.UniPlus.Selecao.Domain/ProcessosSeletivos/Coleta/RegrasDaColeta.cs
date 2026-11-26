@@ -14,20 +14,21 @@ public static class RegrasDaColeta
 {
     internal static Result<MudancaDaConfiguracao> Planejar(
         ConfiguracaoDeclarada configuracao,
-        FinalidadeFormulario finalidade,
+        CodigoDoFormulario codigo,
         IReadOnlyList<FatoColetado> fatosColetados,
         IReadOnlyList<GrupoColetado>? grupos)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(codigo);
 
-        // Sem grupos informados, os do formulário ficam como estão.
-        IReadOnlyList<GrupoColetado> gruposFinais = grupos ?? [.. CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade)];
-        if (configuracao.Coleta.FormularioDe(finalidade) is not { } formulario)
+        if (configuracao.Coleta.FormularioDe(codigo) is not { } formulario)
         {
-            return Result<MudancaDaConfiguracao>.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
+            return Result<MudancaDaConfiguracao>.Failure(RegrasDosFormularios.FormularioNaoEncontrado(codigo));
         }
 
-        Result conferencia = ConferirFatosColetados(configuracao, formulario, finalidade, fatosColetados, gruposFinais);
+        // Sem grupos informados, os do formulário ficam como estão.
+        IReadOnlyList<GrupoColetado> gruposFinais = grupos ?? [.. configuracao.Coleta.GruposDo(formulario)];
+        Result conferencia = ConferirFatosColetados(configuracao, formulario, fatosColetados, gruposFinais);
         return conferencia.IsFailure
             ? Result<MudancaDaConfiguracao>.ValidationFailure(conferencia.Errors)
             : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(configuracao, formulario, fatosColetados, gruposFinais));
@@ -46,9 +47,9 @@ public static class RegrasDaColeta
         MudancaDaConfiguracao mudanca = new()
         {
             Campos = Troca.Substituindo(
-                configuracao.Coleta.Campos.Where(f => f.Finalidade == formulario.Finalidade),
+                configuracao.Coleta.CamposDo(formulario),
                 [.. fatosColetados, .. grupos.SelectMany(static g => g.Subitens)]),
-            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade), grupos),
+            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposDo(formulario), grupos),
         };
         VincularAoFormulario(formulario, fatosColetados, grupos);
         return mudanca;
@@ -162,15 +163,15 @@ public static class RegrasDaColeta
     /// </summary>
     internal static Result ConferirFatosColetados(
         ConfiguracaoDeclarada configuracao,
-        FormularioProcesso formulario, FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
+        FormularioProcesso formulario, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
     {
-        Result forma = ConferirForma(finalidade, fatosColetados, grupos);
+        Result forma = ConferirForma(configuracao, formulario, fatosColetados, grupos);
         if (forma.IsFailure) return forma;
-        Result grafo = ConferirGrafo(configuracao, formulario, finalidade, fatosColetados, grupos);
+        Result grafo = ConferirGrafo(configuracao, formulario, fatosColetados, grupos);
         if (grafo.IsFailure) return grafo;
-        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, fatosColetados) is { } orfa)
+        if (CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, formulario, fatosColetados) is { } orfa)
             return Result.Failure(orfa);
-        UnicidadeEntreFormularios unicidade = new(configuracao, finalidade, fatosColetados, grupos);
+        UnicidadeEntreFormularios unicidade = new(configuracao, formulario, fatosColetados, grupos);
         Result codigos = unicidade.ConferirCodigos();
         if (codigos.IsFailure) return codigos;
         Result produtores = unicidade.ConferirProdutor();
@@ -180,20 +181,21 @@ public static class RegrasDaColeta
         return foraDasSecoes.Count > 0 ? Result.ValidationFailure(foraDasSecoes) : Result.Success();
     }
 
-    private static Result ConferirForma(FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
+    private static Result ConferirForma(
+        ConfiguracaoDeclarada configuracao, FormularioProcesso formulario, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
     {
         if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatos.Count, grupos)) is [var excesso, ..])
             return Result.ValidationFailure([excesso]);
-        if (Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), fatos.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
+        if (Impedimento.ConferirDeclaracao(configuracao.Estrutura(formulario.Declarado), fatos.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
             return Result.ValidationFailure(foraDaInscricao);
         return Result.Success();
     }
 
-    private static Result ConferirGrafo(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario,
-        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
+    private static Result ConferirGrafo(
+        ConfiguracaoDeclarada configuracao, FormularioProcesso formulario, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
     {
-        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
-            ? new(StringComparer.Ordinal) : CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
+        HashSet<string> daInscricao = configuracao.EhDaInscricao(formulario.Declarado)
+            ? new(StringComparer.Ordinal) : configuracao.FatosDaInscricao();
         return CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Paginas, fatos, grupos, daInscricao,
             CitacoesDosFormularios.DependenciasDasDerivacoes(configuracao)) is { } erro ? Result.Failure(erro) : Result.Success();
     }

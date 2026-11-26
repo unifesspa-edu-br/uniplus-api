@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Confere a coleta da cidade de prova nos formulários do processo: com prova presencial e formulário de
+/// Confere a coleta da cidade de prova nos formulários do processo: com prova presencial e formulário da
 /// inscrição, algum item da origem "municípios da prova presencial" é pedido a todo candidato; sem prova
 /// presencial, nenhum formulário a coleta; com a prova ainda por declarar, não há o que conferir.
 /// </summary>
@@ -29,8 +29,8 @@ public static class CidadeDeProvaNosFormularios
     }
 
     private static DomainError? InscricaoSemCidadeDeProva(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is { } inscricao
-            && !CamposDaCidadeDeProva(configuracao).Any(inscricao.PedeATodoCandidato)
+        configuracao.DaInscricao() is { Count: > 0 } formulariosDaInscricao
+            && !formulariosDaInscricao.Any(formulario => CamposDaCidadeDeProva(configuracao).Any(formulario.PedeATodoCandidato))
             ? new DomainError(
                 ProvaPresencialErrorCodes.InscricaoSemCidadeDeProva,
                 "O formulário de inscrição deve pedir a cidade de prova a todo candidato.")

@@ -22,7 +22,7 @@ internal sealed class CidadeDeProvaBuilder
     {
         if (comFormularioDeInscricao)
         {
-            FormularioDeTeste.GarantirFormularioDeInscricaoPropria(_processo);
+            _processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         }
     }
 

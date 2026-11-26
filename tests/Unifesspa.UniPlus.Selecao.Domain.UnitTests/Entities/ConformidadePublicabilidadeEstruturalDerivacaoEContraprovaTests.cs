@@ -164,14 +164,22 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     /// Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o rascunho
     /// que chega por outro caminho.
     /// </summary>
-    private static void AdicionarItensAcimaDoTetoDireto(ProcessoSeletivo processo) =>
-        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
-            .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
-                .ComRotulo("Campo")
-                .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                .NaSecao(FormularioDeTeste.Secao)
-                .DaFinalidade(FinalidadeFormulario.Inscricao)
-                .Construir()));
+    private static void AdicionarItensAcimaDoTetoDireto(ProcessoSeletivo processo)
+    {
+        FormularioProcesso formulario = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
+        FatoColetado[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
+            .ComRotulo("Campo")
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .NaSecao(FormularioDeTeste.Secao)
+            .DaFinalidade(FinalidadeFormulario.Inscricao)
+            .Construir())];
+        foreach (FatoColetado item in itens)
+        {
+            item.VincularFormulario(formulario);
+        }
+
+        ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!).AddRange(itens);
+    }
 
     [Fact(DisplayName = "Pré-canonicalização: formulário com mais itens que o teto — só o item do teto fica vermelho, e Publicar recusa")]
     public void PreCanon_ItensAcimaDoTeto()

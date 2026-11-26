@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Fases
 /// </summary>
 public sealed class FaseSemJulgarNosFormulariosTests
 {
-    private const string CampoDaHabilitacao = "formularios[1].consequenciaDaFaltaDeEnvio";
+    private const string CampoDaHabilitacao = "formularios[0].consequenciaDaFaltaDeEnvio";
 
     [Fact]
     public void Causas_ParteRecusadaDentroDeFaseAdotada_ConfereOFormulario()
@@ -56,7 +56,7 @@ public sealed class FaseSemJulgarNosFormulariosTests
         ConfiguracaoDeclarada configuracao = SemAFase(processo, habilitacao);
 
         Causas(configuracao, processo).Select(static c => (c.Field, c.Error.Code)).Should().Equal(
-            ("formularios[0].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioDaInscricao));
+            ("formularios[1].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioDaInscricao));
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class FaseSemJulgarNosFormulariosTests
         ConfiguracaoDeclarada configuracao = SemAFase(processo, habilitacao);
 
         Causas(configuracao, processo).Select(static c => (c.Field, c.Error.Code)).Should().Equal(
-            ("formularios[1].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo));
+            ("formularios[2].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo));
     }
 
     [Fact]

@@ -140,6 +140,39 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     /// conferências ficam vazias/Ok até que o teste acrescente a única razão que quer isolar. A taxa vem declarada, porque publicar sem
     /// declará-la é recusado, e a convenção de contagem também, porque a janela de recurso da importação a exige.
     /// </summary>
+    /// <summary>
+    /// Define os itens num formulário obrigatório da fase da importação, a única fase do processo conforme: o processo de
+    /// resultado importado não tem formulário na fase que coleta inscrição.
+    /// </summary>
+    internal static Result DefinirItensNaFaseDaImportacao(this ProcessoSeletivo processo, IReadOnlyList<FatoColetado> fatos)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+
+        GarantirFormularioNaFaseDaImportacao(processo);
+        return processo.DefinirItens(fatos, FinalidadeFormulario.Habilitacao);
+    }
+
+    /// <summary>Define os termos no formulário obrigatório da fase da importação.</summary>
+    internal static Result DefinirTermosNaFaseDaImportacao(this ProcessoSeletivo processo, IReadOnlyList<TermoExigidoFormulario> termos)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+
+        GarantirFormularioNaFaseDaImportacao(processo);
+        return processo.DefinirTermos(termos, FinalidadeFormulario.Habilitacao);
+    }
+
+    private static void GarantirFormularioNaFaseDaImportacao(ProcessoSeletivo processo)
+    {
+        if (processo.FormularioDe(FinalidadeFormulario.Habilitacao) is not null)
+        {
+            return;
+        }
+
+        Result definido = processo.DefinirFormulario(
+            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Habilitacao, processo.CronogramaFases.Single().Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao));
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+    }
+
     internal static ProcessoSeletivo ProcessoConforme(IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
     {
         ProcessoSeletivo processo = ProcessoVazioDaMatrizEstrutural();

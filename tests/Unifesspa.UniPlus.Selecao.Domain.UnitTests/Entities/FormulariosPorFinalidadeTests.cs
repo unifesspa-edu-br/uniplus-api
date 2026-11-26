@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -57,9 +58,18 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
         processo.DefinirFatosColetados(FinalidadeFormulario.IsencaoTaxa, [Item("A", 0)])
-            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FormularioInexistente);
+            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
         processo.DefinirTermosDoFormulario(FinalidadeFormulario.IsencaoTaxa, [Termo("DECLARACAO")])
-            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FormularioInexistente);
+            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
+    }
+
+    [Fact(DisplayName = "Remover o formulário de um código que o processo não tem é recusado como formulário não encontrado")]
+    public void RemoverFormulario_SemFormulario_RecusaNaoEncontrado()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+
+        processo.RemoverFormulario(FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.IsencaoTaxa))
+            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "No rascunho, a recusa de seção aponta o item pelo índice dele na lista enviada")]
@@ -81,30 +91,38 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoConformeFactory.Criar().DefinirFatosColetados(FinalidadeFormulario.Inscricao, [Item("A", 0, pagina)])
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
 
-    [Fact(DisplayName = "A fase do formulário está no cronograma e é a que a finalidade pede")]
-    public void Fase_CoerenteComFinalidade()
+    [Fact(DisplayName = "A fase do formulário, quando informada, está no cronograma do processo")]
+    public void Fase_ForaDoCronograma_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Paginas())
+            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseForaDoCronograma);
+    }
+
+    [Fact(DisplayName = "O formulário obrigatório na fase que coleta a inscrição passa a ser formulário da inscrição")]
+    public void Fase_ObrigatorioNaFaseDaInscricao_EFormularioDaInscricao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), null, FormularioDeTeste.Paginas())
-            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseForaDoCronograma);
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Paginas())
-            .Error!.Code.Should().Be(FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade);
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+
+        FormulariosDaInscricao.De(processo.Declaracao().Coleta.FormulariosDeclarados, processo.CronogramaFases)
+            .Select(static f => f.Codigo.Valor).Should().Equal("HABILITACAO", "INSCRICAO");
     }
 
     [Fact(DisplayName = "Título, fase e estrutura do formulário são recusados juntos")]
     public void DefinirFormulario_AcumulaAsRecusas()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid faseDeInscricao = processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
         PaginaDoFormulario soSecao = PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!;
 
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301), [soSecao])
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, Guid.CreateVersion7(), new string('a', 301), [soSecao])
             .Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             [
                 EstruturaFormularioErrorCodes.TituloTamanho,
-                FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,
+                FormularioProcessoErrorCodes.FaseForaDoCronograma,
                 EstruturaFormularioErrorCodes.BlocoExigidoAusente,
             ]);
     }
@@ -138,7 +156,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormulario);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormularioObrigatorio);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
     }
 
@@ -154,9 +172,8 @@ public sealed class FormulariosPorFinalidadeTests
     [Fact(DisplayName = "Formulário de isenção só em processo que cobra taxa")]
     public void Publicacao_IsencaoExigeTaxa()
     {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Paginas())
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(coletaSolicitacaoIsencao: true));
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.IsencaoTaxa);
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
     }

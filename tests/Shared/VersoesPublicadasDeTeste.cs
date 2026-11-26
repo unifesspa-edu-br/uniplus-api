@@ -19,10 +19,10 @@ internal static class VersoesPublicadasDeTeste
         RegraOrdemAlocacao = Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), 'c'),
     }).Value!;
 
-    /// <summary>Uma versão publicada com estes formulários, itens e grupos.</summary>
+    /// <summary>Uma versão publicada com estes formulários, itens, grupos e fases: as fases dizem quais formulários são os da inscrição.</summary>
     public static ConfiguracaoPublicada Versao(
-        IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado>? grupos = null) => new ConfiguracaoPublicada(
-            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, []),
+        IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado>? grupos = null, IEnumerable<FaseCronograma>? fases = null) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. fases ?? []]),
             new AvaliacaoDeclarada([], [], ClassificacaoMinima),
             new VagasDeclaradas([], null, false,
                 null, null, AtendimentoEspecializado.Criar([], [], []).Value!),
@@ -33,7 +33,7 @@ internal static class VersoesPublicadasDeTeste
 
     /// <summary>A versão que o processo publicaria agora, com os formulários, os itens e os grupos que ele tem.</summary>
     public static ConfiguracaoPublicada DoProcesso(ProcessoSeletivo processo) =>
-        Versao(processo.Formularios, processo.FatosColetados, processo.GruposColetados);
+        Versao(processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.CronogramaFases);
 
     /// <summary>O processo publicado uma vez só, com o que ele tem agora.</summary>
     public static FatosDasVersoesPublicadas SoAVigente(ProcessoSeletivo processo) =>

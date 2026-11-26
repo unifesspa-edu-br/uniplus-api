@@ -44,14 +44,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
     public void TermoSemFormaDeAceite_RecusaAteHaverRegistroDigital()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, FormaAceite.ADefinir)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, FormaAceite.ADefinir)]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
 
-        processo.DefinirTermos([Termo("DECLARACAO", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0)]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
@@ -74,13 +74,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
     public void TermoCitaFatoNaoColetado_RecusaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))])
+        processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))])
             .IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
-        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
@@ -89,10 +89,10 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
     public void DefinirOpcoesDeclaradas_OpcaoCitadaPorTermo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2024"))])
+        processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2024"))])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])

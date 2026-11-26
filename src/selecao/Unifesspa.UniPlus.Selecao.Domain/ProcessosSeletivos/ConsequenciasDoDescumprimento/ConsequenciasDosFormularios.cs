@@ -31,7 +31,7 @@ internal static class ConsequenciasDosFormularios
 
     internal static IEnumerable<FieldError> Acrescimo(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma) =>
         Avaliaveis(configuracao, cronograma).Where(par => CoerenciaDaConsequenciaDoDescumprimento.AcrescimoNaoOferecido(configuracao, par.Formulario.ConsequenciaDaFaltaDeEnvio))
-            .Select(par => CoerenciaDaConsequenciaDoDescumprimento.Acrescimo(par.Caminho, $"O formulário '{par.Formulario.Finalidade.Codigo()}'"));
+            .Select(par => CoerenciaDaConsequenciaDoDescumprimento.Acrescimo(par.Caminho, $"O formulário '{par.Formulario.Codigo.Valor}'"));
 
     internal static IEnumerable<FieldError> SemModalidade(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos, CronogramaDoProcesso cronograma) =>
         ComRetirada(configuracao, cronograma).Where(par => CoerenciaDaConsequenciaDoDescumprimento.SemModalidade(configuracao, modalidade => Alcanca(configuracao, par.Formulario, modalidade, fatos)))
@@ -56,9 +56,9 @@ internal static class ConsequenciasDosFormularios
     private static IEnumerable<(FormularioProcesso Formulario, string Caminho)> Avaliaveis(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma) =>
         Declarados(configuracao).Where(par => !Facultativo(par.Formulario) && !ColetaInscricao(cronograma, par.Formulario) && !FaseSemJulgar(cronograma, par.Formulario));
 
-    // O formulário de inscrição e o facultativo são julgados sem a fase: um não depende dela, e o outro não declara.
+    // O facultativo é julgado sem a fase: ele não declara consequência.
     private static bool FaseSemJulgar(CronogramaDoProcesso cronograma, FormularioProcesso formulario) =>
-        !Facultativo(formulario) && formulario.Finalidade != FinalidadeFormulario.Inscricao && cronograma.FaseSemJulgar(formulario.FaseId);
+        formulario.Obrigatorio && cronograma.FaseSemJulgar(formulario.FaseId);
 
     private static IEnumerable<(FormularioProcesso Formulario, string Caminho)> ComRetirada(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma) =>
         Avaliaveis(configuracao, cronograma).Where(par => par.Formulario.ConsequenciaDaFaltaDeEnvio == ConsequenciaDoDescumprimento.RetiraAModalidade
@@ -66,14 +66,14 @@ internal static class ConsequenciasDosFormularios
             && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "documentosExigidos"));
 
     private static bool Alcanca(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario, string modalidade, FatosDeModalidade fatos) =>
-        configuracao.Exigencias.DocumentosExigidos.Any(exigencia => exigencia.Finalidade == formulario.Finalidade && exigencia.PodeAlcancarModalidade(modalidade, fatos));
+        configuracao.Exigencias.DocumentosExigidos.Any(exigencia => exigencia.FormularioCodigo == formulario.Codigo && exigencia.PodeAlcancarModalidade(modalidade, fatos));
 
-    // O pedido de isenção da taxa é o formulário facultativo: o candidato o envia se quiser.
-    private static bool Facultativo(FormularioProcesso formulario) => formulario.Finalidade == FinalidadeFormulario.IsencaoTaxa;
+    // O formulário facultativo, como o pedido de isenção da taxa, o candidato o envia se quiser.
+    private static bool Facultativo(FormularioProcesso formulario) => !formulario.Obrigatorio;
 
     private static bool ColetaInscricao(CronogramaDoProcesso cronograma, FormularioProcesso formulario) =>
-        formulario.Finalidade == FinalidadeFormulario.Inscricao || cronograma.FaseColetaInscricao(formulario.FaseId);
+        cronograma.FaseColetaInscricao(formulario.FaseId);
 
     private static FieldError Recusa((FormularioProcesso Formulario, string Caminho) par, string codigo, string motivo) =>
-        new(par.Caminho, new DomainError(codigo, $"O formulário '{par.Formulario.Finalidade.Codigo()}' {motivo}."));
+        new(par.Caminho, new DomainError(codigo, $"O formulário '{par.Formulario.Codigo.Valor}' {motivo}."));
 }
