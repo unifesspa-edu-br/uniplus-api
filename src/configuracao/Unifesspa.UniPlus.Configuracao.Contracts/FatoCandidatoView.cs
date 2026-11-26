@@ -85,9 +85,11 @@ public sealed record FatoCandidatoView(
     string FinalidadeTratamento,
     bool ProtecaoAprovada,
     string? Formato = null,
-    string Escopo = "CANDIDATO",
+    string? Escopo = null,
     string? ComponenteExibicao = null)
 {
+    public string Escopo { get; init; } = Escopo ?? EscopoFato.Candidato.Codigo();
+    [JsonIgnore] public EscopoFato EscopoValor => CatalogoDe<EscopoFato>.Obter(Escopo);
     [JsonIgnore] public TipoDoDado DominioValor => CatalogoDe<TipoDoDado>.Obter(Dominio.Codigo);
     [JsonIgnore] public OrigemFato OrigemValor => CatalogoDe<OrigemFato>.Obter(Origem.Codigo);
     [JsonIgnore] public QuantidadeDeValores CardinalidadeValor => CatalogoDe<QuantidadeDeValores>.Obter(Cardinalidade.Codigo);

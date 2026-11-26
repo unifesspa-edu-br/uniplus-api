@@ -72,7 +72,7 @@ internal static class VocabularioDeFatos
     {
         ArgumentNullException.ThrowIfNull(fato);
         return new FatoDoCatalogo(
-            fato.Codigo, fato.DominioValor, fato.CardinalidadeValor, fato.OrigemValor, fato.Binding, fato.FonteValoresValor, fato.Escopo, fato.Ativo,
+            fato.Codigo, fato.DominioValor, fato.CardinalidadeValor, fato.OrigemValor, fato.Binding, fato.FonteValoresValor, fato.EscopoValor, fato.Ativo,
             fato.ValoresDominioDeclarados is { } declarados
                 ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]
                 : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))],

@@ -152,7 +152,7 @@ public static class VocabularioDoCatalogo
             fato.Origem,
             fato.Binding,
             fato.FonteValores,
-            fato.Escopo.Codigo(),
+            fato.Escopo,
             fato.Ativo,
             [.. ValoresDe(fato, porCodigo).Select(static valor => new ValorDoCatalogo(valor.Codigo, valor.Ativo))],
             fato.Aprovacao.EstaAprovada);
