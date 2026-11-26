@@ -41,7 +41,7 @@
         "tipoFaseCodigo": {
           "title": "Fase canônica",
           "description": "Código da fase no catálogo de fases canônicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
-          "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+          "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
         },
         "tipoFaseNome": {
           "title": "Nome do tipo de fase",

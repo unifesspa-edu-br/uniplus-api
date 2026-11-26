@@ -40,7 +40,7 @@
     "tipoEtapaCodigo": {
       "title": "Tipo de etapa",
       "description": "Código do tipo de etapa no catálogo de tipos de etapa.",
-      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+      "$ref": "comuns.schema.json#/$defs/codigoDeCadastro"
     },
     "peso": {
       "title": "Peso",

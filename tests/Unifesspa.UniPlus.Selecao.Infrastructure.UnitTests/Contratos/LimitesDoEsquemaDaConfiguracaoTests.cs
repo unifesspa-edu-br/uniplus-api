@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -100,6 +101,10 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         LimitesDoEnvelope.UnidadeAdministradoraCodigo.Should().Be(50);
         limiteDoEsquema.Should().BeGreaterThanOrEqualTo(LimitesDoEnvelope.UnidadeAdministradoraCodigo);
     }
+
+    [Fact]
+    public void CodigoDeCadastro_LimiteDoEsquema_EOMesmoDoFormatoDoCodigo() =>
+        MaximoDoEsquema(Comuns, "/$defs/codigoDeCadastro").Should().Be(FormatoDoCodigo.ComprimentoMaximo);
 
     [Fact]
     public void CodigosDoFormulario_LimitesDoContrato_SaoOsDoDominio()

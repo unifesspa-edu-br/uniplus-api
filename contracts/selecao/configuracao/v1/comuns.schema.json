@@ -16,7 +16,8 @@
       "title": "Código de cadastro",
       "description": "Código com letra maiúscula inicial, seguido de letras maiúsculas e algarismos, com palavras separadas por sublinhado.",
       "type": "string",
-      "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"
+      "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$",
+      "maxLength": 80
     },
     "codigoDeCatalogo": {
       "title": "Código estável de catálogo",
@@ -24,7 +25,7 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
       "minLength": 1,
-      "maxLength": 128,
+      "maxLength": 50,
       "not": {
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
       }
