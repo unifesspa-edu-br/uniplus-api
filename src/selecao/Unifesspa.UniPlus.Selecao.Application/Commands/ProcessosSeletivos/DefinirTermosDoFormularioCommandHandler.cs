@@ -137,7 +137,7 @@ public static class DefinirTermosDoFormularioCommandHandler
 
     private static Result Definir(DefinirTermosDoFormularioCommand command, ProcessoSeletivo processo, IReadOnlyList<TermoExigidoFormulario> termos)
     {
-        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        Result<CodigoDoFormulario> codigo = RegrasDosFormularios.CodigoDoCaminho(command.FormularioCodigo);
         return codigo.IsFailure ? Result.Failure(codigo.Error!) : processo.DefinirTermosDoFormulario(codigo.Value!, termos);
     }
 

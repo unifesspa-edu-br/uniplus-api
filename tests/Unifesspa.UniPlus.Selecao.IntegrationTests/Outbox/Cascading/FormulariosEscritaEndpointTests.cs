@@ -158,6 +158,24 @@ public sealed class FormulariosEscritaEndpointTests
         }
     }
 
+    [Fact(DisplayName = "Gravar itens e termos com código fora do formato no caminho é 404 de formulário não encontrado")]
+    public async Task CodigoForaDoFormatoNoCaminho_404NosItensENosTermos()
+    {
+        Contexto ctx = await SemearRascunhoAsync(_fixture, nameof(CodigoForaDoFormatoNoCaminho_404NosItensENosTermos));
+        string raiz = $"/api/selecao/admin/processos-seletivos/{ctx.ProcessoId}/formularios/inscricao_em_minusculas";
+
+        HttpResponseMessage itens = await PutAsync(ctx, $"{raiz}/itens", new { itens = Array.Empty<object>() });
+        HttpResponseMessage termos = await PutAsync(ctx, $"{raiz}/termos", new { termos = Array.Empty<object>() });
+
+        foreach (HttpResponseMessage resposta in new[] { itens, termos })
+        {
+            string corpo = await resposta.Content.ReadAsStringAsync();
+            resposta.StatusCode.Should().Be(HttpStatusCode.NotFound, corpo);
+            using JsonDocument problema = JsonDocument.Parse(corpo);
+            problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.nao_encontrado");
+        }
+    }
+
     private static async Task<HttpResponseMessage> PutAsync(Contexto ctx, string rota, object corpo)
     {
         using HttpRequestMessage request = new(HttpMethod.Put, new Uri(rota, UriKind.Relative)) { Content = JsonContent.Create(corpo) };

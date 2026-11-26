@@ -67,7 +67,7 @@ public static class DefinirFatosColetadosCommandHandler
             return recusa;
         }
 
-        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        Result<CodigoDoFormulario> codigo = RegrasDosFormularios.CodigoDoCaminho(command.FormularioCodigo);
         if (codigo.IsFailure)
         {
             return Result.Failure(codigo.Error!);
