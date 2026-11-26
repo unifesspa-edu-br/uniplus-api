@@ -70,6 +70,8 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
+    public IModeloFormularioReader Modelos => _modelos;
+
     public IFatoCandidatoReader Fatos { get; } = Substitute.For<IFatoCandidatoReader>();
 
     public ITermoConsentimentoReader Termos { get; } = Substitute.For<ITermoConsentimentoReader>();
@@ -225,9 +227,28 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     /// <summary>Aplica o modelo ao formulário do código, que pode não existir no processo.</summary>
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId, string formularioCodigo) =>
+        AplicarAoProcessoAsync(Processo.Id, modeloId, formularioCodigo);
+
+    /// <summary>Aplica o modelo a um processo que o repositório não conhece.</summary>
+    public Task<Result<AplicacaoDeModeloDto>> AplicarAoProcessoInexistenteAsync(Guid modeloId) =>
+        AplicarAoProcessoAsync(Guid.CreateVersion7(), modeloId, PapelDoFormularioDeTeste.Inscricao.Codigo());
+
+    /// <summary>Aplica o modelo a um processo já publicado, que o repositório devolve para edição.</summary>
+    public Task<Result<AplicacaoDeModeloDto>> AplicarAoProcessoPublicadoAsync(Guid modeloId)
+    {
+        ProcessoSeletivo publicado = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        _repository.ObterParaMutacaoAsync(publicado.Id, Arg.Any<CancellationToken>()).Returns(publicado);
+        return AplicarAoProcessoAsync(publicado.Id, modeloId, PapelDoFormularioDeTeste.Inscricao.Codigo());
+    }
+
+    private Task<Result<AplicacaoDeModeloDto>> AplicarAoProcessoAsync(Guid processoId, Guid modeloId, string formularioCodigo) =>
         AplicarModeloFormularioCommandHandler.Handle(
-            new AplicarModeloFormularioCommand(Processo.Id, modeloId, formularioCodigo),
-            _repository, _modelos, new CadastrosDaAplicacaoDoModelo(Fatos, Termos, new CadastrosDosDocumentosExigidos(_tiposDocumento, Fatos, _modelosDeDocumento)), UnitOfWork, CancellationToken.None);
+            new AplicarModeloFormularioCommand(processoId, modeloId, formularioCodigo),
+            _repository,
+            _modelos,
+            new CadastrosDaAplicacaoDoModelo(Fatos, Termos, new CadastrosDosDocumentosExigidos(_tiposDocumento, Fatos, _modelosDeDocumento)),
+            UnitOfWork,
+            CancellationToken.None);
 
     private static FatoCandidatoView DerivadoBooleano(string codigo, string rotulo) =>
         new(Guid.CreateVersion7(), codigo, rotulo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null, "INSCRICAO",

@@ -62,6 +62,7 @@ public static class SelecaoApplicationServiceRegistration
         AddDefinicaoDoCronogramaDeFases(services);
         AddResolucaoDasDistribuicoesDeVagas(services);
         AddRascunhoDoProcessoSeletivo(services);
+        AddCadastrosDoAtendimentoEspecializado(services);
     }
 
     private static void AddPublicacaoDoProcesso(IServiceCollection services)
@@ -155,6 +156,10 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<DetalheDoLoteDeNotasMontador>();
         services.AddScoped<GeracaoDoEnvioAoInep>();
     }
+
+    // Os cadastros do atendimento especializado guardam só as portas por construtor, e cada handler os recebe prontos, sem service location.
+    private static void AddCadastrosDoAtendimentoEspecializado(IServiceCollection services) =>
+        services.AddScoped<CadastrosDoAtendimentoEspecializado>();
 
     // O resolvedor guarda só as portas dos cadastros por construtor; o comando que grava a distribuição e a query que a
     // simula o recebem prontos, sem service location.
