@@ -23,9 +23,9 @@ public sealed class RestricaoDaRespostaTests
     }
 
     [Fact]
-    public void Modelo_ValorBooleano_MapeiaColunaEIndiceDeSimOuNao()
+    public void Modelo_ValorSimOuNao_MapeiaColunaEIndiceDeSimOuNao()
     {
-        IProperty propriedade = ModeloDaSelecao.Propriedade(typeof(RespostaDaInscricaoRecord), nameof(RespostaDaInscricaoRecord.ValorBooleano));
+        IProperty propriedade = ModeloDaSelecao.Propriedade(typeof(RespostaDaInscricaoRecord), nameof(RespostaDaInscricaoRecord.ValorSimOuNao));
         IIndex indice = propriedade.GetContainingIndexes().Single(i => i.GetDatabaseName() == "ix_respostas_da_inscricao_dado_sim_ou_nao");
 
         propriedade.GetColumnName().Should().Be("valor_sim_ou_nao");

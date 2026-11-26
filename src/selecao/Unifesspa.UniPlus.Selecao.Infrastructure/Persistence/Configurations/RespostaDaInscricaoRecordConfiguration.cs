@@ -37,7 +37,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.OcorrenciaId).HasComment("Identificador da ocorrência de grupo, quando a resposta pertence a um grupo repetível.");
         builder.Property(r => r.Posicao).HasComment("Posição do valor em uma resposta com vários valores; nula para valor único.");
         builder.Property(r => r.FatoCodigo).HasComment("Código do dado do candidato. Exemplos: RENDA_PER_CAPITA, CONCORRER_RENDA.");
-        builder.Property(r => r.ValorBooleano).HasColumnName("valor_sim_ou_nao").HasComment("Resposta de sim ou não, quando aplicável.");
+        builder.Property(r => r.ValorSimOuNao).HasColumnName("valor_sim_ou_nao").HasComment("Resposta de sim ou não, quando aplicável.");
         builder.Property(r => r.ValorNumero).HasComment("Resposta numérica, quando aplicável.");
         builder.Property(r => r.ValorCodigo).HasComment("Código da opção ou município respondido, quando aplicável.");
         builder.Property(r => r.ValorTexto).HasComment("Resposta em texto livre, quando aplicável.");
@@ -119,7 +119,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorCodigo })
             .HasFilter("valor_codigo IS NOT NULL")
             .HasDatabaseName("ix_respostas_da_inscricao_dado_codigo");
-        builder.HasIndex(r => new { r.FatoCodigo, r.ValorBooleano })
+        builder.HasIndex(r => new { r.FatoCodigo, r.ValorSimOuNao })
             .HasFilter("valor_sim_ou_nao IS NOT NULL")
             .HasDatabaseName("ix_respostas_da_inscricao_dado_sim_ou_nao");
         builder.HasIndex(r => new { r.FatoCodigo, r.ValorNumero })

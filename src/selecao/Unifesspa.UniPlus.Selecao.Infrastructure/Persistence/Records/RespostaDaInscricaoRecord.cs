@@ -24,7 +24,7 @@ public sealed class RespostaDaInscricaoRecord
 
     public TipoDoValorDeResposta Tipo { get; set; }
 
-    public bool? ValorBooleano { get; set; }
+    public bool? ValorSimOuNao { get; set; }
 
     public decimal? ValorNumero { get; set; }
 
