@@ -10,6 +10,8 @@ informed: []
 # ADR-0135: As regras sobre fatos do candidato vivem num projeto compartilhado fora do Kernel
 
 > **Emenda (2026-11-17):** a Decisão e a Confirmação valem para os códigos de `Unifesspa.UniPlus.Regras` que alcançam a fronteira HTTP (ADR-0024, emenda de 2026-11-16). A leitura do JSON gravado e as recusas que nenhum chamador deixa chegar à resposta mantêm o código de domínio, sem registro. A Confirmação é o teste de catálogo de códigos de erro e a tabela esperada do registro; não há teste de arquitetura para esta propriedade.
+>
+> **Emenda (2026-11-26) — eixos do dado do candidato e hipótese legal:** os eixos que descrevem um dado do catálogo (tipo do dado, quantidade de valores, origem, fonte dos valores, formato do texto, componente de exibição e escopo) moram em `Unifesspa.UniPlus.Regras`, porque a conferência do formulário os lê na Configuração e na Seleção; o código de cada valor é o declarado no enum (ADR-0176), e nenhuma regra compara eixo por texto. A hipótese legal de tratamento mora no Kernel, ao lado da classificação de proteção: é vocabulário da proteção de dados, usado também pelo tipo de documento, e não regra sobre fato. As regras puras sobre esses valores ficam no módulo que as aplica (o cabimento da hipótese na classificação fica na proteção de dados da Configuração).
 
 ## Contexto e enunciado do problema
 
