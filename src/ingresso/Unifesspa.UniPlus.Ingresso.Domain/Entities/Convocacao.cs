@@ -5,6 +5,7 @@ using Enums;
 using Events;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 using ValueObjects;
 
@@ -16,7 +17,7 @@ public sealed class Convocacao : SoftDeletableEntity
     public ProtocoloConvocacao Protocolo { get; private set; } = null!;
     public StatusConvocacao Status { get; private set; }
     public int Posicao { get; private set; }
-    public string CodigoCurso { get; private set; } = string.Empty;
+    public CopiaDaOfertaDeCurso OfertaCurso { get; private set; } = null!;
     public DateTimeOffset? DataManifestacao { get; private set; }
 
     private Convocacao() { }
@@ -27,7 +28,7 @@ public sealed class Convocacao : SoftDeletableEntity
         Guid candidatoId,
         ProtocoloConvocacao protocolo,
         int posicao,
-        string codigoCurso,
+        CopiaDaOfertaDeCurso ofertaCurso,
         DateTimeOffset convocadaEm)
     {
         ChamadaId = chamadaId;
@@ -36,17 +37,18 @@ public sealed class Convocacao : SoftDeletableEntity
         Protocolo = protocolo;
         Status = StatusConvocacao.Pendente;
         Posicao = posicao;
-        CodigoCurso = codigoCurso;
+        OfertaCurso = ofertaCurso.ParaNovoDono();
 
         AddDomainEvent(new CandidatoConvocadoEvent(inscricaoId, candidatoId, chamadaId, protocolo.Valor, convocadaEm));
     }
 
-    public static Convocacao Criar(Guid chamadaId, Guid inscricaoId, Guid candidatoId, ProtocoloConvocacao protocolo, int posicao, string codigoCurso, TimeProvider clock)
+    public static Convocacao Criar(Guid chamadaId, Guid inscricaoId, Guid candidatoId, ProtocoloConvocacao protocolo, int posicao, CopiaDaOfertaDeCurso ofertaCurso, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(protocolo);
+        ArgumentNullException.ThrowIfNull(ofertaCurso);
         ArgumentNullException.ThrowIfNull(clock);
 
-        return new Convocacao(chamadaId, inscricaoId, candidatoId, protocolo, posicao, codigoCurso, clock.GetUtcNow());
+        return new Convocacao(chamadaId, inscricaoId, candidatoId, protocolo, posicao, ofertaCurso, clock.GetUtcNow());
     }
 
     public void Aceitar(TimeProvider clock)

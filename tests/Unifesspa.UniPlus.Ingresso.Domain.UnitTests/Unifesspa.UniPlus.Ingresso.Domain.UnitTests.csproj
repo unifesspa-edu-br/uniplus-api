@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/Ingresso/Cenarios/*.cs" Link="Cenarios/%(Filename)%(Extension)" />
     <Using Include="Xunit" />
   </ItemGroup>
 

@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Ingresso.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Time.Testing;
+
 using Unifesspa.UniPlus.Ingresso.Domain.Entities;
 using Unifesspa.UniPlus.Ingresso.Domain.ValueObjects;
+using Unifesspa.UniPlus.Ingresso.TestSupport.Cenarios;
 
 /// <summary>
 /// Pin do contrato da ADR-0068: métodos de domínio que leem o relógio exigem
@@ -13,7 +16,9 @@ using Unifesspa.UniPlus.Ingresso.Domain.ValueObjects;
 /// </summary>
 public sealed class RelogioObrigatorioTests
 {
-    private static ProtocoloConvocacao Protocolo() => ProtocoloConvocacao.Gerar(1, 1, TimeProvider.System);
+    private static readonly TimeProvider Relogio = new FakeTimeProvider(new DateTimeOffset(2026, 1, 15, 9, 30, 0, TimeSpan.Zero));
+
+    private static ProtocoloConvocacao Protocolo() => ProtocoloConvocacao.Gerar(1, 1, Relogio);
 
     private static Convocacao NovaConvocacao() => Convocacao.Criar(
         Guid.NewGuid(),
@@ -21,8 +26,8 @@ public sealed class RelogioObrigatorioTests
         Guid.NewGuid(),
         Protocolo(),
         posicao: 1,
-        codigoCurso: "CURSO01",
-        clock: TimeProvider.System);
+        ofertaCurso: new CopiaDaOfertaDeCursoDeTeste().Construir(),
+        clock: Relogio);
 
     [Fact(DisplayName = "ProtocoloConvocacao.Gerar exige TimeProvider não-nulo")]
     public void ProtocoloGerar_ClockNulo_Lanca()
@@ -41,7 +46,7 @@ public sealed class RelogioObrigatorioTests
             Guid.NewGuid(),
             Protocolo(),
             posicao: 1,
-            codigoCurso: "CURSO01",
+            ofertaCurso: new CopiaDaOfertaDeCursoDeTeste().Construir(),
             clock: null!);
 
         act.Should().Throw<ArgumentNullException>();
@@ -70,7 +75,7 @@ public sealed class RelogioObrigatorioTests
     [Fact(DisplayName = "Matricula.Efetivar exige TimeProvider não-nulo")]
     public void MatriculaEfetivar_ClockNulo_Lanca()
     {
-        Matricula matricula = Matricula.Criar(Guid.NewGuid(), Guid.NewGuid(), "CURSO01");
+        Matricula matricula = Matricula.Criar(Guid.NewGuid(), Guid.NewGuid(), new CopiaDaOfertaDeCursoDeTeste().Construir());
 
         Action act = () => matricula.Efetivar(null!);
 
