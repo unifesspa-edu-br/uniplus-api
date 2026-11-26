@@ -25,12 +25,15 @@ public static class ObjetoDeValorGravado
         {
             return desserializacao();
         }
-        catch (JsonException)
+        catch (Exception erro) when (erro is JsonException or FormatException)
         {
-            // A exceção da biblioteca pode repetir o documento no log.
-            throw DadoInvalido(nomeDoValor, "documento JSON inválido");
+            // A exceção da biblioteca e a conversão de texto da plataforma repetem o valor lido na mensagem.
+            throw DadoInvalido(nomeDoValor, MotivoDaFalhaDeLeitura(erro));
         }
     }
+
+    private static string MotivoDaFalhaDeLeitura(Exception erro) =>
+        erro is JsonException ? "documento JSON inválido" : "valor fora do formato esperado";
 
     private static InvalidOperationException DadoInvalido(string nomeDoValor, string motivo) =>
         new($"Dado inválido no banco ao reidratar {nomeDoValor}: {motivo}. " +
