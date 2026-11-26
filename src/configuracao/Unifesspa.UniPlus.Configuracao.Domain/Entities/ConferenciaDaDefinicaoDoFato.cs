@@ -51,11 +51,9 @@ internal static class ConferenciaDaDefinicaoDoFato
         bool tipoValido = RegistrarRecusa(erros, "dominio", RecusaDoDominio(tipo));
         ConferirQuantidadeDeValores(erros, quantidade);
 
-        if (tipoValido)
-        {
-            ConferirFonteDosValores(erros, tipo.Valor == TipoDoDado.Opcao, fonteValores);
-            ConferirFormato(erros, tipo.Valor == TipoDoDado.Texto, formato);
-        }
+        TipoDoDado? tipoConferido = tipoValido ? tipo.Valor : null;
+        ConferirFonteDosValores(erros, tipoConferido, fonteValores);
+        ConferirFormato(erros, tipoConferido, formato);
     }
 
     // O tipo do dado ausente é obrigatório e o desconhecido é inválido; o conhecido não tem recusa aqui.
@@ -78,13 +76,15 @@ internal static class ConferenciaDaDefinicaoDoFato
         RegistrarRecusa(erros, "cardinalidade", recusa);
     }
 
-    private static void ConferirFonteDosValores(List<FieldError> erros, bool ehOpcao, CodigoInformado<FonteValoresFato> fonteValores)
+    private static void ConferirFonteDosValores(List<FieldError> erros, TipoDoDado? tipoConferido, CodigoInformado<FonteValoresFato> fonteValores)
     {
-        (string Codigo, string Mensagem)? recusa = (ehOpcao, fonteValores) switch
+        (string Codigo, string Mensagem)? recusa = (tipoConferido, fonteValores) switch
         {
-            (true, { Valor: null }) =>
+            (_, { Desconhecido: true }) =>
+                (FatoCandidatoErrorCodes.FonteValoresInvalida, "Fonte dos valores do fato fora do vocabulário fechado."),
+            (TipoDoDado.Opcao, { Informado: false }) =>
                 (FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fato categórico precisa declarar a fonte dos seus valores."),
-            (false, { Informado: true }) =>
+            ({ } tipo, { Informado: true }) when tipo != TipoDoDado.Opcao =>
                 (FatoCandidatoErrorCodes.FonteValoresForaDeCategorico, "Só fato categórico declara a fonte dos seus valores."),
             _ => null,
         };
@@ -92,13 +92,15 @@ internal static class ConferenciaDaDefinicaoDoFato
         RegistrarRecusa(erros, "fonteValores", recusa);
     }
 
-    private static void ConferirFormato(List<FieldError> erros, bool ehTexto, CodigoInformado<FormatoTexto> formato)
+    private static void ConferirFormato(List<FieldError> erros, TipoDoDado? tipoConferido, CodigoInformado<FormatoTexto> formato)
     {
-        (string Codigo, string Mensagem)? recusa = (ehTexto, formato) switch
+        (string Codigo, string Mensagem)? recusa = (tipoConferido, formato) switch
         {
-            (true, { Valor: null }) =>
+            (_, { Desconhecido: true }) =>
+                (FatoCandidatoErrorCodes.FormatoInvalido, "Formato do fato fora do vocabulário fechado."),
+            (TipoDoDado.Texto, { Informado: false }) =>
                 (FatoCandidatoErrorCodes.FormatoObrigatorio, "Fato de domínio texto precisa declarar o formato."),
-            (false, { Informado: true }) =>
+            ({ } tipo, { Informado: true }) when tipo != TipoDoDado.Texto =>
                 (FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato."),
             _ => null,
         };
@@ -118,10 +120,13 @@ internal static class ConferenciaDaDefinicaoDoFato
 
     internal static void ConferirEscopo(List<FieldError> erros, CodigoInformado<EscopoFato> escopo)
     {
-        if (escopo.Valor is null)
+        (string Codigo, string Mensagem)? recusa = escopo switch
         {
-            erros.Add(new("escopo", new DomainError(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.")));
-        }
+            { Informado: false } => (FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório."),
+            { Desconhecido: true } => (FatoCandidatoErrorCodes.EscopoInvalido, "Escopo do fato fora do vocabulário fechado."),
+            _ => null,
+        };
+        RegistrarRecusa(erros, "escopo", recusa);
     }
 
     internal static Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> ValidarDescritivo(

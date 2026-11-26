@@ -28,9 +28,12 @@ public static class FatoCandidatoErrorCodes
     public const string CardinalidadeObrigatoria = "FatoCandidato.CardinalidadeObrigatoria";
     public const string CardinalidadeInvalida = "FatoCandidato.CardinalidadeInvalida";
     public const string FonteValoresObrigatoria = "FatoCandidato.FonteValoresObrigatoria";
+    public const string FonteValoresInvalida = "FatoCandidato.FonteValoresInvalida";
     public const string FonteValoresForaDeCategorico = "FatoCandidato.FonteValoresForaDeCategorico";
     public const string EscopoObrigatorio = "FatoCandidato.EscopoObrigatorio";
+    public const string EscopoInvalido = "FatoCandidato.EscopoInvalido";
     public const string FormatoObrigatorio = "FatoCandidato.FormatoObrigatorio";
+    public const string FormatoInvalido = "FatoCandidato.FormatoInvalido";
     public const string FormatoForaDeTexto = "FatoCandidato.FormatoForaDeTexto";
 
     /// <summary>

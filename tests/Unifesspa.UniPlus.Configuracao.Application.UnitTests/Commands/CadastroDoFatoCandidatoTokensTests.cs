@@ -135,7 +135,7 @@ public sealed class CadastroDoFatoCandidatoTokensTests
 
         vazios.IsSuccess.Should().BeTrue(vazios.Error?.Message);
         escopoVazio.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
-        escopoDesconhecido.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
+        escopoDesconhecido.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.EscopoInvalido);
     }
 
     private static CriarFatoCandidatoCommand Declarado() => new(

@@ -181,6 +181,17 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("classificacaoProtecao", "hipoteseLegal");
     }
 
+    [Fact(DisplayName = "Fonte e formato desconhecidos acumulam suas recusas")]
+    public async Task Handle_FonteEFormatoDesconhecidos_AcumulaRecusas()
+    {
+        Result resultado = await AlterarAsync(
+            "CERTIFICADO", Definicao("SIM_OU_NAO") with { FonteValores = "INEXISTENTE", Formato = "INEXISTENTE" });
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("fonteValores", FatoCandidatoErrorCodes.FonteValoresInvalida),
+            ("formato", FatoCandidatoErrorCodes.FormatoInvalido));
+    }
+
     [Theory(DisplayName = "Alteração: eixo vazio ou só espaços é não informado e o desconhecido é inválido, como no cadastro")]
     [InlineData("dominio", "", FatoCandidatoErrorCodes.DominioObrigatorio)]
     [InlineData("dominio", "  ", FatoCandidatoErrorCodes.DominioObrigatorio)]
@@ -188,7 +199,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     [InlineData("cardinalidade", " ", FatoCandidatoErrorCodes.CardinalidadeObrigatoria)]
     [InlineData("cardinalidade", "MUITOS", FatoCandidatoErrorCodes.CardinalidadeInvalida)]
     [InlineData("escopo", "", FatoCandidatoErrorCodes.EscopoObrigatorio)]
-    [InlineData("escopo", "TODOS", FatoCandidatoErrorCodes.EscopoObrigatorio)]
+    [InlineData("escopo", "TODOS", FatoCandidatoErrorCodes.EscopoInvalido)]
     [InlineData("classificacaoProtecao", "", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData("classificacaoProtecao", "SENSIVELL", FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida)]
     [InlineData("hipoteseLegal", " ", FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]

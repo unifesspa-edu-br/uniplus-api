@@ -90,6 +90,12 @@ internal static class FatoCandidatoErrorMappings
                 "uniplus.configuracao.fato_candidato.cardinalidade_invalida",
                 "Cardinalidade do fato fora do vocabulário fechado")),
 
+        new(FatoCandidatoErrorCodes.FonteValoresInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.fonte_valores_invalida",
+                "Fonte dos valores do fato fora do vocabulário fechado")),
+
         new(FatoCandidatoErrorCodes.FonteValoresObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -101,6 +107,12 @@ internal static class FatoCandidatoErrorMappings
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.fonte_valores_fora_de_categorico",
                 "Só fato categórico declara a fonte dos seus valores")),
+
+        new(FatoCandidatoErrorCodes.FormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.formato_invalido",
+                "Formato do fato fora do vocabulário fechado")),
 
         new(FatoCandidatoErrorCodes.FormatoObrigatorio,
             new DomainErrorMapping(
@@ -119,6 +131,12 @@ internal static class FatoCandidatoErrorMappings
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio",
                 "Classificação de proteção de dados incompatível com o domínio do fato")),
+
+        new(FatoCandidatoErrorCodes.EscopoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.escopo_invalido",
+                "Escopo do fato fora do vocabulário fechado")),
 
         new(FatoCandidatoErrorCodes.EscopoObrigatorio,
             new DomainErrorMapping(
