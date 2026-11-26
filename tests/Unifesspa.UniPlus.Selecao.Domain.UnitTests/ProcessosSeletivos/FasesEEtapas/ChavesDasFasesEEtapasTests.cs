@@ -43,8 +43,7 @@ public sealed class ChavesDasFasesEEtapasTests
         ModeloDeEtapa modelo = new("Prova");
         ChaveLocal chave = ChaveLocal.Criar("etapa_declarada").Value;
         EtapaProcesso etapa = EtapaProcesso.Adotar(chave, modelo.Identificacao(),
-            new AvaliacaoDeclaradaDaEtapa(modelo.Avaliacao(), [], null),
-            new JanelaDeTempo(null, null), new PublicacoesDaEtapa([], false, [], null), []);
+            modelo.Avaliacao(), [], new JanelaDeTempo(null, null), new PublicacoesDaEtapa([], false, [], null), []);
         etapa.Chave.Should().Be(chave);
     }
 

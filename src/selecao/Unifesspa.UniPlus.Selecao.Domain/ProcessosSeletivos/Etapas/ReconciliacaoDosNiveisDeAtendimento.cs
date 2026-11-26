@@ -5,6 +5,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ReconciliacaoDosNiveisDeAtendimento
 {
+    /// <summary>Os níveis como o documento os declarou: a chave declarada se conserva, e a ordem é a posição mais 1.</summary>
+    internal static IEnumerable<NivelDeAtendimento> Conservar(IReadOnlyList<NivelDeAtendimento?>? declarados) =>
+        (declarados ?? []).Select(static (nivel, posicao) => nivel! with { Ordem = posicao + 1 });
+
     internal static List<NivelDeAtendimento> Reconciliar(
         IEnumerable<NivelDeAtendimento> existentes, IReadOnlyList<NivelDeAtendimento?>? declarados)
     {

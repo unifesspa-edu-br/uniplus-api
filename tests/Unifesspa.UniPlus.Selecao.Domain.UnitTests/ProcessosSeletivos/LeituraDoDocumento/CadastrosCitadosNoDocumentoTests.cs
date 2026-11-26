@@ -45,4 +45,32 @@ public sealed class CadastrosCitadosNoDocumentoTests
         vazios.TiposDeAto.Should().BeEmpty();
         Cadastros().Unidades.ContainsKey("INEXISTENTE").Should().BeFalse();
     }
+
+    [Fact(DisplayName = "O tipo de etapa e o quadro de pesos citados se acham pelo código e pela resolução, e o que o cadastro não tem não é achado")]
+    public void TipoDeEtapaEQuadroDePesos_SeAchamPeloQueFoiCitado()
+    {
+        TipoEtapaSnapshot tipo = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+        QuadroDePesosCitado quadro = new([], ["Ampla concorrência"]);
+        CadastrosCitadosNoDocumento cadastros = new(LidoEm)
+        {
+            TiposDeEtapa = new Dictionary<string, TipoEtapaSnapshot> { ["PROVA_OBJETIVA"] = tipo },
+            QuadrosDePesos = new Dictionary<string, QuadroDePesosCitado> { ["RESOLUCAO 1/2026"] = quadro },
+        };
+
+        cadastros.TipoDeEtapa("PROVA_OBJETIVA").Should().BeSameAs(tipo);
+        cadastros.TipoDeEtapa("PROVA_ORAL").Should().BeNull();
+        cadastros.QuadroDePesos("RESOLUCAO 1/2026").Should().BeSameAs(quadro);
+        cadastros.QuadroDePesos("RESOLUCAO 2/2026").Should().BeNull();
+        quadro.Completo.Should().BeFalse();
+        new QuadroDePesosCitado([], []).Completo.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Os cadastros de tipos de etapa e de quadros de pesos que o documento não alimenta nascem vazios")]
+    public void TiposDeEtapaEQuadros_SemEntrada_NascemVazios()
+    {
+        CadastrosCitadosNoDocumento vazios = new(LidoEm);
+
+        vazios.TiposDeEtapa.Should().BeEmpty();
+        vazios.QuadrosDePesos.Should().BeEmpty();
+    }
 }

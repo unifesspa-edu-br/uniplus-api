@@ -42,8 +42,6 @@ public sealed class ItemDeAvaliacao : EntityBase
         return new ItemDeAvaliacao { Chave = chave, Rotulo = declarado.Rotulo.Trim(), PontuacaoMaxima = declarado.PontuacaoMaxima };
     }
 
-    internal static ItemDeAvaliacao Adotar(ChaveLocal chave, ItemDeAvaliacaoDeclarado declarado) => Criar(chave, declarado);
-
     /// <summary>Reidrata o item preservando o <see cref="EntityBase.Id"/> congelado.</summary>
     public static ItemDeAvaliacao Reidratar(ChaveLocal chave, Guid id, string rotulo, decimal pontuacaoMaxima)
     {

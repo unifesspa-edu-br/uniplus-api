@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ChavesDosItensENiveisTests
@@ -68,4 +69,73 @@ public sealed class ChavesDosItensENiveisTests
         etapa.EscalaDeAtendimento![0].Chave.Should().Be(chave);
     }
 
+    [Fact]
+    public void Adotar_ItensComChaveDeclarada_ConservaAChaveQueNaoVemDoRotulo()
+    {
+        ModeloDeEtapa modelo = new("Prova") { Itens = [new(null, "Redação", 5m), new(null, "Argumentação", 5m)] };
+
+        EtapaProcesso etapa = modelo.Adotada();
+
+        etapa.ItensDeAvaliacao.Select(static item => item.Chave.Valor).Should().Equal("item_1", "item_2");
+        etapa.ItensDeAvaliacao.Select(static item => item.Rotulo).Should().Equal("Redação", "Argumentação");
+    }
+
+    [Fact]
+    public void Adotar_ItensEmOutraOrdem_ConservaAChaveDeCadaUmEOrdemPelaPosicao()
+    {
+        ModeloDeEtapa modelo = new("Prova");
+        ItemDeAvaliacao segundo = ItemDeAvaliacao.Criar(ChaveLocal.Criar("item_segundo").Value, new(null, "Coesão", 4m));
+        ItemDeAvaliacao primeiro = ItemDeAvaliacao.Criar(ChaveLocal.Criar("item_primeiro").Value, new(null, "Coerência", 6m));
+
+        EtapaProcesso etapa = Adotar(modelo, modelo.Avaliacao(), segundo, primeiro);
+
+        etapa.ItensDeAvaliacao.Select(static item => (item.Chave.Valor, item.Ordem)).Should().Equal(("item_segundo", 1), ("item_primeiro", 2));
+    }
+
+    [Fact]
+    public void Adotar_ItemDeMesmoRotuloEmEtapaDiferente_NaoRecebeChaveNova()
+    {
+        ModeloDeEtapa modelo = new("Prova");
+        ItemDeAvaliacao item = ItemDeAvaliacao.Criar(ChaveLocal.Criar("criterio_unico").Value, new(null, "Redação", 10m));
+
+        EtapaProcesso etapa = Adotar(modelo, modelo.Avaliacao(), item);
+
+        etapa.ItensDeAvaliacao[0].Should().BeSameAs(item);
+        etapa.ItensDeAvaliacao[0].EtapaProcessoId.Should().Be(etapa.Id);
+    }
+
+    [Fact]
+    public void Adotar_NiveisComChaveDeclarada_ConservaAChaveEOrdenaPelaPosicao()
+    {
+        ModeloDeEtapa modelo = new("Prova");
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao = modelo.Avaliacao() with
+        {
+            EscalaDeAtendimento =
+            [
+                NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_zeta").Value, "Atendeu", 1m),
+                NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_alfa").Value, "Não atendeu", 0m),
+            ],
+        };
+
+        EtapaProcesso etapa = Adotar(modelo, avaliacao);
+
+        etapa.EscalaDeAtendimento!.Select(static nivel => (nivel.Chave.Valor, nivel.Ordem)).Should().Equal(("nivel_zeta", 1), ("nivel_alfa", 2));
+    }
+
+    [Fact]
+    public void AtualizarDados_ItemComChaveDeclarada_ContinuaComAChaveAoMudarORotulo()
+    {
+        ModeloDeEtapa modelo = new("Prova");
+        ItemDeAvaliacao item = ItemDeAvaliacao.Criar(ChaveLocal.Criar("criterio_unico").Value, new(null, "Redação", 10m));
+        EtapaProcesso etapa = Adotar(modelo, modelo.Avaliacao(), item);
+
+        etapa.AtualizarDados(modelo.Identificacao(), modelo.Avaliacao(), [new(item.Id, "Texto dissertativo", 10m)]).IsSuccess.Should().BeTrue();
+
+        etapa.ItensDeAvaliacao[0].Chave.Valor.Should().Be("criterio_unico");
+    }
+
+    private static EtapaProcesso Adotar(ModeloDeEtapa modelo, DeclaracaoDaAvaliacaoDaEtapa avaliacao, params ItemDeAvaliacao[] itens) =>
+        EtapaProcesso.Adotar(
+            ChaveLocal.Criar("etapa").Value, modelo.Identificacao(), avaliacao, itens,
+            new JanelaDeTempo(null, null), new PublicacoesDaEtapa([], false, [], null), []);
 }

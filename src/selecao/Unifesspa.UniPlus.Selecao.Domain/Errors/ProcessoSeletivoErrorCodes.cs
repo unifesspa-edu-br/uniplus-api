@@ -6,6 +6,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class ProcessoSeletivoErrorCodes
 {
+    /// <summary>O tipo de etapa citado não existe no cadastro ou não está ativo.</summary>
+    public const string TipoEtapaNaoEncontradoOuInativo = "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo";
+
     /// <summary>A regra citada não corresponde à regra atual do catálogo.</summary>
     public const string RegraCitadaNaoCorrespondeAoCatalogo = "ProcessoSeletivo.RegraCitadaNaoCorrespondeAoCatalogo";
 

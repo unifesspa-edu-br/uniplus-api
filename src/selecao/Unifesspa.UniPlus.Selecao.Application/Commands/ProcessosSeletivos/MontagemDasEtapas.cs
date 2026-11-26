@@ -6,8 +6,6 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
-
 /// <summary>
 /// Monta a coleção de etapas do processo a partir das etapas conferidas, reconciliando por <c>Id</c> em vez
 /// de recriá-la: a etapa cujo <c>Id</c>, ecoado pelo cliente a partir da leitura anterior, ainda existe no
@@ -106,9 +104,6 @@ internal static class MontagemDasEtapas
                 : congelado);
         }
 
-        TipoEtapaView tipo = conferida.TipoLido!;
-        return TipoEtapaSnapshot.Criar(
-            tipo.Id, tipo.Codigo, tipo.Nome, tipo.Avaliacao.AdmitePontuacao, tipo.Avaliacao.AdmiteEliminacao,
-            tipo.Avaliacao.NotaDeOrigemNoEnem, tipo.Avaliacao.ExigeCorrecaoIndependente);
+        return CopiaDoTipoDeEtapa.De(conferida.TipoLido!);
     }
 }
