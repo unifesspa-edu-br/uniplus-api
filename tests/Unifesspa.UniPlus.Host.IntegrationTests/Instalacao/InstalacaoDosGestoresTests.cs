@@ -55,8 +55,10 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
 
         confirmada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.ContaId.ToString(), Isabella.ContaId.ToString());
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_verificado", "codigo_enviado", "tentativas", "instalacao_confirmada", "termo_excecao_da_instalacao");
-        (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain(["concedida", "instalacao_iniciada", "documento_verificado", "codigo_enviado", "instalacao_confirmada"]);
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal(
+            "INSTALACAO_INICIADA", "DOCUMENTO_DE_DESIGNACAO_VERIFICADO", "CODIGO_DE_CONFIRMACAO_ENVIADO", "TENTATIVAS_DE_CONFIRMACAO", "INSTALACAO_CONFIRMADA", "INSTALACAO_SEM_ACEITE_DO_TERMO");
+        (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain(
+            ["CONCEDIDA", "INSTALACAO_INICIADA", "DOCUMENTO_DE_DESIGNACAO_VERIFICADO", "CODIGO_DE_CONFIRMACAO_ENVIADO", "INSTALACAO_CONFIRMADA"]);
     }
 
     [Fact(DisplayName = "A concessão de gestor da instalação guarda o e-mail, e o PDF fica no armazenamento")]
@@ -147,7 +149,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
 
         await InjetarResultadoAsync(id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha);
         await AguardarSituacaoAsync(paulo, id, "DOCUMENTO_RECUSADO");
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_recusado");
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("INSTALACAO_INICIADA", "DOCUMENTO_DE_DESIGNACAO_RECUSADO");
 
         using HttpResponseMessage resposta = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/{id}/codigo");
         await ConferirRecusaAsync(resposta, "situacao_invalida");

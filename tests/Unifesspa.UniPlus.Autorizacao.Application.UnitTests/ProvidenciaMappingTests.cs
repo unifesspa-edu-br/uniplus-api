@@ -56,16 +56,16 @@ public sealed class ProvidenciaMappingTests
 
         EventoDaTrilhaDto[] eventos = [.. ProvidenciaMapping.EventosDaTrilha(p)];
 
-        eventos.Select(static e => (e.Tipo, e.Detalhe)).Should().Equal(
-            ("providencia_solicitada", $"Revisão do acesso. Fundamento: {ProvidenciaBuilder.Fundamento}"), ("providencia_atendida", ProvidenciaBuilder.Motivo));
+        eventos.Select(static e => (e.Tipo.Codigo, e.Detalhe)).Should().Equal(
+            ("PROVIDENCIA_SOLICITADA", $"Revisão do acesso. Fundamento: {ProvidenciaBuilder.Fundamento}"), ("PROVIDENCIA_ATENDIDA", ProvidenciaBuilder.Motivo));
         eventos.Select(static e => e.Autor!.ContaId).Should().Equal(ProvidenciaBuilder.Cecilia.Identidade.ContaId, ProvidenciaBuilder.Diogo.ContaId);
     }
 
     [Fact(DisplayName = "A trilha da concessão mostra a resposta, e a aberta só a solicitação")]
     public void Trilha_RespostaEAberta()
     {
-        ProvidenciaMapping.EventosDaTrilha(new ProvidenciaBuilder().Respondida()).Select(static e => e.Tipo).Should().Equal("providencia_solicitada", "providencia_respondida");
-        ProvidenciaMapping.EventosDaTrilha(new ProvidenciaBuilder().Aberta()).Select(static e => e.Tipo).Should().Equal("providencia_solicitada");
+        ProvidenciaMapping.EventosDaTrilha(new ProvidenciaBuilder().Respondida()).Select(static e => e.Tipo.Codigo).Should().Equal("PROVIDENCIA_SOLICITADA", "PROVIDENCIA_RESPONDIDA");
+        ProvidenciaMapping.EventosDaTrilha(new ProvidenciaBuilder().Aberta()).Select(static e => e.Tipo.Codigo).Should().Equal("PROVIDENCIA_SOLICITADA");
     }
 
     [Fact(DisplayName = "A trilha da própria concessão mostra o vencimento como evento do sistema, e a revogação no lugar dele quando revogada")]
@@ -76,9 +76,9 @@ public sealed class ProvidenciaMappingTests
         revogada.Revogar(ProvidenciaBuilder.AtoDeDiogo(), "Mudou de função.");
 
         EventoDaTrilhaDto fim = ConcessaoMapping.EventosDaConcessao(vencida, Agora.AddHours(2)).Last();
-        (fim.Tipo, fim.Instante, fim.Autor, fim.Ator).Should().Be(("vencida", Agora.AddHours(1), (IdentidadeDto?)null, "sistema"));
-        ConcessaoMapping.EventosDaConcessao(revogada, Agora.AddHours(2)).Select(static e => e.Tipo).Should().Equal("concedida", "revogada");
-        ConcessaoMapping.EventosDaConcessao(vencida, Agora).Select(static e => e.Tipo).Should().Equal("concedida");
+        (fim.Tipo.Codigo, fim.Instante, fim.Autor, fim.Ator.Codigo).Should().Be(("VENCIDA", Agora.AddHours(1), (IdentidadeDto?)null, "SISTEMA"));
+        ConcessaoMapping.EventosDaConcessao(revogada, Agora.AddHours(2)).Select(static e => e.Tipo.Codigo).Should().Equal("CONCEDIDA", "REVOGADA");
+        ConcessaoMapping.EventosDaConcessao(vencida, Agora).Select(static e => e.Tipo.Codigo).Should().Equal("CONCEDIDA");
     }
 
     [Fact(DisplayName = "A trilha da concessão vencida e revogada depois mostra o vencimento e a revogação, e a providência prejudicada aponta o vencimento")]
@@ -88,8 +88,8 @@ public sealed class ProvidenciaMappingTests
         Providencia p = cenario.Aberta();
         cenario.Concessao.Revogar(ProvidenciaBuilder.AtoDeDiogo(Agora.AddHours(3)), "Revogada depois de vencida.");
 
-        ConcessaoMapping.EventosDaConcessao(cenario.Concessao, Agora.AddHours(4)).Select(static e => (e.Tipo, e.Instante)).Should().Equal(
-            ("concedida", Agora.AddDays(-30)), ("vencida", Agora.AddHours(1)), ("revogada", Agora.AddHours(3)));
+        ConcessaoMapping.EventosDaConcessao(cenario.Concessao, Agora.AddHours(4)).Select(static e => (e.Tipo.Codigo, e.Instante)).Should().Equal(
+            ("CONCEDIDA", Agora.AddDays(-30)), ("VENCIDA", Agora.AddHours(1)), ("REVOGADA", Agora.AddHours(3)));
         ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddHours(4), null).EncerramentoDaConcessao
             .Should().Be(new EncerramentoDaConcessaoDto("VENCIDA", Agora.AddHours(1)));
     }

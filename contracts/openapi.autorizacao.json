@@ -8258,6 +8258,52 @@
           }
         }
       },
+      "AtorDoEventoDaContencao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/AtorDoEventoDaContencaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "AtorDoEventoDaContencaoCodigo": {
+        "enum": [
+          "HUMANO",
+          "SISTEMA"
+        ],
+        "type": "string",
+        "description": "- \u0060HUMANO\u0060: Humano\n- \u0060SISTEMA\u0060: Sistema"
+      },
+      "AtorDoEventoDoHistoricoDaConcessao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/AtorDoEventoDoHistoricoDaConcessaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "AtorDoEventoDoHistoricoDaConcessaoCodigo": {
+        "enum": [
+          "HUMANO",
+          "SISTEMA"
+        ],
+        "type": "string",
+        "description": "- \u0060HUMANO\u0060: Humano\n- \u0060SISTEMA\u0060: Sistema"
+      },
       "BeneficiarioDoPedidoDto": {
         "required": [
           "email",
@@ -9216,17 +9262,41 @@
           }
         }
       },
+      "EtapaDaVersao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EtapaDaVersaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EtapaDaVersaoCodigo": {
+        "enum": [
+          "GESTAO_DE_ACESSOS",
+          "PROTECAO_DE_DADOS"
+        ],
+        "type": "string",
+        "description": "- \u0060GESTAO_DE_ACESSOS\u0060: Gest\u00E3o de acessos\n- \u0060PROTECAO_DE_DADOS\u0060: Prote\u00E7\u00E3o de dados"
+      },
       "EventoDaTrilhaDto": {
         "required": [
           "tipo",
           "instante",
           "autor",
-          "detalhe"
+          "detalhe",
+          "ator"
         ],
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoEventoDoHistoricoDaConcessao"
           },
           "instante": {
             "type": "string",
@@ -9249,8 +9319,7 @@
             ]
           },
           "ator": {
-            "type": "string",
-            "default": "humano"
+            "$ref": "#/components/schemas/AtorDoEventoDoHistoricoDaConcessao"
           }
         }
       },
@@ -9693,6 +9762,30 @@
             "type": "boolean"
           }
         }
+      },
+      "OrigemDaRetomada": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/OrigemDaRetomadaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OrigemDaRetomadaCodigo": {
+        "enum": [
+          "DECISAO_DA_ETAPA",
+          "TROCA_DE_VIGENCIA",
+          "RECLASSIFICACAO"
+        ],
+        "type": "string",
+        "description": "- \u0060DECISAO_DA_ETAPA\u0060: Decis\u00E3o da etapa\n- \u0060TROCA_DE_VIGENCIA\u0060: Troca de vig\u00EAncia\n- \u0060RECLASSIFICACAO\u0060: Reclassifica\u00E7\u00E3o"
       },
       "OrigemDto": {
         "required": [
@@ -10642,7 +10735,7 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDoRegistroDoBloqueio"
           },
           "referenciaId": {
             "type": "string",
@@ -10657,7 +10750,7 @@
             "format": "date-time"
           },
           "ator": {
-            "type": "string"
+            "$ref": "#/components/schemas/AtorDoEventoDaContencao"
           },
           "pessoa": {
             "oneOf": [
@@ -10670,9 +10763,13 @@
             ]
           },
           "etapa": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EtapaDaVersao"
+              }
             ]
           },
           "motivo": {
@@ -10682,9 +10779,13 @@
             ]
           },
           "origem": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrigemDaRetomada"
+              }
             ]
           },
           "perfilProtegido": {
@@ -11241,6 +11342,91 @@
             ]
           }
         }
+      },
+      "TipoDoEventoDoHistoricoDaConcessao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDoEventoDoHistoricoDaConcessaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDoEventoDoHistoricoDaConcessaoCodigo": {
+        "enum": [
+          "CONCEDIDA",
+          "VENCIDA",
+          "REVOGADA",
+          "REVOGADA_PELA_MIGRACAO",
+          "CONFIRMADA_NA_REVISAO",
+          "REVOGADA_NA_REVISAO",
+          "MIGRACAO_APROVADA",
+          "MIGRACAO_RECUSADA",
+          "RETIDA_NA_MIGRACAO",
+          "NAO_MIGRADA",
+          "FORA_DA_LISTA_DA_MIGRACAO",
+          "PROVIDENCIA_SOLICITADA",
+          "PROVIDENCIA_RESPONDIDA",
+          "PROVIDENCIA_ATENDIDA",
+          "PEDIDO_CRIADO",
+          "BENEFICIARIO_ACEITOU",
+          "TERMO_ACEITO",
+          "ANEXO_ENVIADO",
+          "ANEXO_VERIFICADO",
+          "ANEXO_RECUSADO",
+          "ANEXO_LIDO",
+          "PEDIDO_APROVADO_NA_ETAPA",
+          "PEDIDO_RECUSADO_NA_ETAPA",
+          "PERFIL_ALTERADO_ENTRE_ETAPAS",
+          "PRAZO_VENCIDO_ENTRE_ETAPAS",
+          "PEDIDO_DEVOLVIDO_POR_TERMO_EXIGIDO",
+          "SEGUNDA_APROVACAO_DISPENSADA",
+          "PEDIDO_CANCELADO",
+          "INSTALACAO_INICIADA",
+          "DOCUMENTO_DE_DESIGNACAO_VERIFICADO",
+          "DOCUMENTO_DE_DESIGNACAO_RECUSADO",
+          "CODIGO_DE_CONFIRMACAO_ENVIADO",
+          "CODIGO_DE_CONFIRMACAO_REENVIADO",
+          "TENTATIVAS_DE_CONFIRMACAO",
+          "INSTALACAO_CONFIRMADA",
+          "INSTALACAO_CANCELADA",
+          "INSTALACAO_EXPIRADA",
+          "INSTALACAO_SEM_ACEITE_DO_TERMO"
+        ],
+        "type": "string",
+        "description": "- \u0060CONCEDIDA\u0060: Acesso concedido\n- \u0060VENCIDA\u0060: Acesso vencido\n- \u0060REVOGADA\u0060: Acesso revogado\n- \u0060REVOGADA_PELA_MIGRACAO\u0060: Acesso revogado pela revis\u00E3o das concess\u00F5es\n- \u0060CONFIRMADA_NA_REVISAO\u0060: Acesso mantido na revis\u00E3o peri\u00F3dica\n- \u0060REVOGADA_NA_REVISAO\u0060: Acesso revogado na revis\u00E3o peri\u00F3dica\n- \u0060MIGRACAO_APROVADA\u0060: Migra\u00E7\u00E3o aprovada\n- \u0060MIGRACAO_RECUSADA\u0060: Migra\u00E7\u00E3o recusada\n- \u0060RETIDA_NA_MIGRACAO\u0060: Concess\u00E3o retida na migra\u00E7\u00E3o\n- \u0060NAO_MIGRADA\u0060: Concess\u00E3o n\u00E3o migrada\n- \u0060FORA_DA_LISTA_DA_MIGRACAO\u0060: Retirada da lista da migra\u00E7\u00E3o\n- \u0060PROVIDENCIA_SOLICITADA\u0060: Provid\u00EAncia solicitada\n- \u0060PROVIDENCIA_RESPONDIDA\u0060: Provid\u00EAncia respondida\n- \u0060PROVIDENCIA_ATENDIDA\u0060: Provid\u00EAncia atendida\n- \u0060PEDIDO_CRIADO\u0060: Pedido criado\n- \u0060BENEFICIARIO_ACEITOU\u0060: Benefici\u00E1rio aceitou o pedido\n- \u0060TERMO_ACEITO\u0060: Termo de responsabilidade aceito\n- \u0060ANEXO_ENVIADO\u0060: Documento enviado\n- \u0060ANEXO_VERIFICADO\u0060: Documento verificado\n- \u0060ANEXO_RECUSADO\u0060: Documento recusado na verifica\u00E7\u00E3o\n- \u0060ANEXO_LIDO\u0060: Documento consultado\n- \u0060PEDIDO_APROVADO_NA_ETAPA\u0060: Aprova\u00E7\u00E3o\n- \u0060PEDIDO_RECUSADO_NA_ETAPA\u0060: Recusa\n- \u0060PERFIL_ALTERADO_ENTRE_ETAPAS\u0060: Perfil alterado entre as etapas\n- \u0060PRAZO_VENCIDO_ENTRE_ETAPAS\u0060: Prazo vencido entre as etapas\n- \u0060PEDIDO_DEVOLVIDO_POR_TERMO_EXIGIDO\u0060: Pedido devolvido por exig\u00EAncia do termo de responsabilidade\n- \u0060SEGUNDA_APROVACAO_DISPENSADA\u0060: Segunda aprova\u00E7\u00E3o dispensada\n- \u0060PEDIDO_CANCELADO\u0060: Pedido cancelado\n- \u0060INSTALACAO_INICIADA\u0060: Instala\u00E7\u00E3o iniciada\n- \u0060DOCUMENTO_DE_DESIGNACAO_VERIFICADO\u0060: Documento de designa\u00E7\u00E3o verificado\n- \u0060DOCUMENTO_DE_DESIGNACAO_RECUSADO\u0060: Documento de designa\u00E7\u00E3o recusado na verifica\u00E7\u00E3o\n- \u0060CODIGO_DE_CONFIRMACAO_ENVIADO\u0060: C\u00F3digo de confirma\u00E7\u00E3o enviado\n- \u0060CODIGO_DE_CONFIRMACAO_REENVIADO\u0060: C\u00F3digo de confirma\u00E7\u00E3o reenviado\n- \u0060TENTATIVAS_DE_CONFIRMACAO\u0060: Tentativas de confirma\u00E7\u00E3o\n- \u0060INSTALACAO_CONFIRMADA\u0060: Instala\u00E7\u00E3o confirmada\n- \u0060INSTALACAO_CANCELADA\u0060: Instala\u00E7\u00E3o cancelada\n- \u0060INSTALACAO_EXPIRADA\u0060: Instala\u00E7\u00E3o expirada\n- \u0060INSTALACAO_SEM_ACEITE_DO_TERMO\u0060: Instala\u00E7\u00E3o sem aceite do termo de responsabilidade"
+      },
+      "TipoDoRegistroDoBloqueio": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDoRegistroDoBloqueioCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDoRegistroDoBloqueioCodigo": {
+        "enum": [
+          "SUSPENSAO",
+          "DECISAO_DA_RETOMADA",
+          "RETOMADA",
+          "DESATIVACAO",
+          "REATIVACAO"
+        ],
+        "type": "string",
+        "description": "- \u0060SUSPENSAO\u0060: Suspens\u00E3o\n- \u0060DECISAO_DA_RETOMADA\u0060: Decis\u00E3o de etapa da retomada\n- \u0060RETOMADA\u0060: Retomada\n- \u0060DESATIVACAO\u0060: Desativa\u00E7\u00E3o\n- \u0060REATIVACAO\u0060: Reativa\u00E7\u00E3o"
       },
       "TrocaDeVersaoDoPedidoDto": {
         "required": [

@@ -59,7 +59,7 @@ public sealed class TermoNaLeituraTests
         PedidoDeConcessaoBuilder cenario = PedidoDeConcessaoBuilder.Pedido().ParaSiMesmo().Protegido();
         PedidoDeConcessao pedido = cenario.Criado();
 
-        EventoDaTrilhaDto evento = EventosDoPedido.Montar(pedido, []).Single(e => e.Tipo == "termo_aceito");
+        EventoDaTrilhaDto evento = EventosDoPedido.Montar(pedido, []).Single(e => e.Tipo.Codigo == "TERMO_ACEITO");
 
         evento.Detalhe.Should().Be($"Versão 1, resumo {cenario.Vigente.Resumo}.");
         evento.Autor!.ContaId.Should().Be("betina.neves");
@@ -72,6 +72,6 @@ public sealed class TermoNaLeituraTests
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().AguardandoGestor();
         pedido.Aprovar(new Identidade("https://idp.test/realms/unifesspa", "diogo.souza"), new(["a"], "SENSIVEL", true, null), new(false), DateTimeOffset.UtcNow);
 
-        EventosDoPedido.Montar(pedido, []).Select(e => e.Tipo).Should().Contain("termo_exigido");
+        EventosDoPedido.Montar(pedido, []).Select(e => e.Tipo.Codigo).Should().Contain("PEDIDO_DEVOLVIDO_POR_TERMO_EXIGIDO");
     }
 }

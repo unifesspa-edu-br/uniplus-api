@@ -89,7 +89,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().EscopoTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeEscopo.Instituicao);
         (await TiposDaTrilhaAsync(diogo, id)).Should().Equal(
-            "pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "termo_aceito", "anexo_lido", "anexo_lido", "APROVADO", "APROVADO");
+            "PEDIDO_CRIADO", "ANEXO_ENVIADO", "ANEXO_VERIFICADO", "BENEFICIARIO_ACEITOU", "TERMO_ACEITO", "ANEXO_LIDO", "ANEXO_LIDO", "PEDIDO_APROVADO_NA_ETAPA", "PEDIDO_APROVADO_NA_ETAPA");
     }
 
     [Fact(DisplayName = "O veredicto de recusa do verificador encerra o anexo, e o pedido de governança continua sem documento")]
@@ -107,7 +107,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         (await SituacaoAsync(betina, id)).Should().Be("AGUARDANDO_DOCUMENTO");
         (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);
-        (await TiposDaTrilhaAsync(betina, id)).Should().Contain("anexo_recusado").And.NotContain("anexo_verificado");
+        (await TiposDaTrilhaAsync(betina, id)).Should().Contain("ANEXO_RECUSADO").And.NotContain("ANEXO_VERIFICADO");
         (await EnviarAsync(betina, HttpMethod.Get, $"{Rota}/{id}/anexos/{anexo}")).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
@@ -153,9 +153,9 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
 
-        JsonElement verificado = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "anexo_verificado");
+        JsonElement verificado = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "ANEXO_VERIFICADO");
         verificado.GetProperty("autor").GetProperty("contaId").GetString().Should().Be("verificador");
-        trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "anexo_enviado")
+        trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetProperty("codigo").GetString() == "ANEXO_ENVIADO")
             .GetProperty("autor").GetProperty("contaId").GetString().Should().Be(Betina.ContaId.ToString());
     }
 

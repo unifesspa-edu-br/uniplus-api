@@ -45,12 +45,15 @@ public static class ProvidenciaMapping
     {
         ArgumentNullException.ThrowIfNull(p);
 
-        yield return new EventoDaTrilhaDto("providencia_solicitada", p.AbertaEm, Pessoa(p.SolicitadaPor), $"{Rotulo(p.Tipo)}. Fundamento: {p.Fundamento}");
+        yield return EventoDaTrilhaDto.DaPessoa(
+            TipoDoEventoDoHistoricoDaConcessao.ProvidenciaSolicitada, p.AbertaEm, Pessoa(p.SolicitadaPor), $"{p.Tipo.Rotulo()}. Fundamento: {p.Fundamento}");
 
         if (p is { DesfechoEm: { } em, DesfechoPor: { } por })
         {
-            string tipo = p.Estado == EstadoDaProvidencia.Atendida ? "providencia_atendida" : "providencia_respondida";
-            yield return new EventoDaTrilhaDto(tipo, em, Pessoa(por), p.MotivoDoDesfecho);
+            TipoDoEventoDoHistoricoDaConcessao tipo = p.Estado == EstadoDaProvidencia.Atendida
+                ? TipoDoEventoDoHistoricoDaConcessao.ProvidenciaAtendida
+                : TipoDoEventoDoHistoricoDaConcessao.ProvidenciaRespondida;
+            yield return EventoDaTrilhaDto.DaPessoa(tipo, em, Pessoa(por), p.MotivoDoDesfecho);
         }
     }
 
@@ -78,7 +81,4 @@ public static class ProvidenciaMapping
     private static bool Impedido(Providencia p, Concessao c, Identidade? leitor) => leitor is not null && p.ImpedeResposta(leitor, c);
 
     private static IdentidadeDto Pessoa(Identidade pessoa) => new(pessoa.Emissor, pessoa.ContaId, pessoa.Nome);
-
-    private static string Rotulo(TipoDaProvidencia tipo) =>
-        tipo == TipoDaProvidencia.Retirada ? "Retirada do acesso" : "Revisão do acesso";
 }

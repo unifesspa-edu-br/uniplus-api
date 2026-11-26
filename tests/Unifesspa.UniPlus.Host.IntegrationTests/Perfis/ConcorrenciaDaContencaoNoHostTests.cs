@@ -53,7 +53,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
             perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(marlene, perfilId, EtapaProtecao));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "decisao_da_retomada", "RETOMADA");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "DECISAO_DA_RETOMADA", "RETOMADA");
         (await PermissoesDaConcessaoAsync(perfilId)).Should().NotBeEmpty();
         DescartarTodas(respostas);
     }
@@ -91,7 +91,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "nao_suspenso");
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "RETOMADA");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "RETOMADA");
         DescartarTodas(respostas);
     }
 

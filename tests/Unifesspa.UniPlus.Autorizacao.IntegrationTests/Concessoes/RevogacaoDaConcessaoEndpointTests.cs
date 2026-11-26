@@ -202,8 +202,8 @@ public sealed class RevogacaoDaConcessaoEndpointTests : ConcessaoEndpointTestBas
         using JsonDocument trilha = await LerAsync(isabella, $"{Rota}/{id}/trilha");
 
         JsonElement[] eventos = [.. trilha.RootElement.EnumerateArray()];
-        eventos.Select(e => (e.GetProperty("tipo").GetString(), e.GetProperty("autor").GetProperty("contaId").GetString()))
-            .Should().Equal(("concedida", Diogo.ContaId), ("revogada", Isabella.ContaId));
+        eventos.Select(e => (e.GetProperty("tipo").GetProperty("codigo").GetString(), e.GetProperty("autor").GetProperty("contaId").GetString()))
+            .Should().Equal(("CONCEDIDA", Diogo.ContaId), ("REVOGADA", Isabella.ContaId));
         eventos[1].GetProperty("detalhe").GetString().Should().Be(Motivo);
         eventos[0].GetProperty("instante").GetDateTimeOffset()
             .Should().BeBefore(eventos[1].GetProperty("instante").GetDateTimeOffset());

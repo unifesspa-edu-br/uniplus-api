@@ -30,6 +30,13 @@ public sealed class TrilhaDaConcessaoTests
     private readonly IEventosDaOrigem _origem = Substitute.For<IEventosDaOrigem>();
     private readonly IConcessaoRepository _concessoes = Substitute.For<IConcessaoRepository>();
 
+    private static EventoDaTrilhaDto PedidoCriadoAntesDaConcessao() =>
+        EventoDaTrilhaDto.DaPessoa(
+            TipoDoEventoDoHistoricoDaConcessao.PedidoCriado,
+            ProvidenciaBuilder.Agora.AddDays(-31),
+            new IdentidadeDto(ProvidenciaBuilder.Cecilia.Identidade.Emissor, ProvidenciaBuilder.Cecilia.Identidade.ContaId),
+            null);
+
     [Fact(DisplayName = "A trilha traz a concessão, a origem, a providência e o atendimento, em ordem cronológica")]
     public async Task Montar_ComAProvidenciaEmOrdem()
     {
@@ -39,11 +46,11 @@ public sealed class TrilhaDaConcessaoTests
         _providencias.ListarDaConcessaoAsync(cenario.Concessao.Id, Arg.Any<CancellationToken>()).Returns([atendida]);
         _origem.Tipo.Returns(TipoDeOrigem.Pedido);
         _origem.ObterAsync(cenario.Concessao.OrigemId, Arg.Any<CancellationToken>())
-            .Returns([new EventoDaTrilhaDto("pedido_criado", ProvidenciaBuilder.Agora.AddDays(-31), null, null)]);
+            .Returns([PedidoCriadoAntesDaConcessao()]);
 
         Result<IReadOnlyList<EventoDaTrilhaDto>> trilha = await ObterAsync(cenario.Concessao);
 
-        trilha.Value!.Select(static e => e.Tipo).Should().Equal("pedido_criado", "concedida", "providencia_solicitada", "revogada", "providencia_atendida");
+        trilha.Value!.Select(static e => e.Tipo.Codigo).Should().Equal("PEDIDO_CRIADO", "CONCEDIDA", "PROVIDENCIA_SOLICITADA", "REVOGADA", "PROVIDENCIA_ATENDIDA");
     }
 
     [Fact(DisplayName = "A concessão inexistente responde não encontrada")]
@@ -78,7 +85,7 @@ public sealed class TrilhaDaConcessaoTests
 
         Result<IReadOnlyList<EventoDaTrilhaDto>> trilha = await ObterAsync(cenario.Concessao, verificador);
 
-        trilha.Value!.Select(static e => e.Tipo).Should().NotContain("providencia_solicitada");
+        trilha.Value!.Select(static e => e.Tipo.Codigo).Should().NotContain("PROVIDENCIA_SOLICITADA");
         verificador.Gravados.Should().BeEmpty();
     }
 

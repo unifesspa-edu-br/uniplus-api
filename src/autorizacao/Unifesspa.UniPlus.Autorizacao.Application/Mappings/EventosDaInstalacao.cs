@@ -50,7 +50,7 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
         IdentidadeDto executor = new(instalacao.ExecutorEmissor, instalacao.ExecutorContaId, instalacao.ExecutorNome);
         IEnumerable<EventoDaTrilhaDto> eventos =
         [
-            new("instalacao_iniciada", instalacao.IniciadaEm, executor, $"Documento de designação nº {instalacao.NumeroDoDocumento}."),
+            EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.InstalacaoIniciada, instalacao.IniciadaEm, executor, $"Documento de designação nº {instalacao.NumeroDoDocumento}."),
             .. DoDocumento(instalacao, executor),
             .. DasTentativas(tentativas, executor),
             .. DoDesfecho(instalacao, executor),
@@ -64,17 +64,17 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
     {
         if (instalacao.DocumentoVerificadoEm is { } verificadoEm)
         {
-            yield return new("documento_verificado", verificadoEm, executor, $"SHA-256 do PDF: {instalacao.DocumentoSha256}.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.DocumentoDeDesignacaoVerificado, verificadoEm, executor, $"SHA-256 do PDF: {instalacao.DocumentoSha256}.");
         }
 
         if (instalacao.DocumentoRecusadoEm is { } recusadoEm)
         {
-            yield return new("documento_recusado", recusadoEm, executor, "O verificador recusou o documento ou pediu o reenvio.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.DocumentoDeDesignacaoRecusado, recusadoEm, executor, "O verificador recusou o documento ou pediu o reenvio.");
         }
 
         if (instalacao.CodigoEnviadoEm is { } enviadoEm)
         {
-            yield return new("codigo_enviado", enviadoEm, executor, "Código enviado ao e-mail institucional de quem executou.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.CodigoDeConfirmacaoEnviado, enviadoEm, executor, "Código enviado ao e-mail institucional de quem executou.");
         }
     }
 
@@ -82,15 +82,17 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
     {
         foreach (TentativaDeInstalacao reenvio in tentativas.Where(t => t.Resultado == ResultadoDaTentativaDeInstalacao.CodigoReenviado))
         {
-            yield return new("codigo_reenviado", reenvio.Instante, executor, "Novo código enviado ao e-mail institucional de quem executou; o anterior deixou de valer.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.CodigoDeConfirmacaoReenviado, reenvio.Instante, executor, "Novo código enviado ao e-mail institucional de quem executou; o anterior deixou de valer.");
         }
 
         List<TentativaDeInstalacao> confirmacoes = [.. tentativas.Where(t => t.Resultado != ResultadoDaTentativaDeInstalacao.CodigoReenviado)];
         if (confirmacoes.Count > 0)
         {
             int erradas = confirmacoes.Count(t => t.Resultado == ResultadoDaTentativaDeInstalacao.CodigoErrado);
-            yield return new(
-                "tentativas", confirmacoes.Max(t => t.Instante), executor, $"{confirmacoes.Count} tentativa(s) de confirmação, {erradas} com código errado.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.TentativasDeConfirmacao,
+                confirmacoes.Max(t => t.Instante),
+                executor,
+                $"{confirmacoes.Count} tentativa(s) de confirmação, {erradas} com código errado.");
         }
     }
 
@@ -98,17 +100,17 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
     {
         if (instalacao.ConfirmadaEm is { } confirmadaEm)
         {
-            yield return new("instalacao_confirmada", confirmadaEm, executor, null);
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.InstalacaoConfirmada, confirmadaEm, executor, null);
         }
 
         if (instalacao.CanceladaEm is { } canceladaEm)
         {
-            yield return new("instalacao_cancelada", canceladaEm, executor, null);
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.InstalacaoCancelada, canceladaEm, executor, null);
         }
 
         if (instalacao.Situacao == SituacaoDaInstalacao.Expirada && instalacao.CodigoExpiraEm is { } expiraEm)
         {
-            yield return new("instalacao_expirada", expiraEm, executor, "O prazo do código esgotou.");
+            yield return EventoDaTrilhaDto.DaPessoa(TipoDoEventoDoHistoricoDaConcessao.InstalacaoExpirada, expiraEm, executor, "O prazo do código esgotou.");
         }
     }
 
@@ -122,6 +124,6 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
         string detalhe = termo.Situacao == SituacaoDoTermoNaInstalacao.SemTermoPublicado
             ? "Gestores instalados antes de existir termo de responsabilidade publicado."
             : $"Gestores instalados sem aceite do termo de responsabilidade vigente, versão {termo.Numero}.";
-        yield return new("termo_excecao_da_instalacao", termo.RegistradaEm, Sistema, detalhe, "sistema");
+        yield return EventoDaTrilhaDto.DoSistema(TipoDoEventoDoHistoricoDaConcessao.InstalacaoSemAceiteDoTermo, termo.RegistradaEm, Sistema, detalhe);
     }
 }

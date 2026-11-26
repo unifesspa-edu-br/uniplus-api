@@ -80,7 +80,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
 
         (await repetida.Content.ReadAsStringAsync()).Should().Be(await primeira.Content.ReadAsStringAsync());
         (primeira.StatusCode, repetida.StatusCode, repetida.Headers.GetValues("Idempotency-Replayed").Single()).Should().Be((HttpStatusCode.OK, HttpStatusCode.OK, "true"));
-        (await TiposDaTrilhaDaConcessaoAsync(g.Diogo, concessao)).Count(static t => t is "revogada" or "providencia_atendida").Should().Be(2);
+        (await TiposDaTrilhaDaConcessaoAsync(g.Diogo, concessao)).Count(static t => t is "REVOGADA" or "PROVIDENCIA_ATENDIDA").Should().Be(2);
         (await AvisosEmitidosAsync(providencia, "PROVIDENCIA_ATENDIDA"), await AvisosEmitidosAsync(providencia, "CONCESSAO_REVOGADA_NO_ATENDIMENTO")).Should().Be((1, 1));
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, Leandro.Email), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_atendida");
     }
@@ -133,5 +133,5 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
     }
 
     private static async Task<string[]> TiposDaTrilhaDaConcessaoAsync(HttpClient cliente, Guid concessaoId) =>
-        [.. (await LerAsync(cliente, $"/api/autorizacao/concessoes/{concessaoId}/trilha")).EnumerateArray().Select(static e => e.GetProperty("tipo").GetString()!)];
+        [.. (await LerAsync(cliente, $"/api/autorizacao/concessoes/{concessaoId}/trilha")).EnumerateArray().Select(static e => e.GetProperty("tipo").GetProperty("codigo").GetString()!)];
 }

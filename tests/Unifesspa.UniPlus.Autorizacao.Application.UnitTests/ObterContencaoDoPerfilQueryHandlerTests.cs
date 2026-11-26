@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
-using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -18,23 +17,27 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
     private const string Consultar = "selecao:processos:consultar";
     private const string Motivo = PerfisDeTeste.MotivoDaContencao;
 
-    [Fact(DisplayName = "Quem mantém perfis lê a trilha: eventos e decisões, com a retomada atribuída ao sistema")]
+    [Fact(DisplayName = "Quem mantém perfis lê a trilha: eventos e decisões")]
     public async Task Obter_PorQuemMantem_DevolveATrilha()
     {
-        Perfil perfil = Suspenso();
-        perfil.DecidirRetomada(new ContextoDaRetomada(
-            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.GestaoDeAcessos, MotivoInformado.Normalizar(Motivo), new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante));
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
+        (CenarioDaGovernancaDaVersao cenario, IReadOnlyList<RegistroDaContencaoDto> registros) = await ObterComARetomadaDecidida();
 
-        Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
-
-        resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("SUSPENSAO", "RETOMADA", ContencaoMapping.TipoDaDecisao);
-        resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao).Should().Match<RegistroDaContencaoDto>(d =>
-            d.Etapa == "GESTAO_DE_ACESSOS" && d.DecisorTemConcessao == true
-            && d.Pessoa == new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.ContaId, PerfisDeTeste.ProtecaoDeDados.Nome));
-        resultado.Value!.Single(r => r.Tipo == "RETOMADA").Should().Match<RegistroDaContencaoDto>(r =>
-            r.Ator == "SISTEMA" && r.Origem == "DECISAO_DA_ETAPA" && r.Pessoa == null);
+        registros.Select(r => r.Tipo.Codigo).Should().BeEquivalentTo("SUSPENSAO", "RETOMADA", "DECISAO_DA_RETOMADA");
+        RegistroDaContencaoDto decisao = registros.Single(r => r.Tipo.Codigo == "DECISAO_DA_RETOMADA");
+        (decisao.Etapa?.Codigo, decisao.DecisorTemConcessao, decisao.Pessoa).Should().Be((
+            "GESTAO_DE_ACESSOS",
+            (bool?)true,
+            new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.ContaId, PerfisDeTeste.ProtecaoDeDados.Nome)));
         cenario.Verificador.Gravados.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "A retomada é atribuída ao sistema, com a origem e sem pessoa")]
+    public async Task Obter_Retomada_ESistema()
+    {
+        (_, IReadOnlyList<RegistroDaContencaoDto> registros) = await ObterComARetomadaDecidida();
+
+        RegistroDaContencaoDto retomada = registros.Single(r => r.Tipo.Codigo == "RETOMADA");
+        (retomada.Ator.Codigo, retomada.Origem?.Codigo, retomada.Pessoa).Should().Be(("SISTEMA", "DECISAO_DA_ETAPA", (IdentidadeDto?)null));
     }
 
     [Fact(DisplayName = "A suspensão por token sem nome traz o emissor e a conta de quem agiu, com o nome nulo")]
@@ -77,6 +80,16 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, Guid.NewGuid());
 
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.NaoEncontrado);
+    }
+
+    private static async Task<(CenarioDaGovernancaDaVersao Cenario, IReadOnlyList<RegistroDaContencaoDto> Registros)> ObterComARetomadaDecidida()
+    {
+        Perfil perfil = Suspenso();
+        perfil.DecidirRetomada(new ContextoDaRetomada(
+            PerfisDeTeste.ProtecaoDeDados, true, EtapaDaVersao.GestaoDeAcessos, MotivoInformado.Normalizar(Motivo), new DoublesDePerfis.CatalogoDeTeste(), PerfisDeTeste.Instante));
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
+
+        return (cenario, (await Obter(cenario, perfil.Id)).Value!);
     }
 
     private static Task<Result<IReadOnlyList<RegistroDaContencaoDto>>> Obter(CenarioDaGovernancaDaVersao cenario, Guid perfilId) =>

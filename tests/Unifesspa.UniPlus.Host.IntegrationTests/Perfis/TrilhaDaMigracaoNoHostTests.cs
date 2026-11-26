@@ -67,39 +67,39 @@ public sealed class TrilhaDaMigracaoNoHostTests : RevisaoDasConcessoesNoHostTest
 
     private static void ConferirTrilhas(JsonElement trilhaDaMigrada, JsonElement trilhaDaPropria, string revisaoId)
     {
-        JsonElement[] decisoes = EventosDoTipo(trilhaDaMigrada, "migracao_migrar");
+        JsonElement[] decisoes = EventosDoTipo(trilhaDaMigrada, "MIGRACAO_APROVADA");
         decisoes.Should().HaveCount(2);
         decisoes.Select(d => d.GetProperty("autor").GetProperty("contaId").GetString())
             .Should().BeEquivalentTo([Isabella.ContaId.ToString(), Marlene.ContaId.ToString()]);
-        decisoes.Should().OnlyContain(d => d.GetProperty("ator").GetString() == "HUMANO");
+        decisoes.Should().OnlyContain(d => d.GetProperty("ator").GetProperty("codigo").GetString() == "HUMANO");
         decisoes.Should().OnlyContain(d => d.GetProperty("detalhe").GetString()!.Contains(revisaoId, StringComparison.Ordinal));
-        JsonElement retencao = EventosDoTipo(trilhaDaPropria, "migracao_reter").Single();
-        retencao.GetProperty("ator").GetString().Should().Be("SISTEMA");
+        JsonElement retencao = EventosDoTipo(trilhaDaPropria, "RETIDA_NA_MIGRACAO").Single();
+        retencao.GetProperty("ator").GetProperty("codigo").GetString().Should().Be("SISTEMA");
         DecisoresDe(trilhaDaPropria).Should().NotContain(Isabella.ContaId.ToString());
         DecisoresDe(trilhaDaPropria).Should().Contain([Diogo.ContaId.ToString(), Marlene.ContaId.ToString()]);
     }
 
     private static void ConferirTrilhaDaNaoMigrada(JsonElement trilha, string revisaoId)
     {
-        JsonElement naoMigrada = EventosDoTipo(trilha, "migracao_nao_migrada").Single();
+        JsonElement naoMigrada = EventosDoTipo(trilha, "NAO_MIGRADA").Single();
         naoMigrada.GetProperty("detalhe").GetString().Should().Contain(revisaoId);
-        naoMigrada.GetProperty("ator").GetString().Should().Be("SISTEMA");
+        naoMigrada.GetProperty("ator").GetProperty("codigo").GetString().Should().Be("SISTEMA");
         naoMigrada.TryGetProperty("autor", out JsonElement autorDaDecisao).Should().BeTrue();
         autorDaDecisao.ValueKind.Should().BeOneOf(JsonValueKind.Null, JsonValueKind.Undefined);
-        JsonElement revogada = EventosDoTipo(trilha, "revogada_pela_migracao").Single();
-        revogada.GetProperty("ator").GetString().Should().Be("sistema");
+        JsonElement revogada = EventosDoTipo(trilha, "REVOGADA_PELA_MIGRACAO").Single();
+        revogada.GetProperty("ator").GetProperty("codigo").GetString().Should().Be("SISTEMA");
         DecisoresDe(trilha).Should().BeEmpty();
     }
 
     private static string RotaDaTrilha(Guid concessaoId) => $"/api/autorizacao/concessoes/{concessaoId}/trilha";
 
     private static JsonElement[] EventosDoTipo(JsonElement trilha, string tipo) =>
-        [.. trilha.EnumerateArray().Where(e => e.GetProperty("tipo").GetString() == tipo)];
+        [.. trilha.EnumerateArray().Where(e => e.GetProperty("tipo").GetProperty("codigo").GetString() == tipo)];
 
     /// <summary>Quem assina os eventos da migração; a concessão e a origem têm autores próprios, fora deste conjunto.</summary>
     private static string[] DecisoresDe(JsonElement trilha) =>
         [.. trilha.EnumerateArray()
-            .Where(e => e.GetProperty("tipo").GetString()!.StartsWith("migracao_", StringComparison.Ordinal))
+            .Where(e => e.GetProperty("tipo").GetProperty("codigo").GetString() is "MIGRACAO_APROVADA" or "MIGRACAO_RECUSADA")
             .Where(e => e.TryGetProperty("autor", out JsonElement a) && a.ValueKind == JsonValueKind.Object)
             .Select(e => e.GetProperty("autor").GetProperty("contaId").GetString()!)];
 }

@@ -94,7 +94,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         JsonElement pedido = await LerAsync(Cliente(Betina), $"{Rota}/{id}");
         pedido.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
         pedido.GetProperty("validaAte").ValueKind.Should().Be(JsonValueKind.Null);
-        (await TiposDaTrilhaAsync(marlene, id)).Should().Contain("prazo_vencido_entre_etapas");
+        (await TiposDaTrilhaAsync(marlene, id)).Should().Contain("PRAZO_VENCIDO_ENTRE_ETAPAS");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
     }
 

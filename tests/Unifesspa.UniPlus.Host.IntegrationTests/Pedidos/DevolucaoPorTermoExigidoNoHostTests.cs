@@ -39,7 +39,7 @@ public sealed class DevolucaoPorTermoExigidoNoHostTests : PedidosDeConcessaoTest
         JsonElement aviso = await AguardarAvisoAsync(Betina, id, "passou a exigir o termo de responsabilidade");
         aviso.GetProperty("Text").GetString().Should().Contain($"/acessos/pedidos/{id}").And.NotContain(Betina.Nome).And.NotContain(Justificativa);
         (await SituacaoAsync(diogo, id)).Should().Be("DEVOLVIDO");
-        (await TiposDaTrilhaAsync(diogo, id)).Should().Contain("termo_exigido");
+        (await TiposDaTrilhaAsync(diogo, id)).Should().Contain("PEDIDO_DEVOLVIDO_POR_TERMO_EXIGIDO");
     }
 
     // O pedido de Betina para si mesma, aguardando o gestor, sem versão do termo fixada.

@@ -323,14 +323,14 @@ public abstract partial class InstalacaoTestBase
     {
         using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/instalacoes/{id}/trilha");
-        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
+        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()!)];
     }
 
     private protected async Task<Dictionary<string, DateTimeOffset>> InstantesDaTrilhaDaInstalacaoAsync(Guid id)
     {
         using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/instalacoes/{id}/trilha");
-        return eventos.EnumerateArray().ToDictionary(e => e.GetProperty("tipo").GetString()!, e => e.GetProperty("instante").GetDateTimeOffset());
+        return eventos.EnumerateArray().ToDictionary(e => e.GetProperty("tipo").GetProperty("codigo").GetString()!, e => e.GetProperty("instante").GetDateTimeOffset());
     }
 
     private protected async Task<string[]> TiposDaTrilhaDaConcessaoAsync(Guid instalacaoId, Persona beneficiario)
@@ -344,7 +344,7 @@ public abstract partial class InstalacaoTestBase
 
         using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/concessoes/{concessao}/trilha");
-        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
+        return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()!)];
     }
 
     private protected async Task<(string Autor, string Resultado)[]> ListarTentativasSemPendenciaAsync()

@@ -100,8 +100,8 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("concessao").GetProperty("ativa").GetBoolean()).Should().Be(("ATENDIDA", false));
         using JsonDocument trilha = await LerAsync(diogo, $"{Rota}/{concessao}/trilha");
-        trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetString()).Should()
-            .Contain(["providencia_solicitada", "revogada", "providencia_atendida"]);
+        trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should()
+            .Contain(["PROVIDENCIA_SOLICITADA", "REVOGADA", "PROVIDENCIA_ATENDIDA"]);
     }
 
     [Fact(DisplayName = "O e-mail que não é o do beneficiário recusa o atendimento com o código da revogação comum, e o motivo acumula")]

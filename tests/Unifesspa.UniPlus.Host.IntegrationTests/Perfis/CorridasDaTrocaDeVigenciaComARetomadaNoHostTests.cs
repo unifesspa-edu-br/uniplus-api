@@ -31,7 +31,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
         using HttpClient diogo = await GestorAsync();
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA");
         (await PermissoesDaConcessaoAsync(perfilId)).Should().BeEmpty();
         DescartarTodas(respostas);
     }
@@ -48,7 +48,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
         using HttpClient diogo = await GestorAsync();
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "RETOMADA");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "RETOMADA");
         (await PermissoesDaConcessaoAsync(perfilId)).Should().Equal(Consultar);
         DescartarTodas(respostas);
     }
@@ -66,8 +66,8 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "nao_suspenso");
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "RETOMADA");
-        (await TrilhaAsync(diogo, perfilId)).EnumerateArray().Last().GetProperty("origem").GetString().Should().Be("TROCA_DE_VIGENCIA");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "RETOMADA");
+        (await TrilhaAsync(diogo, perfilId)).EnumerateArray().Last().GetProperty("origem").GetProperty("codigo").GetString().Should().Be("TROCA_DE_VIGENCIA");
         DescartarTodas(respostas);
     }
 
@@ -83,8 +83,8 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
             perfilId, () => RetomarAsync(marlene, perfilId, EtapaProtecao), () => RemoverPermissoesAsync(diogo, perfilId, Consultar));
 
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
-        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "decisao_da_retomada", "decisao_da_retomada", "RETOMADA");
-        (await TrilhaAsync(diogo, perfilId)).EnumerateArray().Last().GetProperty("origem").GetString().Should().Be("DECISAO_DA_ETAPA");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("SUSPENSAO", "DECISAO_DA_RETOMADA", "DECISAO_DA_RETOMADA", "RETOMADA");
+        (await TrilhaAsync(diogo, perfilId)).EnumerateArray().Last().GetProperty("origem").GetProperty("codigo").GetString().Should().Be("DECISAO_DA_ETAPA");
         DescartarTodas(respostas);
     }
 

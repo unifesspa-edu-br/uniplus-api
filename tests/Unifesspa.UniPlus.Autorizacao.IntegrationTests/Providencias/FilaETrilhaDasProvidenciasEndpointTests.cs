@@ -49,7 +49,7 @@ public sealed class FilaETrilhaDasProvidenciasEndpointTests : ProvidenciaEndpoin
 
         using JsonDocument trilha = await LerAsync(diogo, $"{Rota}/{concessao}/trilha");
 
-        trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetString()).Should().Contain("providencia_solicitada");
+        trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should().Contain("PROVIDENCIA_SOLICITADA");
         Registro.Registrados.Skip(antes).Should().Contain(r =>
             r.ResourceTipo == "providencia-sobre-concessao" && r.ResourceId == providencia && r.AtorContaId == Diogo.ContaId && r.Permissao == Administrar);
     }

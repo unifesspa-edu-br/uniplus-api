@@ -54,8 +54,8 @@ public sealed class FixacaoDoTermoTests
 
         IReadOnlyList<EventoDaTrilhaDto>? trilha = await new EventosDaInstalacao(instalacoes, _termos).ObterAsync(instalacao.Id, CancellationToken.None);
 
-        EventoDaTrilhaDto evento = trilha!.Single(e => e.Tipo == "termo_excecao_da_instalacao");
-        (evento.Ator, evento.Detalhe).Should().Be(("sistema", "Gestores instalados antes de existir termo de responsabilidade publicado."));
+        EventoDaTrilhaDto evento = trilha!.Single(e => e.Tipo.Codigo == "INSTALACAO_SEM_ACEITE_DO_TERMO");
+        (evento.Ator.Codigo, evento.Detalhe).Should().Be(("SISTEMA", "Gestores instalados antes de existir termo de responsabilidade publicado."));
     }
 
     private Task<Result> FixarAsync(PedidoDeConcessao pedido, Perfil perfil, Guid? apresentada) =>
