@@ -52,7 +52,7 @@ internal sealed class ResolucaoDaDistribuicao(
 
     internal async Task ResolverAsync(CancellationToken cancellationToken)
     {
-        Recusar("ofertaCursoId", await ResolverOfertaAsync(cancellationToken).ConfigureAwait(false));
+        await ResolverOfertaAsync(cancellationToken).ConfigureAwait(false);
         Recusar(DadoDaDistribuicaoDeVagas.RegraDeDistribuicao, "regraDistribuicaoCodigo", await ResolverRegraDeDistribuicaoAsync(cancellationToken).ConfigureAwait(false));
         Recusar(DadoDaDistribuicaoDeVagas.RegraDeAjuste, "regraAjusteCodigo", await ResolverRegraDeAjusteAsync(cancellationToken).ConfigureAwait(false));
         Recusar(DadoDaDistribuicaoDeVagas.ReferenciaDemografica, "referenciaReservaDemograficaId", await ResolverReferenciaDemograficaAsync(cancellationToken).ConfigureAwait(false));
@@ -84,20 +84,21 @@ internal sealed class ResolucaoDaDistribuicao(
         Recusar(campo, erro);
     }
 
-    private async Task<DomainError?> ResolverOfertaAsync(CancellationToken cancellationToken)
+    private async Task ResolverOfertaAsync(CancellationToken cancellationToken)
     {
         OfertaCursoView? oferta = await ofertaCursoReader
             .ObterPorIdAsync(pedido.OfertaCursoId, cancellationToken).ConfigureAwait(false);
         if (oferta is null)
         {
-            return RecusasDaResolucaoDeVagas.OfertaNaoEncontrada(pedido.OfertaCursoId);
+            Recusar("ofertaCursoId", RecusasDaResolucaoDeVagas.OfertaNaoEncontrada(pedido.OfertaCursoId));
+            return;
         }
 
         Result<CopiaDaOfertaDeCurso> nome = CopiaDaOfertaDeCurso.Criar(
             oferta.Codigo, oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
         _oferta = oferta;
         _nomeDaOferta = nome.Value;
-        return nome.Error;
+        _recusasDoCadastro.AddRange(nome.Errors.Select(static causa => new FieldError("ofertaCursoId", causa.Error)));
     }
 
     private async Task<DomainError?> ResolverRegraDeDistribuicaoAsync(CancellationToken cancellationToken)

@@ -9845,14 +9845,29 @@
       ]
     },
     {
-      "codigo": "uniplus.copia_da_oferta_de_curso.invalida",
+      "codigo": "uniplus.copia_da_oferta_de_curso.codigo_formato_invalido",
       "requisitos": [
-        "UNI-REQ-0496"
+        "UNI-REQ-0506"
       ],
       "oQueAconteceu": [
-        "Ao definir a distribuição de vagas, o processo seletivo copia por valor o que\nnomeia cada oferta de curso para a pessoa candidata: o nome do curso, o grau, o\nnome da unidade ofertante e os turnos. Essa cópia fica congelada com o processo,\ne renomear o curso ou a unidade depois não a altera. Para ser congelada, a cópia\nprecisa ter curso, grau, unidade ofertante e ao menos um turno, sem caractere\nnulo e dentro do tamanho permitido (curso até 200 caracteres, grau até 60,\nunidade até 250 e turno até 30, depois da normalização do texto). A mensagem do\nerro repete essa exigência e não diz qual dos campos falhou.",
+        "O campo `ofertaCursoCodigo` da cópia da oferta de curso não tem o formato\npermitido ou ultrapassa 50 caracteres. A cópia identifica a oferta na\ndistribuição de vagas."
+      ],
+      "comoResolver": [
+        "Corrija o código da oferta no cadastro: comece com letra maiúscula e use somente\nletras maiúsculas sem acento, algarismos e sublinhado entre as palavras, com até\n50 caracteres. Depois defina novamente a distribuição. Se a falha ocorrer na\nleitura de uma versão já publicada, solicite investigação à equipe técnica do\nUni+."
+      ],
+      "ondeAparece": [
+        "Definição e simulação da distribuição de vagas do processo seletivo e leitura da configuração congelada"
+      ]
+    },
+    {
+      "codigo": "uniplus.copia_da_oferta_de_curso.invalida",
+      "requisitos": [
+        "UNI-REQ-0506"
+      ],
+      "oQueAconteceu": [
+        "Ao definir a distribuição de vagas, o processo seletivo copia por valor o que\nnomeia cada oferta de curso para a pessoa candidata: o nome do curso, o grau, o\nnome da unidade ofertante e os turnos. Essa cópia fica congelada com o processo,\ne renomear o curso ou a unidade depois não a altera. Para ser congelada, a cópia\nprecisa ter curso, grau, unidade ofertante e ao menos um turno, sem caractere\nnulo e dentro do tamanho permitido (curso até 200 caracteres, grau até 60,\nunidade até 250 e turno até 30, depois da normalização do texto). Na definição e\nna simulação, a recusa aponta a oferta; na leitura da versão congelada,\nidentifica o campo que falhou.",
         "Os dados vêm do cadastro de cursos e de ofertas de curso de Configuração, e\naqui algum deles não pôde ser congelado: está em branco, passa do tamanho ou\ntraz caractere que o certame não congela, como um não-caractere do Unicode. Nada\nfoi gravado. A **simulação** da distribuição de vagas devolve a mesma recusa,\nsem gravar nada.",
-        "A recusa também pode aparecer quando o sistema relê a configuração congelada\nda versão publicada, nas demais operações da lista do cabeçalho (a lista\ncompleta é a das operações que propagam a falha da releitura). A consulta de\nconformidade do processo também relê a versão, mas converte a falha em pendência\ndo checklist, e por isso não consta no cabeçalho. Pelo caminho normal de\ngravação, a cópia congelada nunca traz uma oferta assim, porque a definição da\ndistribuição a recusa antes. Nessas leituras a recusa sai como violação única,\nsem a lista `errors[]`, e se refere à versão congelada, não ao pedido enviado."
+        "A recusa também pode aparecer quando o sistema relê a configuração congelada da\nversão publicada, nas demais operações da lista do cabeçalho (a lista completa é\na das operações que propagam a falha da releitura). A consulta de conformidade\ndo processo também relê a versão, mas converte a falha em pendência do\nchecklist, e por isso não consta no cabeçalho. Pelo caminho normal de gravação,\na cópia congelada nunca traz uma oferta assim, porque a definição da\ndistribuição a recusa antes. Nessas leituras as recusas identificam os campos da\noferta na versão congelada, não no pedido enviado."
       ],
       "comoResolver": [
         "Na definição ou na simulação, corrija no cadastro de Configuração o curso ou a\noferta de curso apontados (`PUT /api/configuracao/admin/cursos/{id}` ou\n`PUT /api/configuracao/admin/ofertas-curso/{id}`), de modo que nome do curso,\ngrau, nome da unidade ofertante e turnos fiquem preenchidos, no tamanho\npermitido e sem caractere inválido. Em seguida, defina a distribuição de vagas\nde novo: a cópia é feita no momento da definição, e a correção do cadastro não\nchega sozinha a uma distribuição já definida.",

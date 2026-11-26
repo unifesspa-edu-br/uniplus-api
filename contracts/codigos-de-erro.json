@@ -3097,6 +3097,11 @@
       "titulo": "Versão de mídia não suportada"
     },
     {
+      "codigo": "uniplus.copia_da_oferta_de_curso.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Formato do código da oferta de curso inválido"
+    },
+    {
       "codigo": "uniplus.copia_da_oferta_de_curso.invalida",
       "status": 422,
       "titulo": "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos"
