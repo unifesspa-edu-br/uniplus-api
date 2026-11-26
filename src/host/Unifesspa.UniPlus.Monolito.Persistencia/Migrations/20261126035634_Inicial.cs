@@ -634,12 +634,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "ingresso",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    convocacao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    convocacao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da convocação."),
+                    candidato_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do candidato."),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da matrícula. Códigos: PENDENTE, DOCUMENTACAO_ENVIADA, EM_ANALISE, DEFERIDA, INDEFERIDA, EFETIVADA, CANCELADA."),
-                    codigo_curso = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
-                    observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    oferta_curso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código da oferta de curso, copiado da convocação que originou a matrícula."),
+                    oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do curso da oferta, copiado da convocação que originou a matrícula."),
+                    oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Grau do curso da oferta, copiado da convocação que originou a matrícula."),
+                    oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Nome da unidade ofertante, copiado da convocação que originou a matrícula."),
+                    oferta_turnos = table.Column<string[]>(type: "character varying(30)[]", nullable: false, comment: "Turnos que a oferta ocupa (tokens), copiados da convocação que originou a matrícula."),
+                    observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true, comment: "Informações registradas durante a análise."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
@@ -649,8 +653,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_matriculas", x => x.id);
+                    table.CheckConstraint("ck_matriculas_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_matriculas_status", "status IN ('PENDENTE', 'DOCUMENTACAO_ENVIADA', 'EM_ANALISE', 'DEFERIDA', 'INDEFERIDA', 'EFETIVADA', 'CANCELADA')");
-                });
+                },
+                comment: "Matrículas originadas de convocações.");
 
             migrationBuilder.CreateTable(
                 name: "modalidades",
@@ -1658,15 +1664,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "ingresso",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    chamada_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    protocolo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do registro."),
+                    chamada_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da chamada."),
+                    inscricao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da inscrição."),
+                    candidato_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do candidato."),
+                    protocolo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Identificador atribuído à convocação para acompanhamento."),
                     status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Situação da convocação. Códigos: PENDENTE, ACEITA, RECUSADA, NAO_COMPARECEU, EXPIRADA."),
-                    posicao = table.Column<int>(type: "integer", nullable: false),
-                    codigo_curso = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
-                    data_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    posicao = table.Column<int>(type: "integer", nullable: false, comment: "Posição na chamada."),
+                    oferta_curso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código da oferta de curso, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação."),
+                    oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do curso da oferta, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação."),
+                    oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Grau do curso da oferta, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação."),
+                    oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Nome da unidade ofertante, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação."),
+                    oferta_turnos = table.Column<string[]>(type: "character varying(30)[]", nullable: false, comment: "Turnos que a oferta ocupa (tokens), copiados da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação."),
+                    data_manifestacao = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da manifestação."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver."),
                     is_deleted = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o registro foi excluído logicamente."),
@@ -1676,6 +1686,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_convocacoes", x => x.id);
+                    table.CheckConstraint("ck_convocacoes_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_convocacoes_status", "status IN ('PENDENTE', 'ACEITA', 'RECUSADA', 'NAO_COMPARECEU', 'EXPIRADA')");
                     table.ForeignKey(
                         name: "fk_convocacoes_chamadas_chamada_id",
@@ -1684,7 +1695,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "chamadas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Convocações de candidatos para chamadas.");
 
             migrationBuilder.CreateTable(
                 name: "opcoes_dos_dados",
@@ -2354,37 +2366,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_curso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    vagas_ofertadas_base = table.Column<int>(type: "integer", nullable: false),
-                    percentual_da_reserva_legal = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: true),
-                    regra_distribuicao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_distribuicao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_distribuicao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    referencia_demografica_origem_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    referencia_demografica_censo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    referencia_demografica_ppi_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
-                    referencia_demografica_quilombola_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
-                    referencia_demografica_pcd_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
-                    referencia_demografica_base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    regra_ajuste_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    regra_ajuste_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
-                    regra_ajuste_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
-                    ajuste_do_quadro = table.Column<string>(type: "jsonb", nullable: true),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da configuração de distribuição de vagas."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo ao qual a distribuição pertence."),
+                    oferta_curso_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da oferta no cadastro de origem."),
+                    vagas_ofertadas_base = table.Column<int>(type: "integer", nullable: false, comment: "Quantidade de vagas ofertadas usada como base do quadro."),
+                    percentual_da_reserva_legal = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: true, comment: "Fração das vagas base reservada por lei; ausente no quadro fixado."),
+                    regra_distribuicao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false, comment: "Código da regra de distribuição, copiado do catálogo na definição."),
+                    regra_distribuicao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão da regra de distribuição, copiada do catálogo na definição."),
+                    regra_distribuicao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "Hash da regra de distribuição, copiado do catálogo na definição."),
+                    referencia_demografica_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da referência demográfica no cadastro de origem."),
+                    referencia_demografica_censo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Censo da referência demográfica, copiado do cadastro na definição."),
+                    referencia_demografica_ppi_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true, comment: "Percentual de pessoas pretas, pardas e indígenas no Censo, copiado do cadastro."),
+                    referencia_demografica_quilombola_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true, comment: "Percentual de pessoas quilombolas no Censo, copiado do cadastro."),
+                    referencia_demografica_pcd_percentual = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true, comment: "Percentual de pessoas com deficiência no Censo, copiado do cadastro."),
+                    referencia_demografica_base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "Base legal da referência demográfica, copiada do cadastro."),
+                    regra_ajuste_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da regra de ajuste, copiado do catálogo na definição."),
+                    regra_ajuste_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da regra de ajuste, copiada do catálogo na definição."),
+                    regra_ajuste_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Hash da regra de ajuste, copiado do catálogo na definição."),
+                    ajuste_do_quadro = table.Column<string>(type: "jsonb", nullable: true, comment: "Parâmetros do motor de ajuste do quadro fixado no edital."),
                     grupo_area_enem_codigo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, copiado do cadastro de cursos na definição da distribuição e na publicação; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo."),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Rótulo do grupo de área do ENEM do curso da oferta, copiado junto do código na definição da distribuição e na publicação. Nulo quando o curso não declara grupo."),
                     oferta_curso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Código da oferta de curso, copiado do cadastro na definição da distribuição e na publicação."),
                     oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação."),
                     oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Grau do curso da oferta, copiado do cadastro na definição da distribuição e na publicação."),
                     oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação."),
-                    oferta_turnos = table.Column<string[]>(type: "text[]", nullable: true, comment: "Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação."),
-                    reserva_legal_nominal = table.Column<int>(type: "integer", nullable: true),
-                    reserva_legal_efetiva = table.Column<int>(type: "integer", nullable: true),
-                    excedente_sobre_reserva_legal = table.Column<int>(type: "integer", nullable: true),
-                    vagas_cortadas_por_escassez = table.Column<int>(type: "integer", nullable: true),
-                    vagas_retiradas_no_ajuste = table.Column<string>(type: "jsonb", nullable: true),
-                    total_de_vagas_do_edital = table.Column<int>(type: "integer", nullable: false),
+                    oferta_turnos = table.Column<string[]>(type: "character varying(30)[]", nullable: true, comment: "Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação."),
+                    reserva_legal_nominal = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de vagas reservadas pelo percentual legal, antes das garantias."),
+                    reserva_legal_efetiva = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de vagas concedidas à reserva legal após as garantias."),
+                    excedente_sobre_reserva_legal = table.Column<int>(type: "integer", nullable: true, comment: "Vagas da reserva efetiva acima da reserva nominal."),
+                    vagas_cortadas_por_escassez = table.Column<int>(type: "integer", nullable: true, comment: "Vagas cortadas das reservas por escassez."),
+                    vagas_retiradas_no_ajuste = table.Column<string>(type: "jsonb", nullable: true, comment: "Vagas retiradas por modalidade pelo ajuste do quadro fixado."),
+                    total_de_vagas_do_edital = table.Column<int>(type: "integer", nullable: false, comment: "Total de vagas resultante para o edital."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
                 },
@@ -2392,6 +2404,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_de_vagas", x => x.id);
                     table.CheckConstraint("ck_configuracoes_de_vagas_excedente_sobre_reserva_legal", "excedente_sobre_reserva_legal IS NULL OR excedente_sobre_reserva_legal = GREATEST(0, reserva_legal_efetiva - reserva_legal_nominal)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
                     table.CheckConstraint("ck_configuracoes_de_vagas_percentual_da_reserva_legal", "percentual_da_reserva_legal IS NULL OR (percentual_da_reserva_legal >= 0.5 AND percentual_da_reserva_legal <= 1)");
                     table.CheckConstraint("ck_configuracoes_de_vagas_ramo_do_quadro", "reserva_legal_nominal IS NULL OR (vagas_retiradas_no_ajuste IS NULL AND ajuste_do_quadro IS NULL)");
                     table.CheckConstraint("ck_configuracoes_de_vagas_reserva_legal_completa", "(percentual_da_reserva_legal IS NULL AND reserva_legal_nominal IS NULL AND reserva_legal_efetiva IS NULL AND excedente_sobre_reserva_legal IS NULL AND vagas_cortadas_por_escassez IS NULL) OR (percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL)");
@@ -2402,7 +2415,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Distribuição de vagas de uma oferta de curso em um processo seletivo, com as regras e os dados congelados para compor o quadro.");
 
             migrationBuilder.CreateTable(
                 name: "configuracoes_divulgacao",
