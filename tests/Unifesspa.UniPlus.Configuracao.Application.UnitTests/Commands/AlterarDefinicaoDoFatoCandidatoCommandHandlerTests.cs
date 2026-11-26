@@ -220,12 +220,15 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e => e.Field == campo && e.Error.Code == codigo);
     }
 
-    [Fact(DisplayName = "Alteração: token com espaços nas pontas vale como o token aparado")]
-    public async Task Handle_TokenComEspacos_Aceito()
+    [Fact(DisplayName = "Alteração: códigos com espaços nas pontas são recusados")]
+    public async Task Handle_CodigosComEspacos_Recusa()
     {
         Result resultado = await AlterarAsync("CERTIFICADO", Definicao(" SIM_OU_NAO ", cardinalidade: " VALOR_UNICO ", ponto: "HABILITACAO", escopo: " CANDIDATO "));
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("dominio", FatoCandidatoErrorCodes.DominioInvalido),
+            ("cardinalidade", FatoCandidatoErrorCodes.CardinalidadeInvalida),
+            ("escopo", FatoCandidatoErrorCodes.EscopoInvalido));
     }
 
     [Fact(DisplayName = "Alteração do agregado: eixo que o tipo infere, enviado vazio, é não informado e não é recusado")]

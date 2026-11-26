@@ -1,12 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Cria um tipo de documento classificatório: código (chave natural), nome,
@@ -36,7 +34,7 @@ public sealed record CriarTipoDocumentoCommand(
     public DeclaracaoDoTipoDocumento Declaracao() =>
         new(
             Codigo, Nome, Descricao, Categoria, FormatosAceitos, TamanhoMaximoMb, TipoEquivalente,
-            TokensDoFato.Classificacao(ClassificacaoProtecao),
+            CodigoInformado<ClassificacaoDeProtecao>.Ler(ClassificacaoProtecao),
             FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(HipoteseLegal));
+            CodigoInformado<HipoteseLegalTratamento>.Ler(HipoteseLegal));
 }

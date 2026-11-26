@@ -4,7 +4,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 
 public static class CriarFatoDerivadoCommandHandler
 {
@@ -27,15 +29,15 @@ public static class CriarFatoDerivadoCommandHandler
     // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
     private static Result<FatoCandidato> Montar(CriarFatoDerivadoCommand command) =>
         CriacaoDoFato.CriarDerivadoDoAdministrador(
-            new DescritivoDoFato(command.Codigo, command.Nome, command.Descricao, TokensDoFato.Componente(command.ComponenteExibicao)),
+            new DescritivoDoFato(command.Codigo, command.Nome, command.Descricao, CodigoInformado<ComponenteDeExibicao>.Ler(command.ComponenteExibicao)),
             new DefinicaoDoFato(
-                TokensDoFato.Dominio(command.Dominio),
+                CodigoInformado<TipoDoDado>.Ler(command.Dominio),
                 Cardinalidade: null,
                 FonteValores: null,
                 Formato: null,
                 command.PontoResolucao,
-                TokensDoFato.Escopo(command.Escopo),
-                TokensDoFato.Classificacao(command.ClassificacaoProtecao),
+                CodigoInformado<EscopoFato>.Ler(command.Escopo),
+                CodigoInformado<ClassificacaoDeProtecao>.Ler(command.ClassificacaoProtecao),
                 command.FinalidadeTratamento,
-                TokensDoFato.HipoteseLegal(command.HipoteseLegal)));
+                CodigoInformado<HipoteseLegalTratamento>.Ler(command.HipoteseLegal)));
 }
