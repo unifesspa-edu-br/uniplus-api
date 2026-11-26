@@ -31,24 +31,10 @@ public static class DefinirCascataRemanejamentoCommandHandler
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<ProcessoSeletivo> obtido = await ObterProcessoAsync(command.ProcessoSeletivoId,
-            processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
-        return obtido.IsFailure ? Result.ValidationFailure(obtido.Errors)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure ? Result.Failure(obtido.Error!)
             : await AplicarAsync(command, obtido.Value!, regraCatalogoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<Result<ProcessoSeletivo>> ObterProcessoAsync(
-        Guid id, IProcessoSeletivoRepository repositorio, CancellationToken cancellationToken)
-    {
-        ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(id, cancellationToken).ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<ProcessoSeletivo>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado."));
-        }
-
-        return processo.MutacaoBloqueada() is { } bloqueio
-            ? Result<ProcessoSeletivo>.Failure(bloqueio) : Result<ProcessoSeletivo>.Success(processo);
     }
 
     private static async Task<Result> AplicarAsync(DefinirCascataRemanejamentoCommand command,

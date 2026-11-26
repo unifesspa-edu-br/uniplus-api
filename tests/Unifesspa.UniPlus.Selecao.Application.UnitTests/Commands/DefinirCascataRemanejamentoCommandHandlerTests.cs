@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -31,17 +32,21 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.ApoioDaCas
 /// </summary>
 public sealed class DefinirCascataRemanejamentoCommandHandlerTests
 {
-    [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
+    [Fact(DisplayName = "Handle com processo inexistente recusa com a mesma resposta dos demais manipuladores, sem consultar o catálogo nem gravar")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
-        Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirCascataRemanejamentoCommand command = new(Guid.CreateVersion7(), null, null, null, null);
+        Guid processoId = Guid.CreateVersion7();
+        Mocks mocks = NovosMocks(null, processoId);
+        DefinirCascataRemanejamentoCommand command = new(processoId, null, null, null, null);
 
         Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle com os quatro campos nulos remove a cascata, sem consultar o catálogo de regras")]

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisaoDoProce
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
@@ -27,7 +27,7 @@ public static class RetirarMotivoDeDecisaoDoProcessoCommandHandler
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
             : await RetirarAsync(processo, command, motivoDoProcessoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
