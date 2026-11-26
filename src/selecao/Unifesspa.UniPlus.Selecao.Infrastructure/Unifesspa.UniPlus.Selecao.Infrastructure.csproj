@@ -4,9 +4,17 @@
     <EmbeddedResource Include="Persistence\Scripts\**\*.sql" />
     <!-- O esquema do documento de configuração viaja dentro do assembly: avaliar um documento nunca consulta o registro
          de esquemas nem a rede. -->
-    <EmbeddedResource Include="..\..\..\contracts\selecao\configuracao\v1\*.schema.json"
+    <EsquemaDoDocumento Include="..\..\..\contracts\selecao\configuracao\v1\*.schema.json" />
+    <EmbeddedResource Include="@(EsquemaDoDocumento)"
                       LogicalName="Unifesspa.UniPlus.Selecao.Contratos.Configuracao.v1.%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <!-- O padrão acima não acusa erro quando a pasta não está no contexto de build (imagem sem a pasta contracts/):
+       o programa sai sem o esquema e o documento OpenAPI da Seleção responde 500. Sem arquivo, o build para. -->
+  <Target Name="ConferirEsquemasDoDocumento" BeforeTargets="BeforeBuild;BeforeResGen">
+    <Error Condition="'@(EsquemaDoDocumento)' == ''"
+           Text="Nenhum arquivo *.schema.json encontrado em contracts/selecao/configuracao/v1: o esquema do documento de configuração não seria embutido no programa." />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
