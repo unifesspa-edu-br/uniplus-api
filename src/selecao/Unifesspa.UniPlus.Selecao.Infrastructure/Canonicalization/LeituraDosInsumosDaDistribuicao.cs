@@ -75,7 +75,7 @@ internal static class LeituraDosInsumosDaDistribuicao
         {
             TiposDeAjusteDoQuadro.ReduzirDe => LerReduzirDe(leitor, ajuste, path),
             TiposDeAjusteDoQuadro.ReduzirProporcionalEm => LerReduzirProporcionalEm(leitor, ajuste, path),
-            _ => leitor.Falhou ? null : leitor.Malformado<ParametrosRegraAjusteDistribuicao?>(path, $"o tipo de ajuste '{tipo}' não pertence a esta versão do envelope."),
+            _ => leitor.Falhou ? null : leitor.Malformado<ParametrosRegraAjusteDistribuicao?>(path, "o tipo de ajuste não pertence a esta versão do envelope."),
         };
     }
 

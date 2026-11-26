@@ -69,7 +69,7 @@ internal static class LeituraDosMetadadosDosFatos
         }
 
         leitor.Recusar<object>(
-            $"'documentosExigidos.definicoesDosDados[{indice}]': o fato '{metadado.Codigo}' aparece mais de uma vez em 'definicoesDosDados' — cada fato tem no máximo um metadado congelado.");
+            $"'documentosExigidos.definicoesDosDados[{indice}]': um fato aparece mais de uma vez em 'definicoesDosDados' — cada fato tem no máximo um metadado congelado.");
         return false;
     }
 

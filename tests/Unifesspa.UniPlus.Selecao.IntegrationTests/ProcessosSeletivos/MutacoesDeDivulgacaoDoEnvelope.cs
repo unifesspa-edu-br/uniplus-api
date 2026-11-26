@@ -41,7 +41,7 @@ public static class MutacoesDeDivulgacaoDoEnvelope
             envelope => Bloco(envelope)["camposPublicos"] = Campos("NOME_ABREVIADO", "NUMERO_INSCRICAO"),
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.regraNomeAbreviado"),
         Caso("regra com identificador desconhecido (despacho por identificador conhecido)", RegraComIdentificadorDesconhecido,
-            ErrosCodecEnvelope.EnvelopeMalformado, "regra_do_futuro"),
+            ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.regraNomeAbreviado"),
     ];
 
     private static IEnumerable<object[]> SobreAFormaDoBloco() =>

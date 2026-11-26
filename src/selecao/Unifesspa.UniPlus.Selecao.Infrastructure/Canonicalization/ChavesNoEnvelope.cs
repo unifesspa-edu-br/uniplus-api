@@ -16,7 +16,7 @@ internal static class ChavesNoEnvelope
         }
 
         Result<ChaveLocal> chave = ChaveLocal.Criar(texto);
-        return chave.IsSuccess ? chave.Value : leitor.Malformado<ChaveLocal>($"{caminho}.chave", chave.Error!.Message);
+        return chave.IsSuccess ? chave.Value : leitor.Malformado<ChaveLocal>($"{caminho}.chave", "a chave deve começar por letra minúscula e conter apenas letras minúsculas, números e sublinhados entre palavras, com até 64 caracteres.");
     }
 
     internal static void ExigirUnicas(LeitorEnvelope leitor, IEnumerable<ChaveLocal> chaves, string caminho)
@@ -26,7 +26,7 @@ internal static class ChavesNoEnvelope
         {
             if (!encontradas.Add(chave))
             {
-                leitor.Malformado<object>(caminho, $"a chave '{chave.Valor}' aparece mais de uma vez.");
+                leitor.Malformado<object>(caminho, "a chave aparece mais de uma vez.");
                 return;
             }
         }

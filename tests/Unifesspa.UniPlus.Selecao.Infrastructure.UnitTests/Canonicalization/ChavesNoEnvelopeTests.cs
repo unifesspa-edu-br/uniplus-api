@@ -22,7 +22,7 @@ public sealed class ChavesNoEnvelopeTests
     }
 
     [Theory]
-    [InlineData("Etapa")]
+    [InlineData("ExemploChaveInvalida")]
     [InlineData("etapa__x")]
     [InlineData("etapa-")]
     [InlineData("")]
@@ -33,6 +33,10 @@ public sealed class ChavesNoEnvelopeTests
 
         leitor.Falhou.Should().BeTrue();
         leitor.Erro.Message.Should().Contain("chave");
+        if (!string.IsNullOrEmpty(texto))
+        {
+            leitor.Erro.Message.Should().NotContain(texto);
+        }
     }
 
     [Fact]
@@ -50,10 +54,11 @@ public sealed class ChavesNoEnvelopeTests
     public void ExigirUnicas_ChaveRepetida_Recusa()
     {
         LeitorEnvelope leitor = new();
-        ChaveLocal chave = ChaveLocal.Criar("fase_inscricao").Value;
+        ChaveLocal chave = ChaveLocal.Criar("chave_exemplo_repetida").Value;
         ChavesNoEnvelope.ExigirUnicas(leitor, [chave, chave], "fases");
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Message.Should().Contain("fase_inscricao");
+        leitor.Erro.Message.Should().Contain("aparece mais de uma vez").And.NotContain("chave_exemplo_repetida");
+        leitor.Falha<object>().Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 }

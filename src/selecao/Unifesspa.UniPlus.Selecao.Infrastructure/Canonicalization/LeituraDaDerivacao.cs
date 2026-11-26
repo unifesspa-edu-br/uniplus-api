@@ -169,13 +169,12 @@ internal static class LeituraDaDerivacao
             ?? ConferirTestemunhos(bloco, efetivas, documentosExigidos, formularios, termos, distribuicao, payload);
     }
 
-    // Há uma só semântica de motor vigente e nenhum snapshot congelado em banco: exigir a versão corrente é
-    // a leitura honesta enquanto não existe versão legada a preservar.
+    // A leitura exige a versão corrente da semântica de cálculo, a única que este sistema resolve.
     private static DomainError? ConferirVersaoDoInterpretador(string versaoInterpretador) =>
         string.Equals(versaoInterpretador, CalculoDosFatosDerivados.VersaoSemantica, StringComparison.Ordinal)
             ? null
             : Malformado(
-                $"'versaoDasRegrasDeCalculo' desconhecida: '{versaoInterpretador}' — este sistema resolve a semântica "
+                "'versaoDasRegrasDeCalculo' desconhecida — este sistema resolve a semântica "
                 + $"'{CalculoDosFatosDerivados.VersaoSemantica}'.");
 
     private static DomainError Malformado(string mensagem) => new(ErrosCodecEnvelope.EnvelopeMalformado, mensagem);

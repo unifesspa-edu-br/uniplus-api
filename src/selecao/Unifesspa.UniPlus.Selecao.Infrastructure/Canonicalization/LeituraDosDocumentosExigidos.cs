@@ -164,7 +164,7 @@ internal static class LeituraDosDocumentosExigidos
             "customizado" => LerCustomizado(leitor, parametros, parametrosPath),
             _ => leitor.Propagar<PredicadoObrigatoriedade>(new DomainError(
                 ErrosCodecEnvelope.RegraDesconhecida,
-                $"Não há variante de {nameof(PredicadoObrigatoriedade)} conhecida para o tipo '{tipo}' em '{path}'.")),
+                $"O tipo de condição de obrigatoriedade não é reconhecido em '{path}'.")),
         };
     }
 

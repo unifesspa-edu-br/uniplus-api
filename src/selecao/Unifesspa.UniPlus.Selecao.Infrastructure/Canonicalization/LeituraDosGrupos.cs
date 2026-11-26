@@ -128,7 +128,7 @@ internal static class LeituraDosGrupos
 
         return campos.FirstOrDefault(c => c.Finalidade != d.Finalidade || c.PaginaCodigo is not null) is { } foraDoGrupo
             ? leitor.Recusar<IReadOnlyList<FatoColetado>?>(
-                $"'{path}.subitens': o campo '{foraDoGrupo.FatoCodigo}' tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")
+                $"'{path}.subitens': um campo tem finalidade ou seção própria, mas o campo do grupo segue o grupo.")
             : campos;
     }
 
@@ -204,7 +204,7 @@ internal static class LeituraDosGrupos
     }
 
     private static string? DefeitoDoAgregado(string fatoDeMembro, string codigo, string? anterior, GrupoColetado grupo) =>
-        !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? $"o fato de membro '{fatoDeMembro}' não é campo do grupo"
+        !grupo.Subitens.Any(s => string.Equals(s.FatoCodigo, fatoDeMembro, StringComparison.Ordinal)) ? "o fato de membro não é campo do grupo"
             : anterior is not null && string.CompareOrdinal(anterior, codigo) >= 0 ? "os agregados não estão na ordem do código"
             : null;
 }

@@ -78,12 +78,12 @@ internal static class CoerenciaEntreBlocos
                 DerivacoesDaOferta.Efetivas(blocos.Coleta.RegrasDerivacao, blocos.Configuracao.Distribuicao),
                 blocos.Coleta.GruposColetados) is { } citacaoInvalida)
         {
-            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {citacaoInvalida.Message}");
+            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': uma citação não corresponde aos dados conhecidos pelo formulário.");
         }
 
         return Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
                 [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Configuracao.Classificacao) is { } edicaoSemEnem
-            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {edicaoSemEnem.Message}")
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': a edição do ENEM exige classificação pelo ENEM.")
             : null;
     }
 
@@ -127,9 +127,9 @@ internal static class CoerenciaEntreBlocos
         if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
         {
             return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'dadosDosFormularios' tem itens de {itens.Key.Codigo()}, que não tem formulário no envelope.");
+                "'dadosDosFormularios' tem itens de uma finalidade que não tem formulário no envelope.");
         }
         return EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..]
-            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'dadosDosFormularios': {primeiro.Error.Message}") : null;
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': os itens não correspondem à estrutura do formulário.") : null;
     }
 }

@@ -158,7 +158,7 @@ internal static class LeituraDosValoresDeDominio
         if (item["valoresSelecionaveis"] is not JsonNode node)
         {
             return ehFatoDeSelecao
-                ? Recusar(leitor, $"'{path}' é null, mas o tipo de campo é de seleção — a bicondicional exige um array.")
+                ? Recusar(leitor, $"'{path}' é null, mas o tipo de campo é de seleção — campos de seleção exigem uma lista de opções.")
                 : null;
         }
 
@@ -176,7 +176,7 @@ internal static class LeituraDosValoresDeDominio
         if (!ehFatoDeSelecao)
         {
             return Recusar(
-                leitor, $"'{path}' é um array, mas o tipo de campo '{tipoDeCampo}' não é de seleção — a bicondicional exige null.");
+                leitor, $"'{path}' é um array, mas o tipo de campo não é de seleção — campos que não são de seleção não podem ter opções.");
         }
 
         return LerOpcoesDoSeletor(leitor, array, path);

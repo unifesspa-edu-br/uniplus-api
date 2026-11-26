@@ -104,7 +104,7 @@ internal static class LeituraDaDivulgacaoETaxa
 
         if (regraNomeAbreviado is not null && !RegrasDeNomeAbreviado.EhConhecida(regraNomeAbreviado))
         {
-            return $"'divulgacao.regraNomeAbreviado' não é uma regra conhecida: '{regraNomeAbreviado}'.";
+            return "'divulgacao.regraNomeAbreviado' deve ser uma regra conhecida.";
         }
 
         return null;

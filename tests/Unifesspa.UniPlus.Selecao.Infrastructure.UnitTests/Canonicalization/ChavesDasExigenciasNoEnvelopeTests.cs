@@ -58,11 +58,15 @@ public sealed class ChavesDasExigenciasNoEnvelopeTests
     [Fact]
     public void Ler_ChaveRepetida_Recusa()
     {
+        const string valor = "chave_exemplo_repetida";
         JsonObject exigencia = Exigencia();
+        exigencia["chave"] = valor;
         LeitorEnvelope leitor = new();
         Ler(leitor, exigencia, exigencia.DeepClone().AsObject());
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Message.Should().Contain("exigencia_identidade_2");
+        leitor.Erro.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
+        leitor.Erro.Message.Should().Contain("exigencias").And.Contain("a chave aparece mais de uma vez").And.NotContain(valor);
+        leitor.Falha<object>().Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 }
