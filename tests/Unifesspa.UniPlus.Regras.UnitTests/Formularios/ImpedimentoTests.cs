@@ -101,6 +101,40 @@ public class ImpedimentoTests : TestesDeAvaliacao
         });
     }
 
+    [Theory(DisplayName = "Só o formulário que serve à fase de inscrição admite impedimento, seja ele obrigatório ou não")]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public void ConferirDeclaracao_ServeAInscricao_NaoRecusa(bool serveAFaseDeInscricao, bool obrigatorio) =>
+        Impedimento.ConferirDeclaracao(new DeclaracaoDoFormulario(serveAFaseDeInscricao, obrigatorio), [ImpedimentoDoVinculo()])
+            .Should().BeEmpty();
+
+    [Theory(DisplayName = "O formulário que não serve à fase de inscrição recusa o impedimento na posição do item, e só dele")]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void ConferirDeclaracao_NaoServeAInscricao_RecusaOItemComImpedimento(bool serveAFaseDeInscricao, bool obrigatorio)
+    {
+        List<FieldError> erros = Impedimento.ConferirDeclaracao(
+            new DeclaracaoDoFormulario(serveAFaseDeInscricao, obrigatorio), [null, ImpedimentoDoVinculo(), null]);
+
+        erros.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "itens[1].regras.impedimento",
+            Error = new { Code = ItemFormularioErrorCodes.ImpedimentoForaDaInscricao },
+        });
+    }
+
+    [Fact(DisplayName = "Sem declaração do formulário, o impedimento é recusado")]
+    public void ConferirDeclaracao_SemDeclaracao_RecusaOImpedimento() =>
+        Impedimento.ConferirDeclaracao(declaracao: null, [ImpedimentoDoVinculo()])
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ImpedimentoForaDaInscricao);
+
+    [Fact(DisplayName = "Item sem impedimento não é recusado em formulário que não serve à fase de inscrição")]
+    public void ConferirDeclaracao_ItemSemImpedimento_NaoRecusa() =>
+        Impedimento.ConferirDeclaracao(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), [null, null])
+            .Should().BeEmpty();
+
+    private static Impedimento ImpedimentoDoVinculo() => new(Predicado(("VINCULO_PARFOR", true)), Mensagem);
+
     private static DefinicaoFormulario FormularioComVinculoImpeditivo() =>
         new(
             [

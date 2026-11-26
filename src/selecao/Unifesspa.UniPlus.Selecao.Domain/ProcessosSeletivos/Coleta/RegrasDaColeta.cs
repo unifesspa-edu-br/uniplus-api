@@ -184,7 +184,7 @@ public static class RegrasDaColeta
     {
         if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatos.Count, grupos)) is [var excesso, ..])
             return Result.ValidationFailure([excesso]);
-        if (Impedimento.ConferirFinalidade(finalidade, fatos.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
+        if (Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), fatos.Select(static f => f.Impedimento)) is { Count: > 0 } foraDaInscricao)
             return Result.ValidationFailure(foraDaInscricao);
         return Result.Success();
     }

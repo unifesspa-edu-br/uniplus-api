@@ -135,7 +135,7 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
         new ApresentacaoDoCampoDto(
             item.Apresentacao.Rotulo,
             item.Apresentacao.TipoDeCampo.Codigo(),
-            ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Apresentacao.Ajuda),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), item.FatoCodigo, item.Apresentacao.Ajuda),
             item.Apresentacao.PedirConfirmacao),
         item.Formato,
         opcoes.GetValueOrDefault(item.FatoCodigo));

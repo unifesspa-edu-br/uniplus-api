@@ -175,7 +175,7 @@ internal static class LeituraDosFatos
 
         // A forma do item não conhece a finalidade; o agregado recusa o impedimento fora da inscrição ao
         // definir os itens, e o decoder tem de recusar o mesmo.
-        return leitor.Falhou ? null : Impedimento.ConferirFinalidade(finalidade, [impedimento]) is [{ } foraDaInscricao, ..]
+        return leitor.Falhou ? null : Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), [impedimento]) is [{ } foraDaInscricao, ..]
             ? leitor.Recusar<RegrasDoCampo?>($"'{path}.impedimento': {foraDaInscricao.Error.Message}")
             : new RegrasDoCampo(exibicao, obrigatoriedade, restricoes, impedimento);
     }

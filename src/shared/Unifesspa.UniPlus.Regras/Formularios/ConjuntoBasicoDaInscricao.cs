@@ -47,10 +47,10 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>
     /// A ajuda com que o campo é publicado. O nome social vem da conta em toda inscrição, inclusive na
     /// de formulário já gravado ou publicado sem essa orientação: a ajuda acompanha a regra, não a
-    /// versão do formulário. A regra é da inscrição; fora dela, vale a ajuda gravada.
+    /// versão do formulário. A regra é do formulário que serve à fase de inscrição; fora dele, vale a ajuda gravada.
     /// </summary>
-    public static string? AjudaDoCampo(FinalidadeFormulario finalidade, string fatoCodigo, string? ajuda) =>
-        finalidade == FinalidadeFormulario.Inscricao && string.Equals(fatoCodigo, NomeSocial, StringComparison.Ordinal)
+    public static string? AjudaDoCampo(DeclaracaoDoFormulario declaracao, string fatoCodigo, string? ajuda) =>
+        declaracao.ServeAFaseDeInscricao && string.Equals(fatoCodigo, NomeSocial, StringComparison.Ordinal)
             ? AjudaDoNomeSocial
             : ajuda;
 

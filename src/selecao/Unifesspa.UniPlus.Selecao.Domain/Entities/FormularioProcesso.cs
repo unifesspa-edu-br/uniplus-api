@@ -96,7 +96,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         List<FieldError> erros = FormaDoCabecalho.Validar(finalidade, titulo);
         if (finalidade is { } declarada)
         {
-            erros.AddRange(EstruturaFormulario.ValidarPaginas(declarada, [.. paginas.Select(static e => e.Estrutura)]));
+            erros.AddRange(EstruturaFormulario.ValidarPaginas(CorrespondenciaDaFinalidade.DeclaracaoDa(declarada), [.. paginas.Select(static e => e.Estrutura)]));
         }
 
         return erros;
