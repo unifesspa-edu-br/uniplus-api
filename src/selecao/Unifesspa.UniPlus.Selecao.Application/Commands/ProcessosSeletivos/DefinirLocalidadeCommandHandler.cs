@@ -6,9 +6,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Services;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 
 /// <summary>
 /// Handler do <see cref="DefinirLocalidadeCommand"/> (UNI-REQ-0111): monta o value object
@@ -28,41 +27,48 @@ public static class DefinirLocalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
-        }
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (processo.MutacaoBloqueada() is { } bloqueio)
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirLocalidadeCommand command,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = Definir(processo, command);
+        if (definido.IsFailure)
         {
-            return Result.Failure(bloqueio);
-        }
-
-        if (command.LocalidadeNaoDeclarada)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória para alterar o processo seletivo."));
-        }
-
-        Result<LocalidadeRegente> localidadeResult = LocalidadeRegente.Criar(
-            command.CodigoIbge, command.Nome, command.Uf);
-        if (localidadeResult.IsFailure)
-        {
-            return Result.Failure(localidadeResult.Error!);
-        }
-
-        Result definirResult = processo.DefinirLocalidade(localidadeResult.Value!);
-        if (definirResult.IsFailure)
-        {
-            return Result.Failure(definirResult.Error!);
+            return definido;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
         return Result.Success();
     }
+
+    private static Result Definir(ProcessoSeletivo processo, DefinirLocalidadeCommand command)
+    {
+        if (command.LocalidadeNaoDeclarada)
+        {
+            return Result.Failure(LocalidadeAusente());
+        }
+
+        Result<LocalidadeRegente> declarada = LocalidadeRegente.Criar(command.CodigoIbge, command.Nome, command.Uf);
+        if (declarada.IsFailure)
+        {
+            return Result.Failure(declarada.Error!);
+        }
+
+        Result definido = processo.DefinirLocalidade(declarada.Value!);
+        return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
+    }
+
+    private static DomainError LocalidadeAusente() => new(
+        "ProcessoSeletivo.LocalidadeAusente",
+        "A localidade que rege a contagem dos prazos é obrigatória para alterar o processo seletivo.");
 }

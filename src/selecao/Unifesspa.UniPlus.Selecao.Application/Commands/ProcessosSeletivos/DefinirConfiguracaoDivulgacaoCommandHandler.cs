@@ -5,8 +5,6 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-using Services;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
@@ -27,27 +25,41 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        Result definido = obtido.IsFailure ? Result.Failure(obtido.Error!) : Definir(obtido.Value!, command);
-        if (definido.IsSuccess)
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirConfiguracaoDivulgacaoCommand command,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = Definir(processo, command);
+        if (definido.IsFailure)
         {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return definido;
         }
 
-        return definido;
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
     }
 
     private static Result Definir(ProcessoSeletivo processo, DefinirConfiguracaoDivulgacaoCommand command)
     {
-        if (command.CamposPublicos is null)
+        Result<ConfiguracaoDivulgacao>? declarada = command.CamposPublicos is null
+            ? null
+            : ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
+        if (declarada is { IsFailure: true })
         {
-            return processo.DefinirConfiguracaoDivulgacao(null);
+            return Result.ValidationFailure(declarada.Errors);
         }
 
-        Result<ConfiguracaoDivulgacao> criada = ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
-        return criada.IsFailure
-            ? Result.ValidationFailure(criada.Errors)
-            : processo.DefinirConfiguracaoDivulgacao(criada.Value!);
+        Result definido = processo.DefinirConfiguracaoDivulgacao(declarada?.Value);
+        return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
     }
 }

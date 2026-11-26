@@ -6,15 +6,14 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Services;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 
 /// <summary>
 /// Handler do <see cref="DefinirReferenciaTemporalFatosCommand"/> (Story #554, PR #896):
-/// <c>Tipo</c> nulo remove a referência (toggle por ausência); caso contrário monta o VO
-/// e delega a validação estrutural (coerência por variante, fase do próprio processo)
-/// ao domínio.
+/// <c>Tipo</c> nulo remove a referência temporal dos dados do candidato (toggle por ausência);
+/// caso contrário monta o value object e delega a validação estrutural (coerência por
+/// variante, fase do próprio processo) ao domínio.
 /// </summary>
 public static class DefinirReferenciaTemporalFatosCommandHandler
 {
@@ -28,39 +27,41 @@ public static class DefinirReferenciaTemporalFatosCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
-        }
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (processo.MutacaoBloqueada() is { } bloqueio)
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirReferenciaTemporalFatosCommand command,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = Definir(processo, command);
+        if (definido.IsFailure)
         {
-            return Result.Failure(bloqueio);
-        }
-
-        ReferenciaTemporalFatos? referencia = null;
-        if (command.Tipo is not null)
-        {
-            Result<ReferenciaTemporalFatos> referenciaResult = ReferenciaTemporalFatos.Criar(command.Tipo, command.Data, command.FaseId);
-            if (referenciaResult.IsFailure)
-            {
-                return Result.ValidationFailure(referenciaResult.Errors);
-            }
-
-            referencia = referenciaResult.Value!;
-        }
-
-        Result definirResult = processo.DefinirReferenciaTemporalFatos(referencia);
-        if (definirResult.IsFailure)
-        {
-            return Result.Failure(definirResult.Error!);
+            return definido;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
         return Result.Success();
+    }
+
+    private static Result Definir(ProcessoSeletivo processo, DefinirReferenciaTemporalFatosCommand command)
+    {
+        Result<ReferenciaTemporalFatos>? declarada = command.Tipo is null
+            ? null
+            : ReferenciaTemporalFatos.Criar(command.Tipo, command.Data, command.FaseId);
+        if (declarada is { IsFailure: true })
+        {
+            return Result.ValidationFailure(declarada.Errors);
+        }
+
+        Result definido = processo.DefinirReferenciaTemporalFatos(declarada?.Value);
+        return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
     }
 }
