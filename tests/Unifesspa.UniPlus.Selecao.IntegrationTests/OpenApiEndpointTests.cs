@@ -72,7 +72,7 @@ public sealed class OpenApiEndpointTests
     [InlineData("/api/selecao/processos-seletivos/{id}/fases/{faseCanonicaOrigemId}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
     [InlineData("/api/selecao/processos-seletivos/{id}/etapas/{etapaId}/motivos-de-decisao/{motivoDeDecisaoId}", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/etapas/{etapaId}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
-    [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}", "put")]
+    [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/{codigo}", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/etapas", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/classificacao", "put")]
     [InlineData("/api/selecao/processos-seletivos/{id}/cronograma-fases", "put")]

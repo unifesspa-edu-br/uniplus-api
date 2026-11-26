@@ -252,7 +252,7 @@ internal static class EnvelopeDeReferencia
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComChave(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_comprovante_residencia").Value!)
             .ComTipo(new CopiaDoTipoDeDocumento(TipoDocumentoFixo, "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [GatilhoDaModalidade(), GatilhoDaCorRaca()]))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, "ELIMINA_DO_PROCESSO", [BaseLegalDaResolucao()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPdfComTetoEJpegSemTeto(), 5_000_000, ModeloDeDeclaracaoDeResidencia(), PrazoDeNoventaDias(), ValidadeNoFimDasInscricoes()))

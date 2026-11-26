@@ -8,7 +8,6 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -24,12 +23,22 @@ public sealed class ContextoDaColetaNoEnvelopeTests
         formularios.Should().NotBeEmpty();
         foreach (JsonNode? formulario in formularios)
         {
-            Conferir<FinalidadeFormulario>(formulario!, "finalidade");
+            ConferirIdentificadoPeloCodigo(formulario!, "codigo");
             foreach (JsonNode? termo in formulario!["termos"]!.AsArray())
             {
                 Conferir<FormaAceite>(termo!, "formaAceite");
             }
         }
+    }
+
+    [Fact(DisplayName = "O formulário no documento congelado carrega a fase pelo identificador e a obrigatoriedade que o processo declara")]
+    public void Canonicalizar_Formularios_CarregamFaseEObrigatoriedade()
+    {
+        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
+        JsonNode envelope = JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes)!;
+
+        envelope["formularios"]!.AsArray().Select(static f => (f!["codigo"]!.GetValue<string>(), f["obrigatorio"]!.GetValue<bool>(), f["faseId"]?.GetValue<Guid>()))
+            .Should().BeEquivalentTo(processo.Formularios.Select(static f => (f.Codigo.Valor, f.Obrigatorio, f.FaseId)));
     }
 
     [Fact]
@@ -39,7 +48,7 @@ public sealed class ContextoDaColetaNoEnvelopeTests
         dados.Should().NotBeEmpty();
         foreach (JsonNode? dado in dados)
         {
-            Conferir<FinalidadeFormulario>(dado!, "finalidade");
+            ConferirIdentificadoPeloCodigo(dado!, "formularioCodigo");
             Conferir<TipoDeCampo>(dado!, "tipoDeCampo");
             Conferir<OrigemValoresColeta>(dado!, "origemValores");
         }
@@ -52,7 +61,7 @@ public sealed class ContextoDaColetaNoEnvelopeTests
         grupos.Should().NotBeEmpty();
         foreach (JsonNode? grupo in grupos)
         {
-            Conferir<FinalidadeFormulario>(grupo!, "finalidade");
+            ConferirIdentificadoPeloCodigo(grupo!, "formularioCodigo");
         }
     }
 
@@ -74,7 +83,7 @@ public sealed class ContextoDaColetaNoEnvelopeTests
         exigencias.Should().NotBeEmpty();
         foreach (JsonNode? exigencia in exigencias)
         {
-            Conferir<FinalidadeFormulario>(exigencia!, "finalidade");
+            ConferirIdentificadoPeloCodigo(exigencia!, "formularioCodigo");
             Conferir<Aplicabilidade>(exigencia!, "aplicabilidade");
         }
     }
@@ -209,6 +218,13 @@ public sealed class ContextoDaColetaNoEnvelopeTests
 
     private static JsonNode Envelope() => JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(
         ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true))).Bytes)!;
+
+    private static void ConferirIdentificadoPeloCodigo(JsonNode objeto, string campo)
+    {
+        objeto[campo]!.GetValue<string>().Should().NotBeNullOrWhiteSpace("o formulário se identifica pelo código");
+        objeto["finalidade"].Should().BeNull("a finalidade não é mais gravada no documento congelado");
+        (objeto["contexto"] as JsonObject)?.ContainsKey("finalidadeRotulo").Should().NotBe(true);
+    }
 
     private static void Conferir<TEnum>(JsonNode objeto, string campo)
         where TEnum : struct, Enum

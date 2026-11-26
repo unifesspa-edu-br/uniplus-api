@@ -22,6 +22,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Exemp
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeEtapas;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeProcessoRico;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelopeVagas;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 internal static class ExemploDeEnvelopeDocumentos
 {
@@ -68,7 +69,7 @@ internal static class ExemploDeEnvelopeDocumentos
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipoDocumentoCodigo.ToLowerInvariant()).Value!,
             id,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(exigidoNaFaseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(obrigatorio, null, []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),

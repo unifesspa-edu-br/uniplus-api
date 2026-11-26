@@ -46,7 +46,6 @@ internal static class ProcessoComMatrizDaLeiDeTeste
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .ComClassificacao("SENSIVEL")
         .NaSecao(FormularioDeTeste.Secao)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static FatoColetado Selecao(string codigo, int ordem) => FatoColetadoDeTeste.Coletando(codigo, ordem)
@@ -54,7 +53,6 @@ internal static class ProcessoComMatrizDaLeiDeTeste
         .DoTipo(TipoDeCampo.EscolhaUnica)
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
         .NaSecao(FormularioDeTeste.Secao)
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     /// <summary>As opções da origem escolar que a publicação congela para as duas perguntas.</summary>

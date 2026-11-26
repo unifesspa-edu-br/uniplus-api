@@ -110,7 +110,7 @@ public sealed class GrupoRepetivelEndpointTests
 
     private static JsonElement FormularioDeInscricao(JsonDocument processo) =>
         processo.RootElement.GetProperty("formularios").EnumerateArray()
-            .Single(static f => f.GetProperty("finalidade").GetProperty("codigo").GetString() == "INSCRICAO");
+            .Single(static f => f.GetProperty("codigo").GetString() == FormulariosDoProcessoDeTeste.Inscricao);
 
     private static void ConferirGrupoDaComposicaoFamiliar(JsonElement grupo, string campo)
     {
@@ -210,7 +210,7 @@ public sealed class GrupoRepetivelEndpointTests
     private static object DocumentoDaRegra(ProcessoSeletivo processo, Guid tipoDocumentoId, (string Fato, string Operador, string Valor) condicao) => new
     {
         tipoDocumento = new { id = tipoDocumentoId },
-        momento = new { faseId = processo.CronogramaFases.Single().Id, finalidade = "INSCRICAO" },
+        momento = new { faseId = processo.CronogramaFases.Single().Id, formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao },
         aplicabilidade = new
         {
             tipo = "CONDICIONAL",

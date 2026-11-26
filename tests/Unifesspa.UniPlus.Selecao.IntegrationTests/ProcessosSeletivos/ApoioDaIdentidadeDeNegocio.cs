@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPoliticaDeOrdenacao;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Montagem e conferência dos cenários em que a identidade de negócio decide a ordem do envelope e o
@@ -112,7 +113,7 @@ internal static class ApoioDaIdentidadeDeNegocio
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(tipoDocumentoNome == "Alfa Documento" ? "exigencia_alfa" : "exigencia_zeta").Value!,
             id,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(false, null, []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),

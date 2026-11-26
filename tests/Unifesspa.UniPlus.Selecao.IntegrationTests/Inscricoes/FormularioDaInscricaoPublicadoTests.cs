@@ -87,7 +87,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoComFator(nameof(FormularioDaIsencao_NaoTrazAsDependenciasDoFator), comIsencao: true));
 
         Result<FormularioApresentadoDoProcessoDto> formulario = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.IsencaoTaxa.Codigo()), ProcessoSeletivoRepositoryDeTeste.Criar(db),
+            new ObterFormularioApresentadoQuery(processoId, FormulariosDoProcessoDeTeste.PedidoDeIsencao), ProcessoSeletivoRepositoryDeTeste.Criar(db),
             new CertameDivulgadoRepository(db), RegistroCodecs, EnderecosSemCopia(), CancellationToken.None);
 
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);

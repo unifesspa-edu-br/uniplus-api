@@ -80,7 +80,7 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
     private static object DocumentoExigido(Guid faseId, Guid tipoDocumentoId, string fato) => new
     {
         tipoDocumento = new { id = tipoDocumentoId },
-        momento = new { faseId, finalidade = "ISENCAO_TAXA" },
+        momento = new { faseId, formularioCodigo = FormulariosDoProcessoDeTeste.PedidoDeIsencao },
         aplicabilidade = new
         {
             tipo = "CONDICIONAL",
@@ -125,9 +125,9 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
     private static void ColetarOFatoNaIsencao(ProcessoSeletivo processo, string fato)
     {
         Guid fase = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa)).IsSuccess.Should().BeTrue();
+        processo.DefinirFormularioSemConjuntoBasico(FormulariosDoProcessoDeTeste.PedidoDeIsencao, fase, obrigatorio: false);
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.IsencaoTaxa,
+                FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.PedidoDeIsencao),
                 [FatoColetadoDeTeste.Coletando(fato, 0)
                     .ComRotulo("Elegível")
                     .ComObrigatoriedade(Obrigatoriedade.Sempre)

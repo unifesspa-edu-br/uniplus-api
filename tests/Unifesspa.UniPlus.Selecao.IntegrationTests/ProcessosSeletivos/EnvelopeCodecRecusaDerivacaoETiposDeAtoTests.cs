@@ -84,7 +84,7 @@ public sealed class EnvelopeCodecRecusaDerivacaoETiposDeAtoTests
     public void ImpedimentoForaDaInscricao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            FatoColetadoPorCodigo(envelope, "RENDA")["finalidade"] = "HABILITACAO");
+            FatoColetadoPorCodigo(envelope, "RENDA")["formularioCodigo"] = "HABILITACAO");
 
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         resultado.Error.Message.Should().Contain(".impedimento'");

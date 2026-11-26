@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes.CenarioDaInscricaoGravada;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O comprovante gravado volta do banco como foi emitido: na ordem de emissão, com os documentos, as modalidades das duas
@@ -162,7 +163,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_laudo_medico").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(Guid.CreateVersion7(), null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

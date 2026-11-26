@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 public sealed class EnvelopeLidoConjuntosOrdenadosTests
 {
@@ -62,7 +63,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_rg").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(false, null, []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!),

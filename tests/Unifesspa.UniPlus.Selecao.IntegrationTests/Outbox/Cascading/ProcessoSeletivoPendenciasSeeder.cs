@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoProcessoConformeSemeado;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Variantes de <see cref="ProcessoSeletivoPublicavelSeeder"/> — cada método isola UM defeito
@@ -156,7 +157,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_certidao_reservista").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+                new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
                 new IndeferimentoDoDocumento(true, null, [baseLegal]),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

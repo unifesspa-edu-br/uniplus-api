@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O edital e o modelo baixados pelo candidato, de ponta a ponta: o edital é publicado pela API, o
@@ -116,7 +117,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
     private static DocumentoExigido ExigenciaQueOfereceOModelo(ProcessoSeletivo processo, ModeloDeDocumento modelo) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_autodeclaracao_etnico_racial").Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(processo.CronogramaFases.Single().Id, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
+            new MomentoDaExigencia(processo.CronogramaFases.Single().Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: ModeloDaExigencia.Do(modelo).Value!),

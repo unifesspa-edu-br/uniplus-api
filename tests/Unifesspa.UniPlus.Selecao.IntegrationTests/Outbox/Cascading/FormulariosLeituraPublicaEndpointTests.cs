@@ -6,12 +6,13 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoFormularioPeloEndpoint;
 
 /// <summary>
-/// A leitura pública do formulário por finalidade (UNI-REQ-0144), fim a fim pelo HTTP, sob
-/// <c>/processos-seletivos/{id}/formularios/{finalidade}</c> (ADR-0064).
+/// A leitura pública do formulário pelo código (UNI-REQ-0144), fim a fim pelo HTTP, sob
+/// <c>/processos-seletivos/{id}/formularios/{codigo}</c> (ADR-0064).
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -71,8 +72,11 @@ public sealed class FormulariosLeituraPublicaEndpointTests
 
     private static void ConferirCabecalhoDoFormularioPublicado(JsonElement raiz)
     {
+        raiz.GetProperty("codigo").GetString().Should().Be(FormulariosDoProcessoDeTeste.Inscricao);
+        raiz.GetProperty("obrigatorio").GetBoolean().Should().BeTrue();
+        raiz.TryGetProperty("finalidade", out _).Should().BeFalse("o formulário se identifica só pelo código");
         JsonElement root = raiz.GetProperty("formulario");
-        root.GetProperty("finalidade").GetString().Should().Be("INSCRICAO");
+        root.TryGetProperty("finalidade", out _).Should().BeFalse("o formulário se identifica só pelo código");
         root.GetProperty("titulo").GetString().Should().Be("Formulário de Inscrição");
         root.GetProperty("paginas").EnumerateArray().Select(static e => e.GetProperty("codigo").GetString())
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
@@ -102,6 +106,34 @@ public sealed class FormulariosLeituraPublicaEndpointTests
             .Single(static i => i.GetProperty("fatoCodigo").GetString() == "COR_RACA");
         regraDoCampo.GetProperty("regras").GetProperty("obrigatoriedade").GetProperty("tipo").GetString().Should().Be("SEMPRE");
         regraDoCampo.GetProperty("oferta").GetArrayLength().Should().BePositive("a resposta fora da oferta congelada não vale");
+    }
+
+    [Fact(DisplayName = "GET público lê cada formulário do processo publicado pelo próprio código, e o código que o processo não tem é 404")]
+    public async Task Obter_DoisFormulariosPublicados_CadaUmPeloCodigo()
+    {
+        Contexto ctx = await PublicarComUmFormularioFacultativoAsync(nameof(Obter_DoisFormulariosPublicados_CadaUmPeloCodigo));
+
+        HttpResponseMessage complementar = await ctx.GetFormularioAsync("DADOS_COMPLEMENTARES");
+        HttpResponseMessage inexistente = await ctx.GetFormularioAsync("FORMULARIO_QUE_NAO_EXISTE");
+
+        complementar.StatusCode.Should().Be(HttpStatusCode.OK, await complementar.Content.ReadAsStringAsync());
+        using JsonDocument doc = JsonDocument.Parse(await complementar.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("codigo").GetString().Should().Be("DADOS_COMPLEMENTARES");
+        doc.RootElement.GetProperty("obrigatorio").GetBoolean().Should().BeFalse();
+        doc.RootElement.GetProperty("formulario").GetProperty("titulo").GetString().Should().Be("Dados complementares");
+        inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private async Task<Contexto> PublicarComUmFormularioFacultativoAsync(string cenario)
+    {
+        Contexto ctx = await SemearRascunhoAsync(_fixture, cenario);
+        Guid fase = await ctx.FaseDeInscricaoAsync();
+        (await ctx.PutFormularioAsync("Formulário de Inscrição")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ctx.PutFatosAsync([])).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await ctx.PutFormularioAsync("Dados complementares", codigo: "DADOS_COMPLEMENTARES", faseId: fase, obrigatorio: false))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await ctx.PublicarEEsperarDivulgacaoAsync();
+        return ctx;
     }
 
     /// <summary>

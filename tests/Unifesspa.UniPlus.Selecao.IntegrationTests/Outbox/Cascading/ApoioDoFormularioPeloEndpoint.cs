@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// O processo semeado, o cliente HTTP e as chamadas ao endpoint de formulários por finalidade,
+/// O processo semeado, o cliente HTTP e as chamadas ao endpoint de formulários pelo código,
 /// compartilhados pelas classes de teste do formulário.
 /// </summary>
 internal static class ApoioDoFormularioPeloEndpoint
@@ -82,32 +82,42 @@ internal static class ApoioDoFormularioPeloEndpoint
         public async Task<HttpResponseMessage> PutFormularioAsync(
             string? titulo,
             Autenticacao autenticar = Autenticacao.PlataformaAdmin,
-            string finalidade = "INSCRICAO",
-            Guid? faseId = null)
+            string codigo = FormulariosDoProcessoDeTeste.Inscricao,
+            Guid? faseId = null,
+            bool obrigatorio = true)
         {
-            Guid? fase = faseId ?? (finalidade == "INSCRICAO" ? await FaseDeInscricaoAsync().ConfigureAwait(false) : null);
+            Guid? fase = faseId ?? (codigo == FormulariosDoProcessoDeTeste.Inscricao ? await FaseDeInscricaoAsync().ConfigureAwait(false) : null);
             using HttpRequestMessage request = new(
                 HttpMethod.Put,
-                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative))
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{codigo}", UriKind.Relative))
             {
-                Content = JsonContent.Create(new { faseId = fase, titulo, paginas = PaginasDoFormulario() }),
+                Content = JsonContent.Create(new { faseId = fase, titulo, obrigatorio, paginas = PaginasDoFormulario() }),
             };
             Autenticar(request, autenticar);
             request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
 
-        public async Task<HttpResponseMessage> GetRascunhoAsync(Autenticacao autenticar, string finalidade = "INSCRICAO")
+        public async Task<HttpResponseMessage> GetRascunhoAsync(Autenticacao autenticar, string codigo = FormulariosDoProcessoDeTeste.Inscricao)
         {
             using HttpRequestMessage request = new(
                 HttpMethod.Get,
-                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{finalidade}/apresentacao", UriKind.Relative));
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{codigo}/apresentacao", UriKind.Relative));
             Autenticar(request, autenticar);
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
 
-        public async Task<HttpResponseMessage> GetFormularioAsync(string finalidade = "INSCRICAO") => await Client.GetAsync(
-            new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/formularios/{finalidade}", UriKind.Relative)).ConfigureAwait(false);
+        public async Task<HttpResponseMessage> GetFormularioAsync(string codigo = FormulariosDoProcessoDeTeste.Inscricao) => await Client.GetAsync(
+            new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/formularios/{codigo}", UriKind.Relative)).ConfigureAwait(false);
+
+        public async Task<HttpResponseMessage> DeleteFormularioAsync(string codigo)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Delete,
+                new Uri($"/api/selecao/admin/processos-seletivos/{ProcessoId}/formularios/{codigo}", UriKind.Relative));
+            Autenticar(request, Autenticacao.PlataformaAdmin);
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
 
         public async Task<HttpResponseMessage> PutFatosAsync(IReadOnlyList<object> corpo)
         {
