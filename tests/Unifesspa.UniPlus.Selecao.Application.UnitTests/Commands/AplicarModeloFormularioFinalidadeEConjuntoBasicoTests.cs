@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
@@ -57,6 +58,30 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
         resultado.Value!.FatosTrazidosParaAInscricao.Should().Equal("CERTIFICADO");
         _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
     }
+
+    [Fact(DisplayName = "Na inscrição, o fato que outro formulário da inscrição coleta fica nele e não é trazido")]
+    public async Task Handle_FatoEmOutroFormularioDaInscricao_MantemENaoTraz()
+    {
+        FormularioDeTeste.GarantirFormulario(_cenario.Processo, FinalidadeFormulario.Inscricao);
+        FormularioProcesso inscricao = _cenario.Processo.Declaracao().Coleta.FormularioDe(CodigoDoFormulario.Criar(FormularioDeTeste.CodigoDaInscricao).Value!)!;
+        CodigoDoFormulario complementar = CodigoDoFormulario.Criar("DADOS_COMPLEMENTARES").Value!;
+        _cenario.Processo.DefinirFormulario(
+            new FormularioDeclarado(complementar, inscricao.FaseId, Obrigatorio: true), null, [.. PaginasDeDados()]).IsSuccess.Should().BeTrue();
+        _cenario.Processo.DefinirFatosColetados(
+            complementar, [FatoColetadoDeTeste.Como(FatoBooleanoJaColetado("QUILOMBOLA", "Quilombola")).NaSecao(FormularioDeTeste.Secao).Construir()])
+            .IsSuccess.Should().BeTrue();
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.FatosTrazidosParaAInscricao.Should().BeEmpty();
+        resultado.Value.FatosMantidosNaInscricao.Should().Equal("QUILOMBOLA");
+        _cenario.Processo.FatosColetados.Where(static f => f.FatoCodigo == "QUILOMBOLA").Should().ContainSingle()
+            .Which.FormularioId.Should().Be(_cenario.Processo.Declaracao().Coleta.FormularioDe(complementar)!.Id);
+    }
+
+    private static IEnumerable<PaginaDoFormulario> PaginasDeDados() =>
+        FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao);
 
     [Fact(DisplayName = "O modelo de inscrição sem a seção dos dados básicos é copiado com ela em primeiro")]
     public async Task Handle_ModeloDeInscricaoSemASecao_CopiaComASecao()

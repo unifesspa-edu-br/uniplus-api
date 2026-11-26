@@ -183,10 +183,11 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
     [Fact(DisplayName = "O documento do modelo numa fase que o cronograma não tem é recusado, e nada é gravado")]
     public async Task Handle_DocumentoEmFaseInexistente_RecusaSemGravar()
     {
-        _cenario.FaseDoCronograma("RESULTADO_FINAL");
+        _cenario.FaseDoCronograma("INSCRICAO");
         _cenario.DeclararAtendimentoEspecializado();
+        DocumentoExigidoDoModeloInput documentoEmFaseSemCronograma = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with { FaseCodigo = "RESULTADO_FINAL" };
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(DocumentoDoModelo("LAUDO_MEDICO", "PCD")));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(documentoEmFaseSemCronograma));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {

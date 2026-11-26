@@ -119,9 +119,10 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
     [Fact(DisplayName = "O documento do grupo numa fase que o cronograma não tem é recusado no caminho do documento do grupo")]
     public async Task Handle_DocumentoDoGrupoEmFaseInexistente_RecusaNoCaminhoDoDocumento()
     {
-        _cenario.FaseDoCronograma("RESULTADO_FINAL");
+        _cenario.FaseDoCronograma("INSCRICAO");
         _cenario.DeclararAtendimentoEspecializado();
-        GrupoDeDocumentosDoModeloInput grupo = ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, DocumentoDoModelo("LAUDO_MEDICO", "PCD"));
+        DocumentoExigidoDoModeloInput documentoEmFaseSemCronograma = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with { FaseCodigo = "RESULTADO_FINAL" };
+        GrupoDeDocumentosDoModeloInput grupo = ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, documentoEmFaseSemCronograma);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComGrupos(grupo));
 

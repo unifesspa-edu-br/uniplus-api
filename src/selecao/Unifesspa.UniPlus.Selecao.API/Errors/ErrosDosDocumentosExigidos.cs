@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -25,8 +26,6 @@ internal static class ErrosDosDocumentosExigidos
         new("DocumentoExigido.ConsequenciaDoDescumprimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida", "Consequência do descumprimento da exigência inválida")),
         new("DocumentoExigido.GeralComCondicao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.geral_com_condicao", "A exigência geral não pode ter condição de aplicação ativa")),
         new("DocumentoExigido.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo", "A fase informada não pertence ao cronograma deste processo")),
-        new("DocumentoExigido.FinalidadeObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.finalidade_obrigatoria", "Documento exigido em fase de formulário sem o formulário a que pertence")),
-        new("DocumentoExigido.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fase_incoerente_com_finalidade", "A fase do documento não é a fase em que se responde o formulário a que ele pertence")),
         new("DocumentoExigido.FatosComprovadosInvalidos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fatos_comprovados_invalidos", "Os fatos comprovados pela exigência devem ser códigos de fato não repetidos")),
         new("DocumentoExigido.FatoComprovadoForaDoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_comprovado_fora_do_processo", "A exigência comprova um fato que o processo não coleta e que não é derivado do catálogo")),
     ];
@@ -40,6 +39,8 @@ internal static class ErrosDosDocumentosExigidos
         new(ProcessoSeletivoErrorCodes.FatoComProtecaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente", "Fato do processo aguarda a aprovação da proteção de dados")),
         new(ProcessoSeletivoErrorCodes.TipoDocumentoDoVinculoNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
         new(ModeloDaExigenciaErrorCodes.ModeloNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.modelo_nao_encontrado", "O modelo de documento citado não existe neste processo")),
+        new(DocumentoExigidoErrorCodes.FatoDeFormularioNaoAlcancado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado", "O fato citado na condição de aplicação da exigência não é conhecido no formulário que a entrega")),
+        new(DocumentoExigidoErrorCodes.FatoDeMembroForaDaRepeticao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_de_membro_fora_da_repeticao", "O campo de grupo repetível só é citado pela exigência que repete por esse grupo")),
         new("DocumentoExigido.PontoResolucaoForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma", "A fase em que o fato citado na condição de aplicação é conhecido não pertence ao cronograma deste processo")),
     ];
 

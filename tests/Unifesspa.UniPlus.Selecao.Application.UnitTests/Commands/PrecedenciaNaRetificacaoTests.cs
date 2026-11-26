@@ -15,6 +15,7 @@ public sealed class PrecedenciaNaRetificacaoTests
     public async Task Retificar_CronogramaDiferente_LeAPrecedencia()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
+        cenario.ComCronogramaPublicadoDiferenteDoDoProcesso();
         IPrecedenciaFaseReader leitor = PrecedenciasDeTeste.SemArestas();
         cenario.Servicos.ComPrecedencias(leitor);
 

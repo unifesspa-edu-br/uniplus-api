@@ -5,24 +5,23 @@ using System.Text.Json;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.Services;
 using Domain.ValueObjects;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Copia o conjunto padrão de documentos exigidos do modelo para as regras do processo, resolvendo a fase
 /// pelo código no cronograma e o tipo pelo código no catálogo. Cada grupo de documentos vira uma regra de
 /// quantidade mínima de itens, com os documentos do grupo como itens; o grupo sem nenhum documento que valha
-/// sai da cópia, e que a quantidade caiba nos itens e que eles sejam da mesma fase quem confere é o processo. Os documentos da finalidade do modelo que o
-/// processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os das outras
-/// finalidades ficam. Modelo sem conjunto não altera as regras. A cláusula que cita valor que o processo não
+/// sai da cópia, e que a quantidade caiba nos itens e que eles sejam da mesma fase quem confere é o processo. Os documentos do formulário que recebe o modelo que o
+/// processo já tinha são trocados pelos do modelo, como o formulário; os dos outros
+/// formulários ficam. Modelo sem conjunto não altera as regras. A cláusula que cita valor que o processo não
 /// oferta — a condição de atendimento fora das condições ofertadas — não tem como valer e sai da cópia; o documento sem
 /// nenhuma cláusula que valha sai com ela. O documento que o modelo multiplica pelas opções de um fato
 /// entra uma vez por opção ofertada. O prazo de emissão e a validade que o modelo escolheu vão junto, com a
@@ -30,7 +29,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 internal sealed class SelecaoDosDocumentosDoModelo(
     ProcessoSeletivo processo,
-    FinalidadeFormulario finalidade,
+    CodigoDoFormulario formulario,
     CadastrosDosDocumentosExigidos cadastros)
 {
     private readonly LeituraMemoizada<string, TipoDocumentoView> _tipos = new(
@@ -61,11 +60,11 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             : Result.ValidationFailure([.. definida.Errors.Select(erro => RegraCopiadaDoModelo.NoModelo(erro, copiadas))]);
     }
 
-    // O modelo substitui as regras sem grupo cujos documentos pertencem à sua finalidade.
+    // O modelo substitui as regras sem grupo cujos documentos pertencem ao formulário que ele preenche.
     private List<RegraDeComprovacao> RegrasSemGrupoQueOModeloNaoSubstitui() =>
         [.. processo.RegrasDeComprovacaoSemGrupo.Where(regraSemGrupo => !regraSemGrupo.EnumerarRegraEItens()
             .Where(static regraDeDocumento => regraDeDocumento.Forma == FormaDeComprovacao.Documento)
-            .All(regraDeDocumento => regraDeDocumento.DocumentoExigido!.Finalidade == finalidade))];
+            .All(regraDeDocumento => regraDeDocumento.DocumentoExigido!.FormularioCodigo == formulario))];
 
     /// <summary>
     /// O campo da recusa no conjunto de documentos do modelo: o da fase, o do tipo e o que o processo
@@ -257,7 +256,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
         DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo, PrazoEValidadeCopiados prazoEValidade) =>
         new(
             new TipoDocumentoDaExigenciaInput(tipo.Id),
-            new MomentoDaExigenciaInput(fase.Id, FormularioCodigo: finalidade.Codigo()),
+            new MomentoDaExigenciaInput(fase.Id, FormularioCodigo: formulario.Valor),
             new AplicabilidadeDaExigenciaInput(
                 documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", CondicoesDoGatilho(documento.Quando)),
             IndeferimentoDoModelo(documento.Indeferimento),

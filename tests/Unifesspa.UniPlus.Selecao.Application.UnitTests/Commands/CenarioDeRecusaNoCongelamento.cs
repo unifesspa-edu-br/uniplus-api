@@ -64,7 +64,8 @@ internal sealed class CenarioDeRecusaNoCongelamento
         [DefeitoDoCongelamento.Motivos] = static c => IsencaoDeTeste.HabilitarSemMotivos(c.Processo),
     };
 
-    // Todas as causas que o defeito, sozinho, produz, na ordem: a primeira é a que o cliente vê.
+    // Todas as causas que o defeito, sozinho, produz, na ordem: a primeira é a que o cliente vê. O processo que passa a cobrar taxa
+    // fica também sem formulário de isenção, e a conferência dos formulários recusa antes da dos motivos.
     private static readonly Dictionary<DefeitoDoCongelamento, string[]> Causas = new()
     {
         [DefeitoDoCongelamento.Documento] = [ConferenciaDoDocumentoDoEdital.NaoEncontrado],
@@ -76,7 +77,7 @@ internal sealed class CenarioDeRecusaNoCongelamento
         [DefeitoDoCongelamento.TiposDeAtoCongelados] = ["ProcessoSeletivo.TipoDeAtoSemVersaoVigente"],
         [DefeitoDoCongelamento.Anexos] = ["AnexoDoEdital.NaoEncontrado"],
         [DefeitoDoCongelamento.ConformidadeLegal] = ["ProcessoSeletivo.ConformidadeLegalInsuficiente"],
-        [DefeitoDoCongelamento.Motivos] = [MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado],
+        [DefeitoDoCongelamento.Motivos] = [FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao, MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado],
     };
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaPublicacao =

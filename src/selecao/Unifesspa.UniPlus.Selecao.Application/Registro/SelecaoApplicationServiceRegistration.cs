@@ -58,6 +58,7 @@ public static class SelecaoApplicationServiceRegistration
 
     private static void AddConfiguracaoDoProcesso(IServiceCollection services)
     {
+        AddCadastrosDosFormulariosEDosDocumentos(services);
         AddDefinicaoDoCronogramaDeFases(services);
         AddResolucaoDasDistribuicoesDeVagas(services);
         AddRascunhoDoProcessoSeletivo(services);
@@ -159,6 +160,14 @@ public static class SelecaoApplicationServiceRegistration
     // simula o recebem prontos, sem service location.
     private static void AddResolucaoDasDistribuicoesDeVagas(IServiceCollection services) =>
         services.AddScoped<ConfiguracaoDistribuicaoVagasResolver>();
+
+    // Os cadastros que a aplicação de modelo e a definição dos documentos exigidos consultam guardam só as portas por
+    // construtor, e cada handler os recebe prontos, sem service location.
+    private static void AddCadastrosDosFormulariosEDosDocumentos(IServiceCollection services)
+    {
+        services.AddScoped<CadastrosDosDocumentosExigidos>();
+        services.AddScoped<CadastrosDaAplicacaoDoModelo>();
+    }
 
     // O serviço de definição e a montagem das fases não guardam estado de uma edição para outra: as portas entram
     // por construtor, e o handler recebe os dois prontos. A retirada dos motivos dos lugares que saem é comum ao

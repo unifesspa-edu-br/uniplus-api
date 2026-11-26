@@ -36,8 +36,8 @@ internal sealed class CenarioDosDocumentosDaInscricaoDeTeste
     {
         _certame = DivulgacaoDeTeste.Certame(ProcessoId);
         (VersaoConfiguracao versao, ConfiguracaoPublicada conforme) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        FaseCronograma faseDaInscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
-        FaseCronograma outraFase = Fase(2, "RESULTADO_FINAL", coletaInscricao: false);
+        FaseCronograma faseDaInscricao = conforme.Cronograma.CronogramaFases.Single(static fase => fase.ColetaInscricao);
+        FaseCronograma outraFase = Fase(2, "HABILITACAO", coletaInscricao: false);
         Laudo = Exigencia("LAUDO", faseDaInscricao.Id);
         Certidao = Exigencia("CERTIDAO", faseDaInscricao.Id);
         DeOutraFase = Exigencia("RESULTADO", outraFase.Id);

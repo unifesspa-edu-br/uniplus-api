@@ -140,7 +140,7 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(fase.Id, Guid.CreateVersion7()).ComFatosComprovados("A", "A");
+        ItemDocumentoExigidoDeTeste item = ApoioDosDocumentosExigidos.GeralNoFormularioDaExigencia(fase.Id, Guid.CreateVersion7()).ComFatosComprovados("A", "A");
         DefinirDocumentosExigidosCommand command = new(processo.Id, [RegraDeComprovacaoDeTeste.DeDocumento(item).Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);

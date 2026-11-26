@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.Coleta;
 using Domain.ProcessosSeletivos.Edicao;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.ProcessosSeletivos.Referencias;
 using Domain.Services;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -14,28 +17,46 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// Copia do modelo os itens, os grupos e as páginas do formulário pelos mesmos resolvedores da escrita
 /// direta. O que o catálogo mudou depois da composição do modelo sai da cópia e volta no relatório; o fato
-/// desativado que o processo já vincula não é vínculo novo e continua (ADR-0136). O fato que outra
-/// finalidade já coleta segue o par de finalidades, porque só a inscrição é citável pelas outras
-/// (UNI-REQ-0144): na inscrição ele passa para a cópia, e nas outras o que está na inscrição sai da cópia.
+/// desativado que o processo já vincula não é vínculo novo e continua (ADR-0136). O fato que outro
+/// formulário já coleta segue o par de formulários, porque só os da inscrição são citáveis pelos outros
+/// (UNI-REQ-0144): o formulário da inscrição só puxa o fato de formulário que não é da inscrição, e o que já está
+/// num formulário da inscrição sai da cópia, em qualquer formulário.
 /// </summary>
-internal sealed class SelecaoDoFormularioDoModelo(
-    ProcessoSeletivo processo,
-    FinalidadeFormulario finalidade,
-    ContextoDoCatalogo contexto,
-    RelatorioDaAplicacaoDoModelo relatorio)
+internal sealed class SelecaoDoFormularioDoModelo
 {
-    private readonly IReadOnlySet<string> _vinculados = ReferenciasVivas.Vinculos(processo.Declaracao()).Fatos;
+    private readonly ProcessoSeletivo _processo;
+    private readonly FormularioProcesso _formulario;
+    private readonly ContextoDoCatalogo _contexto;
+    private readonly RelatorioDaAplicacaoDoModelo _relatorio;
+    private readonly IReadOnlySet<string> _vinculados;
+    private readonly bool _guardaOConjuntoBasico;
+    private readonly bool _coletaAInscricao;
+    private readonly HashSet<Guid> _formulariosDaInscricao;
+
+    public SelecaoDoFormularioDoModelo(
+        ProcessoSeletivo processo, FormularioProcesso formulario, ContextoDoCatalogo contexto, RelatorioDaAplicacaoDoModelo relatorio)
+    {
+        ConfiguracaoDeclarada configuracao = processo.Declaracao();
+        _processo = processo;
+        _formulario = formulario;
+        _contexto = contexto;
+        _relatorio = relatorio;
+        _vinculados = ReferenciasVivas.Vinculos(configuracao).Fatos;
+        _guardaOConjuntoBasico = ConjuntoBasicoNaInscricao.Guarda(configuracao, formulario.Declarado);
+        _coletaAInscricao = configuracao.EhDaInscricao(formulario.Declarado);
+        _formulariosDaInscricao = [.. configuracao.DaInscricao().Select(static f => f.Id)];
+    }
 
     /// <summary>Copia as partes do formulário; as recusas vêm já na posição do modelo.</summary>
     public FormularioSelecionado Copiar(ConteudoDoModeloInput conteudo)
     {
         (ConteudoDoModeloInput conteudoFinal, List<FieldError> recusasDaMescla) =
-            finalidade == FinalidadeFormulario.Inscricao ? ComConjuntoBasico(conteudo) : (conteudo, []);
+            _guardaOConjuntoBasico ? ComConjuntoBasico(conteudo) : (conteudo, []);
         ItensSelecionados itens = CopiarItens(conteudoFinal.Itens ?? []);
         GruposSelecionados grupos = CopiarGrupos(conteudoFinal.Grupos ?? []);
         PaginasDoFormularioLidas paginas = EscritaDasPaginasDoFormulario.Ler(conteudoFinal.Paginas ?? []);
         IEnumerable<FieldError> recusasDasPaginas = paginas.Erros
-            .Concat(EscritaDasPaginasDoFormulario.ConferirExibicoes(paginas, contexto))
+            .Concat(EscritaDasPaginasDoFormulario.ConferirExibicoes(paginas, _contexto))
             .Select(static e => PosicaoNoModelo.NoModelo(e));
         return new FormularioSelecionado(itens, grupos, paginas, [.. recusasDaMescla, .. itens.Recusas, .. grupos.Recusas, .. recusasDasPaginas]);
     }
@@ -68,7 +89,7 @@ internal sealed class SelecaoDoFormularioDoModelo(
             }
         }
 
-        (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(EscritaDosItens.Ler(aCopiar), contexto);
+        (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(EscritaDosItens.Ler(aCopiar), _contexto);
         return new ItensSelecionados(itens, indices, aCopiar, [.. errosDosItens.Select(e => PosicaoNoModelo.NoModelo(e, "itens", indices))]);
     }
 
@@ -76,29 +97,33 @@ internal sealed class SelecaoDoFormularioDoModelo(
     {
         if (DescarteDoCampo(item.FatoCodigo, ConferenciaNoCatalogo.EhColetavel) is { } motivo)
         {
-            relatorio.Descartados.Add(new ParteDescartadaDto(ParteDoModelo.Item, item.FatoCodigo, motivo));
+            _relatorio.Descartados.Add(new ParteDescartadaDto(ParteDoModelo.Item, item.FatoCodigo, motivo));
             return false;
         }
 
-        return DecidirCopiaEntreFinalidades(item);
+        return DecidirCopiaEntreFormularios(item);
     }
 
-    private bool DecidirCopiaEntreFinalidades(FatoColetadoInput item)
+    private bool DecidirCopiaEntreFormularios(FatoColetadoInput item)
     {
-        FatoColetado? emOutra = processo.FatosColetados.FirstOrDefault(f => f.FatoCodigo == item.FatoCodigo && f.Finalidade != finalidade);
-        if (emOutra is not null && finalidade == FinalidadeFormulario.Inscricao)
-        {
-            relatorio.Trazidos.Add(item.FatoCodigo);
-            return true;
-        }
-
-        if (emOutra?.Finalidade != FinalidadeFormulario.Inscricao)
+        FatoColetado? emOutro = _processo.FatosColetados.FirstOrDefault(f => f.FatoCodigo == item.FatoCodigo && f.FormularioId != _formulario.Id);
+        if (emOutro is null)
         {
             return true;
         }
 
-        relatorio.Mantidos.Add(item.FatoCodigo);
-        return false;
+        if (emOutro.FormularioId is { } formularioDoFato && _formulariosDaInscricao.Contains(formularioDoFato))
+        {
+            _relatorio.Mantidos.Add(item.FatoCodigo);
+            return false;
+        }
+
+        if (_coletaAInscricao)
+        {
+            _relatorio.Trazidos.Add(item.FatoCodigo);
+        }
+
+        return true;
     }
 
     // O grupo com campo que o catálogo mudou sai da cópia inteiro: a ocorrência sem o campo seria outra
@@ -116,7 +141,7 @@ internal sealed class SelecaoDoFormularioDoModelo(
             }
         }
 
-        (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(aCopiar), contexto);
+        (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(aCopiar), _contexto);
         return new GruposSelecionados(grupos, indices, aCopiar, [.. errosDosGrupos.Select(e => PosicaoNoModelo.NoModelo(e, "grupos", indices))]);
     }
 
@@ -130,7 +155,7 @@ internal sealed class SelecaoDoFormularioDoModelo(
             return true;
         }
 
-        relatorio.Descartados.Add(new ParteDescartadaDto(ParteDoModelo.Grupo, grupo.Codigo, motivo));
+        _relatorio.Descartados.Add(new ParteDescartadaDto(ParteDoModelo.Grupo, grupo.Codigo, motivo));
         return false;
     }
 
@@ -138,7 +163,7 @@ internal sealed class SelecaoDoFormularioDoModelo(
     // desativado que o processo já vincula não é vínculo novo e fica.
     private string? DescarteDoCampo(string? fatoCodigo, Func<FatoDoCatalogo, bool> coletavel)
     {
-        if (fatoCodigo is null || !contexto.FatosDasRegras.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato) || !coletavel(fato))
+        if (fatoCodigo is null || !_contexto.FatosDasRegras.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato) || !coletavel(fato))
         {
             return MotivoDoDescarte.FatoNaoColetavel;
         }

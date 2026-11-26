@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -27,6 +28,13 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class ApoioDosDocumentosExigidos
 {
+    /// <summary>O código do formulário que as exigências dos testes citam: o cenário o declara na fase da exigência.</summary>
+    internal const string CodigoDoFormularioDaExigencia = "FORMULARIO_DA_EXIGENCIA";
+
+    /// <summary>A exigência geral e obrigatória na fase, citando o formulário de teste: o código do formulário é obrigatório em toda exigência.</summary>
+    internal static ItemDocumentoExigidoDeTeste GeralNoFormularioDaExigencia(Guid faseId, Guid tipoDocumentoId) =>
+        ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).NaFinalidade(CodigoDoFormularioDaExigencia);
+
     /// <summary>FormatosPermitidos é obrigatório — QUALQUER é o valor neutro dos testes que não são sobre formato.</summary>
     internal static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
 
@@ -50,13 +58,18 @@ internal static class ApoioDosDocumentosExigidos
             Substitute.For<IUnitOfWork>());
     }
 
+    /// <summary>O processo passa a ter o formulário que as exigências dos testes citam, facultativo e na fase dada.</summary>
+    internal static void DeclararOFormularioDaExigencia(ProcessoSeletivo processo, Guid faseId)
+    {
+        FormularioDeclarado formulario = new(CodigoDoFormulario.Criar(CodigoDoFormularioDaExigencia).Value!, faseId, Obrigatorio: false);
+        processo.DefinirFormulario(formulario, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao)).IsSuccess.Should().BeTrue();
+    }
+
     internal static Task<Result> HandleAsync(Mocks mocks, DefinirDocumentosExigidosCommand command) =>
         DefinirDocumentosExigidosCommandHandler.Handle(
             command,
             mocks.Repository,
-            mocks.TipoDocumentoReader,
-            mocks.FatoCandidatoReader,
-            mocks.Modelos,
+            new CadastrosDosDocumentosExigidos(mocks.TipoDocumentoReader, mocks.FatoCandidatoReader, mocks.Modelos),
             mocks.UnitOfWork,
             CancellationToken.None);
 
@@ -65,7 +78,7 @@ internal static class ApoioDosDocumentosExigidos
 
     internal static FaseCronograma FaseQualquer() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -111,12 +124,14 @@ internal static class ApoioDosDocumentosExigidos
         new(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
             null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")), HipoteseLegal: CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: CodigoComRotulo<EscopoFato>.De(CatalogoDe<EscopoFato>.Obter("MEMBRO_GRUPO")), ProtecaoAprovada: true);
 
+    /// <summary>O formulário da exigência fica na última fase do cronograma, que é a fase das exigências desses testes.</summary>
     internal static (ProcessoSeletivo Processo, Mocks Mocks, Guid TipoDocumentoId) ProcessoComAmplaConcorrencia(params FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = NovoProcesso("PS Convocação");
         processo.DefinirDistribuicaoVagas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
+        DeclararOFormularioDaExigencia(processo, processo.CronogramaFases.OrderBy(static f => f.Ordem).Last().Id);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -132,7 +147,7 @@ internal static class ApoioDosDocumentosExigidos
         /// <summary>Exigência geral e obrigatória, sem condições nem bases legais, com qualquer formato.</summary>
         internal ItemDocumentoExigidoDeTeste ItemGeral(JsonElement? formatosPermitidos = null, int? tamanhoMaximoBytes = null)
         {
-            ItemDocumentoExigidoDeTeste item = ItemDocumentoExigidoDeTeste.Geral(Fase.Id, TipoDocumentoId).ComTamanhoMaximo(tamanhoMaximoBytes);
+            ItemDocumentoExigidoDeTeste item = GeralNoFormularioDaExigencia(Fase.Id, TipoDocumentoId).ComTamanhoMaximo(tamanhoMaximoBytes);
             return formatosPermitidos is { } formatos ? item.ComFormatos(formatos) : item;
         }
 
@@ -167,6 +182,7 @@ internal static class ApoioDosDocumentosExigidos
         ProcessoSeletivo processo = NovoProcesso("PS Handler");
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
+        DeclararOFormularioDaExigencia(processo, fase.Id);
 
         return new CenarioDaExigencia(processo, fase, NovosMocks(processo, processo.Id), Guid.CreateVersion7());
     }

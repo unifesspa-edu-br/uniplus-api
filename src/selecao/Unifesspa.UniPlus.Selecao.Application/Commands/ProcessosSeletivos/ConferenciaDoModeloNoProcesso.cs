@@ -2,19 +2,22 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Formularios;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O modelo serve a este processo: está ativo, é do tipo dele ou de todos os tipos, e os pressupostos —
-/// fatos da inscrição que ele cita — são coletados pela inscrição do processo.
+/// fatos da inscrição que ele cita — são coletados pelos formulários que coletam a inscrição do processo.
 /// </summary>
 internal static class ConferenciaDoModeloNoProcesso
 {
-    public static IEnumerable<FieldError> Conferir(ModeloFormularioView modelo, ProcessoSeletivo processo)
+    public static IEnumerable<FieldError> Conferir(ModeloFormularioView modelo, ProcessoSeletivo processo) =>
+        RecusasDoModelo(modelo, processo).Concat(PressupostosAusentes(modelo, processo));
+
+    private static IEnumerable<FieldError> RecusasDoModelo(ModeloFormularioView modelo, ProcessoSeletivo processo)
     {
         if (!modelo.Ativo)
         {
@@ -28,18 +31,11 @@ internal static class ConferenciaDoModeloNoProcesso
                 AplicacaoDeModeloErrorCodes.TipoDeProcessoDiferente,
                 $"O modelo '{modelo.Codigo}' é do tipo de processo '{tipo}', e este processo é '{processo.TipoProcesso.Codigo}'."));
         }
-
-        foreach (FieldError pressuposto in PressupostosAusentes(modelo, processo))
-        {
-            yield return pressuposto;
-        }
     }
 
     private static IEnumerable<FieldError> PressupostosAusentes(ModeloFormularioView modelo, ProcessoSeletivo processo)
     {
-        HashSet<string> daInscricao = new(
-            processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo),
-            StringComparer.Ordinal);
+        HashSet<string> daInscricao = CodigosColetadosNaInscricao(processo);
         IReadOnlyList<string> pressupostos = modelo.Conteudo.Pressupostos ?? [];
         for (int i = 0; i < pressupostos.Count; i++)
         {
@@ -50,5 +46,13 @@ internal static class ConferenciaDoModeloNoProcesso
                     $"O modelo cita '{pressupostos[i]}', que a inscrição do processo não coleta; colete-o na inscrição antes."));
             }
         }
+    }
+
+    private static HashSet<string> CodigosColetadosNaInscricao(ProcessoSeletivo processo)
+    {
+        HashSet<Guid> formularios = [.. processo.Declaracao().DaInscricao().Select(static f => f.Id)];
+        return new(
+            processo.FatosColetados.Where(f => f.FormularioId is { } id && formularios.Contains(id)).Select(static f => f.FatoCodigo),
+            StringComparer.Ordinal);
     }
 }

@@ -6,27 +6,39 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
-/// Recusas dos formulários do processo: fase e finalidade, aplicação de modelo, completude do conjunto de
-/// inscrição e termos exigidos. A ordem vale: o registro global guarda o último mapeamento de um código repetido.
+/// Recusas dos formulários do processo: código, fase, exigências de documento, aplicação de modelo,
+/// obrigatoriedade por fase, completude do conjunto de inscrição e termos exigidos. A ordem vale: o registro global guarda o último mapeamento de um código repetido.
 /// </summary>
 internal static class ErrosDosFormulariosDoProcesso
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
+        .. CodigoEExigenciasDosFormularios(),
         .. FormulariosDoProcesso(),
         .. AplicacaoDeModelo(),
         .. CompletudeDosFormularios(),
         .. TermosExigidos(),
     ];
 
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CodigoEExigenciasDosFormularios() =>
+    [
+        new(CodigoDoFormularioErrorCodes.Obrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.codigo_obrigatorio", "O código do formulário é obrigatório")),
+        new(CodigoDoFormularioErrorCodes.FormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.codigo_formato_invalido", "O código do formulário não tem o formato permitido")),
+        new(FormulariosDeclaradosErrorCodes.CodigoDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.codigo_duplicado", "O código do formulário já identifica outro formulário do processo")),
+        new(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente", "O processo não tem o formulário citado pela exigência de documento")),
+        new(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.exigencia_em_formulario_de_outra_fase", "O formulário citado é de outra fase que a da exigência de documento")),
+        new(FormulariosDeclaradosErrorCodes.RemocaoDeFormularioComExigencia, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.remocao_de_formulario_com_exigencia", "O formulário entrega exigência de documento e não pode ser removido")),
+    ];
+
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> FormulariosDoProcesso() =>
     [
         new("FormularioProcesso.FaseForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_fora_do_cronograma", "A fase do formulário não está no cronograma do processo")),
-        new("FormularioProcesso.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade", "A fase do formulário não é a que a finalidade pede")),
-        new("FormularioProcesso.IsencaoSemTaxa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.isencao_sem_taxa", "Formulário de isenção de taxa em processo que não cobra taxa")),
-        new("FormularioProcesso.FormularioInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_inexistente", "O processo não tem formulário dessa finalidade")),
+        new("FormularioProcesso.IsencaoSemTaxa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.isencao_sem_taxa", "O processo que não cobra taxa tem formulário na fase de solicitação de isenção")),
+        new(FormularioProcessoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.formulario_processo.nao_encontrado", "Formulário do processo não encontrado")),
+        new(FormularioProcessoErrorCodes.FormularioInexistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_inexistente", "O processo não tem formulário com esse código")),
         new(FormularioProcessoErrorCodes.ConsequenciaDaFaltaDeEnvioInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida", "A consequência da falta de envio do formulário não é uma opção conhecida")),
         new(FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_em_formulario_facultativo", "O formulário facultativo não declara consequência para a falta de envio")),
         new(FormularioProcessoErrorCodes.ConsequenciaEmFormularioDaInscricao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_em_formulario_da_inscricao", "O formulário que coleta a inscrição não declara consequência para a falta de envio")),
@@ -47,10 +59,14 @@ internal static class ErrosDosFormulariosDoProcesso
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CompletudeDosFormularios() =>
     [
-        new("ProcessoSeletivo.InscricaoSemConjuntoBasico", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico", "O formulário de inscrição não coleta o conjunto básico de dados do candidato")),
+        new("ProcessoSeletivo.InscricaoSemConjuntoBasico", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico", "O conjunto básico de dados do candidato não está todo em formulário obrigatório da fase que coleta inscrição")),
         new("ProcessoSeletivo.InscricaoSemEdicaoDoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_edicao_do_enem", "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição a todo candidato")),
         new("ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.edicao_do_enem_sem_classificacao_enem", "Um formulário pede a edição do ENEM, e a classificação não usa as notas do ENEM")),
-        new("ProcessoSeletivo.InscricaoSemFormulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_formulario", "Processo com inscrição própria sem formulário de inscrição")),
+        new(FormularioProcessoErrorCodes.InscricaoSemFormularioObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.inscricao_sem_formulario_obrigatorio", "O processo com inscrição pelo sistema não tem formulário obrigatório na fase que coleta inscrição")),
+        new(FormularioProcessoErrorCodes.InscricaoEmResultadoImportado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.inscricao_em_resultado_importado", "O processo de resultado importado tem formulário na fase que coleta inscrição")),
+        new(FormularioProcessoErrorCodes.FormularioDaIsencaoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_da_isencao_obrigatorio", "Formulário obrigatório na fase de solicitação de isenção que não coleta inscrição")),
+        new(FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.taxa_sem_formulario_de_isencao", "O processo que cobra taxa não tem formulário facultativo na fase de solicitação de isenção")),
+        new(FormularioProcessoErrorCodes.PosImportacaoSemFormularioObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.pos_importacao_sem_formulario_obrigatorio", "A primeira fase depois da importação não tem formulário obrigatório")),
         new("ProcessoSeletivo.FaseReferenciadaPorFormulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario", "A fase é usada por um formulário e não pode sair do cronograma")),
         new("ProcessoSeletivo.FormularioSemFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.formulario_sem_fase", "O formulário ainda não declara a fase em que é respondido")),
         new("ProcessoSeletivo.ItemDoFormularioForaDeSecao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.item_do_formulario_fora_de_secao", "Item do formulário fora de uma seção ou da ordem das seções")),

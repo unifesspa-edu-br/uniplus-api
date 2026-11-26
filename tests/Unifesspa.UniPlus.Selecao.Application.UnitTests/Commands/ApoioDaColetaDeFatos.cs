@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using System.Text.Json;
 
+using AwesomeAssertions;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
@@ -116,12 +118,22 @@ internal static class ApoioDaColetaDeFatos
     internal static CondicaoPrecondicaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));
 
+    /// <summary>O processo com o formulário de inscrição ligado à fase do cronograma que coleta inscrição, como a inscrição é definida.</summary>
     internal static ProcessoSeletivo ProcessoComInscricao()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
+        processo.DefinirCronogramaFases([FaseQueColetaInscricao()], []).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
         return processo;
     }
+
+    private static FaseCronograma FaseQueColetaInscricao() => FaseCronograma.Criar(ChaveLocal.Criar("fase").Value!,
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false)),
+        new DecisoesDeCronogramaDaFase(1, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     internal static GrupoColetadoInput Composicao() =>
         EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao(FormularioDeTeste.Secao)

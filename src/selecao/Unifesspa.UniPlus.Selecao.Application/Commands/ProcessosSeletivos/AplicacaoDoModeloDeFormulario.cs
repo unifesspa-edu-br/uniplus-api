@@ -1,14 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
-using Domain.ValueObjects;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Aplica o modelo ao processo em memória: planeja a cópia (ver <see cref="PlanejamentoDaAplicacaoDoModelo"/>),
@@ -17,13 +14,14 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 internal sealed class AplicacaoDoModeloDeFormulario(
     ProcessoSeletivo processo,
+    FormularioProcesso formulario,
     ModeloFormularioView modelo,
     CadastrosDaAplicacaoDoModelo cadastros,
     IUnitOfWork unitOfWork)
 {
     public async Task<Result<AplicacaoDeModeloDto>> AplicarAsync(CancellationToken cancellationToken)
     {
-        Result<PlanoDaAplicacaoDoModelo> plano = await new PlanejamentoDaAplicacaoDoModelo(processo, modelo, cadastros)
+        Result<PlanoDaAplicacaoDoModelo> plano = await new PlanejamentoDaAplicacaoDoModelo(processo, formulario, modelo, cadastros)
             .PlanejarAsync(cancellationToken).ConfigureAwait(false);
         if (plano.IsFailure)
         {
@@ -40,8 +38,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
     // um documento desfaz a aplicação inteira.
     private async Task<Result<AplicacaoDeModeloDto>> CopiarDocumentosEGravarAsync(PlanoDaAplicacaoDoModelo plano, CancellationToken cancellationToken)
     {
-        FinalidadeFormulario finalidade = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
-        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, finalidade, cadastros.Documentos)
+        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, formulario.Codigo, cadastros.Documentos)
             .CopiarAsync(modelo.Conteudo.ConjuntoDeDocumentos ?? new ConjuntoDeDocumentosDoModeloInput(null, null), plano.Catalogo, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
@@ -49,7 +46,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(finalidade));
+        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(formulario.Codigo));
     }
 
     // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do handler,

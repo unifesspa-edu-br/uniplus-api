@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -52,14 +53,14 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         await cenario.Mocks.TipoDocumentoReader.Received().ObterPorIdAsync(cenario.TipoDocumentoId, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O formulário do documento fora do vocabulário das finalidades é recusado no campo dele, e consulta TipoDocumento")]
-    public async Task Handle_FinalidadeForaDoVocabulario_RecusaNoCampo()
+    [Fact(DisplayName = "O código do formulário do documento fora do formato é recusado no campo dele, e consulta TipoDocumento")]
+    public async Task Handle_CodigoDoFormularioForaDoFormato_RecusaNoCampo()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("MATRICULA"));
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("matricula"));
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.formularioCodigo", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.formularioCodigo", CodigoDoFormularioErrorCodes.FormatoInvalido)]);
         await cenario.Mocks.TipoDocumentoReader.Received().ObterPorIdAsync(cenario.TipoDocumentoId, Arg.Any<CancellationToken>());
     }
 
@@ -318,12 +319,12 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     }
 
     [Fact]
-    public async Task Handle_FinalidadeInvalidaComCondicaoValida_NaoAcrescentaRecusaDeFase()
+    public async Task Handle_CodigoForaDoFormatoComCondicaoValida_NaoAcrescentaRecusaDeFase()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
         ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA");
-        Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")).NaFinalidade("INVALIDA"));
-        resultado.Errors.Select(e => e.Error.Code).Should().Equal(EstruturaFormularioErrorCodes.FinalidadeInvalida);
+        Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")).NaFinalidade("invalida"));
+        resultado.Errors.Select(e => e.Error.Code).Should().Equal(CodigoDoFormularioErrorCodes.FormatoInvalido);
     }
 
     private static DefinirDocumentosExigidosCommand GrupoComUmaRegraDeDocumento(CenarioDaExigencia cenario, ItemDocumentoExigidoInput documentoInformado) =>

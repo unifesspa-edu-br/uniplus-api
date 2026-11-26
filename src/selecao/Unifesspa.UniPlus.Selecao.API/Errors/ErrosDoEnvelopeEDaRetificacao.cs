@@ -30,9 +30,9 @@ internal static class ErrosDoEnvelopeEDaRetificacao
         // O If-Match da inscrição que a gramática da RFC 9110 recusa: 400, antes de a operação ser tentada.
         new("Precondicao.Malformada", new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.precondicao_malformada", "If-Match sintaticamente inválido (RFC 9110 §8.8.3)")),
         // Fatos das versões publicadas (UNI-REQ-0144): o candidato pode ter preenchido um formulário
-        // em qualquer versão publicada, então a retificação não usa, de outra finalidade, fato que não foi
+        // em qualquer versão publicada, então a retificação não usa, de outro formulário, fato que não foi
         // coletado em todas elas, e não retira da inscrição o fato que ela já coletava.
-        new("Retificacao.FatoAusenteDeVersaoPublicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ausente_de_versao_publicada", "Fato de outra finalidade não coletado em todas as versões publicadas")),
+        new("Retificacao.FatoAusenteDeVersaoPublicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ausente_de_versao_publicada", "Fato de outro formulário não coletado em todas as versões publicadas")),
         new("Retificacao.FatoJaColetadoRemovido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ja_coletado_removido", "A retificação não retira da inscrição fato que ela já coleta")),
         // O candidato pode ter respondido o fato em qualquer versão publicada: a retificação não troca
         // o eixo que a versão publicada congelou, e a mudança vale para processo novo.

@@ -6,7 +6,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>O processo que passa a cobrar a taxa com fundamento de isenção, sem escolher nenhum motivo de decisão.</summary>
+/// <summary>
+/// O processo que passa a cobrar a taxa com fundamento de isenção, sem escolher nenhum motivo de decisão. Ele não ganha formulário de
+/// isenção, então a conferência também recusa a taxa sem esse formulário.
+/// </summary>
 internal static class IsencaoDeTeste
 {
     /// <summary>

@@ -1,17 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Domain.ValueObjects;
-
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Aplica ao processo a cópia de um modelo no formulário do código informado (UNI-REQ-0144, ADR-0061): o
-/// formulário é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois não muda o processo.
+/// formulário, que o processo já tem, é substituído por inteiro. Só em rascunho; mudar o modelo depois não muda o processo.
 /// </summary>
 public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId, string FormularioCodigo)
     : ICommand<Result<AplicacaoDeModeloDto>>;
@@ -20,12 +15,12 @@ public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Gui
 public sealed record AplicacaoDeModeloInput(Guid ModeloId, string FormularioCodigo);
 
 /// <summary>
-/// O que a aplicação fez além de copiar: os fatos que vieram de outra finalidade para a inscrição,
-/// os que ficaram na inscrição e saíram da cópia, as partes descartadas por mudança no catálogo e as
+/// O que a aplicação fez além de copiar: o código do formulário que recebeu a cópia, os fatos que vieram de
+/// outro formulário para a inscrição, os que ficaram na inscrição e saíram da cópia, as partes descartadas por mudança no catálogo e as
 /// derivações copiadas do catálogo ou mantidas como o processo já as tinha.
 /// </summary>
 public sealed record AplicacaoDeModeloDto(
-    CodigoComRotulo<FinalidadeFormulario> Finalidade,
+    string FormularioCodigo,
     IReadOnlyList<string> FatosTrazidosParaAInscricao,
     IReadOnlyList<string> FatosMantidosNaInscricao,
     IReadOnlyList<ParteDescartadaDto> Descartados,

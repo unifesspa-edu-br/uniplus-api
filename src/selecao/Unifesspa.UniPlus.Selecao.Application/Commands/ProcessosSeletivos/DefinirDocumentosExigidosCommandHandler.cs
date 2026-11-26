@@ -6,7 +6,6 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>Define as exigências após conferir as declarações e consultar os cadastros necessários.</summary>
 public static class DefinirDocumentosExigidosCommandHandler
@@ -14,20 +13,18 @@ public static class DefinirDocumentosExigidosCommandHandler
     public static async Task<Result> Handle(
         DefinirDocumentosExigidosCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ITipoDocumentoReader tipoDocumentoReader,
-        IFatoCandidatoReader fatoCandidatoReader,
-        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        CadastrosDosDocumentosExigidos cadastros,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(cadastros);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
             .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        CadastrosDosDocumentosExigidos cadastros = new(tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirAsync(command, obtido.Value!, cadastros, unitOfWork, cancellationToken).ConfigureAwait(false);

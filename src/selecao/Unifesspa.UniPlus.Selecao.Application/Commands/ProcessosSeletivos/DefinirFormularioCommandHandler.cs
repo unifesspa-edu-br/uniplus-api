@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
@@ -46,10 +47,6 @@ public static class DefinirFormularioCommandHandler
         return definido;
     }
 
-    // Provisório até a retirada da finalidade: o código do pedido ainda é traduzido para a finalidade que a conferência usa.
-    private static FinalidadeFormulario FinalidadeDo(DefinirFormularioCommand command) =>
-        FormularioDeclarado.FinalidadeProvisoriaDe(command.FormularioCodigo, command.Obrigatorio);
-
     internal static DomainError ProcessoNaoEncontrado(Guid id) =>
         new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado.");
 
@@ -62,31 +59,48 @@ public static class DefinirFormularioCommandHandler
             return Result.Failure(bloqueio);
         }
 
-        FormularioLido lido = await LerAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+        Result<FormularioDeclarado> declarado = Declarar(command);
+        return declarado.IsFailure
+            ? Result.Failure(declarado.Error!)
+            : await LerEGravarAsync(command, declarado.Value!, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result<FormularioDeclarado> Declarar(DefinirFormularioCommand command)
+    {
+        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        return codigo.IsFailure
+            ? Result<FormularioDeclarado>.Failure(codigo.Error!)
+            : Result<FormularioDeclarado>.Success(new FormularioDeclarado(codigo.Value!, command.FaseId, command.Obrigatorio));
+    }
+
+    private static async Task<Result> LerEGravarAsync(
+        DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+    {
+        FormularioLido lido = await LerAsync(command, declarado, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         return lido.Erros.Count > 0
-            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, processo, lido)])
-            : Gravar(command, processo, lido);
+            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, declarado, processo, lido)])
+            : Gravar(command, declarado, processo, lido);
     }
 
     /// <summary>
     /// As páginas lidas pela forma, as exibições conferidas contra o catálogo — lido só quando preciso — e, na criação do
-    /// formulário de inscrição, os itens do conjunto básico. O formulário de inscrição tem a seção reservada dos dados
+    /// formulário que guarda o conjunto básico da inscrição, os itens dele. Esse formulário tem a seção reservada dos dados
     /// básicos, a primeira: o que nasce agora nasce também com os itens dela.
     /// </summary>
     private static async Task<FormularioLido> LerAsync(
-        DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+        DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        bool inscricao = FinalidadeDo(command) == FinalidadeFormulario.Inscricao;
-        (IReadOnlyList<PaginaDoFormularioInput> entradas, List<FieldError> daSecao) = inscricao
-            ? ConjuntoBasicoDaInscricao.MesclarPaginas(command.Paginas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo))
+        bool guardaOConjuntoBasico = ConjuntoBasicoNaInscricao.Guarda(processo.Declaracao(), declarado);
+        (IReadOnlyList<PaginaDoFormularioInput> entradas, List<FieldError> daSecao) = guardaOConjuntoBasico
+            ? ConjuntoBasicoDaInscricao.MesclarPaginas(command.Paginas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo, declarado.Codigo))
             : (command.Paginas ?? [], []);
         PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler(entradas);
-        bool criaInscricao = inscricao && processo.FormularioDe(FinalidadeFormulario.Inscricao) is null;
+        bool criaInscricao = guardaOConjuntoBasico && processo.Declaracao().Coleta.FormularioDe(declarado.Codigo) is null;
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, FinalidadeDo(command));
+        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, declarado.FinalidadeProvisoria);
         List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto), .. consequencia.Errors];
         List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
         return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros, consequencia.Value);
@@ -103,16 +117,16 @@ public static class DefinirFormularioCommandHandler
     /// As recusas do formulário somam-se às das páginas (ADR-0125). A estrutura só é conferida com todas as páginas montadas,
     /// e a exibição já recusada pela semântica não é recusada de novo pela posição.
     /// </summary>
-    private static IEnumerable<FieldError> ConferirEstrutura(DefinirFormularioCommand command, ProcessoSeletivo processo, FormularioLido lido)
+    private static IEnumerable<FieldError> ConferirEstrutura(DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, FormularioLido lido)
     {
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), FinalidadeDo(command), command.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
+                processo.Declaracao(), declarado.FinalidadeProvisoria, declarado.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 
-    private static Result Gravar(DefinirFormularioCommand command, ProcessoSeletivo processo, FormularioLido lido)
+    private static Result Gravar(DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, FormularioLido lido)
     {
         Result vinculoNovo = ConferirVinculoNovo(processo, lido);
         if (vinculoNovo.IsFailure)
@@ -120,8 +134,7 @@ public static class DefinirFormularioCommandHandler
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definido = processo.DefinirFormulario(
-            FinalidadeDo(command), command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
+        Result definido = processo.DefinirFormulario(declarado, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
