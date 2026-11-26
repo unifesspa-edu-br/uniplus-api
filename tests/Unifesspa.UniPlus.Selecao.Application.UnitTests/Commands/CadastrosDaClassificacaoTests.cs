@@ -28,7 +28,7 @@ public sealed class CadastrosDaClassificacaoTests
 
         Result resultado = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, new(codigo, "v1", null, null, null, null)));
         resultado.Error!.Code.Should().Be(codigoEsperado);
-        resultado.Error.Message.Should().NotContain(codigo).And.NotContain("v1");
+        resultado.Error.Message.Should().NotContain(codigo).And.NotContain("v1").And.NotContain("regra_eliminacao");
     }
 
     [Fact]

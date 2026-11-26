@@ -123,7 +123,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
         null => new DomainError("RegraEliminacao.RegraNaoEncontrada",
             "Regra de eliminação não encontrada no catálogo de regras."),
         { Tipo: not TipoRegra.RegraEliminacao } => new DomainError("RegraEliminacao.RegraTipoInvalido",
-            "A regra não é do tipo regra_eliminacao."),
+            "A regra informada não é uma regra de eliminação."),
         _ => null,
     };
 

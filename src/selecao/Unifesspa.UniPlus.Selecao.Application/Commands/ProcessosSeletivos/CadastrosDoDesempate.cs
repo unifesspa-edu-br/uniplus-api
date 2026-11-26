@@ -115,7 +115,7 @@ internal sealed class CadastrosDoDesempate
         return regra switch
         {
             null => Recusa("Regra de desempate não encontrada no catálogo de regras.", "CriterioDesempate.RegraNaoEncontrada"),
-            { Tipo: not TipoRegra.CriterioDesempate } => Recusa("A regra não é do tipo criterio_desempate.", "CriterioDesempate.RegraTipoInvalido"),
+            { Tipo: not TipoRegra.CriterioDesempate } => Recusa("A regra informada não é uma regra de desempate.", "CriterioDesempate.RegraTipoInvalido"),
             _ => Result<RegraCatalogo>.Success(regra),
         };
     }
