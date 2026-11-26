@@ -1,39 +1,35 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Cópia por valor do que nomeia uma oferta de curso para o candidato — o código da oferta, o curso com o grau, a
-/// unidade ofertante e os turnos —, no momento em que a distribuição de vagas é definida
-/// (snapshot-copy, ADR-0061). É o que o candidato vê ao escolher a oferta na inscrição.
+/// Cópia por valor do código, nome do curso, grau, unidade ofertante e turnos de uma oferta de curso.
+/// Os dados preservam os valores informados no momento da cópia (ADR-0061).
 /// </summary>
-/// <remarks>
-/// Renomear o curso ou a unidade depois não alcança o processo; quem quiser o nome novo redefine
-/// a distribuição.
-/// </remarks>
-public sealed record OfertaCursoSnapshot
+public sealed record CopiaDaOfertaDeCurso
 {
     /// <summary>Tamanho máximo do código da oferta — o mesmo da coluna do cadastro de ofertas.</summary>
-    public const int CodigoMaxLength = 50;
+    public const int TamanhoMaximoDoCodigo = 50;
 
     /// <summary>Tamanho máximo do nome do curso — o mesmo da coluna do cadastro de cursos.</summary>
-    public const int CursoNomeMaxLength = 200;
+    public const int TamanhoMaximoDoNomeDoCurso = 200;
 
     /// <summary>Tamanho máximo do grau do curso — o mesmo da coluna do cadastro de cursos.</summary>
-    public const int CursoGrauMaxLength = 60;
+    public const int TamanhoMaximoDoGrauDoCurso = 60;
 
     /// <summary>Tamanho máximo do nome da unidade ofertante — o mesmo do cadastro de ofertas.</summary>
-    public const int UnidadeOfertanteNomeMaxLength = 250;
+    public const int TamanhoMaximoDoNomeDaUnidadeOfertante = 250;
 
     /// <summary>Tamanho máximo do token de um turno.</summary>
-    public const int TurnoMaxLength = 30;
+    public const int TamanhoMaximoDoTurno = 30;
 
     // EF Core materialization
-    private OfertaCursoSnapshot() { }
+    private CopiaDaOfertaDeCurso() { }
 
-    private OfertaCursoSnapshot(string codigo, string cursoNome, string cursoGrau, string unidadeOfertanteNome, IReadOnlyList<string> turnos)
+    private CopiaDaOfertaDeCurso(string codigo, string cursoNome, string cursoGrau, string unidadeOfertanteNome, IReadOnlyList<string> turnos)
     {
         Codigo = codigo;
         CursoNome = cursoNome;
@@ -54,37 +50,37 @@ public sealed record OfertaCursoSnapshot
     /// <summary>Os turnos que a oferta ocupa (tokens), na ordem canônica do cadastro.</summary>
     public IReadOnlyList<string> Turnos { get; private set; } = [];
 
-    public static Result<OfertaCursoSnapshot> Criar(
+    public static Result<CopiaDaOfertaDeCurso> Criar(
         string? codigo, string? cursoNome, string? cursoGrau, string? unidadeOfertanteNome, IReadOnlyList<string>? turnos)
     {
         string? codigoInformado = CodigoValido(codigo) ? codigo : null;
-        string? nome = Texto(cursoNome, CursoNomeMaxLength);
-        string? grau = Texto(cursoGrau, CursoGrauMaxLength);
-        string? unidade = Texto(unidadeOfertanteNome, UnidadeOfertanteNomeMaxLength);
-        List<string?> turnosNormalizados = [.. (turnos ?? []).Select(static t => Texto(t, TurnoMaxLength))];
+        string? nome = Texto(cursoNome, TamanhoMaximoDoNomeDoCurso);
+        string? grau = Texto(cursoGrau, TamanhoMaximoDoGrauDoCurso);
+        string? unidade = Texto(unidadeOfertanteNome, TamanhoMaximoDoNomeDaUnidadeOfertante);
+        List<string?> turnosNormalizados = [.. (turnos ?? []).Select(static turno => Texto(turno, TamanhoMaximoDoTurno))];
 
         return codigoInformado is null || nome is null || grau is null || unidade is null
-            || turnosNormalizados.Count == 0 || turnosNormalizados.Any(static t => t is null)
-            ? Result<OfertaCursoSnapshot>.Failure(new DomainError("OfertaCursoSnapshot.Invalida", MensagemDeInvalidez))
-            : Result<OfertaCursoSnapshot>.Success(
-                new OfertaCursoSnapshot(codigoInformado, nome, grau, unidade, [.. turnosNormalizados.Select(static t => t!)]));
+            || turnosNormalizados.Count == 0 || turnosNormalizados.Any(static turno => turno is null)
+            ? Result<CopiaDaOfertaDeCurso>.Failure(new DomainError(CopiaDaOfertaDeCursoErrorCodes.Invalida, MensagemDeInvalidez))
+            : Result<CopiaDaOfertaDeCurso>.Success(
+                new CopiaDaOfertaDeCurso(codigoInformado, nome, grau, unidade, [.. turnosNormalizados.Select(static turno => turno!)]));
     }
 
     private static bool CodigoValido(string? codigo) =>
-        codigo is not null && codigo.Length <= CodigoMaxLength && FormatoDoCodigo.TemFormatoValido(codigo);
+        codigo is not null && codigo.Length <= TamanhoMaximoDoCodigo && FormatoDoCodigo.TemFormatoValido(codigo);
 
     private static readonly string MensagemDeInvalidez =
         "A oferta de curso precisa de código, curso, grau, unidade ofertante e ao menos um turno, sem caractere nulo e "
-        + $"dentro do tamanho permitido (código de letras maiúsculas, dígitos e sublinhado até {CodigoMaxLength}, curso até {CursoNomeMaxLength}, grau até {CursoGrauMaxLength}, "
-        + $"unidade até {UnidadeOfertanteNomeMaxLength} e turno até {TurnoMaxLength} caracteres).";
+        + $"dentro do tamanho permitido (código de letras maiúsculas, dígitos e sublinhado até {TamanhoMaximoDoCodigo}, curso até {TamanhoMaximoDoNomeDoCurso}, grau até {TamanhoMaximoDoGrauDoCurso}, "
+        + $"unidade até {TamanhoMaximoDoNomeDaUnidadeOfertante} e turno até {TamanhoMaximoDoTurno} caracteres).";
 
-    public bool Equals(OfertaCursoSnapshot? other) =>
-        other is not null
-        && string.Equals(Codigo, other.Codigo, StringComparison.Ordinal)
-        && string.Equals(CursoNome, other.CursoNome, StringComparison.Ordinal)
-        && string.Equals(CursoGrau, other.CursoGrau, StringComparison.Ordinal)
-        && string.Equals(UnidadeOfertanteNome, other.UnidadeOfertanteNome, StringComparison.Ordinal)
-        && Turnos.SequenceEqual(other.Turnos, StringComparer.Ordinal);
+    public bool Equals(CopiaDaOfertaDeCurso? outra) =>
+        outra is not null
+        && string.Equals(Codigo, outra.Codigo, StringComparison.Ordinal)
+        && string.Equals(CursoNome, outra.CursoNome, StringComparison.Ordinal)
+        && string.Equals(CursoGrau, outra.CursoGrau, StringComparison.Ordinal)
+        && string.Equals(UnidadeOfertanteNome, outra.UnidadeOfertanteNome, StringComparison.Ordinal)
+        && Turnos.SequenceEqual(outra.Turnos, StringComparer.Ordinal);
 
     public override int GetHashCode() => HashCode.Combine(Codigo, CursoNome, CursoGrau, UnidadeOfertanteNome, Turnos.Count);
 

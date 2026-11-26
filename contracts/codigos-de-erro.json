@@ -3097,6 +3097,11 @@
       "titulo": "Versão de mídia não suportada"
     },
     {
+      "codigo": "uniplus.copia_da_oferta_de_curso.invalida",
+      "status": 422,
+      "titulo": "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos"
+    },
+    {
       "codigo": "uniplus.cpf.invalido",
       "status": 422,
       "titulo": "CPF inválido"
@@ -6815,11 +6820,6 @@
       "codigo": "uniplus.selecao.obrigatoriedade_legal.vigencia_invalida",
       "status": 422,
       "titulo": "Vigência inválida"
-    },
-    {
-      "codigo": "uniplus.selecao.oferta_curso_snapshot.invalida",
-      "status": 422,
-      "titulo": "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos"
     },
     {
       "codigo": "uniplus.selecao.opcao_declarada_fato.codigo_invalido",

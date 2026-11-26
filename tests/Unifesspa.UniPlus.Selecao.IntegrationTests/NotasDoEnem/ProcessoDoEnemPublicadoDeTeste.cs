@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -141,7 +142,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
     }
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, OfertaCursoSnapshot ofertaCurso, Dictionary<string, ReferenciaRegra> regras)
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, CopiaDaOfertaDeCurso ofertaCurso, Dictionary<string, ReferenciaRegra> regras)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Res. Unifesspa 532/2021" }, 40).Value!;
 

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -113,19 +114,19 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             oferta.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             oferta.Property(o => o.Codigo)
                 .HasColumnName("oferta_curso_codigo")
-                .HasMaxLength(OfertaCursoSnapshot.CodigoMaxLength)
+                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo)
                 .HasComment("Código da oferta de curso, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.CursoNome)
                 .HasColumnName("oferta_curso_nome")
-                .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)
+                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDoCurso)
                 .HasComment("Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.CursoGrau)
                 .HasColumnName("oferta_curso_grau")
-                .HasMaxLength(OfertaCursoSnapshot.CursoGrauMaxLength)
+                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoGrauDoCurso)
                 .HasComment("Grau do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.UnidadeOfertanteNome)
                 .HasColumnName("oferta_unidade_ofertante_nome")
-                .HasMaxLength(OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength)
+                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDaUnidadeOfertante)
                 .HasComment("Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação.");
             oferta.Property(o => o.Turnos)
                 .HasColumnName("oferta_turnos")

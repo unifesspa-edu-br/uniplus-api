@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests.Conferencias;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -61,7 +62,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             []),
 
         // O que nomeia a oferta para o candidato, congelado por valor; vai no bloco público de ofertas.
-        [typeof(OfertaCursoSnapshot)] = (
+        [typeof(CopiaDaOfertaDeCurso)] = (
             ["Codigo", "CursoNome", "CursoGrau", "UnidadeOfertanteNome", "Turnos"],
             []),
 

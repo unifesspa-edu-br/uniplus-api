@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -31,7 +32,7 @@ internal static class OfertasDeTeste
     public static ConfiguracaoDistribuicaoVagas DistribuicaoDoCurso(Guid ofertaCursoId, string cursoNome, params string[] codigos) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * codigos.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", new string('a', 64)), Modalidades = [.. codigos.Select(Modalidade)] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoSnapshot.Criar($"OFERTA_{ofertaCursoId.ToString("N")[..12].ToUpperInvariant()}", cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value! }).Value!;
+            new FatosDaOfertaNoCadastro { OfertaCurso = CopiaDaOfertaDeCurso.Criar($"OFERTA_{ofertaCursoId.ToString("N")[..12].ToUpperInvariant()}", cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value! }).Value!;
 
     /// <summary>A mesma configuração, com a distribuição de vagas dada no lugar da que ela tinha.</summary>
     public static ConfiguracaoPublicada ComDistribuicao(ConfiguracaoPublicada configuracao, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>

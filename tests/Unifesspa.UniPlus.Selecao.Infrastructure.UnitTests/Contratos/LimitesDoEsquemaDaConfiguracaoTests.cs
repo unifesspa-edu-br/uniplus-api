@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -76,11 +77,11 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(FormaDoItem.RotuloMaxLength), FormaDoItem.RotuloMaxLength, Item, "/properties/rotulo", true),
         (nameof(FormaDoItem.RotuloMaxLength) + " (opção)", FormaDoItem.RotuloMaxLength, Item, "/$defs/opcao/properties/rotulo", true),
         (nameof(FormaDoCabecalho.TituloMaxLength), FormaDoCabecalho.TituloMaxLength, Formulario, "/properties/titulo", true),
-        ($"{nameof(OfertaCursoSnapshot)}.{nameof(OfertaCursoSnapshot.CodigoMaxLength)}", OfertaCursoSnapshot.CodigoMaxLength, Distribuicao, "/properties/ofertaCursoCodigo", true),
-        (nameof(OfertaCursoSnapshot.CursoNomeMaxLength), OfertaCursoSnapshot.CursoNomeMaxLength, Distribuicao, "/properties/cursoNome", true),
-        (nameof(OfertaCursoSnapshot.CursoGrauMaxLength), OfertaCursoSnapshot.CursoGrauMaxLength, Distribuicao, "/properties/cursoGrau", true),
-        (nameof(OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength), OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength, Distribuicao, "/properties/unidadeOfertanteNome", true),
-        (nameof(OfertaCursoSnapshot.TurnoMaxLength), OfertaCursoSnapshot.TurnoMaxLength, Distribuicao, "/properties/turnos/items", true),
+        ($"{nameof(CopiaDaOfertaDeCurso)}.{nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo)}", CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo, Distribuicao, "/properties/ofertaCursoCodigo", true),
+        (nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDoCurso), CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDoCurso, Distribuicao, "/properties/cursoNome", true),
+        (nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoGrauDoCurso), CopiaDaOfertaDeCurso.TamanhoMaximoDoGrauDoCurso, Distribuicao, "/properties/cursoGrau", true),
+        (nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDaUnidadeOfertante), CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDaUnidadeOfertante, Distribuicao, "/properties/unidadeOfertanteNome", true),
+        (nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoTurno), CopiaDaOfertaDeCurso.TamanhoMaximoDoTurno, Distribuicao, "/properties/turnos/items", true),
         (nameof(LimitesDoEnvelope.CensoReferencia), LimitesDoEnvelope.CensoReferencia, Distribuicao, "/properties/referenciaDemograficaCodigo", true),
         (nameof(LimitesDoEnvelope.ModalidadeCodigo), LimitesDoEnvelope.ModalidadeCodigo, Distribuicao, "/$defs/modalidade/properties/codigo", true),
         (nameof(LimitesDoEnvelope.ModalidadeDescricao), LimitesDoEnvelope.ModalidadeDescricao, Distribuicao, "/$defs/modalidade/properties/descricao", true),

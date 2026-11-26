@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>

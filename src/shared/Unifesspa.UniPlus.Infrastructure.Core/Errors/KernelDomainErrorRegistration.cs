@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
 {
@@ -17,6 +18,7 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         .. LocalizacaoDoEndereco(),
         .. ReferenciaDeCidade(),
         .. ParametrosDeConsulta(),
+        .. CopiaDaOfertaDeCurso(),
     ];
 
     // Falhas de desserialização e binding acontecem antes da execução do comando.
@@ -92,5 +94,10 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         new(ConsultaErrorCodes.CampoDeOrdenacaoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.campo_de_ordenacao_invalido", "Campo de ordenação não aceito por esta listagem")),
         new(ConsultaErrorCodes.OrdenacaoMalFormada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.ordenacao_mal_formada", "Expressão de ordenação inválida")),
         new(ConsultaErrorCodes.BuscaMuitoLonga, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.consulta.busca_muito_longa", "Texto pesquisado excede o comprimento aceito")),
+    ];
+
+    private static KeyValuePair<string, DomainErrorMapping>[] CopiaDaOfertaDeCurso() =>
+    [
+        new(CopiaDaOfertaDeCursoErrorCodes.Invalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.copia_da_oferta_de_curso.invalida", "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos")),
     ];
 }

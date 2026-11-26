@@ -9845,6 +9845,36 @@
       ]
     },
     {
+      "codigo": "uniplus.copia_da_oferta_de_curso.invalida",
+      "requisitos": [
+        "UNI-REQ-0496"
+      ],
+      "oQueAconteceu": [
+        "Ao definir a distribuição de vagas, o processo seletivo copia por valor o que\nnomeia cada oferta de curso para a pessoa candidata: o nome do curso, o grau, o\nnome da unidade ofertante e os turnos. Essa cópia fica congelada com o processo,\ne renomear o curso ou a unidade depois não a altera. Para ser congelada, a cópia\nprecisa ter curso, grau, unidade ofertante e ao menos um turno, sem caractere\nnulo e dentro do tamanho permitido (curso até 200 caracteres, grau até 60,\nunidade até 250 e turno até 30, depois da normalização do texto). A mensagem do\nerro repete essa exigência e não diz qual dos campos falhou.",
+        "Os dados vêm do cadastro de cursos e de ofertas de curso de Configuração, e\naqui algum deles não pôde ser congelado: está em branco, passa do tamanho ou\ntraz caractere que o certame não congela, como um não-caractere do Unicode. Nada\nfoi gravado. A **simulação** da distribuição de vagas devolve a mesma recusa,\nsem gravar nada.",
+        "A recusa também pode aparecer quando o sistema relê a configuração congelada\nda versão publicada, nas demais operações da lista do cabeçalho (a lista\ncompleta é a das operações que propagam a falha da releitura). A consulta de\nconformidade do processo também relê a versão, mas converte a falha em pendência\ndo checklist, e por isso não consta no cabeçalho. Pelo caminho normal de\ngravação, a cópia congelada nunca traz uma oferta assim, porque a definição da\ndistribuição a recusa antes. Nessas leituras a recusa sai como violação única,\nsem a lista `errors[]`, e se refere à versão congelada, não ao pedido enviado."
+      ],
+      "comoResolver": [
+        "Na definição ou na simulação, corrija no cadastro de Configuração o curso ou a\noferta de curso apontados (`PUT /api/configuracao/admin/cursos/{id}` ou\n`PUT /api/configuracao/admin/ofertas-curso/{id}`), de modo que nome do curso,\ngrau, nome da unidade ofertante e turnos fiquem preenchidos, no tamanho\npermitido e sem caractere inválido. Em seguida, defina a distribuição de vagas\nde novo: a cópia é feita no momento da definição, e a correção do cadastro não\nchega sozinha a uma distribuição já definida.",
+        "Se o erro apareceu em uma operação que lê a configuração congelada (qualquer\numa das listadas no cabeçalho, exceto a definição e a simulação da\ndistribuição), o pedido enviado agora não é a causa: o defeito está na oferta de\ncurso congelada na versão publicada do processo. Corrigir o cadastro não altera\no que já foi congelado. A causa é investigada pela equipe técnica do Uni+."
+      ],
+      "ondeAparece": [
+        "Definição de distribuição de vagas do processo seletivo",
+        "Simulação da distribuição de vagas do processo seletivo",
+        "Retificação em ato único",
+        "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
+        "Apresentação do formulário do processo",
+        "Consulta do formulário da inscrição",
+        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
+        "Avaliação da inscrição",
+        "Início, confirmação e remoção de envio de documento da inscrição",
+        "Consulta e emissão do comprovante da inscrição",
+        "Consulta administrativa da inscrição e dos documentos dela",
+        "Publicação de produto do edital e listagem de produtos previstos do processo",
+        "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
+      ]
+    },
+    {
       "codigo": "uniplus.cpf.invalido",
       "requisitos": [],
       "oQueAconteceu": [
@@ -22628,34 +22658,6 @@
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
         "Atualização de uma obrigatoriedade legal"
-      ]
-    },
-    {
-      "codigo": "uniplus.selecao.oferta_curso_snapshot.invalida",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "Ao definir a distribuição de vagas, o processo seletivo copia por valor o que\nnomeia cada oferta de curso para a pessoa candidata: o nome do curso, o grau, o\nnome da unidade ofertante e os turnos. Essa cópia fica congelada com o processo,\ne renomear o curso ou a unidade depois não a altera. Para ser congelada, a cópia\nprecisa ter curso, grau, unidade ofertante e ao menos um turno, sem caractere\nnulo e dentro do tamanho permitido (curso até 200 caracteres, grau até 60,\nunidade até 250 e turno até 30, depois da normalização do texto). A mensagem do\nerro repete essa exigência e não diz qual dos campos falhou.",
-        "Os dados vêm do cadastro de cursos e de ofertas de curso de Configuração, e\naqui algum deles não pôde ser congelado: está em branco, passa do tamanho ou\ntraz caractere que o certame não congela, como um não-caractere do Unicode. Nada\nfoi gravado. A **simulação** da distribuição de vagas devolve a mesma recusa,\nsem gravar nada.",
-        "A recusa também pode aparecer quando o sistema relê a configuração congelada\nda versão publicada, nas demais operações da lista do cabeçalho (a lista\ncompleta é a das operações que propagam a falha da releitura). A consulta de\nconformidade do processo também relê a versão, mas converte a falha em pendência\ndo checklist, e por isso não consta no cabeçalho. Pelo caminho normal de\ngravação, a cópia congelada nunca traz uma oferta assim, porque a definição da\ndistribuição a recusa antes. Nessas leituras a recusa sai como violação única,\nsem a lista `errors[]`, e se refere à versão congelada, não ao pedido enviado."
-      ],
-      "comoResolver": [
-        "Na definição ou na simulação, corrija no cadastro de Configuração o curso ou a\noferta de curso apontados (`PUT /api/configuracao/admin/cursos/{id}` ou\n`PUT /api/configuracao/admin/ofertas-curso/{id}`), de modo que nome do curso,\ngrau, nome da unidade ofertante e turnos fiquem preenchidos, no tamanho\npermitido e sem caractere inválido. Em seguida, defina a distribuição de vagas\nde novo: a cópia é feita no momento da definição, e a correção do cadastro não\nchega sozinha a uma distribuição já definida.",
-        "Se o erro apareceu em uma operação que lê a configuração congelada (qualquer\numa das listadas no cabeçalho, exceto a definição e a simulação da\ndistribuição), o pedido enviado agora não é a causa: o defeito está na oferta de\ncurso congelada na versão publicada do processo. Corrigir o cadastro não altera\no que já foi congelado. A causa é investigada pela equipe técnica do Uni+."
-      ],
-      "ondeAparece": [
-        "Definição de distribuição de vagas do processo seletivo",
-        "Simulação da distribuição de vagas do processo seletivo",
-        "Retificação em ato único",
-        "Definição de etapas e do cronograma das fases de processo publicado, quando declaram atos",
-        "Apresentação do formulário do processo",
-        "Consulta do formulário da inscrição",
-        "Início, salvamento, submissão, cancelamento e descarte do rascunho da inscrição",
-        "Avaliação da inscrição",
-        "Início, confirmação e remoção de envio de documento da inscrição",
-        "Consulta e emissão do comprovante da inscrição",
-        "Consulta administrativa da inscrição e dos documentos dela",
-        "Publicação de produto do edital e listagem de produtos previstos do processo",
-        "Notas do ENEM (importação de lote, geração do envio ao INEP e consulta de lotes e de envios)"
       ]
     },
     {

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>

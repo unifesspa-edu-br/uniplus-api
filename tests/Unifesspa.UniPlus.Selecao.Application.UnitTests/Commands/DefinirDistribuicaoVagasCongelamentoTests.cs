@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -34,7 +35,7 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoInstitucional(ofertaCursoId, modalidadeId, 60)));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        OfertaCursoSnapshot congelado = processo.DistribuicaoVagas.Single().OfertaCurso!;
+        CopiaDaOfertaDeCurso congelado = processo.DistribuicaoVagas.Single().OfertaCurso!;
         (congelado.Codigo, congelado.CursoNome, congelado.CursoGrau, congelado.UnidadeOfertanteNome).Should()
             .Be(("MEDICINA_MARABA", "Medicina", "Bacharelado", "Centro de Tecnologia"));
         congelado.Turnos.Should().Equal("MATUTINO");

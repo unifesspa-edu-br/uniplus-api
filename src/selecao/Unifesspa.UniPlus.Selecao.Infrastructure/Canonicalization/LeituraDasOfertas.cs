@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -16,10 +17,10 @@ internal static class LeituraDasOfertas
     /// Cada oferta de curso com o que a nomeia para o candidato, congelado na definição da
     /// distribuição.
     /// </summary>
-    internal static List<(Guid Id, OfertaCursoSnapshot Oferta)> LerOfertas(LeitorEnvelope leitor, JsonObject payload)
+    internal static List<(Guid Id, CopiaDaOfertaDeCurso Oferta)> LerOfertas(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "ofertas", "$");
-        List<(Guid, OfertaCursoSnapshot)> ofertas = [];
+        List<(Guid, CopiaDaOfertaDeCurso)> ofertas = [];
         for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
             if (LerOferta(leitor, leitor.ItemObjeto(array, i, "ofertas"), $"ofertas[{i}]") is { } lida)
@@ -31,24 +32,24 @@ internal static class LeituraDasOfertas
         return leitor.Falhou ? [] : ofertas;
     }
 
-    private static (Guid, OfertaCursoSnapshot)? LerOferta(LeitorEnvelope leitor, JsonObject item, string path)
+    private static (Guid, CopiaDaOfertaDeCurso)? LerOferta(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "ofertaCursoCodigo", "cursoNome", "cursoGrau", "unidadeOfertanteNome", "turnos");
         Guid id = leitor.Identificador(item, "ofertaCursoOrigemId", path);
-        string codigo = leitor.TextoNaoVazio(item, "ofertaCursoCodigo", path, OfertaCursoSnapshot.CodigoMaxLength);
-        string cursoNome = leitor.TextoNaoVazio(item, "cursoNome", path, OfertaCursoSnapshot.CursoNomeMaxLength);
-        string cursoGrau = leitor.TextoNaoVazio(item, "cursoGrau", path, OfertaCursoSnapshot.CursoGrauMaxLength);
-        string unidade = leitor.TextoNaoVazio(item, "unidadeOfertanteNome", path, OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength);
+        string codigo = leitor.TextoNaoVazio(item, "ofertaCursoCodigo", path, CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo);
+        string cursoNome = leitor.TextoNaoVazio(item, "cursoNome", path, CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDoCurso);
+        string cursoGrau = leitor.TextoNaoVazio(item, "cursoGrau", path, CopiaDaOfertaDeCurso.TamanhoMaximoDoGrauDoCurso);
+        string unidade = leitor.TextoNaoVazio(item, "unidadeOfertanteNome", path, CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDaUnidadeOfertante);
         IReadOnlyList<string> turnos = leitor.Textos(item, "turnos", path);
 
-        return leitor.Falhou ? null : Congelar(leitor, id, path, OfertaCursoSnapshot.Criar(codigo, cursoNome, cursoGrau, unidade, turnos));
+        return leitor.Falhou ? null : Congelar(leitor, id, path, CopiaDaOfertaDeCurso.Criar(codigo, cursoNome, cursoGrau, unidade, turnos));
     }
 
-    private static (Guid, OfertaCursoSnapshot)? Congelar(LeitorEnvelope leitor, Guid id, string caminho, Result<OfertaCursoSnapshot> oferta)
+    private static (Guid, CopiaDaOfertaDeCurso)? Congelar(LeitorEnvelope leitor, Guid id, string caminho, Result<CopiaDaOfertaDeCurso> oferta)
     {
         if (oferta.IsFailure)
         {
-            leitor.Propagar<OfertaCursoSnapshot>(oferta.Errors, caminho);
+            leitor.Propagar<CopiaDaOfertaDeCurso>(oferta.Errors, caminho);
             return null;
         }
 

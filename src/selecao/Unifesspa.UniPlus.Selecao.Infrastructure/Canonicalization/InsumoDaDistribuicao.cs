@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -33,7 +34,7 @@ internal readonly record struct InsumoDaDistribuicao(
     };
 
     // O rol deriva do catálogo de regras: a leitura confere o que a regra publicada admitia.
-    internal FatosDaOfertaNoCadastro FatosDoCadastro(OfertaCursoSnapshot nomeDaOferta) => new()
+    internal FatosDaOfertaNoCadastro FatosDoCadastro(CopiaDaOfertaDeCurso nomeDaOferta) => new()
     {
         ModalidadesAdmitidas = PoliticaDaDistribuicaoDeVagas.RolFechado(Regras.Distribuicao.Codigo),
         GrupoAreaEnem = GrupoAreaEnem,

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -111,7 +112,7 @@ internal static class SerializacaoDasVagas
 
     private static JsonObject SerializarOferta(ConfiguracaoDistribuicaoVagas configuracao)
     {
-        OfertaCursoSnapshot oferta = configuracao.OfertaCurso ?? throw new InvalidOperationException(
+        CopiaDaOfertaDeCurso oferta = configuracao.OfertaCurso ?? throw new InvalidOperationException(
             $"Canonicalização de oferta de curso sem nome congelado ({configuracao.OfertaCursoOrigemId}) — a verificação de conformidade deveria ter recusado a transição antes deste ponto.");
 
         return new JsonObject
