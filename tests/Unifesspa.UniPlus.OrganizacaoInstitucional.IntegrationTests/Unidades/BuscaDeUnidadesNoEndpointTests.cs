@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure
 
 /// <summary>
 /// Contrato HTTP da busca textual de <c>GET /api/organizacao/unidades?q=</c>: texto em branco ou só de caractere
-/// nulo não é busca, o texto longo demais é recusado com 422, os links de navegação ecoam o <c>q</c> como chegou e
+/// nulo não é busca, o texto longo demais é recusado com 422, os links de navegação ecoam o <c>q</c> sem os espaços das pontas e
 /// o cursor não carrega o filtro.
 /// </summary>
 [Collection(OrganizacaoEndpointCollection.Name)]
@@ -54,8 +54,8 @@ public sealed class BuscaDeUnidadesNoEndpointTests
         segunda.Ids.Should().Equal(semQ[1].Ids);
     }
 
-    [Fact(DisplayName = "Os links self e next ecoam o q como chegou, inclusive com espaços nas pontas")]
-    public async Task Links_EcoamOQComoChegou()
+    [Fact(DisplayName = "Os links self e next ecoam o q sem os espaços das pontas")]
+    public async Task Links_EcoamOQSemOsEspacosDasPontas()
     {
         string token = NovoToken();
         await SemearAsync(2, token);
@@ -64,8 +64,8 @@ public sealed class BuscaDeUnidadesNoEndpointTests
 
         PaginaDeUnidades pagina = await PaginaDeUnidades.ConsultarAsync(client, $"q={Uri.EscapeDataString(q)}&limit=1");
 
-        PaginaDeUnidades.ParametroDe(pagina.Self!, "q").Should().Be(q);
-        PaginaDeUnidades.ParametroDe(pagina.Next!, "q").Should().Be(q);
+        PaginaDeUnidades.ParametroDe(pagina.Self!, "q").Should().Be(token);
+        PaginaDeUnidades.ParametroDe(pagina.Next!, "q").Should().Be(token);
         (await PaginaDeUnidades.LerAsync(client, pagina.Next!)).Status.Should().Be(HttpStatusCode.OK);
     }
 
