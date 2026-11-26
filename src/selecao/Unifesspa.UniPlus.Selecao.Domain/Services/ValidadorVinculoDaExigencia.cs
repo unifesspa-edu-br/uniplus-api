@@ -19,13 +19,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// que a habilitação coleta no dia da prova.
 /// </para>
 /// <para>
-/// A finalidade diz o formulário a que o documento pertence, e só vale numa fase que responde o
-/// formulário dela. Na fase que responde algum formulário, ela é obrigatória: inscrição e isenção
-/// podem dividir a fase, e sem a finalidade não se sabe em que formulário o documento aparece. A
-/// regra olha as flags da fase, e não a existência do formulário, para que exigências e formulários
-/// possam ser configurados em qualquer ordem.
-/// </para>
-/// <para>
 /// Vive aqui, e não dentro da escrita, porque a configuração congelada volta por um caminho
 /// próprio — o envelope canônico do certame publicado — que monta o mesmo grafo sem passar
 /// pela escrita. Guarda que roda num caminho só é guarda que o outro caminho não tem: uma
@@ -39,7 +32,7 @@ public static class ValidadorVinculoDaExigencia
 {
     /// <summary>
     /// Devolve o primeiro vínculo que não fecha, ou <c>null</c> quando todas as exigências
-    /// apontam para fase, formulário e etapa coerentes entre si.
+    /// apontam para fase e etapa coerentes entre si.
     /// </summary>
     public static DomainError? PrimeiroVinculoInvalido(
         IReadOnlyCollection<DocumentoExigido> exigencias,
@@ -58,11 +51,6 @@ public static class ValidadorVinculoDaExigencia
                 return new DomainError(
                     "DocumentoExigido.FaseNaoPertenceAoProcesso",
                     $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo.");
-            }
-
-            if (RecusaDaFinalidade(item.Finalidade, faseDaExigencia) is { } recusaDaFinalidade)
-            {
-                return recusaDaFinalidade;
             }
 
             if (item.ExigidoNaEtapaId is not { } exigidoNaEtapaId)

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -25,9 +26,14 @@ public sealed class DocumentosDoComprovanteTests
             .ComFatos(null)
             .Criar().Value!;
 
+    private static readonly CodigoDoFormulario[] FormulariosDaInscricao = [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)];
+
     private static DocumentosDaInscricao Avaliacao(params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens) =>
         new([.. itens.Select(static i => new DocumentoAvaliado(i.Documento, i.Situacao, null, i.Ocorrencia, [], null))],
-            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []);
+            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), [])
+        {
+            CodigosDosFormulariosDaInscricao = FormulariosDaInscricao,
+        };
 
     private static ArquivoConfirmado Arquivo(DocumentoExigido documento, string hash, string? ocorrencia = null, int minuto = 0) =>
         new(Guid.CreateVersion7(), Guid.CreateVersion7(), documento.Id, ocorrencia, FormatoPermitido.Pdf, 1024, hash,
@@ -64,8 +70,8 @@ public sealed class DocumentosDoComprovanteTests
         }
     }
 
-    [Fact(DisplayName = "A exigência que não se aplica e a de outra finalidade ficam fora do comprovante da inscrição")]
-    public void Compor_NaoExigidoEOutraFinalidade_FicamFora()
+    [Fact(DisplayName = "A exigência que não se aplica e a de outro formulário ficam fora do comprovante da inscrição")]
+    public void Compor_NaoExigidoEDeOutroFormulario_FicamFora()
     {
         DocumentoExigido aplica = Documento("RG");
         DocumentosDaInscricao avaliacao = Avaliacao(
@@ -74,6 +80,21 @@ public sealed class DocumentosDoComprovanteTests
             (Documento("Comprovante de renda", finalidade: FinalidadeFormulario.IsencaoTaxa), SituacaoDoDocumento.Pendente, null));
 
         DocumentosDoComprovante.Compor(avaliacao, []).Select(static d => d.Nome).Should().Equal("RG");
+    }
+
+    [Fact(DisplayName = "Com dois formulários de inscrição, o comprovante traz as exigências de cada um e deixa de fora as dos demais")]
+    public void Compor_DoisFormulariosDaInscricao_TrazOsDosDois()
+    {
+        DocumentosDaInscricao avaliacao = Avaliacao(
+            (Documento("RG"), SituacaoDoDocumento.Satisfeita, null),
+            (Documento("Laudo", finalidade: FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.Pendente, null),
+            (Documento("Comprovante de renda", finalidade: FinalidadeFormulario.IsencaoTaxa), SituacaoDoDocumento.Pendente, null))
+            with
+        {
+            CodigosDosFormulariosDaInscricao = [.. FormulariosDaInscricao, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao)],
+        };
+
+        DocumentosDoComprovante.Compor(avaliacao, []).Select(static d => d.Nome).Should().Equal("RG", "Laudo");
     }
 
     [Fact(DisplayName = "O arquivo traz SHA-256, tamanho e formato, e só os da exigência e da ocorrência dela")]
@@ -102,7 +123,10 @@ public sealed class DocumentosDoComprovanteTests
     private static DocumentosDaInscricao ComGrupo(
         GrupoDeComprovacao grupo, bool grupoAtendido, params (DocumentoExigido Documento, SituacaoDoDocumento Situacao)[] alternativas) =>
         new([.. alternativas.Select(a => new DocumentoAvaliado(a.Documento, a.Situacao, null, null, [grupo], null, DispensadoPeloGrupo: grupoAtendido && a.Situacao != SituacaoDoDocumento.Satisfeita))],
-            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []);
+            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), [])
+        {
+            CodigosDosFormulariosDaInscricao = FormulariosDaInscricao,
+        };
 
     [Fact(DisplayName = "A alternativa não enviada de um grupo que exige um item e já foi cumprido sai dispensada e sem consequência")]
     public void Compor_OuAtendido_DispensaAAlternativaNaoEnviada()

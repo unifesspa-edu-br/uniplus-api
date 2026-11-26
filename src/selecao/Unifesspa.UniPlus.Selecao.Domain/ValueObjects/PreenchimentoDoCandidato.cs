@@ -261,7 +261,7 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
 
     private IEnumerable<FieldError> ConferirAceites(IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos)
     {
-        HashSet<string> vistos = new(StringComparer.Ordinal);
+        HashSet<TermoNoFormulario> vistos = [];
         for (int indice = 0; indice < Aceites.Count; indice++)
         {
             FieldError? recusa = RecusaDoAceite(Aceites[indice], indice, vistos, termos);
@@ -269,12 +269,13 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
         }
     }
 
-    private static FieldError? RecusaDoAceite(AceiteDeTermo aceite, int indice, HashSet<string> vistos, IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos)
+    private static FieldError? RecusaDoAceite(AceiteDeTermo aceite, int indice, HashSet<TermoNoFormulario> vistos, IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos)
     {
         string campo = $"aceites[{indice}]";
-        if (!vistos.Add(aceite.Codigo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteRepetido,
+        TermoNoFormulario termoAceito = new(aceite.FormularioCodigo, aceite.Codigo);
+        if (!vistos.Add(termoAceito)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteRepetido,
             $"O termo '{aceite.Codigo}' foi aceito mais de uma vez. Envie um único aceite para cada termo."));
-        if (!termos.TryGetValue(new TermoNoFormulario(aceite.FormularioCodigo, aceite.Codigo), out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
+        if (!termos.TryGetValue(termoAceito, out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
             $"O termo '{aceite.Codigo}' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
         return aceite.ValeParaAVersao(termo) ? null : new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteDeOutraVersao,
             $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));

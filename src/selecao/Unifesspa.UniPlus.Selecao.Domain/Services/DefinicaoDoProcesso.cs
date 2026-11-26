@@ -9,14 +9,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// Os formulários do processo como uma definição só para o avaliador (ADR-0135): cada seção de cada
-/// formulário é uma página, com a exibição da seção, na ordem das finalidades e das seções, com os
+/// formulário é uma página, com a exibição da seção, na ordem dos códigos dos formulários e das seções, com os
 /// itens e os grupos dela; os termos de todos os formulários; as derivações e os agregados do
 /// processo. Uma definição só porque o formulário seguinte cita os fatos e os derivados do
 /// anterior, e o avaliador resolve tudo numa ordem.
 /// </summary>
 /// <remarks>
-/// A página e o termo levam a finalidade no código, porque o código da seção e o do termo só são
-/// únicos dentro do formulário. O item sem seção fica numa página sem exibição da sua finalidade.
+/// A página e o termo levam o código do formulário no código, porque o código da seção e o do termo só são
+/// únicos dentro do formulário. O item sem seção fica numa página sem exibição, com o código do formulário.
 /// </remarks>
 public static class DefinicaoDoProcesso
 {
@@ -35,23 +35,26 @@ public static class DefinicaoDoProcesso
         ArgumentNullException.ThrowIfNull(derivacoes);
         ArgumentNullException.ThrowIfNull(agregados);
 
+        FormularioProcesso[] naOrdemDosCodigos = [.. formularios.OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal)];
         return new DefinicaoFormulario(
-            [.. FinalidadesDeclaradas(formularios, itens, grupos).SelectMany(finalidade => PaginasDaFinalidade(
-                finalidade, formularios.FirstOrDefault(f => f.Finalidade == finalidade),
-                [.. itens.Where(i => i.Finalidade == finalidade)], [.. grupos.Where(g => g.Finalidade == finalidade)]))],
-            TermosDaDefinicao(termos), derivacoes, agregados);
+            PaginasDosFormularios(naOrdemDosCodigos, itens, grupos),
+            TermosDosFormularios(naOrdemDosCodigos, termos),
+            derivacoes, agregados);
     }
 
-    private static IEnumerable<FinalidadeFormulario> FinalidadesDeclaradas(
+    private static DefinicaoPagina[] PaginasDosFormularios(
         IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        formularios.Select(static f => f.Finalidade)
-            .Concat(itens.Select(static i => i.Finalidade).OfType<FinalidadeFormulario>())
-            .Concat(grupos.Select(static g => g.Finalidade).OfType<FinalidadeFormulario>())
-            .Distinct().Order();
+        [.. formularios.SelectMany(formulario => PaginasDoFormulario(
+            formulario,
+            [.. itens.Where(i => i.FormularioId == formulario.Id)],
+            [.. grupos.Where(g => g.FormularioId == formulario.Id)]))];
 
-    private static DefinicaoTermo[] TermosDaDefinicao(IEnumerable<TermoExigidoFormulario> termos) =>
-        [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
-            .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))];
+    private static DefinicaoTermo[] TermosDosFormularios(IEnumerable<FormularioProcesso> formularios, IEnumerable<TermoExigidoFormulario> termos) =>
+        [.. formularios.SelectMany(formulario => TermosDoFormulario(formulario, termos))];
+
+    private static IEnumerable<DefinicaoTermo> TermosDoFormulario(FormularioProcesso formulario, IEnumerable<TermoExigidoFormulario> termos) =>
+        termos.Where(t => t.FormularioId == formulario.Id).OrderBy(static t => t.Ordem)
+            .Select(t => new DefinicaoTermo(CodigoDoTermo(formulario.Codigo, t.Codigo), t.Exibicao, t.Obrigatoriedade));
 
     /// <summary>O código da página na definição do processo: <c>CODIGO:SECAO</c>, ou só o código do formulário para o item sem seção.</summary>
     public static string CodigoDaPagina(CodigoDoFormulario formulario, string? secao)
@@ -84,38 +87,38 @@ public static class DefinicaoDoProcesso
 
     private static CodigoDoFormulario CodigoDe(FinalidadeFormulario finalidade) => CodigoDoFormulario.Criar(finalidade.Codigo()).Value!;
 
-    private static IEnumerable<DefinicaoPagina> PaginasDaFinalidade(
-        FinalidadeFormulario finalidade, FormularioProcesso? formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)
+    private static IEnumerable<DefinicaoPagina> PaginasDoFormulario(
+        FormularioProcesso formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)
     {
-        PaginaDoFormulario[] secoes = [.. (formulario?.Paginas ?? []).Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem)];
+        PaginaDoFormulario[] secoes = [.. formulario.Paginas.Where(static e => e.Tipo == TipoPaginaFormulario.Secao).OrderBy(static e => e.Ordem)];
         HashSet<string> codigosDasSecoes = new(secoes.Select(static s => s.Codigo), StringComparer.Ordinal);
 
-        if (PaginaDosItensSemSecao(finalidade, itens, grupos, codigosDasSecoes) is { } semSecao)
+        if (PaginaDosItensSemSecao(formulario.Codigo, itens, grupos, codigosDasSecoes) is { } semSecao)
         {
             yield return semSecao;
         }
 
         foreach (PaginaDoFormulario secao in secoes)
         {
-            yield return PaginaDaSecao(finalidade, secao, itens, grupos);
+            yield return PaginaDaSecao(formulario.Codigo, secao, itens, grupos);
         }
     }
 
     private static DefinicaoPagina PaginaDaSecao(
-        FinalidadeFormulario finalidade, PaginaDoFormulario secao, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos) =>
+        CodigoDoFormulario formulario, PaginaDoFormulario secao, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos) =>
         Pagina(
-            CodigoDaPagina(finalidade, secao.Codigo),
+            CodigoDaPagina(formulario, secao.Codigo),
             secao.Exibicao,
             [.. itens.Where(i => string.Equals(i.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))],
             [.. grupos.Where(g => string.Equals(g.PaginaCodigo, secao.Codigo, StringComparison.Ordinal))]);
 
     private static DefinicaoPagina? PaginaDosItensSemSecao(
-        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos, HashSet<string> secoes)
+        CodigoDoFormulario formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos, HashSet<string> secoes)
     {
         FatoColetado[] semSecao = [.. itens.Where(i => i.PaginaCodigo is not { } codigo || !secoes.Contains(codigo))];
         GrupoColetado[] gruposSemSecao = [.. grupos.Where(g => g.PaginaCodigo is not { } codigo || !secoes.Contains(codigo))];
         return semSecao.Length > 0 || gruposSemSecao.Length > 0
-            ? Pagina(CodigoDaPagina(finalidade, null), null, semSecao, gruposSemSecao)
+            ? Pagina(CodigoDaPagina(formulario, null), null, semSecao, gruposSemSecao)
             : null;
     }
 

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using ValueObjects;
 
@@ -79,10 +80,20 @@ public static class AvaliacaoDaInscricao
         return new ResultadoDaAvaliacaoDaInscricao(
             formulario,
             Modalidades(configuracao, formulario),
-            new DocumentosDaInscricao(
-                documentos,
-                DocumentosAvaliadosDaInscricao.PendenciasDosDocumentos(configuracao, formulario, documentos),
-                DocumentosAusentesDaInscricao.Apurar(configuracao.RegrasDeComprovacao, resultadoDaComprovacao)));
+            DocumentosAvaliados(configuracao, formulario, documentos, resultadoDaComprovacao));
+    }
+
+    private static DocumentosDaInscricao DocumentosAvaliados(
+        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, List<DocumentoAvaliado> documentos, ResultadoDaComprovacao resultadoDaComprovacao)
+    {
+        IReadOnlyList<CodigoDoFormulario> daInscricao = CodigosDosFormulariosDaInscricao(configuracao);
+        return new DocumentosDaInscricao(
+            documentos,
+            DocumentosAvaliadosDaInscricao.PendenciasDosDocumentos(configuracao, formulario, documentos),
+            DocumentosAusentesDaInscricao.Apurar(configuracao.RegrasDeComprovacao, resultadoDaComprovacao, daInscricao))
+        {
+            CodigosDosFormulariosDaInscricao = daInscricao,
+        };
     }
 
     private static AvaliacaoFormulario AvaliarFormulario(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada) =>
@@ -109,8 +120,8 @@ public static class AvaliacaoDaInscricao
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        DependenciasDaAvaliacao daModalidade = DependenciasDaModalidade(configuracao.Definicao);
-        DependenciasDaAvaliacao dosDocumentos = DependenciasDaInscricao.DependenciasDe(configuracao.Definicao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo));
+        DependenciasDaAvaliacao daModalidade = DependenciasDaModalidade(configuracao);
+        DependenciasDaAvaliacao dosDocumentos = DependenciasDaInscricao.DependenciasDe(configuracao, new ColetorDeCitacoes(configuracao.Definicao, null).Coletar(configuracao.RegrasDeComprovacao.RegrasSemGrupo));
         return new DependenciasDaAvaliacao(
             [.. daModalidade.Fatos.Union(dosDocumentos.Fatos, StringComparer.Ordinal).Order(StringComparer.Ordinal)],
             [.. daModalidade.Grupos.Union(dosDocumentos.Grupos, StringComparer.Ordinal).Order(StringComparer.Ordinal)]);
@@ -135,7 +146,7 @@ public static class AvaliacaoDaInscricao
         string[] doCandidato = FatosDoFator(configuracao, fada);
         (string Grupo, string Fato)[] deMembro = FatosDeMembroDoFator(configuracao);
         return DependenciasDaInscricao.DependenciasDe(
-            configuracao.Definicao,
+            configuracao,
             new DependenciasDaInscricao.CitacoesDosGatilhos(doCandidato, deMembro, [.. deMembro.Select(static m => m.Grupo).Distinct(StringComparer.Ordinal)]));
     }
 
@@ -186,17 +197,51 @@ public static class AvaliacaoDaInscricao
         definicao.Derivacoes.Any(static d => d.CodigoFato == FatoDaModalidade);
 
     /// <summary>Os campos e os grupos da inscrição de que a modalidade depende.</summary>
-    private static DependenciasDaAvaliacao DependenciasDaModalidade(DefinicaoFormulario definicao) =>
-        DerivaAModalidade(definicao)
-            ? DependenciasDaInscricao.DependenciasDe(definicao, new DependenciasDaInscricao.CitacoesDosGatilhos([FatoDaModalidade], [], []))
+    private static DependenciasDaAvaliacao DependenciasDaModalidade(ConfiguracaoAvaliavel configuracao) =>
+        DerivaAModalidade(configuracao.Definicao)
+            ? DependenciasDaInscricao.DependenciasDe(configuracao, new DependenciasDaInscricao.CitacoesDosGatilhos([FatoDaModalidade], [], []))
             : new DependenciasDaAvaliacao([], []);
 
     /// <summary>
-    /// A avaliação só com o que o formulário de inscrição pergunta: as páginas, os itens, os grupos e os
-    /// termos da finalidade Inscrição. Os fatos ficam todos, porque a derivação pode citar um fato que
-    /// outra finalidade coleta. É sobre ela que se decide o veredito da inscrição: o item obrigatório de
-    /// outra finalidade, como a isenção, não é pendência da inscrição.
+    /// A avaliação só com o que os formulários da inscrição perguntam: as páginas, os itens, os grupos e os
+    /// termos deles. Os fatos ficam todos, porque a derivação pode citar um fato que outro formulário
+    /// coleta. É sobre ela que se decide o veredito da inscrição: o item obrigatório de outro formulário,
+    /// como o do pedido de isenção, não é pendência da inscrição.
     /// </summary>
+    public static AvaliacaoFormulario DaInscricao(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        IReadOnlyList<CodigoDoFormulario> formularios = CodigosDosFormulariosDaInscricao(configuracao);
+        return formulario with
+        {
+            Paginas = [.. formulario.Paginas.Where(e => DeAlgumFormulario(e.Codigo, formularios))],
+            Itens = [.. formulario.Itens.Where(i => DeAlgumFormulario(i.PaginaCodigo, formularios))],
+            Grupos = [.. formulario.Grupos.Where(g => DeAlgumFormulario(g.PaginaCodigo, formularios))],
+            Termos = [.. formulario.Termos.Where(t => DeAlgumFormulario(t.Codigo, formularios))],
+        };
+    }
+
+    public static IReadOnlySet<string> CodigosDasPaginasDaInscricao(ConfiguracaoAvaliavel configuracao)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        return PaginasDaInscricao(configuracao).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
+    }
+
+    internal static IEnumerable<DefinicaoPagina> PaginasDaInscricao(ConfiguracaoAvaliavel configuracao)
+    {
+        IReadOnlyList<CodigoDoFormulario> formularios = CodigosDosFormulariosDaInscricao(configuracao);
+        return configuracao.Definicao.Paginas.Where(e => DeAlgumFormulario(e.Codigo, formularios));
+    }
+
+    private static IReadOnlyList<CodigoDoFormulario> CodigosDosFormulariosDaInscricao(ConfiguracaoAvaliavel configuracao) =>
+        [.. configuracao.FormulariosQueServemAInscricao.Select(static f => f.Codigo)];
+
+    private static bool DeAlgumFormulario(string codigo, IReadOnlyList<CodigoDoFormulario> formularios) =>
+        formularios.Any(formulario => DefinicaoDoProcesso.EhDoFormulario(codigo, formulario));
+
+    // Provisório até a retirada da finalidade: as operações por finalidade ainda servem a quem não tem a configuração à mão.
     public static AvaliacaoFormulario DaInscricao(AvaliacaoFormulario formulario)
     {
         ArgumentNullException.ThrowIfNull(formulario);
@@ -212,13 +257,10 @@ public static class AvaliacaoDaInscricao
     public static IReadOnlySet<string> CodigosDasPaginasDaInscricao(DefinicaoFormulario definicao)
     {
         ArgumentNullException.ThrowIfNull(definicao);
-        return PaginasDaInscricao(definicao).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
+        return definicao.Paginas.Where(static e => DaInscricao(e.Codigo)).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
     }
 
     private static bool DaInscricao(string codigo) => DefinicaoDoProcesso.EhDaFinalidade(codigo, FinalidadeFormulario.Inscricao);
-
-    internal static IEnumerable<DefinicaoPagina> PaginasDaInscricao(DefinicaoFormulario definicao) =>
-        definicao.Paginas.Where(static e => DaInscricao(e.Codigo));
 
     private static ModalidadesDeConcorrencia Modalidades(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
     {
@@ -227,7 +269,7 @@ public static class AvaliacaoDaInscricao
             return ModalidadesDeConcorrencia.SemDerivacao;
         }
 
-        DependenciasDaAvaliacao dependencias = DependenciasDaModalidade(configuracao.Definicao);
+        DependenciasDaAvaliacao dependencias = DependenciasDaModalidade(configuracao);
         FatoResolvido modalidade = formulario.Fatos.GetValueOrDefault(FatoDaModalidade) ?? FatoResolvido.Indeterminado();
         if (modalidade is not { Estado: EstadoFato.Resolvido, Valor: { } valor })
         {

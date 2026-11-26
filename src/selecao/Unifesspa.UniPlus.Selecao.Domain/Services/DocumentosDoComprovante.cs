@@ -6,7 +6,6 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 using ValueObjects;
 
@@ -28,8 +27,7 @@ public static class DocumentosDoComprovante
         ArgumentNullException.ThrowIfNull(documentos);
         ArgumentNullException.ThrowIfNull(arquivos);
 
-        DocumentoAvaliado[] daInscricao = [.. documentos.Itens
-            .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido && d.Documento.Finalidade == FinalidadeFormulario.Inscricao)];
+        DocumentoAvaliado[] daInscricao = [.. documentos.DaInscricao.Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)];
 
         return [.. daInscricao.Select(d => ComporItem(d, daInscricao, arquivos))];
     }

@@ -4,17 +4,20 @@ using Entities;
 
 using Enums;
 
-using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using ValueObjects;
 
 /// <summary>Apura os documentos obrigatórios da inscrição ainda não comprovados, inclusive por ocorrência (UNI-REQ-0028).</summary>
 public static class DocumentosAusentesDaInscricao
 {
-    public static IReadOnlyList<DocumentoAusente> Apurar(RegrasDeComprovacaoDaVersao regras, ResultadoDaComprovacao resultado)
+    /// <param name="formulariosDaInscricao">Os códigos dos formulários da inscrição: só as exigências ligadas a eles são da inscrição.</param>
+    public static IReadOnlyList<DocumentoAusente> Apurar(
+        RegrasDeComprovacaoDaVersao regras, ResultadoDaComprovacao resultado, IReadOnlyCollection<CodigoDoFormulario> formulariosDaInscricao)
     {
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(resultado);
+        ArgumentNullException.ThrowIfNull(formulariosDaInscricao);
         Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia = resultado.SituacoesDeRegraPorOcorrencia
             .ToDictionary(static e => (e.RegraDeComprovacaoId, e.OcorrenciaId), static e => e.Situacao);
         List<DocumentoAusente> ausentes = [];
@@ -22,8 +25,13 @@ public static class DocumentosAusentesDaInscricao
         {
             Percorrer(regraSemGrupo, null, resultado, porOcorrencia, ausentes);
         }
-        return ausentes;
+        return SomenteDosFormularios(ausentes, formulariosDaInscricao);
     }
+
+    private static List<DocumentoAusente> SomenteDosFormularios(List<DocumentoAusente> ausentes, IReadOnlyCollection<CodigoDoFormulario> formularios) =>
+        [.. ausentes
+            .Select(ausente => ausente with { Alternativas = [.. ausente.Alternativas.Where(d => d.FormularioCodigo is { } formulario && formularios.Contains(formulario))] })
+            .Where(static ausente => ausente.Alternativas.Count > 0)];
 
     private static void Percorrer(RegraDeComprovacao regra, string? ocorrenciaId, ResultadoDaComprovacao resultado,
         Dictionary<(Guid RegraId, string OcorrenciaId), SituacaoDaComprovacao> porOcorrencia, List<DocumentoAusente> ausentes)
@@ -73,7 +81,7 @@ public static class DocumentosAusentesDaInscricao
             .Where(static n => n.Forma == FormaDeComprovacao.Documento && (n.Distincao is null || n.Distincao.ConferivelPelaContagem))
             .Where(n => SituacaoDe(n, ocorrenciaId, resultado, porOcorrencia) == SituacaoDaComprovacao.PendenteDeComprovacao)
             .Select(static n => n.DocumentoExigido!)
-            .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
+            .Where(static d => d.Obrigatorio)];
         if (faltantes.Length > 0)
         {
             ausentes.Add(new DocumentoAusente(faltantes, ocorrenciaId));

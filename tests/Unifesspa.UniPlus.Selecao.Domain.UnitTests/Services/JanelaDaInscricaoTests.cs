@@ -4,10 +4,12 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -49,13 +51,18 @@ public sealed class JanelaDaInscricaoTests
     private static DadosEdital Dados(DateTimeOffset de, DateTimeOffset ate) =>
         DadosEdital.Criar("01/2026", de, ate, Guid.CreateVersion7()).Value!;
 
-    private static ConfiguracaoPublicada Configuracao(ProcessoSeletivo processo) => new ConfiguracaoPublicada(
-            new CronogramaDeclarado(processo.Localidade, null, [.. processo.CronogramaFases]),
-            new AvaliacaoDeclarada([], [], VersoesPublicadasDeTeste.DoProcesso(processo).Avaliacao.Classificacao),
+    private static ConfiguracaoPublicada Configuracao(ProcessoSeletivo processo) => Configuracao(processo.Localidade, [.. processo.CronogramaFases], [.. processo.Formularios]);
+
+    private static ConfiguracaoPublicada Configuracao(FaseCronograma fase, FinalidadeFormulario papel) =>
+        Configuracao(ConfiguracaoPublicadaDeTeste.Localidade, [fase], [LigacaoAoFormulario.FormularioNaFase(papel, fase)]);
+
+    private static ConfiguracaoPublicada Configuracao(LocalidadeRegente localidade, FaseCronograma[] fases, FormularioProcesso[] formularios) => new ConfiguracaoPublicada(
+            new CronogramaDeclarado(localidade, null, fases),
+            new AvaliacaoDeclarada([], [], VersoesPublicadasDeTeste.Versao([], []).Avaliacao.Classificacao),
             new VagasDeclaradas([], 1, false,
                 null, null, AtendimentoEspecializado.Criar([], [], []).Value!),
             new ExigenciasDeclaradas([], []),
-            new ColetaDeclarada([], [], [.. processo.Formularios], [],
+            new ColetaDeclarada([], [], formularios, [],
                 [], [], null),
             new DivulgacaoETaxaDeclaradas(null, null), null);
 
@@ -119,6 +126,30 @@ public sealed class JanelaDaInscricaoTests
 
         fechadas!.Recusa.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
         fechadas.Recusa.Message.Should().Be("As inscrições deste processo seletivo se encerraram em 20/03/2026 às 23h59, no horário de Belém (PA).");
+    }
+
+    [Fact(DisplayName = "O formulário obrigatório numa fase que coleta inscrição faz do processo um que recebe inscrição, qualquer que seja o papel dele")]
+    public void Da_FormularioObrigatorioEmFaseQueColetaInscricao_AbreAJanela()
+    {
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), FinalidadeFormulario.Habilitacao);
+
+        JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O formulário obrigatório numa fase que não coleta inscrição não faz do processo um que recebe inscrição")]
+    public void Da_FormularioObrigatorioEmFaseQueNaoColetaInscricao_Recusa()
+    {
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "HABILITACAO"), FinalidadeFormulario.Inscricao);
+
+        JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).Error!.Code.Should().Be(InscricaoErrorCodes.ProcessoSemInscricao);
+    }
+
+    [Fact(DisplayName = "O formulário facultativo, ainda que numa fase que coleta inscrição, não faz do processo um que recebe inscrição")]
+    public void Da_FormularioFacultativo_Recusa()
+    {
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), FinalidadeFormulario.IsencaoTaxa);
+
+        JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).Error!.Code.Should().Be(InscricaoErrorCodes.ProcessoSemInscricao);
     }
 
     [Fact(DisplayName = "A versão sem formulário de inscrição não recebe inscrição pelo sistema")]

@@ -1,19 +1,20 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// O que os formulários do processo coletaram nas versões publicadas do edital, lido na abertura
-/// da retificação (UNI-REQ-0144). Cada finalidade fixa a versão no nascimento do rascunho do
+/// da retificação (UNI-REQ-0144). Cada formulário fixa a versão no nascimento do rascunho do
 /// candidato (UNI-REQ-0084), então quem já preencheu um formulário pode tê-lo feito em qualquer
 /// versão em que ele existia: só o fato coletado em todas elas é garantido para quem vem depois.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Os fatos produzidos por uma finalidade numa versão são os itens, os grupos e os campos de grupo
-/// do formulário dela, quando a versão o tem. Os campos de grupo entram porque o agregado sobre
+/// Os fatos produzidos por um formulário numa versão são os itens, os grupos e os campos de grupo
+/// dele, quando a versão o tem. Os campos de grupo entram porque o agregado sobre
 /// grupo repetível depende do fato de membro.
 /// </para>
 /// <para>
@@ -21,21 +22,21 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// de cada fato, item ou campo de qual grupo, que a retificação não muda.
 /// </para>
 /// <para>
-/// As regras de derivação das versões não entram: o derivado usado por uma finalidade é calculado
-/// pela versão dela, a da retificação; o que varia entre as versões é só quais fatos a finalidade
+/// As regras de derivação das versões não entram: o derivado usado por um formulário é calculado
+/// pela versão dele, a da retificação; o que varia entre as versões é só quais fatos o formulário
 /// anterior coletou.
 /// </para>
 /// </remarks>
 public sealed class FatosDasVersoesPublicadas
 {
-    private readonly SortedDictionary<FinalidadeFormulario, SortedSet<string>> _garantidos;
+    private readonly SortedDictionary<CodigoDoFormulario, SortedSet<string>> _garantidos;
     private readonly SortedDictionary<string, SortedSet<string>> _gruposDaInscricaoNaBase;
     private readonly Dictionary<string, HashSet<EixosDoItemCongelado>> _eixosDosItens;
     private readonly Dictionary<string, HashSet<EixosDoMetadadoCongelado>> _eixosDosMetadados;
     private readonly Dictionary<string, HashSet<string>> _operacoesDosAgregados;
 
     private FatosDasVersoesPublicadas(
-        SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos,
+        SortedDictionary<CodigoDoFormulario, SortedSet<string>> garantidos,
         SortedSet<string> itensDaInscricaoNaBase,
         SortedDictionary<string, SortedSet<string>> gruposDaInscricaoNaBase,
         Dictionary<string, HashSet<EixosDoItemCongelado>> eixosDosItens,
@@ -82,16 +83,16 @@ public sealed class FatosDasVersoesPublicadas
         _operacoesDosAgregados.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<string>)par.Value, StringComparer.Ordinal);
 
     /// <summary>
-    /// Por finalidade que teve formulário em alguma versão, os fatos que ele coletou em todas as
+    /// Por código de formulário que existiu em alguma versão, os fatos que ele coletou em todas as
     /// versões em que existia.
     /// </summary>
-    public IReadOnlyDictionary<FinalidadeFormulario, IReadOnlySet<string>> Garantidos =>
+    public IReadOnlyDictionary<CodigoDoFormulario, IReadOnlySet<string>> Garantidos =>
         _garantidos.ToDictionary(static par => par.Key, static par => (IReadOnlySet<string>)par.Value);
 
-    /// <summary>Os itens que o formulário de inscrição coleta na versão base.</summary>
+    /// <summary>Os itens que os formulários da inscrição coletam na versão base.</summary>
     public IReadOnlySet<string> ItensDaInscricaoNaBase { get; }
 
-    /// <summary>Os grupos que o formulário de inscrição coleta na versão base, cada um com os códigos dos seus campos.</summary>
+    /// <summary>Os grupos que os formulários da inscrição coletam na versão base, cada um com os códigos dos seus campos.</summary>
     public IReadOnlyDictionary<string, IReadOnlySet<string>> GruposDaInscricaoNaBase =>
         _gruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => (IReadOnlySet<string>)par.Value, StringComparer.Ordinal);
 
@@ -106,8 +107,7 @@ public sealed class FatosDasVersoesPublicadas
         ConferirVersoes(versoes, congeladoPorVersao);
         ConfiguracaoPublicada versaoBase = versoes[^1];
         return new FatosDasVersoesPublicadas(GarantidosDasVersoes(versoes),
-            new SortedSet<string>(versaoBase.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
-                .Select(static f => f.FatoCodigo), StringComparer.Ordinal), GruposDaInscricao(versaoBase),
+            ItensDaInscricao(versaoBase), GruposDaInscricao(versaoBase),
             EixosDosItensDasVersoes(versoes),
             PorChave(congeladoPorVersao.SelectMany(static v => v.Metadados)),
             PorChave(congeladoPorVersao.SelectMany(static v => v.OperacaoDosAgregados)));
@@ -128,14 +128,33 @@ public sealed class FatosDasVersoesPublicadas
         }
     }
 
-    private static SortedDictionary<string, SortedSet<string>> GruposDaInscricao(ConfiguracaoPublicada versao) => new(
-        versao.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-            .ToDictionary(static g => g.Codigo, static g => new SortedSet<string>(g.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal)),
-        StringComparer.Ordinal);
-
-    private static SortedDictionary<FinalidadeFormulario, SortedSet<string>> GarantidosDasVersoes(IReadOnlyList<ConfiguracaoPublicada> versoes)
+    /// <summary>Os formulários da inscrição da versão: os obrigatórios ligados a uma fase que coleta inscrição, pelas fases que ela congelou.</summary>
+    private static HashSet<Guid> IdsDosFormulariosDaInscricao(ConfiguracaoPublicada versao)
     {
-        SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos = [];
+        HashSet<CodigoDoFormulario> codigos = [.. FormulariosDaInscricao
+            .De(versao.Coleta.FormulariosDeclarados, versao.Cronograma.CronogramaFases).Select(static f => f.Codigo)];
+        return [.. versao.Coleta.Formularios.Where(f => codigos.Contains(f.Codigo)).Select(static f => f.Id)];
+    }
+
+    private static SortedSet<string> ItensDaInscricao(ConfiguracaoPublicada versao)
+    {
+        HashSet<Guid> formularios = IdsDosFormulariosDaInscricao(versao);
+        return new SortedSet<string>(
+            versao.Coleta.Itens.Where(f => f.FormularioId is { } id && formularios.Contains(id)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+    }
+
+    private static SortedDictionary<string, SortedSet<string>> GruposDaInscricao(ConfiguracaoPublicada versao)
+    {
+        HashSet<Guid> formularios = IdsDosFormulariosDaInscricao(versao);
+        return new(
+            versao.Coleta.GruposColetados.Where(g => g.FormularioId is { } id && formularios.Contains(id))
+                .ToDictionary(static g => g.Codigo, static g => new SortedSet<string>(g.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal)),
+            StringComparer.Ordinal);
+    }
+
+    private static SortedDictionary<CodigoDoFormulario, SortedSet<string>> GarantidosDasVersoes(IReadOnlyList<ConfiguracaoPublicada> versoes)
+    {
+        SortedDictionary<CodigoDoFormulario, SortedSet<string>> garantidos = new(CodigoDoFormulario.OrdemOrdinal);
         foreach (ConfiguracaoPublicada versao in versoes)
         {
             AcumularGarantidos(versao, garantidos);
@@ -143,18 +162,18 @@ public sealed class FatosDasVersoesPublicadas
         return garantidos;
     }
 
-    private static void AcumularGarantidos(ConfiguracaoPublicada versao, SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos)
+    private static void AcumularGarantidos(ConfiguracaoPublicada versao, SortedDictionary<CodigoDoFormulario, SortedSet<string>> garantidos)
     {
-        foreach (FinalidadeFormulario finalidade in versao.Coleta.Formularios.Select(static f => f.Finalidade))
+        foreach (FormularioProcesso formulario in versao.Coleta.Formularios)
         {
-            SortedSet<string> produzidos = Produzidos(versao, finalidade);
-            if (garantidos.TryGetValue(finalidade, out SortedSet<string>? acumulado))
+            SortedSet<string> produzidos = Produzidos(versao, formulario);
+            if (garantidos.TryGetValue(formulario.Codigo, out SortedSet<string>? acumulado))
             {
                 acumulado.IntersectWith(produzidos);
             }
             else
             {
-                garantidos[finalidade] = produzidos;
+                garantidos[formulario.Codigo] = produzidos;
             }
         }
     }
@@ -179,31 +198,6 @@ public sealed class FatosDasVersoesPublicadas
         return acumulados;
     }
 
-    /// <summary>Reconstitui o que foi lido das versões publicadas, como foi guardado.</summary>
-    public static FatosDasVersoesPublicadas Reconstituir(
-        IReadOnlyDictionary<FinalidadeFormulario, IReadOnlyCollection<string>> garantidos,
-        IReadOnlyCollection<string> itensDaInscricaoNaBase,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> gruposDaInscricaoNaBase,
-        IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoItemCongelado>>? eixosDosItens = null,
-        IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>>? eixosDosMetadados = null,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>>? operacoesDosAgregados = null)
-    {
-        ArgumentNullException.ThrowIfNull(garantidos);
-        ArgumentNullException.ThrowIfNull(itensDaInscricaoNaBase);
-        ArgumentNullException.ThrowIfNull(gruposDaInscricaoNaBase);
-
-        return new FatosDasVersoesPublicadas(
-            new SortedDictionary<FinalidadeFormulario, SortedSet<string>>(
-                garantidos.ToDictionary(static par => par.Key, static par => new SortedSet<string>(par.Value, StringComparer.Ordinal))),
-            new SortedSet<string>(itensDaInscricaoNaBase, StringComparer.Ordinal),
-            new SortedDictionary<string, SortedSet<string>>(
-                gruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => new SortedSet<string>(par.Value, StringComparer.Ordinal), StringComparer.Ordinal),
-                StringComparer.Ordinal),
-            (eixosDosItens ?? new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(), StringComparer.Ordinal),
-            (eixosDosMetadados ?? new Dictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(), StringComparer.Ordinal),
-            (operacoesDosAgregados ?? new Dictionary<string, IReadOnlyCollection<string>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal));
-    }
-
     private static void Acrescentar<T>(Dictionary<string, HashSet<T>> destino, string chave, T valor)
     {
         if (!destino.TryGetValue(chave, out HashSet<T>? existentes))
@@ -215,21 +209,20 @@ public sealed class FatosDasVersoesPublicadas
     }
 
     /// <summary>
-    /// Se o fato produzido pela finalidade foi coletado por ela em todas as versões publicadas em que
-    /// ela tinha formulário. A finalidade sem formulário em nenhuma versão garante o que produz: o
-    /// formulário dela nasce nesta retificação, e ninguém o preencheu antes.
+    /// Se o fato produzido pelo formulário do código foi coletado por ele em todas as versões publicadas em que
+    /// existia. O código sem formulário em nenhuma versão garante o que produz: o formulário dele nasce nesta
+    /// retificação, e ninguém o preencheu antes.
     /// </summary>
-    public bool Garante(FinalidadeFormulario finalidade, string fato) =>
-        !_garantidos.TryGetValue(finalidade, out SortedSet<string>? garantidos) || garantidos.Contains(fato);
-
-    /// <summary>Se o fato produzido pelo formulário do código foi coletado por ele em todas as versões em que existia; o código sem formulário em nenhuma versão garante o que produz.</summary>
     public bool Garante(CodigoDoFormulario formulario, string fato)
     {
         ArgumentNullException.ThrowIfNull(formulario);
 
-        // Provisório até a retirada da finalidade: as versões ainda guardam o que cada finalidade garante.
-        return EstruturaFormulario.FinalidadeDoCodigo(formulario.Valor) is not { } finalidade || Garante(finalidade, fato);
+        return !_garantidos.TryGetValue(formulario, out SortedSet<string>? garantidos) || garantidos.Contains(fato);
     }
+
+    // Provisório até a retirada da finalidade: o código dos formulários conhecidos dá a finalidade deles.
+    public bool Garante(FinalidadeFormulario finalidade, string fato) =>
+        Garante(CodigoDoFormulario.Criar(finalidade.Codigo()).Value!, fato);
 
     /// <summary>
     /// O primeiro fato que a inscrição coletava na versão base e que os itens e os grupos dados
@@ -301,12 +294,12 @@ public sealed class FatosDasVersoesPublicadas
             ? new TrocaDeEixo(agregado, "operação do agregado", diferente, novo, DeAgregado: true)
             : null;
 
-    /// <summary>Os itens, os grupos e os campos de grupo que o formulário da finalidade coleta na versão.</summary>
-    private static SortedSet<string> Produzidos(ConfiguracaoPublicada versao, FinalidadeFormulario finalidade)
+    /// <summary>Os itens, os grupos e os campos de grupo que o formulário coleta na versão.</summary>
+    private static SortedSet<string> Produzidos(ConfiguracaoPublicada versao, FormularioProcesso formulario)
     {
-        IEnumerable<GrupoColetado> grupos = versao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade);
+        IEnumerable<GrupoColetado> grupos = versao.Coleta.GruposColetados.Where(g => g.FormularioId == formulario.Id);
         return new SortedSet<string>(
-            versao.Coleta.Itens.Where(f => f.Finalidade == finalidade).Select(static f => f.FatoCodigo)
+            versao.Coleta.Itens.Where(f => f.FormularioId == formulario.Id).Select(static f => f.FatoCodigo)
                 .Concat(grupos.Select(static g => g.Codigo))
                 .Concat(grupos.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo)),
             StringComparer.Ordinal);

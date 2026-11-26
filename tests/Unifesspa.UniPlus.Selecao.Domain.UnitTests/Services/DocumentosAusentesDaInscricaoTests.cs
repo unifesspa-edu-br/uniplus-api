@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -41,9 +42,22 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Contracheque"), 0, quantidadeMinima: 3, criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, dataReferencia: new DateOnly(2026, 10, 1)).Value!])
             .Should().BeEmpty();
 
-    [Fact(DisplayName = "O documento que não é da inscrição não falta no envio dela")]
-    public void DeOutraFinalidade_NaoFalta() =>
+    [Fact(DisplayName = "O documento ligado a um formulário que não é da inscrição não falta no envio dela")]
+    public void DeOutroFormulario_NaoFalta() =>
         Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Comprovante da habilitação", finalidade: FinalidadeFormulario.Habilitacao), 0).Value!]).Should().BeEmpty();
+
+    [Fact(DisplayName = "Com dois formulários de inscrição, falta o documento de cada um deles")]
+    public void DeDoisFormulariosDaInscricao_FaltaODeCadaUm()
+    {
+        DocumentoExigido identidade = Documento("RG");
+        DocumentoExigido laudo = Documento("Laudo", finalidade: FinalidadeFormulario.Habilitacao);
+
+        IReadOnlyList<DocumentoAusente> ausentes = Ausentes(
+            [RegraDeComprovacao.CriarRegraDeDocumento(identidade, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(laudo, 1).Value!],
+            formularios: [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao)]);
+
+        ausentes.SelectMany(static a => a.Alternativas).Should().BeEquivalentTo([identidade, laudo]);
+    }
 
     [Fact(DisplayName = "Num grupo um ou outro, uma alternativa atendida basta: a pendente ao lado dela não falta")]
     public void QuantidadeMinimaDeItens_AtendidoPorUmaAlternativa_NaoFalta()
@@ -141,7 +155,8 @@ public sealed class DocumentosAusentesDaInscricaoTests
     private static IReadOnlyList<DocumentoAusente> Ausentes(
         IReadOnlyList<RegraDeComprovacao> regrasSemGrupo,
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
-        string[]? ocorrencias = null)
+        string[]? ocorrencias = null,
+        CodigoDoFormulario[]? formularios = null)
     {
         RegrasDeComprovacaoDaVersao regrasDaVersao = RegrasDeComprovacaoDaVersao.DaConfiguracaoPublicada(regrasSemGrupo);
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> instancias = ocorrencias is null
@@ -150,6 +165,6 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Kernel.Results.Result<ResultadoDaComprovacao> resultado = AvaliadorDaComprovacao.Resolver(
             regrasDaVersao, new Dictionary<string, FatoResolvido> { ["NUNCA"] = FatoResolvido.Resolvido(System.Text.Json.JsonSerializer.SerializeToElement(false)) }, apresentacoes ?? [], instancias);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        return DocumentosAusentesDaInscricao.Apurar(regrasDaVersao, resultado.Value!);
+        return DocumentosAusentesDaInscricao.Apurar(regrasDaVersao, resultado.Value!, formularios ?? [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)]);
     }
 }
