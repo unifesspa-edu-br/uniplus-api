@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 /// <summary>Os fatos congelados respondem qual grupo abriga um identificador e qual proteção o nome tem.</summary>
 public sealed class FatosDaVersaoTests
@@ -74,6 +75,39 @@ public sealed class FatosDaVersaoTests
         EnvelopeReidratado envelope = ComprovanteDeTeste.Envelope(derivados: new Dictionary<string, FatoDerivadoCongelado> { ["DADO"] = derivado });
 
         FluentActions.Invoking(() => FatosDaVersao.De(envelope)).Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Os fatos de todos os formulários obrigatórios da fase de inscrição entram na versão; os do formulário facultativo, não")]
+    public void De_VariosFormulariosDaInscricao_UneOsFatosDosObrigatorios()
+    {
+        EnvelopeReidratado envelope = FormularioDaInscricaoDeTeste.EnvelopeCom(
+            new("INSCRICAO", Obrigatorio: true, ["NOME", "CPF"], []),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, ["ESCOLA"], []),
+            new("SOLICITACAO_DE_ISENCAO", Obrigatorio: false, ["RENDA"], []));
+
+        FatosDaVersao fatos = FatosDaVersao.De(envelope);
+
+        fatos.Coletados.Keys.Should().BeEquivalentTo("NOME", "CPF", "ESCOLA");
+    }
+
+    [Fact(DisplayName = "O título da seção de mesmo código vem do primeiro formulário da inscrição, em ordem de código")]
+    public void De_SecaoComOMesmoCodigoEmDoisFormularios_TituloDoPrimeiroEmOrdemDeCodigo()
+    {
+        EnvelopeReidratado envelope = FormularioDaInscricaoDeTeste.EnvelopeCom(
+            new("INSCRICAO", Obrigatorio: true, ["NOME"], []),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, ["ESCOLA"], []));
+
+        FatosDaVersao fatos = FatosDaVersao.De(envelope);
+
+        fatos.TitulosDasSecoes["DADOS"].Should().Be("Dados do formulário COMPLEMENTO_DA_INSCRICAO");
+    }
+
+    [Fact(DisplayName = "Sem formulário obrigatório na fase de inscrição, a versão não tem fato coletado")]
+    public void De_SemFormularioDaInscricao_SemFatosColetados()
+    {
+        EnvelopeReidratado envelope = FormularioDaInscricaoDeTeste.EnvelopeCom(new FormularioDaInscricaoDeTeste("SOLICITACAO_DE_ISENCAO", Obrigatorio: false, ["RENDA"], []));
+
+        FatosDaVersao.De(envelope).Coletados.Should().BeEmpty();
     }
 
     private static FatosDaVersao Nomes(params (string Codigo, ClassificacaoDeProtecao Classificacao)[] nomes) => new(

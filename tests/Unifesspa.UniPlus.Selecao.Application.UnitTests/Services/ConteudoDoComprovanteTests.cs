@@ -148,16 +148,56 @@ public sealed class ConteudoDoComprovanteTests
     {
         Inscricao inscricao = UmaInscricao();
         Guid versaoDoTermo = Guid.CreateVersion7();
-        ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
-            inscricao.Id, "00000001", Instante, null, Respostas(), new Dictionary<string, JsonElement>(),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(),
-            [new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64))], []);
+        ComprovanteInscricao comprovante = EmitirComAceites(
+            inscricao, new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64)));
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope());
 
         dto.Formulario.TermosAceitos.Should().ContainSingle().Which.Should().Be(
-            new TermoAceitoDoComprovanteDto("TERMO_VERACIDADE", "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64)));
+            new TermoAceitoDoComprovanteDto(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64)));
     }
+
+    [Fact(DisplayName = "Dois formulários da inscrição com o termo de mesmo código: cada aceite sai com o nome do termo do formulário dele")]
+    public void Montar_TermoDeMesmoCodigoEmDoisFormularios_NomeDoFormularioDoAceite()
+    {
+        Inscricao inscricao = UmaInscricao();
+        EnvelopeReidratado envelope = FormularioDaInscricaoDeTeste.EnvelopeCom(
+            new("INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]));
+        ComprovanteInscricao comprovante = EmitirComAceites(
+            inscricao,
+            new AceiteDeTermo("COMPLEMENTO_DA_INSCRICAO", "VERACIDADE", Guid.CreateVersion7(), new string('b', 64)),
+            new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "VERACIDADE", Guid.CreateVersion7(), new string('c', 64)));
+
+        ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, envelope);
+
+        dto.Formulario.TermosAceitos.Select(static t => t.Nome).Should().BeEquivalentTo(
+            "Termo VERACIDADE do formulário COMPLEMENTO_DA_INSCRICAO", "Termo VERACIDADE do formulário INSCRICAO");
+    }
+
+    [Fact(DisplayName = "Dois formulários com o termo de mesmo código: o comprovante traz dois termos, cada um com o código do seu formulário")]
+    public void Montar_TermoDeMesmoCodigoEmDoisFormularios_CadaTermoTrazOFormulario()
+    {
+        Inscricao inscricao = UmaInscricao();
+        EnvelopeReidratado envelope = FormularioDaInscricaoDeTeste.EnvelopeCom(
+            new("INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]),
+            new("COMPLEMENTO_DA_INSCRICAO", Obrigatorio: true, [], ["VERACIDADE"]));
+        ComprovanteInscricao comprovante = EmitirComAceites(
+            inscricao,
+            new AceiteDeTermo("COMPLEMENTO_DA_INSCRICAO", "VERACIDADE", Guid.CreateVersion7(), new string('b', 64)),
+            new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "VERACIDADE", Guid.CreateVersion7(), new string('c', 64)));
+
+        ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, envelope);
+
+        dto.Formulario.TermosAceitos.Should().HaveCount(2);
+        dto.Formulario.TermosAceitos.Select(static t => (t.FormularioCodigo, t.Codigo)).Should().BeEquivalentTo(
+            [("COMPLEMENTO_DA_INSCRICAO", "VERACIDADE"), (FormularioDeTeste.CodigoDaInscricao, "VERACIDADE")]);
+    }
+
+    private static ComprovanteInscricao EmitirComAceites(Inscricao inscricao, params AceiteDeTermo[] aceites) =>
+        ComprovanteInscricao.Emitir(
+            inscricao.Id, "00000001", Instante, null, Respostas(), new Dictionary<string, JsonElement>(),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), aceites, []);
 
     private static DocumentoDoComprovante Documento(string nome, string situacao, params ArquivoDoComprovante[] arquivos) =>
         new(Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, Obrigatorio: true, situacao, null, "Sem o documento, a vantagem não é concedida.", arquivos);

@@ -35,7 +35,7 @@ public sealed class CodigosDeCadastroNoEsquemaTests
         yield return ["\"distribuicaoVagas\": [{ \"ofertaCursoCodigo\": \"OFERTA\", \"ajusteDoQuadro\": { \"$tipo\": \"reduzirProporcionalEm\", \"modalidadeCodigos\": [\"VALOR\"] } }]", "/distribuicaoVagas/0/ajusteDoQuadro/modalidadeCodigos/0"];
         yield return ["\"fada\": { \"aplica\": true, \"regra\": {}, \"fator\": 1, \"baseLegalCodigo\": \"VALOR\" }", "/fada/baseLegalCodigo"];
         yield return ["\"fada\": { \"aplica\": true, \"regra\": {}, \"fator\": 1, \"baseLegalCodigo\": \"LEI\", \"codigoDoDadoDeElegibilidade\": \"VALOR\" }", "/fada/codigoDoDadoDeElegibilidade"];
-        yield return ["\"formularios\": [{ \"finalidade\": \"INSCRICAO\", \"termos\": [{ \"codigo\": \"termo\", \"termoCodigo\": \"VALOR\", \"versaoNumero\": 1 }] }]", "/formularios/0/termos/0/termoCodigo"];
+        yield return ["\"formularios\": [{ \"codigo\": \"INSCRICAO\", \"termos\": [{ \"codigo\": \"termo\", \"termoCodigo\": \"VALOR\", \"versaoNumero\": 1 }] }]", "/formularios/0/termos/0/termoCodigo"];
     }
 
     private static IEnumerable<object[]> Campos4()

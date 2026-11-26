@@ -4,6 +4,9 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Cronograma;
+using Domain.ProcessosSeletivos.Formularios;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -44,15 +47,15 @@ public static class ObterFormularioApresentadoDoRascunhoQueryHandler
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
         ProcessoSeletivo? processo = await repository.ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        // Provisório até a retirada da finalidade: o código desconhecido é o mesmo não encontrado do formulário ausente.
-        return processo is null || EstruturaFormulario.FinalidadeDoCodigo(query.FormularioCodigo) is not { } finalidade
+        // Código fora do formato não designa formulário nenhum: é o mesmo não encontrado do formulário ausente.
+        return processo is null || CodigoDoFormulario.Criar(query.FormularioCodigo) is not { IsSuccess: true } codigo
             ? NaoEncontrado(query.ProcessoSeletivoId)
-            : await ProjetarAsync(processo, finalidade, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
+            : await ProjetarAsync(processo, codigo.Value!, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<FormularioApresentadoDoProcessoDto>> ProjetarAsync(
         ProcessoSeletivo processo,
-        FinalidadeFormulario finalidade,
+        CodigoDoFormulario codigo,
         IFatoCandidatoReader fatoCandidatoReader,
         IResolvedorFusoInstitucional resolvedorFuso,
         CancellationToken cancellationToken)
@@ -67,20 +70,25 @@ public static class ObterFormularioApresentadoDoRascunhoQueryHandler
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogo);
         return avaliavel.IsFailure
             ? Result<FormularioApresentadoDoProcessoDto>.Failure(avaliavel.Error!)
-            : Projetar(processo, finalidade, avaliavel.Value!, fuso.Value!);
+            : Projetar(processo, codigo, avaliavel.Value!, fuso.Value!);
     }
 
     private static Result<FormularioApresentadoDoProcessoDto> Projetar(
-        ProcessoSeletivo processo, FinalidadeFormulario finalidade, DefinicaoAvaliavel avaliavel, TimeZoneInfo fuso) =>
-        ProjecaoDoFormularioApresentado.Projetar(
-            finalidade, avaliavel, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-            ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso)) is { } formulario
-            ? Result<FormularioApresentadoDoProcessoDto>.Success(new FormularioApresentadoDoProcessoDto(
-                formulario, processo.Formularios.FirstOrDefault(f => f.Finalidade == finalidade)?.FaseId, null, null, null))
+        ProcessoSeletivo processo, CodigoDoFormulario codigo, DefinicaoAvaliavel avaliavel, TimeZoneInfo fuso)
+    {
+        ConfiguracaoDeclarada declaracao = processo.Declaracao();
+        return ProjecaoDoFormularioApresentado.Projetar(
+            codigo, avaliavel, declaracao.Coleta, CronogramaDoProcesso.Do(declaracao.Cronograma.CronogramaFases),
+            ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(declaracao, fuso)) is { } formulario
+            ? Result<FormularioApresentadoDoProcessoDto>.Success(DoRascunho(formulario, declaracao.Coleta.FormularioDe(codigo)!))
             : NaoEncontrado(processo.Id);
+    }
+
+    private static FormularioApresentadoDoProcessoDto DoRascunho(FormularioApresentado apresentado, FormularioProcesso formulario) =>
+        new(apresentado, formulario.Codigo.Valor, formulario.FaseId, formulario.Obrigatorio, null, null, null);
 
     private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado(Guid processoSeletivoId) =>
         Result<FormularioApresentadoDoProcessoDto>.Failure(new DomainError(
             "ProcessoSeletivo.NaoEncontrado",
-            $"Processo Seletivo {processoSeletivoId} não encontrado, ou sem formulário da finalidade."));
+            $"Processo Seletivo {processoSeletivoId} não encontrado, ou sem o formulário pedido."));
 }

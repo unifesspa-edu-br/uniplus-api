@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -16,13 +15,24 @@ internal static class TermosEDocumentosDoComprovante
 {
     public static IReadOnlyList<TermoAceitoDoComprovanteDto> Termos(InsumosDoComprovante insumos)
     {
-        Dictionary<string, string> nomes = [];
-        foreach (TermoExigidoFormulario termo in insumos.Envelope.Configuracao.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
+        Dictionary<TermoNoFormulario, string> nomes = NomesDosTermos(insumos.Envelope.Configuracao.Coleta);
+
+        return [.. insumos.Comprovante.Aceites.Select(a => new TermoAceitoDoComprovanteDto(
+            a.FormularioCodigo, a.Codigo, nomes.GetValueOrDefault(new TermoNoFormulario(a.FormularioCodigo, a.Codigo), a.Codigo), a.VersaoId, a.HashVersao))];
+    }
+
+    private static Dictionary<TermoNoFormulario, string> NomesDosTermos(ColetaDeclarada coleta)
+    {
+        Dictionary<TermoNoFormulario, string> nomes = [];
+        foreach (FormularioProcesso formulario in coleta.Formularios)
         {
-            nomes.TryAdd(termo.Codigo, termo.Nome);
+            foreach (TermoExigidoFormulario termo in coleta.TermosExigidos.Where(t => t.FormularioId == formulario.Id))
+            {
+                nomes.TryAdd(new TermoNoFormulario(formulario.Codigo.Valor, termo.Codigo), termo.Nome);
+            }
         }
 
-        return [.. insumos.Comprovante.Aceites.Select(a => new TermoAceitoDoComprovanteDto(a.Codigo, nomes.GetValueOrDefault(a.Codigo, a.Codigo), a.VersaoId, a.HashVersao))];
+        return nomes;
     }
 
     public static IReadOnlyList<DocumentoDoComprovanteDto> Documentos(InsumosDoComprovante insumos, FatosDaVersao fatos)

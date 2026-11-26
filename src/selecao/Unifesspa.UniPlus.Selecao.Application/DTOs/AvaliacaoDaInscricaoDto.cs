@@ -8,7 +8,6 @@ using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O que o candidato consulta enquanto preenche, sem gravar nada (ADR-0143): as respostas como estão
@@ -83,7 +82,7 @@ public sealed record AvaliacaoDaInscricaoDto(
         DocumentoExigido documento = avaliado.Documento;
         return new DocumentoDaInscricaoDto(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
-            documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null,
+            documento.FormularioCodigo?.Valor,
             documento.ExigidoNaEtapaId, Formatos(documento), Modelo(documento, enderecoDoModelo),
             CodigoComRotulo<SituacaoDoDocumento>.De(avaliado.Situacao), avaliado.GrupoCodigo, avaliado.OcorrenciaId,
             [.. avaliado.Grupos.Select(static g => new GrupoDeComprovacaoDto(g.GrupoId, CodigoComRotulo<FormaDeComprovacao>.De(g.Forma), g.Minimo, g.GrupoDoFormularioParaRepeticao))],
@@ -124,7 +123,7 @@ public sealed record FaseDosDocumentosDto(
 /// Uma exigência documental diante do candidato.
 /// </summary>
 /// <param name="ExigenciaId">A exigência na versão fixada, que identifica a vaga do documento.</param>
-/// <param name="Finalidade">O formulário em que o documento é apresentado, como <c>INSCRICAO</c> ou <c>ISENCAO_TAXA</c>; nulo quando a exigência não o declara.</param>
+/// <param name="FormularioCodigo">O código do formulário em que o documento é apresentado; nulo quando a exigência não o declara.</param>
 /// <param name="EtapaId">A etapa da fase em que o documento é exigido; nula quando vale a fase inteira.</param>
 /// <param name="Situacao">
 /// <c>PENDENTE</c> — se aplica e falta enviar —, <c>SATISFEITA</c> — se aplica e os documentos enviados a atendem —,
@@ -150,7 +149,7 @@ public sealed record DocumentoDaInscricaoDto(
     string TipoDocumentoCodigo,
     string Nome,
     bool Obrigatorio,
-    CodigoComRotulo<FinalidadeFormulario>? Finalidade,
+    string? FormularioCodigo,
     Guid? EtapaId,
     FormatosAceitosCertameDto Formatos,
     ModeloDocumentalCertameDto? Modelo,

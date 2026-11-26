@@ -3,9 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O perfil simulado de um candidato para a pré-visualização do processo: as respostas dos
@@ -23,8 +21,8 @@ public sealed record PreVisualizacaoDoProcessoInput(
 /// <summary>Uma ocorrência de grupo repetível, pela identidade dela, e as respostas dos campos.</summary>
 public sealed record OcorrenciaSimuladaInput(string? Id, IReadOnlyDictionary<string, JsonElement>? Respostas);
 
-/// <summary>Uma seção dada como concluída, no formulário da finalidade.</summary>
-public sealed record PaginaConcluidaInput([property: AceitaCodigosDe<FinalidadeFormulario>] string Finalidade, string Pagina);
+/// <summary>Uma seção dada como concluída, no formulário de código <paramref name="FormularioCodigo"/>.</summary>
+public sealed record PaginaConcluidaInput(string FormularioCodigo, string Pagina);
 
 /// <summary>
 /// O processo avaliado contra o perfil simulado: o que cada formulário mostra e exige, e os
@@ -37,7 +35,7 @@ public sealed record PreVisualizacaoDoProcessoDto(
 
 /// <summary>Um formulário avaliado: as seções, os itens, os grupos e os termos dele.</summary>
 public sealed record FormularioSimuladoDto(
-    CodigoComRotulo<FinalidadeFormulario> Finalidade,
+    string Codigo,
     IReadOnlyList<ItemSimuladoDto> Itens,
     IReadOnlyList<GrupoSimuladoDto> Grupos,
     IReadOnlyList<TermoSimuladoDto> Termos,
@@ -91,10 +89,9 @@ public sealed record TermoSimuladoDto(string Codigo, CodigoComRotulo<Ternario> V
 /// um grupo repetível aparece uma vez por ocorrência, com a identidade dela; o que está dentro de
 /// grupos de alternativas traz cada um deles, do mais externo ao mais interno, com o mínimo que pede.
 /// </summary>
-/// <param name="Finalidade">
-/// O formulário em que o documento é apresentado (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou
-/// <c>HABILITACAO</c>); nulo quando a fase não responde formulário nenhum. Inscrição e isenção podem
-/// dividir a fase, e é a finalidade que separa os documentos de cada formulário.
+/// <param name="FormularioCodigo">
+/// O código do formulário em que o documento é apresentado; nulo quando a fase não responde formulário
+/// nenhum. Dois formulários podem dividir a fase, e é o código que separa os documentos de cada um.
 /// </param>
 public sealed record DocumentoSimuladoDto(
     Guid ExigenciaId,
@@ -102,7 +99,7 @@ public sealed record DocumentoSimuladoDto(
     string TipoDocumentoNome,
     bool Obrigatorio,
     Guid FaseId,
-    CodigoComRotulo<FinalidadeFormulario>? Finalidade,
+    string? FormularioCodigo,
     Guid? EtapaId,
     string Situacao,
     string? OcorrenciaId,

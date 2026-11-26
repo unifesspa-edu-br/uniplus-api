@@ -26,7 +26,7 @@ public sealed class ConsequenciaDaAusenciaNaExportacaoTests
     [Fact]
     public void Projetar_FormularioPublicado_UsaCodigoERotuloCongelados()
     {
-        string formulario = """{"finalidade":"HABILITACAO","consequenciaDaFaltaDeEnvio":"RETIRA_O_ACRESCIMO","contexto":{"consequenciaDaFaltaDeEnvioRotulo":"Rótulo congelado"}}""";
+        string formulario = """{"codigo":"HABILITACAO","consequenciaDaFaltaDeEnvio":"RETIRA_O_ACRESCIMO","contexto":{"consequenciaDaFaltaDeEnvioRotulo":"Rótulo congelado"}}""";
         string congelado = $"{{\"formularios\":[{formulario}]}}";
 
         JsonObject documento = new ProjecaoDaVersaoPublicada(new EsquemaDoDocumentoDaConfiguracao()).Projetar(new(Guid.Empty, 1, DateTimeOffset.UnixEpoch, congelado));

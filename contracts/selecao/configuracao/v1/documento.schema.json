@@ -48,7 +48,7 @@
     },
     "formularios": {
       "title": "Formulários",
-      "description": "Os formulários do processo, no máximo um por finalidade. Lista vazia ou ausente é válida no rascunho.",
+      "description": "Os formulários do processo, cada um identificado pelo código, único no processo. Lista vazia ou ausente é válida no rascunho.",
       "type": "array",
       "items": {
         "$ref": "formulario.schema.json"

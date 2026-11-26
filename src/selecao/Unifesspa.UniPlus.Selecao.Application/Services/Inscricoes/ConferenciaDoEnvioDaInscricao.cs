@@ -107,7 +107,7 @@ public sealed class ConferenciaDoEnvioDaInscricao(
         HashSet<string> camposDoGeo = [.. municipiosConferidos.Recusas.Select(static r => r.Field).OfType<string>()];
         return VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(finais, entrada.Mesclado.Grupos, entrada.Pedido.Contexto.Ofertas)
             .Concat(VeredictoDeSubmissao.AvaliarDistinguindoOGeo(AvaliacaoDaInscricao.DaInscricao(avaliacao.Formulario),
-                    [.. entrada.Pedido.Contexto.TermosExigidos], entrada.Pedido.Recebido.Aceites, entrada.Envio.Dia, dependencia)
+                    admitidas.Termos, entrada.Pedido.Recebido.Aceites, entrada.Envio.Dia, dependencia)
                 .Where(static r => !r.DependeDoGeo).Select(static r => r.Recusa)
                 .Where(e => !nomeSocialRecusado || !string.Equals(e.Field, ConjuntoBasicoDaInscricao.NomeSocial, StringComparison.Ordinal))
                 .Where(e => e.Field is null || !camposDoGeo.Contains(e.Field)));

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -39,11 +40,13 @@ internal sealed class InscricaoAdministrativaDeTeste
     private readonly List<DateTimeOffset> _envios = [];
     private (DateTimeOffset Em, string? Motivo)? _cancelamento;
     private readonly Cpf _cpf;
-    private readonly Guid _faseId = Guid.CreateVersion7();
+    private readonly ProcessoSeletivo _processo;
+    private readonly Guid _faseId;
 
     public InscricaoAdministrativaDeTeste(Cpf cpf, SituacaoInscricao situacao = SituacaoInscricao.Enviada, Guid? processoId = null)
     {
         _cpf = cpf;
+        _processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso, out _faseId);
         Situacao = situacao;
         ProcessoId = processoId ?? Guid.CreateVersion7();
     }
@@ -185,20 +188,29 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     private EnvelopeReidratado EnvelopeDoCenario()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
-        ConfiguracaoPublicada configuracao = new ConfiguracaoPublicada(
-            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, []),
-            new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
-            new VagasDeclaradas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], 1, processo.Fada is not null,
-                processo.Fada, null, processo.AtendimentoEspecializado!),
-            new ExigenciasDeclaradas(_exigencias, []),
-            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(_fatos, _grupos), _grupos, [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Paginas()).Value!], [],
-                _opcoes, [], null),
-            new DivulgacaoETaxaDeclaradas(null, null), null);
+        FormularioProcesso formulario = FormularioProcesso.Criar(
+            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Inscricao, _faseId),
+            CronogramaDoProcesso.Do(_processo.CronogramaFases), null, FormularioDeTeste.Paginas()).Value!;
 
         return new EnvelopeReidratado(
-            configuracao, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
+            ConfiguracaoDoCenario(formulario), DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, new DadosDeCatalogoDaConfiguracaoPublicada(FatosDerivadosCongelados: _derivados));
+    }
+
+    private ConfiguracaoPublicada ConfiguracaoDoCenario(FormularioProcesso formulario)
+    {
+        FatoColetado[] fatos = [.. _fatos.Select(fato => fato.NoFormulario(formulario))];
+        GrupoColetado[] grupos = [.. _grupos.Select(grupo => grupo.NoFormulario(formulario))];
+
+        return new ConfiguracaoPublicada(
+            new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. _processo.CronogramaFases]),
+            new AvaliacaoDeclarada([.. _processo.Etapas], [.. _processo.CriteriosDesempate], _processo.Classificacao!),
+            new VagasDeclaradas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], 1, _processo.Fada is not null,
+                _processo.Fada, null, _processo.AtendimentoEspecializado!),
+            new ExigenciasDeclaradas(_exigencias, []),
+            new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(fatos, grupos), grupos, [formulario], [],
+                _opcoes, [], null),
+            new DivulgacaoETaxaDeclaradas(null, null), null);
     }
 
     private IProcessoSeletivoRepository ProcessosCom(VersaoConfiguracao versao)

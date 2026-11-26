@@ -19,7 +19,7 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
 
     private const string FormularioValido = """
         {
-          "finalidade": "INSCRICAO", "faseChave": "inscricao", "titulo": "Inscrição",
+          "codigo": "INSCRICAO", "obrigatorio": true, "faseChave": "inscricao", "titulo": "Inscrição",
           "paginas": [
             { "codigo": "DADOS", "ordem": 0, "tipo": "SECAO", "titulo": "Dados" },
             { "codigo": "REVISAO", "ordem": 1, "tipo": "BLOCO", "bloco": "REVISAO_E_ACEITE" }
@@ -96,12 +96,31 @@ public sealed class FormulariosDoEsquemaDaConfiguracaoTests
         CaminhosComErro(formulario, Formulario).Should().Contain("/termos/0/texto");
     }
 
-    [Theory(DisplayName = "A finalidade, o bloco ou a fase fora do vocabulário e do formato são recusados")]
-    [InlineData("/finalidade", "MATRICULA", "/finalidade")]
+    [Theory(DisplayName = "O código do formulário fora do formato, o bloco e a fase fora do vocabulário e do formato são recusados")]
+    [InlineData("/codigo", "formulario de matrícula", "/codigo")]
     [InlineData("/paginas/1/bloco", "OUTRO_BLOCO", "/paginas/1/bloco")]
     [InlineData("/faseChave", "Fase Um", "/faseChave")]
     public void Formulario_ForaDoVocabulario_Recusa(string ponteiro, string valor, string caminho) =>
         CaminhosComErro(Alterado(ponteiro, valor), Formulario).Should().Contain(caminho);
+
+    [Fact(DisplayName = "O formulário sem código é recusado")]
+    public void Formulario_SemCodigo_Recusa()
+    {
+        JsonNode formulario = Documento(FormularioValido);
+        formulario.AsObject().Remove("codigo");
+
+        CaminhosComErro(formulario, Formulario).Should().NotBeEmpty();
+    }
+
+    [Fact(DisplayName = "O formulário sem a marca de obrigatoriedade valida e a marca que não é verdadeiro ou falso é recusada")]
+    public void Formulario_Obrigatoriedade_ValidaSoOBooleano()
+    {
+        JsonNode semMarca = Documento(FormularioValido);
+        semMarca.AsObject().Remove("obrigatorio");
+
+        CaminhosComErro(semMarca, Formulario).Should().BeEmpty();
+        CaminhosComErro(Alterado("/obrigatorio", "sim"), Formulario).Should().Contain("/obrigatorio");
+    }
 
     [Theory(DisplayName = "O subitem de grupo com página ou impedimento preenchidos é recusado")]
     [InlineData("paginaCodigo", "\"DADOS\"")]

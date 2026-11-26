@@ -37,7 +37,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         AvaliacaoDaInscricaoDto avaliacao = Projetar(documentos.ComAsSituacoesDaAvaliacao(), faseId: null).Value!;
 
         avaliacao.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("INSCRICAO", "HABILITACAO");
-        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade!.Codigo, d.Situacao.Codigo)).Should().Equal(
+        avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.FormularioCodigo, d.Situacao.Codigo)).Should().Equal(
             [(documentos.DaInscricao.Id, "INSCRICAO", "PENDENTE"), (documentos.DaIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
             "a isenção na mesma fase aparece como da isenção, e não como exigência da inscrição");
         avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao.Codigo).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
@@ -138,7 +138,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             []);
 
         return new ContextoDaVersaoFixada(
-            [], null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RespostasAdmitidasVazias(),
+            null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), RespostasAdmitidasVazias(),
             configuracao, AtoId, configuracao, null, []);
     }
 

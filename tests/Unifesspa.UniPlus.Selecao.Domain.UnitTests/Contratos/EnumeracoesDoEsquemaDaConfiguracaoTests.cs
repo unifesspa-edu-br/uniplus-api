@@ -71,7 +71,6 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         ("manifestacao-de-interesse.schema.json", "", () => Codigos<ManifestacaoDeInteresse>(static v => v.Codigo())),
         ("identificacao.schema.json", "/properties/origemCandidatos", () => Codigos<OrigemCandidatos>(static v => v.Codigo())),
         ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => CatalogoDe<FundamentoIsencao>.Todos().Select(static v => v.Codigo).ToArray()),
-        ("formulario.schema.json", "/properties/finalidade", () => CatalogoDe<FinalidadeFormulario>.Todos().Select(static c => c.Codigo)),
         ("formulario.schema.json", "/$defs/pagina/properties/tipo", () => Codigos<TipoPaginaFormulario>(static v => v.Codigo())),
         ("formulario.schema.json", "/$defs/pagina/properties/bloco", () => Codigos<BlocoSistema>(static v => v.Codigo())),
         (Comuns, "/$defs/alvoDoProcedimentoDeRecurso/properties/areaDoEnem", () => AreaDoEnem.Todas),

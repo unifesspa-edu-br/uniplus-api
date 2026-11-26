@@ -5,24 +5,38 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ApoioDoFormularioApresentado;
 
-/// <summary>O que o <see cref="ObterFormularioApresentadoQueryHandler"/> serve do envelope congelado além do grafo: a finalidade pedida, a data de referência dos fatos e o fuso do envio.</summary>
+/// <summary>O que o <see cref="ObterFormularioApresentadoQueryHandler"/> serve do envelope congelado além do grafo: o código do formulário pedido, a data de referência dos fatos e o fuso do envio.</summary>
 public sealed class ObterFormularioApresentadoPressupostosTests
 {
-    [Fact(DisplayName = "Processo sem formulário da finalidade não serve formulário")]
-    public async Task Handle_SemFormularioDaFinalidade_NaoEncontrado()
+    [Fact(DisplayName = "Processo sem o formulário do código pedido não serve formulário")]
+    public async Task Handle_SemFormularioDoCodigo_NaoEncontrado()
     {
         Guid processoId = Guid.CreateVersion7();
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
-            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Habilitacao);
+            EnvelopeCom(Formulario(FormularioDeTeste.CodigoDaInscricao, null, comComprovacao: false)), "HABILITACAO");
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+    }
+
+    [Theory(DisplayName = "Código de formulário fora do formato não designa formulário: é o mesmo não encontrado do formulário ausente")]
+    [InlineData("inscricao")]
+    [InlineData("formulário")]
+    [InlineData("1INSCRICAO")]
+    public async Task Handle_CodigoForaDoFormato_NaoEncontrado(string codigo)
+    {
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
+            processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
+            EnvelopeCom(Formulario(FormularioDeTeste.CodigoDaInscricao, null, comComprovacao: false)), codigo);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
@@ -37,7 +51,7 @@ public sealed class ObterFormularioApresentadoPressupostosTests
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, $$"""{"documentosExigidos": {"dataDeReferenciaDosDados": {{data}} } }""",
-            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
+            EnvelopeCom(Formulario(FormularioDeTeste.CodigoDaInscricao, null, comComprovacao: false)), FormularioDeTeste.CodigoDaInscricao);
 
         if (valida)
         {
@@ -56,7 +70,7 @@ public sealed class ObterFormularioApresentadoPressupostosTests
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await HandleAsync(
             processoId, """{"documentosExigidos": {"dataDeReferenciaDosDados": null}}""",
-            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
+            EnvelopeCom(Formulario(FormularioDeTeste.CodigoDaInscricao, null, comComprovacao: false)), FormularioDeTeste.CodigoDaInscricao);
 
         resultado.Value!.Formulario.Pressupostos.FusoDoEnvio.Should().Be("America/Belem");
     }

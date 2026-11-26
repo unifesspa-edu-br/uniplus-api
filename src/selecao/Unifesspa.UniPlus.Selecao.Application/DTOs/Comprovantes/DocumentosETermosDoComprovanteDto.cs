@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 
-/// <summary>Um termo aceito no envio, com o nome da versão da inscrição e a versão e o hash que o candidato aceitou.</summary>
-public sealed record TermoAceitoDoComprovanteDto(string Codigo, string Nome, Guid VersaoId, string HashVersao);
+/// <summary>Um termo aceito no envio, com o formulário a que pertence, o nome da versão da inscrição e a versão e o hash que o candidato aceitou.</summary>
+public sealed record TermoAceitoDoComprovanteDto(string FormularioCodigo, string Codigo, string Nome, Guid VersaoId, string HashVersao);
 
 /// <summary>
 /// Uma exigência documental no envio: a obrigatoriedade, a situação já em texto (<c>Atendido</c>, <c>Pendente</c>,

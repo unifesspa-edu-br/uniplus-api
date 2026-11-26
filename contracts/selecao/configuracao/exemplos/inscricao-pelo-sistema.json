@@ -61,7 +61,8 @@
   },
   "formularios": [
     {
-      "finalidade": "INSCRICAO",
+      "codigo": "INSCRICAO",
+      "obrigatorio": true,
       "faseChave": "fase_inscricao",
       "titulo": "Formulário de inscrição",
       "paginas": [
@@ -462,7 +463,7 @@
         "tipoDocumentoCodigo": "DOCUMENTO_IDENTIFICACAO",
         "tipoDocumentoNome": "Documento de identificação",
         "faseChave": "fase_inscricao",
-        "finalidade": "INSCRICAO",
+        "formularioCodigo": "INSCRICAO",
         "aplicabilidade": "GERAL",
         "obrigatorio": true,
         "abrePrazoParaReenvio": true,
@@ -476,7 +477,7 @@
         "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
         "tipoDocumentoNome": "Comprovante de renda",
         "faseChave": "fase_inscricao",
-        "finalidade": "ISENCAO_TAXA",
+        "formularioCodigo": "INSCRICAO",
         "aplicabilidade": "CONDICIONAL",
         "obrigatorio": true,
         "condicoes": [

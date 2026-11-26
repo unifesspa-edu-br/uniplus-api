@@ -157,7 +157,7 @@ public static class DefinicaoAvaliavelDoProcesso
     {
         HashSet<string> perguntados = new(fatos.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         return formularios
-            .SelectMany(f => RecorteDaFinalidade.De(definicao, DefinicaoDoProcesso.CodigoDaPagina(f.Finalidade, null)).Pressupostos)
+            .SelectMany(f => RecorteDaFinalidade.De(definicao, DefinicaoDoProcesso.CodigoDaPagina(f.Codigo, null)).Pressupostos)
             .Where(c => !perguntados.Contains(c))
             .Distinct(StringComparer.Ordinal);
     }

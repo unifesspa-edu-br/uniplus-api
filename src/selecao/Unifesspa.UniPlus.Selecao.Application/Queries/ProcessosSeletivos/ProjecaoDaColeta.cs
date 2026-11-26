@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -27,7 +28,7 @@ internal static class ProjecaoDaColeta
     private static readonly JsonSerializerOptions OpcoesDaProjecao = new(JsonSerializerDefaults.Web);
 
     internal static IReadOnlyList<FormularioDto> ProjetarFormularios(ProcessoSeletivo processo) =>
-        [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(f => ProjetarFormulario(processo, f))];
+        [.. processo.Formularios.OrderBy(static f => f.Codigo, CodigoDoFormulario.OrdemOrdinal).Select(f => ProjetarFormulario(processo, f))];
 
     internal static IReadOnlyList<OpcoesDeclaradasDoFatoDto> ProjetarOpcoesDeclaradas(ProcessoSeletivo processo) =>
         [.. processo.OpcoesDeclaradas
@@ -45,13 +46,14 @@ internal static class ProjecaoDaColeta
         [.. processo.RegrasDeComprovacaoSemGrupo.OrderBy(static n => n.Ordem).ThenBy(static n => n.Id).Select(ProjetarRegra)];
 
     private static FormularioDto ProjetarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario) => new(
-        CodigoComRotulo<FinalidadeFormulario>.De(formulario.Finalidade),
+        formulario.Codigo.Valor,
         formulario.FaseId,
+        formulario.Obrigatorio,
         formulario.Titulo,
         formulario.ModeloDeOrigem is { } origem ? new ModeloDeOrigemDto(origem.Id, origem.Codigo) : null,
         [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(ProjetarPagina)],
-        ProjetarColeta(processo, formulario.Finalidade),
-        [.. processo.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())])
+        ProjetarColeta(processo, formulario.Id),
+        [.. processo.TermosExigidos.Where(t => t.FormularioId == formulario.Id).OrderBy(static t => t.Ordem).Select(static t => t.ToDto())])
     {
         ConsequenciaDaFaltaDeEnvio = formulario.ConsequenciaDaFaltaDeEnvio is { } consequencia ? CodigoComRotulo<ConsequenciaDoDescumprimento>.De(consequencia) : null,
     };
@@ -64,9 +66,9 @@ internal static class ProjecaoDaColeta
         new ApresentacaoDaPaginaDto(pagina.Titulo, pagina.Descricao, pagina.Aviso),
         pagina.Exibicao?.ToDto());
 
-    private static ColetaDoFormularioDto ProjetarColeta(ProcessoSeletivo processo, FinalidadeFormulario finalidade) => new(
-        [.. processo.FatosColetados.Where(f => f.Finalidade == finalidade).OrderBy(static f => f.Ordem).Select(f => ProjetarFato(processo, f))],
-        [.. processo.GruposColetados.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => ProjetarGrupo(processo, g))]);
+    private static ColetaDoFormularioDto ProjetarColeta(ProcessoSeletivo processo, Guid formularioId) => new(
+        [.. processo.FatosColetados.Where(f => f.FormularioId == formularioId).OrderBy(static f => f.Ordem).Select(f => ProjetarFato(processo, f))],
+        [.. processo.GruposColetados.Where(g => g.FormularioId == formularioId).OrderBy(static g => g.Ordem).Select(g => ProjetarGrupo(processo, g))]);
 
     private static GrupoColetadoDto ProjetarGrupo(ProcessoSeletivo processo, GrupoColetado g) => new(
         g.Codigo, g.Ordem, g.PaginaCodigo, g.Rotulo,
@@ -163,7 +165,7 @@ internal static class ProjecaoDaColeta
     private static MomentoDaExigenciaDto ProjetarMomento(DocumentoExigido documento) => new(
         documento.ExigidoNaFaseId,
         documento.ExigidoNaEtapaId,
-        documento.Finalidade is { } finalidade ? CodigoComRotulo<FinalidadeFormulario>.De(finalidade) : null);
+        documento.FormularioCodigo?.Valor);
 
     private static RequisitosDoDocumentoDto ProjetarRequisitos(DocumentoExigido documento) => new(
         ProjetarFormatosPermitidos(documento.FormatosPermitidos),

@@ -10,12 +10,10 @@ using DTOs;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O contexto de avaliação da finalidade Inscrição na versão da inscrição (<see cref="VersaoDaInscricaoResolver"/>) —
-/// nunca a vigente por relógio (UNI-REQ-0084): os termos exigidos dessa finalidade, a data de
+/// O contexto de avaliação dos formulários da inscrição na versão da inscrição (<see cref="VersaoDaInscricaoResolver"/>) —
+/// nunca a vigente por relógio (UNI-REQ-0084): a data de
 /// referência dos fatos congelada na publicação, a oferta de valores de cada campo, o que a versão
 /// admite como resposta, a configuração inteira que a avaliação da inscrição lê (ADR-0143) e o ato que
 /// publicou a versão, de que é o endereço dos modelos de documento no acervo. Reusado por Salvar, por
@@ -31,7 +29,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// que as nomeia, para quem escolhe a opção não depender do certame vivo.
 /// </remarks>
 public sealed record ContextoDaVersaoFixada(
-    IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
     RespostasAdmitidas Admitidas,
@@ -108,7 +105,6 @@ public sealed class ContextoDaVersaoFixadaResolver(
         return dataReferencia.IsFailure
             ? Result<ContextoDaVersaoFixada>.Failure(dataReferencia.Error!)
             : Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
-                [.. envelope.Configuracao.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)],
                 dataReferencia.Value, dasEscolhidas.Avaliavel.Ofertas, admitidas, dasEscolhidas.Configuracao,
                 versao.AtoCriadorId, daPrimeira, daSegunda, OfertasDaVersao(envelope.Configuracao)));
     }
@@ -197,31 +193,36 @@ public sealed class ContextoDaVersaoFixadaResolver(
     {
         ArgumentNullException.ThrowIfNull(configuracaoPublicada);
 
+        IReadOnlyList<FormularioProcesso> formularios = FormulariosDaInscricaoNaVersao.De(configuracaoPublicada);
         return new RespostasAdmitidas(
-            DefinicoesDasRespostasDaInscricao(configuracaoPublicada),
-            FatosDeNivelSuperiorDaInscricao(configuracaoPublicada),
-            SubitensDosGruposDaInscricao(configuracaoPublicada),
+            DefinicoesDasRespostasDaInscricao(configuracaoPublicada, formularios),
+            FatosDeNivelSuperiorDaInscricao(configuracaoPublicada, formularios),
+            SubitensDosGruposDaInscricao(configuracaoPublicada, formularios),
             configuracaoPublicada.Vagas.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet(),
-            TermosDaInscricao(configuracaoPublicada),
+            TermosDaInscricao(configuracaoPublicada, formularios),
             NumeroDeOpcoesDeCurso: configuracaoPublicada.Vagas.NumeroDeOpcoesDeCurso ?? 1);
     }
 
-    private static Dictionary<TermoNoFormulario, TermoAdmitido> TermosDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
+    private static Dictionary<TermoNoFormulario, TermoAdmitido> TermosDaInscricao(
+        ConfiguracaoPublicada configuracaoPublicada, IReadOnlyList<FormularioProcesso> formularios)
     {
-        string formulario = FinalidadeFormulario.Inscricao.Codigo();
         Dictionary<TermoNoFormulario, TermoAdmitido> termos = [];
-        foreach (TermoExigidoFormulario termo in configuracaoPublicada.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
+        foreach (FormularioProcesso formulario in formularios)
         {
-            termos.TryAdd(new TermoNoFormulario(formulario, termo.Codigo), termo.ParaAceite());
+            foreach (TermoExigidoFormulario termo in configuracaoPublicada.Coleta.TermosExigidos.Where(t => t.FormularioId == formulario.Id))
+            {
+                termos.TryAdd(new TermoNoFormulario(formulario.Codigo.Valor, termo.Codigo), termo.ParaAceite());
+            }
         }
 
         return termos;
     }
 
-    private static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
+    private static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(
+        ConfiguracaoPublicada configuracaoPublicada, IReadOnlyList<FormularioProcesso> formularios)
     {
         Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
-        IEnumerable<FatoColetado> coletados = configuracaoPublicada.Coleta.Campos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao);
+        IEnumerable<FatoColetado> coletados = configuracaoPublicada.Coleta.Campos.Where(f => formularios.Any(formulario => formulario.Id == f.FormularioId));
         foreach (FatoColetado fato in coletados)
         {
             definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoDeCampo, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
@@ -230,16 +231,18 @@ public sealed class ContextoDaVersaoFixadaResolver(
         return definicoes;
     }
 
-    private static HashSet<string> FatosDeNivelSuperiorDaInscricao(ConfiguracaoPublicada configuracaoPublicada) =>
+    private static HashSet<string> FatosDeNivelSuperiorDaInscricao(
+        ConfiguracaoPublicada configuracaoPublicada, IReadOnlyList<FormularioProcesso> formularios) =>
         configuracaoPublicada.Coleta.Itens
-            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+            .Where(f => formularios.Any(formulario => formulario.Id == f.FormularioId))
             .Select(static f => f.FatoCodigo)
             .ToHashSet(StringComparer.Ordinal);
 
-    private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
+    private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(
+        ConfiguracaoPublicada configuracaoPublicada, IReadOnlyList<FormularioProcesso> formularios)
     {
         Dictionary<string, IReadOnlySet<string>> subitens = new(StringComparer.Ordinal);
-        foreach (GrupoColetado grupo in configuracaoPublicada.Coleta.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao))
+        foreach (GrupoColetado grupo in configuracaoPublicada.Coleta.GruposColetados.Where(g => formularios.Any(formulario => formulario.Id == g.FormularioId)))
         {
             subitens.TryAdd(grupo.Codigo, grupo.Subitens.Select(static s => s.FatoCodigo).ToHashSet(StringComparer.Ordinal));
         }
