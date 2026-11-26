@@ -20,6 +20,7 @@ internal static class ItensDasConsequenciasDoDescumprimento
         new ItemConformidade("grupo_retira_a_modalidade_sem_ampla_concorrencia", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: ampla concorrência ofertada para retirada da modalidade (grupo)", CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarCoerencia(configuracao, "documentosExigidos.regrasDeComprovacao") && !CoerenciaDaConsequenciaDoDescumprimento.SemAmplaDosGrupos(configuracao, fatosDeModalidade).Any()),
         new ItemConformidade("modalidade_retira_a_modalidade_sem_ampla_concorrencia", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: ampla concorrência ofertada para retirada da modalidade (modalidade)", CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarCoerencia(configuracao, "distribuicaoVagas") && !CoerenciaDaConsequenciaDoDescumprimento.SemAmplaDasModalidades(configuracao).Any()),
         .. ItensDasBancas(configuracao, fatosDeModalidade),
+        .. ItensDosFormularios(configuracao, fatosDeModalidade),
     ];
 
     private static IReadOnlyList<ItemConformidade> ItensDasBancas(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos)
@@ -33,12 +34,29 @@ internal static class ItensDasConsequenciasDoDescumprimento
         ];
     }
 
+    private static IReadOnlyList<ItemConformidade> ItensDosFormularios(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatos)
+    {
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases, configuracao.Origem);
+        bool declaracoes = !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "formularios");
+        bool julgados = declaracoes && !ConsequenciasDosFormularios.ComFaseSemJulgar(configuracao, cronograma);
+        return [
+            new ItemConformidade("formulario_consequencia_em_formulario_facultativo", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: formulário facultativo sem consequência da falta de envio", declaracoes && !ConsequenciasDosFormularios.Facultativos(configuracao).Any()),
+            new ItemConformidade("formulario_consequencia_em_formulario_da_inscricao", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: formulário da inscrição sem consequência da falta de envio", julgados && !ConsequenciasDosFormularios.DaInscricao(configuracao, cronograma).Any()),
+            new ItemConformidade("formulario_acrescimo_nao_oferecido", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: retirada de acréscimo somente quando oferecido (formulário)", julgados && CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarAcrescimo(configuracao, "formularios") && !ConsequenciasDosFormularios.Acrescimo(configuracao, cronograma).Any()),
+            new ItemConformidade("formulario_sem_modalidade_em_questao", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: retirada da modalidade apenas quando há modalidade em questão (formulário)", julgados && PodeAvaliarCoerenciaDosFormularios(configuracao) && !ConsequenciasDosFormularios.SemModalidade(configuracao, fatos, cronograma).Any()),
+            new ItemConformidade("formulario_retira_a_modalidade_sem_ampla_concorrencia", DimensaoConformidade.ExigenciasDocumentais, "Descumprimento: ampla concorrência ofertada para retirada da modalidade (formulário)", julgados && PodeAvaliarCoerenciaDosFormularios(configuracao) && !ConsequenciasDosFormularios.SemAmpla(configuracao, fatos, cronograma).Any()),
+        ];
+    }
+
+    private static bool PodeAvaliarCoerenciaDosFormularios(ConfiguracaoDeclarada configuracao) =>
+        CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarCoerencia(configuracao, "formularios")
+        && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "documentosExigidos");
+
     private static bool PodeAvaliarAcrescimoDasBancas(ConfiguracaoDeclarada configuracao) =>
-        CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarAcrescimo(configuracao, "fases")
-        && CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarAcrescimo(configuracao, "etapas");
+        !ConsequenciasDasBancas.SemJulgar(configuracao) && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "bonusRegional");
 
     private static bool PodeAvaliarCoerenciaDasBancas(ConfiguracaoDeclarada configuracao) =>
-        CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarCoerencia(configuracao, "fases")
-        && CoerenciaDaConsequenciaDoDescumprimento.PodeAvaliarCoerencia(configuracao, "etapas")
+        !ConsequenciasDasBancas.SemJulgar(configuracao)
+        && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "distribuicaoVagas")
         && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, "documentosExigidos");
 }

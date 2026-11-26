@@ -1249,6 +1249,7 @@ selecao.avaliacoes_da_etapa.oferta_curso_id: Pessoal
 selecao.avaliacoes_da_etapa.situacao: Pessoal
 selecao.bancas_da_etapa.chave_local: Interno
 selecao.bancas_da_etapa.codigo: Interno
+selecao.bancas_da_etapa.consequencia_da_ausencia: Publico
 selecao.bancas_da_etapa.created_at: Interno
 selecao.bancas_da_etapa.encerra_recurso_na_primeira_instancia: Interno
 selecao.bancas_da_etapa.etapa_processo_id: Interno
@@ -1271,6 +1272,7 @@ selecao.bancas_da_etapa.tipos_de_decisao_julgados: Interno
 selecao.bancas_da_etapa.updated_at: Interno
 selecao.bancas_requeridas.chave_local: Interno
 selecao.bancas_requeridas.codigo: Interno
+selecao.bancas_requeridas.consequencia_da_ausencia: Publico
 selecao.bancas_requeridas.created_at: Interno
 selecao.bancas_requeridas.encerra_recurso_na_primeira_instancia: Interno
 selecao.bancas_requeridas.exige_duas_ou_mais_bancas: Interno
@@ -1520,6 +1522,7 @@ selecao.documentos_a_publicar.processo_seletivo_id: Interno
 selecao.documentos_a_publicar.situacao: Interno
 selecao.documentos_a_publicar.tamanho_bytes: Interno
 selecao.documentos_a_publicar.updated_at: Interno
+selecao.documentos_exigidos.abre_prazo_para_reenvio: Interno
 selecao.documentos_exigidos.aplicabilidade: Interno
 selecao.documentos_exigidos.chave_local: Interno
 selecao.documentos_exigidos.classificacao_protecao: Interno
@@ -1637,6 +1640,7 @@ selecao.fases_cronograma.unidade_responsavel_nome: Interno
 selecao.fases_cronograma.unidade_responsavel_origem_id: Interno
 selecao.fases_cronograma.unidade_responsavel_sigla: Interno
 selecao.fases_cronograma.updated_at: Interno
+selecao.formularios_processo.consequencia_da_falta_de_envio: Publico
 selecao.formularios_processo.created_at: Interno
 selecao.formularios_processo.fase_id: Interno
 selecao.formularios_processo.finalidade: Interno
@@ -1970,6 +1974,7 @@ selecao.regras_de_calculo_dos_dados.created_at: Interno
 selecao.regras_de_calculo_dos_dados.id: Interno
 selecao.regras_de_calculo_dos_dados.ordem: Interno
 selecao.regras_de_calculo_dos_dados.updated_at: Interno
+selecao.regras_de_comprovacao.abre_prazo_para_reenvio: Interno
 selecao.regras_de_comprovacao.consequencia_do_descumprimento: Interno
 selecao.regras_de_comprovacao.created_at: Interno
 selecao.regras_de_comprovacao.criterio_de_distincao: Interno

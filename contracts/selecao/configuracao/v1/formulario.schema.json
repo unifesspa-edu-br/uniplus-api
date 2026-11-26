@@ -35,6 +35,17 @@
       "type": "string",
       "maxLength": 300
     },
+    "consequenciaDaFaltaDeEnvio": {
+      "title": "Consequência da falta de envio",
+      "description": "Consequência para quem não envia o formulário. Ausente: a falta de envio não tem consequência própria. Só o formulário obrigatório que não coleta a inscrição a declara.",
+      "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
+    },
+    "consequenciaDaFaltaDeEnvioRotulo": {
+      "title": "Rótulo da consequência da falta de envio",
+      "description": "Rótulo registrado na publicação. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "readOnly": true
+    },
     "modeloOrigemCodigo": {
       "title": "Modelo de origem",
       "description": "Código do modelo de formulário aplicado ao processo, de até 60 caracteres. Registra só a proveniência. Campo só de leitura: ignorado na importação.",

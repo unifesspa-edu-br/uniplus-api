@@ -8,11 +8,13 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -116,6 +118,68 @@ public sealed class DefinirFormularioCommandHandlerTests
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.OrderBy(static e => e.Ordem).Select(static e => e.Codigo)
             .Should().Equal(ConjuntoBasicoDaInscricao.CodigoDaSecao, "DADOS", "REVISAO");
         processo.FatosColetados.Select(static f => f.FatoCodigo).Should().BeEquivalentTo(ConjuntoBasicoDaInscricao.Fatos);
+    }
+
+    [Fact(DisplayName = "A consequência da falta de envio do vocabulário é gravada no formulário")]
+    public async Task Handle_ConsequenciaDoVocabulario_GravaNoFormulario()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+
+        Result result = await DefinirComConsequenciaAsync(processo, "ELIMINA_DO_PROCESSO", PaginasValidas());
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+    }
+
+    [Fact(DisplayName = "Redefinir o formulário sem consequência retira a que ele declarava")]
+    public async Task Handle_SemConsequencia_RetiraADeclaracaoAnterior()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        (await DefinirComConsequenciaAsync(processo, "RETIRA_A_MODALIDADE", PaginasValidas())).IsSuccess.Should().BeTrue();
+
+        Result result = await DefinirComConsequenciaAsync(processo, null, PaginasValidas());
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Consequência fora do vocabulário é recusada no campo e nada é gravado")]
+    public async Task Handle_ConsequenciaForaDoVocabulario_RecusaESemGravar()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+
+        Result result = await DefinirComConsequenciaAsync(processo, "ABRE_PRAZO_PARA_REENVIO", PaginasValidas());
+
+        FieldError recusa = result.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("consequenciaDaFaltaDeEnvio");
+        recusa.Error.Code.Should().Be(FormularioProcessoErrorCodes.ConsequenciaDaFaltaDeEnvioInvalida);
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A consequência recusada e a página inválida saem juntas na mesma recusa")]
+    public async Task Handle_ConsequenciaEPaginaInvalidas_AcumulaAsRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+
+        Result result = await DefinirComConsequenciaAsync(
+            processo, "XPTO", [EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("").Construir()]);
+
+        result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["paginas[0].apresentacao.titulo", "consequenciaDaFaltaDeEnvio"]);
+    }
+
+    private static PaginaDoFormularioInput[] PaginasValidas() =>
+    [
+        EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").Construir(),
+        EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", 1, "REVISAO_E_ACEITE").ComTitulo("Revisão e aceite").Construir(),
+    ];
+
+    private static Task<Result> DefinirComConsequenciaAsync(ProcessoSeletivo processo, string? consequencia, IReadOnlyList<PaginaDoFormularioInput> paginas)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        return DefinirFormularioCommandHandler.Handle(
+            new DefinirFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, null, null, paginas, consequencia),
+            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
     }
 
     private static Task<Result> DefinirAsync(

@@ -74,6 +74,12 @@ public sealed class EsquemaDoDocumentoDaConfiguracaoTests
         AvaliarComCabecalho($"\"{parte}\":{valor}").Select(Resumo).Should().Contain((caminho, DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
     }
 
+    [Fact(DisplayName = "A consequência da falta de envio desconhecida é recusada no campo do formulário")]
+    public void ConsequenciaDaFaltaDeEnvio_ValorDesconhecido_RecusadoNoCaminho() =>
+        AvaliarComCabecalho("""
+            "formularios": [ { "finalidade": "HABILITACAO", "paginas": [], "consequenciaDaFaltaDeEnvio": "DESCONHECIDA" } ]
+            """).Select(Resumo).Should().Contain(("/formularios/0/consequenciaDaFaltaDeEnvio", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
+
     [Fact(DisplayName = "A chave fora do padrão é recusada como valor inválido")]
     public void ChaveForaDoPadrao_EValorInvalido() =>
         AvaliarComCabecalho("""

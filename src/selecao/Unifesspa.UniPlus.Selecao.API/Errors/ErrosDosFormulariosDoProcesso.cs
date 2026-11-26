@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -26,6 +27,9 @@ internal static class ErrosDosFormulariosDoProcesso
         new("FormularioProcesso.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade", "A fase do formulário não é a que a finalidade pede")),
         new("FormularioProcesso.IsencaoSemTaxa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.isencao_sem_taxa", "Formulário de isenção de taxa em processo que não cobra taxa")),
         new("FormularioProcesso.FormularioInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_inexistente", "O processo não tem formulário dessa finalidade")),
+        new(FormularioProcessoErrorCodes.ConsequenciaDaFaltaDeEnvioInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida", "A consequência da falta de envio do formulário não é uma opção conhecida")),
+        new(FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_em_formulario_facultativo", "O formulário facultativo não declara consequência para a falta de envio")),
+        new(FormularioProcessoErrorCodes.ConsequenciaEmFormularioDaInscricao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.consequencia_em_formulario_da_inscricao", "O formulário que coleta a inscrição não declara consequência para a falta de envio")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AplicacaoDeModelo() =>

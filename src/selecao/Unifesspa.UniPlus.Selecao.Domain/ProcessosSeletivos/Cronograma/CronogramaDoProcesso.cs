@@ -61,6 +61,15 @@ public sealed record CronogramaDoProcesso
     /// <summary>Se cada fase tem a sua origem: o casamento com o cronograma já gravado, que casa por origem, só existe sem repetição.</summary>
     public bool OrigensUnicas => Fases.Select(static fase => fase.OrigemId).Distinct().Count() == Fases.Count;
 
+    /// <summary>Se a fase de identificador dado coleta a inscrição; falso quando o identificador é ausente ou nenhuma fase declarada o tem.</summary>
+    public bool FaseColetaInscricao(Guid? faseId) => faseId is { } id && Fases.Any(fase => fase.Id == id && fase.ColetaInscricao);
+
+    /// <summary>
+    /// Se a fase de um formulário fica sem julgar: o identificador não está entre as fases adotadas e a leitura recusou alguma fase
+    /// inteira da lista, que pode ser a dele. A fase que o documento não cita ou que existe é julgada.
+    /// </summary>
+    public bool FaseSemJulgar(Guid? faseId) => faseId is { } id && TemParteRecusadaNaListaDeFases && Fases.All(fase => fase.Id != id);
+
     /// <summary>Se alguma fase tem o código, ainda que mais de uma o tenha.</summary>
     public bool TemFaseDeCodigo(string codigo) => Fases.Any(fase => TemOCodigo(fase, codigo));
 

@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
@@ -314,12 +315,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Define o formulário de uma finalidade; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
     public Result DefinirFormulario(
         FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas,
-        IReadOnlyList<FatoColetado>? itensDaCriacao = null)
+        IReadOnlyList<FatoColetado>? itensDaCriacao = null, ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null)
     {
         ArgumentNullException.ThrowIfNull(paginas);
 
         return Editar(
-            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), finalidade, faseId, titulo, paginas, itensDaCriacao),
+            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), finalidade, faseId, titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio),
             Aplicar);
     }
 

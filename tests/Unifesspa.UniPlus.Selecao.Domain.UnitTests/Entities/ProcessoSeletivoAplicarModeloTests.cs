@@ -161,6 +161,19 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain("'QUILOMBOLA'");
     }
 
+    [Fact(DisplayName = "A reaplicação mantém a consequência da falta de envio que o processo declarou, e o modelo não a traz")]
+    public void AplicarModeloDeFormulario_FormularioComConsequencia_MantemAConsequenciaDoProcesso()
+    {
+        ProcessoSeletivo processo = Processo();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.Habilitacao, Item("COR_RACA", 0)));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ConsequenciaDaFaltaDeEnvio.Should().Be(ConsequenciaDoDescumprimento.EliminaDoProcesso);
+    }
+
     [Fact(DisplayName = "As derivações da cópia somam-se às do processo, que continuam")]
     public void AplicarModeloDeFormulario_DerivacoesNovas_SomamSeAsExistentes()
     {

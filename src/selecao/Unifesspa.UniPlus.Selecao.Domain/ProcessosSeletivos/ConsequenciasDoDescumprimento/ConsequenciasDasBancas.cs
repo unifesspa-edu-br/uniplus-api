@@ -25,6 +25,13 @@ internal static class ConsequenciasDasBancas
             .Where(par => CoerenciaDaConsequenciaDoDescumprimento.SemAmpla(configuracao, modalidade => par.Exigencias.Any(exigencia => exigencia.PodeAlcancarModalidade(modalidade, fatos))))
             .Select(par => CoerenciaDaConsequenciaDoDescumprimento.SemAmpla(par.Caminho));
 
+    /// <summary>
+    /// Se a leitura recusou alguma fase ou etapa inteira, ou a lista de bancas de alguma, e as bancas que a conferência
+    /// não alcançou ficam sem julgar. A parte recusada em outra propriedade da fase ou da etapa não afeta as bancas.
+    /// </summary>
+    internal static bool SemJulgar(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Origem.PartesRecusadas.Any(static parte => parte.Caminho is "fases" or "etapas" || parte.Caminho.Contains(".bancas", StringComparison.Ordinal));
+
     private static IEnumerable<BancasParaConsequencias.BancaComExigencias> BancasComRetirada(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         BancasParaConsequencias.Ler(configuracao, cronograma, etapas)
             .Where(par => par.Consequencia == ConsequenciaDoDescumprimento.RetiraAModalidade

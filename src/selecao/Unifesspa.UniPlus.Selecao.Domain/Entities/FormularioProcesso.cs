@@ -41,6 +41,12 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     public string? ModeloOrigemNome { get; private set; }
 
+    /// <summary>
+    /// O que acontece com quem não envia o formulário. Ausente, a falta de envio não tem consequência própria e
+    /// nenhuma é presumida.
+    /// </summary>
+    public ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio { get; private set; }
+
     public IReadOnlyCollection<PaginaDoFormulario> Paginas => _paginas.AsReadOnly();
 
     private FormularioProcesso() { }
@@ -113,11 +119,19 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     /// <summary>As páginas na forma que a estrutura do formulário confere.</summary>
     public IReadOnlyList<PaginaEstrutura> Estrutura => [.. _paginas.Select(static e => e.Estrutura)];
 
+    /// <summary>
+    /// Declara, ou retira com <see langword="null"/>, a consequência da falta de envio. A conferência de que a
+    /// declaração cabe a este formulário é da configuração do processo, que conhece a fase e o cronograma.
+    /// </summary>
+    public void DeclararConsequenciaDaFaltaDeEnvio(ConsequenciaDoDescumprimento? consequencia) =>
+        ConsequenciaDaFaltaDeEnvio = consequencia;
+
     /// <summary>Substitui o conteúdo por outro formulário já validado da mesma finalidade.</summary>
     internal void Substituir(FormularioProcesso outro)
     {
         FaseId = outro.FaseId;
         Titulo = outro.Titulo;
+        ConsequenciaDaFaltaDeEnvio = outro.ConsequenciaDaFaltaDeEnvio;
         _paginas.Clear();
         AdicionarPaginas(outro._paginas);
     }
@@ -253,4 +267,13 @@ public static class FormularioProcessoErrorCodes
 
     /// <summary>A fase do cronograma é usada por um formulário e não pode sair.</summary>
     public const string FaseReferenciadaPorFormulario = "ProcessoSeletivo.FaseReferenciadaPorFormulario";
+
+    /// <summary>A consequência da falta de envio informada não é uma opção do vocabulário.</summary>
+    public const string ConsequenciaDaFaltaDeEnvioInvalida = "FormularioProcesso.ConsequenciaDaFaltaDeEnvioInvalida";
+
+    /// <summary>O formulário facultativo declara consequência para a falta de envio.</summary>
+    public const string ConsequenciaEmFormularioFacultativo = "FormularioProcesso.ConsequenciaEmFormularioFacultativo";
+
+    /// <summary>O formulário que coleta a inscrição declara consequência para a falta de envio.</summary>
+    public const string ConsequenciaEmFormularioDaInscricao = "FormularioProcesso.ConsequenciaEmFormularioDaInscricao";
 }

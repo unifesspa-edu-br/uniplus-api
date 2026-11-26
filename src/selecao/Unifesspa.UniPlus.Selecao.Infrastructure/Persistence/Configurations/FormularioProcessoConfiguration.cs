@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -24,7 +25,11 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("formularios_processo", t =>
-            t.HasCheckConstraint("ck_formularios_processo_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})"));
+        {
+            t.HasCheckConstraint("ck_formularios_processo_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
+            t.HasCheckConstraint("ck_formularios_processo_consequencia_da_falta_de_envio",
+                $"consequencia_da_falta_de_envio IS NULL OR consequencia_da_falta_de_envio IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
+        });
         builder.HasKey(f => f.Id);
         builder.Property(f => f.Id).ValueGeneratedNever();
 
@@ -33,6 +38,9 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
         builder.Property(f => f.ModeloOrigemNome).HasColumnName("modelo_origem_nome").HasMaxLength(FormularioProcesso.ModeloOrigemNomeMaxLength)
             .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
+        builder.Property(f => f.ConsequenciaDaFaltaDeEnvio).HasMaxLength(30)
+            .ClassificaComo(ClassificacaoDeProtecao.Publico)
+            .HasComment("Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara.");
         builder.Ignore(f => f.Estrutura);
 
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade })

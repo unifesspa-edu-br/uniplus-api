@@ -5482,14 +5482,14 @@
       "titulo": "Exigência CONDICIONAL sem condição viva que determina resultado nunca seria cobrada de ninguém"
     },
     {
-      "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
-      "status": 422,
-      "titulo": "A consequência do descumprimento da exigência é incoerente com a ação declarada na modalidade que ela alcança"
-    },
-    {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
       "status": 422,
       "titulo": "Consequência do descumprimento da exigência inválida"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
+      "status": 422,
+      "titulo": "A consequência do descumprimento da exigência é incoerente com a ação declarada na modalidade que ela alcança"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase",
@@ -5910,6 +5910,21 @@
       "codigo": "uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido",
       "status": 422,
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_da_falta_de_envio_invalida",
+      "status": 422,
+      "titulo": "A consequência da falta de envio do formulário não é uma opção conhecida"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_em_formulario_da_inscricao",
+      "status": 422,
+      "titulo": "O formulário que coleta a inscrição não declara consequência para a falta de envio"
+    },
+    {
+      "codigo": "uniplus.selecao.formulario_processo.consequencia_em_formulario_facultativo",
+      "status": 422,
+      "titulo": "O formulário facultativo não declara consequência para a falta de envio"
     },
     {
       "codigo": "uniplus.selecao.formulario_processo.fase_fora_do_cronograma",
@@ -7950,6 +7965,11 @@
       "codigo": "uniplus.selecao.regra_de_comprovacao.quantidade_minima_proibida_quando_exige_todos",
       "status": 422,
       "titulo": "O grupo que exige todos os itens não declara quantidade mínima"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_de_comprovacao.reenvio_proibido_em_regra_de_documento",
+      "status": 422,
+      "titulo": "A regra de documento não declara reenvio próprio; o reenvio é declarado na exigência"
     },
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.regra_contem_a_si_mesma",
