@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Os sete arrays do envelope que são <b>conjuntos</b> (sem precedência entre os
@@ -56,7 +56,8 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processo,
         ResultadoConformidade? conformidade = null,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, Conformidade: conformidade, Retificacao: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(MetadadosFatosCongelados: metadadosFatos));
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, Conformidade: conformidade, Retificacao: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), MetadadosFatosCongelados: metadadosFatos));
 
     /// <summary>
     /// Serializa um FRAGMENTO do envelope (não o envelope inteiro) pelas mesmas regras de bytes
@@ -153,7 +154,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
             RegraDeComprovacao regraDeDocumento = RegraDeDocumento(fase, formatosAceitos, ocorrenciasEsperadas);
 
-            processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+            processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
         }
     }
 

@@ -18,7 +18,7 @@ public sealed class EnvelopeCodecFidelidadePorBlocoTests
         "Id", "CreatedAt", "UpdatedAt", "DomainEvents", "ProcessoSeletivoId", "EtapaProcessoId", "FaseCronogramaId",
         "AtendimentoEspecializadoId", "ConfiguracaoDistribuicaoVagasId", "ConfiguracaoDoFadaId", "ConfiguracaoClassificacaoId",
         "ConfiguracaoCascataRemanejamentoId", "GrupoPesoAreaEnemCongeladoId", "BancaRequeridaId", "RegraDeComprovacaoId",
-        "GrupoColetadoId", "FormularioProcessoId", "FatoColetadoId", "ConfiguracaoDerivacaoFatoId", "RegraDerivacaoConfiguradaId",
+        "GrupoColetadoId", "FormularioProcessoId", "FormularioId", "FatoColetadoId", "ConfiguracaoDerivacaoFatoId", "RegraDerivacaoConfiguradaId",
     ];
 
     [Fact]

@@ -337,11 +337,21 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     // aplica ao formulário de habilitação, que o processo declara na fase de habilitação, fora da inscrição.
     private static void DefinirFaseDeInscricaoNoCronograma(ProcessoSeletivo processo)
     {
-        FaseCronograma habilitacao = FaseDeHabilitacao();
-        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, FaseDeInscricao(), habilitacao], []);
+        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, FaseDeInscricao(), FaseDeHabilitacao()], []);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
+        MoverOFormularioDeInscricaoParaAFaseDeInscricao(processo);
         processo.DefinirFormularioSemConjuntoBasico(
             FormulariosDoProcessoDeTeste.Habilitacao, processo.CronogramaFases.Single(f => f.Codigo == "HABILITACAO").Id, obrigatorio: true);
+    }
+
+    // O modelo exige os documentos na fase INSCRICAO, e o formulário que os entrega é o da mesma fase.
+    private static void MoverOFormularioDeInscricaoParaAFaseDeInscricao(ProcessoSeletivo processo)
+    {
+        FormularioProcesso inscricao = processo.FormularioDoCodigo(FormulariosDoProcessoDeTeste.Inscricao)!;
+        Guid faseDeInscricaoId = processo.CronogramaFases.Single(static f => f.Codigo == "INSCRICAO").Id;
+        Result movido = processo.DefinirFormulario(
+            FormulariosDoProcessoDeTeste.Declarado(FormulariosDoProcessoDeTeste.Inscricao, faseDeInscricaoId, obrigatorio: true), inscricao.Titulo, [.. inscricao.Paginas]);
+        movido.IsSuccess.Should().BeTrue(movido.Error?.Message);
     }
 
     /// <summary>A condição de atendimento cuja declaração torna o documento exigido.</summary>

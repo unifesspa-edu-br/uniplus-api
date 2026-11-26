@@ -151,7 +151,7 @@ internal static class ApoioDaPoliticaDeOrdenacao
     {
         if (documentosExigidos is not null)
         {
-            processo.DefinirDocumentosExigidos(documentosExigidos).IsSuccess.Should().BeTrue();
+            processo.DefinirDocumentosExigidosNosFormulariosMinimos(documentosExigidos).IsSuccess.Should().BeTrue();
         }
 
         if (fatosColetados is not null)

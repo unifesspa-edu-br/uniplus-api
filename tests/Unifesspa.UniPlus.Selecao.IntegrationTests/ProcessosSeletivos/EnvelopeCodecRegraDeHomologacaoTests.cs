@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.AdulteracaoDeEnvelopeDeTeste;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
@@ -36,6 +37,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     public void IdaEVolta_ComARegra_ReproduzBytesEHash()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico congelado = Codificar(processo);
         ExemploDeEnvelopeEntrada.Publicar(processo);
         VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);

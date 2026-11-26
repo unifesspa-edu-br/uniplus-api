@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -57,17 +58,14 @@ public sealed class CalendarioCongeladoRoundTripTests
     public void Recanonicalizacao_UsaOCalendarioDoEnvelope()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        EnvelopeReidratado envelope = PublicarEReidratar(processo, congelado);
 
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        reidratado.Value!.DadosDeCatalogo.CalendarioDiasUteis.Should().NotBeNull(
+        envelope.DadosDeCatalogo.CalendarioDiasUteis.Should().NotBeNull(
             "o calendário volta do envelope, e é dele que a recanonicalização parte");
 
-        Recodificar(processo, reidratado.Value).Should().Equal(congelado.Bytes);
+        Recodificar(processo, envelope).Should().Equal(congelado.Bytes);
     }
 
     [Fact(DisplayName = "Trocado o calendário vigente, a versão publicada continua reproduzindo os mesmos bytes")]
@@ -91,19 +89,26 @@ public sealed class CalendarioCongeladoRoundTripTests
     public void CalendarioRemovido_VersaoAindaSeReproduz()
     {
         ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
-
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // Nada aqui consulta cadastro nenhum: a reidratação parte só dos bytes persistidos. É
         // essa ausência que o cenário prova — com o calendário removido da origem, um envelope que
         // guardasse apenas a referência não teria de onde recuperar a lista.
+        EnvelopeReidratado envelope = PublicarEReidratar(processo, congelado);
+
+        Recodificar(processo, envelope).Should().Equal(congelado.Bytes,
+            "a lista congelada basta para reproduzir a versão — a origem é rastreio, não dependência");
+    }
+
+    private static EnvelopeReidratado PublicarEReidratar(ProcessoSeletivo processo, SnapshotCanonico congelado)
+    {
+        ExemploDeEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
-        Recodificar(processo, reidratado.Value!).Should().Equal(congelado.Bytes,
-            "a lista congelada basta para reproduzir a versão — a origem é rastreio, não dependência");
+        return reidratado.Value!;
     }
 
     private static byte[] Recodificar(ProcessoSeletivo processo, EnvelopeReidratado envelope) =>

@@ -14,10 +14,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDoProcessoConformeSemeado;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Variantes de <see cref="ProcessoSeletivoPublicavelSeeder"/> — cada método isola UM defeito
@@ -162,7 +162,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
                 new IndeferimentoDoDocumento(true, null, [baseLegal]),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
-        Result exigenciaResult = processo.DefinirDocumentosExigidos(
+        Result exigenciaResult = processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);
     }

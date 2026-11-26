@@ -14,10 +14,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Paridade bidirecional entre <see cref="DocumentoExigido"/> viva e o item congelado no
@@ -127,7 +127,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = Canonicalizar(processo);
         JsonObject envelope = Envelope(congelado);
@@ -141,7 +141,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         // O envelope acima já está congelado (bytes fixos, como VersaoConfiguracao.Abrir
         // produziria) — o que acontece DEPOIS na configuração viva nunca o altera.
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
-        processo.DefinirDocumentosExigidos(
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().Contain(exigenciaB.Id,
             "pré-condição: a exigência B está viva no agregado");
@@ -157,7 +157,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
-        processo.DefinirDocumentosExigidos(
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congeladoV1 = Canonicalizar(processo);
@@ -171,7 +171,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
     {
         // Retificação que remove B (ex.: exigência cadastrada por engano) — só na
         // configuração VIVA; o envelope V1, já congelado, é outro objeto, imutável.
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraDeComprovacao.CriarRegraDeDocumento(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().NotContain(exigenciaB.Id,
             "pré-condição: B não está mais viva no agregado");
 

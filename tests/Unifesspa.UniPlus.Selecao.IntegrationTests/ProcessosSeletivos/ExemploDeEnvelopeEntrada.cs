@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ExemploDeEnvelope;
@@ -82,10 +83,11 @@ internal static class ExemploDeEnvelopeEntrada
 
     /// <summary>
     /// Publica o processo para que ele fique em <see cref="SituacaoDoProcessoSeletivo.Publicado"/>, com
-    /// a versão congelada.
+    /// a versão congelada. O processo que cobra taxa recebe, antes, o formulário facultativo de isenção que a publicação exige.
     /// </summary>
     internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)
     {
+        IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico snapshot = Canonicalizador.Canonicalizar(entrada ?? Entrada(processo));
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             new CenarioDeCongelamento { Dados = DadosRicos(), Documento = new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = Ator, Contagem = ContextoRico(), MotivosEscolhidos = MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo) });

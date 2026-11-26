@@ -69,6 +69,7 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
             {
                 faseId,
                 titulo,
+                obrigatorio = true,
                 paginas = new object[]
                 {
                     new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, apresentacao = new { titulo = "Dados" } },

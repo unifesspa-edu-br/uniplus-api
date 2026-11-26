@@ -38,7 +38,7 @@ public sealed class FormatoDasPaginasEndpointTests(CascadingFixture fixture)
     private static async Task<HttpResponseMessage> EnviarPaginaInvalidaAsync(Contexto contexto)
     {
         using HttpRequestMessage request = new(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{contexto.ProcessoId}/formularios/INSCRICAO");
-        request.Content = JsonContent.Create(new { faseId = await contexto.FaseDeInscricaoAsync(), titulo = "Inscrição", paginas = new[] { new { codigo = "pagina ruim", ordem = 0, tipo = "SECAO", apresentacao = new { titulo = "" } } } });
+        request.Content = JsonContent.Create(new { faseId = await contexto.FaseDeInscricaoAsync(), titulo = "Inscrição", obrigatorio = true, paginas = new[] { new { codigo = "pagina ruim", ordem = 0, tipo = "SECAO", apresentacao = new { titulo = "" } } } });
         Autenticar(request, Autenticacao.PlataformaAdmin);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
         return await contexto.Client.SendAsync(request);

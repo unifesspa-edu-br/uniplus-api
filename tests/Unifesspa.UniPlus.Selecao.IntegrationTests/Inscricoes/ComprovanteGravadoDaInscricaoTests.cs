@@ -10,10 +10,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes.CenarioDaInscricaoGravada;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O comprovante gravado volta do banco como foi emitido: na ordem de emissão, com os documentos, as modalidades das duas
@@ -172,7 +172,10 @@ public sealed class ComprovanteGravadoDaInscricaoTests
     private static DocumentosDaInscricao DocumentoSatisfeito(DocumentoExigido laudo) =>
         new(
             [new DocumentoAvaliado(laudo, SituacaoDoDocumento.Satisfeita, null, null, [], null)],
-            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []);
+            new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), [])
+        {
+            CodigosDosFormulariosDaInscricao = [FormularioDeTeste.FormularioDaInscricao],
+        };
 
     private static ArquivoConfirmado ArquivoConfirmadoDoLaudo(DocumentoExigido laudo) =>
         new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, FormatoPermitido.Pdf, 4096, new string('d', 64), DateTimeOffset.UtcNow);

@@ -19,15 +19,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>Os processos de inscrição que os testes publicam: o conjunto básico, os campos próprios e a modalidade que deriva de resposta.</summary>
 internal static class ProcessosDeInscricaoDeTeste
 {
-    private static FaseCronograma FaseDeIsencaoDaTaxa() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_isencao").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "ISENCAO_DA_TAXA", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-            ColetaSolicitacaoIsencao: true)),
-        new DecisoesDeCronogramaDaFase(
-            Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]),
-        bancasRequeridas: []).Value!;
-
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
@@ -143,21 +134,27 @@ internal static class ProcessosDeInscricaoDeTeste
 
     private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo, bool comIsencao)
     {
-        FaseCronograma faseDaInscricao = FaseDeResultadoFinal();
-        List<FaseCronograma> fases = [faseDaInscricao];
+        processo.DefinirCronogramaFases(FasesDoCronograma(comIsencao), []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaProvaObjetiva()]).IsSuccess.Should().BeTrue();
+    }
+
+    private static List<FaseCronograma> FasesDoCronograma(bool comIsencao)
+    {
+        List<FaseCronograma> fases = [FaseDeResultadoFinal()];
         if (comIsencao)
         {
             // A janela de isenção abre com a inscrição e fecha antes dela: é fase à parte.
-            fases.Add(FaseDeIsencaoDaTaxa());
+            fases.Add(IsencaoDaTaxaDeTeste.FaseDeIsencaoDaTaxa(
+                ordem: 2, inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero)));
         }
 
-        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        return fases;
     }
+
+    private static EtapaProcesso EtapaDaProvaObjetiva() =>
+        EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
 
     private static void DefinirTaxaEFada(ProcessoSeletivo processo, bool comIsencao, string? fatoDoFator)
@@ -208,22 +205,8 @@ internal static class ProcessosDeInscricaoDeTeste
     {
         if (comIsencao)
         {
-            DefinirFormularioEFatosDaIsencao(processo);
+            IsencaoDaTaxaDeTeste.DefinirFormularioEFatosDaIsencao(processo, processo.CronogramaFases.Single(static f => f.ColetaSolicitacaoIsencao).Id);
         }
-    }
-
-    private static void DefinirFormularioEFatosDaIsencao(ProcessoSeletivo processo)
-    {
-        processo.DefinirFormularioSemConjuntoBasico(
-            FormulariosDoProcessoDeTeste.PedidoDeIsencao, processo.CronogramaFases.Single(f => f.ColetaSolicitacaoIsencao).Id, obrigatorio: false);
-        processo.DefinirFatosColetados(
-                FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.PedidoDeIsencao),
-                [FatoColetadoDeTeste.Coletando("BOLSISTA", 0)
-                    .ComRotulo("Bolsista")
-                    .ComObrigatoriedade(Obrigatoriedade.Sempre)
-                    .NaSecao(FormularioDeTeste.Secao)
-                    .Construir()])
-            .IsSuccess.Should().BeTrue();
     }
 
 
