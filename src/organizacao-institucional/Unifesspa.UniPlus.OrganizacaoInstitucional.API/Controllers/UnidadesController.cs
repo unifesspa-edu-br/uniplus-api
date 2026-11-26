@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using Unifesspa.UniPlus.Application.Abstractions.Consultas;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -78,7 +79,7 @@ public sealed class UnidadesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery(Name = "q"), Description("Até 200 caracteres, sem contar os espaços das pontas.")] string? q,
+        [FromQuery(Name = BuscaPedida.NomeDoParametro), Description("Até 200 caracteres, sem contar os espaços das pontas.")] string? q,
         [FromQuery(Name = "tipo")] int[]? tipo,
         CancellationToken cancellationToken)
     {

@@ -30,10 +30,10 @@ using Xunit;
 /// tradução desse recorte que decide quais linhas entram no marcador.
 /// </para>
 /// </remarks>
-public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
+public sealed class RevisaoDosCertamesPublicadosPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
+
 
     private const string VersaoServida = "1";
 
@@ -41,7 +41,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
 
     private readonly List<CertameDivulgado> _semeados = [];
 
-    public RevisaoDoRecortePersistenciaTests(ProcessoSeletivoDbFixture fixture)
+    public RevisaoDosCertamesPublicadosPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
     }
@@ -68,9 +68,9 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Sem mudança na coleção, a revisão se repete entre leituras e entre páginas da mesma travessia")]
     public async Task Revisao_SemMudanca_DeveSerEstavel()
     {
-        PaginaDaVitrine primeira = await ListarAsync(new RecorteDaVitrine(), Agora, limite: 2);
-        PaginaDaVitrine repetida = await ListarAsync(new RecorteDaVitrine(), Agora, limite: 2);
-        PaginaDaVitrine segunda = await ContinuarAsync(new RecorteDaVitrine(), primeira, limite: 2);
+        PaginaDaVitrine primeira = await ListarAsync(new FiltroDosCertamesPublicados(), Agora, limite: 2);
+        PaginaDaVitrine repetida = await ListarAsync(new FiltroDosCertamesPublicados(), Agora, limite: 2);
+        PaginaDaVitrine segunda = await ContinuarAsync(new FiltroDosCertamesPublicados(), primeira, limite: 2);
 
         repetida.Revisao.Should().Be(primeira.Revisao, "nada mudou entre as duas leituras");
         segunda.Revisao.Should().Be(primeira.Revisao,
@@ -81,18 +81,18 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Divulgar um certame que entra no recorte muda a revisão")]
     public async Task Revisao_QuandoCertameEntraNoRecorte_DeveMudar()
     {
-        string antes = (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao;
+        string antes = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao;
 
         await AdicionarAsync(Divulgado(Agora.AddDays(-1), Agora.AddDays(30)));
 
-        (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao.Should().NotBe(antes);
+        (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao.Should().NotBe(antes);
     }
 
     [Fact(DisplayName = "Recortes diferentes têm revisões independentes: mudar um não mexe no outro")]
     public async Task Revisao_QuandoMudaOutroRecorte_NaoDeveMudar()
     {
-        RecorteDaVitrine abertas = new(SituacaoDoCertame.InscricoesAbertas);
-        RecorteDaVitrine encerradas = new(SituacaoDoCertame.Encerradas);
+        FiltroDosCertamesPublicados abertas = new(SituacaoDoCertame.InscricoesAbertas);
+        FiltroDosCertamesPublicados encerradas = new(SituacaoDoCertame.Encerradas);
 
         string abertasAntes = (await ListarAsync(abertas, Agora)).Revisao;
         string encerradasAntes = (await ListarAsync(encerradas, Agora)).Revisao;
@@ -108,8 +108,8 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
     public async Task Revisao_QuandoORelogioCruzaAJanela_DeveMudar()
     {
         // O primeiro aberto encerra em 20 dias: um dia depois ele muda de grupo e de posição.
-        string antes = (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao;
-        string depois = (await ListarAsync(new RecorteDaVitrine(), Agora.AddDays(21))).Revisao;
+        string antes = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao;
+        string depois = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora.AddDays(21))).Revisao;
 
         depois.Should().NotBe(antes);
     }
@@ -119,11 +119,11 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
     {
         // O instante de divulgação mais antigo que o máximo corrente e a contagem inalterada são
         // exatamente o caso que a contagem mais o instante máximo não alcançavam.
-        string antes = (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao;
+        string antes = (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao;
 
         await RetificarUltimoCertameAsync();
 
-        (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao.Should().NotBe(antes);
+        (await ListarAsync(new FiltroDosCertamesPublicados(), Agora)).Revisao.Should().NotBe(antes);
     }
 
     private async Task RetificarUltimoCertameAsync()
@@ -144,17 +144,15 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
         }
     }
 
-    private async Task<PaginaDaVitrine> ListarAsync(RecorteDaVitrine recorte, DateTimeOffset instante, int limite = 50)
+    private async Task<PaginaDaVitrine> ListarAsync(FiltroDosCertamesPublicados recorte, DateTimeOffset instante, int limite = 50)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        return await repository.ListarVitrineAsync(
-            instante, recorte, [], Limiar, null, null, limite, PaginationDirection.Next,
-            incluirContadores: false, VersaoServida, CancellationToken.None);
+        return await repository.ListarVitrineAsync(Consulta(instante, recorte, [], false), null, null, limite, PaginationDirection.Next, CancellationToken.None);
     }
 
-    private async Task<PaginaDaVitrine> ContinuarAsync(RecorteDaVitrine recorte, PaginaDaVitrine anterior, int limite)
+    private async Task<PaginaDaVitrine> ContinuarAsync(FiltroDosCertamesPublicados recorte, PaginaDaVitrine anterior, int limite)
     {
         (string sortKey, Guid id) = anterior.Proximo!.Value;
 
@@ -163,9 +161,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
 
         // O instante da primeira página viaja na âncora; o que se passa aqui é ignorado na
         // continuação, e passar outro prova que a revisão não depende dele.
-        return await repository.ListarVitrineAsync(
-            Agora.AddDays(365), recorte, [], Limiar, sortKey, id, limite, PaginationDirection.Next,
-            incluirContadores: false, VersaoServida, CancellationToken.None);
+        return await repository.ListarVitrineAsync(Consulta(Agora.AddDays(365), recorte, [], false), sortKey, id, limite, PaginationDirection.Next, CancellationToken.None);
     }
 
     private async Task AdicionarAsync(CertameDivulgado divulgado)
@@ -186,4 +182,8 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
                 IdentificadoresDeTeste.Novo().Valor, "Certame de revisão", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
             """{"nome":"Certame de revisão"}""",
             Agora);
+    private static ConsultaDosCertamesPublicados Consulta(
+        DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>
+        new(instante, filtro, ordenacao, contadores, VersaoServida);
+
 }

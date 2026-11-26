@@ -45,12 +45,11 @@ public static class ListarCertamesPublicadosQueryHandler
         ListarCertamesPublicadosQuery query, ICertameDivulgadoRepository certameDivulgadoRepository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        Result<string?> busca = BuscaPedida.Validar(query.Recorte.Busca);
         Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(query.Ordenacao, CamposOrdenacaoDaVitrine.Todos, OrdemCanonica);
 
-        if (!busca.IsSuccess || !ordenacao.IsSuccess)
+        if (!ordenacao.IsSuccess)
         {
-            return Result<ListarCertamesPublicadosResult>.Failure((busca.IsSuccess ? ordenacao.Error : busca.Error)!);
+            return Result<ListarCertamesPublicadosResult>.Failure(ordenacao.Error!);
         }
 
         PaginaDaVitrine pagina = await ListarPaginaAsync(query, certameDivulgadoRepository, ordenacao.Value!, cancellationToken).ConfigureAwait(false);
@@ -65,9 +64,8 @@ public static class ListarCertamesPublicadosQueryHandler
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
 
         return certameDivulgadoRepository.ListarVitrineAsync(
-            query.Instante, query.Recorte, ordenacao, SituacaoDaVitrine.LimiarDosUltimosDias,
-            query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
-            query.IncluirContadores, ProjecaoDoCertamePublicado.Versao, cancellationToken);
+            new ConsultaDosCertamesPublicados(query.Instante, query.Filtro, ordenacao, query.IncluirContadores, ProjecaoDoCertamePublicado.Versao),
+            query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken);
     }
 
     private static List<CertameNaVitrineDto> ItensDaVitrine(PaginaDaVitrine pagina)

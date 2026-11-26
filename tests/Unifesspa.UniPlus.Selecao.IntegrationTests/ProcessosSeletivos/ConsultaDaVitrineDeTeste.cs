@@ -10,24 +10,23 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 internal sealed class ConsultaDaVitrineDeTeste(ProcessoSeletivoDbFixture fixture)
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
+
     private const string VersaoServida = "1";
     private readonly ProcessoSeletivoDbFixture _fixture = fixture;
 
-    internal async Task<IReadOnlyList<string>> ListarNumerosAsync(RecorteDaVitrine recorte)
+    internal async Task<IReadOnlyList<string>> ListarNumerosAsync(FiltroDosCertamesPublicados recorte)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, recorte, [], Limiar, null, null, 20, PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, recorte, [], false), null, null, 20, PaginationDirection.Next, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Numero!)];
     }
 
     internal async Task<IReadOnlyList<string>> ListarAsync(
-        RecorteDaVitrine recorte,
+        FiltroDosCertamesPublicados recorte,
         IReadOnlyList<SortField>? ordenacao = null,
         string? afterSortKey = null,
         Guid? afterId = null)
@@ -36,15 +35,13 @@ internal sealed class ConsultaDaVitrineDeTeste(ProcessoSeletivoDbFixture fixture
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, recorte, ordenacao ?? [], Limiar, afterSortKey, afterId, 20,
-                PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, recorte, ordenacao ?? [], false), afterSortKey, afterId, 20, PaginationDirection.Next, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Nome)];
     }
 
     internal async Task<(string SortKey, Guid Id)?> PrimeiraPaginaAsync(
-        RecorteDaVitrine recorte,
+        FiltroDosCertamesPublicados recorte,
         int limite,
         IReadOnlyList<SortField>? ordenacao = null)
     {
@@ -52,9 +49,7 @@ internal sealed class ConsultaDaVitrineDeTeste(ProcessoSeletivoDbFixture fixture
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, recorte, ordenacao ?? [], Limiar, null, null, limite,
-                PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, recorte, ordenacao ?? [], false), null, null, limite, PaginationDirection.Next, CancellationToken.None);
 
         return pagina.Proximo;
     }
@@ -68,9 +63,7 @@ internal sealed class ConsultaDaVitrineDeTeste(ProcessoSeletivoDbFixture fixture
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), ordenacao, false), cursor?.SortKey, cursor?.Id, 1, direcao, CancellationToken.None);
 
         return (pagina.Itens, direcao == PaginationDirection.Prev ? pagina.Anterior : pagina.Proximo);
     }
@@ -82,11 +75,13 @@ internal sealed class ConsultaDaVitrineDeTeste(ProcessoSeletivoDbFixture fixture
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, new RecorteDaVitrine(), [], Limiar, cursor?.SortKey, cursor?.Id, 1,
-                direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), [], false), cursor?.SortKey, cursor?.Id, 1, direcao, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }
+
+    private static ConsultaDosCertamesPublicados Consulta(
+        DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>
+        new(instante, filtro, ordenacao, contadores, VersaoServida);
 
 }

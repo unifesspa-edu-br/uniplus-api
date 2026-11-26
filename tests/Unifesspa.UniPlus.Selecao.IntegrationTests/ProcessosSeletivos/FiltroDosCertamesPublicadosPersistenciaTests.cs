@@ -31,10 +31,10 @@ using Xunit;
 /// memória, os dois predicados seriam o mesmo código.
 /// </para>
 /// </remarks>
-public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
+public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
+
 
     /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
     private const string VersaoServida = "1";
@@ -49,7 +49,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
     private readonly List<CertameDivulgado> _semeados = [];
 
-    public RecorteDaVitrinePersistenciaTests(ProcessoSeletivoDbFixture fixture)
+    public FiltroDosCertamesPublicadosPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
     }
@@ -111,9 +111,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
-        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
-            Agora, new RecorteDaVitrine(), [], Limiar, null, null, 1, PaginationDirection.Next,
-            incluirContadores: true, VersaoServida, CancellationToken.None)).Contadores!.Value;
+        ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), [], true), null, null, 1, PaginationDirection.Next, CancellationToken.None)).Contadores!.Value;
 
         // Contar por um critério e filtrar por outro faz o rótulo mentir sem nada quebrar.
         await ConferirTamanhoDosRecortesAsync(contadores);
@@ -141,9 +139,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
         await AdicionarCertameDeOutraVersaoAsync(context);
 
-        PaginaDaVitrine pagina = await repository.ListarVitrineAsync(
-            Agora, new RecorteDaVitrine(), [], Limiar, null, null, _semeados.Count + 10,
-            PaginationDirection.Next, incluirContadores: true, VersaoServida, CancellationToken.None);
+        PaginaDaVitrine pagina = await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), [], true), null, null, _semeados.Count + 10, PaginationDirection.Next, CancellationToken.None);
 
         ContadoresDaVitrine contadores = pagina.Contadores!.Value;
 
@@ -160,7 +156,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     }
 
     private static SituacaoDoCertame Classificar(CertameDivulgado certame) =>
-        SituacaoDaVitrine.Classificar(certame.InscricoesDe, certame.InscricoesAte, Agora, Limiar);
+        SituacaoDaVitrine.Classificar(certame.InscricoesDe, certame.InscricoesAte, Agora, SituacaoDaVitrine.LimiarDosUltimosDias);
 
     private async Task<IReadOnlyList<Guid>> ListarAsync(SituacaoDoCertame? situacao)
     {
@@ -168,9 +164,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, new RecorteDaVitrine(situacao), [], Limiar, null, null,
-                Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(situacao), [], false), null, null, Deslocamentos.Length * Deslocamentos.Length, PaginationDirection.Next, CancellationToken.None);
 
         return [.. pagina.Itens.Select(static c => c.Id)];
     }
@@ -186,4 +180,8 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
             new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, "Certame de recorte", "001/2026", ["AC"], inscricoesDe, inscricoesAte),
             """{"nome":"Certame de recorte"}""",
             Agora);
+    private static ConsultaDosCertamesPublicados Consulta(
+        DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>
+        new(instante, filtro, ordenacao, contadores, VersaoServida);
+
 }

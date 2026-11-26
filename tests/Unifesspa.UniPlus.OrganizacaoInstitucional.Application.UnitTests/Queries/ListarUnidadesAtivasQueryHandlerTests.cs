@@ -34,7 +34,7 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
     [Fact(DisplayName = "A busca longa demais é recusada sem consultar o repositório")]
     public async Task BuscaLonga_RecusaSemPaginar()
     {
-        Result<ListarUnidadesAtivasResult> resultado = await ListarAsync(new string('a', BuscaPedida.ComprimentoMaximo + 1), null);
+        Result<ListarUnidadesAtivasResult> resultado = await ListarAsync(new string('a', Unifesspa.UniPlus.Kernel.Domain.ValueObjects.TermoDeBusca.ComprimentoMaximo + 1), null);
 
         resultado.Error!.Code.Should().Be(ConsultaErrorCodes.BuscaMuitoLonga);
         _repositorio.ReceivedCalls().Should().BeEmpty();

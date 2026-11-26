@@ -36,7 +36,7 @@ using Xunit;
 public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
+
 
     /// <summary>Versão do documento público que a consulta sabe servir — a que os semeados gravam.</summary>
     private const string VersaoServida = "1";
@@ -282,9 +282,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
-            await repository.ListarVitrineAsync(
-                Agora, new RecorteDaVitrine(), ordenacao, Limiar, cursor?.SortKey, cursor?.Id,
-                TamanhoDaPagina, direcao, incluirContadores: false, VersaoServida, CancellationToken.None);
+            await repository.ListarVitrineAsync(Consulta(Agora, new FiltroDosCertamesPublicados(), ordenacao, false), cursor?.SortKey, cursor?.Id, TamanhoDaPagina, direcao, CancellationToken.None);
 
         return (pagina.Itens, pagina.Anterior, pagina.Proximo);
     }
@@ -299,4 +297,8 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
             new FacetasDoCertameDivulgado(IdentificadoresDeTeste.Novo().Valor, nome, numero, ["AC"], Agora.AddDays(-60), inscricoesAte),
             """{"nome":"documento"}""",
             Agora);
+    private static ConsultaDosCertamesPublicados Consulta(
+        DateTimeOffset instante, FiltroDosCertamesPublicados filtro, IReadOnlyList<SortField> ordenacao, bool contadores) =>
+        new(instante, filtro, ordenacao, contadores, VersaoServida);
+
 }

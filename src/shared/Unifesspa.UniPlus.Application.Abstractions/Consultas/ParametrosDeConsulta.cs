@@ -28,8 +28,14 @@ public static class ConsultaErrorCodes
 /// <summary>Limites do texto pesquisado nas listagens, os de <see cref="TermoDeBusca"/>.</summary>
 public static class BuscaPedida
 {
-    /// <summary>Comprimento máximo do texto pesquisado.</summary>
-    public const int ComprimentoMaximo = TermoDeBusca.ComprimentoMaximo;
+    /// <summary>Nome do parâmetro de query que carrega o texto pesquisado, na maioria das listagens.</summary>
+    public const string NomeDoParametro = "q";
+
+    /// <summary>Nome do parâmetro do texto pesquisado na listagem das decisões da proteção do catálogo.</summary>
+    public const string NomePorExtensoDoParametro = "busca";
+
+    /// <summary>Todos os nomes de parâmetro que carregam o texto pesquisado.</summary>
+    public static IReadOnlyList<string> NomesDosParametros { get; } = [NomeDoParametro, NomePorExtensoDoParametro];
 
     /// <summary>Recusa o termo longo demais; devolve-o inalterado caso caiba.</summary>
     public static Result<string?> Validar(string? termo) =>
