@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Regras.Enums;
+namespace Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
