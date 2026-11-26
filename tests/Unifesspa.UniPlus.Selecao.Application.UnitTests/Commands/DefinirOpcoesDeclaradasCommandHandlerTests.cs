@@ -88,6 +88,46 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("opcoes[0].rotulo");
     }
 
+    [Fact(DisplayName = "Opção sem rótulo é recusada em rascunho antes de ler o catálogo de dados do candidato")]
+    public async Task Handle_OpcaoSemRotulo_RecusaSemLerOCatalogo()
+    {
+        ProcessoSeletivo processo = CriarProcesso();
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+
+        Result resultado = await HandleOpcaoSemRotuloAsync(CriarRepositorio(processo), reader, processo.Id);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("opcoes[0].rotulo");
+        reader.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Processo inexistente é recusado antes da conferência das opções, sem ler o catálogo de dados do candidato")]
+    public async Task Handle_ProcessoInexistenteComOpcaoSemRotulo_RecusaPeloProcesso()
+    {
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+
+        Result resultado = await HandleOpcaoSemRotuloAsync(Substitute.For<IProcessoSeletivoRepository>(), reader, Guid.CreateVersion7());
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        reader.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Processo publicado é recusado antes da conferência das opções, sem ler o catálogo de dados do candidato")]
+    public async Task Handle_ProcessoPublicadoComOpcaoSemRotulo_RecusaPelaSituacao()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+
+        Result resultado = await HandleOpcaoSemRotuloAsync(CriarRepositorio(processo), reader, processo.Id);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        reader.ReceivedCalls().Should().BeEmpty();
+    }
+
+    private static Task<Result> HandleOpcaoSemRotuloAsync(IProcessoSeletivoRepository repositorio, IFatoCandidatoReader reader, Guid processoId) =>
+        DefinirOpcoesDeclaradasCommandHandler.Handle(
+            new DefinirOpcoesDeclaradasCommand(processoId, "CATEGORIA_RENDA", [new("RURAL", "")]),
+            repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
     private static ProcessoSeletivo CriarProcesso() => ProcessoSeletivo.Criar(
         "PS Opções", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

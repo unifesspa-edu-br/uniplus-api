@@ -6,7 +6,6 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -46,10 +45,19 @@ public static class DefinirFatosColetadosCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        Result escrita = processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
-            : await EscreverAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await EscreverESalvarAsync(command, obtido.Value!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> EscreverESalvarAsync(
+        DefinirFatosColetadosCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result escrita = await EscreverAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         if (escrita.IsSuccess)
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -61,7 +69,7 @@ public static class DefinirFatosColetadosCommandHandler
     private static async Task<Result> EscreverAsync(
         DefinirFatosColetadosCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        if (RecusaAntesDoCatalogo(command, processo) is { } recusa)
+        if (RecusaDaQuantidade(command) is { } recusa)
         {
             return recusa;
         }
@@ -78,19 +86,11 @@ public static class DefinirFatosColetadosCommandHandler
     }
 
     /// <summary>
-    /// Fora do rascunho a recusa vem antes de resolver o vocabulário cross-módulo, sem pagar o I/O do
-    /// reader. Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a
-    /// recusa da quantidade é a única resposta.
+    /// Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a recusa da quantidade é
+    /// a única resposta, dada antes de resolver o vocabulário cross-módulo, sem pagar o I/O do reader.
     /// </summary>
-    private static Result? RecusaAntesDoCatalogo(DefinirFatosColetadosCommand command, ProcessoSeletivo processo)
-    {
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        return FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso ? Result.ValidationFailure(excesso) : null;
-    }
+    private static Result? RecusaDaQuantidade(DefinirFatosColetadosCommand command) =>
+        FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso ? Result.ValidationFailure(excesso) : null;
 
     /// <summary>
     /// A forma vem antes da leitura do catálogo, sem I/O; o item de forma inválida só não segue para a

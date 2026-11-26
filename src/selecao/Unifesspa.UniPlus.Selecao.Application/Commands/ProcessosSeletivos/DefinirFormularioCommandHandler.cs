@@ -36,10 +36,19 @@ public static class DefinirFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        Result definido = processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
-            : await DefinirAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
+
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirESalvarAsync(command, obtido.Value!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> DefinirESalvarAsync(
+        DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = await DefinirAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         if (definido.IsSuccess)
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -51,12 +60,6 @@ public static class DefinirFormularioCommandHandler
     private static async Task<Result> DefinirAsync(
         DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        // Fora do rascunho a recusa vem antes de consultar cadastros.
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
         Result<FormularioDeclarado> declarado = Declarar(command);
         return declarado.IsFailure
             ? Result.Failure(declarado.Error!)

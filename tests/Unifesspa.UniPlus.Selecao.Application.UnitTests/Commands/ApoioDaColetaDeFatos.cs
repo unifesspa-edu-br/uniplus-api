@@ -47,6 +47,16 @@ internal static class ApoioDaColetaDeFatos
         DefinirFatosColetadosCommandHandler.Handle(
             command, mocks.Repository, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
+    internal static FatoColetadoInput[] ItensAcimaDoTeto() =>
+        [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
+            .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"FATO_{i}", i).ComRotulo("Campo").Construir())];
+
+    internal static async Task ConferirQueNadaFoiLidoNemGravadoAsync(Mocks mocks)
+    {
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     /// <summary>Define os itens no formulário de habilitação do processo, com o catálogo do vocabulário de teste.</summary>
     internal static Task<Result> DefinirNaHabilitacaoAsync(ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens) =>
         HandleAsync(

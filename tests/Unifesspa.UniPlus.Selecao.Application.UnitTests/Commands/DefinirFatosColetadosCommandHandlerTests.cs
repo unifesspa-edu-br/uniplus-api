@@ -111,6 +111,31 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Processo inexistente é recusado antes da quantidade de itens, sem ler o catálogo nem gravar")]
+    public async Task Handle_ProcessoInexistenteComItensAcimaDoTeto_RecusaPeloProcesso()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Mocks mocks = NovosMocks(processo: null, processoId);
+
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processoId, PapelDoFormularioDeTeste.Habilitacao.Codigo(), ItensAcimaDoTeto()));
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Processo publicado é recusado antes da quantidade de itens, sem ler o catálogo nem gravar")]
+    public async Task Handle_ProcessoPublicadoComItensAcimaDoTeto_RecusaPelaSituacao()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), ItensAcimaDoTeto()));
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
     }
 
     private static FatoColetadoInput[] ItensDaColetaValida() =>

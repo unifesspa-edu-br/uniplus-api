@@ -40,13 +40,37 @@ public sealed class DefinirFormularioCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaErroSemCampo()
     {
         DefinirFormularioCommand command = new(Guid.NewGuid(), PapelDoFormularioDeTeste.Habilitacao.Codigo(), null, null, true, []);
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result result = await DefinirFormularioCommandHandler.Handle(
-            command, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IFatoCandidatoReader>(),
-            Substitute.For<IUnitOfWork>(), CancellationToken.None);
+            command, Substitute.For<IProcessoSeletivoRepository>(), reader, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
         result.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
+        await ConferirQueNadaFoiLidoNemGravadoAsync(reader, unitOfWork);
+    }
+
+    [Fact(DisplayName = "Processo publicado é recusado sem ler o catálogo de dados do candidato nem gravar")]
+    public async Task Handle_ProcessoPublicado_RecusaSemLerOCatalogo()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        DefinirFormularioCommand command = new(processo.Id, PapelDoFormularioDeTeste.Inscricao.Codigo(), null, null, true, []);
+
+        Result result = await DefinirFormularioCommandHandler.Handle(command, repository, reader, unitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(reader, unitOfWork);
+    }
+
+    private static async Task ConferirQueNadaFoiLidoNemGravadoAsync(IFatoCandidatoReader reader, IUnitOfWork unitOfWork)
+    {
+        await reader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Título, fase fora do cronograma e página inválidos saem juntos na mesma recusa")]
