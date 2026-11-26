@@ -5,9 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-using Services;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 
 /// <summary>
 /// Handler do <see cref="DefinirTaxaInscricaoCommand"/> (issue #1112): <c>Cobra</c> nulo remove
@@ -27,47 +26,41 @@ public static class DefinirTaxaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
-        }
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        // Fora do rascunho a recusa vem antes das regras de negócio.
-        if (processo.MutacaoBloqueada() is { } bloqueio)
+    private static async Task<Result> DefinirEGravarAsync(
+        ProcessoSeletivo processo,
+        DefinirTaxaInscricaoCommand command,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result definido = Definir(processo, command);
+        if (definido.IsFailure)
         {
-            return Result.Failure(bloqueio);
-        }
-
-        if (command.Cobra is null)
-        {
-            Result removerResult = processo.DefinirTaxaInscricao(null);
-            if (removerResult.IsFailure)
-            {
-                return Result.Failure(removerResult.Error!);
-            }
-
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result.Success();
-        }
-
-        Result<ConfiguracaoTaxaInscricao> configuracaoResult = ConfiguracaoTaxaInscricao.Criar(
-            command.Cobra.Value, command.Valor, command.Fundamentos);
-        if (configuracaoResult.IsFailure)
-        {
-            return Result.ValidationFailure(configuracaoResult.Errors);
-        }
-
-        Result definirResult = processo.DefinirTaxaInscricao(configuracaoResult.Value!);
-        if (definirResult.IsFailure)
-        {
-            return Result.Failure(definirResult.Error!);
+            return definido;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
         return Result.Success();
+    }
+
+    private static Result Definir(ProcessoSeletivo processo, DefinirTaxaInscricaoCommand command)
+    {
+        Result<ConfiguracaoTaxaInscricao>? declarada = command.Cobra is null
+            ? null
+            : ConfiguracaoTaxaInscricao.Criar(command.Cobra.Value, command.Valor, command.Fundamentos);
+        if (declarada is { IsFailure: true })
+        {
+            return Result.ValidationFailure(declarada.Errors);
+        }
+
+        Result definido = processo.DefinirTaxaInscricao(declarada?.Value);
+        return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
     }
 }

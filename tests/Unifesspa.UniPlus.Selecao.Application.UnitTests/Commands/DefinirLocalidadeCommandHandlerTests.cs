@@ -96,6 +96,23 @@ public sealed class DefinirLocalidadeCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Processo publicado recusa a alteração antes da recusa de localidade não declarada e não grava")]
+    public async Task Handle_ProcessoPublicadoComTrioAusente_RecusaPelaPublicacaoENaoGrava()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        LocalidadeRegente antes = processo.Localidade;
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirLocalidadeCommand command = new(processo.Id, null, null, null);
+
+        Result result = await DefinirLocalidadeCommandHandler.Handle(
+            command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        processo.Localidade.Should().Be(antes);
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Trio incoerente é recusado pela causa que o Kernel nomeia")]
     public async Task Handle_TrioIncoerente_RecusaPelaCausaDoKernel()
     {
