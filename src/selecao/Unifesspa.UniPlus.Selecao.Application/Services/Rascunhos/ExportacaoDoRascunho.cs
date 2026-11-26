@@ -14,7 +14,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 public sealed class ExportacaoDoRascunho(
     IUnidadeReader unidades,
     DescricaoDoDocumentoDoRascunho descricao,
-    ResolucaoDosModelosCitados resolucao)
+    ResolucaoDosModelosCitados resolucao,
+    DescricaoDaLocalidade localidade)
 {
     private const int PosicaoDoIdNaRaiz = 2;
 
@@ -27,6 +28,8 @@ public sealed class ExportacaoDoRascunho(
         OmitirNomesDeMunicipiosAusentes(documento);
         await DescreverUnidadeAdministradoraAsync(documento, rascunho.UnidadeAdministradoraOrigemId, cancellationToken).ConfigureAwait(false);
         await descricao.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        await localidade.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        DescricaoDoNomeAbreviado.Descrever(documento);
         await DescreverModelosAsync(rascunho.Id, documento, cancellationToken).ConfigureAwait(false);
         return documento;
     }

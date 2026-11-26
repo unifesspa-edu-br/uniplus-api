@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
@@ -18,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.DocumentoDaConfig
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 /// <summary>
 /// O documento exportado volta inteiro ao ser salvo: ele nomeia a unidade pelo código que ela tem hoje, e os campos só de
@@ -105,6 +107,41 @@ public sealed class ExportacaoDoRascunhoTests
 
         recusado.IsFailure.Should().BeTrue();
         recusado.Errors.Select(static causa => causa.Error.Code).Should().Contain(DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite);
+    }
+
+    private const string DocumentoComLocalidadeENomeAbreviado = """
+        { "identificacao": { "unidadeAdministradoraCodigo": "CEPS", "localidadeCodigoIbge": "1504208" },
+          "divulgacao": { "camposPublicos": [ "NOME_ABREVIADO" ] } }
+        """;
+
+    private Task<JsonObject> ExportarComLocalidadeENomeAbreviado() =>
+        _cenario.Exportacao.ExportarAsync(
+            _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps, DocumentoComLocalidadeENomeAbreviado), CancellationToken.None);
+
+    [Fact(DisplayName = "A exportação traz o nome e a UF da localidade e a regra do nome abreviado")]
+    public async Task Exportar_LocalidadeENomeAbreviado_AcrescentaOsDescritivos()
+    {
+        _cenario.Geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+
+        JsonObject documento = await ExportarComLocalidadeENomeAbreviado();
+
+        documento["identificacao"]!["localidadeNome"]!.GetValue<string>().Should().Be("Marabá");
+        documento["identificacao"]!["localidadeUf"]!.GetValue<string>().Should().Be("PA");
+        documento["divulgacao"]!["regraNomeAbreviado"]!.GetValue<string>().Should().Be(RegrasDeNomeAbreviado.Vigente);
+    }
+
+    [Fact(DisplayName = "Com o Geo fora do ar a exportação segue, sem o nome e a UF da localidade e com a regra do nome abreviado")]
+    public async Task Exportar_GeoForaDoAr_OmiteSoANomeEAUfDaLocalidade()
+    {
+        _cenario.Geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "O Geo não respondeu.")));
+
+        JsonObject documento = await ExportarComLocalidadeENomeAbreviado();
+
+        documento["identificacao"]!["localidadeCodigoIbge"]!.GetValue<string>().Should().Be("1504208");
+        documento["identificacao"]!["localidadeNome"].Should().BeNull();
+        documento["identificacao"]!["localidadeUf"].Should().BeNull();
+        documento["divulgacao"]!["regraNomeAbreviado"].Should().NotBeNull();
     }
 
     private const string DocumentoComFases = """

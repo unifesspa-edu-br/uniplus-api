@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
@@ -47,6 +48,8 @@ internal sealed class CenarioDoRascunho
 
     public IUnidadeReader Unidades { get; } = Substitute.For<IUnidadeReader>();
 
+    public IConferenciaEnderecoGeo Geo { get; } = Substitute.For<IConferenciaEnderecoGeo>();
+
     public ITipoProcessoReader Tipos { get; } = Substitute.For<ITipoProcessoReader>();
 
     public ITipoDocumentoReader TiposDeDocumento { get; } = Substitute.For<ITipoDocumentoReader>();
@@ -75,7 +78,7 @@ internal sealed class CenarioDoRascunho
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
     public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao);
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos)]), Resolucao, new DescricaoDaLocalidade(Geo));
 
     public CenarioDoRascunho PodeConfigurarEm(UnidadeView unidade)
     {
