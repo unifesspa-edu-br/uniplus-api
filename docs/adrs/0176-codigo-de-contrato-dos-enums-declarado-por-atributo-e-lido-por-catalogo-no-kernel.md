@@ -84,7 +84,7 @@ O enum com código de contrato que um cliente precisa listar é publicado como v
 4. A resposta é uma lista de `{ codigo, rotulo }` na ordem de declaração do enum, com teste da ordem; `{ codigo, rotulo, descricao }` só quando todo membro tem descrição.
 5. O acesso é anônimo: a lista é fechada e não traz dado de ninguém; a proteção fica na ação que usa o código.
 6. Não há cache.
-7. O dono é o módulo do enum. O enum usado só por um módulo mora nesse módulo e é servido por ele. Todos os enums do projeto de regras compartilhado são servidos pela Configuração.
+7. O dono é o módulo do enum. O enum usado só por um módulo mora nesse módulo e é servido por ele. Todos os enums do projeto de regras compartilhado são servidos pela Configuração. Enum do Kernel cuja escolha só existe nos cadastros de um módulo é servido por esse módulo; a hipótese legal de tratamento é servida pela Configuração.
 
 O campo de texto de um contrato que carrega o código de um desses enums é marcado com `AceitaCodigosDe<T>`, para o contrato apontar o vocabulário.
 
