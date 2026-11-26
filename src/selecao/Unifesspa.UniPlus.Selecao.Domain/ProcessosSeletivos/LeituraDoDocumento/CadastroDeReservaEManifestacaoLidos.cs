@@ -32,6 +32,5 @@ public sealed record CadastroDeReservaEManifestacaoLidos(
     }
 
     private static IEnumerable<ParteRecusada> Recusadas(IReadOnlyList<FieldError> causas, string campoDoBloco) =>
-        causas.Select(causa => new ParteRecusada(
-            campoDoBloco, null, 0, causa with { Field = PonteiroNoDocumento.Converter(causa.Field, OrigemNoDocumento.Identidade) }));
+        causas.Select(causa => ParteRecusada.DoBloco(campoDoBloco, causa));
 }

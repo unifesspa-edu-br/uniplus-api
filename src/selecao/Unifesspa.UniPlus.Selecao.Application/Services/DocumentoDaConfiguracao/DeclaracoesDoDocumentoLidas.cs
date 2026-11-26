@@ -10,11 +10,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva e a
-/// manifestação de interesse, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
+/// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva, a
+/// manifestação de interesse e a prova presencial, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
 /// então aqui só se converte; o que falta fica ausente ou no valor de partida do tipo, e quem o confere é o domínio. Não decide regra.
 /// </summary>
 internal static class DeclaracoesDoDocumentoLidas
@@ -29,6 +30,7 @@ internal static class DeclaracoesDoDocumentoLidas
         {
             CadastroDeReserva = [.. Itens(documento, "cadastroDeReserva").Select(static item => CadastroDeReserva(item.Item))],
             ManifestacaoDeInteresse = Texto(documento, "manifestacaoDeInteresse"),
+            ProvaPresencial = ProvaPresencial(Objeto(documento, "provaPresencial")),
         };
     }
 
@@ -37,6 +39,13 @@ internal static class DeclaracoesDoDocumentoLidas
         Valor<int>(chamada, "numeroDaChamada"),
         Valor<int>(chamada, "pessoasDaReservaPorVaga"),
         Texto(chamada, "participacaoDaReserva"));
+
+    // O nome do município é só de leitura e fica de fora; o código e a UF seguem como foram escritos, e o domínio os confere.
+    private static ProvaPresencialNoDocumento? ProvaPresencial(JsonObject? bloco) => bloco is null
+        ? null
+        : new(
+            Valor<bool>(bloco, "temProvaPresencial") ?? false,
+            [.. Itens(bloco, "municipios").Select(static item => new MunicipioDeProvaInformado(Texto(item.Item, "codigoIbge"), Texto(item.Item, "uf")))]);
 
     private static IdentificacaoNoDocumento Identificacao(JsonObject? bloco) => new(
         Texto(bloco, "nome"),
