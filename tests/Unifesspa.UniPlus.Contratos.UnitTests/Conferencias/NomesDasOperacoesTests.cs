@@ -52,7 +52,7 @@ public sealed class NomesDasOperacoesTests
     [Fact(DisplayName = "A regra reprova a operação sem nome e informa o verbo e o caminho")]
     public void Regra_ReprovaOperacaoSemNome()
     {
-        OperacaoPublicada[] operacoes = [new("UniPlus", "selecao", "GET", "/api/selecao/coisas", null), new("UniPlus", "selecao", "POST", "/api/selecao/coisas", "CriarCoisa")];
+        OperacaoPublicada[] operacoes = [new("UniPlus", "selecao", "GET", "/api/selecao/coisas", null, []), new("UniPlus", "selecao", "POST", "/api/selecao/coisas", "CriarCoisa", [])];
 
         RegraDosNomesDasOperacoes.SemNome(operacoes).Should().Equal("GET /api/selecao/coisas (selecao)");
     }
@@ -62,8 +62,8 @@ public sealed class NomesDasOperacoesTests
     {
         OperacaoPublicada[] operacoes =
         [
-            new("UniPlus", "selecao", "GET", "/api/selecao/coisas", "ListarCoisas"),
-            new("UniPlus", "configuracao", "GET", "/api/configuracao/coisas", "ListarCoisas"),
+            new("UniPlus", "selecao", "GET", "/api/selecao/coisas", "ListarCoisas", []),
+            new("UniPlus", "configuracao", "GET", "/api/configuracao/coisas", "ListarCoisas", []),
         ];
 
         RegraDosNomesDasOperacoes.Repetidos(operacoes).Should().ContainSingle()
@@ -75,8 +75,8 @@ public sealed class NomesDasOperacoesTests
     {
         OperacaoPublicada[] operacoes =
         [
-            new("UniPlus", "selecao", "GET", "/api/profile/me", "ConsultarUsuarioAutenticado"),
-            new("UniPlus", "ingresso", "GET", "/api/profile/me", "ConsultarUsuarioAutenticado"),
+            new("UniPlus", "selecao", "GET", "/api/profile/me", "ConsultarUsuarioAutenticado", []),
+            new("UniPlus", "ingresso", "GET", "/api/profile/me", "ConsultarUsuarioAutenticado", []),
         ];
 
         RegraDosNomesDasOperacoes.Repetidos(operacoes).Should().BeEmpty();
@@ -87,8 +87,8 @@ public sealed class NomesDasOperacoesTests
     {
         OperacaoPublicada[] operacoes =
         [
-            new("UniPlus", "selecao", "GET", "/api/selecao/coisas", "ListarCoisas"),
-            new("Portal", "portal", "GET", "/api/portal/coisas", "ListarCoisas"),
+            new("UniPlus", "selecao", "GET", "/api/selecao/coisas", "ListarCoisas", []),
+            new("Portal", "portal", "GET", "/api/portal/coisas", "ListarCoisas", []),
         ];
 
         RegraDosNomesDasOperacoes.Repetidos(operacoes).Should().BeEmpty();
