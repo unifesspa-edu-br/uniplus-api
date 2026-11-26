@@ -1,14 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -70,15 +65,8 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             .HasComment("Tipo da regra no catálogo.")
             .IsRequired();
 
-        builder.Property(r => r.DeclaracaoDaRegra)
-            .HasConversion(JsonElementConverter, JsonElementComparer)
-            .HasColumnType("jsonb")
-            .IsRequired();
-
-        builder.Property(r => r.Invariantes)
-            .HasConversion(JsonElementConverter, JsonElementComparer)
-            .HasColumnType("jsonb")
-            .IsRequired();
+        builder.MapearValorJson(r => r.DeclaracaoDaRegra, nameof(RegraCatalogo));
+        builder.MapearValorJson(r => r.Invariantes, nameof(RegraCatalogo));
 
         builder.Property(r => r.BaseLegal).HasMaxLength(BaseLegalMaxLength).IsRequired();
 
@@ -119,38 +107,11 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
             item.Codigo,
             item.Versao,
             item.Tipo,
-            DeclaracaoDaRegra = Parse(item.DeclaracaoDaRegraJson),
-            Invariantes = Parse(item.InvariantesJson),
+            DeclaracaoDaRegra = ColunaDeValorJson.Desanexado(item.DeclaracaoDaRegraJson),
+            Invariantes = ColunaDeValorJson.Desanexado(item.InvariantesJson),
             item.BaseLegal,
             Hash = item.ComputarHash(),
             CreatedAt = seedCriadoEm,
         }));
-    }
-
-    /// <summary>
-    /// Serializa o payload jsonb (<c>declaracao_da_regra</c>/<c>invariantes</c>) pelo
-    /// texto bruto do <see cref="JsonElement"/> e o reidrata desanexado do
-    /// <see cref="JsonDocument"/> de origem (<see cref="JsonElement.Clone"/>).
-    /// </summary>
-    private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
-        new(element => element.GetRawText(), json => Ler(json));
-
-    /// <summary>
-    /// ValueComparer por texto bruto — suficiente para o change-tracker de uma
-    /// entidade append-only (nunca mutada após o seed).
-    /// </summary>
-    private static readonly ValueComparer<JsonElement> JsonElementComparer =
-        new(
-            (a, b) => a.GetRawText() == b.GetRawText(),
-            v => v.GetRawText().GetHashCode(StringComparison.Ordinal),
-            v => Parse(v.GetRawText()));
-
-    private static JsonElement Ler(string json) =>
-        ObjetoDeValorGravado.DesserializarDocumento(() => Parse(json), nameof(RegraCatalogo));
-
-    private static JsonElement Parse(string json)
-    {
-        using JsonDocument document = JsonDocument.Parse(json);
-        return document.RootElement.Clone();
     }
 }

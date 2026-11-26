@@ -1,17 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Text.Json;
-
 using Domain.Entities;
 using Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -53,32 +48,8 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
             .HasMaxLength(OperadorCodigoMaxLength)
             .IsRequired();
 
-        // Mesmo padrão jsonb de RegraCatalogoConfiguration (DeclaracaoDaRegra/Invariantes) —
-        // serializa pelo texto bruto do JsonElement, reidrata desanexado do JsonDocument
-        // de origem.
-        builder.Property(c => c.Valor)
-            .HasConversion(JsonElementConverter, JsonElementComparer)
-            .HasColumnType("jsonb")
-            .IsRequired();
+        builder.MapearValorJson(c => c.Valor, nameof(CondicaoGatilho.Valor));
     }
 
     private const int OperadorCodigoMaxLength = 20;
-
-    private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
-        new(element => element.GetRawText(), json => Ler(json));
-
-    private static readonly ValueComparer<JsonElement> JsonElementComparer =
-        new(
-            (a, b) => a.GetRawText() == b.GetRawText(),
-            v => v.GetRawText().GetHashCode(StringComparison.Ordinal),
-            v => Parse(v.GetRawText()));
-
-    private static JsonElement Ler(string json) =>
-        ObjetoDeValorGravado.DesserializarDocumento(() => Parse(json), nameof(CondicaoGatilho.Valor));
-
-    private static JsonElement Parse(string json)
-    {
-        using JsonDocument document = JsonDocument.Parse(json);
-        return document.RootElement.Clone();
-    }
 }
