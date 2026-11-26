@@ -116,10 +116,7 @@ public sealed class AtosNormativosController : ControllerBase
     public async Task<IActionResult> ListarDaEntidade(
         string entidadeTipo,
         Guid entidadeId,
-        [FromCursor(
-            ResourceTagEntidade,
-            RequireSortKey = true,
-            ScopeRouteValues = [RouteEntidadeTipo, RouteEntidadeId])] PageRequest page,
+        [FromCursor(ResourceTagEntidade, RouteEntidadeTipo, RouteEntidadeId, RequireSortKey = true)] PageRequest page,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
