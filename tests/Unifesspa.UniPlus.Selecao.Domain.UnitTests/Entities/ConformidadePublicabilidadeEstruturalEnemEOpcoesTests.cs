@@ -213,7 +213,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         SoEstesItensVermelhos(processo, "classificacao_resolucao_peso_area_enem_ausente");
         Checklist(processo).Select(static i => i.Codigo).Should().NotContain(
             "desempate_area_enem_sem_quadro", "sairia verde com a descrição de que há quadro, justamente quando ele falta");
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
             "a conferência diz o mesmo que o checklist: a falta do quadro é só pendência da resolução");
 
         // A deduplicação é da conformidade: a gravação do desempate continua recusando.
@@ -259,7 +259,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
         processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().ContainSingle().Which.Codigo.Should().Be("2025");
     }
 

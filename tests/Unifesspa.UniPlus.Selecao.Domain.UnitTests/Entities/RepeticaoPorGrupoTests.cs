@@ -127,7 +127,7 @@ public sealed class RepeticaoPorGrupoTests
 
         processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [], []).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("RegraDeComprovacao.GrupoParaRepeticaoNaoDeclarado");
     }
 
     [Fact(DisplayName = "A regra repetida cita os campos do grupo; a regra de fora, não")]

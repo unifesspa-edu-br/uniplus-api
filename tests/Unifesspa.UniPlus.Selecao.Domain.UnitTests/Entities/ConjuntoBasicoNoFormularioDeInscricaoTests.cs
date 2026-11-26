@@ -36,7 +36,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
                 PapelDoFormularioDeTeste.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]))
             .IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(semODado is null ? null : FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
@@ -59,7 +59,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
                 PapelDoFormularioDeTeste.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
     }
 
     [Theory(DisplayName = "O formulário de inscrição nasce com os dados básicos, e uma seção já pode citá-los")]

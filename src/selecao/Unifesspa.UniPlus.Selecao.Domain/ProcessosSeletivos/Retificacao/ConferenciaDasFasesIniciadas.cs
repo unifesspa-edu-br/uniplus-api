@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -30,7 +30,7 @@ public static class ConferenciaDasFasesIniciadas
 
         return
         [
-            .. RecusasDaTroca(iniciadas, [.. OrdemCanonicaDaConfiguracao.Fases(fases)]),
+            .. RecusasDaTroca(iniciadas, [.. OrdemDaConfiguracao.Fases(fases)]),
             .. RecusasDaRemocaoDaFase(iniciadas, fases),
             .. RecusasDaRemocaoDaEtapa(iniciadas, etapas),
         ];

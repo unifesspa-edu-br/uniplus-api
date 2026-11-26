@@ -8,10 +8,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>As condições da canonicalização, lida pela primeira causa: o que cada regra isolada recusa no processo do teste.</summary>
-internal static class CondicoesDaCanonicalizacaoDeTeste
+internal static class CondicoesParaRegistrarConfiguracaoDeTeste
 {
     public static DomainError? PrimeiraCausa(ProcessoSeletivo processo, CadastrosDaConfiguracao? cadastros = null) =>
-        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), cadastros ?? CadastrosDeTeste.Padrao) is [var primeira, ..]
+        CondicoesParaRegistrarConfiguracao.Causas(processo.Declaracao(), cadastros ?? CadastrosDeTeste.Padrao) is [var primeira, ..]
             ? primeira.Error
             : null;
 }

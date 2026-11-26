@@ -50,7 +50,7 @@ public sealed class ImpedimentoNoFormularioTests
                 [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)])
             .IsSuccess.Should().BeTrue();
 
-        (CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)?.Code)
+        (CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)?.Code)
             .Should().Be(obrigatorio ? null : ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
     }
 

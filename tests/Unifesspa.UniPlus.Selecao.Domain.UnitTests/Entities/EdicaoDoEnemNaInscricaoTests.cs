@@ -74,7 +74,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(comOCampo ? null : FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
         ItemOk(processo, ItemDoCampo).Should().Be(comOCampo);
@@ -86,7 +86,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens([CampoDaEdicao(obrigatoriedade: Obrigatoriedade.Quando(SeCasado()))]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição com exibição condicional não pede a edição a todo candidato e é recusado")]
@@ -97,7 +97,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             [CampoDaEdicao(exibicao: ExibicaoDeTeste.Quando("ESTADO_CIVIL", Operador.Igual, "CASADO"))])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição numa seção que se esconde não pede a edição a todo candidato e é recusado")]
@@ -115,7 +115,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "Com o resultado importado, a classificação baseada em ENEM não exige o campo da edição nem as edições admitidas")]
@@ -194,7 +194,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(comOCampo ? FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem : null);
         ItemOk(processo, "formulario_edicao_enem_sem_classificacao_enem").Should().Be(!comOCampo);
@@ -207,7 +207,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem()).IsSuccess.Should().BeTrue();
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Select(static causa => causa.Error.Code)
+        CondicoesParaRegistrarConfiguracao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Select(static causa => causa.Error.Code)
             .Should().Equal(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
     }
 
@@ -227,7 +227,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
         vermelhos.IndexOf("formulario_edicao_enem_sem_classificacao_enem")
             .Should().BeGreaterThanOrEqualTo(0).And.BeLessThan(vermelhos.IndexOf("termo_exigido_sem_forma_de_aceite"));

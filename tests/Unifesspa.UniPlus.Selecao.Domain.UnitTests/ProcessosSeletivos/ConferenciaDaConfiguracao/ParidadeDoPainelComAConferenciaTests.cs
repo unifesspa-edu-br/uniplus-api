@@ -113,7 +113,7 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         ["TiposDeAto"] = ["cronograma_resultado_declarado_com_papel", "cronograma_tipo_que_congela_nao_eh_resultado", "cronograma_tipo_de_ato_unico_declarado_uma_vez"],
         ["Cascata"] = ["cascata_pendente", "cascata_modalidade_fora_do_regime_federal"],
         ["ConsequenciasDoDescumprimento"] = ["exigencia_acrescimo_nao_oferecido"],
-        ["CondicoesDaCanonicalizacao"] = ["exigencia_condicional_vazia_determina_resultado"],
+        ["CondicoesParaRegistrarConfiguracao"] = ["exigencia_condicional_vazia_determina_resultado"],
         ["MotivosDeDecisao"] = ["motivos_escolhidos_ativos_no_cadastro", "motivos_escolhidos_de_tipo_declarado_pelo_lugar"],
         ["ProvaPresencial"] = ["prova_presencial"],
     };

@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -16,11 +15,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -205,8 +205,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public ConfiguracaoDeclarada Declaracao(IReadOnlyList<MotivoDeDecisaoDeclarado> motivos) => new(
         new IdentidadeDoProcessoDeclarada(Nome, OrigemCandidatos, IdentificadorLegivel, TipoProcesso, UnidadeAdministradora),
-        new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemCanonicaDaConfiguracao.Fases(_cronogramaFases)]),
-        new AvaliacaoDeclarada([.. OrdemCanonicaDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
+        new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemDaConfiguracao.Fases(_cronogramaFases)]),
+        new AvaliacaoDeclarada([.. OrdemDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
         new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaFada, Fada, Cascata, AtendimentoEspecializado),
         new ExigenciasDeclaradas([.. _documentosExigidos], [.. _regrasDeComprovacao]),
         new ColetaDeclarada([.. _campos], [.. _gruposColetados], [.. _formularios], [.. _termosExigidos], [.. _opcoesDeclaradas], [.. _regrasDerivacao], ReferenciaTemporalFatos),

@@ -87,7 +87,7 @@ internal static class LeituraDaDivulgacaoETaxa
 
         // A mesma política do encoder, nunca um comparador próprio: ele coincidiria hoje e divergiria no
         // dia em que o vocabulário crescesse com um token não-ASCII. Não reordena: fora de ordem é malformado.
-        if (!NaOrdemCanonica(camposPublicos))
+        if (!NaOrdemDaConfiguracao(camposPublicos))
         {
             return "'divulgacao.camposPublicos' não está na ordem canônica.";
         }
@@ -200,7 +200,7 @@ internal static class LeituraDaDivulgacaoETaxa
         return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoTaxaInscricao>(configuracao.Errors, "taxaInscricao") : configuracao.Value;
     }
 
-    private static bool NaOrdemCanonica(IReadOnlyList<string> tokens) =>
+    private static bool NaOrdemDaConfiguracao(IReadOnlyList<string> tokens) =>
         EscritaCanonica
             .OrdenarPorConteudo(tokens.Select(static t => JsonValue.Create(t)!))
             .Select(static n => n!.GetValue<string>())
@@ -213,7 +213,7 @@ internal static class LeituraDaDivulgacaoETaxa
             return "'taxaInscricao.fundamentos' tem token repetido.";
         }
 
-        return NaOrdemCanonica(fundamentos)
+        return NaOrdemDaConfiguracao(fundamentos)
             ? null
             : "'taxaInscricao.fundamentos' não está na ordem canônica.";
     }

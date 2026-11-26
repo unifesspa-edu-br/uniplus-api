@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfigura
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Os itens do painel que as condições da canonicalização conferem, na mesma ordem dela.</summary>
-internal static class ItensDasCondicoesDaCanonicalizacao
+internal static class ItensDasCondicoesParaRegistrarConfiguracao
 {
     internal static IReadOnlyList<ItemConformidade> Avaliar(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>
     [

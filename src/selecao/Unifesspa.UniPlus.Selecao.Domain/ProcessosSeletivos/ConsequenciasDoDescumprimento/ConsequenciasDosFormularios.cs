@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -43,7 +43,7 @@ internal static class ConsequenciasDosFormularios
 
     private static IEnumerable<(FormularioProcesso Formulario, string Caminho)> Declarados(ConfiguracaoDeclarada configuracao)
     {
-        FormularioProcesso[] formularios = [.. OrdemCanonicaDaConfiguracao.Formularios(configuracao.Coleta.Formularios)];
+        FormularioProcesso[] formularios = [.. OrdemDaConfiguracao.Formularios(configuracao.Coleta.Formularios)];
         return Enumerable.Range(0, formularios.Length).OrderBy(indice => configuracao.Origem.PosicaoDeOrigem(ListaDosFormularios, indice))
             .Select(indice => (Formulario: formularios[indice], Caminho: $"{ListaDosFormularios}[{indice}].{LeituraDaConsequenciaDaFaltaDeEnvio.Campo}"))
             .Where(par => par.Formulario.ConsequenciaDaFaltaDeEnvio is not null && !CoerenciaDaConsequenciaDoDescumprimento.Recusada(configuracao, par.Caminho));

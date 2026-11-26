@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
-using Domain.ProcessosSeletivos.OrdemCanonica;
+using Domain.ProcessosSeletivos.Ordenacao;
 
 /// <summary>
 /// O percurso do documento da configuração sobre os formulários do processo: por formulário, os itens e depois os grupos
 /// repetíveis com os seus campos, cada um com o caminho que o documento lhe dá (<c>formularios[f].itens[i]</c>,
 /// <c>formularios[f].grupos[g].subitens[c]</c>). Cada posição é a do item na ordem canônica do documento
-/// (<see cref="OrdemCanonicaDaConfiguracao"/>): o formulário pela ordem do código e os itens, os grupos e os campos pela ordem
+/// (<see cref="OrdemDaConfiguracao"/>): o formulário pela ordem do código e os itens, os grupos e os campos pela ordem
 /// dentro dele, de modo que toda conferência que aponta um item usa o mesmo caminho.
 /// </summary>
 internal static class ItensDoFormularioNoDocumento
@@ -16,7 +16,7 @@ internal static class ItensDoFormularioNoDocumento
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        return [.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select((formulario, posicao) => DoFormulario(processo, formulario, posicao))];
+        return [.. OrdemDaConfiguracao.Formularios(processo.Formularios).Select((formulario, posicao) => DoFormulario(processo, formulario, posicao))];
     }
 
     /// <summary>Os campos coletados do processo, itens e campos de grupo, na ordem do documento: por formulário, os itens e depois os grupos.</summary>
@@ -39,8 +39,8 @@ internal static class ItensDoFormularioNoDocumento
     {
         string caminho = $"formularios[{posicaoDoFormulario}]";
         FormularioProcesso[] doFormulario = [formulario];
-        FatoColetado[] itens = [.. OrdemCanonicaDaConfiguracao.Campos(processo.FatosColetados.Where(i => i.FormularioId == formulario.Id), doFormulario)];
-        GrupoColetado[] grupos = [.. OrdemCanonicaDaConfiguracao.Grupos(processo.GruposColetados.Where(g => g.FormularioId == formulario.Id), doFormulario)];
+        FatoColetado[] itens = [.. OrdemDaConfiguracao.Campos(processo.FatosColetados.Where(i => i.FormularioId == formulario.Id), doFormulario)];
+        GrupoColetado[] grupos = [.. OrdemDaConfiguracao.Grupos(processo.GruposColetados.Where(g => g.FormularioId == formulario.Id), doFormulario)];
 
         return new(
             [.. itens.Select((item, posicao) => new ItemNoDocumento(item, $"{caminho}.itens[{posicao}]"))],
@@ -50,7 +50,7 @@ internal static class ItensDoFormularioNoDocumento
     private static GrupoNoDocumento DoGrupo(GrupoColetado grupo, string caminho) => new(
         grupo,
         caminho,
-        [.. OrdemCanonicaDaConfiguracao.CamposDoGrupo(grupo.Subitens).Select((campo, posicao) => new ItemNoDocumento(campo, $"{caminho}.subitens[{posicao}]"))]);
+        [.. OrdemDaConfiguracao.CamposDoGrupo(grupo.Subitens).Select((campo, posicao) => new ItemNoDocumento(campo, $"{caminho}.subitens[{posicao}]"))]);
 }
 
 /// <summary>Os itens e os grupos de um formulário, na ordem do documento: os itens primeiro.</summary>

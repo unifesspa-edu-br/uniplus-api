@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -44,9 +44,9 @@ public sealed class ConferenciaDoDocumentoLidoComOrigemDistintaTests
         return OrigemNoDocumento.Reunir(
         [
             OrigemNoDocumento.DaLista(
-                "fases", [(comParecerSemResultado, 0), (comAtoRepetido, PosicaoDaFaseDeProdutosRepetidosNoDocumento)], OrdemCanonicaDaConfiguracao.Fases, [daLeitura]),
+                "fases", [(comParecerSemResultado, 0), (comAtoRepetido, PosicaoDaFaseDeProdutosRepetidosNoDocumento)], OrdemDaConfiguracao.Fases, [daLeitura]),
             OrigemNoDocumento.DaLista(
-                "etapas", [(conforme, 0), (semDefinitivo, PosicaoDaEtapaSemDefinitivoNoDocumento)], OrdemCanonicaDaConfiguracao.Etapas, []),
+                "etapas", [(conforme, 0), (semDefinitivo, PosicaoDaEtapaSemDefinitivoNoDocumento)], OrdemDaConfiguracao.Etapas, []),
         ]);
     }
 

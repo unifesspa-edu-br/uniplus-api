@@ -158,7 +158,7 @@ public sealed class FormulariosDoProcessoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormularioObrigatorio);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormularioObrigatorio);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
     }
 
@@ -167,7 +167,7 @@ public sealed class FormulariosDoProcessoTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
     }
 
@@ -190,7 +190,7 @@ public sealed class FormulariosDoProcessoTests
                 [Item("TEM_RENDA", FormularioDeTeste.PrimeiraOrdemDeInscricao, pagina: null), .. FormularioDeTeste.DadosBasicos()])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_item_fora_de_secao" && !i.Ok);
     }
 

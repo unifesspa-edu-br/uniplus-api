@@ -15,7 +15,7 @@ internal static class NomeDoAssunto
     internal const string TiposDeAto = "TiposDeAto";
     internal const string Cascata = "Cascata";
     internal const string ConsequenciasDoDescumprimento = "ConsequenciasDoDescumprimento";
-    internal const string CondicoesDaCanonicalizacao = "CondicoesDaCanonicalizacao";
+    internal const string CondicoesParaRegistrarConfiguracao = "CondicoesParaRegistrarConfiguracao";
     internal const string MotivosDeDecisao = "MotivosDeDecisao";
     internal const string ProvaPresencial = "ProvaPresencial";
 }

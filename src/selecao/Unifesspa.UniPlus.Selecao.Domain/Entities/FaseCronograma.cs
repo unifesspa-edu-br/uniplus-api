@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 
 using ValueObjects;
 
@@ -117,7 +117,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     private readonly List<BancaRequerida> _bancasRequeridas = [];
 
     /// <summary>As bancas que a fase requer (0..*), em ordem canônica: a posição de cada uma é a que as recusas apontam em <c>bancasRequeridas[p]</c>.</summary>
-    public IReadOnlyCollection<BancaRequerida> BancasRequeridas => [.. OrdemCanonicaDaConfiguracao.BancasDaFase(_bancasRequeridas)];
+    public IReadOnlyCollection<BancaRequerida> BancasRequeridas => [.. OrdemDaConfiguracao.BancasDaFase(_bancasRequeridas)];
 
     private FaseCronograma() { }
 
@@ -219,7 +219,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
         Id,
         OrigemCanonica(),
         DecisoesDeCronograma(),
-        new PublicacoesDaFase([.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())], RegraDeHomologacao),
+        new PublicacoesDaFase([.. OrdemDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())], RegraDeHomologacao),
         [.. BancasRequeridas],
         colecoesComParteRecusada);
 

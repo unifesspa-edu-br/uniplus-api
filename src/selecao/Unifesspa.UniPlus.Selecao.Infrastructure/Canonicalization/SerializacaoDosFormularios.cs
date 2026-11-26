@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class SerializacaoDosFormularios
 {
     internal static JsonArray SerializarFormularios(ProcessoSeletivo processo) =>
-        new([.. OrdemCanonicaDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)SerializarFormulario(processo, formulario))]);
+        new([.. OrdemDaConfiguracao.Formularios(processo.Formularios).Select(formulario => (JsonNode)SerializarFormulario(processo, formulario))]);
 
     private static JsonObject SerializarFormulario(ProcessoSeletivo processo, FormularioProcesso formulario)
     {

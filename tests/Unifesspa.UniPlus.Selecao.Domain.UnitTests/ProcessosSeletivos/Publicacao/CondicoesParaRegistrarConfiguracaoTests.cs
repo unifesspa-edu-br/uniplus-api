@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class CondicoesDaCanonicalizacaoTests
+public sealed class CondicoesParaRegistrarConfiguracaoTests
 {
     private const string TermoSemFormaDeAceite = "ProcessoSeletivo.TermoExigidoSemFormaDeAceite";
     private const string FatoSemValoresOfertados = "ProcessoSeletivo.FatoColetadoSemValoresOfertados";
@@ -23,7 +23,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().BeEmpty();
+        CondicoesParaRegistrarConfiguracao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "As conferências independentes acumulam as causas, na ordem em que são aplicadas, cada uma no bloco do documento")]
@@ -33,7 +33,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
         processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoFada()]).IsSuccess.Should().BeTrue();
         processo.DefinirTermos([TermoSemForma()]).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<FieldError> causas = CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo));
+        IReadOnlyList<FieldError> causas = CondicoesParaRegistrarConfiguracao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo));
 
         causas.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
             ("formularios", FatoSemValoresOfertados),
@@ -46,7 +46,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoFada()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+        CondicoesParaRegistrarConfiguracao.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Select(static causa => causa.Error.Code).Should().Equal(FatoSemValoresOfertados);
     }
 

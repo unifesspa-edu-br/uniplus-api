@@ -83,8 +83,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1, d2]).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
@@ -112,8 +112,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1]).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 

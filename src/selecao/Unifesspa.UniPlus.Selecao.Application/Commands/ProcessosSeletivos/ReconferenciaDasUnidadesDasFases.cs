@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.ProcessosSeletivos.OrdemCanonica;
+using Domain.ProcessosSeletivos.Ordenacao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -45,7 +45,7 @@ internal static class ReconferenciaDasUnidadesDasFases
         CancellationToken cancellationToken)
     {
         List<FieldError> erros = [];
-        FaseCronograma[] fases = [.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)];
+        FaseCronograma[] fases = [.. OrdemDaConfiguracao.Fases(processo.CronogramaFases)];
         for (int indice = 0; indice < fases.Length; indice++)
         {
             if (fases[indice].UnidadeResponsavel?.OrigemId is { } unidadeId

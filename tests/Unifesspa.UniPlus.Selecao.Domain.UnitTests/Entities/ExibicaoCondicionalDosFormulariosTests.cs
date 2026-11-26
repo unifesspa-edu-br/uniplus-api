@@ -97,11 +97,11 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase, null, PaginasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("RENDA_FORMAL")]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "Regra do formulário que cita a faixa etária exige a data de referência, como o gatilho")]
@@ -111,7 +111,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
     }
 
     [Fact(DisplayName = "Data de nascimento opcional que alimenta a faixa etária citada recusa a publicação; obrigatória, aceita")]
@@ -124,11 +124,11 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Nunca), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
 
         processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
     [Fact(DisplayName = "Campo opcional que alimenta derivação recusa a publicação; obrigatório sempre que exibido, aceita")]
@@ -138,10 +138,10 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Opcional("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
 
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
     [Fact(DisplayName = "Campo opcional citado por DIFERENTE em regra de outro campo recusa a publicação")]
@@ -153,7 +153,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
             Opcional("COMPROVANTE", 1, ExibicaoDeTeste.Quando("NACIONALIDADE_BR", Operador.Diferente, true)),
         ]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Message.Should().Contain("'NACIONALIDADE_BR'");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Message.Should().Contain("'NACIONALIDADE_BR'");
     }
 
     [Fact(DisplayName = "Bloco de sistema não tem exibição condicional")]

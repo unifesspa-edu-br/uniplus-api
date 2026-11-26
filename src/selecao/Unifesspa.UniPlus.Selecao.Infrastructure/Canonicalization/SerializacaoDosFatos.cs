@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -100,7 +100,7 @@ internal static class SerializacaoDosFatos
         IReadOnlyCollection<FormularioProcesso> formularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados) =>
         SerializarEmOrdem(
-            OrdemCanonicaDaConfiguracao.Campos(fatos, formularios),
+            OrdemDaConfiguracao.Campos(fatos, formularios),
             SerializacaoDosFormularios.CodigosPorIdentificador(formularios),
             valoresSelecionaveisCongelados);
 
@@ -224,7 +224,7 @@ internal static class SerializacaoDosFatos
         IReadOnlyList<DefinicaoAgregado>? agregados)
     {
         IReadOnlyDictionary<Guid, string> codigosDosFormularios = SerializacaoDosFormularios.CodigosPorIdentificador(formularios);
-        return [.. OrdemCanonicaDaConfiguracao.Grupos(grupos, formularios)
+        return [.. OrdemDaConfiguracao.Grupos(grupos, formularios)
             .Select(g => SerializarGrupo(g, codigosDosFormularios, valoresSelecionaveisCongelados, agregados))];
     }
 
@@ -260,7 +260,7 @@ internal static class SerializacaoDosFatos
     {
         objeto["exibicao"] = g.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null;
         objeto["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(g.Obrigatoriedade);
-        objeto["subitens"] = SerializarEmOrdem(OrdemCanonicaDaConfiguracao.CamposDoGrupo(g.Subitens), codigosDosFormularios, valoresSelecionaveisCongelados);
+        objeto["subitens"] = SerializarEmOrdem(OrdemDaConfiguracao.CamposDoGrupo(g.Subitens), codigosDosFormularios, valoresSelecionaveisCongelados);
         objeto["agregados"] = SerializarAgregadosDoGrupo(g, agregados);
     }
 

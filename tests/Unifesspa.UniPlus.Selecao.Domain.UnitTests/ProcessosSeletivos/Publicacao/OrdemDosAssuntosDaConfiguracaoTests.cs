@@ -21,7 +21,7 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
     private static readonly string[] SequenciaEsperada =
     [
         "Identificacao", "Conformidade", "Declaracoes", "ReferenciasDeRegra", "Conjunto", "Completude", "Recursos",
-        "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "ConsequenciasDoDescumprimento", "CondicoesDaCanonicalizacao", "MotivosDeDecisao",
+        "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "ConsequenciasDoDescumprimento", "CondicoesParaRegistrarConfiguracao", "MotivosDeDecisao",
         "ProvaPresencial",
     ];
 
