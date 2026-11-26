@@ -24,7 +24,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         Cenario cenario = new();
         cenario.ConfigurarCondicao(codigo);
         cenario.ConfigurarTipoDeficiencia();
-        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.TipoDeficienciaId]);
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [], [cenario.TipoDeficienciaId]);
         resultado.IsSuccess.Should().Be(permitido);
         await ConferirPersistencia(cenario, resultado, permitido);
     }
@@ -47,7 +47,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     public async Task Handle_CondicaoIdDuplicado_RecusaSemConsultarLeitores()
     {
         Cenario cenario = new();
-        Result resultado = await cenario.Executar([cenario.CondicaoId, cenario.CondicaoId], []);
+        Result resultado = await cenario.Executar([cenario.CondicaoId, cenario.CondicaoId], [], []);
         resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
         await cenario.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
     }
@@ -56,19 +56,83 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     public async Task Handle_CondicaoInexistente_Recusa()
     {
         Cenario cenario = new();
-        Result resultado = await cenario.Executar([cenario.CondicaoId], []);
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [], []);
         resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ProcessoInexistente_RecusaSemConsultarCadastrosNemGravar()
+    {
+        Cenario cenario = new();
+        Result resultado = await cenario.ExecutarNoProcessoInexistente();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await cenario.ConferirSemLeituraNemGravacao();
+    }
+
+    [Fact]
+    public async Task Handle_ProcessoPublicado_RecusaSemConsultarCadastrosNemGravar()
+    {
+        Cenario cenario = new();
+        Result resultado = await cenario.ExecutarNoProcessoPublicado();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await cenario.ConferirSemLeituraNemGravacao();
+    }
+
+    [Fact]
+    public async Task Handle_RecursoInexistente_RecusaSemConsultarTiposNemGravar()
+    {
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao("LACTANTE");
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.RecursoId], [cenario.TipoDeficienciaId]);
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.RecursoNaoEncontrado");
+        await cenario.TipoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_TipoDeficienciaInexistente_Recusa()
+    {
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao("PCD");
+        cenario.ConfigurarRecurso();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.RecursoId], [cenario.TipoDeficienciaId]);
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaNaoEncontrado");
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_PrimeiraCondicaoAusente_DevolveUmSoErroEPara()
+    {
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao("LACTANTE");
+        Guid ausente = Guid.CreateVersion7();
+        Result resultado = await cenario.Executar([ausente, cenario.CondicaoId], [cenario.RecursoId], []);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
+        await cenario.RecursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+    }
+
+    [Fact]
+    public async Task Handle_TodosOsCadastrosEncontrados_CongelaPorValorEGrava()
+    {
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao("LACTANTE");
+        cenario.ConfigurarRecurso();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.RecursoId], []);
+        resultado.IsSuccess.Should().BeTrue();
+        cenario.Processo.AtendimentoEspecializado!.Recursos.Should().ContainSingle().Which.RecursoOrigemId.Should().Be(cenario.RecursoId);
+        await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     private sealed class Cenario
     {
         private readonly IProcessoSeletivoRepository _repository = Substitute.For<IProcessoSeletivoRepository>();
-        private readonly IRecursoAcessibilidadeReader _recursoReader = Substitute.For<IRecursoAcessibilidadeReader>();
-        private readonly ITipoDeficienciaReader _tipoReader = Substitute.For<ITipoDeficienciaReader>();
+        public IRecursoAcessibilidadeReader RecursoReader { get; } = Substitute.For<IRecursoAcessibilidadeReader>();
+        public ITipoDeficienciaReader TipoReader { get; } = Substitute.For<ITipoDeficienciaReader>();
         public ICondicaoAtendimentoReader CondicaoReader { get; } = Substitute.For<ICondicaoAtendimentoReader>();
         public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
         public Guid CondicaoId { get; } = Guid.CreateVersion7();
+        public Guid RecursoId { get; } = Guid.CreateVersion7();
         public Guid TipoDeficienciaId { get; } = Guid.CreateVersion7();
         public ProcessoSeletivo Processo { get; } = ProcessoSeletivo.Criar(
             "PS 2026 — SiSU", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -78,10 +142,29 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         public Cenario() => _repository.ObterParaMutacaoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns(Processo);
         public void ConfigurarCondicao(string codigo) => CondicaoReader.ObterPorIdAsync(CondicaoId, Arg.Any<CancellationToken>())
             .Returns(new CondicaoAtendimentoView(CondicaoId, codigo, "Condição"));
-        public void ConfigurarTipoDeficiencia() => _tipoReader.ObterPorIdAsync(TipoDeficienciaId, Arg.Any<CancellationToken>())
+        public void ConfigurarTipoDeficiencia() => TipoReader.ObterPorIdAsync(TipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(TipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
-        public Task<Result> Executar(Guid[] condicoes, Guid[] tipos) => DefinirAtendimentoEspecializadoCommandHandler.Handle(
-            new DefinirAtendimentoEspecializadoCommand(Processo.Id, condicoes, [], tipos), _repository,
-            CondicaoReader, _recursoReader, _tipoReader, UnitOfWork, CancellationToken.None);
+        public void ConfigurarRecurso() => RecursoReader.ObterPorIdAsync(RecursoId, Arg.Any<CancellationToken>())
+            .Returns(new RecursoAcessibilidadeView(RecursoId, "LEDOR", "Ledor"));
+        public Task<Result> Executar(Guid[] condicoes, Guid[] recursos, Guid[] tipos) => ExecutarNo(Processo.Id, condicoes, recursos, tipos);
+        public Task<Result> ExecutarNoProcessoInexistente() => ExecutarNo(Guid.CreateVersion7(), [CondicaoId], [RecursoId], [TipoDeficienciaId]);
+        public Task<Result> ExecutarNoProcessoPublicado()
+        {
+            ProcessoSeletivo publicado = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+            _repository.ObterParaMutacaoAsync(publicado.Id, Arg.Any<CancellationToken>()).Returns(publicado);
+            return ExecutarNo(publicado.Id, [CondicaoId], [RecursoId], [TipoDeficienciaId]);
+        }
+
+        public async Task ConferirSemLeituraNemGravacao()
+        {
+            await CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+            await RecursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+            await TipoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+            await UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        }
+
+        private Task<Result> ExecutarNo(Guid processoId, Guid[] condicoes, Guid[] recursos, Guid[] tipos) => DefinirAtendimentoEspecializadoCommandHandler.Handle(
+            new DefinirAtendimentoEspecializadoCommand(processoId, condicoes, recursos, tipos), _repository,
+            new CadastrosDoAtendimentoEspecializado(CondicaoReader, RecursoReader, TipoReader), UnitOfWork, CancellationToken.None);
     }
 }

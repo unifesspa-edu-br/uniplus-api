@@ -7,7 +7,6 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
@@ -16,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// <see cref="AplicacaoDoModeloDeFormulario"/>): as páginas, os itens e os termos passam pelos resolvedores
 /// da escrita do formulário, e o estado final é conferido pelo agregado, que só então muda o processo
 /// (ADR-0125). O que o catálogo mudou depois da composição do modelo sai da cópia e volta no relatório.
+/// O estado do processo é conferido antes de qualquer leitura externa.
 /// </summary>
 public static class AplicarModeloFormularioCommandHandler
 {
@@ -33,10 +33,11 @@ public static class AplicarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(cadastros);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return processo is null
-            ? Result<AplicacaoDeModeloDto>.Failure(AcessoAoProcesso.NaoEncontrado())
-            : await ConferirEAplicarAsync(command, processo, cadastros, modeloFormularioReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result<AplicacaoDeModeloDto>.Failure(obtido.Error!)
+            : await ConferirEAplicarAsync(command, obtido.Value!, cadastros, modeloFormularioReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<AplicacaoDeModeloDto>> ConferirEAplicarAsync(
@@ -60,15 +61,10 @@ public static class AplicarModeloFormularioCommandHandler
                 .AplicarAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    // O estado do processo é conferido antes de qualquer leitura externa. A cópia substitui o conteúdo do formulário
+    // A cópia substitui o conteúdo do formulário
     // declarado: a fase e a obrigatoriedade não vêm do modelo, então o formulário precisa existir.
     private static Result<FormularioProcesso> FormularioDoPedido(string formularioCodigo, ProcessoSeletivo processo)
     {
-        if (processo.MutacaoBloqueada() is { } recusaDeEstado)
-        {
-            return Result<FormularioProcesso>.Failure(recusaDeEstado);
-        }
-
         Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(formularioCodigo);
         return codigo.IsFailure ? Result<FormularioProcesso>.Failure(codigo.Error!) : FormularioExistente(processo, codigo.Value!);
     }

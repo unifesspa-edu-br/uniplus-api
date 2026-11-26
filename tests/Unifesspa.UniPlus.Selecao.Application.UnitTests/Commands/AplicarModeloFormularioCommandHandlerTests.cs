@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -193,5 +194,27 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             PapelDoFormularioDeTeste.Habilitacao, Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.termos[1]");
+    }
+
+    [Fact(DisplayName = "Processo inexistente é recusado como não encontrado, sem consultar o modelo nem gravar")]
+    public async Task Handle_ProcessoInexistente_RecusaSemConsultarOModelo()
+    {
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAoProcessoInexistenteAsync(Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
+        await _cenario.Modelos.DidNotReceiveWithAnyArgs().ObterAsync(default, default);
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Processo já publicado é recusado pela situação, sem consultar o modelo nem gravar")]
+    public async Task Handle_ProcessoPublicado_RecusaSemConsultarOModelo()
+    {
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAoProcessoPublicadoAsync(Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await _cenario.Modelos.DidNotReceiveWithAnyArgs().ObterAsync(default, default);
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }
