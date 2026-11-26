@@ -29,7 +29,6 @@ public static class ProfileEndpointsExtensions
             .RequireAuthorization();
 
         profileGroup.MapGet("/me", ObterPerfilAsync)
-            .WithName("GetAuthenticatedUserProfile")
             .WithSummary("Retorna o perfil do usuário autenticado")
             .WithDescription("Retorna a identidade do access token (nome, e-mail, CPF, NomeSocial) e os perfis de acesso que a pessoa tem por concessão vigente, cada um com o escopo (unidade ou instituição) e o prazo. O token identifica a pessoa e não concede acesso. Requer autenticação.")
             .Produces<UserProfileResponse>(StatusCodes.Status200OK)
@@ -38,6 +37,7 @@ public static class ProfileEndpointsExtensions
         return endpoints;
     }
 
+    [EndpointName("ConsultarUsuarioAutenticado")]
     private static async Task<IResult> ObterPerfilAsync(
         IUserContext userContext,
         IConcessoesAtivasDoSujeito concessoes,
@@ -52,18 +52,9 @@ public static class ProfileEndpointsExtensions
             .ConfigureAwait(false);
 
         // Sem emissor ou contaId a identidade do token é incompleta: é falha de autenticação, não de acesso.
-        if (perfis.IsFailure)
-        {
-            return Results.Challenge();
-        }
-
-        return Results.Ok(new UserProfileResponse(
-            userContext.UserId,
-            userContext.Name,
-            userContext.Email,
-            userContext.Cpf,
-            userContext.NomeSocial,
-            perfis.Value!,
-            agora));
+        return perfis.IsFailure ? Results.Challenge() : Results.Ok(Montar(userContext, perfis.Value!, agora));
     }
+
+    private static UserProfileResponse Montar(IUserContext usuario, IReadOnlyList<PerfilConcedidoResponse> perfis, DateTimeOffset agora) =>
+        new(usuario.UserId, usuario.Name, usuario.Email, usuario.Cpf, usuario.NomeSocial, perfis, agora);
 }

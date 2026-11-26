@@ -35,6 +35,7 @@ public sealed class AnexosDoPedidoController : ControllerBase
     /// protegido, só o documento declarado na criação, enquanto o pedido o aguarda.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/anexos")]
+    [EndpointName("IniciarEnvioDeAnexoDoPedidoDeConcessao")]
     // TTL alinhado ao da URL de PUT devolvida: um replay depois de ela expirar devolveria uma URL inutilizável.
     [RequiresIdempotencyKey(TtlSeconds = EnvioDoPdf.PrazoEmSegundos)]
     [ProducesResponseType(typeof(AnexoParaEnvioDto), StatusCodes.Status201Created)]
@@ -63,6 +64,7 @@ public sealed class AnexosDoPedidoController : ControllerBase
     /// e publica o pedido ao verificador na mesma transação.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/anexos/{anexoId:guid}/confirmacao")]
+    [EndpointName("ConfirmarAnexoDoPedidoDeConcessao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AnexoDoPedidoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -88,6 +90,7 @@ public sealed class AnexosDoPedidoController : ControllerBase
     /// acesso entra na trilha.
     /// </summary>
     [HttpGet("pedidos-de-concessao/{id:guid}/anexos/{anexoId:guid}")]
+    [EndpointName("LerAnexoDoPedidoDeConcessao")]
     [VendorMediaType(Resource = "anexo-do-pedido", Versions = [1])]
     [ProducesResponseType(typeof(LeituraDoAnexoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

@@ -32,7 +32,7 @@
         ],
         "summary": "Retorna o perfil do usu\u00E1rio autenticado",
         "description": "Retorna a identidade do access token (nome, e-mail, CPF, NomeSocial) e os perfis de acesso que a pessoa tem por concess\u00E3o vigente, cada um com o escopo (unidade ou institui\u00E7\u00E3o) e o prazo. O token identifica a pessoa e n\u00E3o concede acesso. Requer autentica\u00E7\u00E3o.",
-        "operationId": "GetAuthenticatedUserProfile",
+        "operationId": "ConsultarUsuarioAutenticado",
         "responses": {
           "200": {
             "description": "OK",

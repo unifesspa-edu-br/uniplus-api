@@ -59,6 +59,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// usa chave de idempotência nova.
     /// </summary>
     [HttpPost("pedidos-de-concessao")]
+    [EndpointName("CriarPedidoDeConcessao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -89,6 +90,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// por titularidade, quando não a tem. Sem o registro, a leitura é recusada com 503; a página vazia não grava nada.
     /// </summary>
     [HttpGet("pedidos-de-concessao")]
+    [EndpointName("ListarPedidosDeConcessao")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PedidoResumoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -124,6 +126,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// externo sem ela recebe 403.
     /// </summary>
     [HttpGet("perfis-para-pedido")]
+    [EndpointName("ListarPerfisDeAcessoDisponiveisParaPedidoDeConcessao")]
     [VendorMediaType(Resource = "perfil-para-pedido", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PerfilParaPedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -154,6 +157,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// permissão que a deu; a da parte, pela permissão de consultar os pedidos, quando ela a tem, ou por titularidade.
     /// </summary>
     [HttpGet("pedidos-de-concessao/{id:guid}")]
+    [EndpointName("ObterPedidoDeConcessao")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -171,6 +175,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>Trilha do pedido: quem pediu, aceitou, anexou, leu, aprovou, recusou ou cancelou, e a dispensa da segunda aprovação.</summary>
     [HttpGet("pedidos-de-concessao/{id:guid}/trilha")]
+    [EndpointName("ObterTrilhaDoPedidoDeConcessao")]
     [VendorMediaType(Resource = "trilha-do-pedido", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<EventoDaTrilhaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -192,6 +197,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// identidade da sessão. O pedido que aguarda o documento declarado não aceita.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aceite")]
+    [EndpointName("AceitarPedidoDeConcessao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -218,6 +224,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// gestor de acessos e de Representante do controlador não admitem prazo.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aprovacoes")]
+    [EndpointName("AprovarPedidoDeConcessao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -239,6 +246,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>Recusa o pedido na etapa que ele aguarda, com motivo. Encerra o pedido sem concessão.</summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/recusa")]
+    [EndpointName("RecusarPedidoDeConcessao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -261,6 +269,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>Cancela o pedido: só o solicitante, antes da primeira decisão. O pedido sai das filas.</summary>
     [HttpDelete("pedidos-de-concessao/{id:guid}")]
+    [EndpointName("CancelarPedidoDeConcessao")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

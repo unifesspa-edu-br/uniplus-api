@@ -127,7 +127,7 @@ public sealed class AprovacaoDeVersoesController : ControllerBase
 
     /// <summary>Lista as versões pendentes que aguardam a etapa da fila; a permissão é a da etapa.</summary>
     [HttpGet("versoes-de-perfil")]
-    [EndpointName("ListarFilaDeVersoes")]
+    [EndpointName("ListarFilaDeVersoesDoPerfil")]
     [VendorMediaType(Resource = "fila-de-versoes", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<ItemDaFilaDeVersoesDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

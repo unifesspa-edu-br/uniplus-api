@@ -49,6 +49,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
     /// gestão de acessos ou a proteção de dados suspendem, e a suspensão avisa os outros gestores.
     /// </summary>
     [HttpPost("perfis/{id:guid}/suspensao")]
+    [EndpointName("SuspenderPerfilDeAcesso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -68,6 +69,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
     /// proteção de dados. Quem suspendeu não decide, e as duas etapas são de pessoas diferentes.
     /// </summary>
     [HttpPost("perfis/{id:guid}/suspensao/retomada")]
+    [EndpointName("DecidirRetomadaDoPerfil")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RetomadaDaSuspensaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -88,6 +90,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
 
     /// <summary>Desativa um perfil comum, com motivo. Não revoga concessão alguma: só impede pedidos e versões novos.</summary>
     [HttpPost("perfis/{id:guid}/desativacao")]
+    [EndpointName("DesativarPerfilDeAcesso")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -105,6 +108,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
 
     /// <summary>Reativa um perfil desativado, com motivo, por outra pessoa que não quem o desativou.</summary>
     [HttpPost("perfis/{id:guid}/reativacao")]
+    [EndpointName("ReativarPerfilDeAcesso")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -125,6 +129,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
     /// retomadas, desativações e reativações, com o motivo e as pessoas.
     /// </summary>
     [HttpGet("perfis/{id:guid}/contencao")]
+    [EndpointName("ObterTrilhaDaContencaoDoPerfil")]
     [ProducesResponseType(typeof(IReadOnlyList<RegistroDaContencaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
