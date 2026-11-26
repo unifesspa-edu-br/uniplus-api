@@ -14617,6 +14617,51 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.chamada_repetida",
+      "requisitos": [
+        "UNI-REQ-0354"
+      ],
+      "oQueAconteceu": [
+        "A mesma chamada aparece mais de uma vez no cadastro de reserva."
+      ],
+      "comoResolver": [
+        "Declare cada chamada uma única vez, com a quantidade de pessoas da reserva por vaga."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.numero_da_chamada_invalido",
+      "requisitos": [
+        "UNI-REQ-0354"
+      ],
+      "oQueAconteceu": [
+        "O número da chamada do cadastro de reserva não foi informado ou é menor que 1."
+      ],
+      "comoResolver": [
+        "Informe o número da chamada como um inteiro a partir de 1."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.pessoas_da_reserva_por_vaga_invalida",
+      "requisitos": [
+        "UNI-REQ-0355"
+      ],
+      "oQueAconteceu": [
+        "A quantidade de pessoas da reserva por vaga não foi informada ou é negativa."
+      ],
+      "comoResolver": [
+        "Informe a quantidade como um inteiro a partir de 0. Zero é a chamada sem reserva."
+      ],
+      "ondeAparece": [
+        "Definição do cadastro de reserva por chamada do processo seletivo"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado",
       "requisitos": [
         "UNI-REQ-0080"

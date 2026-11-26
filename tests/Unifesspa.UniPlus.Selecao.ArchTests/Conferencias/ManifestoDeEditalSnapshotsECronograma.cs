@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -21,6 +22,11 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // Prova presencial: a declaração do processo e os municípios de prova, com o nome copiado do Geo na publicação.
         [typeof(DeclaracaoDaProvaPresencial)] = (["TemProvaPresencial", "Municipios"], []),
         [typeof(MunicipioDeProva)] = (["CodigoIbge", "Uf", "Nome", "Posicao"], []),
+
+        // Cadastro de reserva por chamada: as chamadas declaradas pelo processo, no bloco cadastroDeReserva.
+        [typeof(CadastroDeReservaPorChamada)] = (["Chamadas"], []),
+        [typeof(CadastroDeReservaDaChamada)] = (["Chamada", "PessoasDaReservaPorVaga"], []),
+        [typeof(NumeroDaChamada)] = (["Valor"], []),
 
         // Motivo de decisão escolhido pelo processo, copiado por valor no bloco motivosDeDecisao.
         [typeof(MotivoDeDecisaoDeclarado)] = (

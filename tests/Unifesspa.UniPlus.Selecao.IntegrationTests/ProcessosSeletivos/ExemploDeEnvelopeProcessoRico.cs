@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -32,7 +33,7 @@ internal static class ExemploDeEnvelopeProcessoRico
     /// atendimento povoado, bônus com teto, <b>as quatro</b> variantes de desempate,
     /// classificação local com regras de eliminação de <b>todas</b> as variantes — duas delas do
     /// <b>mesmo</b> código — e duas ofertas de curso, uma sob a Lei 12.711 (com
-    /// referência demográfica e as nove modalidades federais) e outra institucional.
+    /// referência demográfica e as nove modalidades federais) e outra institucional, e o cadastro de reserva das chamadas 1 (sem reserva) e 2.
     /// </summary>
     /// <remarks>
     /// A multiplicidade é deliberada: um decoder que indexasse as regras <b>por código</b>
@@ -64,6 +65,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         DefinirFormularioDeInscricao(processo, permutar);
         DefinirCascataEDocumentos(processo, variante, permutar, comRegrasDeComprovacao);
         DefinirTaxaEOpcoesDeCurso(processo, permutar);
+        DefinirCadastroDeReservaDoExemplo(processo, permutar);
         return processo;
     }
 
@@ -346,4 +348,8 @@ internal static class ExemploDeEnvelopeProcessoRico
         processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
+
+    // A chamada 1 declara zero (sem reserva) e a 2 convoca duas pessoas da reserva por vaga; a ordem de entrada não muda o envelope.
+    internal static void DefinirCadastroDeReservaDoExemplo(ProcessoSeletivo processo, bool permutar) =>
+        processo.DefinirCadastroDeReserva(Ordem<CadastroDeReservaInformado?>([new(2, 2), new(1, 0)], permutar)).IsSuccess.Should().BeTrue();
 }

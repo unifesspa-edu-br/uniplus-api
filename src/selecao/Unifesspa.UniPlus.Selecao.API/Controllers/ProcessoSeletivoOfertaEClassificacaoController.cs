@@ -113,6 +113,26 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
+    /// Substitui o cadastro de reserva por chamada inteiro: cada item traz o número da chamada, a partir de 1 e declarado uma só vez, e quantas pessoas da
+    /// reserva a chamada convoca por vaga, que pode ser zero. A chamada que não consta na lista não tem reserva, e a lista vazia deixa o processo sem reserva.
+    /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
+    [HttpPut("{id:guid}/cadastro-reserva")]
+    [EndpointName("DefinirCadastroDeReserva")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirCadastroDeReserva(Guid id, [FromBody] DefinirCadastroDeReservaRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result resultado = await _commandBus.Send(new DefinirCadastroDeReservaCommand(id, request.Chamadas), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). A declaração é obrigatória
     /// para publicar, e o número não pode superar o de ofertas da distribuição de vagas.
     /// </summary>

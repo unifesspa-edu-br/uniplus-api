@@ -10,7 +10,11 @@ internal static class ConfiguracaoPublicadaDoEnvelope
         IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoes) => new(
         Cronograma(blocos), Avaliacao(blocos), Vagas(blocos), Exigencias(blocos, regras), Coleta(blocos, campos, opcoes),
         DivulgacaoETaxa(blocos), blocos.Publicacao.IdentificadorLegivel)
-        { MotivosDeDecisao = blocos.Configuracao.MotivosDeDecisao, ProvaPresencial = blocos.Configuracao.ProvaPresencial };
+        {
+            MotivosDeDecisao = blocos.Configuracao.MotivosDeDecisao,
+            ProvaPresencial = blocos.Configuracao.ProvaPresencial,
+            CadastroDeReserva = blocos.Configuracao.CadastroDeReserva,
+        };
 
     private static CronogramaDeclarado Cronograma(BlocosDoEnvelope blocos) => new(
         blocos.Publicacao.Localidade!, blocos.Publicacao.AlgoritmoContagemPrazo, blocos.Configuracao.CronogramaFases);

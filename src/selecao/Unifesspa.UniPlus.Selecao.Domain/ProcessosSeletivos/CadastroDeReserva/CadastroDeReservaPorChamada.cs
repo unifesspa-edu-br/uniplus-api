@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que o processo declara do cadastro de reserva por chamada (UNI-REQ-0354, UNI-REQ-0355): as chamadas
-/// que têm cadastro de reserva, cada uma com a quantidade de pessoas da reserva convocadas por vaga. A
+/// declaradas, cada uma com a quantidade de pessoas da reserva convocadas por vaga, que pode ser zero. A
 /// chamada sem declaração não tem reserva. A declaração é do próprio processo, indexada pelo número da
 /// chamada, e não faz parte do quadro de vagas. Sem nenhuma chamada declarada, o processo não tem cadastro
 /// de reserva, e a declaração é vazia, nunca nula.
@@ -18,7 +18,7 @@ public sealed record CadastroDeReservaPorChamada
     /// <summary>O processo sem cadastro de reserva em nenhuma chamada.</summary>
     public static CadastroDeReservaPorChamada SemReserva { get; } = new([]);
 
-    /// <summary>As chamadas com cadastro de reserva, em ordem crescente do número da chamada.</summary>
+    /// <summary>As chamadas declaradas, em ordem crescente do número da chamada.</summary>
     public IReadOnlyList<CadastroDeReservaDaChamada> Chamadas { get; }
 
     /// <summary>As declarações são iguais quando declaram as mesmas chamadas com as mesmas quantidades, qualquer que seja a ordem informada.</summary>
@@ -54,8 +54,8 @@ public sealed record CadastroDeReservaPorChamada
 
     /// <summary>
     /// Confere a forma da declaração e acumula as recusas (ADR-0125): cada chamada informa um número a partir
-    /// de 1, declarado uma só vez, e ao menos uma pessoa da reserva por vaga. A declaração sem chamada é a do
-    /// processo sem cadastro de reserva. Quantas vagas cada chamada tem não é conferido aqui: vem do quadro,
+    /// de 1, declarado uma só vez, e a quantidade de pessoas da reserva por vaga, não negativa. A declaração sem
+    /// chamada é a do processo sem cadastro de reserva. Quantas vagas cada chamada tem não é conferido aqui: vem do quadro,
     /// por quem convoca.
     /// </summary>
     public static Result<CadastroDeReservaPorChamada> Declarar(IReadOnlyList<CadastroDeReservaInformado?> chamadas)
@@ -65,10 +65,15 @@ public sealed record CadastroDeReservaPorChamada
         List<FieldError> recusas = [.. RecusasDeCadaChamada(chamadas)];
         return recusas.Count > 0
             ? Result<CadastroDeReservaPorChamada>.ValidationFailure(recusas)
-            : Result<CadastroDeReservaPorChamada>.Success(new(
-                [.. chamadas.Select(static chamada => new CadastroDeReservaDaChamada(
-                        NumeroDaChamada.Criar(chamada!.NumeroDaChamada).Value!, chamada.PessoasDaReservaPorVaga!.Value))
-                    .OrderBy(static chamada => chamada.Chamada.Valor)]));
+            : Result<CadastroDeReservaPorChamada>.Success(DeItensConferidos(chamadas.Select(static chamada =>
+                new CadastroDeReservaDaChamada(NumeroDaChamada.Criar(chamada!.NumeroDaChamada).Value!, chamada.PessoasDaReservaPorVaga!.Value))));
+    }
+
+    /// <summary>A declaração dos itens que já passaram pela conferência de <see cref="Declarar"/>, em ordem crescente do número da chamada.</summary>
+    internal static CadastroDeReservaPorChamada DeItensConferidos(IEnumerable<CadastroDeReservaDaChamada> itens)
+    {
+        CadastroDeReservaDaChamada[] ordenados = [.. itens.OrderBy(static item => item.Chamada.Valor)];
+        return ordenados.Length == 0 ? SemReserva : new(ordenados);
     }
 
     private static IEnumerable<FieldError> RecusasDeCadaChamada(IReadOnlyList<CadastroDeReservaInformado?> chamadas)
@@ -104,12 +109,12 @@ public sealed record CadastroDeReservaPorChamada
 
     private static IEnumerable<FieldError> RecusasDaQuantidade(int? pessoasDaReservaPorVaga, string campo)
     {
-        if (pessoasDaReservaPorVaga is not >= 1)
+        if (pessoasDaReservaPorVaga is not >= 0)
         {
             yield return Recusa(
                 campo,
                 CadastroDeReservaErrorCodes.PessoasDaReservaPorVagaInvalida,
-                "A chamada com cadastro de reserva convoca pelo menos uma pessoa da reserva por vaga; para não ter reserva, deixe a chamada sem declaração.");
+                "Informe quantas pessoas da reserva a chamada convoca por vaga, um inteiro a partir de 0; zero é a chamada sem reserva.");
         }
     }
 

@@ -4472,6 +4472,21 @@
       "titulo": "A situação da base legal é obrigatória"
     },
     {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.chamada_repetida",
+      "status": 422,
+      "titulo": "Chamada repetida no cadastro de reserva"
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.numero_da_chamada_invalido",
+      "status": 422,
+      "titulo": "Número da chamada inválido no cadastro de reserva"
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.pessoas_da_reserva_por_vaga_invalida",
+      "status": 422,
+      "titulo": "Quantidade de pessoas da reserva por vaga inválida"
+    },
+    {
       "codigo": "uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado",
       "status": 422,
       "titulo": "O calendário congelado traz o mesmo dia não útil mais de uma vez"

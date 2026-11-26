@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
@@ -40,6 +41,7 @@ public sealed class ConfiguracaoPublicada
     public DivulgacaoETaxaDeclaradas DivulgacaoETaxa { get; }
     public IdentificadorLegivel? IdentificadorLegivel { get; }
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; init; }
+    public CadastroDeReservaPorChamada CadastroDeReserva { get; init; } = CadastroDeReservaPorChamada.SemReserva;
     public IReadOnlyList<MotivoDeDecisaoDeclarado> MotivosDeDecisao { get; init; } = [];
 
     /// <summary>As derivações configuradas e as que a união das ofertas escolhidas define.</summary>

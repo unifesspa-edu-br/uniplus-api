@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 
 /// <summary>
 /// A declaração do cadastro de reserva por chamada (UNI-REQ-0354, UNI-REQ-0355): cada chamada declara um
-/// número a partir de 1, uma só vez, e ao menos uma pessoa da reserva por vaga. A chamada sem declaração não
-/// tem reserva, e a declaração guarda as chamadas em ordem crescente do número.
+/// número a partir de 1, uma só vez, e quantas pessoas da reserva convoca por vaga, a partir de zero. A chamada
+/// sem declaração, ou declarada com zero, não tem reserva, e a declaração guarda as chamadas em ordem crescente do número.
 /// </summary>
 public sealed class CadastroDeReservaPorChamadaTests
 {
@@ -39,25 +39,24 @@ public sealed class CadastroDeReservaPorChamadaTests
             .Should().Equal((1, 2), (2, 1));
     }
 
-    [Fact(DisplayName = "Só a segunda chamada pode ter cadastro de reserva: a primeira fica sem declaração")]
-    public void SoASegundaChamada_Aceita()
+    [Fact(DisplayName = "A primeira chamada também pode ter cadastro de reserva")]
+    public void PrimeiraChamada_Aceita()
     {
-        CadastroDeReservaPorChamada declaracao = Declarada(Chamada(2, 1));
+        CadastroDeReservaPorChamada declaracao = Declarada(Chamada(1, 2));
 
-        declaracao.Chamadas.Should().ContainSingle().Which.Chamada.Valor.Should().Be(2);
+        declaracao.Chamadas.Should().ContainSingle().Which.Chamada.Valor.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Uma pessoa da reserva por vaga é a menor quantidade aceita")]
-    public void UmaPessoaPorVaga_Aceita()
+    [Fact(DisplayName = "Zero pessoas da reserva por vaga é aceito e declara a chamada sem reserva")]
+    public void Zero_Aceito_ComoChamadaSemReserva()
     {
-        Declarada(Chamada(1, 1)).Chamadas.Should().ContainSingle().Which.PessoasDaReservaPorVaga.Should().Be(1);
+        Declarada(Chamada(1, 0)).Chamadas.Should().ContainSingle().Which.PessoasDaReservaPorVaga.Should().Be(0);
     }
 
-    [Theory(DisplayName = "A quantidade ausente, zero ou negativa é recusada na posição da chamada, sem repetir o valor")]
+    [Theory(DisplayName = "A quantidade ausente ou negativa é recusada na posição da chamada, sem repetir o valor")]
     [InlineData(null)]
-    [InlineData(0)]
     [InlineData(-3)]
-    public void Quantidade_AusenteOuMenorQueUm_Recusa(int? pessoasPorVaga)
+    public void Quantidade_AusenteOuNegativa_Recusa(int? pessoasPorVaga)
     {
         Result<CadastroDeReservaPorChamada> resultado = CadastroDeReservaPorChamada.Declarar([Chamada(1, 2), Chamada(2, pessoasPorVaga)]);
 
@@ -67,7 +66,7 @@ public sealed class CadastroDeReservaPorChamadaTests
             Error = new
             {
                 Code = CadastroDeReservaErrorCodes.PessoasDaReservaPorVagaInvalida,
-                Message = "A chamada com cadastro de reserva convoca pelo menos uma pessoa da reserva por vaga; para não ter reserva, deixe a chamada sem declaração.",
+                Message = "Informe quantas pessoas da reserva a chamada convoca por vaga, um inteiro a partir de 0; zero é a chamada sem reserva.",
             },
         });
     }
@@ -116,7 +115,7 @@ public sealed class CadastroDeReservaPorChamadaTests
     [Fact(DisplayName = "As recusas de vários itens se acumulam na ordem do índice, e em cada item o número vem antes da quantidade")]
     public void Recusas_DeVariosItens_AcumulamNaOrdemDoIndice()
     {
-        Recusas(Chamada(1, 2), Chamada(1, 0), Chamada(null, 1), Chamada(2, null), Chamada(-1, -1)).Should().Equal(
+        Recusas(Chamada(1, 2), Chamada(1, -2), Chamada(null, 1), Chamada(2, null), Chamada(-1, -1)).Should().Equal(
             ("cadastroDeReserva[1].numeroDaChamada", CadastroDeReservaErrorCodes.ChamadaRepetida),
             ("cadastroDeReserva[1].pessoasDaReservaPorVaga", CadastroDeReservaErrorCodes.PessoasDaReservaPorVagaInvalida),
             ("cadastroDeReserva[2].numeroDaChamada", CadastroDeReservaErrorCodes.NumeroDaChamadaInvalido),

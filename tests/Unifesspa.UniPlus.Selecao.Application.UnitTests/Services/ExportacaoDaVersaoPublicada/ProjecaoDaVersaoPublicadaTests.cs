@@ -31,7 +31,7 @@ public sealed class ProjecaoDaVersaoPublicadaTests
     private static FormaDoNo FormaDaRaiz()
     {
         string[] partes = ["cronograma", "etapas", "documentosExigidos", "formularios", "motivosDeDecisao", "identificacao", "coleta", "opcoesDeCurso", "distribuicaoVagas", "ordemDeRemanejamento",
-            "taxaDeInscricao", "divulgacao", "tiposDeAto", "classificacao", "atendimento", "fada", "provaPresencial"];
+            "taxaDeInscricao", "divulgacao", "tiposDeAto", "classificacao", "atendimento", "fada", "provaPresencial", "cadastroDeReserva"];
         FormaDoNo vazia = new([], [], false, null, () => new Dictionary<string, FormaDoNo>(), () => null);
         return new([], [], false, null, () => partes.ToDictionary(nome => nome, _ => vazia, StringComparer.Ordinal), () => null);
     }

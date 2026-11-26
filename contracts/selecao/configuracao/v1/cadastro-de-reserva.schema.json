@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/cadastro-de-reserva.schema.json",
+  "title": "Cadastro de reserva de uma chamada",
+  "description": "O cadastro de reserva de uma chamada do processo: quantas pessoas da reserva a chamada convoca por vaga, além de quem ocupa a vaga. A chamada que não consta na lista do processo não tem reserva. O esquema descreve só a forma: o número a partir de 1, declarado uma só vez, e a quantidade não negativa são regras do domínio.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "numeroDaChamada"
+  ],
+  "properties": {
+    "numeroDaChamada": {
+      "title": "Número da chamada",
+      "description": "Número da chamada do processo, a partir de 1 e declarado uma só vez. O limite superior é o do inteiro de 32 bits; a conferência do menor valor e da repetição é do domínio.",
+      "type": "integer",
+      "maximum": 2147483647
+    },
+    "pessoasDaReservaPorVaga": {
+      "title": "Pessoas da reserva por vaga",
+      "description": "Quantas pessoas da reserva a chamada convoca por vaga, além de quem ocupa a vaga. Zero é a chamada sem reserva. O limite superior é o do inteiro de 32 bits; a conferência de que a quantidade não é negativa é do domínio.",
+      "type": "integer",
+      "maximum": 2147483647
+    }
+  }
+}

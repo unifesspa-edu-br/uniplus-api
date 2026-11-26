@@ -336,6 +336,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).
         builder.OwnsOne(p => p.ProvaPresencial, prova => prova.ConfigurarProvaPresencial());
+        builder.ConfigurarCadastroDeReserva();
         builder.OwnsOne(p => p.ReferenciaTemporalFatos, referencia =>
         {
             referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);

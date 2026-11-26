@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -22,6 +21,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
     [
         "motivosDeDecisao",
         "provaPresencial",
+        "cadastroDeReserva",
         "tipoProcesso",
         "periodo",
         "etapas",
@@ -202,10 +202,10 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         bool temRetificacao = payload.ContainsKey("retificacao");
         leitor.ExigirChaves(payload, "$", temRetificacao ? [.. BlocosReais, "retificacao"] : BlocosReais);
 
-        DeclaracaoDaProvaPresencial? prova = LeituraDaProvaPresencial.Ler(leitor, payload);
+        DeclaracoesDoProcessoLidas declaracoes = LeituraDasDeclaracoesDoProcesso.Ler(leitor, payload);
         BlocosDoEnvelope? blocos = LeituraDoEnvelope.Ler(leitor, payload, temRetificacao);
         return blocos is null
             ? leitor.Falha<EnvelopeReidratado>()
-            : CoerenciaEntreBlocos.Conferir(blocos with { Configuracao = blocos.Configuracao with { ProvaPresencial = prova } }, versao, payload);
+            : CoerenciaEntreBlocos.Conferir(declaracoes.Aplicar(blocos), versao, payload);
     }
 }

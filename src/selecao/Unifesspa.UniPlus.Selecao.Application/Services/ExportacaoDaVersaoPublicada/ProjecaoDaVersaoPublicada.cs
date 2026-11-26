@@ -25,6 +25,7 @@ public sealed class ProjecaoDaVersaoPublicada(IEsquemaDoDocumentoDaConfiguracao 
         ("atendimento", ProjecaoDeAtendimento.Projetar),
         ("fada", ProjecaoDeFada.Projetar),
         ("provaPresencial", ProjecaoDeProvaPresencial.Projetar),
+        ("cadastroDeReserva", ProjecaoDeCadastroDeReserva.Projetar),
     ];
 
     public JsonObject Projetar(VersaoPublicada versao)

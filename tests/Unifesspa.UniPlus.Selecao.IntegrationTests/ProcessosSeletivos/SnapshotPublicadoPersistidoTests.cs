@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do congelamento do snapshot de
 /// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0100): re-hashear os
-/// bytes lidos de volta do banco bate com o hash persistido pela app, os 36 blocos canônicos —
+/// bytes lidos de volta do banco bate com o hash persistido pela app, os 37 blocos canônicos —
 /// todos reais — estão presentes, e editar a configuração viva durante uma retificação aberta não
 /// altera a versão já persistida.
 /// </summary>
@@ -58,6 +58,8 @@ public sealed class SnapshotPublicadoPersistidoTests
         // A classificação, congelada, de cada tipo de ato que o cronograma declara — 33º bloco.
         "tiposDeAto",
         "dadosCalculados", "provaPresencial", "motivosDeDecisao",
+        // As chamadas com cadastro de reserva e quantas pessoas da reserva cada uma convoca por vaga.
+        "cadastroDeReserva",
     ];
 
     public SnapshotPublicadoPersistidoTests(ProcessoSeletivoDbFixture fixture)
@@ -82,7 +84,7 @@ public sealed class SnapshotPublicadoPersistidoTests
     private async Task<VersaoConfiguracao> PublicarAsync(string nome) =>
         await _cenario.PublicarEPersistirAsync(CenarioDeRetificacaoPersistida.NovoProcessoConforme(nome));
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 36 blocos, todos reais, estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 37 blocos, todos reais, estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         VersaoConfiguracao publicada = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));

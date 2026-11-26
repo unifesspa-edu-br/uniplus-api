@@ -615,6 +615,16 @@
       }
     ]
   },
+  "cadastroDeReserva": [
+    {
+      "numeroDaChamada": 1,
+      "pessoasDaReservaPorVaga": 0
+    },
+    {
+      "numeroDaChamada": 2,
+      "pessoasDaReservaPorVaga": 2
+    }
+  ],
   "motivosDeDecisao": [
     {
       "faseChave": "fase_inscricao",
