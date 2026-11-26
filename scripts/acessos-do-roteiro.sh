@@ -40,6 +40,8 @@ PDF_DO_PERFIL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf
 DESCRICAO_DO_PERFIL="${DESCRICAO_DO_PERFIL:-Permissões que o roteiro local de processo de teste usa.}"
 PERFIL_INSTITUCIONAL="Roteiro de teste — cadastros institucionais"
 PERFIL_DE_MOTIVOS="Roteiro de teste — motivos de decisão"
+# O pedido do roteiro traz sempre esta justificativa, o que o distingue de um pedido de outra pessoa para o executor.
+JUSTIFICATIVA_DO_PEDIDO="Executar o roteiro local do processo de teste."
 PERMISSOES_INSTITUCIONAIS='[
     "publicacoes:tipos-ato:manter",
     "organizacao:instituicao:manter", "organizacao:unidades:manter",
@@ -251,13 +253,27 @@ gestor_que_decide() {
     fail "não há gestor de acessos, além do executor, para aprovar o pedido (GESTORES='$GESTORES')."
 }
 
+# O pedido do executor, para ele mesmo, que aguarda a decisão do gestor para o perfil e a unidade, de uma execução
+# interrompida: pedir de novo recebe 409 (pedido duplicado). Vazio quando não há. $1=perfil $2=unidade (vazio: instituição)
+pedido_em_andamento_do_executor() {
+    local email
+    email=$(como "a leitura do executor" "$TOKEN" GET "/api/profile/me" | jq -r '.email')
+    como "a lista dos pedidos de $ADMIN_USER" "$TOKEN" GET "/api/autorizacao/pedidos-de-concessao?fila=meus&situacao=AGUARDANDO_GESTOR&limit=100" \
+        | jq -r --arg p "$1" --arg u "$2" --arg e "$email" --arg j "$JUSTIFICATIVA_DO_PEDIDO" \
+            'first(.[] | select(.perfil.id == $p and (.escopo.unidadeId // "") == $u and (.beneficiario.email | ascii_downcase) == ($e | ascii_downcase)
+                                and .justificativa == $j and .situacao == "AGUARDANDO_GESTOR")) | .id // empty'
+}
+
 # O executor pede o perfil para si e um gestor aprova. $1=perfil $2=unidade (vazio: instituição) $3=nome
 pedir_e_aprovar() {
     local perfil="$1" unidade="$2" nome="$3" corpo pedido gestor situacao
-    corpo=$(jq -nc --arg p "$perfil" --arg u "$unidade" \
+    corpo=$(jq -nc --arg p "$perfil" --arg u "$unidade" --arg j "$JUSTIFICATIVA_DO_PEDIDO" \
         '{beneficiarioEmail: null, perfilId: $p, unidadeId: (if $u == "" then null else $u end),
-          justificativa: "Executar o roteiro local do processo de teste."}')
-    pedido=$(como "o pedido do perfil '$nome' por $ADMIN_USER" "$TOKEN" POST "/api/autorizacao/pedidos-de-concessao" "$corpo" | jq -r '.id')
+          justificativa: $j}')
+    pedido=$(pedido_em_andamento_do_executor "$perfil" "$unidade")
+    if [ -z "$pedido" ]; then
+        pedido=$(como "o pedido do perfil '$nome' por $ADMIN_USER" "$TOKEN" POST "/api/autorizacao/pedidos-de-concessao" "$corpo" | jq -r '.id')
+    fi
     gestor=$(gestor_que_decide) || fail "não foi possível escolher um gestor para aprovar o perfil '$nome'."
     situacao=$(como "a aprovação do pedido do perfil '$nome' por $gestor" "$(token_de "$gestor" "$SENHA_GESTORES")" POST \
         "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" | jq -r '.situacao')
