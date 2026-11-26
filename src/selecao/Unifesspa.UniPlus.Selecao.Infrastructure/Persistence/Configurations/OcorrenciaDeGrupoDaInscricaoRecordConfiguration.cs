@@ -8,10 +8,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class OcorrenciaDeGrupoDaInscricaoRecordConfiguration : IEntityTypeConfiguration<OcorrenciaDeGrupoDaInscricaoRecord>
 {
     public void Configure(EntityTypeBuilder<OcorrenciaDeGrupoDaInscricaoRecord> builder)

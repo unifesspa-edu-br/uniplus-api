@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,10 +14,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Configuração EF Core das decisões das etapas da reclassificação, registro só acrescentado. O banco recusa a etapa
 /// repetida na concessão e o motivo que não casa com o resultado.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfiguration<LiberacaoDaReclassificacao>
 {
     private const int IdentidadeMaxLength = 255;

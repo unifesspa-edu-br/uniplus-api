@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,10 +16,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// lote. A nota é <c>numeric</c> sem precisão, de propósito: com escala o banco arredondaria em
 /// silêncio, e o arredondamento é regra própria da classificação. Sem cifra, sem nome, sem CPF.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<AvaliacaoDaEtapa>
 {
     public void Configure(EntityTypeBuilder<AvaliacaoDaEtapa> builder)

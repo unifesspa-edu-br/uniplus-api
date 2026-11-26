@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,10 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// soft-delete, sem audit fields, sem updates — qualquer mutação fora de
 /// <c>INSERT</c> é incidente operacional.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeConfiguration<ObrigatoriedadeLegalHistorico>
 {
     private const int HashLength = 64;

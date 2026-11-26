@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,10 +12,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// Configuração EF Core do estado de entrega dos avisos da reclassificação: a unicidade por origem e fato deduplica o aviso.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class AvisoDaReclassificacaoConfiguration : IEntityTypeConfiguration<AvisoDaReclassificacao>
 {
     private const int OrigemMaxLength = 40;

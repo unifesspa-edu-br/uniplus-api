@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,10 +12,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// Configuração EF Core de <see cref="GrupoPesoAreaEnemCongelado"/> — um grupo de área do
 /// quadro de pesos por área congelado na <see cref="ConfiguracaoClassificacao"/>.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfiguration<GrupoPesoAreaEnemCongelado>
 {
     public void Configure(EntityTypeBuilder<GrupoPesoAreaEnemCongelado> builder)

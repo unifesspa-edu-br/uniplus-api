@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,10 +12,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 /// <summary>Configuração EF Core das ocorrências de um lote: o que não virou nota. Nunca guarda CPF.</summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfiguration<OcorrenciaDoLoteDeNotas>
 {
     public void Configure(EntityTypeBuilder<OcorrenciaDoLoteDeNotas> builder)
