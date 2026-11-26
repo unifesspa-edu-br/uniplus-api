@@ -25,6 +25,12 @@ using Microsoft.OpenApi;
 /// Cobre também <c>errors</c>, a lista das violações da ADR-0023, com o campo, o código, a
 /// mensagem e os identificadores dos itens de lista que o campo atravessa.
 /// </para>
+/// <para>
+/// Cobre ainda <c>code</c> e <c>traceId</c>, que a ADR-0023 torna obrigatórios em toda resposta
+/// de erro, inclusive na recusa de requisição inválida. Sem a declaração, quem gera cliente tipado
+/// não encontra a chave estável de tratamento do erro nem o identificador que o liga ao registro
+/// do servidor.
+/// </para>
 /// </summary>
 public sealed class ProblemDetailsExtensionsDocumentTransformer : IOpenApiDocumentTransformer
 {
@@ -36,6 +42,24 @@ public sealed class ProblemDetailsExtensionsDocumentTransformer : IOpenApiDocume
         + "requisição, repetida sem alteração, pode agora ser aceita. A ausência é o default "
         + "conservador do servidor — diz que o conflito não foi declarado retentável, não que "
         + "repetir esteja descartado; nesse caso vale a descrição da própria resposta.";
+
+    private const string CodePropertyName = "code";
+    private const string TraceIdPropertyName = "traceId";
+
+    // Mesma forma da taxonomia da ADR-0023: namespace `uniplus.<modulo>.<razao>`, sem dígito,
+    // hífen ou maiúscula.
+    private const string CodePattern = @"^[a-z]+(\.[a-z_]+)+$";
+
+    // O `trace-id` do W3C trace context: 32 caracteres hexadecimais em minúsculas.
+    private const string TraceIdPattern = "^[0-9a-f]{32}$";
+
+    private const string CodeDescription =
+        "Identificador estável da causa do erro, no formato `uniplus.<módulo>.<razão>`. É a chave para "
+        + "tratar o erro no cliente e para pedir suporte; o texto de `detail` pode mudar, o código não.";
+
+    private const string TraceIdDescription =
+        "Identificador do pedido, com 32 caracteres hexadecimais, o mesmo do rastreamento da requisição. "
+        + "Quem pede suporte informa este valor para que o erro seja achado no registro do servidor.";
 
     private const string ErrorsPropertyName = "errors";
 
@@ -73,19 +97,47 @@ public sealed class ProblemDetailsExtensionsDocumentTransformer : IOpenApiDocume
 
     private static void DeclararAsExtensoes(OpenApiSchema problemDetails)
     {
-        problemDetails.Properties ??= new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
+        IDictionary<string, IOpenApiSchema> propriedades = problemDetails.Properties
+            ??= new Dictionary<string, IOpenApiSchema>(StringComparer.Ordinal);
 
+        DeclararCodeETraceId(propriedades);
+        DeclararOpcionais(propriedades);
+        ExigirCodeETraceId(problemDetails);
+    }
+
+    private static void DeclararCodeETraceId(IDictionary<string, IOpenApiSchema> propriedades)
+    {
+        propriedades[CodePropertyName] = TextoComPadrao(CodeDescription, CodePattern);
+        propriedades[TraceIdPropertyName] = TextoComPadrao(TraceIdDescription, TraceIdPattern);
+    }
+
+    private static void ExigirCodeETraceId(OpenApiSchema problemDetails)
+    {
+        problemDetails.Required ??= new HashSet<string>(StringComparer.Ordinal);
+        problemDetails.Required.Add(CodePropertyName);
+        problemDetails.Required.Add(TraceIdPropertyName);
+    }
+
+    private static void DeclararOpcionais(IDictionary<string, IOpenApiSchema> propriedades)
+    {
         // A propriedade só viaja quando é `true` (ResultExtensions grava a extensão
         // apenas nesse caso), então fica fora de `required`: cliente que a espera
         // sempre presente leria a ausência como erro de contrato.
-        problemDetails.Properties[RetryablePropertyName] = new OpenApiSchema
+        propriedades[RetryablePropertyName] = new OpenApiSchema
         {
             Type = JsonSchemaType.Boolean,
             Description = RetryableDescription,
         };
 
-        problemDetails.Properties[ErrorsPropertyName] = ErrosDeCampo();
+        propriedades[ErrorsPropertyName] = ErrosDeCampo();
     }
+
+    private static OpenApiSchema TextoComPadrao(string descricao, string padrao) => new()
+    {
+        Type = JsonSchemaType.String,
+        Description = descricao,
+        Pattern = padrao,
+    };
 
     private static OpenApiSchema ErrosDeCampo() => new()
     {
