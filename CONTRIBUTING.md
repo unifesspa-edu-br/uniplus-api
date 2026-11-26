@@ -872,11 +872,11 @@ Tipo que só existe para o teste (como enum com defeito ou controller de exemplo
 ```csharp
 // Naming: Método_Cenário_ResultadoEsperado
 [Fact]
-public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
+public void CalcularNotaFinal_ComVagasEFada_DeveAplicarFadaSobreTotal()
 {
     // Arrange
     // Test Data Builder: padrões válidos, só o que importa ao cenário aparece
-    var candidato = new CandidatoBuilder().ComNota(8.5m).ComBonus(0.20m).Build();
+    var candidato = new CandidatoBuilder().ComNota(8.5m).ComFada(0.20m).Build();
 
     // Act
     var resultado = candidato.CalcularNotaFinal();

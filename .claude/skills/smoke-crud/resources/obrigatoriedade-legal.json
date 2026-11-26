@@ -24,10 +24,10 @@
       "regraCodigo": "SMOKE_CRUD_DOC_COMPROVANTE_RESIDENCIA",
       "predicado": {
         "$tipo": "documentoObrigatorioParaModalidade",
-        "modalidade": "BONUS_REGIONAL",
+        "modalidade": "FADA",
         "tipoDocumento": "COMPROVANTE_RESIDENCIA"
       },
-      "descricaoHumana": "Candidato cotista de bônus regional deve apresentar comprovante de residência.",
+      "descricaoHumana": "Candidato que pede o Fator de Atenuação das Desigualdades de Acesso (FADA) deve apresentar comprovante de residência.",
       "baseLegal": "Resolução CONSEPE 184/2017",
       "vigenciaInicio": "2026-01-01",
       "vigenciaFim": null,
