@@ -27,7 +27,7 @@ internal static class ModeloDaSelecao
         return [.. Montado.Value.GetEntityTypes().SelectMany(static e => e.GetProperties())
             .Select(p => (Propriedade: p, Nome: p.GetColumnName(objeto)))
             .Where(static c => c.Nome is not null)
-            .Select(c => new ColunaDoModelo(c.Nome!, c.Propriedade.IsColumnNullable(objeto), c.Propriedade.GetComment(objeto)))
+            .Select(c => new ColunaDoModelo(c.Nome!, c.Propriedade.IsColumnNullable(objeto), c.Propriedade.GetComment(objeto), c.Propriedade.GetMaxLength()))
             .DistinctBy(static c => c.Nome)];
     }
 
@@ -52,5 +52,5 @@ internal static class ModeloDaSelecao
     }
 }
 
-/// <summary>O que o modelo diz de uma coluna da tabela: o nome, se aceita nulo e o comentário.</summary>
-internal sealed record ColunaDoModelo(string Nome, bool Anulavel, string? Comentario);
+/// <summary>O que o modelo diz de uma coluna da tabela: o nome, se aceita nulo, o comentário e a largura máxima do texto.</summary>
+internal sealed record ColunaDoModelo(string Nome, bool Anulavel, string? Comentario, int? LarguraMaxima);
