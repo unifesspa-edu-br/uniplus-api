@@ -5,41 +5,28 @@ using Microsoft.AspNetCore.Http;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 /// <summary>
-/// Recusas da unidade administradora, da divulgação e da taxa de inscrição.
+/// Recusas das referências aos cadastros do processo (unidade administradora, tipo de processo e tipo de
+/// etapa), da divulgação pública e da taxa de inscrição.
 /// </summary>
 internal static class ErrosDaAdministracaoDoProcesso
 {
-    // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
-    // capability cross-module, registrada uma única vez via AddCursorPagination().
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        .. UnidadeAdministradora(),
+        .. ReferenciasAosCadastros(),
         .. DivulgacaoPublica(),
         .. TaxaDeInscricao(),
     ];
 
-    private static KeyValuePair<string, DomainErrorMapping>[] UnidadeAdministradora() =>
+    private static KeyValuePair<string, DomainErrorMapping>[] ReferenciasAosCadastros() =>
     [
-        // Unidade administradora do Processo Seletivo.
         new("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada", "Unidade administradora não encontrada ou não está mais viva")),
         new("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
         new("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
-        // A localidade que governa a contagem de prazo em dias úteis
-        // vem da Unidade administradora — sem cidade cadastrada, criar processo é recusado.
         new("ProcessoSeletivo.UnidadeAdministradoraSemCidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_sem_cidade", "Unidade administradora não tem cidade cadastrada")),
-        // Referência de cidade do Geo (ADR-0090) — usada tanto por
-        // UnidadeAdministradoraSnapshot.Criar (Domain) quanto pelo decoder do envelope
-        // (LeituraDoEdital.LerIdentidadesUnidade): registrada uma única vez em
-        // KernelDomainErrorRegistration, não aqui — DomainErrorMappingRegistry agrega todo
-        // IDomainErrorRegistration num único dicionário global por código, e um segundo registro
-        // do mesmo CidadeReferenciaErrorCodes sobrescreveria silenciosamente o mapeamento de
-        // Configuração/Organização Institucional (ou vice-versa, a depender da ordem de DI).
     ];
 
     private static KeyValuePair<string, DomainErrorMapping>[] DivulgacaoPublica() =>
     [
-        // Divulgação pública do Processo Seletivo (UNI-REQ-0050) — ausência já é o
-        // default minimizado (só o número de inscrição), toggle por presença.
         new("ConfiguracaoDivulgacao.CamposPublicosVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campos_publicos_vazio", "A lista de campos públicos não pode ser vazia")),
         new("ConfiguracaoDivulgacao.CampoNaoPermitido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campo_nao_permitido", "Campo fora do vocabulário de divulgação pública")),
         new("ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.numero_inscricao_obrigatorio", "O número de inscrição é o piso da divulgação pública e não pode ser removido")),
@@ -53,8 +40,6 @@ internal static class ErrosDaAdministracaoDoProcesso
 
     private static KeyValuePair<string, DomainErrorMapping>[] TaxaDeInscricao() =>
     [
-        // Taxa de inscrição e isenção do Processo Seletivo. Diferente de
-        // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável — ver ProcessoSeletivo.ItensEstruturaisDeConformidade.
         new("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_obrigatorio_quando_cobra", "Processo que cobra taxa exige valor positivo")),
         new("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_nao_permitido_quando_nao_cobra", "Processo que declara não cobrar taxa não pode informar valor")),
         new("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_exige_cobranca", "Processo que declara não cobrar taxa não pode configurar fundamento de isenção")),
