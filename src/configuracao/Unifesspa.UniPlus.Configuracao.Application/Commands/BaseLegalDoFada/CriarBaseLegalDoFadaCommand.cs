@@ -8,7 +8,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record CriarMunicipioDaBaseLegalDoFadaCommand(
     string? CodigoIbge,
     string? Nome,
-    string? Uf);
+    string? Uf)
+{
+    // m pode ser null (JSON "municipios": [null]) — os options padrão não rejeitam elemento nulo em coleção genérica; sem
+    // o ?., o projetado estouraria NullReferenceException em vez de virar 422 (ReferenciaCidadeGeo.Validar já recusa
+    // código/nome/UF nulos como campo obrigatório ausente).
+    internal static IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? ParaABaseLegal(
+        IEnumerable<CriarMunicipioDaBaseLegalDoFadaCommand?>? municipios) =>
+        municipios?.Select(m => (m?.CodigoIbge, m?.Nome, m?.Uf));
+}
 
 public sealed record CriarBaseLegalDoFadaCommand(
     [AceitaCodigosDe<TipoInstrumentoNormativo>] string? TipoInstrumento,
