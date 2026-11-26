@@ -111,6 +111,53 @@ public sealed class DefinirDocumentosExigidosExigenciaCommandHandlerTests
         (await HandleComTipoAsync(cenario, command, aprovado with { ProtecaoAprovada = false })).IsSuccess.Should().BeTrue("o vínculo existente não é vínculo novo");
     }
 
+    [Fact(DisplayName = "A recusa do tipo de documento pendente na exigência nomeia o tipo, sem o código, e diz quem aprova")]
+    public async Task Handle_TipoComProtecaoPendente_NomeiaOTipoEDizQuemAprova()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase();
+        TipoDocumentoView pendente = LaudoMedico(cenario.TipoDocumentoId) with { ProtecaoAprovada = false };
+
+        Result recusa = await HandleComTipoAsync(cenario, cenario.Comando(cenario.ItemGeral()), pendente);
+
+        recusa.Error!.Message.Should().Be(
+            "No item 1 da lista: O tipo de documento 'Laudo médico' aguarda a aprovação do Representante do controlador e não pode ser exigido agora. "
+            + "Escolha outro tipo de documento ou retire a exigência, ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou.");
+    }
+
+    [Fact(DisplayName = "O tipo de documento pendente e o dado comprovado pendente da mesma exigência são recusados juntos, nesta ordem")]
+    public async Task Handle_TipoEDadoPendentesNaMesmaExigencia_RecusaAsDuasCausas()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase();
+        TipoDocumentoView tipoPendente = LaudoMedico(cenario.TipoDocumentoId) with { ProtecaoAprovada = false };
+        cenario.Mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([FatoTipoDeficiencia() with { ProtecaoAprovada = false }]);
+
+        Result recusa = await HandleComTipoAsync(cenario, cenario.Comando(cenario.ItemGeral().ComFatosComprovados("TIPO_DEFICIENCIA")), tipoPendente);
+
+        recusa.Errors.Select(static e => e.Error.Code).Should().Equal("DocumentoExigido.TipoDocumentoComProtecaoPendente", "VinculoCatalogo.FatoComProtecaoPendente");
+        recusa.Errors[1].Error.Message.Should().StartWith("O dado do candidato 'Tipo de deficiência' aguarda a aprovação do Representante do controlador");
+        cenario.Processo.DocumentosExigidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O tipo de documento pendente acompanha a condição recusada da mesma exigência, e as recusas de tipo saem juntas, na ordem do pedido")]
+    public async Task Handle_TipoPendenteECondicaoRecusada_RecusaAsDuasCausas()
+    {
+        CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
+        TipoDocumentoView tipoPendente = LaudoMedico(cenario.TipoDocumentoId) with { ProtecaoAprovada = false };
+        DefinirDocumentosExigidosCommand command = new(cenario.Processo.Id,
+        [
+            RegraDeComprovacaoDeTeste.DeDocumento(cenario.ItemGeral().Construir()).Construir(),
+            RegraDeComprovacaoDeTeste.DeDocumento(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"AUDITIVA\"")).Construir()).Construir(),
+        ]);
+
+        Result recusa = await HandleComTipoAsync(cenario, command, tipoPendente);
+
+        recusa.Errors.Select(static e => e.Error.Code).Should().Equal(
+            "PredicadoDnf.FatoNaoColetadoPeloProcesso", "DocumentoExigido.TipoDocumentoComProtecaoPendente", "DocumentoExigido.TipoDocumentoComProtecaoPendente");
+        recusa.Errors[1].Error.Message.Should().StartWith("No item 1 da lista: O tipo de documento 'Laudo médico'");
+        recusa.Errors[2].Error.Message.Should().StartWith("No item 2 da lista: O tipo de documento 'Laudo médico'");
+        cenario.Processo.DocumentosExigidos.Should().BeEmpty();
+    }
+
     /// <summary>
     /// Já vinculado: a mesma entrada, sobre o catálogo que depois perdeu a aprovação, não é vínculo novo.
     /// </summary>
