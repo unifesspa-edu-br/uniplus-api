@@ -82,26 +82,43 @@ public sealed class JanelaDaInscricaoTests
         JanelaDaInscricao janela = Janela(Abertura, prorrogado);
 
         janela.Conferir(Encerramento.AddDays(5), Belem).Should().BeNull();
-        janela.Conferir(prorrogado.AddMinutes(1), Belem)!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        janela.Conferir(prorrogado.AddMinutes(1), Belem)!.Recusa.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+    }
+
+    [Fact(DisplayName = "Antes da abertura, as inscrições estão fechadas porque o período ainda não começou")]
+    public void Conferir_AntesDaAbertura_InformaPeriodoNaoIniciado() =>
+        Janela().Conferir(Abertura.AddMinutes(-1), Belem)!.Motivo.Should().Be(MotivoDasInscricoesFechadas.PeriodoNaoIniciado);
+
+    [Fact(DisplayName = "Depois do encerramento, as inscrições estão fechadas porque o período terminou")]
+    public void Conferir_DepoisDoEncerramento_InformaPeriodoEncerrado() =>
+        Janela().Conferir(Encerramento.AddMinutes(1), Belem)!.Motivo.Should().Be(MotivoDasInscricoesFechadas.PeriodoEncerrado);
+
+    [Fact(DisplayName = "No primeiro e no último instante do período não há motivo de fechamento")]
+    public void Conferir_NosLimitesDoPeriodo_NaoInformaMotivo()
+    {
+        JanelaDaInscricao janela = Janela();
+
+        janela.Conferir(Abertura, Belem).Should().BeNull();
+        janela.Conferir(Encerramento, Belem).Should().BeNull();
     }
 
     [Fact(DisplayName = "Antes da abertura, a recusa diz quando a inscrição abre e até quando vai, no horário do fuso institucional")]
     public void Conferir_AntesDaAbertura_Recusa()
     {
-        DomainError? recusa = Janela().Conferir(Abertura.AddMinutes(-1), Belem);
+        InscricoesFechadas? fechadas = Janela().Conferir(Abertura.AddMinutes(-1), Belem);
 
-        recusa!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
-        recusa.Message.Should().Be(
+        fechadas!.Recusa.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        fechadas.Recusa.Message.Should().Be(
             "As inscrições deste processo seletivo começam em 02/03/2026 às 08h00 e vão até 20/03/2026 às 23h59, no horário de Belém (PA).");
     }
 
     [Fact(DisplayName = "Depois do encerramento, a recusa diz quando a inscrição se encerrou")]
     public void Conferir_DepoisDoEncerramento_Recusa()
     {
-        DomainError? recusa = Janela().Conferir(Encerramento.AddMinutes(1), Belem);
+        InscricoesFechadas? fechadas = Janela().Conferir(Encerramento.AddMinutes(1), Belem);
 
-        recusa!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
-        recusa.Message.Should().Be("As inscrições deste processo seletivo se encerraram em 20/03/2026 às 23h59, no horário de Belém (PA).");
+        fechadas!.Recusa.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        fechadas.Recusa.Message.Should().Be("As inscrições deste processo seletivo se encerraram em 20/03/2026 às 23h59, no horário de Belém (PA).");
     }
 
     [Fact(DisplayName = "A versão sem formulário de inscrição não recebe inscrição pelo sistema")]

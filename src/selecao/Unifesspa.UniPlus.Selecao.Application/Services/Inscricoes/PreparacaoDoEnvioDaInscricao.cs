@@ -21,7 +21,7 @@ public sealed class PreparacaoDoEnvioDaInscricao(
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(command);
         DateTimeOffset instante = relogio.GetUtcNow();
-        DomainError? recusa = await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = (await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false))?.Recusa;
         return recusa is not null
             ? Result<EnvioPreparado>.Failure(recusa)
             : await PrepararNaVersaoAsync(inscricao, command, instante, cancellationToken).ConfigureAwait(false);

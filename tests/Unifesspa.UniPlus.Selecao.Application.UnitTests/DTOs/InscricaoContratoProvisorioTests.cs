@@ -6,7 +6,9 @@ using System.Text.Json.Serialization;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -119,5 +121,28 @@ public sealed class InscricaoContratoProvisorioTests
         JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.MinhaInscricao, Opcoes)!;
 
         json.AsObject().Should().NotContainKey("nomePreferido").And.NotContainKey("cpfMascarado");
+    }
+
+    [Fact(DisplayName = "MinhaInscricaoDto: com as inscrições abertas, o exemplo não traz motivo de fechamento")]
+    public void MinhaInscricaoDto_Exemplo_VemSemMotivoDeFechamento()
+    {
+        JsonNode json = JsonSerializer.SerializeToNode(ExemplosDoContratoDeInscricao.MinhaInscricao, Opcoes)!;
+
+        json.AsObject().Should().ContainKey("motivoDasInscricoesFechadas");
+        json["motivoDasInscricoesFechadas"].Should().BeNull();
+    }
+
+    [Fact(DisplayName = "MinhaInscricaoDto: o motivo de fechamento sai como código e rótulo, sem descrição")]
+    public void MinhaInscricaoDto_ComMotivoDeFechamento_SerializaCodigoERotulo()
+    {
+        MinhaInscricaoDto fechada = ExemplosDoContratoDeInscricao.MinhaInscricao with
+        {
+            MotivoDasInscricoesFechadas = CodigoComRotulo<MotivoDasInscricoesFechadas>.De(MotivoDasInscricoesFechadas.PeriodoEncerrado),
+        };
+
+        JsonNode motivo = JsonSerializer.SerializeToNode(fechada, Opcoes)!["motivoDasInscricoesFechadas"]!;
+
+        motivo.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(["codigo", "rotulo"]);
+        motivo["codigo"]!.GetValue<string>().Should().Be("PERIODO_ENCERRADO");
     }
 }

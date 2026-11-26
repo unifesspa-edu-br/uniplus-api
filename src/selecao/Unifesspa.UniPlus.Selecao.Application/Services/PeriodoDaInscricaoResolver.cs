@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -22,7 +23,8 @@ public sealed class PeriodoDaInscricaoResolver(
     IRegistroCodecsEnvelope registroCodecs,
     IResolvedorFusoInstitucional resolvedorFuso)
 {
-    public async Task<DomainError?> ConferirAsync(Guid processoSeletivoId,
+    /// <summary>Fecha as inscrições, com o motivo, quando o instante está fora do período divulgado ou o período não se confirma.</summary>
+    public async Task<InscricoesFechadas?> ConferirAsync(Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
@@ -30,27 +32,38 @@ public sealed class PeriodoDaInscricaoResolver(
             .ResolverAsync(processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
         return divulgada.IsFailure
-            ? divulgada.Error
+            ? PeriodoNaoConfirmado(divulgada.Error!)
             : Conferir(divulgada.Value!.Versao, instante);
     }
 
     /// <summary>A mesma conferência sobre a versão divulgada já resolvida por quem chama.</summary>
-    public DomainError? Conferir(VersaoConfiguracao versaoDivulgada,
+    public InscricoesFechadas? Conferir(VersaoConfiguracao versaoDivulgada,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
-        Result<JanelaDaInscricao> janela = JanelaDa(versaoDivulgada, registroCodecs);
+        Result<EnvelopeReidratado> reidratado = ContextoDaVersaoFixadaResolver.Reidratar(versaoDivulgada, registroCodecs);
+        return reidratado.IsFailure
+            ? PeriodoNaoConfirmado(reidratado.Error!)
+            : ConferirNaConfiguracao(reidratado.Value!, instante);
+    }
+
+    private InscricoesFechadas? ConferirNaConfiguracao(EnvelopeReidratado envelope, DateTimeOffset instante)
+    {
+        Result<JanelaDaInscricao> janela = JanelaDaInscricao.Da(envelope.Configuracao, envelope.Dados);
         if (janela.IsFailure)
         {
-            return janela.Error;
+            return new InscricoesFechadas(MotivoDasInscricoesFechadas.ProcessoSemInscricao, janela.Error!);
         }
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         return fuso.IsFailure
-            ? fuso.Error
+            ? PeriodoNaoConfirmado(fuso.Error!)
             : janela.Value!.Conferir(instante, fuso.Value!);
     }
+
+    private static InscricoesFechadas PeriodoNaoConfirmado(DomainError recusa) =>
+        new(MotivoDasInscricoesFechadas.PeriodoNaoConfirmado, recusa);
 
     /// <summary>A janela de inscrição que a versão divulgada publicou, com o fim que a retificação prorroga.</summary>
     public static Result<JanelaDaInscricao> JanelaDa(VersaoConfiguracao versaoDivulgada, IRegistroCodecsEnvelope registroCodecs)

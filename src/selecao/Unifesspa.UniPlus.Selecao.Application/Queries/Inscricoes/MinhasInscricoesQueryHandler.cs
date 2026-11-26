@@ -79,7 +79,7 @@ public static class MinhasInscricoesQueryHandler
             .. inscricoes.Select(i => MinhaInscricaoDto.De(
                 i,
                 situacoes[i.ProcessoSeletivoId].Nome,
-                situacoes[i.ProcessoSeletivoId].InscricoesAbertas,
+                situacoes[i.ProcessoSeletivoId].MotivoDoFechamento,
                 [.. emissoes[i.Id]],
                 ofertas.GetValueOrDefault(i.Formulario.VersaoFormularioId, []))),
         ];

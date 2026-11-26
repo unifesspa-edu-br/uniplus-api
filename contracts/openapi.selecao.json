@@ -24668,6 +24668,7 @@
           "canceladaEm",
           "motivoDoCancelamento",
           "acoes",
+          "motivoDasInscricoesFechadas",
           "numeroDoUltimoComprovante"
         ],
         "type": "object",
@@ -24716,6 +24717,16 @@
           },
           "acoes": {
             "$ref": "#/components/schemas/AcoesDaInscricaoDto"
+          },
+          "motivoDasInscricoesFechadas": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MotivoDasInscricoesFechadas"
+              }
+            ]
           },
           "numeroDoUltimoComprovante": {
             "type": [
@@ -25109,6 +25120,31 @@
             ]
           }
         }
+      },
+      "MotivoDasInscricoesFechadas": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/MotivoDasInscricoesFechadasCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "MotivoDasInscricoesFechadasCodigo": {
+        "enum": [
+          "PERIODO_ENCERRADO",
+          "PERIODO_NAO_INICIADO",
+          "PROCESSO_SEM_INSCRICAO",
+          "PERIODO_NAO_CONFIRMADO"
+        ],
+        "type": "string",
+        "description": "- \u0060PERIODO_ENCERRADO\u0060: Per\u00EDodo de inscri\u00E7\u00E3o encerrado \u2014 O per\u00EDodo de inscri\u00E7\u00E3o do processo seletivo j\u00E1 terminou.\n- \u0060PERIODO_NAO_INICIADO\u0060: Per\u00EDodo de inscri\u00E7\u00E3o n\u00E3o iniciado \u2014 O per\u00EDodo de inscri\u00E7\u00E3o do processo seletivo ainda n\u00E3o come\u00E7ou.\n- \u0060PROCESSO_SEM_INSCRICAO\u0060: Processo sem inscri\u00E7\u00E3o pelo sistema \u2014 O processo seletivo n\u00E3o recebe inscri\u00E7\u00E3o pelo sistema.\n- \u0060PERIODO_NAO_CONFIRMADO\u0060: Per\u00EDodo de inscri\u00E7\u00E3o n\u00E3o confirmado \u2014 O per\u00EDodo de inscri\u00E7\u00E3o do processo seletivo n\u00E3o p\u00F4de ser lido agora."
       },
       "MotivoDeDecisaoDoProcessoDto": {
         "required": [
