@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -57,6 +58,95 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         await ConferirDocumentosGuardadosAsync(original, copia, codigo);
         JsonObject segundo = await ExportarAsync(copia);
         CompararExportacoes(primeiro, original, segundo, copia);
+    }
+
+    [Fact]
+    public async Task ExportarEImportar_ComDescritivosDosCadastros_TrazONomeAoLadoDoCodigoESoPreservaOsCodigos()
+    {
+        CodigosSemeados codigos = await SemearCadastrosDosDescritivosAsync();
+        await _cliente.ConcederAsync(Conta, UnidadesDeTeste.Ceps.OrigemId);
+        Guid original = await CriarAsync(DocumentoComDescritivos(codigos));
+        JsonObject primeiro = await ExportarAsync(original);
+        await ConferirNomesDosCadastrosAsync(primeiro, codigos);
+        new EsquemaDoDocumentoDaConfiguracao().Avaliar(primeiro).Should().BeEmpty();
+        Guid copia = await CriarAsync(AlterarDescritivosDosCadastros(primeiro));
+        JsonNode.DeepEquals(await DocumentoGuardadoAsync(copia), await DocumentoGuardadoAsync(original)).Should().BeTrue();
+        CompararExportacoes(primeiro, original, await ExportarAsync(copia), copia);
+    }
+
+    private sealed record CodigosSemeados(string Condicao, string Recurso, string TipoDeficiencia, string BaseLegal);
+
+    private static string NomeDe(string codigo) => $"Nome fictício de {codigo}";
+
+    private async Task<CodigosSemeados> SemearCadastrosDosDescritivosAsync()
+    {
+        string sufixo = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
+        BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
+            "PORTARIA", $"Portaria fictícia {sufixo}", "Atenua as desigualdades de acesso.", [("1504208", "Marabá", "PA")]).Value!;
+        CodigosSemeados codigos = new($"COND_{sufixo}", $"REC_{sufixo}", $"DEF_{sufixo}", baseLegal.Codigo.Valor);
+        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        banco.Add(CondicaoAtendimentoEspecializado.Criar(codigos.Condicao, NomeDe(codigos.Condicao), null).Value!);
+        banco.Add(RecursoAcessibilidade.Criar(codigos.Recurso, NomeDe(codigos.Recurso), null).Value!);
+        banco.Add(TipoDeficiencia.Criar(codigos.TipoDeficiencia, NomeDe(codigos.TipoDeficiencia), "Descrição fictícia").Value!);
+        banco.Add(baseLegal);
+        await banco.SaveChangesAsync();
+        return codigos;
+    }
+
+    private static string DocumentoComDescritivos(CodigosSemeados codigos) => $$"""
+        {
+          "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
+          "identificacao": { "nome": "Processo fictício", "unidadeAdministradoraCodigo": "CEPS", "tipoProcessoCodigo": "SISU" },
+          "cronograma": { "fases": [{ "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" }] },
+          "atendimento": {
+            "condicoes": [{ "condicaoCodigo": "{{codigos.Condicao}}" }],
+            "recursos": [{ "recursoCodigo": "{{codigos.Recurso}}" }],
+            "tiposDeficiencia": [{ "tipoDeficienciaCodigo": "{{codigos.TipoDeficiencia}}" }]
+          },
+          "fada": { "aplica": true, "regra": { "codigo": "FADA_REGIONAL", "versao": "v1" }, "fator": 1.1, "baseLegalCodigo": "{{codigos.BaseLegal}}" }
+        }
+        """;
+
+    private async Task ConferirNomesDosCadastrosAsync(JsonObject documento, CodigosSemeados codigos)
+    {
+        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
+        IFaseCanonicaReader fases = escopo.ServiceProvider.GetRequiredService<IFaseCanonicaReader>();
+        IBaseLegalBonusRegionalReader bases = escopo.ServiceProvider.GetRequiredService<IBaseLegalBonusRegionalReader>();
+        FaseCanonicaView inscricao = (await fases.ListarVivasPorCodigosAsync(["INSCRICAO"])).Single();
+        documento["cronograma"]!["fases"]![0]!["tipoFaseNome"]!.GetValue<string>().Should().Be(inscricao.Nome);
+        ConferirNomesDoAtendimento(documento["atendimento"]!, codigos);
+        ConferirFada(documento["fada"]!, (await bases.ObterPorCodigoAsync(codigos.BaseLegal, CancellationToken.None))!);
+    }
+
+    private static void ConferirNomesDoAtendimento(JsonNode atendimento, CodigosSemeados codigos)
+    {
+        atendimento["condicoes"]![0]!["condicaoNome"]!.GetValue<string>().Should().Be(NomeDe(codigos.Condicao));
+        atendimento["recursos"]![0]!["recursoNome"]!.GetValue<string>().Should().Be(NomeDe(codigos.Recurso));
+        atendimento["tiposDeficiencia"]![0]!["tipoDeficienciaNome"]!.GetValue<string>().Should().Be(NomeDe(codigos.TipoDeficiencia));
+    }
+
+    private static void ConferirFada(JsonNode fada, BaseLegalBonusRegionalView baseLegal)
+    {
+        fada["tipoInstrumento"]!.GetValue<string>().Should().Be(baseLegal.TipoInstrumento);
+        fada["identificacao"]!.GetValue<string>().Should().Be(baseLegal.Identificacao);
+        fada["descricao"]!.GetValue<string>().Should().Be(baseLegal.Descricao);
+        JsonNode municipio = fada["municipios"]![0]!;
+        municipio["codigoIbge"]!.GetValue<string>().Should().Be("1504208");
+        municipio["nome"]!.GetValue<string>().Should().Be("Marabá");
+        municipio["uf"]!.GetValue<string>().Should().Be("PA");
+    }
+
+    private static string AlterarDescritivosDosCadastros(JsonObject exportado)
+    {
+        JsonObject alterado = exportado.DeepClone().AsObject();
+        alterado["cronograma"]!["fases"]![0]!["tipoFaseNome"] = "Nome alterado";
+        alterado["atendimento"]!["condicoes"]![0]!["condicaoNome"] = "Condição alterada";
+        alterado["atendimento"]!["recursos"]![0]!["recursoNome"] = "Recurso alterado";
+        alterado["atendimento"]!["tiposDeficiencia"]![0]!["tipoDeficienciaNome"] = "Tipo alterado";
+        alterado["fada"]!["descricao"] = "Descrição alterada";
+        alterado["fada"]!["municipios"]![0]!["nome"] = "Município alterado";
+        return alterado.ToJsonString();
     }
 
     private async Task<string> SemearCadastrosAsync()

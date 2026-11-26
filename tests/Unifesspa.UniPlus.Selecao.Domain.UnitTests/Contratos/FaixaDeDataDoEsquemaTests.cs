@@ -55,7 +55,8 @@ public sealed class FaixaDeDataDoEsquemaTests
         DescricaoDoDocumentoDoRascunho descricao = new(
             new EsquemaDoDocumentoDaConfiguracao(),
             [new DescricaoDeUnidades(unidades), new DescricaoDeTiposDeProcesso(Substitute.For<ITipoProcessoReader>())]);
-        ExportacaoDoRascunho exportacao = new(unidades, descricao, new ResolucaoDosModelosCitados(Substitute.For<IModeloDeDocumentoRepository>()));
+        ExportacaoDoRascunho exportacao = new(unidades, descricao, new ResolucaoDosModelosCitados(Substitute.For<IModeloDeDocumentoRepository>()),
+            new DescricaoDaLocalidade(Substitute.For<IConferenciaEnderecoGeo>()));
         return await exportacao.ExportarAsync(rascunho, CancellationToken.None);
     }
 

@@ -214,8 +214,25 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeProcesso>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDocumento>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeMotivosDeDecisao>();
+        AddDescricoesDosCadastrosDaConfiguracao(services);
         services.AddScoped<DescricaoDoDocumentoDoRascunho>();
+        services.AddScoped<DescricaoDaLocalidade>();
         services.AddScoped<ExportacaoDoRascunho>();
+    }
+
+    private static void AddDescricoesDosCadastrosDaConfiguracao(IServiceCollection services)
+    {
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeFase>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeAto>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeCategoriasDeDocumento>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeBanca>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeEtapa>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeOfertasDeCurso>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeModalidades>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeCondicoesDeAtendimento>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeRecursosDeAcessibilidade>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDeficiencia>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeBasesLegaisDaFada>();
     }
 
     private static void AddPreparacaoDosAtos(IServiceCollection services)
