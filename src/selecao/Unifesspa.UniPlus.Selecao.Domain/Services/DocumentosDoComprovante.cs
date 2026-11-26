@@ -52,12 +52,11 @@ public static class DocumentosDoComprovante
 
     /// <summary>A consequência de não atender a exigência, em linguagem do candidato; nula sem consequência declarada.</summary>
     /// <param name="referencia">O que falta, no meio da frase, como "o documento RG".</param>
-    public static string? ConsequenciaPorEscrito(string? consequencia, string referencia) => (CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(consequencia, out ConsequenciaDoIndeferimento valor) ? valor : (ConsequenciaDoIndeferimento?)null) switch
+    public static string? ConsequenciaPorEscrito(string? consequencia, string referencia) => (CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(consequencia, out ConsequenciaDoDescumprimento valor) ? valor : (ConsequenciaDoDescumprimento?)null) switch
     {
-        ConsequenciaDoIndeferimento.Elimina => $"Sem {referencia}, você será eliminado do processo seletivo.",
-        ConsequenciaDoIndeferimento.ReclassificaAc => $"Sem {referencia}, você perderá a vaga reservada e passará a concorrer na ampla concorrência.",
-        ConsequenciaDoIndeferimento.RemoveVantagem => $"Sem {referencia}, a vantagem que você pleiteia não será concedida.",
-        ConsequenciaDoIndeferimento.AbrePrazoParaReenvio => $"Sem {referencia}, você será notificado para reenviá-lo no prazo da fase.",
+        ConsequenciaDoDescumprimento.EliminaDoProcesso => $"Sem {referencia}, você será eliminado do processo seletivo.",
+        ConsequenciaDoDescumprimento.RetiraAModalidade => $"Sem {referencia}, você perderá a modalidade e continuará nas demais em que concorre.",
+        ConsequenciaDoDescumprimento.RetiraOAcrescimo => $"Sem {referencia}, o acréscimo do Fator de Atenuação das Desigualdades de Acesso não será concedido.",
         _ => null,
     };
 
@@ -72,7 +71,7 @@ public static class DocumentosDoComprovante
         GrupoDeComprovacao? grupo = avaliado.Grupos.FirstOrDefault(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens);
         if (grupo is null)
         {
-            return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaIndeferimento, $"o documento {avaliado.Documento.TipoDocumentoNome}");
+            return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaIndeferimento?.Codigo(), $"o documento {avaliado.Documento.TipoDocumentoNome}");
         }
 
         string nomes = string.Join(", ", NoGrupo(grupo, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));

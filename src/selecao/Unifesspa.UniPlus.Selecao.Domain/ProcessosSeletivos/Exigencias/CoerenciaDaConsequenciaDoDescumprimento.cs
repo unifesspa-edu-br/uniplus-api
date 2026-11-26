@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-internal static class CoerenciaDaConsequenciaDoIndeferimento
+internal static class CoerenciaDaConsequenciaDoDescumprimento
 {
     /// <summary>
     /// Coerência entre a consequência de indeferimento declarada em cada
@@ -24,8 +24,7 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
     /// <remarks>
     /// Duas checagens:
     /// <list type="bullet">
-    /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — a única
-    /// vantagem modelada é <see cref="ProcessoSeletivo.BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
+    /// <item><c>RETIRA_O_ACRESCIMO</c> exige o Fator oferecido no processo — o Fator modelado é <see cref="ProcessoSeletivo.BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
     /// <see cref="ProcessoSeletivo.AplicaBonusRegional"/> é verdadeiro).</item>
     /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
     /// valores são modalidades (os mesmos da avaliação de conformidade, <see cref="Services.AvaliadorConformidadeLegal"/>),
@@ -63,9 +62,9 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
         {
             return null;
         }
-        if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequencia))
+        if (ConsequenciaAcrescimoNaoOferecido(configuracao, consequencia))
         {
-            return new DomainError("DocumentoExigido.RemoveVantagemSemVantagemViva", $"A exigência '{exigencia.TipoDocumentoNome}' determina retirar vantagem, mas nenhuma está configurada.");
+            return new DomainError("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", $"A exigência '{exigencia.TipoDocumentoNome}' determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido.");
         }
         ModalidadeSelecionada? modalidade = ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, exigencia, fatosDeModalidade));
         return modalidade is null ? null : new DomainError("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -74,10 +73,10 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
 
     private static DomainError? RecusaDoGrupo(ConfiguracaoDeclarada configuracao, RegraDeComprovacao grupo, FatosDeModalidade fatosDeModalidade)
     {
-        string consequencia = grupo.Consequencia!;
-        if (ConsequenciaRemoveVantagemSemVantagemViva(configuracao, consequencia))
+        ConsequenciaDoDescumprimento consequencia = grupo.Consequencia!.Value;
+        if (ConsequenciaAcrescimoNaoOferecido(configuracao, consequencia))
         {
-            return new DomainError("RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada", "O grupo determina retirar vantagem, mas nenhuma está configurada.");
+            return new DomainError("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "O grupo determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido.");
         }
         ModalidadeSelecionada? modalidade = ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(configuracao, grupo, fatosDeModalidade));
         return modalidade is null ? null : new DomainError("RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -87,9 +86,9 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
     private static string DescricaoDaModalidade(ModalidadeSelecionada modalidade) =>
         string.IsNullOrWhiteSpace(modalidade.Descricao) ? "selecionada" : modalidade.Descricao;
 
-    /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
-    internal static bool ConsequenciaRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao, string? consequencia) =>
-        consequencia == ConsequenciaDoIndeferimento.RemoveVantagem.Codigo() && configuracao.Vagas.BonusRegional is null;
+    /// <summary>A consequência é RETIRA_O_ACRESCIMO sem nenhum acréscimo oferecido no processo (bônus regional, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
+    internal static bool ConsequenciaAcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao, ConsequenciaDoDescumprimento? consequencia) =>
+        consequencia == ConsequenciaDoDescumprimento.RetiraOAcrescimo && configuracao.Vagas.BonusRegional is null;
 
     /// <summary>
     /// A primeira modalidade alcançada cuja <c>AcaoQuandoIndeferido</c> declarada é incoerente com a
@@ -97,24 +96,24 @@ internal static class CoerenciaDaConsequenciaDoIndeferimento
     /// modalidade para que a mensagem e a verificação de conformidade usem a mesma busca.
     /// </summary>
     internal static ModalidadeSelecionada? ModalidadeIncoerenteComConsequencia(
-        string consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
+        ConsequenciaDoDescumprimento consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
     {
         return modalidadesAlcancadas.FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
-            && !string.Equals(acao, consequencia, StringComparison.Ordinal));
+            && !string.Equals(acao, consequencia.Codigo(), StringComparison.Ordinal));
     }
 
-    /// <summary>Existe <see cref="DocumentoExigido"/> com REMOVE_VANTAGEM sem vantagem viva.</summary>
-    internal static bool ExisteExigenciaRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Exigencias.DocumentosExigidos.Any(e => ConsequenciaRemoveVantagemSemVantagemViva(configuracao, e.ConsequenciaIndeferimento));
+    /// <summary>Existe <see cref="DocumentoExigido"/> com RETIRA_O_ACRESCIMO sem o Fator oferecido.</summary>
+    internal static bool ExisteExigenciaComAcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Exigencias.DocumentosExigidos.Any(e => ConsequenciaAcrescimoNaoOferecido(configuracao, e.ConsequenciaIndeferimento));
 
     /// <summary>Existe <see cref="DocumentoExigido"/> com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
     internal static bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade) =>
         configuracao.Exigencias.DocumentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
             && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(configuracao, e, fatosDeModalidade)) is not null);
 
-    /// <summary>Existe grupo que exige uma quantidade mínima de itens com consequência própria REMOVE_VANTAGEM sem vantagem viva.</summary>
-    internal static bool ExisteGrupoRemoveVantagemSemVantagemViva(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Exigencias.RegrasDeComprovacao.Any(regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && ConsequenciaRemoveVantagemSemVantagemViva(configuracao, regra.Consequencia));
+    /// <summary>Existe grupo que exige uma quantidade mínima de itens com consequência própria RETIRA_O_ACRESCIMO sem o Fator oferecido.</summary>
+    internal static bool ExisteGrupoComAcrescimoNaoOferecido(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Exigencias.RegrasDeComprovacao.Any(regra => regra.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens && ConsequenciaAcrescimoNaoOferecido(configuracao, regra.Consequencia));
 
     /// <summary>Existe grupo que exige uma quantidade mínima de itens com consequência própria incoerente com a ação de alguma modalidade alcançada.</summary>
     internal static bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(ConfiguracaoDeclarada configuracao, FatosDeModalidade fatosDeModalidade) =>

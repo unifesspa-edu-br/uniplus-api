@@ -32,7 +32,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     private static readonly (string Arquivo, string Caminho, Func<IEnumerable<string?>> Dominio)[] Paridades =
     [
         (RegrasDeComprovacao, "/properties/forma", () => Codigos<FormaDeComprovacao>(static v => v.Codigo())),
-        (RegrasDeComprovacao, "/properties/consequencia", () => CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
+        (RegrasDeComprovacao, "/properties/consequencia", () => CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
         (RegrasDeComprovacao, "/properties/criterioDeDistincao", () => Codigos<CriterioDeDistincaoDasApresentacoes>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/modo", () => Codigos<ModoDeDeliberacao>(static v => v.Codigo())),
         (Bancas, $"{Deliberacao}/criterio", () => Codigos<CriterioDeVotacao>(static v => v.Codigo())),
@@ -57,7 +57,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/eventoInicialDoPrazo", () => Codigos<EventoInicialDoPrazo>(static v => v.Codigo())),
         (Exigencias, $"{Exigencia}/classificacaoProtecao", () => ClassificacoesDeProtecao.TokensCanonicos),
         (Exigencias, $"{Exigencia}/aplicabilidade", () => Codigos<Aplicabilidade>(static v => v.Codigo())),
-        (Exigencias, $"{Exigencia}/consequenciaIndeferimento", () => CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
+        (Exigencias, $"{Exigencia}/consequenciaIndeferimento", () => CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(static valor => valor.Codigo()).ToArray()),
         (Exigencias, "/$defs/prazoDeEmissao/properties/escolha", () => CatalogoDe<EscolhaDoPrazoDeEmissao>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/prazoDeEmissao/properties/unidade", () => CatalogoDe<UnidadeDoPrazoDeEmissao>.Todos().Select(static c => c.Codigo)),
         (Exigencias, "/$defs/prazoDeEmissao/properties/efeitoForaDoPrazo", () => CatalogoDe<EfeitoNaAnaliseDoDocumento>.Todos().Select(static c => c.Codigo)),
@@ -105,6 +105,11 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         string texto = File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Contratos", "selecao-configuracao", "v1", arquivo));
         JsonNode no = caminho.Split('/', StringSplitOptions.RemoveEmptyEntries)
             .Aggregate(JsonNode.Parse(texto)!, static (atual, passo) => atual[passo]!);
+        if (no["$ref"]?.GetValue<string>() is { } referencia)
+        {
+            string[] partes = referencia.Split('#', 2);
+            return ValoresDoEsquema(partes[0], partes[1]);
+        }
         return no["enum"]!.AsArray().Select(static valor => valor?.GetValue<string>());
     }
 }

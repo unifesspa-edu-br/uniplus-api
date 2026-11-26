@@ -99,6 +99,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.FatosComprovados).HasColumnName("dados_comprovados").IsRequired().HasComment("Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados.");
         builder.Property(d => d.Aplicabilidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired()
             .HasComment("A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência.");
+        builder.Property(d => d.AbrePrazoParaReenvio).HasComment("Indica se a exigência abre prazo para reenvio do documento.");
         builder.Property(d => d.Obrigatorio).IsRequired().HasComment("Indica se a falta do documento impede a inscrição de seguir.");
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength)
             .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
@@ -165,7 +166,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     {
         tabela.HasCheckConstraint("ck_documentos_exigidos_aplicabilidade", $"aplicabilidade IN ({SqlDosCodigosDeContrato.Lista<Aplicabilidade>()})");
         RestringirCodigoOpcional<FinalidadeFormulario>(tabela, "finalidade");
-        RestringirCodigoOpcional<ConsequenciaDoIndeferimento>(tabela, "consequencia_indeferimento");
+        RestringirCodigoOpcional<ConsequenciaDoDescumprimento>(tabela, "consequencia_indeferimento");
         RestringirCodigoOpcional<FormatoDeDocumento>(tabela, "modelo_formato");
         RestringirCodigoOpcional<EscolhaDoPrazoDeEmissao>(tabela, "prazo_emissao_escolha");
         RestringirCodigoOpcional<UnidadeDoPrazoDeEmissao>(tabela, "prazo_emissao_unidade");

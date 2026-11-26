@@ -38,7 +38,7 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         List<BaseLegalDoModelo> basesLegais = LerBasesLegais(entrada.BasesLegais, $"{campo}.indeferimento");
         LerConsequencia(entrada.Consequencia, $"{campo}.indeferimento.consequencia");
 
-        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.Consequencia ?? string.Empty, basesLegais);
+        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.Consequencia, basesLegais, entrada.AbrePrazoParaReenvio);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         RecusarCodigosAusentes(entrada, campo);
         LerConsequencia(entrada.Indeferimento?.Consequencia, $"{campo}.indeferimento.consequencia");
         return new IndeferimentoDoDocumentoDoModelo(
-            entrada.Indeferimento?.Obrigatorio ?? false, entrada.Indeferimento?.Consequencia ?? string.Empty, basesLegais);
+            entrada.Indeferimento?.Obrigatorio ?? false, entrada.Indeferimento?.Consequencia, basesLegais, entrada.Indeferimento?.AbrePrazoParaReenvio ?? false);
     }
 
     private RequisitosDoDocumentoDoModelo? LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)
@@ -103,18 +103,11 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 
     private void LerConsequencia(string? consequencia, string campo)
     {
-        if (string.IsNullOrWhiteSpace(consequencia))
+        if (consequencia is not null)
         {
-            string mensagem = campo.Contains(".gruposDeDocumentos[", StringComparison.Ordinal)
-                && !campo.Contains(".documentos[", StringComparison.Ordinal)
-                ? "O grupo de documentos do modelo precisa informar a consequência do indeferimento."
-                : "O documento exigido do modelo precisa informar a consequência do indeferimento.";
-            _recusas.RecusarEntradaMalformada(campo, mensagem);
-            return;
+            ConferirCodigo<ConsequenciaDoDescumprimento>(consequencia, campo,
+                ModeloFormularioErrorCodes.ConsequenciaDesconhecida, "A consequência do descumprimento é desconhecida.");
         }
-
-        ConferirCodigo<ConsequenciaDoIndeferimento>(consequencia, campo,
-            ModeloFormularioErrorCodes.ConsequenciaDesconhecida, "A consequência do indeferimento é desconhecida.");
     }
 
     private void ConferirCodigo<TEnum>(string? codigo, string campo, string erro, string mensagem)

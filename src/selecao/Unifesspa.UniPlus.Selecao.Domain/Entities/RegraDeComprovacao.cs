@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -23,7 +24,8 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
     public Guid? DocumentoExigidoId { get; private set; }
     public DocumentoExigido? DocumentoExigido { get; private set; }
     public int? QuantidadeMinima { get; private set; }
-    public string? Consequencia { get; private set; }
+    public ConsequenciaDoDescumprimento? Consequencia { get; private set; }
+    public bool AbrePrazoParaReenvio { get; private set; }
     public DistincaoDasApresentacoes? Distincao { get; private set; }
 
     /// <summary>Grupo do formulário a cujos registros a regra se aplica (ADR-0138).</summary>
@@ -75,19 +77,20 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         };
 
     public static Result<RegraDeComprovacao> CriarGrupo(
-        FormaDeComprovacao forma, int ordem, int? quantidadeMinima, string? consequencia,
-        IReadOnlyList<BaseLegalDaComprovacao> basesLegais, IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao = null)
+        CombinacaoDoGrupo declaracao, int ordem, IReadOnlyList<BaseLegalDaComprovacao> basesLegais,
+        IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao = null)
     {
+        ArgumentNullException.ThrowIfNull(declaracao);
         ArgumentNullException.ThrowIfNull(basesLegais);
         ArgumentNullException.ThrowIfNull(itens);
-        ConferirFormaDoGrupo(forma);
+        ConferirFormaDoGrupo(declaracao.Forma);
         ArgumentOutOfRangeException.ThrowIfNegative(ordem);
         DomainError? recusa = ComposicaoDoGrupo.Recusa(itens, grupoDoFormularioParaRepeticao);
         if (recusa is not null)
         {
             return Result<RegraDeComprovacao>.Failure(recusa);
         }
-        Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(forma, quantidadeMinima, consequencia, itens.Count, basesLegais.Count > 0);
+        Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(declaracao.Forma, declaracao.QuantidadeMinima, declaracao.Consequencia, itens.Count, basesLegais.Count > 0, declaracao.AbrePrazoParaReenvio);
         return combinacao.IsFailure ? Result<RegraDeComprovacao>.Failure(combinacao.Error!)
             : Result<RegraDeComprovacao>.Success(NovoGrupo(ordem, combinacao.Value!, basesLegais, itens, grupoDoFormularioParaRepeticao?.Trim()));
     }
@@ -116,7 +119,8 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
             Forma = combinacao.Forma,
             Ordem = ordem,
             QuantidadeMinima = combinacao.QuantidadeMinima,
-            Consequencia = combinacao.Consequencia,
+            Consequencia = CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(combinacao.Consequencia, out ConsequenciaDoDescumprimento valor) ? valor : null,
+            AbrePrazoParaReenvio = combinacao.AbrePrazoParaReenvio,
             GrupoDoFormularioParaRepeticao = grupoDoFormularioParaRepeticao,
         };
         regra.VincularItensEBasesLegais(itens, basesLegais);

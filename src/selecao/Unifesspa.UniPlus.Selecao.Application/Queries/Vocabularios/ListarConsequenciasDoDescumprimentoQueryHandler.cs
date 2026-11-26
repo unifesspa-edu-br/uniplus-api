@@ -5,11 +5,11 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>Oferece o vocabulário das consequências do indeferimento de um documento exigido.</summary>
-public static class ListarConsequenciasDoIndeferimentoQueryHandler
+public static class ListarConsequenciasDoDescumprimentoQueryHandler
 {
-    public static IReadOnlyList<CodigoComRotulo<ConsequenciaDoIndeferimento>> Handle(ListarConsequenciasDoIndeferimentoQuery query)
+    public static IReadOnlyList<CodigoComRotulo<ConsequenciaDoDescumprimento>> Handle(ListarConsequenciasDoDescumprimentoQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return [.. CatalogoDe<ConsequenciaDoIndeferimento>.Valores().Select(CodigoComRotulo<ConsequenciaDoIndeferimento>.De)];
+        return [.. CatalogoDe<ConsequenciaDoDescumprimento>.Valores().Select(CodigoComRotulo<ConsequenciaDoDescumprimento>.De)];
     }
 }

@@ -32,7 +32,7 @@ public sealed class RegraDeComprovacaoTests
     [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens)]
     public void CriarGrupo_SemItens_Recusa(FormaDeComprovacao forma)
     {
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(forma, 0, null, null, [], []);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(forma, null, null), 0, [], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoSemItens");
@@ -44,7 +44,7 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao primeiraRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(Guid.CreateVersion7()), 0).Value!;
         RegraDeComprovacao segundaRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(Guid.CreateVersion7()), 1).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.GrupoComFasesDiferentes");
@@ -57,7 +57,7 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao primeiraRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!;
         RegraDeComprovacao segundaRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.FaseComum().Should().Be(faseId);
@@ -73,7 +73,7 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao primeiraRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: primeira), 0).Value!;
         RegraDeComprovacao segundaRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId, finalidade: segunda), 1).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
 
         resultado.IsSuccess.Should().Be(aceita);
         if (!aceita)
@@ -90,7 +90,7 @@ public sealed class RegraDeComprovacaoTests
 
         // A mesma regra não pode aparecer mais de uma vez na composição.
         // é de domínio, não só de contrato (ver remarks de RegraDeComprovacao.CriarGrupo).
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [item, item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [item, item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.RegraContemASiMesma");
@@ -101,7 +101,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, 1, null, [], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, 1, null), 0, [], [item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos");
@@ -112,7 +112,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, "ELIMINA", [], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, "ELIMINA_DO_PROCESSO"), 0, [], [item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos");
@@ -123,7 +123,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [BaseLegalResolvida()], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [BaseLegalResolvida()], [item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos");
@@ -138,7 +138,7 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao primeiraRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!;
         RegraDeComprovacao segundaRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, quantidadeMinima, null, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, quantidadeMinima, null), 0, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites");
@@ -149,7 +149,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [item]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.QuantidadeMinima.Should().Be(RegraDeComprovacao.QuantidadeMinimaPadrao);
@@ -160,7 +160,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, "QUALQUER_COISA", [], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, "QUALQUER_COISA"), 0, [], [item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.ConsequenciaInvalida");
@@ -171,7 +171,7 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
-        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [BaseLegalResolvida()], [item]);
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [BaseLegalResolvida()], [item]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.BaseLegalSemConsequencia");
@@ -183,10 +183,11 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
 
         Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegalResolvida()], [item]);
+
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegalResolvida()], [item]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Consequencia.Should().Be("ELIMINA");
+        resultado.Value!.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         resultado.Value!.BasesLegais.Should().ContainSingle();
         resultado.Value!.DeterminaResultado().Should().BeTrue();
     }
@@ -198,7 +199,8 @@ public sealed class RegraDeComprovacaoTests
             Documento(), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
 
         Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumentoRepetida], grupoDoFormularioParaRepeticao: "PESSOAS_JURIDICAS");
+
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumentoRepetida], grupoDoFormularioParaRepeticao: "PESSOAS_JURIDICAS");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.RepeticaoDentroDeRepeticao");
@@ -209,10 +211,11 @@ public sealed class RegraDeComprovacaoTests
     {
         RegraDeComprovacao regraDeDocumentoRepetida = RegraDeComprovacao.CriarRegraDeDocumento(
             Documento(), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
-        RegraDeComprovacao grupoIntermediario = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumentoRepetida]).Value!;
+        RegraDeComprovacao grupoIntermediario = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumentoRepetida]).Value!;
 
         Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [grupoIntermediario], grupoDoFormularioParaRepeticao: "PESSOAS_JURIDICAS");
+
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [grupoIntermediario], grupoDoFormularioParaRepeticao: "PESSOAS_JURIDICAS");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.RepeticaoDentroDeRepeticao");
@@ -226,7 +229,8 @@ public sealed class RegraDeComprovacaoTests
         RegraDeComprovacao segundaRegraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
 
         Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento], grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR");
+
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [primeiraRegraDeDocumento, segundaRegraDeDocumento], grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR");
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -235,7 +239,7 @@ public sealed class RegraDeComprovacaoTests
     public void DeterminaResultado_TodosOsItens_SempreFalso()
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
-        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [item]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [item]).Value!;
 
         grupoDeTodos.DeterminaResultado().Should().BeFalse();
     }
@@ -244,7 +248,7 @@ public sealed class RegraDeComprovacaoTests
     public void DeterminaResultado_QuantidadeMinimaDeItensSemConsequencia_Falso()
     {
         RegraDeComprovacao item = RegraDeComprovacao.CriarRegraDeDocumento(Documento(), 0).Value!;
-        RegraDeComprovacao grupoDeQuantidadeMinima = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [item]).Value!;
+        RegraDeComprovacao grupoDeQuantidadeMinima = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [item]).Value!;
 
         grupoDeQuantidadeMinima.DeterminaResultado().Should().BeFalse();
     }
@@ -255,9 +259,9 @@ public sealed class RegraDeComprovacaoTests
         Guid faseId = Guid.CreateVersion7();
         RegraDeComprovacao rg = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 0).Value!;
         RegraDeComprovacao cpf = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
-        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [rg, cpf]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [rg, cpf]).Value!;
         RegraDeComprovacao cin = RegraDeComprovacao.CriarRegraDeDocumento(Documento(faseId), 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, null, null, [], [grupoDeTodos, cin]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, null, null), 0, [], [grupoDeTodos, cin]).Value!;
 
         List<RegraDeComprovacao> regras = [.. regraSemGrupo.EnumerarRegraEItens()];
 
@@ -271,7 +275,7 @@ public sealed class RegraDeComprovacaoTests
         Guid faseId = Guid.CreateVersion7();
         DocumentoExigido documentoGeral = Documento(faseId, aplicabilidade: Aplicabilidade.Geral);
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(documentoGeral, 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumento]).Value!;
 
         // Aplicabilidade GERAL alcança qualquer modalidade (DocumentoExigido.PodeAlcancarModalidade).
         grupo.PodeAlcancarModalidade("AC", FatosDeModalidadeDeTeste.DoCatalogo).Should().BeTrue();

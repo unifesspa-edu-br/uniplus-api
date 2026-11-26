@@ -65,24 +65,24 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     [Fact(DisplayName = "Regra de documento que aguarda dados não aplica consequência, enquanto o outro item aplica")]
     public void RegraQueAguardaDadosEmGrupoDeTodos_AdiaConsequencia_OutroItemAplica()
     {
-        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
-        DocumentoExigido aberto = DocumentoGeral("REMOVE_VANTAGEM");
+        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido aberto = DocumentoGeral("RETIRA_O_ACRESCIMO");
         RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!;
         RegraDeComprovacao regraComDados = RegraDeComprovacao.CriarRegraDeDocumento(aberto, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraQueAguardaDados, regraComDados]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraQueAguardaDados, regraComDados]).Value!;
 
         ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
 
         resultado.SituacoesPorRegra[regraQueAguardaDados.Id].Should().Be(SituacaoDaComprovacao.AguardandoDados, "a regra de documento aguarda dados");
         resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id);
-        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraComDados.Id && c.Consequencia == "REMOVE_VANTAGEM");
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraComDados.Id && c.Consequencia == "RETIRA_O_ACRESCIMO");
         resultado.ConsequenciasVigentes.Should().NotContain(c => c.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra que aguarda dados não aplica consequência");
     }
 
     [Fact(DisplayName = "Grupo com quantidade mínima adia a consequência quando as regras decisivas aguardam dados")]
     public void GrupoComRegrasDecisivasQueAguardamDados_AdiaConsequencia()
     {
-        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
+        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA_DO_PROCESSO");
         (RegraDeComprovacao regraSemGrupo, RegraDeComprovacao grupoDeTodos) = CriarGrupoAlternativoComCondicionais(bloqueado);
         ResultadoDaComprovacao resultado = Resolver(
             Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false)), bloqueadas: new HashSet<Guid> { bloqueado.Id }).Value!;
@@ -93,18 +93,18 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     [Fact(DisplayName = "Grupo aplica a consequência quando a regra decisiva pode ser avaliada")]
     public void GrupoComRegraDecisivaAvaliada_Emite()
     {
-        DocumentoExigido alcancavel = DocumentoGeral("ELIMINA");
+        DocumentoExigido alcancavel = DocumentoGeral("ELIMINA_DO_PROCESSO");
         DocumentoExigido naoAplicavelDentro = DocumentoCondicional("CONDICAO");
         DocumentoExigido naoAplicavelFora = DocumentoCondicional("CONDICAO");
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(alcancavel, 0).Value!;
         RegraDeComprovacao regraNaoAplicavelDentro = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavelDentro, 1).Value!;
-        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento, regraNaoAplicavelDentro]).Value!;
+        RegraDeComprovacao grupoDeTodos = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumento, regraNaoAplicavelDentro]).Value!;
         RegraDeComprovacao regraNaoAplicavelFora = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavelFora, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "RECLASSIFICA_AC", [], [grupoDeTodos, regraNaoAplicavelFora]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_A_MODALIDADE"), 0, [], [grupoDeTodos, regraNaoAplicavelFora]).Value!;
         ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false))).Value!;
 
         resultado.RegrasComConsequenciaAdiada.Should().BeEmpty();
-        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "RECLASSIFICA_AC");
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "RETIRA_A_MODALIDADE");
     }
 
     [Fact(DisplayName = "Grupo sem possibilidade de cumprimento aplica consequência quando não aguarda dados")]
@@ -114,7 +114,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         DocumentoExigido naoAplicavel = DocumentoCondicional("CONDICAO");
         RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
         RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 2, "ELIMINA", [], [regraCumprida, regraNaoAplicavel]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, "ELIMINA_DO_PROCESSO"), 0, [], [regraCumprida, regraNaoAplicavel]).Value!;
 
         Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresenta = ApresentacaoDe(satisfeito);
         ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo), fatos: Fatos(("CONDICAO", false)), apresentacoes: apresenta).Value!;
@@ -125,9 +125,9 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     [Fact(DisplayName = "Consequência adiada é aplicada quando os dados chegam")]
     public void DadosRecebidos_PermitemReavaliar()
     {
-        DocumentoExigido documento = DocumentoGeral("ELIMINA");
+        DocumentoExigido documento = DocumentoGeral("ELIMINA_DO_PROCESSO");
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumento]).Value!;
         RegrasDeComprovacaoDaVersao regras = Regras(regraSemGrupo);
 
         ResultadoDaComprovacao bloqueado = Resolver(regras, bloqueadas: new HashSet<Guid> { documento.Id }).Value!;
@@ -136,20 +136,20 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
 
         ResultadoDaComprovacao desbloqueado = Resolver(regras).Value!;
         desbloqueado.RegrasComConsequenciaAdiada.Should().BeEmpty("os dados recebidos permitem reavaliar a consequência");
-        desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraDeDocumento.Id && c.Consequencia == "ELIMINA");
+        desbloqueado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraDeDocumento.Id && c.Consequencia == "ELIMINA_DO_PROCESSO");
     }
 
     [Fact(DisplayName = "Grupo sem possibilidade de cumprimento aplica consequência e mantém adiada a da regra que aguarda dados")]
     public void RegraQueAguardaDadosSobGrupoImpossivel_ContinuaAdiada()
     {
-        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
+        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA_DO_PROCESSO");
         DocumentoExigido satisfeito = DocumentoGeral(null);
         DocumentoExigido naoAplicavel = DocumentoCondicional("CONDICAO");
         RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!;
         RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
         RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
-        RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 2, "RECLASSIFICA_AC", [], [regraCumprida, regraNaoAplicavel]).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraQueAguardaDados, grupoInterno]).Value!;
+        RegraDeComprovacao grupoInterno = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, "RETIRA_A_MODALIDADE"), 1, [], [regraCumprida, regraNaoAplicavel]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraQueAguardaDados, grupoInterno]).Value!;
 
         ResultadoDaComprovacao resultado = ResolverComDocumentoBloqueado(regraSemGrupo, satisfeito, bloqueado);
 
@@ -165,7 +165,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         RegraDeComprovacao regraCumprida = RegraDeComprovacao.CriarRegraDeDocumento(satisfeito, 0).Value!;
         RegraDeComprovacao regraNaoAplicavel = RegraDeComprovacao.CriarRegraDeDocumento(naoAplicavel, 1).Value!;
         RegraDeComprovacao regraQueAguardaDados = RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 2).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 3, "ELIMINA", [], [regraCumprida, regraNaoAplicavel, regraQueAguardaDados]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 3, "ELIMINA_DO_PROCESSO"), 0, [], [regraCumprida, regraNaoAplicavel, regraQueAguardaDados]).Value!;
 
         ResultadoDaComprovacao resultado = ResolverComDocumentoBloqueado(regraSemGrupo, satisfeito, bloqueado);
 
@@ -175,12 +175,10 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     [Fact(DisplayName = "Regra repetida aguarda dados em cada ocorrência sem aplicar consequência")]
     public void RepeticaoPorMembro_RegraQueAguardaDados_NaoAplicaConsequencia()
     {
-        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
-        DocumentoExigido aberto = DocumentoGeral("REMOVE_VANTAGEM");
+        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido aberto = DocumentoGeral("RETIRA_O_ACRESCIMO");
         RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [],
-            [RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(aberto, 1).Value!],
-            grupoDoFormularioParaRepeticao: "FAMILIA").Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(bloqueado, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(aberto, 1).Value!], grupoDoFormularioParaRepeticao: "FAMILIA").Value!;
         Dictionary<string, IReadOnlyList<OcorrenciaDoGrupo>> membros = MembrosDaFamilia();
 
         ResultadoDaComprovacao resultado = AvaliadorDaComprovacao.Resolver(
@@ -193,11 +191,11 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     [Fact(DisplayName = "Sem regras aguardando dados, a avaliação aplica as consequências previstas")]
     public void SemBloqueio_ComportamentoInalterado()
     {
-        DocumentoExigido a = DocumentoGeral("ELIMINA");
-        DocumentoExigido b = DocumentoGeral("REMOVE_VANTAGEM");
+        DocumentoExigido a = DocumentoGeral("ELIMINA_DO_PROCESSO");
+        DocumentoExigido b = DocumentoGeral("RETIRA_O_ACRESCIMO");
         RegraDeComprovacao primeiraRegra = RegraDeComprovacao.CriarRegraDeDocumento(a, 0).Value!;
         RegraDeComprovacao segundaRegra = RegraDeComprovacao.CriarRegraDeDocumento(b, 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [primeiraRegra, segundaRegra]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [primeiraRegra, segundaRegra]).Value!;
 
         ResultadoDaComprovacao resultado = Resolver(Regras(regraSemGrupo)).Value!;
 
@@ -215,7 +213,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     {
         resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento, "uma regra cumprida não alcança o mínimo de duas regras");
         resultado.RegrasComConsequenciaAdiada.Should().BeEmpty("IMPOSSIVEL decidido emite o inevitável, nunca aguarda dados");
-        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA");
+        resultado.ConsequenciasVigentes.Should().ContainSingle(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA_DO_PROCESSO");
     }
 
     private static void VerificarBloqueioSobGrupoImpossivel(
@@ -224,7 +222,7 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
         resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id, "a regra que aguarda dados continua com consequência adiada");
         resultado.ConsequenciasVigentes.Should().NotContain(c => c.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra que aguarda dados não aplica a eliminação");
-        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == grupoInterno.Id && c.Consequencia == "RECLASSIFICA_AC", "o grupo sem possibilidade de cumprimento aplica a consequência");
+        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == grupoInterno.Id && c.Consequencia == "RETIRA_A_MODALIDADE", "o grupo sem possibilidade de cumprimento aplica a consequência");
     }
 
     private static void VerificarOrientacaoBloqueada(ResultadoDaComprovacao resultado, RegraDeComprovacao regraSemGrupo, RegraDeComprovacao regraQueAguardaDados)
@@ -232,15 +230,15 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
         resultado.SituacoesPorRegra[regraSemGrupo.Id].Should().Be(SituacaoDaComprovacao.SemPossibilidadeDeCumprimento);
         resultado.RegrasComConsequenciaAdiada.Should().Contain(regraQueAguardaDados.Id);
         resultado.PendenciasDeOrientacao.Should().NotContain(p => p.RegraDeComprovacaoId == regraQueAguardaDados.Id, "a regra de documento bloqueada não gera orientação");
-        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA");
+        resultado.ConsequenciasVigentes.Should().Contain(c => c.RegraDeComprovacaoId == regraSemGrupo.Id && c.Consequencia == "ELIMINA_DO_PROCESSO");
     }
 
     private static void VerificarOcorrencias(ResultadoDaComprovacao resultado, DocumentoExigido bloqueado)
     {
         resultado.SituacoesDeExigenciaPorOcorrencia.Where(s => s.DocumentoExigidoId == bloqueado.Id)
             .Should().OnlyContain(static s => s.Situacao == StatusResolucaoExigencia.AguardandoDados);
-        resultado.ConsequenciasVigentes.Should().NotContain(static c => c.Consequencia == "ELIMINA", "a regra que aguarda dados não aplica consequência em nenhuma ocorrência");
-        resultado.ConsequenciasVigentes.Where(static c => c.Consequencia == "REMOVE_VANTAGEM").Select(static c => c.OcorrenciaId)
+        resultado.ConsequenciasVigentes.Should().NotContain(static c => c.Consequencia == "ELIMINA_DO_PROCESSO", "a regra que aguarda dados não aplica consequência em nenhuma ocorrência");
+        resultado.ConsequenciasVigentes.Where(static c => c.Consequencia == "RETIRA_O_ACRESCIMO").Select(static c => c.OcorrenciaId)
             .Should().Equal("m1", "m2");
     }
 
@@ -248,9 +246,9 @@ public sealed class AvaliadorDaComprovacaoConsequenciasAdiadasTests
     {
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!;
         RegraDeComprovacao condicionalDentro = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional("CONDICAO"), 1).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [regraDeDocumento, condicionalDentro]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [regraDeDocumento, condicionalDentro]).Value!;
         RegraDeComprovacao condicionalFora = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoCondicional("CONDICAO"), 1).Value!;
-        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "RECLASSIFICA_AC", [], [grupo, condicionalFora]).Value!;
+        RegraDeComprovacao regraSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_A_MODALIDADE"), 0, [], [grupo, condicionalFora]).Value!;
         return (regraSemGrupo, grupo);
     }
 

@@ -7,18 +7,18 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>A cardinalidade e a consequência próprias de um grupo de exigências.</summary>
-public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? QuantidadeMinima, string? Consequencia)
+public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? QuantidadeMinima, string? Consequencia, bool AbrePrazoParaReenvio = false)
 {
     public static Result<CombinacaoDoGrupo> Declarar(
-        FormaDeComprovacao forma, int? quantidadeMinima, string? consequencia, int quantidadeDeItens, bool temBaseLegal)
+        FormaDeComprovacao forma, int? quantidadeMinima, string? consequencia, int quantidadeDeItens, bool temBaseLegal, bool abrePrazoParaReenvio = false)
     {
         DomainError? recusa = forma == FormaDeComprovacao.TodosOsItens
             ? RecusaQuandoExigeTodosOsItens(quantidadeMinima, consequencia, temBaseLegal)
             : RecusaQuandoExigeQuantidadeMinima(quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, consequencia, quantidadeDeItens, temBaseLegal);
         return recusa is not null ? Result<CombinacaoDoGrupo>.Failure(recusa)
             : Result<CombinacaoDoGrupo>.Success(forma == FormaDeComprovacao.TodosOsItens
-                ? new(forma, null, null)
-                : new(forma, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, NormalizarConsequencia(consequencia)));
+                ? new(forma, null, null, abrePrazoParaReenvio)
+                : new(forma, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, NormalizarConsequencia(consequencia), abrePrazoParaReenvio));
     }
 
     private static DomainError? RecusaQuandoExigeTodosOsItens(int? quantidadeMinima, string? consequencia, bool temBaseLegal)
@@ -46,8 +46,8 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
         {
             return new("RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos", "Este grupo exige todos os itens, mas informa uma consequência própria. Retire a consequência do grupo.");
         }
-        return forma == FormaDeComprovacao.QuantidadeMinimaDeItens && normalizada is not null && !CatalogoDe<ConsequenciaDoIndeferimento>.TentarObter(normalizada, out _)
-            ? new("RegraDeComprovacao.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio.") : null;
+        return forma == FormaDeComprovacao.QuantidadeMinimaDeItens && normalizada is not null && !CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(normalizada, out _)
+            ? new("RegraDeComprovacao.ConsequenciaInvalida", "A consequência deste grupo não é reconhecida.") : null;
     }
 
     internal static DomainError? RecusaDaBaseLegal(FormaDeComprovacao forma, string? consequencia, bool temBaseLegal) => forma switch

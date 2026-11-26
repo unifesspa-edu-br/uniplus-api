@@ -8,8 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public sealed class AcaoQuandoIndeferidoTests
 {
     [Theory(DisplayName = "Cada ação quando indeferido tem o código e o rótulo do contrato")]
-    [InlineData(AcaoQuandoIndeferido.ReclassificaAc, "RECLASSIFICA_AC", "Ampla concorrência")]
-    [InlineData(AcaoQuandoIndeferido.ReclassificaConformeEdital, "RECLASSIFICA_CONFORME_EDITAL", "Conforme o edital")]
+    [InlineData(AcaoQuandoIndeferido.RetiraAModalidade, "RETIRA_A_MODALIDADE", "Retirada da modalidade")]
     public void Valor_Declarado_TemCodigoERotulo(AcaoQuandoIndeferido valor, string codigo, string rotulo)
     {
         valor.Codigo().Should().Be(codigo);
@@ -21,16 +20,15 @@ public sealed class AcaoQuandoIndeferidoTests
     [Fact(DisplayName = "O enum tem exatamente as duas ações, na ordem de exibição")]
     public void Valores_Catalogo_NaOrdemDeDeclaracao() =>
         CatalogoDe<AcaoQuandoIndeferido>.Valores().Should().Equal(
-            AcaoQuandoIndeferido.ReclassificaAc,
-            AcaoQuandoIndeferido.ReclassificaConformeEdital);
+            AcaoQuandoIndeferido.RetiraAModalidade);
 
     [Theory(DisplayName = "Código fora do contrato não é ação quando indeferido, sem tolerância a espaço nem a caixa")]
     [InlineData("")]
     [InlineData("2")]
     [InlineData("ReclassificaAc")]
     [InlineData("reclassifica_ac")]
-    [InlineData(" RECLASSIFICA_AC")]
-    [InlineData("ELIMINA")]
+    [InlineData(" RETIRA_A_MODALIDADE")]
+    [InlineData("ELIMINA_DO_PROCESSO")]
     public void TentarObter_CodigoForaDoContrato_NaoEncontra(string codigo) =>
         CatalogoDe<AcaoQuandoIndeferido>.TentarObter(codigo, out _).Should().BeFalse();
 }

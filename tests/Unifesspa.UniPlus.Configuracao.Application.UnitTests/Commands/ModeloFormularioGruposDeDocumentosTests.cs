@@ -21,7 +21,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
     private readonly CenarioDoHandlerDoModelo _cenario = new();
 
     private static DocumentoExigidoDoModeloInput LaudoQueExigeAoMenos(string fato) =>
-        new("INSCRICAO", "LAUDO_MEDICO", Quando(fato, true), new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
+        new("INSCRICAO", "LAUDO_MEDICO", Quando(fato, true), new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
 
     private static ConteudoDoModeloInput ComGrupoDeDocumentos(GrupoDeDocumentosDoModeloInput grupo) =>
         Conteudo(Item("CERTIFICADO", 0)) with { ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(grupo).Construir() };
@@ -29,7 +29,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
     private static ModeloFormulario ExistenteComDocumentosEGrupo()
     {
         DocumentoExigidoDoModelo documento = new(
-            "INSCRICAO", "LAUDO_MEDICO", null, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
+            "INSCRICAO", "LAUDO_MEDICO", null, new IndeferimentoDoDocumentoDoModelo(false, "RETIRA_O_ACRESCIMO", []), RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
         ConjuntoDeDocumentosDoModelo conjunto = new([documento], [new GrupoDeDocumentosDoModelo(1, null, [documento])]);
         ModeloFormulario existente = Existente(null);
         return ModeloFormulario.Criar(
@@ -44,14 +44,14 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
         ModeloFormulario? gravado = null;
         await _cenario.Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
         GrupoDeDocumentosDoModeloInput grupo = new(
-            2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput("REMOVE_VANTAGEM", []), [LaudoQueExigeAoMenos("CERTIFICADO")]);
+            2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_O_ACRESCIMO", []), [LaudoQueExigeAoMenos("CERTIFICADO")]);
 
         Result<Guid> resultado = await _cenario.CriarAsync(ComGrupoDeDocumentos(grupo));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         GrupoDeDocumentosDoModelo gravada = gravado!.Conteudo.Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
         gravada.QuantidadeMinima.Should().Be(2);
-        gravada.Indeferimento!.Consequencia.Should().Be("REMOVE_VANTAGEM");
+        gravada.Indeferimento!.Consequencia.Should().Be("RETIRA_O_ACRESCIMO");
         gravada.Documentos.Should().ContainSingle().Which.TipoDocumentoCodigo.Should().Be("LAUDO_MEDICO");
     }
 

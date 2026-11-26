@@ -40,8 +40,8 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
     private static BaseLegalDaComprovacao BaseLegal(StatusBaseLegal status) =>
         BaseLegalDaComprovacao.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
-    [Fact(DisplayName = "Grupo não pode retirar vantagem que não está configurada")]
-    public void Grupo_RemoveVantagemSemVantagemViva_Bloqueia()
+    [Fact(DisplayName = "Grupo não pode retirar acréscimo que não é oferecido")]
+    public void Grupo_AcrescimoNaoOferecido_Bloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
@@ -49,14 +49,14 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "REMOVE_VANTAGEM", [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_O_ACRESCIMO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada");
+        pendencia!.Code.Should().Be("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
     [Fact(DisplayName = "Grupo com consequência e base legal só PENDENTE reprova o verificação de conformidade")]
@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Pendente)], [regraDeDocumento]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Pendente)], [regraDeDocumento]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
@@ -85,7 +85,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
@@ -101,7 +101,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ABRE_PRAZO_PARA_REENVIO", [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, true), 0, [], [regraDeDocumento]).Value!;
 
         Result resultado = processo.DefinirDocumentosExigidos([grupo]);
 
@@ -118,7 +118,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([faseComComplementacao], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
-        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ABRE_PRAZO_PARA_REENVIO", [], [regraDeDocumento]).Value!;
+        RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, true), 0, [], [regraDeDocumento]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
@@ -220,7 +220,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);

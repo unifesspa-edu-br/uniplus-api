@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public static class ConferenciaDasReferenciasEntreModalidades
 {
     /// <summary>Token de contrato da ação que reclassifica na ampla concorrência.</summary>
-    private const string ReclassificarNaAmplaConcorrencia = "RECLASSIFICA_AC";
+    private const string ReclassificarNaAmplaConcorrencia = "RETIRA_A_MODALIDADE";
 
     private static readonly (Func<ModalidadeSelecionada, string?> Citada, string Codigo, string Rotulo)[] Citacoes =
     [
@@ -86,8 +86,8 @@ public static class ConferenciaDasReferenciasEntreModalidades
         string.Equals(modalidade.AcaoQuandoIndeferido, ReclassificarNaAmplaConcorrencia, StringComparison.Ordinal)
         && !codigos.Contains(ModalidadesFederaisLei12711.Ac)
         && !declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades)
-            ? [Recusa(DistribuicaoDeVagasErrorCodes.ReclassificacaoParaAmplaSemAmplaOfertada,
-                $"Modalidade {modalidade.Codigo} reclassifica em {ModalidadesFederaisLei12711.Ac}, que não está selecionada nesta oferta.")]
+            ? [Recusa(DistribuicaoDeVagasErrorCodes.RetiraAModalidadeSemAmplaConcorrencia,
+                $"A modalidade {modalidade.Codigo} prevê sua retirada, mas a oferta não inclui ampla concorrência.")]
             : [];
 
     private static FieldError Recusa(string codigo, string mensagem) =>

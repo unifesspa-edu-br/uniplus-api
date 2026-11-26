@@ -19,7 +19,6 @@ public sealed class ConteudoDoModeloJsonTests
 {
     private static readonly Guid TermoId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid VersaoId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-
     [Fact(DisplayName = "O conteúdo com todos os opcionais presentes grava o JSON na ordem do contrato")]
     public void Serializar_ConteudoComOpcionaisPresentes_GravaOJsonNaOrdemDoContrato()
     {
@@ -27,7 +26,6 @@ public sealed class ConteudoDoModeloJsonTests
 
         json.Should().Be(JsonCompleto);
     }
-
     [Fact(DisplayName = "O conteúdo com os opcionais ausentes grava nulo nos textos e nas regras e lista vazia nas coleções")]
     public void Serializar_ConteudoComOpcionaisAusentes_GravaNuloEListaVazia()
     {
@@ -35,7 +33,6 @@ public sealed class ConteudoDoModeloJsonTests
 
         json.Should().Be(JsonMinimo);
     }
-
     [Fact(DisplayName = "O JSON com todos os opcionais presentes remonta cada parte e volta idêntico ao ser gravado de novo")]
     public void Desserializar_JsonComOpcionaisPresentes_VoltaIdenticoAoSerGravado()
     {
@@ -43,7 +40,6 @@ public sealed class ConteudoDoModeloJsonTests
 
         ConteudoDoModeloJson.Serializar(conteudo).Should().Be(JsonCompleto);
     }
-
     [Fact(DisplayName = "O JSON com os opcionais nulos remonta cada parte e volta idêntico ao ser gravado de novo")]
     public void Desserializar_JsonComOpcionaisAusentes_VoltaIdenticoAoSerGravado()
     {
@@ -92,7 +88,7 @@ public sealed class ConteudoDoModeloJsonTests
 
         GrupoDeDocumentosDoModelo grupo = conteudo.Documentos.GruposDeDocumentos.Single();
         grupo.QuantidadeMinima.Should().Be(2);
-        grupo.Indeferimento!.Consequencia.Should().Be("ELIMINA");
+        grupo.Indeferimento!.Consequencia.Should().Be("ELIMINA_DO_PROCESSO");
         grupo.Documentos.Should().ContainSingle().Which.TipoDocumentoCodigo.Should().Be("CERTIDAO");
     }
 
@@ -316,7 +312,7 @@ public sealed class ConteudoDoModeloJsonTests
         """{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[],"prazoDeEmissao":null,"validade":null,"porOpcao":null}""";
 
     private const string GrupoDeDocumentosJson =
-        $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
+        $$"""{"quantidadeMinima":2,"consequenciaIndeferimento":"ELIMINA_DO_PROCESSO","basesLegais":[],"documentos":[{{DocumentoCertidaoJson}}]}""";
 
     private const string JsonCompleto =
         $$"""{"titulo":"Inscri\u00E7\u00E3o \u0022Medicina\u0022 \u003C2027\u003E","paginas":[{{PaginaDadosJson}},{{PaginaRevisaoJson}}],"itens":[{{ItemRendaJson}}],"termos":[{{TermoUsoJson}}],"pressupostos":["COR_RACA"],"grupos":[{{GrupoFamiliaJson}}],"documentosExigidos":[{{DocumentoCertidaoJson}}],"gruposDeDocumentos":[{{GrupoDeDocumentosJson}}]}""";
@@ -346,7 +342,7 @@ public sealed class ConteudoDoModeloJsonTests
         ["COR_RACA"],
         [GrupoCompleto()],
         new ConjuntoDeDocumentosDoModelo(
-            [DocumentoCompleto()], [new GrupoDeDocumentosDoModelo(2, new IndeferimentoDoGrupoDeDocumentosDoModelo("ELIMINA", []), [DocumentoCompleto()])]));
+            [DocumentoCompleto()], [new GrupoDeDocumentosDoModelo(2, new IndeferimentoDoGrupoDeDocumentosDoModelo("ELIMINA_DO_PROCESSO", []), [DocumentoCompleto()])]));
 
     private static ConteudoDoModelo ConteudoMinimo() => new(
         null,

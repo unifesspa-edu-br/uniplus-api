@@ -86,7 +86,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         PredicadoDnf quando = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
         DocumentoExigidoDoModelo documento = new(
-            "INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]),
+            "INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "RETIRA_O_ACRESCIMO", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
 
         return Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(documento) });

@@ -79,7 +79,7 @@ public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<A
 /// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir.</param>
 /// <param name="Consequencia">Código da consequência do indeferimento, lido no GET; ausente, a exigência não determina resultado.</param>
 /// <param name="BasesLegais">As bases legais da exigência; ausentes valem lista vazia, válida na escrita e pendente na publicação quando exigida.</param>
-public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoIndeferimento>] string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais)
+public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? Consequencia, IReadOnlyList<BaseLegalInput>? BasesLegais, bool AbrePrazoParaReenvio = false)
 {
     /// <summary>O caminho da consequência no pedido.</summary>
     public const string CaminhoDaConsequencia = "indeferimento.consequencia";
@@ -167,7 +167,7 @@ public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null,
 /// <summary>A consequência do indeferimento de um grupo com quantidade mínima de itens e as bases legais dela.</summary>
 /// <param name="Consequencia">Código da consequência lido no GET; só o grupo com quantidade mínima de itens a declara.</param>
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
-public sealed record IndeferimentoDoGrupoInput([property: AceitaCodigosDe<ConsequenciaDoIndeferimento>] string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null);
+public sealed record IndeferimentoDoGrupoInput([property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? Consequencia = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null, bool AbrePrazoParaReenvio = false);
 
 /// <summary>Regra informada para comprovar uma exigência documental.</summary>
 public sealed record RegraDeComprovacaoInformada(

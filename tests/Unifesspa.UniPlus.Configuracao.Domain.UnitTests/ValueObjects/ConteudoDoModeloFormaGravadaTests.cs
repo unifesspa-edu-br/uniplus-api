@@ -154,7 +154,7 @@ public sealed class ConteudoDoModeloFormaGravadaTests
     [Fact(DisplayName = "Os documentos de um grupo ficam na forma gravada, nas mesmas posições, e o grupo mantém a quantidade e o indeferimento")]
     public void NaFormaGravada_DocumentosDeGrupo_CodigosComoEnviados()
     {
-        IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento = new("REMOVE_VANTAGEM", []);
+        IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento = new("RETIRA_O_ACRESCIMO", []);
         DocumentoExigidoDoModelo comCodigosDecompostos = Documento($" TIPO{CComCedilhaDecomposto}") with { FaseCodigo = $"FASE{CComCedilhaDecomposto}" };
         ConteudoDoModelo conteudo = Vazio with
         {

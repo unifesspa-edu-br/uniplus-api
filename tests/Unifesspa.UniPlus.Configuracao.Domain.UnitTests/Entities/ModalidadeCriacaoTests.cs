@@ -86,9 +86,9 @@ public sealed class ModalidadeCriacaoTests
     [Fact(DisplayName = "Ação quando indeferido válida é aceita")]
     public void Criar_AcaoValida_Aceita()
     {
-        Modalidade m = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "RECLASSIFICA_AC" }).ValorEsperado();
+        Modalidade m = Criar(ajuste: d => d with { CodigoDaAcaoQuandoIndeferido = "RETIRA_A_MODALIDADE" }).ValorEsperado();
 
-        m.AcaoQuandoIndeferido.Should().Be(AcaoQuandoIndeferido.ReclassificaAc);
+        m.AcaoQuandoIndeferido.Should().Be(AcaoQuandoIndeferido.RetiraAModalidade);
     }
 
     // ── Descrição e base legal ─────────────────────────────────────────────────

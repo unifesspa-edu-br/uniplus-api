@@ -127,14 +127,14 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 
     /// <summary>
     /// O <c>acaoQuandoIndeferido</c> é <b>domínio fechado</b> no cadastro
-    /// (<c>RECLASSIFICA_AC</c> · <c>RECLASSIFICA_CONFORME_EDITAL</c>), e o comando nunca
+    /// (<c>RETIRA_A_MODALIDADE</c>), e o comando nunca
     /// produz outro token — ele <b>copia</b> o da view. Um token inventado no envelope faria
     /// round-trip perfeito e restauraria uma <b>instrução que a homologação não sabe
     /// executar</b>.
     /// </summary>
     [Theory(DisplayName = "Ação ao indeferir fora do domínio fechado do cadastro é recusada")]
     [InlineData("INDEFERE")]
-    [InlineData("ELIMINA")]
+    [InlineData("ELIMINA_DO_PROCESSO")]
     [InlineData("reclassifica_ac")]
     [InlineData("QUALQUER_COISA")]
     public void AcaoQuandoIndeferidoForaDoCadastro_Recusa(string token)

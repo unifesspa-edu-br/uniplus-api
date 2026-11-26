@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -23,7 +24,7 @@ internal static class LeituraDasExigencias
     [
         "exigenciaId", "chave", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome", "tipoDocumentoCategoria",
         "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "dadosComprovados", "exigidoNaFaseId",
-        "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaIndeferimento",
+        "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio", "consequenciaIndeferimento", "abrePrazoParaReenvio",
         "condicoes", "basesLegais", "prazoDeEmissao", "validade", "formatosPermitidos", "tamanhoMaximoBytes", "modelo",
     ];
 
@@ -55,9 +56,20 @@ internal static class LeituraDasExigencias
             return null;
         }
 
+        return LerExigenciaComClassificacao(leitor, item, path, campos);
+    }
+
+    private static DocumentoExigido? LerExigenciaComClassificacao(
+        LeitorEnvelope leitor, JsonObject item, string path, CamposDaExigenciaNoEnvelope campos)
+    {
         if (!ClassificacoesDeProtecao.TryAnalisar(campos.ClassificacaoToken, out ClassificacaoDeProtecao classificacaoProtecao))
         {
             return Recusar(leitor, $"'{path}.classificacaoProtecao' fora do vocabulário de classificações de proteção.");
+        }
+
+        if (campos.ConsequenciaIndeferimento is { } codigo && !CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(codigo, out _))
+        {
+            return Recusar(leitor, $"'{path}.consequenciaIndeferimento' fora do vocabulário de consequências.");
         }
 
         return LerExigenciaClassificada(leitor, item, path, campos, classificacaoProtecao);
@@ -118,7 +130,7 @@ internal static class LeituraDasExigencias
             new CopiaDoTipoDeDocumento(d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo, d.TipoDocumentoNome, d.TipoDocumentoCategoria, new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal)),
             new MomentoDaExigencia(d.ExigidoNaFaseId, d.ExigidoNaEtapaId, finalidade),
             new AplicabilidadeDaExigencia(d.Aplicabilidade, c.Condicoes),
-            new IndeferimentoDoDocumento(d.Obrigatorio, d.ConsequenciaIndeferimento, c.BasesLegais),
+            new IndeferimentoDoDocumento(d.Obrigatorio, d.ConsequenciaIndeferimento, c.BasesLegais, d.AbrePrazoParaReenvio),
             new RequisitosDoDocumento(c.FormatosPermitidos, d.TamanhoMaximoBytes, c.Modelo, c.PrazoDeEmissao, c.Validade),
             c.FatosComprovados));
 
@@ -142,6 +154,7 @@ internal static class LeituraDasExigencias
             FinalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token),
             Aplicabilidade = leitor.CodigoDeContrato<Aplicabilidade>(item, "aplicabilidade", path),
             Obrigatorio = leitor.Booleano(item, "obrigatorio", path),
+            AbrePrazoParaReenvio = leitor.Booleano(item, "abrePrazoParaReenvio", path),
             ConsequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token),
             TamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path),
         };
@@ -190,6 +203,7 @@ internal static class LeituraDasExigencias
         public bool Obrigatorio { get; init; }
 
         public string? ConsequenciaIndeferimento { get; init; }
+        public bool AbrePrazoParaReenvio { get; init; }
 
         public int? TamanhoMaximoBytes { get; init; }
     }

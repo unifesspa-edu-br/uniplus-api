@@ -464,7 +464,7 @@
         "finalidade": "INSCRICAO",
         "aplicabilidade": "GERAL",
         "obrigatorio": true,
-        "consequenciaIndeferimento": "ABRE_PRAZO_PARA_REENVIO",
+        "abrePrazoParaReenvio": true,
         "formatosPermitidos": {
           "qualquer": true
         },
@@ -478,7 +478,6 @@
         "finalidade": "ISENCAO_TAXA",
         "aplicabilidade": "CONDICIONAL",
         "obrigatorio": true,
-        "consequenciaIndeferimento": "REMOVE_VANTAGEM",
         "condicoes": [
           [
             {
@@ -515,7 +514,6 @@
           },
           {
             "exigenciaChave": "exigencia_comprovante_renda",
-            "consequencia": "REMOVE_VANTAGEM",
             "forma": "DOCUMENTO"
           }
         ]

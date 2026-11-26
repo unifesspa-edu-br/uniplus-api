@@ -197,7 +197,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static ModalidadeSelecionada ModalidadeAmplaFederal() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
-    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
+    private static ModalidadeSelecionada ModalidadeFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
     /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJAMENTO_ORDEM_LEI_12711 v1.</summary>
     internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(char semente = 'f')
@@ -278,7 +278,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     private static ModalidadeSelecionada AmplaDaOfertaFederal() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
 
-    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RECLASSIFICA_AC", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
+    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal) with { Descricao = $"Reserva {codigo}", RegraRemanejamento = RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento, AcaoQuandoIndeferido = "RETIRA_A_MODALIDADE", BaseLegal = "Lei 12.711/2012, alterada pela Lei 14.723/2023" }).Value!;
 
 
     private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOfertaFederal() =>

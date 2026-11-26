@@ -67,7 +67,8 @@ internal static class SerializacaoDasExigencias
         ["forma"] = regra.Forma.Codigo(),
         ["exigenciaId"] = regra.Forma == FormaDeComprovacao.Documento ? regra.DocumentoExigidoId : null,
         ["quantidadeMinima"] = regra.QuantidadeMinima,
-        ["consequencia"] = regra.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
+        ["abrePrazoParaReenvio"] = regra.AbrePrazoParaReenvio,
+        ["consequencia"] = regra.Consequencia is { } consequencia ? consequencia.Codigo() : null,
         ["basesLegais"] = SerializarBasesLegaisDaRegra(regra.BasesLegaisResolvidas()),
         ["criterioDeDistincao"] = regra.Distincao?.Criterio?.Codigo(),
     };
@@ -148,8 +149,9 @@ internal static class SerializacaoDasExigencias
     private static void AcrescentarDetalhesDaExigencia(JsonObject item, DocumentoExigido exigencia)
     {
         item["obrigatorio"] = exigencia.Obrigatorio;
+        item["abrePrazoParaReenvio"] = exigencia.AbrePrazoParaReenvio;
         item["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
-            ? HashCanonicalComputer.NormalizeNfc(consequencia)
+            ? consequencia.Codigo()
             : null;
         item["condicoes"] = SerializarCondicaoGatilho(exigencia.Condicoes);
         item["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas());

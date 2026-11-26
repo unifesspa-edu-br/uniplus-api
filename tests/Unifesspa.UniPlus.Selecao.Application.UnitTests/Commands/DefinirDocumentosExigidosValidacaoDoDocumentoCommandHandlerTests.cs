@@ -317,7 +317,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     }
 
     private static DefinirDocumentosExigidosCommand GrupoComUmaRegraDeDocumento(CenarioDaExigencia cenario, ItemDocumentoExigidoInput documentoInformado) =>
-        new(cenario.Processo.Id, [RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(documentoInformado).Construir()).ComQuantidadeMinima(1).ComIndeferimento("ELIMINA").Construir()]);
+        new(cenario.Processo.Id, [RegraDeComprovacaoDeTeste.Grupo("QUANTIDADE_MINIMA_DE_ITENS", RegraDeComprovacaoDeTeste.DeDocumento(documentoInformado).Construir()).ComQuantidadeMinima(1).ComIndeferimento("ELIMINA_DO_PROCESSO").Construir()]);
 
     private static async Task ConferirQueNenhumLeitorFoiConsultado(Mocks mocks)
     {

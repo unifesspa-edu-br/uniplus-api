@@ -290,6 +290,15 @@
         }
       }
     },
+    "consequenciaDoDescumprimento": {
+      "title": "Consequência do descumprimento",
+      "description": "Consequência declarada para o descumprimento de uma exigência.",
+      "enum": [
+        "ELIMINA_DO_PROCESSO",
+        "RETIRA_A_MODALIDADE",
+        "RETIRA_O_ACRESCIMO"
+      ]
+    },
     "semParametros": {
       "title": "Regra sem parâmetros",
       "description": "A regra não tem parâmetros.",

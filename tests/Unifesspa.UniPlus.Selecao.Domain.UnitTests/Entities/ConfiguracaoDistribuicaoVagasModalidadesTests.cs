@@ -106,7 +106,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            ModalidadeComAcao("AC_I", "RECLASSIFICA_AC", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_I", "RETIRA_A_MODALIDADE", quantidadeDeclarada: 2),
             ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
         ];
 
@@ -114,7 +114,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e =>
-            e.Error.Code == "ConfiguracaoDistribuicaoVagas.ReclassificacaoParaAmplaSemAmplaOfertada"
+            e.Error.Code == "ConfiguracaoDistribuicaoVagas.RetiraAModalidadeSemAmplaConcorrencia"
             && e.Error.Message.Contains("AC_I", StringComparison.Ordinal));
     }
 
@@ -124,7 +124,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         List<ModalidadeSelecionada> modalidades =
         [
             ModalidadeComAcao("AC", acaoQuandoIndeferido: null, quantidadeDeclarada: 38),
-            ModalidadeComAcao("AC_PCD", "RECLASSIFICA_AC", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
+            ModalidadeComAcao("AC_PCD", "RETIRA_A_MODALIDADE", quantidadeDeclarada: 2, composicaoOrigemCodigo: "AC"),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraComAcPcd(), modalidades);
@@ -132,19 +132,19 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
     }
 
-    [Fact(DisplayName = "RECLASSIFICA_CONFORME_EDITAL não exige a ampla ofertada — o destino vem da regra, não de um código")]
-    public void Criar_ReclassificaConformeEditalSemAc_Sucesso()
+    [Fact(DisplayName = "Modalidade sem ação não exige ampla ofertada")]
+    public void Criar_SemAcaoESemAmpla_Sucesso()
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            ModalidadeComAcao("AC_I", "RECLASSIFICA_CONFORME_EDITAL", quantidadeDeclarada: 2),
+            ModalidadeComAcao("AC_I", null, quantidadeDeclarada: 2),
             ModalidadeComAcao("AC_Q", acaoQuandoIndeferido: null, quantidadeDeclarada: 2),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(4, RegraPsiq(), modalidades);
 
         resultado.IsSuccess.Should().BeTrue(
-            "o token delega o destino à regra do edital e não nomeia modalidade nenhuma");
+            "não há ação declarada");
     }
 
     private static ModalidadeSelecionada ModalidadeComAcao(

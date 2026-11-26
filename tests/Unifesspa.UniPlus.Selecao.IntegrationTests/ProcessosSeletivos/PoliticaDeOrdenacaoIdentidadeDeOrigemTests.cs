@@ -202,7 +202,7 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
         RegraDeComprovacao regraDeDocumentoSemGrupo = RegraDeDocumentoSemGrupo(fase);
         RegraDeComprovacao itemZeta = RegraDeDocumentoComIdentidade(fase, 2, 4, 0, "ITEM_ZETA");
         RegraDeComprovacao itemAlfa = RegraDeDocumentoComIdentidade(fase, 1, 3, 1, "ITEM_ALFA");
-        RegraDeComprovacao grupoSemGrupo = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [itemAlfa, itemZeta]).Value!;
+        RegraDeComprovacao grupoSemGrupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [itemAlfa, itemZeta]).Value!;
         ConferirEntradasContrariasAOrdem(regraDeDocumentoSemGrupo, grupoSemGrupo, itemAlfa, itemZeta);
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [regraDeDocumentoSemGrupo, grupoSemGrupo]);
         JsonArray regras = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDeComprovacao"]!.AsArray();

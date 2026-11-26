@@ -16337,11 +16337,10 @@
       },
       "AcaoQuandoIndeferidoCodigo": {
         "enum": [
-          "RECLASSIFICA_AC",
-          "RECLASSIFICA_CONFORME_EDITAL"
+          "RETIRA_A_MODALIDADE"
         ],
         "type": "string",
-        "description": "- \u0060RECLASSIFICA_AC\u0060: Ampla concorr\u00EAncia \u2014 Passa a pessoa para a ampla concorr\u00EAncia.\n- \u0060RECLASSIFICA_CONFORME_EDITAL\u0060: Conforme o edital \u2014 Reclassifica a pessoa conforme as regras do edital."
+        "description": "- \u0060RETIRA_A_MODALIDADE\u0060: Retirada da modalidade \u2014 A pessoa perde a modalidade e continua nas demais em que concorre."
       },
       "AgregadoPortavel": {
         "required": [
@@ -18460,15 +18459,14 @@
           }
         }
       },
-      "ConsequenciaDoIndeferimentoCodigo": {
+      "ConsequenciaDoDescumprimentoCodigo": {
         "enum": [
-          "ELIMINA",
-          "RECLASSIFICA_AC",
-          "REMOVE_VANTAGEM",
-          "ABRE_PRAZO_PARA_REENVIO"
+          "ELIMINA_DO_PROCESSO",
+          "RETIRA_A_MODALIDADE",
+          "RETIRA_O_ACRESCIMO"
         ],
         "type": "string",
-        "description": "- \u0060ELIMINA\u0060: Elimina\u00E7\u00E3o \u2014 Retira a pessoa do processo seletivo.\n- \u0060RECLASSIFICA_AC\u0060: Ampla concorr\u00EAncia \u2014 Passa a pessoa para a ampla concorr\u00EAncia.\n- \u0060REMOVE_VANTAGEM\u0060: Perda da vantagem \u2014 Retira a vantagem solicitada.\n- \u0060ABRE_PRAZO_PARA_REENVIO\u0060: Prazo para reenvio \u2014 Abre prazo para reenviar o documento."
+        "description": "- \u0060ELIMINA_DO_PROCESSO\u0060: Elimina\u00E7\u00E3o do processo \u2014 Retira a pessoa do processo, depois dos procedimentos e recursos cab\u00EDveis.\n- \u0060RETIRA_A_MODALIDADE\u0060: Retirada da modalidade \u2014 A pessoa perde a modalidade a que o requisito se refere e continua nas demais em que concorre.\n- \u0060RETIRA_O_ACRESCIMO\u0060: Retirada s\u00F3 do acr\u00E9scimo do Fator de Atenua\u00E7\u00E3o das Desigualdades de Acesso \u2014 A pessoa perde s\u00F3 o acr\u00E9scimo; n\u00E3o \u00E9 eliminada nem perde modalidade."
       },
       "ConteudoDoModeloDto": {
         "required": [
@@ -22518,7 +22516,7 @@
       "IndeferimentoDoDocumentoDoModeloDto": {
         "required": [
           "obrigatorio",
-          "consequencia",
+          "consequenciaDoDescumprimento",
           "basesLegais"
         ],
         "type": "object",
@@ -22526,21 +22524,28 @@
           "obrigatorio": {
             "type": "boolean"
           },
-          "consequencia": {
-            "type": "string"
+          "consequenciaDoDescumprimento": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "basesLegais": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BaseLegalDoModeloDto"
             }
+          },
+          "abrePrazoParaReenvio": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
       "IndeferimentoDoDocumentoDoModeloInput": {
         "required": [
           "obrigatorio",
-          "consequencia",
+          "consequenciaDoDescumprimento",
           "basesLegais"
         ],
         "type": "object",
@@ -22548,8 +22553,15 @@
           "obrigatorio": {
             "type": "boolean"
           },
-          "consequencia": {
-            "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
+          "consequenciaDoDescumprimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoDescumprimentoCodigo"
+              }
+            ]
           },
           "basesLegais": {
             "type": [
@@ -22559,36 +22571,54 @@
             "items": {
               "$ref": "#/components/schemas/BaseLegalDoModeloInput"
             }
+          },
+          "abrePrazoParaReenvio": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
       "IndeferimentoDoGrupoDeDocumentosDoModeloDto": {
         "required": [
-          "consequencia",
+          "consequenciaDoDescumprimento",
           "basesLegais"
         ],
         "type": "object",
         "properties": {
-          "consequencia": {
-            "type": "string"
+          "consequenciaDoDescumprimento": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "basesLegais": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BaseLegalDoModeloDto"
             }
+          },
+          "abrePrazoParaReenvio": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
       "IndeferimentoDoGrupoDeDocumentosDoModeloInput": {
         "required": [
-          "consequencia",
+          "consequenciaDoDescumprimento",
           "basesLegais"
         ],
         "type": "object",
         "properties": {
-          "consequencia": {
-            "$ref": "#/components/schemas/ConsequenciaDoIndeferimentoCodigo"
+          "consequenciaDoDescumprimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsequenciaDoDescumprimentoCodigo"
+              }
+            ]
           },
           "basesLegais": {
             "type": [
@@ -22598,6 +22628,10 @@
             "items": {
               "$ref": "#/components/schemas/BaseLegalDoModeloInput"
             }
+          },
+          "abrePrazoParaReenvio": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

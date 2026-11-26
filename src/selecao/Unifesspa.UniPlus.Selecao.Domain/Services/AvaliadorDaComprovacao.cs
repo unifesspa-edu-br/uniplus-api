@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -288,7 +289,7 @@ public sealed class AvaliadorDaComprovacao
     {
         if (regra.DocumentoExigido!.ConsequenciaIndeferimento is { } consequencia)
         {
-            consequencias.Add(new(regra.Id, FormaDeComprovacao.Documento, consequencia));
+            consequencias.Add(new(regra.Id, FormaDeComprovacao.Documento, consequencia.Codigo()));
         }
     }
 
@@ -306,7 +307,7 @@ public sealed class AvaliadorDaComprovacao
     {
         if (regra.Consequencia is { } consequencia)
         {
-            consequencias.Add(new(regra.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia));
+            consequencias.Add(new(regra.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia.Codigo()));
         }
         foreach (RegraDeComprovacao item in regra.Itens.Where(f => RequerAvaliacaoDeConsequencia(situacoesPorRegra[f.Id]) && !regrasComConsequenciaAdiada.Contains(f.Id)))
         {

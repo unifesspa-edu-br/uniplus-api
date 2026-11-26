@@ -136,50 +136,50 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: exigência não pode retirar vantagem que não está configurada")]
-    public void PreCanon_ExigenciaRemoveVantagemSemVantagemViva()
+    [Fact(DisplayName = "Pré-canonicalização: exigência não pode retirar acréscimo que não é oferecido")]
+    public void PreCanon_ExigenciaAcrescimoNaoOferecido()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "REMOVE_VANTAGEM", [BaseLegalResolvida()]));
-        // Sem DefinirBonusRegional — nenhuma vantagem viva para remover.
+        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "RETIRA_O_ACRESCIMO", [BaseLegalResolvida()]));
+        // Sem DefinirBonusRegional — nenhuma acréscimo oferecido para remover.
 
-        AfirmarPendenciaUnicaERecusa(processo, "exigencia_remove_vantagem_sem_vantagem_viva", "DocumentoExigido.RemoveVantagemSemVantagemViva");
+        AfirmarPendenciaUnicaERecusa(processo, "exigencia_acrescimo_nao_oferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: consequência da exigência deve ser coerente com a ação da vaga")]
     public void PreCanon_ExigenciaConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICA_AC")]);
-        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA", [BaseLegalResolvida()]));
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")]);
+        ExigirDocumentos(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA_DO_PROCESSO", [BaseLegalResolvida()]));
 
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_consequencia_incoerente_com_acao_da_vaga", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: grupo não pode retirar vantagem que não está configurada")]
-    public void PreCanon_GrupoRemoveVantagemSemVantagemViva()
+    [Fact(DisplayName = "Pré-canonicalização: grupo não pode retirar acréscimo que não é oferecido")]
+    public void PreCanon_GrupoAcrescimoNaoOferecido()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "REMOVE_VANTAGEM");
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "RETIRA_O_ACRESCIMO");
 
-        AfirmarPendenciaUnicaERecusa(processo, "grupo_remove_vantagem_sem_vantagem_viva", "RegraDeComprovacao.RemoveVantagemSemVantagemConfigurada");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_acrescimo_nao_oferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
     }
 
-    [Fact(DisplayName = "A recusa de vantagem ausente explica o grupo sem expor seu identificador")]
+    [Fact(DisplayName = "A recusa de acréscimo não oferecido explica o grupo sem expor seu identificador")]
     public void PreCanon_GrupoSemVantagem_MensagemExplicaRecusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "REMOVE_VANTAGEM");
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "RETIRA_O_ACRESCIMO");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
-        resultado.Error!.Message.Should().Be("O grupo determina retirar vantagem, mas nenhuma está configurada.");
+        resultado.Error!.Message.Should().Be("O grupo determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido.");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: consequência do grupo deve ser coerente com a ação da vaga")]
     public void PreCanon_GrupoConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICA_AC")]);
-        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "ELIMINA");
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RETIRA_A_MODALIDADE")]);
+        ExigirGrupoDeQuantidadeMinimaComDocumento(processo, "ELIMINA_DO_PROCESSO");
 
         AfirmarPendenciaUnicaERecusa(processo, "grupo_consequencia_incoerente_com_acao_da_vaga", "RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga");
     }

@@ -17,7 +17,7 @@ public sealed class EnvelopeLidoCamposTests
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal", "Lei 14.723/2023 art. 3º")]
     [InlineData("modalidades.0.baseLegal", "Outra base legal inteiramente diversa")]
     [InlineData("modalidades.0.descricao", "Outra descrição")]
-    [InlineData("modalidades.1.acaoQuandoIndeferido|modalidades.10.acaoQuandoIndeferido", "RECLASSIFICA_CONFORME_EDITAL")]
+    [InlineData("modalidades.0.acaoQuandoIndeferido|modalidades.9.acaoQuandoIndeferido", "RETIRA_A_MODALIDADE")]
     [InlineData("fada.fator", "1.9900")]
     [InlineData("fada.teto", "42.5000")]
     [InlineData("fada.identificacao", "Portaria Unifesspa nº 999/2026")]

@@ -43,8 +43,7 @@ public sealed class ModalidadeSelecionada : EntityBase
 
     /// <summary>
     /// Cópia da ação de indeferimento do cadastro de <c>Modalidade</c>
-    /// (Configuração) — código em letras maiúsculas, <c>RECLASSIFICA_AC</c> ou
-    /// <c>RECLASSIFICA_CONFORME_EDITAL</c>. <see langword="null"/> declara que a modalidade não
+    /// (Configuração) — código em letras maiúsculas, <c>RETIRA_A_MODALIDADE</c> quando declarada. <see langword="null"/> declara que a modalidade não
     /// reclassifica, e é assim que a conferência de coerência da publicação a lê: só confronta a
     /// consequência da exigência documental com esta ação quando ela está declarada. Sem
     /// ação, quem responde pelo destino do candidato indeferido é a própria exigência.

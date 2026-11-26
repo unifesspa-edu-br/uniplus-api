@@ -36,7 +36,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     public void Reidratar_RegraDeDocumentoComConsequencia_RecusaEnvelopeMalformado()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
-            envelope => PrimeiraRegra(envelope, "DOCUMENTO")["consequencia"] = "ELIMINA", comRegrasDeComprovacao: true);
+            envelope => PrimeiraRegra(envelope, "DOCUMENTO")["consequencia"] = "ELIMINA_DO_PROCESSO", comRegrasDeComprovacao: true);
 
         ConferirRecusa(resultado, "consequencia");
     }
@@ -103,7 +103,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         {
             JsonObject grupo = PrimeiraRegra(envelope, "QUANTIDADE_MINIMA_DE_ITENS");
             grupo["dataReferencia"] = "2026-10-10";
-            grupo["itens"]![0]!["consequencia"] = "ELIMINA";
+            grupo["itens"]![0]!["consequencia"] = "ELIMINA_DO_PROCESSO";
         }, comRegrasDeComprovacao: true);
 
         ConferirRecusa(resultado, "consequencia");
@@ -116,7 +116,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
         {
             JsonObject regraDeDocumento = PrimeiraRegra(envelope, "DOCUMENTO");
             regraDeDocumento["exigenciaId"] = Guid.CreateVersion7().ToString();
-            regraDeDocumento["consequencia"] = "ELIMINA";
+            regraDeDocumento["consequencia"] = "ELIMINA_DO_PROCESSO";
         }, comRegrasDeComprovacao: true);
 
         ConferirRecusa(resultado, "exigenciaId");
@@ -146,7 +146,7 @@ public sealed class EnvelopeCodecMetadadosDasRegrasTests
     {
         regraDeDocumento[campo] = campo switch
         {
-            "consequencia" => JsonValue.Create("ELIMINA"),
+            "consequencia" => JsonValue.Create("ELIMINA_DO_PROCESSO"),
             "basesLegais" => JsonNode.Parse("""[{"referencia":"Lei de referência","abrangencia":"FEDERAL","situacao":"RESOLVIDO","observacao":null}]"""),
             "itens" => new JsonArray(RegraDeDocumentoSemAtributosIncompativeis(regraDeDocumento)),
             _ => throw new ArgumentOutOfRangeException(nameof(campo)),

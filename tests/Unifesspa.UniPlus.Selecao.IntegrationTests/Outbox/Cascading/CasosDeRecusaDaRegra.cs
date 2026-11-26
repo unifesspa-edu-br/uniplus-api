@@ -34,12 +34,12 @@ internal static class CasosDeRecusaDaRegra
 
     private static IReadOnlyList<CasoDeRecusaDaRegra> ConsequenciasEBases() =>
     [
-        Caso(Grupo("TODOS_OS_ITENS", consequencia: "ELIMINA"), "consequencia_proibida_quando_exige_todos", "indeferimento.consequencia",
+        Caso(Grupo("TODOS_OS_ITENS", consequencia: "ELIMINA_DO_PROCESSO"), "consequencia_proibida_quando_exige_todos", "indeferimento.consequencia",
             "Este grupo exige todos os itens, mas informa uma consequência própria. Retire a consequência do grupo."),
         Caso(Grupo("TODOS_OS_ITENS", bases: [BaseLegal()]), "base_legal_proibida_quando_exige_todos", "indeferimento.basesLegais",
             "Este grupo exige todos os itens, mas informa base legal própria. Retire a base legal do grupo."),
         Caso(Grupo("QUANTIDADE_MINIMA_DE_ITENS", consequencia: "INVALIDA"), "consequencia_invalida", "indeferimento.consequencia",
-            "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RECLASSIFICA_AC\" para a ampla concorrência, \"REMOVE_VANTAGEM\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio."),
+            "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RETIRA_A_MODALIDADE\" para a ampla concorrência, \"RETIRA_O_ACRESCIMO\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio."),
         Caso(Grupo("QUANTIDADE_MINIMA_DE_ITENS", bases: [BaseLegal()]), "base_legal_sem_consequencia", "indeferimento.basesLegais",
             "Este grupo tem base legal, mas não tem consequência. Informe a consequência ou retire a base legal."),
     ];

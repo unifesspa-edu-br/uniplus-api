@@ -147,7 +147,7 @@ public sealed class ConteudoDoModeloTextosNaoGravaveisTests
     {
         DocumentoExigidoDoModelo documento = Documento(ComNulo, QuandoOValorE(JsonSerializer.SerializeToElement(ComNulo)), new(ComNulo, [ComNulo])) with
         {
-            Indeferimento = new(false, "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", ComNulo)]),
+            Indeferimento = new(false, "RETIRA_O_ACRESCIMO", [new("Edital", "INTERNA_EDITAL", "PENDENTE", ComNulo)]),
         };
 
         CamposRecusados(Vazio with { ConjuntoDeDocumentos = Conjunto(documento) }).Should().Equal(

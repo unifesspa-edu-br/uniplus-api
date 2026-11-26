@@ -120,7 +120,7 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
 
     [Fact(DisplayName = "O código da ação quando indeferido é componente de texto com enum, sem o valor nenhum")]
     public Task AcaoQuandoIndeferidoCodigo_EComponenteDeTextoComEnum() =>
-        ConferirComponenteDeCodigosAsync("AcaoQuandoIndeferidoCodigo", ["RECLASSIFICA_AC", "RECLASSIFICA_CONFORME_EDITAL"]);
+        ConferirComponenteDeCodigosAsync("AcaoQuandoIndeferidoCodigo", ["RETIRA_A_MODALIDADE"]);
 
     [Fact(DisplayName = "O código da composição de vagas é componente de texto com enum, sem o valor nenhum")]
     public Task ComposicaoVagasCodigo_EComponenteDeTextoComEnum() =>

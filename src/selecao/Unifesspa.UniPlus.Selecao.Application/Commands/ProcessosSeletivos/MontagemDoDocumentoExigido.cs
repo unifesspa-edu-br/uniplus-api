@@ -78,7 +78,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
             new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
             new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FinalidadeDoCodigo(documentoInformado.Finalidade())),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
-            new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.Consequencia(), basesLegais),
+            new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.Consequencia(), basesLegais, documentoInformado.Indeferimento?.AbrePrazoParaReenvio ?? false),
             new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),
             documentoInformado.FatosComprovados);
         return contexto.Reconhecimento.Criar(documentoInformado.Chave, tipo.Codigo, declarado);

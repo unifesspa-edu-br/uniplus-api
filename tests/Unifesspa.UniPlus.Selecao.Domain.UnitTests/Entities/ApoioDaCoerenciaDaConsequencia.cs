@@ -83,13 +83,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
     {
         if (modalidade.NaturezaLegal != NaturezaLegalModalidade.CotaReservada)
         {
-            DefinirDistribuicao(processo, new DistribuicaoDeVagasDeclarada
-            {
-                VagasOfertadasBase = modalidade.QuantidadeDeclarada ?? 40,
-                PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo),
-                Modalidades = [modalidade],
-            });
+            DefinirDistribuicao(processo, DistribuicaoInstitucional(modalidade));
             return;
         }
 
@@ -97,11 +91,21 @@ internal static class ApoioDaCoerenciaDaConsequencia
         processo.DefinirCascataRemanejamento(CascataLegalCompleta()).IsSuccess.Should().BeTrue();
     }
 
+    private static DistribuicaoDeVagasDeclarada DistribuicaoInstitucional(ModalidadeSelecionada modalidade) => new()
+    {
+        VagasOfertadasBase = (modalidade.QuantidadeDeclarada ?? 0) + 40,
+        PercentualDaReservaLegal = 1m,
+        RegraDeDistribuicao = ReferenciaRegra.De(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), "v1", HashFixo),
+        Modalidades = [modalidade, ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da(
+            ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas), 40).Value!],
+    };
+
     private static void DefinirDistribuicao(ProcessoSeletivo processo, DistribuicaoDeVagasDeclarada declarada)
     {
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), declarada, new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), declarada, new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
+        resultado.IsSuccess.Should().BeTrue("{0}", string.Join(", ", resultado.Errors));
+        processo.DefinirDistribuicaoVagas([resultado.Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>A distribuição pela Lei 12.711, com a modalidade do chamador no lugar da federal padrão.</summary>

@@ -71,7 +71,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
     {
         DocumentoExigido rg = Documento("RG"), cpf = Documento("CPF");
         RegraDeComprovacao conjunto = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
+            new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cpf, 1).Value!]).Value!;
 
         Ausentes([conjunto], Apresentadas(rg)).Should().ContainSingle().Which.Alternativas.Should().Equal(cpf);
     }
@@ -83,8 +83,8 @@ public sealed class DocumentosAusentesDaInscricaoTests
         // Só o RG se aplica; o grupo exige dois itens e o laudo continua faltando.
         DocumentoExigido cnhNaoAplica = Documento("CNH condicional", gatilhoFalso: true);
         RegraDeComprovacao ouImpossivel = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 1, 2, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cnhNaoAplica, 1).Value!]).Value!;
-        RegraDeComprovacao regra = RegraDeComprovacao.CriarGrupo(FormaDeComprovacao.TodosOsItens, 0, null, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(laudo, 0).Value!, ouImpossivel]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 2, null), 1, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cnhNaoAplica, 1).Value!]).Value!;
+        RegraDeComprovacao regra = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, null, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(laudo, 0).Value!, ouImpossivel]).Value!;
 
         Ausentes([regra]).Select(static a => a.Alternativas[0].TipoDocumentoNome).Should().Contain("Laudo");
     }
@@ -106,7 +106,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
     {
         DocumentoExigido rg = Documento("RG"), cnh = Documento("CNH");
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, 0, 1, null, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cnh, 1).Value!], grupoDoFormularioParaRepeticao: Familia).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), 0, [], [RegraDeComprovacao.CriarRegraDeDocumento(rg, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(cnh, 1).Value!], grupoDoFormularioParaRepeticao: Familia).Value!;
 
         IReadOnlyList<DocumentoAusente> ausentes = Ausentes(
             [grupo], Apresentadas((cnh, "m1")), ocorrencias: ["m1", "m2"]);
@@ -128,7 +128,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
 
     private static RegraDeComprovacao QuantidadeMinimaDeItens(int ordem, params DocumentoExigido[] alternativas) =>
         RegraDeComprovacao.CriarGrupo(
-            FormaDeComprovacao.QuantidadeMinimaDeItens, ordem, 1, null, [], [.. alternativas.Select((d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)]).Value!;
+            new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), ordem, [], [.. alternativas.Select((d, i) => RegraDeComprovacao.CriarRegraDeDocumento(d, i).Value!)]).Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Apresentadas(params DocumentoExigido[] documentos) =>
         Apresentadas([.. documentos.Select(static d => (d, (string?)null))]);

@@ -41,8 +41,8 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     public void DefinirDistribuicaoVagas_AcaoQuandoIndeferidoDivergente_Falha()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoDistribuicaoVagas ofertaA = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV("RECLASSIFICA_AC", 2), Ac(8)]);
-        ConfiguracaoDistribuicaoVagas ofertaB = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV("RECLASSIFICA_CONFORME_EDITAL", 2), Ac(8)]);
+        ConfiguracaoDistribuicaoVagas ofertaA = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV("RETIRA_A_MODALIDADE", 2), Ac(8)]);
+        ConfiguracaoDistribuicaoVagas ofertaB = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV(null, 2), Ac(8)]);
 
         Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo);
 

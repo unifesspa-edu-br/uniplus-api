@@ -47,14 +47,14 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
         _cenario.FaseDoCronograma("INSCRICAO");
         _cenario.DeclararAtendimentoEspecializado();
         GrupoDeDocumentosDoModeloInput grupo = ConjuntoDeDocumentosDoModeloBuilder.GrupoComIndeferimento(
-            2, "REMOVE_VANTAGEM", DocumentoDoModelo("LAUDO_MEDICO", "PCD"), DocumentoDoModelo("CERTIDAO_NASCIMENTO", "LACTANTE"));
+            2, "RETIRA_O_ACRESCIMO", DocumentoDoModelo("LAUDO_MEDICO", "PCD"), DocumentoDoModelo("CERTIDAO_NASCIMENTO", "LACTANTE"));
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComGrupos(grupo));
 
         resultado.IsSuccess.Should().BeTrue(Recusas(resultado));
         RegraDeComprovacao regra = RegraDoGrupoCopiado();
         regra.QuantidadeMinima.Should().Be(2);
-        regra.Consequencia.Should().Be("REMOVE_VANTAGEM");
+        regra.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
         regra.Itens.Select(static i => i.DocumentoExigido!.TipoDocumentoCodigo).Should().BeEquivalentTo("LAUDO_MEDICO", "CERTIDAO_NASCIMENTO");
     }
 
@@ -141,7 +141,7 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
         DocumentoExigidoDoModeloInput laudo = new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
+            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
             FinalidadeFormulario.Inscricao,
