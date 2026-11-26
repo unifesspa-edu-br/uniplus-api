@@ -1,9 +1,9 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
+namespace Unifesspa.UniPlus.Regras.Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
-/// Sobre quem o <see cref="Entities.FatoCandidato"/> é respondido (ADR-0136): o próprio
+/// Sobre quem o dado do candidato é respondido (ADR-0136): o próprio
 /// candidato, ou cada membro de uma lista do formulário, como a composição familiar (ADR-0138).
 /// </summary>
 [DescricaoDoContrato("Sobre quem o dado do candidato é respondido: o próprio candidato ou cada membro de uma lista do formulário.")]

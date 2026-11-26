@@ -24,7 +24,7 @@ public sealed record FatoDoCatalogo(
     OrigemFato Origem,
     string Binding,
     FonteValoresFato? FonteValores,
-    string Escopo,
+    EscopoFato Escopo,
     bool Ativo,
     IReadOnlyList<ValorDoCatalogo> Valores,
     bool ProtecaoAprovada)
@@ -39,20 +39,17 @@ public sealed record FatoDoCatalogo(
 /// </summary>
 public static class ConferenciaNoCatalogo
 {
-    private const string EscopoCandidato = "CANDIDATO";
-    private const string EscopoMembroGrupo = "MEMBRO_GRUPO";
-
     /// <summary>
     /// Coletável é o fato declarado, respondido num campo de formulário, do próprio candidato. O
     /// derivado e o calculado não se respondem; o de membro de grupo só existe dentro do grupo.
     /// </summary>
-    public static bool EhColetavel(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoCandidato);
+    public static bool EhColetavel(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoFato.Candidato);
 
     /// <summary>
     /// Coletável num campo de grupo repetível é o fato declarado, respondido num campo de formulário,
     /// de membro do grupo: cada ocorrência responde o seu.
     /// </summary>
-    public static bool EhColetavelEmGrupo(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoMembroGrupo);
+    public static bool EhColetavelEmGrupo(FatoDoCatalogo fato) => EhRespondidoNoEscopo(fato, EscopoFato.MembroGrupo);
 
     /// <summary>O fato que o campo do grupo coleta: existe no catálogo e é coletável em grupo.</summary>
     public static DomainError? FatoDoSubitem(string fatoCodigo, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
@@ -71,11 +68,11 @@ public static class ConferenciaNoCatalogo
                 + "em cada ocorrência — fatos do candidato, derivados e calculados não.");
     }
 
-    private static bool EhRespondidoNoEscopo(FatoDoCatalogo fato, string escopo)
+    private static bool EhRespondidoNoEscopo(FatoDoCatalogo fato, EscopoFato escopo)
     {
         ArgumentNullException.ThrowIfNull(fato);
         return fato.Origem == OrigemFato.Declarado
-            && string.Equals(fato.Escopo, escopo, StringComparison.Ordinal)
+            && fato.Escopo == escopo
             && VinculoDeFato.Usa(fato.Binding, MecanismoDoVinculo.CampoFormulario);
     }
 

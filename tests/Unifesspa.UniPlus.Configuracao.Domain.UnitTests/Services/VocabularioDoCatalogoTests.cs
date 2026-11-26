@@ -98,7 +98,7 @@ public sealed class VocabularioDoCatalogoTests
         FatoDoCatalogo fato = VocabularioDoCatalogo.ParaRegras([global, Fato("SIM_OU_NAO")])["CATALOGO"];
 
         fato.Should().BeEquivalentTo(new FatoDoCatalogo(
-            "CATALOGO", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, OrigemFato.Declarado, "CAMPO_FORMULARIO:CATALOGO", FonteValoresFato.Catalogo, "CANDIDATO", true,
+            "CATALOGO", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, OrigemFato.Declarado, "CAMPO_FORMULARIO:CATALOGO", FonteValoresFato.Catalogo, EscopoFato.Candidato, true,
             [new ValorDoCatalogo("URBANA", true), new ValorDoCatalogo("RURAL", false)], false));
     }
 
@@ -110,7 +110,7 @@ public sealed class VocabularioDoCatalogoTests
         fatos.Keys.Should().Equal("SIM_OU_NAO", "DO_MEMBRO");
         fatos["SIM_OU_NAO"].FonteValores.Should().BeNull();
         fatos["SIM_OU_NAO"].Valores.Should().BeEmpty();
-        fatos["DO_MEMBRO"].Escopo.Should().Be("MEMBRO_GRUPO");
+        fatos["DO_MEMBRO"].Escopo.Should().Be(EscopoFato.MembroGrupo);
     }
 
     [Fact(DisplayName = "As opções do campo de categórico global são os valores ativos, por ordem e depois por código")]

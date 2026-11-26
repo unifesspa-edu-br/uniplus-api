@@ -13,10 +13,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class ConferenciaDoSubitemTests
 {
     [Theory]
-    [InlineData(OrigemFato.Declarado, "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO", null)]
-    [InlineData(OrigemFato.Declarado, "CANDIDATO", "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
-    [InlineData(OrigemFato.Calculado, "MEMBRO_GRUPO", "REGRA_DE_CALCULO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
-    public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(OrigemFato origem, string escopo, string binding, string? esperado)
+    [InlineData(OrigemFato.Declarado, EscopoFato.MembroGrupo, "CAMPO_FORMULARIO:PARENTESCO", null)]
+    [InlineData(OrigemFato.Declarado, EscopoFato.Candidato, "CAMPO_FORMULARIO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    [InlineData(OrigemFato.Calculado, EscopoFato.MembroGrupo, "REGRA_DE_CALCULO:PARENTESCO", ItemFormularioErrorCodes.FatoNaoColetavel)]
+    public void FatoDoSubitem_SoAceitaFatoDeclaradoDeMembro(OrigemFato origem, EscopoFato escopo, string binding, string? esperado)
     {
         Dictionary<string, FatoDoCatalogo> catalogo = Catalogo(origem, escopo, binding);
 
@@ -27,11 +27,11 @@ public sealed class ConferenciaDoSubitemTests
     [Fact]
     public void FatoDoItem_FatoDeMembro_NaoEhColetavel()
     {
-        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo(OrigemFato.Declarado, "MEMBRO_GRUPO", "CAMPO_FORMULARIO:PARENTESCO"))!.Code
+        ConferenciaNoCatalogo.FatoDoItem("PARENTESCO", Catalogo(OrigemFato.Declarado, EscopoFato.MembroGrupo, "CAMPO_FORMULARIO:PARENTESCO"))!.Code
             .Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
     }
 
-    private static Dictionary<string, FatoDoCatalogo> Catalogo(OrigemFato origem, string escopo, string binding) =>
+    private static Dictionary<string, FatoDoCatalogo> Catalogo(OrigemFato origem, EscopoFato escopo, string binding) =>
         new(StringComparer.Ordinal)
         {
             ["PARENTESCO"] = new("PARENTESCO", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, origem, binding, FonteValoresFato.Catalogo, escopo, Ativo: true, [], ProtecaoAprovada: true),
