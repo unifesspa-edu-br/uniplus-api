@@ -11,8 +11,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// A definição avaliável de um formulário portável. Cada elemento é conferido onde o construtor dele
 /// o exigiria, por meio da <c>Violacao</c> do próprio tipo, e a recusa sai como texto para quem
 /// importou: o construtor só protege quem monta a definição pelo módulo. A leitura para na primeira
-/// recusa, na ordem páginas, termos, derivações, agregados e, por fim, a definição: o que vem depois
-/// dela não chega a ser lido.
+/// recusa entre elementos, na ordem páginas, termos, derivações, agregados e, por fim, a definição:
+/// a definição só é conferida quando nenhum elemento foi recusado. Só as condições de um mesmo predicado
+/// têm todas as recusas informadas, porque o predicado é lido pela mesma leitura que a API usa para as
+/// regras recebidas em um pedido.
 /// </summary>
 internal static class ConversaoDoPortavel
 {
