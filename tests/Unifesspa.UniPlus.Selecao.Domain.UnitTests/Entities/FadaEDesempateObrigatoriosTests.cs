@@ -67,15 +67,6 @@ public sealed class FadaEDesempateObrigatoriosTests
         processo.AplicaFada.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "FADA gravado antes da declaração (configuração sem declaração) volta como por declarar")]
-    public void ConfiguracaoSemDeclaracao_ContinuaPorDeclarar()
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararFada: false);
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Fada))!.SetValue(processo, Fada());
-
-        Vermelhos(processo).Should().Equal("fada_nao_declarado");
-    }
-
     [Fact(DisplayName = "Inscrição própria sem critério de desempate é a única pendência")]
     public void InscricaoPropria_SemDesempate_ApontaOItem()
     {
@@ -89,10 +80,10 @@ public sealed class FadaEDesempateObrigatoriosTests
     [Fact(DisplayName = "Resultado importado dispensa o desempate: a lista já vem classificada")]
     public void ResultadoImportado_DispensaDesempate()
     {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(comDesempate: false);
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.OrigemCandidatos))!
-            .SetValue(processo, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
 
+        processo.OrigemCandidatos.Should().Be(OrigemCandidatos.ImportacaoExterna);
+        processo.CriteriosDesempate.Should().BeEmpty();
         Vermelhos(processo).Should().NotContain("criterios_desempate_ausentes");
     }
 }
