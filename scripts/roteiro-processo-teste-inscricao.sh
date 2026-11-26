@@ -21,8 +21,8 @@
 #   Criar ProcessoSeletivo → Atendimento Especializado → Distribuição de Vagas
 #   (Anexo II) → Cascata de Remanejamento (Quadro 3) → FADA (item
 #   1.6) → Critério de Desempate → Classificação importada → Taxa de Inscrição
-#   (gratuita, item 2.2) → Cronograma de Fases → aplicar e vincular os modelos
-#   de inscrição e habilitação → documentos comuns e do FADA → Documento do
+#   (gratuita, item 2.2) → Cronograma de Fases → declarar os formulários de
+#   inscrição e de habilitação e aplicar os modelos → documentos comuns e do FADA → Documento do
 #   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
@@ -616,7 +616,7 @@ conferir_processo_publicado() {
     # a ordem dos municípios é significativa, como na declaração enviada.
     jq -e --arg modelo "$MODELO_INSCRICAO_ID" --argjson tem_prova "$MODELO_PEDE_CIDADE_DE_PROVA" \
         --argjson municipios "$municipios" '
-        ([.formularios[] | select(.finalidade.codigo == "INSCRICAO")] | length == 1 and
+        ([.formularios[] | select(.codigo == "INSCRICAO")] | length == 1 and
             (.[0].modeloOrigem.id | type == "string" and ascii_downcase == ($modelo | ascii_downcase))) and
         (.provaPresencial.temProvaPresencial == $tem_prova) and
         ((.provaPresencial.municipios | type) == "array") and
@@ -1026,83 +1026,69 @@ escolher_motivo_da_homologacao() {
     ok "motivo da homologação escolhido"
 }
 
-aplicar_modelo_inscricao() {
-    log "Aplicar o modelo de inscrição ($MODELO_INSCRICAO_ID)"
-    api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
-        "{\"modeloId\": \"$MODELO_INSCRICAO_ID\"}" >/dev/null
-    ok "modelo aplicado"
+# O formulário nasce declarado: o código, a fase do cronograma DESTE processo (só existe depois do
+# cronograma) e a obrigatoriedade que o modelo declara. A revisão e aceite é a única página que a
+# declaração leva, porque todo formulário a exige; o modelo aplicado depois substitui o conteúdo e
+# mantém a fase e a obrigatoriedade. Numa segunda execução o formulário já existe e não é declarado
+# de novo: refazer a declaração recusaria as seções dos itens que o modelo já trouxe.
+declarar_formulario() {
+    local codigo="$1" fase_codigo="$2" modelo_id="$3" processo fase modelo
+    processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
+    if jq -e --arg codigo "$codigo" 'any(.formularios[]; .codigo == $codigo)' <<< "$processo" >/dev/null; then
+        ok "formulário $codigo já declarado"
+        return
+    fi
+    fase=$(jq -c --arg codigo "$fase_codigo" '[.cronogramaFases[] | select(.codigo == $codigo)][0] // empty' <<< "$processo")
+    [ -n "$fase" ] || fail "fase $fase_codigo não encontrada no cronograma do processo $PROCESSO_ID"
+    modelo=$(api_get "/api/configuracao/admin/modelos-formulario/$modelo_id")
+    jq -e --argjson fase "$fase" '.declaracao.serveAFaseDeInscricao == $fase.faseCanonica.coletaInscricao' <<< "$modelo" >/dev/null \
+        || fail "o modelo $modelo_id declara servir à fase de inscrição de forma diferente da fase $fase_codigo do cronograma"
+    api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/$codigo" "$(jq -nc \
+        --argjson fase "$fase" --argjson modelo "$modelo" '{
+            faseId: $fase.id, titulo: null, obrigatorio: $modelo.declaracao.obrigatorio,
+            paginas: [{codigo: "REVISAO", ordem: 1, tipo: "BLOCO", bloco: "REVISAO_E_ACEITE",
+                apresentacao: {titulo: "Revisão e aceite", descricao: null, aviso: null}}]}')" >/dev/null
+    ok "formulário $codigo declarado na fase $fase_codigo"
 }
 
-# Vincula o formulário de inscrição (já criado pela aplicação do modelo) à fase
-# INSCRICAO do cronograma DESTE processo. "Aplicar modelo" não fixa a fase —
-# ela é por definição processo-específica, e só existe depois do cronograma.
-# As páginas replicam exatamente as seções/blocos de ConteudoDaInscricao()
-# (SementePsrMedicina2027) — reenviar a mesma estrutura, com o FaseId
-# acrescentado, não recria nem descarta os itens já aplicados (o handler só
-# substitui os itens quando o formulário nasce agora, não quando já existe).
-vincular_fase_do_formulario() {
-    log "Vincular o formulário de inscrição à fase do cronograma"
-    local processo fase_inscricao_processo_id apresentado titulo paginas
+# Copia o modelo para o formulário do código, que já precisa existir. O que o cadastro mudou depois da
+# composição do modelo sai da cópia e volta na resposta, que o roteiro mostra.
+aplicar_modelo_ao_formulario() {
+    local codigo="$1" modelo_id="$2" aplicacao descartados
+    aplicacao=$(api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
+        "$(jq -nc --arg modelo "$modelo_id" --arg codigo "$codigo" '{modeloId: $modelo, formularioCodigo: $codigo}')")
+    descartados=$(jq -r '[.descartados[] | "\(.parte) \(.codigo) (\(.motivo))"] | join(", ")' <<< "$aplicacao")
+    [ -z "$descartados" ] || warn "partes do modelo $modelo_id fora do formulário $codigo: $descartados"
+}
 
-    processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
-    fase_inscricao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="INSCRICAO") | .id' <<< "$processo")
-    [ -n "$fase_inscricao_processo_id" ] || fail "fase INSCRICAO não encontrada no cronograma do processo $PROCESSO_ID"
+formulario_apresentado() {
+    local codigo="$1" resposta
+    resposta=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
+        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/$codigo/apresentacao")
+    [ "$(tail -n1 <<< "$resposta")" = "200" ] || fail "não foi possível ler o formulário $codigo: $(sed '$d' <<< "$resposta")"
+    sed '$d' <<< "$resposta"
+}
 
-    # Lê a estrutura (título + páginas) que a aplicação do modelo já criou, em
-    # vez de copiá-la à mão do seed — sobrevive a qualquer mudança no modelo
-    # da Medicina. DADOS_BASICOS é excluída: o handler do PUT já a repõe por
-    # conta própria (ConjuntoBasicoDaInscricao.MesclarPaginas) a partir da
-    # referência do processo — reenviá-la é redundante, e arriscaria recusa
-    # por SecaoReservadaAlterada se a apresentação um dia divergir, por
-    # pouco que seja, da referência que o handler usa para comparar.
-    # A projeção do formulário apresentado
-    # não traz a exibição condicional de cada página (a projeção não
-    # tem esse campo) — hoje o modelo da Medicina não usa exibição condicional
-    # em nenhuma seção/bloco, então "exibicao: null" aqui reflete o estado
-    # real; um modelo futuro com seção condicional exigiria uma fonte própria
-    # para esse dado, não esta leitura.
-    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO/apresentacao")
-    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "GET formulário apresentado falhou: $(sed '$d' <<< "$apresentado")"
-    apresentado=$(sed '$d' <<< "$apresentado")
-    titulo=$(jq -r '.formulario.titulo' <<< "$apresentado")
-    [ -n "$titulo" ] && [ "$titulo" != "null" ] || fail "formulário INSCRICAO sem título — a aplicação do modelo falhou em silêncio?"
-    paginas=$(jq -c '[.formulario.paginas[] | select(.codigo != "DADOS_BASICOS") | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
-    [ "$(jq 'length' <<< "$paginas")" -gt 0 ] || fail "formulário INSCRICAO sem páginas — a aplicação do modelo falhou em silêncio?"
-
-    api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO" "$(jq -nc \
-        --arg fase "$fase_inscricao_processo_id" --arg titulo "$titulo" --argjson paginas "$paginas" \
-        '{faseId: $fase, titulo: $titulo, paginas: $paginas}')" >/dev/null
-    ok "formulário vinculado à fase $fase_inscricao_processo_id"
+aplicar_modelo_inscricao() {
+    log "Declarar o formulário de inscrição e aplicar o modelo ($MODELO_INSCRICAO_ID)"
+    local apresentado
+    declarar_formulario INSCRICAO INSCRICAO "$MODELO_INSCRICAO_ID"
+    aplicar_modelo_ao_formulario INSCRICAO "$MODELO_INSCRICAO_ID"
+    apresentado=$(formulario_apresentado INSCRICAO)
+    jq -e '(.formulario.titulo | type == "string" and length > 0) and (.formulario.paginas | length > 0)' <<< "$apresentado" >/dev/null \
+        || fail "formulário INSCRICAO sem título ou sem páginas — a aplicação do modelo falhou em silêncio?"
+    ok "modelo de inscrição aplicado"
 }
 
 aplicar_modelo_habilitacao() {
-    log "Aplicar e vincular o modelo de habilitação"
-    local modelo_id processo fase_id apresentado titulo paginas
-    modelo_id="5e3d0006-0000-7000-8000-000000000002"
-    processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
-    fase_id=$(jq -r '.cronogramaFases[] | select(.codigo == "HABILITACAO") | .id' <<< "$processo")
-    exigir_id "fase HABILITACAO" "$fase_id"
-    api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
-        "{\"modeloId\": \"$modelo_id\"}" >/dev/null
-    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
-    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível ler o formulário de habilitação: $(sed '$d' <<< "$apresentado")"
-    apresentado=$(sed '$d' <<< "$apresentado")
+    log "Declarar o formulário de habilitação e aplicar o modelo"
+    local modelo_id="5e3d0006-0000-7000-8000-000000000002" apresentado
+    declarar_formulario HABILITACAO HABILITACAO "$modelo_id"
+    aplicar_modelo_ao_formulario HABILITACAO "$modelo_id"
+    apresentado=$(formulario_apresentado HABILITACAO)
     jq -e '[.formulario.paginas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' <<< "$apresentado" >/dev/null \
         || fail "formulário de habilitação sem as seções ou blocos esperados"
-    titulo=$(jq -r '.formulario.titulo // empty' <<< "$apresentado")
-    [ -n "$titulo" ] || fail "formulário de habilitação sem título"
-    paginas=$(jq -c '[.formulario.paginas[] | {codigo, ordem, tipo, bloco, apresentacao, exibicao: null}]' <<< "$apresentado")
-    api PUT "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO" "$(jq -nc \
-        --arg fase "$fase_id" --arg titulo "$titulo" --argjson paginas "$paginas" \
-        '{faseId: $fase, titulo: $titulo, paginas: $paginas}')" >/dev/null
-    apresentado=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.formulario.v2+json" \
-        "$API_URL/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/HABILITACAO/apresentacao")
-    [ "$(tail -n1 <<< "$apresentado")" = "200" ] || fail "não foi possível conferir o formulário de habilitação"
-    sed '$d' <<< "$apresentado" | jq -e '[.formulario.paginas[] | select((.codigo == "CONCLUSAO_ENSINO_MEDIO" and .tipo == "SECAO") or (.codigo == "COMPOSICAO_FAMILIAR" and .tipo == "SECAO") or (.codigo == "DOCUMENTOS" and .tipo == "BLOCO" and .bloco == "COMPROVACAO_DOCUMENTAL") or (.codigo == "REVISAO" and .tipo == "BLOCO" and .bloco == "REVISAO_E_ACEITE")) | .codigo] | unique | length == 4' >/dev/null \
-        || fail "formulário de habilitação vinculado sem as seções ou blocos esperados"
-    ok "modelo de habilitação vinculado à fase $fase_id"
+    ok "modelo de habilitação aplicado ao formulário HABILITACAO"
 }
 
 documentos_comuns_da_habilitacao() {
@@ -1110,7 +1096,7 @@ documentos_comuns_da_habilitacao() {
     jq -nc --arg fase "$fase" --argjson tipos "$TIPOS_DOCUMENTO" --argjson bases "$bases" '
         def id($codigo): ([$tipos[] | select(.codigo == $codigo) | .id][0] // error("tipo de documento ausente: " + $codigo));
         def documento($codigo; $prazo): {forma: "DOCUMENTO", documento: {
-            tipoDocumento: {id: id($codigo)}, momento: {faseId: $fase, finalidade: "HABILITACAO"},
+            tipoDocumento: {id: id($codigo)}, momento: {faseId: $fase, formularioCodigo: "HABILITACAO"},
             aplicabilidade: {tipo: "GERAL", condicoes: []},
             indeferimento: {obrigatorio: true, consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases},
             requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: $prazo,
@@ -1131,7 +1117,7 @@ documentos_do_fada() {
     local fase="$1" bases="$2"
     jq -nc --arg fase "$fase" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson bases "$bases" '
         def regra($tipo; $condicoes; $observacao): {forma: "DOCUMENTO", documento: {
-            tipoDocumento: {id: $tipo}, momento: {faseId: $fase, finalidade: "HABILITACAO"},
+            tipoDocumento: {id: $tipo}, momento: {faseId: $fase, formularioCodigo: "HABILITACAO"},
             aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
             indeferimento: {obrigatorio: true, consequenciaDoDescumprimento: "RETIRA_O_ACRESCIMO", basesLegais: ($bases | map(.observacao = $observacao))},
             requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: {escolha: "SEM_PRAZO"}, validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null}, fatosComprovados: []}};
@@ -1157,7 +1143,7 @@ definir_documentos_exigidos() {
         forma: "DOCUMENTO",
         documento: (.documento | {
             tipoDocumento: {id: .tipoDocumento.id},
-            momento: (.momento | {faseId, etapaId, finalidade: (.finalidade | codigo)}),
+            momento: (.momento | {faseId, etapaId, formularioCodigo}),
             aplicabilidade: (.aplicabilidade | {
                 tipo: (.tipo | codigo),
                 condicoes: [.condicoes[] | {clausula, fato, operador, valor}]
@@ -1334,7 +1320,6 @@ main() {
     definir_cronograma_fases
     escolher_motivo_da_homologacao
     aplicar_modelo_inscricao
-    vincular_fase_do_formulario
     aplicar_modelo_habilitacao
     definir_documentos_exigidos
     documento_do_edital

@@ -254,7 +254,8 @@ inscrever_persona() {
     rascunho=$(curl -sS -X PUT "$url" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
         -H "If-Match: $(jq -r '.eTag' <<< "$(sed '$d' <<< "$rascunho")")" -H "Content-Type: application/json" -H "$accept" -d "$corpo") \
         || fail "não foi possível salvar as respostas da persona $username"
-    jq -e '.eTag' <<< "$rascunho" >/dev/null || fail "não foi possível salvar as respostas da persona $username"
+    jq -e '.eTag' <<< "$rascunho" >/dev/null \
+        || fail "não foi possível salvar as respostas da persona $username: $(jq -c '{status, code, detail, errors}' <<< "$rascunho" 2>/dev/null)"
 
     resposta=$(curl -sS -w '\n%{http_code}' -X POST "$url/envio" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
         -H "If-Match: $(jq -r '.eTag' <<< "$rascunho")" -H "Content-Type: application/json" \
@@ -272,7 +273,7 @@ inscrever_personas() {
     log "Inscrever as personas candidatas (sem $PERSONA_NAO_INSCRITA)"
     local edicoes=(2025 2024 2025 2026) ofertas=("${OFERTAS_DISTRIBUIDAS[@]}") formulario candidatas pessoa i=0
     formulario=$(curl -sS "$API_URL/api/selecao/processos-seletivos/$PROCESSO_ID/formularios/INSCRICAO")
-    ACEITES=$(jq -c '[.formulario.termos[] | {codigo, versaoId, hashVersao: .conteudo.hashVersao}]' <<< "$formulario")
+    ACEITES=$(jq -c '[.formulario.termos[] | {formularioCodigo: "INSCRICAO", codigo, versaoId, hashVersao: .conteudo.hashVersao}]' <<< "$formulario")
     # Lido antes do laço para que uma falha do jq derrube o roteiro em vez de
     # terminar com zero inscrições.
     candidatas=$(jq -c --arg fora "$PERSONA_NAO_INSCRITA" '.[] | select(.perfil == "candidato" and .username != $fora)' "$FAKE_PEOPLE")
@@ -339,7 +340,7 @@ main() {
     escolher_motivo_da_homologacao
     definir_etapa_nota_do_enem
     aplicar_modelo_inscricao
-    vincular_fase_do_formulario
+    aplicar_modelo_habilitacao
     definir_documentos_exigidos
     documento_do_edital
     divulgar
