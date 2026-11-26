@@ -5,7 +5,6 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -38,10 +37,12 @@ public static class DefinirTermosDoFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(termoConsentimentoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
-            : await DefinirAsync(command, processo, fatoCandidatoReader, termoConsentimentoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? Result.Failure(obtido.Error!)
+            : await DefinirAsync(command, obtido.Value!, fatoCandidatoReader, termoConsentimentoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> DefinirAsync(
@@ -52,7 +53,7 @@ public static class DefinirTermosDoFormularioCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        if (RecusaAntesDoCatalogo(command, processo) is { } recusa)
+        if (RecusaDaListaAusente(command) is { } recusa)
         {
             return recusa;
         }
@@ -64,19 +65,12 @@ public static class DefinirTermosDoFormularioCommandHandler
             : await GravarAsync(command, processo, resolvidos, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Fora do rascunho a recusa vem antes de consultar cadastros; a lista de termos é obrigatória, e a vazia os remove.</summary>
-    private static Result? RecusaAntesDoCatalogo(DefinirTermosDoFormularioCommand command, ProcessoSeletivo processo)
-    {
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        return command.Termos is null
+    /// <summary>A lista de termos é obrigatória, e a vazia os remove; a recusa vem antes de consultar cadastros.</summary>
+    private static Result? RecusaDaListaAusente(DefinirTermosDoFormularioCommand command) =>
+        command.Termos is null
             ? Result.Failure(new DomainError(
                 TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."))
             : null;
-    }
 
     /// <summary>
     /// A forma vem antes das leituras externas; as recusas da forma, do catálogo e da unicidade acumulam no mesmo

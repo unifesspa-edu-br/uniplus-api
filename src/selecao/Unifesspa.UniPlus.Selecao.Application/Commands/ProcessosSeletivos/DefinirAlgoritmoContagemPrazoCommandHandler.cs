@@ -7,7 +7,6 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
@@ -42,18 +41,21 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
     {
         public async Task<Result> ExecutarAsync(DefinirAlgoritmoContagemPrazoCommand command, CancellationToken cancellationToken)
         {
-            ProcessoSeletivo? processo = await repository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-                .ConfigureAwait(false);
-            Result conferencia = ConferirProcessoEDeclaracao(processo, command);
-            if (conferencia.IsFailure)
-            {
-                return conferencia;
-            }
+            Result<ProcessoSeletivo> processo = await ProcessoSeletivoEmEdicao
+                .ObterAsync(repository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+            Result recusa = processo.IsFailure ? Result.Failure(processo.Error!) : ConferirDeclaracao(command);
+            return recusa.IsFailure
+                ? recusa
+                : await ConsultarEDefinirAsync(processo.Value!, command, cancellationToken).ConfigureAwait(false);
+        }
 
+        private async Task<Result> ConsultarEDefinirAsync(
+            ProcessoSeletivo processo, DefinirAlgoritmoContagemPrazoCommand command, CancellationToken cancellationToken)
+        {
             Result<ReferenciaRegra> referencia = await ConsultarRegraAsync(command, reader, cancellationToken).ConfigureAwait(false);
             return referencia.IsFailure
                 ? Result.Failure(referencia.Error!)
-                : await DefinirESalvarAsync(processo!, referencia.Value!, cancellationToken).ConfigureAwait(false);
+                : await DefinirESalvarAsync(processo, referencia.Value!, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<Result> DefinirESalvarAsync(
@@ -68,21 +70,6 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
-    }
-
-    private static Result ConferirProcessoEDeclaracao(ProcessoSeletivo? processo, DefinirAlgoritmoContagemPrazoCommand command)
-    {
-        if (processo is null)
-        {
-            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
-        }
-
-        if (processo.MutacaoBloqueada() is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        return ConferirDeclaracao(command);
     }
 
     private static Result ConferirDeclaracao(DefinirAlgoritmoContagemPrazoCommand command) =>

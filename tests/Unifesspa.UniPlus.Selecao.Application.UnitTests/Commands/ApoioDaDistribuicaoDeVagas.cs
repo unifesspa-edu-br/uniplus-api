@@ -51,6 +51,14 @@ internal static class ApoioDaDistribuicaoDeVagas
         internal Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> DefinirAsync(DefinirDistribuicaoVagasCommand command) =>
             DefinirDistribuicaoVagasCommandHandler.Handle(command, Repository, Resolvedor, CadastrosVivos.CatalogoDeFatos(), UnitOfWork, CancellationToken.None);
 
+        internal void NenhumCadastroConsultado()
+        {
+            RegraCatalogoReader.ReceivedCalls().Should().BeEmpty();
+            OfertaCursoReader.ReceivedCalls().Should().BeEmpty();
+            ModalidadeReader.ReceivedCalls().Should().BeEmpty();
+            ReferenciaReservaDemograficaReader.ReceivedCalls().Should().BeEmpty();
+        }
+
         internal Mocks ComOferta(Guid ofertaCursoId, GrupoAreaEnemView? grupoAreaEnem = null)
         {
             OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId, grupoAreaEnem));

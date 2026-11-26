@@ -93,10 +93,8 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
-            .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"FATO_{i}", i).ComRotulo("Campo").Construir())];
 
-        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), itens));
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), ItensAcimaDoTeto()));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());

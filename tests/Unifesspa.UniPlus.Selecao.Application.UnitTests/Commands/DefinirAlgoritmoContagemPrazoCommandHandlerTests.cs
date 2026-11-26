@@ -144,5 +144,38 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await ConferirQueNadaFoiConsultadoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Processo inexistente é recusado antes do algoritmo não declarado, sem consultar o catálogo nem gravar")]
+    public async Task Handle_ProcessoInexistenteComAlgoritmoNaoDeclarado_RecusaPeloProcesso()
+    {
+        Mocks mocks = NovosMocks(null, Guid.CreateVersion7(), RegraDoCatalogo());
+
+        Result result = await DefinirAsync(mocks, new DefinirAlgoritmoContagemPrazoCommand(Guid.CreateVersion7(), null, null));
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await ConferirQueNadaFoiConsultadoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Processo publicado é recusado antes do algoritmo não declarado, sem consultar o catálogo nem gravar")]
+    public async Task Handle_ProcessoPublicadoComAlgoritmoNaoDeclarado_RecusaPelaSituacao()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
+
+        Result result = await DefinirAsync(mocks, new DefinirAlgoritmoContagemPrazoCommand(processo.Id, null, null));
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await ConferirQueNadaFoiConsultadoNemGravadoAsync(mocks);
+    }
+
+    private static Task<Result> DefinirAsync(Mocks mocks, DefinirAlgoritmoContagemPrazoCommand command) =>
+        DefinirAlgoritmoContagemPrazoCommandHandler.Handle(command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
+
+    private static async Task ConferirQueNadaFoiConsultadoNemGravadoAsync(Mocks mocks)
+    {
+        await mocks.Catalogo.DidNotReceive().ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

@@ -53,6 +53,22 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        mocks.NenhumCadastroConsultado();
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com processo publicado recusa a alteração sem consultar cadastro nem gravar")]
+    public async Task Handle_ProcessoPublicado_RecusaSemConsultarCadastros()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirDistribuicaoVagasCommand command = ComandoDaDistribuicao(
+            processo, DistribuicaoSemQuadro(Guid.CreateVersion7(), "X", [Guid.CreateVersion7()]));
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(command);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        mocks.NenhumCadastroConsultado();
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

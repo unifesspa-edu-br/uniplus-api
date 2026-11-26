@@ -225,6 +225,54 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos[0].termo.versaoId", TermoExigidoFormularioErrorCodes.VersaoNaoEncontrada));
     }
 
+    [Fact(DisplayName = "Processo inexistente é recusado antes da lista de termos ausente, sem ler cadastro nem gravar")]
+    public async Task Handle_ProcessoInexistenteComListaAusente_RecusaPeloProcesso()
+    {
+        Mocks mocks = NovosMocks(ProcessoQueColetaCorRaca());
+
+        Result resultado = await HandleSemListaAsync(mocks, Guid.CreateVersion7());
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Processo publicado é recusado antes da lista de termos ausente, sem ler cadastro nem gravar")]
+    public async Task Handle_ProcessoPublicadoComListaAusente_RecusaPelaSituacao()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        Mocks mocks = NovosMocks(processo);
+
+        Result resultado = await HandleSemListaAsync(mocks, processo.Id);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
+    }
+
+    [Fact(DisplayName = "Lista de termos ausente é recusada em rascunho antes de ler os cadastros, e a lista vazia não é")]
+    public async Task Handle_ListaAusenteEmRascunho_RecusaSemLerCadastros()
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+        Mocks mocks = NovosMocks(processo);
+
+        Result resultado = await HandleSemListaAsync(mocks, processo.Id);
+
+        resultado.Error!.Code.Should().Be(TermoExigidoFormularioErrorCodes.EntradaMalformada);
+        await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
+        (await HandleAsync(mocks, processo)).IsSuccess.Should().BeTrue();
+    }
+
+    private static Task<Result> HandleSemListaAsync(Mocks mocks, Guid processoId) =>
+        DefinirTermosDoFormularioCommandHandler.Handle(
+            new DefinirTermosDoFormularioCommand(processoId, PapelDoFormularioDeTeste.Habilitacao.Codigo(), null!),
+            mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
+
+    private static async Task ConferirQueNadaFoiLidoNemGravadoAsync(Mocks mocks)
+    {
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+        await mocks.TermoReader.DidNotReceive().ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     private static EntradaDoTermoExigidoDeTeste Termo(string codigo, Guid termoId, Guid versaoId, int ordem = 0) =>
         EntradaDoTermoExigidoDeTeste.Exigindo(codigo, ordem).DaVersao(termoId, versaoId);
 

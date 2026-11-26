@@ -10,7 +10,6 @@ using Kernel.Results;
 
 using Queries.ProcessosSeletivos;
 
-using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -31,6 +30,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         IFatoCandidatoReader fatoCandidatoReader, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
 
         Result<ProcessoSeletivo> definido = await DefinirNoProcessoAsync(
             command, processoSeletivoRepository, resolvedor, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
@@ -58,7 +58,8 @@ public static class DefinirDistribuicaoVagasCommandHandler
         IFatoCandidatoReader fatoCandidatoReader,
         CancellationToken cancellationToken)
     {
-        Result<ProcessoSeletivo> processo = await CarregarParaMutacaoAsync(command, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> processo = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (processo.IsFailure)
         {
             return processo;
@@ -71,21 +72,6 @@ public static class DefinirDistribuicaoVagasCommandHandler
         return resolvidas.IsFailure
             ? Result<ProcessoSeletivo>.ValidationFailure(resolvidas.Errors)
             : await DefinirAsync(command, processo.Value!, resolvidas.Value!, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-    }
-
-    // Fora do rascunho a recusa vem antes de consultar cadastros.
-    private static async Task<Result<ProcessoSeletivo>> CarregarParaMutacaoAsync(
-        DefinirDistribuicaoVagasCommand command, IProcessoSeletivoRepository processoSeletivoRepository, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return processo is null
-            ? Result<ProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado())
-            : processo.MutacaoBloqueada() is { } bloqueio
-                ? Result<ProcessoSeletivo>.Failure(bloqueio)
-                : Result<ProcessoSeletivo>.Success(processo);
     }
 
     // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre qualquer fato cujos
