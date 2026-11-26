@@ -15,6 +15,10 @@ COPY Directory.Build.props Directory.Packages.props SonarLint.xml .globalconfig 
 # EmbeddedResource — sem esta árvore no contexto, o publish falha em CS1566.
 COPY seeds/ seeds/
 
+# Os esquemas do documento de configuração da Seleção entram no assembly como
+# EmbeddedResource a partir de contracts/ — sem esta pasta no contexto o build falha.
+COPY contracts/selecao/configuracao/v1/ contracts/selecao/configuracao/v1/
+
 # Apenas as árvores que o host referencia (shared + 7 módulos internos + contratos do verificador + host).
 COPY src/shared/ src/shared/
 COPY src/selecao/ src/selecao/
