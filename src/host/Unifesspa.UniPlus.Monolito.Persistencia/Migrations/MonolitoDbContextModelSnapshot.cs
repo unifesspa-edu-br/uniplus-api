@@ -9787,21 +9787,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<Guid>("CandidatoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("candidato_id");
+                        .HasColumnName("candidato_id")
+                        .HasComment("Identificador do candidato.");
 
                     b.Property<Guid>("ChamadaId")
                         .HasColumnType("uuid")
-                        .HasColumnName("chamada_id");
-
-                    b.Property<string>("CodigoCurso")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("codigo_curso");
+                        .HasColumnName("chamada_id")
+                        .HasComment("Identificador da chamada.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9810,7 +9807,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<DateTimeOffset?>("DataManifestacao")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("data_manifestacao");
+                        .HasColumnName("data_manifestacao")
+                        .HasComment("Instante da manifestação.");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9824,7 +9822,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("inscricao_id");
+                        .HasColumnName("inscricao_id")
+                        .HasComment("Identificador da inscrição.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -9833,7 +9832,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int>("Posicao")
                         .HasColumnType("integer")
-                        .HasColumnName("posicao");
+                        .HasColumnName("posicao")
+                        .HasComment("Posição na chamada.");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -9855,6 +9855,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("convocacoes", "ingresso", t =>
                         {
+                            t.HasComment("Convocações de candidatos para chamadas.");
+
+                            t.HasCheckConstraint("ck_convocacoes_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_convocacoes_status", "status IN ('PENDENTE', 'ACEITA', 'RECUSADA', 'NAO_COMPARECEU', 'EXPIRADA')");
                         });
                 });
@@ -9940,21 +9944,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador do registro.");
 
                     b.Property<Guid>("CandidatoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("candidato_id");
-
-                    b.Property<string>("CodigoCurso")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("codigo_curso");
+                        .HasColumnName("candidato_id")
+                        .HasComment("Identificador do candidato.");
 
                     b.Property<Guid>("ConvocacaoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("convocacao_id");
+                        .HasColumnName("convocacao_id")
+                        .HasComment("Identificador da convocação.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -9979,7 +9980,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<string>("Observacoes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
-                        .HasColumnName("observacoes");
+                        .HasColumnName("observacoes")
+                        .HasComment("Informações registradas durante a análise.");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -9998,6 +10000,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("matriculas", "ingresso", t =>
                         {
+                            t.HasComment("Matrículas originadas de convocações.");
+
+                            t.HasCheckConstraint("ck_matriculas_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+
                             t.HasCheckConstraint("ck_matriculas_status", "status IN ('PENDENTE', 'DOCUMENTACAO_ENVIADA', 'EM_ANALISE', 'DEFERIDA', 'INDEFERIDA', 'EFETIVADA', 'CANCELADA')");
                         });
                 });
@@ -12346,11 +12352,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador da configuração de distribuição de vagas.");
 
                     b.Property<string>("AjusteDoQuadro")
                         .HasColumnType("jsonb")
-                        .HasColumnName("ajuste_do_quadro");
+                        .HasColumnName("ajuste_do_quadro")
+                        .HasComment("Parâmetros do motor de ajuste do quadro fixado no edital.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12359,32 +12367,39 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int?>("ExcedenteSobreReservaLegal")
                         .HasColumnType("integer")
-                        .HasColumnName("excedente_sobre_reserva_legal");
+                        .HasColumnName("excedente_sobre_reserva_legal")
+                        .HasComment("Vagas da reserva efetiva acima da reserva nominal.");
 
                     b.Property<Guid>("OfertaCursoOrigemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("oferta_curso_origem_id");
+                        .HasColumnName("oferta_curso_origem_id")
+                        .HasComment("Identificador da oferta no cadastro de origem.");
 
                     b.Property<decimal?>("PercentualDaReservaLegal")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)")
-                        .HasColumnName("percentual_da_reserva_legal");
+                        .HasColumnName("percentual_da_reserva_legal")
+                        .HasComment("Fração das vagas base reservada por lei; ausente no quadro fixado.");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Processo seletivo ao qual a distribuição pertence.");
 
                     b.Property<int?>("ReservaLegalEfetiva")
                         .HasColumnType("integer")
-                        .HasColumnName("reserva_legal_efetiva");
+                        .HasColumnName("reserva_legal_efetiva")
+                        .HasComment("Quantidade de vagas concedidas à reserva legal após as garantias.");
 
                     b.Property<int?>("ReservaLegalNominal")
                         .HasColumnType("integer")
-                        .HasColumnName("reserva_legal_nominal");
+                        .HasColumnName("reserva_legal_nominal")
+                        .HasComment("Quantidade de vagas reservadas pelo percentual legal, antes das garantias.");
 
                     b.Property<int>("TotalDeVagasDoEdital")
                         .HasColumnType("integer")
-                        .HasColumnName("total_de_vagas_do_edital");
+                        .HasColumnName("total_de_vagas_do_edital")
+                        .HasComment("Total de vagas resultante para o edital.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -12393,15 +12408,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.Property<int?>("VagasCortadasPorEscassez")
                         .HasColumnType("integer")
-                        .HasColumnName("vagas_cortadas_por_escassez");
+                        .HasColumnName("vagas_cortadas_por_escassez")
+                        .HasComment("Vagas cortadas das reservas por escassez.");
 
                     b.Property<int>("VagasOfertadasBase")
                         .HasColumnType("integer")
-                        .HasColumnName("vagas_ofertadas_base");
+                        .HasColumnName("vagas_ofertadas_base")
+                        .HasComment("Quantidade de vagas ofertadas usada como base do quadro.");
 
                     b.Property<string>("VagasRetiradasNoAjuste")
                         .HasColumnType("jsonb")
-                        .HasColumnName("vagas_retiradas_no_ajuste");
+                        .HasColumnName("vagas_retiradas_no_ajuste")
+                        .HasComment("Vagas retiradas por modalidade pelo ajuste do quadro fixado.");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_de_vagas");
@@ -12412,7 +12430,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("configuracoes_de_vagas", "selecao", t =>
                         {
+                            t.HasComment("Distribuição de vagas de uma oferta de curso em um processo seletivo, com as regras e os dados congelados para compor o quadro.");
+
                             t.HasCheckConstraint("ck_configuracoes_de_vagas_excedente_sobre_reserva_legal", "excedente_sobre_reserva_legal IS NULL OR excedente_sobre_reserva_legal = GREATEST(0, reserva_legal_efetiva - reserva_legal_nominal)");
+
+                            t.HasCheckConstraint("ck_configuracoes_de_vagas_oferta_curso_codigo_formato", "oferta_curso_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_configuracoes_de_vagas_percentual_da_reserva_legal", "percentual_da_reserva_legal IS NULL OR (percentual_da_reserva_legal >= 0.5 AND percentual_da_reserva_legal <= 1)");
 
@@ -19710,6 +19732,55 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_convocacoes_chamadas_chamada_id");
 
+                    b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso.CopiaDaOfertaDeCurso", "OfertaCurso", b1 =>
+                        {
+                            b1.Property<Guid>("ConvocacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("oferta_curso_codigo")
+                                .HasComment("Código da oferta de curso, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação.");
+
+                            b1.Property<string>("CursoGrau")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("oferta_curso_grau")
+                                .HasComment("Grau do curso da oferta, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação.");
+
+                            b1.Property<string>("CursoNome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("oferta_curso_nome")
+                                .HasComment("Nome do curso da oferta, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação.");
+
+                            b1.PrimitiveCollection<string[]>("Turnos")
+                                .IsRequired()
+                                .HasColumnType("character varying(30)[]")
+                                .HasColumnName("oferta_turnos")
+                                .HasComment("Turnos que a oferta ocupa (tokens), copiados da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação.");
+
+                            b1.Property<string>("UnidadeOfertanteNome")
+                                .IsRequired()
+                                .HasMaxLength(250)
+                                .HasColumnType("character varying(250)")
+                                .HasColumnName("oferta_unidade_ofertante_nome")
+                                .HasComment("Nome da unidade ofertante, copiado da oferta congelada na versão do processo seletivo que a chamada segue, na criação da convocação.");
+
+                            b1.HasKey("ConvocacaoId");
+
+                            b1.ToTable("convocacoes", "ingresso");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConvocacaoId")
+                                .HasConstraintName("fk_convocacoes_convocacoes_id");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Ingresso.Domain.ValueObjects.ProtocoloConvocacao", "Protocolo", b1 =>
                         {
                             b1.Property<Guid>("ConvocacaoId")
@@ -19720,7 +19791,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
-                                .HasColumnName("protocolo");
+                                .HasColumnName("protocolo")
+                                .HasComment("Identificador atribuído à convocação para acompanhamento.");
 
                             b1.HasKey("ConvocacaoId");
 
@@ -19735,6 +19807,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_convocacoes_convocacoes_id");
                         });
 
+                    b.Navigation("OfertaCurso")
+                        .IsRequired();
+
                     b.Navigation("Protocolo")
                         .IsRequired();
                 });
@@ -19747,6 +19822,61 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_documentos_matricula_matricula_matricula_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Matricula", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso.CopiaDaOfertaDeCurso", "OfertaCurso", b1 =>
+                        {
+                            b1.Property<Guid>("MatriculaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("oferta_curso_codigo")
+                                .HasComment("Código da oferta de curso, copiado da convocação que originou a matrícula.");
+
+                            b1.Property<string>("CursoGrau")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("oferta_curso_grau")
+                                .HasComment("Grau do curso da oferta, copiado da convocação que originou a matrícula.");
+
+                            b1.Property<string>("CursoNome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("oferta_curso_nome")
+                                .HasComment("Nome do curso da oferta, copiado da convocação que originou a matrícula.");
+
+                            b1.PrimitiveCollection<string[]>("Turnos")
+                                .IsRequired()
+                                .HasColumnType("character varying(30)[]")
+                                .HasColumnName("oferta_turnos")
+                                .HasComment("Turnos que a oferta ocupa (tokens), copiados da convocação que originou a matrícula.");
+
+                            b1.Property<string>("UnidadeOfertanteNome")
+                                .IsRequired()
+                                .HasMaxLength(250)
+                                .HasColumnType("character varying(250)")
+                                .HasColumnName("oferta_unidade_ofertante_nome")
+                                .HasComment("Nome da unidade ofertante, copiado da convocação que originou a matrícula.");
+
+                            b1.HasKey("MatriculaId");
+
+                            b1.ToTable("matriculas", "ingresso");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MatriculaId")
+                                .HasConstraintName("fk_matriculas_matriculas_id");
+                        });
+
+                    b.Navigation("OfertaCurso")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
@@ -20648,75 +20778,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_configuracoes_de_vagas_configuracoes_de_vagas_id");
                         });
 
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraAjuste", b1 =>
-                        {
-                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Codigo")
-                                .IsRequired()
-                                .HasMaxLength(128)
-                                .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_ajuste_codigo");
-
-                            b1.Property<string>("Hash")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character(64)")
-                                .HasColumnName("regra_ajuste_hash")
-                                .IsFixedLength();
-
-                            b1.Property<string>("Versao")
-                                .IsRequired()
-                                .HasMaxLength(16)
-                                .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_ajuste_versao");
-
-                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
-
-                            b1.ToTable("configuracoes_de_vagas", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
-                                .HasConstraintName("fk_configuracoes_de_vagas_configuracoes_de_vagas_id");
-                        });
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraDistribuicao", b1 =>
-                        {
-                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Codigo")
-                                .IsRequired()
-                                .HasMaxLength(128)
-                                .HasColumnType("character varying(128)")
-                                .HasColumnName("regra_distribuicao_codigo");
-
-                            b1.Property<string>("Hash")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character(64)")
-                                .HasColumnName("regra_distribuicao_hash")
-                                .IsFixedLength();
-
-                            b1.Property<string>("Versao")
-                                .IsRequired()
-                                .HasMaxLength(16)
-                                .HasColumnType("character varying(16)")
-                                .HasColumnName("regra_distribuicao_versao");
-
-                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
-
-                            b1.ToTable("configuracoes_de_vagas", "selecao");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
-                                .HasConstraintName("fk_configuracoes_de_vagas_configuracoes_de_vagas_id");
-                        });
-
-                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.OfertaCursoSnapshot", "OfertaCurso", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso.CopiaDaOfertaDeCurso", "OfertaCurso", b1 =>
                         {
                             b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
                                 .HasColumnType("uuid")
@@ -20743,9 +20805,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("oferta_curso_nome")
                                 .HasComment("Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
 
-                            b1.PrimitiveCollection<string[]>("Turnos")
+                            b1.Property<string[]>("Turnos")
                                 .IsRequired()
-                                .HasColumnType("text[]")
+                                .HasColumnType("character varying(30)[]")
                                 .HasColumnName("oferta_turnos")
                                 .HasComment("Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação.");
 
@@ -20755,6 +20817,80 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character varying(250)")
                                 .HasColumnName("oferta_unidade_ofertante_nome")
                                 .HasComment("Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação.");
+
+                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
+
+                            b1.ToTable("configuracoes_de_vagas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
+                                .HasConstraintName("fk_configuracoes_de_vagas_configuracoes_de_vagas_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraAjuste", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_ajuste_codigo")
+                                .HasComment("Código da regra de ajuste, copiado do catálogo na definição.");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_ajuste_hash")
+                                .IsFixedLength()
+                                .HasComment("Hash da regra de ajuste, copiado do catálogo na definição.");
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_ajuste_versao")
+                                .HasComment("Versão da regra de ajuste, copiada do catálogo na definição.");
+
+                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
+
+                            b1.ToTable("configuracoes_de_vagas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
+                                .HasConstraintName("fk_configuracoes_de_vagas_configuracoes_de_vagas_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraDistribuicao", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_distribuicao_codigo")
+                                .HasComment("Código da regra de distribuição, copiado do catálogo na definição.");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_distribuicao_hash")
+                                .IsFixedLength()
+                                .HasComment("Hash da regra de distribuição, copiado do catálogo na definição.");
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_distribuicao_versao")
+                                .HasComment("Versão da regra de distribuição, copiada do catálogo na definição.");
 
                             b1.HasKey("ConfiguracaoDistribuicaoVagasId");
 
@@ -20775,32 +20911,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(500)
                                 .HasColumnType("character varying(500)")
-                                .HasColumnName("referencia_demografica_base_legal");
+                                .HasColumnName("referencia_demografica_base_legal")
+                                .HasComment("Base legal da referência demográfica, copiada do cadastro.");
 
                             b1.Property<string>("CensoReferencia")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
-                                .HasColumnName("referencia_demografica_censo");
+                                .HasColumnName("referencia_demografica_censo")
+                                .HasComment("Censo da referência demográfica, copiado do cadastro na definição.");
 
                             b1.Property<Guid>("OrigemId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("referencia_demografica_origem_id");
+                                .HasColumnName("referencia_demografica_origem_id")
+                                .HasComment("Identificador da referência demográfica no cadastro de origem.");
 
                             b1.Property<decimal>("PcdPercentual")
                                 .HasPrecision(5, 2)
                                 .HasColumnType("numeric(5,2)")
-                                .HasColumnName("referencia_demografica_pcd_percentual");
+                                .HasColumnName("referencia_demografica_pcd_percentual")
+                                .HasComment("Percentual de pessoas com deficiência no Censo, copiado do cadastro.");
 
                             b1.Property<decimal>("PpiPercentual")
                                 .HasPrecision(5, 2)
                                 .HasColumnType("numeric(5,2)")
-                                .HasColumnName("referencia_demografica_ppi_percentual");
+                                .HasColumnName("referencia_demografica_ppi_percentual")
+                                .HasComment("Percentual de pessoas pretas, pardas e indígenas no Censo, copiado do cadastro.");
 
                             b1.Property<decimal>("QuilombolaPercentual")
                                 .HasPrecision(5, 2)
                                 .HasColumnType("numeric(5,2)")
-                                .HasColumnName("referencia_demografica_quilombola_percentual");
+                                .HasColumnName("referencia_demografica_quilombola_percentual")
+                                .HasComment("Percentual de pessoas quilombolas no Censo, copiado do cadastro.");
 
                             b1.HasKey("ConfiguracaoDistribuicaoVagasId");
 
