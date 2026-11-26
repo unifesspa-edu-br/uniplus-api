@@ -13331,7 +13331,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Algumas perguntas e regras do modelo de formulário usam um fato derivado: um\nvalor que o sistema calcula a partir de outras respostas, por regras de\nderivação. Ao copiar o modelo, o processo traz para si as regras de derivação\nque o modelo cita, direta ou indiretamente: mantém as que o processo já tem e\ncopia as regras padrão do catálogo para as que não tem.",
-        "Esta recusa sai para o fato derivado que o modelo cita quando o processo ainda\nnão o deriva e o catálogo também não tem regra padrão para ele; nesse caso a\ncópia não sabe como calculá-lo. A recusa traz uma entrada por fato, na posição\n`derivacoes[<fato>]`, com o código do fato na mensagem. A modalidade de\nconcorrência e a opção pelas cotas da lei não entram aqui: elas vêm da\ndistribuição de vagas do processo e têm recusas próprias\n([`sem_distribuicao_de_vagas`](/erros/uniplus.selecao.aplicacao_de_modelo.sem_distribuicao_de_vagas),\n[`sem_cota_da_lei_ofertada`](/erros/uniplus.selecao.aplicacao_de_modelo.sem_cota_da_lei_ofertada)).\nNada foi alterado no processo."
+        "Esta recusa sai para o fato derivado que o modelo cita quando o processo ainda\nnão o deriva e o catálogo também não tem regra padrão para ele; nesse caso a\ncópia não sabe como calculá-lo. A recusa traz uma entrada por dado, na posição\n`derivacoes[<código>]`; a mensagem não repete o código do dado. A modalidade de\nconcorrência e a opção pelas cotas da lei não entram aqui: elas vêm da\ndistribuição de vagas do processo e têm recusas próprias\n([`sem_distribuicao_de_vagas`](/erros/uniplus.selecao.aplicacao_de_modelo.sem_distribuicao_de_vagas),\n[`sem_cota_da_lei_ofertada`](/erros/uniplus.selecao.aplicacao_de_modelo.sem_cota_da_lei_ofertada)).\nNada foi alterado no processo."
       ],
       "comoResolver": [
         "Configure no processo as regras de derivação do fato citado\n(`PUT .../regras-derivacao`) e reaplique o modelo; o que o processo já deriva é\nmantido como está. Se o processo não deve derivar esse fato, escolha outro\nmodelo que não o cite."
@@ -13402,7 +13402,7 @@
       "codigo": "uniplus.selecao.aplicacao_de_modelo.sem_cota_da_lei_ofertada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O modelo de formulário cita, direta ou indiretamente, a opção do candidato pelas\ncotas da lei. Esse fato não é copiado do modelo: ele existe no processo que\noferta modalidade de cota reservada pela lei na distribuição de vagas e é\nderivado dessa oferta. O processo em que se tenta aplicar o modelo não tem essa\noferta, e por isso a opção não existe nele. A recusa traz a posição\n`derivacoes[<fato>]` e o código do fato na mensagem. Nada foi alterado no\nprocesso."
+        "O modelo de formulário cita, direta ou indiretamente, a opção do candidato pelas\ncotas da lei. Esse fato não é copiado do modelo: ele existe no processo que\noferta modalidade de cota reservada pela lei na distribuição de vagas e é\nderivado dessa oferta. O processo em que se tenta aplicar o modelo não tem essa\noferta, e por isso a opção não existe nele. A recusa traz a posição\n`derivacoes[<código>]`; a mensagem não repete o código do dado. Nada foi alterado no\nprocesso."
       ],
       "comoResolver": [
         "Oferte a modalidade de cota da lei na distribuição de vagas do processo\n(definição de distribuição de vagas) e reaplique o modelo, se o processo deve\nmesmo ter cotas. Se o processo não oferta cotas da lei, escolha um modelo que não\ndependa da opção."
@@ -26382,7 +26382,7 @@
       "codigo": "uniplus.selecao.regra_catalogo.nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "A consulta de uma regra do catálogo pelo par código e versão não encontrou entrada. A identidade da\nregra é o par: não existe a versão pedida do código informado, ou o próprio código não existe. A\nmensagem da resposta traz o código e a versão que foram pedidos.",
+        "A consulta de uma regra do catálogo pelo par código e versão não encontrou entrada. A identidade da\nregra é o par: não existe a versão pedida do código informado, ou o próprio código não existe. A\nmensagem da resposta não repete o código nem a versão pedidos.",
         "A API dá a mesma resposta para os dois casos. Distingui-los revelaria, a quem só tentou adivinhar,\nquais códigos existem no catálogo.",
         "A comparação é exata, sem aparar espaços e com diferença entre maiúsculas e minúsculas. A permissão\npara consultar o catálogo é conferida antes: quem não a tem recebe a recusa de acesso, e não este\nerro."
       ],

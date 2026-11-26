@@ -56,6 +56,9 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), porSemRegra]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
+        FieldError recusa = resultado.Errors.Single(static e => e.Error.Code == AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
+        recusa.Field.Should().EndWith("derivacoes[SEM_REGRA]");
+        recusa.Error.Message.Should().NotContain("SEM_REGRA").And.Contain("dado calculado");
     }
 
     [Fact(DisplayName = "Os valores desativados no catálogo citados nas regras são recusados juntos, como vínculo novo")]
@@ -99,6 +102,9 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0), porOpcao]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada);
+        FieldError recusa = resultado.Errors.Single(static e => e.Error.Code == AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada);
+        recusa.Field.Should().EndWith($"derivacoes[{OpcaoPelasCotasDaLei.Fato}]");
+        recusa.Error.Message.Should().NotContain("OPTOU_PELAS_COTAS_DA_LEI").And.Contain("opção pelas cotas da lei");
         _cenario.Processo.RegrasDerivacao.Should().BeEmpty();
     }
 
