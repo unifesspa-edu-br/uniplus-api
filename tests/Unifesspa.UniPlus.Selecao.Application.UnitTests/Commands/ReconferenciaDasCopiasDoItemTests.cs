@@ -4,6 +4,8 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -64,7 +66,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         Codigo = codigo,
         Nome = nome,
         Binding = $"CAMPO_FORMULARIO:{codigo}",
-        Escopo = escopo ?? Fato("DESEJA_NOME_SOCIAL").Escopo,
+        Escopo = escopo is null ? Fato("DESEJA_NOME_SOCIAL").Escopo : CodigoComRotulo<EscopoFato>.De(CatalogoDe<EscopoFato>.Obter(escopo)),
     };
 
     [Fact(DisplayName = "O fato que nenhuma versão publicada coletou é recopiado; o já coletado fica como está")]
@@ -83,7 +85,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
     {
         ProcessoSeletivo processo = ProcessoComCpfERgNumero();
         IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo is "CPF" or "RG_NUMERO"
-            ? f with { HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS", FinalidadeTratamento = "Finalidade nova do catálogo." }
+            ? f with { HipoteseLegal = CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter("EXECUCAO_POLITICAS_PUBLICAS")), FinalidadeTratamento = "Finalidade nova do catálogo." }
             : f)];
 
         ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
@@ -238,7 +240,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ProcessoSeletivo processo = ProcessoConforme();
         string antes = ItemDe(processo, "CPF").ClassificacaoProtecao;
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoComAlteracoes(
-            ("CPF", static f => f with { ClassificacaoProtecao = "PUBLICO" }),
+            ("CPF", static f => f with { ClassificacaoProtecao = CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Publico) }),
             ("RG_UF", static f => f with { FonteValores = CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Municipios) }));
         antes.Should().NotBe("PUBLICO", "pré-condição: há cópia a refazer");
 

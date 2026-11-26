@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -10,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 /// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>DEVOLVIDA</c>.</param>
 /// <param name="Ciclo">O ciclo de aprovação corrente, que a manifestação e a decisão informam ao se registrar.</param>
-/// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o ajuste foi recomendado.</param>
+/// <param name="ClassificacaoRecomendada">Código e rótulo da classificação, quando o ajuste foi recomendado.</param>
 /// <param name="Justificativa">
 /// Motivo do ajuste ou da devolução, quando o Representante do controlador o escreveu; sempre presente na
 /// devolução. A justificativa da aprovação sai no ato da decisão.
@@ -25,7 +26,7 @@ public sealed record AprovacaoDaProtecaoDto(
     int Ciclo,
     DateTimeOffset? SolicitadaEm,
     DateTimeOffset? DecididaEm,
-    string? ClassificacaoRecomendada,
+    CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoRecomendada,
     string? Justificativa,
     DateTimeOffset? AceitaEm,
     DateTimeOffset? ManifestadaEm,
@@ -39,9 +40,9 @@ public sealed record ItemDaProtecaoDoCatalogoDto(
     Guid Id,
     string Codigo,
     string Nome,
-    string ClassificacaoProtecao,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     AprovacaoDaProtecaoDto Aprovacao);
 
 /// <summary>
@@ -71,8 +72,8 @@ public sealed record DetalheDaProtecaoDoCatalogoDto(
     string Codigo,
     string Nome,
     string? Descricao,
-    string ClassificacaoProtecao,
-    string HipoteseLegal,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoProtecao,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     string FinalidadeTratamento,
     AprovacaoDaProtecaoDto Aprovacao,
     DetalheDoFatoDto? Fato,
@@ -84,13 +85,13 @@ public sealed record DetalheDaProtecaoDoCatalogoDto(
 /// <param name="Dominio">O tipo do dado, com código e rótulo.</param>
 /// <param name="Cardinalidade">Se o fato recebe um valor ou vários, com código e rótulo.</param>
 /// <param name="SemeadoPeloSistema"><c>true</c> no fato que o sistema semeou e mantém.</param>
-/// <param name="ComponenteExibicao">Token canônico do componente de exibição, quando o fato declara um.</param>
+/// <param name="ComponenteExibicao">Código e rótulo do componente de exibição, quando o fato declara um.</param>
 /// <param name="Valores">Os valores possíveis ativos, na ordem do cadastro; vazio no fato sem conjunto fechado.</param>
 public sealed record DetalheDoFatoDto(
     CodigoComRotulo<TipoDoDado> Dominio,
     CodigoComRotulo<QuantidadeDeValores> Cardinalidade,
     bool SemeadoPeloSistema,
-    string? ComponenteExibicao,
+    CodigoComRotulo<ComponenteDeExibicao>? ComponenteExibicao,
     IReadOnlyList<DetalheDoValorDoFatoDto> Valores);
 
 /// <summary>Um valor possível do fato: o código, o rótulo e a orientação ao candidato.</summary>
@@ -111,7 +112,7 @@ public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? Forma
 /// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>
 /// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o Representante do controlador conferiu.</param>
 /// <param name="Ciclo">O ciclo de aprovação em que o ato aconteceu.</param>
-/// <param name="ClassificacaoRecomendada">Token canônico da classificação recomendada, só no ajuste recomendado.</param>
+/// <param name="ClassificacaoRecomendada">Código e rótulo da classificação recomendada, só no ajuste recomendado.</param>
 /// <param name="Justificativa">Motivo da decisão: na devolução, sempre; na aprovação e no ajuste, se escrito.</param>
 /// <param name="DianteDeManifestacaoDesfavoravel">Se a decisão foi tomada com manifestação desfavorável vigente.</param>
 public sealed record AtoDaProtecaoDto(
@@ -119,10 +120,10 @@ public sealed record AtoDaProtecaoDto(
     DateTimeOffset Instante,
     string? AtorNome,
     int Ciclo,
-    string ClassificacaoProtecao,
-    string HipoteseLegal,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoProtecao,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     string FinalidadeTratamento,
-    string? ClassificacaoRecomendada,
+    CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoRecomendada,
     string? Justificativa,
     bool DianteDeManifestacaoDesfavoravel);
 
@@ -140,9 +141,9 @@ public sealed record DecisaoDaProtecaoDto(
     DateTimeOffset Instante,
     string? AtorNome,
     int Ciclo,
-    string ClassificacaoProtecao,
-    string HipoteseLegal,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoProtecao,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     string FinalidadeTratamento,
-    string? ClassificacaoRecomendada,
+    CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoRecomendada,
     string? Justificativa,
     bool DianteDeManifestacaoDesfavoravel);

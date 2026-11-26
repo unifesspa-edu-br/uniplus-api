@@ -22,7 +22,7 @@ public sealed class FatoCandidatoMappingTests
 
         dto.Id.Should().Be(fato.Id);
         dto.Codigo.Should().Be("FATO_DE_TESTE");
-        dto.Descritivo.Should().Be(new DescritivoDoFatoDto("Fato de teste", "Descrição do fato.", "SITUACAO"));
+        dto.Descritivo.Should().Be(new DescritivoDoFatoDto("Fato de teste", "Descrição do fato.", CodigoComRotulo<ComponenteDeExibicao>.De(ComponenteDeExibicao.Situacao)));
         dto.SemeadoPeloSistema.Should().BeFalse();
         dto.Ativo.Should().BeTrue();
         dto.RegrasPadrao.Should().BeEmpty();
@@ -36,7 +36,7 @@ public sealed class FatoCandidatoMappingTests
 
         definicao.Dominio.Codigo.Should().Be("OPCAO");
         definicao.Cardinalidade.Codigo.Should().Be("VALOR_UNICO");
-        definicao.Escopo.Should().Be("CANDIDATO");
+        definicao.Escopo.Codigo.Should().Be("CANDIDATO");
         definicao.Formato.Should().BeNull();
         definicao.Valores.Fonte!.Codigo.Should().Be("CATALOGO");
         definicao.Resolucao.Should().Be(new ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), "INSCRICAO", "CAMPO_FORMULARIO:FATO_DE_TESTE"));
@@ -47,9 +47,9 @@ public sealed class FatoCandidatoMappingTests
     {
         ProtecaoDoFatoDto protecao = FatosCandidatoDeTeste.Declarado(TipoDoDado.SimOuNao).ToDto().Fato.Definicao.Protecao;
 
-        protecao.Classificacao.Should().Be("PESSOAL");
+        protecao.Classificacao.Codigo.Should().Be("PESSOAL");
         protecao.Finalidade.Should().Be("Verificação dos requisitos do processo seletivo.");
-        protecao.HipoteseLegal.Should().Be("CUMPRIMENTO_OBRIGACAO_LEGAL");
+        protecao.HipoteseLegal.Codigo.Should().Be("CUMPRIMENTO_OBRIGACAO_LEGAL");
     }
 
     [Fact(DisplayName = "Os valores declarados saem em ordem, com o estado de cada um")]
@@ -71,7 +71,7 @@ public sealed class FatoCandidatoMappingTests
     {
         FatoDeManutencaoDto dto = FatosCandidatoDeTeste.Declarado(TipoDoDado.Texto).ToDto();
 
-        dto.Fato.Definicao.Formato.Should().Be("LIVRE");
+        dto.Fato.Definicao.Formato!.Codigo.Should().Be("LIVRE");
         dto.Fato.Definicao.Valores.Fonte.Should().BeNull();
         dto.Fato.Definicao.Valores.Declarados.Should().BeEmpty();
         dto.OperadoresAdmitidos.Should().BeEmpty();

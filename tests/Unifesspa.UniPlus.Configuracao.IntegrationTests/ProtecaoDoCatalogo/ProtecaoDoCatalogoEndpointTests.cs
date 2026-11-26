@@ -50,11 +50,11 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
 
         (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "AJUSTE_RECOMENDADO", "SENSIVEL")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement ajustado = (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao");
-        (ajustado.GetProperty("situacao").GetString(), ajustado.GetProperty("classificacaoRecomendada").GetString()).Should().Be(("AJUSTE_RECOMENDADO", "SENSIVEL"));
+        (ajustado.GetProperty("situacao").GetString(), ajustado.GetProperty("classificacaoRecomendada").GetProperty("codigo").GetString()).Should().Be(("AJUSTE_RECOMENDADO", "SENSIVEL"));
         (await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         JsonElement aprovado = await (await client.GetAsync(new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative))).Content.ReadFromJsonAsync<JsonElement>();
-        (aprovado.GetProperty("classificacaoProtecao").GetString(), aprovado.GetProperty("protecaoAprovada").GetBoolean()).Should().Be(("SENSIVEL", true));
+        (aprovado.GetProperty("classificacaoProtecao").GetProperty("codigo").GetString(), aprovado.GetProperty("protecaoAprovada").GetBoolean()).Should().Be(("SENSIVEL", true));
         (await ListarAsync(client)).Should().NotContain(item => item.GetProperty("id").GetGuid() == id, "o item aprovado sai da lista");
     }
 

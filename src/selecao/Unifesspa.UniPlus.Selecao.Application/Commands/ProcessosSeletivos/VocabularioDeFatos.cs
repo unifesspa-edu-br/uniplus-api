@@ -215,7 +215,7 @@ internal static class VocabularioDeFatos
     {
         ArgumentNullException.ThrowIfNull(fato);
         return new(
-            OrigemValores(fato), fato.Formato, fato.ClassificacaoProtecao, fato.HipoteseLegal, fato.FinalidadeTratamento, fato.Descricao, fato.ComponenteExibicao);
+            OrigemValores(fato), fato.Formato?.Codigo, fato.ClassificacaoProtecao.Codigo, fato.HipoteseLegal.Codigo, fato.FinalidadeTratamento, fato.Descricao, fato.ComponenteExibicao?.Codigo);
     }
 
     /// <summary>Indica que as opções do fato são as que o processo declara.</summary>

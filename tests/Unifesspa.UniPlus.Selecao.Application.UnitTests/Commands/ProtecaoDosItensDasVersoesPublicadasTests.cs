@@ -4,8 +4,12 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -118,10 +122,10 @@ public sealed class ProtecaoDosItensDasVersoesPublicadasTests
         cenario.Servicos.CatalogoDeFatos.ListarAsync(Arg.Any<CancellationToken>()).Returns(
             [.. catalogo.Select(static f => f.Codigo is Fato or FatoNovo ? f with
             {
-                HipoteseLegal = HipoteseAtual,
+                HipoteseLegal = CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(HipoteseAtual)),
                 FinalidadeTratamento = FinalidadeAtual,
                 Descricao = DescricaoAtual,
-                ComponenteExibicao = ComponenteAtual,
+                ComponenteExibicao = CodigoComRotulo<ComponenteDeExibicao>.De(CatalogoDe<ComponenteDeExibicao>.Obter(ComponenteAtual)),
             } : f)]);
     }
 }

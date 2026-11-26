@@ -16319,9 +16319,13 @@
             "format": "date-time"
           },
           "classificacaoRecomendada": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecao"
+              }
             ]
           },
           "justificativa": {
@@ -16401,18 +16405,22 @@
             "format": "int32"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "classificacaoRecomendada": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecao"
+              }
             ]
           },
           "justificativa": {
@@ -17961,6 +17969,21 @@
           }
         }
       },
+      "ClassificacaoDeProtecao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "ClassificacaoDeProtecaoCodigo": {
         "enum": [
           "PUBLICO",
@@ -17990,6 +18013,21 @@
             "items": {
               "$ref": "#/components/schemas/GrupoApresentado"
             }
+          }
+        }
+      },
+      "ComponenteDeExibicao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ComponenteDeExibicaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
           }
         }
       },
@@ -19907,18 +19945,22 @@
             "format": "int32"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "classificacaoRecomendada": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecao"
+              }
             ]
           },
           "justificativa": {
@@ -19951,12 +19993,16 @@
             "$ref": "#/components/schemas/QuantidadeDeValores"
           },
           "escopo": {
-            "type": "string"
+            "$ref": "#/components/schemas/EscopoFato"
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTexto"
+              }
             ]
           },
           "valores": {
@@ -20176,9 +20222,13 @@
             "type": "string"
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicao"
+              }
             ]
           }
         }
@@ -20302,10 +20352,10 @@
             ]
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "finalidadeTratamento": {
             "type": "string"
@@ -20367,9 +20417,13 @@
             "type": "boolean"
           },
           "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicao"
+              }
             ]
           },
           "valores": {
@@ -21023,6 +21077,21 @@
         "type": "string",
         "description": "Escolha sobre o prazo de emiss\u00E3o do documento.\n\n- \u0060SEM_PRAZO\u0060: Sem prazo\n- \u0060COM_PRAZO\u0060: Com prazo"
       },
+      "EscopoFato": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EscopoFatoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "EscopoFatoCodigo": {
         "enum": [
           "CANDIDATO",
@@ -21388,10 +21457,10 @@
             "type": "boolean"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "finalidadeTratamento": {
             "type": "string"
@@ -21400,20 +21469,27 @@
             "type": "boolean"
           },
           "formato": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FormatoTexto"
+              }
+            ]
+          },
+          "componenteExibicao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponenteDeExibicao"
+              }
             ]
           },
           "escopo": {
-            "type": "string",
-            "default": "CANDIDATO"
-          },
-          "componenteExibicao": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "$ref": "#/components/schemas/EscopoFato"
           }
         }
       },
@@ -21744,6 +21820,21 @@
         ],
         "type": "string",
         "description": "- \u0060PRESENCIAL\u0060: Presencial\n- \u0060SEMIPRESENCIAL\u0060: Semipresencial\n- \u0060EAD\u0060: A dist\u00E2ncia"
+      },
+      "FormatoTexto": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/FormatoTextoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "FormatoTextoCodigo": {
         "enum": [
@@ -22146,6 +22237,21 @@
           }
         }
       },
+      "HipoteseLegalTratamento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/HipoteseLegalTratamentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "HipoteseLegalTratamentoCodigo": {
         "enum": [
           "CONSENTIMENTO",
@@ -22324,13 +22430,13 @@
             "type": "string"
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "aprovacao": {
             "$ref": "#/components/schemas/AprovacaoDaProtecaoDto"
@@ -24051,13 +24157,13 @@
         "type": "object",
         "properties": {
           "classificacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "finalidade": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "aprovacao": {
             "$ref": "#/components/schemas/AprovacaoDaProtecaoDto"
@@ -25446,13 +25552,13 @@
             ]
           },
           "classificacaoProtecao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "finalidadeTratamento": {
             "type": "string"
           },
           "hipoteseLegal": {
-            "type": "string"
+            "$ref": "#/components/schemas/HipoteseLegalTratamento"
           },
           "criadoEm": {
             "type": "string",

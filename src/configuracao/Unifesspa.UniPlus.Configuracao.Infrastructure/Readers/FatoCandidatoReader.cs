@@ -157,9 +157,9 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader, IFatoCandidato
             CodigoComRotulo<TipoDoDado>.De(f.Dominio), CodigoComRotulo<OrigemFato>.De(f.Origem), CodigoComRotulo<QuantidadeDeValores>.De(f.Cardinalidade),
             valores?.Select(static v => v.Codigo).ToList(),
             f.PontoResolucao, f.Binding, valores, f.FonteValores is { } fonte ? CodigoComRotulo<FonteValoresFato>.De(fonte) : null,
-            f.Ativo, ClassificacoesDeProtecao.ParaTokenCanonico(f.ClassificacaoProtecao), f.HipoteseLegal.Codigo(), f.FinalidadeTratamento,
-            f.Aprovacao.EstaAprovada, f.Formato?.Codigo(),
-            f.Escopo.Codigo(), f.ComponenteExibicao?.Codigo());
+            f.Ativo, CodigoComRotulo<ClassificacaoDeProtecao>.De(f.ClassificacaoProtecao), CodigoComRotulo<HipoteseLegalTratamento>.De(f.HipoteseLegal), f.FinalidadeTratamento,
+            f.Aprovacao.EstaAprovada, f.Formato is { } formato ? CodigoComRotulo<FormatoTexto>.De(formato) : null,
+            CodigoComRotulo<EscopoFato>.De(f.Escopo), f.ComponenteExibicao is { } componente ? CodigoComRotulo<ComponenteDeExibicao>.De(componente) : null);
     }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ValoresDoFato(FatoCandidato f, FatosLidos lidos) =>

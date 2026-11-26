@@ -93,6 +93,6 @@ public sealed class MunicipiosDaProvaPresencialTests
     private static FatoCandidatoView Fato() => new(
         Guid.CreateVersion7(), Codigo, "Cidade de prova", "Cidade de prova",
         CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
-        null, "INSCRICAO", $"CAMPO_FORMULARIO:{Codigo}", null, CodigoComRotulo<FonteValoresFato>.De(Fonte), true, "PESSOAL",
-        ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        null, "INSCRICAO", $"CAMPO_FORMULARIO:{Codigo}", null, CodigoComRotulo<FonteValoresFato>.De(Fonte), true, CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")),
+        CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 }

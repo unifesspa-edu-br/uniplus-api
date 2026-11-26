@@ -27,13 +27,13 @@ internal static class FatoCandidatoMapping
     private static DescritivoDoFatoDto DescritivoDe(FatoCandidato fato) => new(
         fato.Nome,
         fato.Descricao,
-        fato.ComponenteExibicao?.Codigo());
+        fato.ComponenteExibicao is { } componente ? CodigoComRotulo<ComponenteDeExibicao>.De(componente) : null);
 
     private static DefinicaoDoFatoDto DefinicaoDe(FatoCandidato fato) => new(
         CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
         CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
-        fato.Escopo.Codigo(),
-        fato.Formato?.Codigo(),
+        CodigoComRotulo<EscopoFato>.De(fato.Escopo),
+        fato.Formato is { } formato ? CodigoComRotulo<FormatoTexto>.De(formato) : null,
         ValoresDe(fato),
         new ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato>.De(fato.Origem), fato.PontoResolucao, fato.Binding),
         ProtecaoDe(fato));
@@ -46,8 +46,8 @@ internal static class FatoCandidatoMapping
             .Select(static v => new FatoValorDominioDto(v.Codigo, v.Descricao, v.Ordem, v.Ativo, v.Orientacao))]);
 
     private static ProtecaoDoFatoDto ProtecaoDe(FatoCandidato fato) => new(
-        ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
+        CodigoComRotulo<ClassificacaoDeProtecao>.De(fato.ClassificacaoProtecao),
         fato.FinalidadeTratamento,
-        fato.HipoteseLegal.Codigo(),
+        CodigoComRotulo<HipoteseLegalTratamento>.De(fato.HipoteseLegal),
         fato.Aprovacao.ToDto());
 }
