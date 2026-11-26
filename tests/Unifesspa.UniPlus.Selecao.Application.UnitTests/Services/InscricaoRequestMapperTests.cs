@@ -28,25 +28,28 @@ public sealed class InscricaoRequestMapperTests
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("DEPENDENTES");
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.GrupoMalFormado);
+        resultado.Error.Message.Should().NotContain("DEPENDENTES");
     }
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> GruposComOcorrenciaENulos() => new(StringComparer.Ordinal)
+    {
+        ["DEPENDENTES"] =
+        [
+            new OcorrenciaDeGrupoInscricaoInput("a", null),
+            null!,
+        ],
+        ["OUTRO"] = null!,
+    };
 
     [Fact(DisplayName = "ParaGrupos recusa a ocorrência nula no caminho da ocorrência e segue lendo as demais")]
     public void ParaGrupos_OcorrenciaNula_RecusaNoCaminhoDaOcorrencia()
     {
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> grupos = new(StringComparer.Ordinal)
-        {
-            ["DEPENDENTES"] =
-            [
-                new OcorrenciaDeGrupoInscricaoInput("a", null),
-                null!,
-            ],
-            ["OUTRO"] = null!,
-        };
-
-        Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> resultado = InscricaoRequestMapper.ParaGrupos(grupos);
+        Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> resultado = InscricaoRequestMapper.ParaGrupos(GruposComOcorrenciaENulos());
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("DEPENDENTES[1]", "OUTRO");
         resultado.Errors.Should().OnlyContain(static e => e.Error.Code == InscricaoErrorCodes.GrupoMalFormado);
+        resultado.Errors.Select(static e => e.Error.Message).Should()
+            .NotContain(static mensagem => mensagem.Contains("DEPENDENTES", StringComparison.Ordinal) || mensagem.Contains("OUTRO", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "ParaGrupos lê o grupo bem formado, com a ocorrência sem respostas valendo vazia")]

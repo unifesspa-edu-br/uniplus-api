@@ -92,6 +92,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.ParametrosIncompativeisComRegra");
+        result.Error.Message.Should().NotContain("ELIMINACAO_ZERO_EM_AREA");
     }
 
     [Theory(DisplayName = "Handle com ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM e qualquer arg recusa: a regra não tem parâmetro")]
@@ -114,6 +115,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.ParametrosIncompativeisComRegra");
+        result.Error.Message.Should().NotContain(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo());
     }
 
     [Fact(DisplayName = "Handle com ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM sem parâmetros em processo ENEM grava a regra")]

@@ -55,7 +55,7 @@ public static class InscricaoRequestMapper
         {
             recusas.Add(new FieldError(codigo, new DomainError(
                 InscricaoErrorCodes.GrupoMalFormado,
-                $"O grupo '{codigo}' veio sem a lista de ocorrências. Envie a lista, vazia se não houver nenhuma, ou remova o grupo do corpo.")));
+                "O grupo veio sem a lista de ocorrências. Envie a lista, vazia se não houver nenhuma, ou remova o grupo do corpo.")));
             return;
         }
 
@@ -85,7 +85,7 @@ public static class InscricaoRequestMapper
         $"{codigo}[{posicao}]",
         new DomainError(
             InscricaoErrorCodes.GrupoMalFormado,
-            $"A ocorrência {posicao + 1} do grupo '{codigo}' veio nula. Envie a ocorrência com id e respostas, ou remova-a da lista."));
+            $"A ocorrência {posicao + 1} do grupo veio nula. Envie a ocorrência com id e respostas, ou remova-a da lista."));
 
     /// <summary>
     /// Os aceites do corpo na forma do domínio. A anotação de nulidade não alcança os elementos de uma
