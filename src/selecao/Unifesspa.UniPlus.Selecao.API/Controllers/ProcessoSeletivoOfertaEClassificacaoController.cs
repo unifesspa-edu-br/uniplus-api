@@ -114,7 +114,9 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
 
     /// <summary>
     /// Substitui o cadastro de reserva por chamada inteiro: cada item traz o número da chamada, a partir de 1 e declarado uma só vez, e quantas pessoas da
-    /// reserva a chamada convoca por vaga, que pode ser zero. A chamada que não consta na lista não tem reserva, e a lista vazia deixa o processo sem reserva.
+    /// reserva a chamada convoca por vaga, que pode ser zero. A chamada com pessoas da reserva escolhe a participação da reserva (a reserva só antecipa a
+    /// habilitação ou assume na mesma chamada), sem valor padrão; a chamada com zero não tem participação. A chamada que não consta na lista não tem
+    /// reserva, e a lista vazia deixa o processo sem reserva.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cadastro-reserva")]

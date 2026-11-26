@@ -4482,6 +4482,21 @@
       "titulo": "Número da chamada inválido no cadastro de reserva"
     },
     {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_ausente",
+      "status": 422,
+      "titulo": "A participação da reserva é obrigatória na chamada com reserva"
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_com_quantidade_zero",
+      "status": 422,
+      "titulo": "A chamada sem reserva não tem participação da reserva"
+    },
+    {
+      "codigo": "uniplus.selecao.cadastro_de_reserva.participacao_desconhecida",
+      "status": 422,
+      "titulo": "Participação da reserva desconhecida"
+    },
+    {
       "codigo": "uniplus.selecao.cadastro_de_reserva.pessoas_da_reserva_por_vaga_invalida",
       "status": 422,
       "titulo": "Quantidade de pessoas da reserva por vaga inválida"

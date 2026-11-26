@@ -52,7 +52,10 @@ internal static class ProjecaoDoProcessoSeletivo
             [.. declaracao.Municipios.Select(static m => new MunicipioDeProvaDto(m.CodigoIbge, m.Uf, m.Nome))]);
 
     private static IReadOnlyList<CadastroDeReservaDaChamadaDto> ProjetarCadastroDeReserva(CadastroDeReservaPorChamada cadastro) =>
-        [.. cadastro.Chamadas.Select(static c => new CadastroDeReservaDaChamadaDto(c.Chamada.Valor, c.PessoasDaReservaPorVaga))];
+        [.. cadastro.Chamadas.Select(static c => new CadastroDeReservaDaChamadaDto(
+            c.Chamada.Valor,
+            c.PessoasDaReservaPorVaga,
+            c.Participacao is { } participacao ? CodigoComRotulo<ParticipacaoDaReserva>.De(participacao) : null))];
 
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,

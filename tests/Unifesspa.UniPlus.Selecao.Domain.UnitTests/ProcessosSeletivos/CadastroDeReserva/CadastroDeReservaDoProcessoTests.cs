@@ -18,7 +18,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class CadastroDeReservaDoProcessoTests
 {
-    private static CadastroDeReservaInformado Chamada(int numero, int pessoasPorVaga) => new(numero, pessoasPorVaga);
+    private static CadastroDeReservaInformado Chamada(int numero, int pessoasPorVaga) =>
+        new(numero, pessoasPorVaga, pessoasPorVaga > 0 ? "ASSUME_NA_MESMA_CHAMADA" : null);
 
     private static (int Chamada, int Pessoas)[] Declarado(ProcessoSeletivo processo) =>
         [.. processo.CadastroDeReserva.Chamadas.Select(static item => (item.Chamada.Valor, item.PessoasDaReservaPorVaga))];
@@ -67,7 +68,7 @@ public sealed class CadastroDeReservaDoProcessoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirCadastroDeReserva([Chamada(1, 2)]);
 
-        Result resultado = processo.DefinirCadastroDeReserva([Chamada(1, 1), Chamada(1, -1), new(null, 1)]);
+        Result resultado = processo.DefinirCadastroDeReserva([Chamada(1, 1), Chamada(1, -1), new(null, 1, "ASSUME_NA_MESMA_CHAMADA")]);
 
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("cadastroDeReserva[1].numeroDaChamada", CadastroDeReservaErrorCodes.ChamadaRepetida),

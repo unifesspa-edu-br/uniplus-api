@@ -349,7 +349,7 @@ internal static class ExemploDeEnvelopeProcessoRico
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
-    // A chamada 1 declara zero (sem reserva) e a 2 convoca duas pessoas da reserva por vaga; a ordem de entrada não muda o envelope.
+    // A chamada 1 declara zero (sem reserva) e a 2 convoca duas pessoas da reserva por vaga e escolhe que a reserva só antecipa a habilitação; a ordem de entrada não muda o envelope.
     internal static void DefinirCadastroDeReservaDoExemplo(ProcessoSeletivo processo, bool permutar) =>
-        processo.DefinirCadastroDeReserva(Ordem<CadastroDeReservaInformado?>([new(2, 2), new(1, 0)], permutar)).IsSuccess.Should().BeTrue();
+        processo.DefinirCadastroDeReserva(Ordem<CadastroDeReservaInformado?>([new(2, 2, "ANTECIPA_A_HABILITACAO"), new(1, 0, null)], permutar)).IsSuccess.Should().BeTrue();
 }

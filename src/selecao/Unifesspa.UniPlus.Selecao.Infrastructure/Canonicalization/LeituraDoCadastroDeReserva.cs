@@ -24,9 +24,10 @@ internal static class LeituraDoCadastroDeReserva
 
     private static CadastroDeReservaInformado? LerItem(LeitorEnvelope leitor, JsonObject item, string caminho)
     {
-        leitor.ExigirChaves(item, caminho, "numeroDaChamada", "pessoasDaReservaPorVaga");
+        leitor.ExigirChaves(item, caminho, "numeroDaChamada", "pessoasDaReservaPorVaga", "participacaoDaReserva");
         int numero = leitor.Inteiro(item, "numeroDaChamada", caminho);
         int pessoas = leitor.Inteiro(item, "pessoasDaReservaPorVaga", caminho);
-        return leitor.Falhou ? null : new CadastroDeReservaInformado(numero, pessoas);
+        string? participacao = leitor.TextoOpcional(item, "participacaoDaReserva", caminho, LimitesDoEnvelope.Token);
+        return leitor.Falhou ? null : new CadastroDeReservaInformado(numero, pessoas, participacao);
     }
 }

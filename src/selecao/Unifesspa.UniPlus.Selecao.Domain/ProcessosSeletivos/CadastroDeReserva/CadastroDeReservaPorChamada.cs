@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -54,7 +55,8 @@ public sealed record CadastroDeReservaPorChamada
 
     /// <summary>
     /// Confere a forma da declaração e acumula as recusas (ADR-0125): cada chamada informa um número a partir
-    /// de 1, declarado uma só vez, e a quantidade de pessoas da reserva por vaga, não negativa. A declaração sem
+    /// de 1, declarado uma só vez, a quantidade de pessoas da reserva por vaga, não negativa, e a participação da
+    /// reserva (UNI-REQ-0505), que a quantidade maior que zero exige e a quantidade zero recusa. A declaração sem
     /// chamada é a do processo sem cadastro de reserva. Quantas vagas cada chamada tem não é conferido aqui: vem do quadro,
     /// por quem convoca.
     /// </summary>
@@ -65,8 +67,7 @@ public sealed record CadastroDeReservaPorChamada
         List<FieldError> recusas = [.. RecusasDeCadaChamada(chamadas)];
         return recusas.Count > 0
             ? Result<CadastroDeReservaPorChamada>.ValidationFailure(recusas)
-            : Result<CadastroDeReservaPorChamada>.Success(DeItensConferidos(chamadas.Select(static chamada =>
-                new CadastroDeReservaDaChamada(NumeroDaChamada.Criar(chamada!.NumeroDaChamada).Value!, chamada.PessoasDaReservaPorVaga!.Value))));
+            : Result<CadastroDeReservaPorChamada>.Success(DeItensConferidos(chamadas.Select(static chamada => Conferida(chamada!))));
     }
 
     /// <summary>A declaração dos itens que já passaram pela conferência de <see cref="Declarar"/>, em ordem crescente do número da chamada.</summary>
@@ -76,6 +77,11 @@ public sealed record CadastroDeReservaPorChamada
         return ordenados.Length == 0 ? SemReserva : new(ordenados);
     }
 
+    private static CadastroDeReservaDaChamada Conferida(CadastroDeReservaInformado chamada) => new(
+        NumeroDaChamada.Criar(chamada.NumeroDaChamada).Value!,
+        chamada.PessoasDaReservaPorVaga!.Value,
+        CatalogoDe<ParticipacaoDaReserva>.TentarObter(chamada.ParticipacaoDaReserva, out ParticipacaoDaReserva participacao) ? participacao : null);
+
     private static IEnumerable<FieldError> RecusasDeCadaChamada(IReadOnlyList<CadastroDeReservaInformado?> chamadas)
     {
         HashSet<int> jaDeclaradas = [];
@@ -84,7 +90,8 @@ public sealed record CadastroDeReservaPorChamada
             string campo = $"{CampoDasChamadas}[{indice}]";
             CadastroDeReservaInformado? chamada = chamadas[indice];
             foreach (FieldError recusa in RecusasDoNumero(chamada?.NumeroDaChamada, jaDeclaradas, $"{campo}.numeroDaChamada")
-                .Concat(RecusasDaQuantidade(chamada?.PessoasDaReservaPorVaga, $"{campo}.pessoasDaReservaPorVaga")))
+                .Concat(RecusasDaQuantidade(chamada?.PessoasDaReservaPorVaga, $"{campo}.pessoasDaReservaPorVaga"))
+                .Concat(RecusasDaParticipacao(chamada, $"{campo}.participacaoDaReserva")))
             {
                 yield return recusa;
             }
@@ -117,6 +124,26 @@ public sealed record CadastroDeReservaPorChamada
                 "Informe quantas pessoas da reserva a chamada convoca por vaga, um inteiro a partir de 0; zero é a chamada sem reserva.");
         }
     }
+
+    private static IEnumerable<FieldError> RecusasDaParticipacao(CadastroDeReservaInformado? chamada, string campo)
+    {
+        string? codigo = chamada?.ParticipacaoDaReserva;
+        if (codigo is not null && !CatalogoDe<ParticipacaoDaReserva>.TentarObter(codigo, out _))
+        {
+            yield return Recusa(campo, CadastroDeReservaErrorCodes.ParticipacaoDesconhecida, $"A participação da reserva informada não existe; escolha {OpcoesDeParticipacao()}.");
+        }
+        else if (chamada?.PessoasDaReservaPorVaga is > 0 && codigo is null)
+        {
+            yield return Recusa(campo, CadastroDeReservaErrorCodes.ParticipacaoAusente, $"A chamada com pessoas da reserva por vaga precisa da participação da reserva; escolha {OpcoesDeParticipacao()}.");
+        }
+        else if (chamada?.PessoasDaReservaPorVaga is 0 && codigo is not null)
+        {
+            yield return Recusa(campo, CadastroDeReservaErrorCodes.ParticipacaoSemReserva, "A chamada sem pessoas da reserva por vaga não tem opção de participação a escolher; retire a opção ou informe a quantidade.");
+        }
+    }
+
+    private static string OpcoesDeParticipacao() =>
+        string.Join(" ou ", CatalogoDe<ParticipacaoDaReserva>.Todos().Select(static opcao => $"\"{opcao.Rotulo}\""));
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }

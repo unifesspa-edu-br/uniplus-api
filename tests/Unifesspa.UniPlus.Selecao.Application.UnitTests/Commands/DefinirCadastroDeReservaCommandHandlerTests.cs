@@ -19,11 +19,11 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
         ProcessoSeletivo processo = PublicacaoDeTeste.NovoProcessoConforme();
         Contexto contexto = new(processo);
 
-        Result resultado = await contexto.Definir([new(2, 1), new(1, 0)]);
+        Result resultado = await contexto.Definir([new(2, 1, "ANTECIPA_A_HABILITACAO"), new(1, 0, null)]);
 
         resultado.IsSuccess.Should().BeTrue();
-        processo.CadastroDeReserva.Chamadas.Select(static c => (c.Chamada.Valor, c.PessoasDaReservaPorVaga))
-            .Should().Equal((1, 0), (2, 1));
+        processo.CadastroDeReserva.Chamadas.Select(static c => (c.Chamada.Valor, c.PessoasDaReservaPorVaga, c.Participacao))
+            .Should().Equal((1, 0, null), (2, 1, ParticipacaoDaReserva.AntecipaAHabilitacao));
         await contexto.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -31,7 +31,7 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
     public async Task Handle_ListaVazia_LimpaESalva()
     {
         ProcessoSeletivo processo = PublicacaoDeTeste.NovoProcessoConforme();
-        processo.DefinirCadastroDeReserva([new(1, 2)]);
+        processo.DefinirCadastroDeReserva([new(1, 2, "ASSUME_NA_MESMA_CHAMADA")]);
         Contexto contexto = new(processo);
 
         Result resultado = await contexto.Definir([]);
@@ -46,11 +46,25 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
     {
         Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
 
-        Result resultado = await contexto.Definir([new(1, 2), new(1, -1)]);
+        Result resultado = await contexto.Definir([new(1, 2, "ASSUME_NA_MESMA_CHAMADA"), new(1, -1, null)]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("cadastroDeReserva[1].numeroDaChamada", CadastroDeReservaErrorCodes.ChamadaRepetida),
             ("cadastroDeReserva[1].pessoasDaReservaPorVaga", CadastroDeReservaErrorCodes.PessoasDaReservaPorVagaInvalida));
+        await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A chamada com reserva sem participação e a chamada sem reserva com participação são recusadas no campo da participação, sem salvar")]
+    public async Task Handle_ParticipacaoIncoerenteComAQuantidade_RecusaSemSalvar()
+    {
+        Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
+
+        Result resultado = await contexto.Definir([new(1, 2, null), new(2, 0, "ASSUME_NA_MESMA_CHAMADA"), new(3, 1, "OUTRA")]);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("cadastroDeReserva[0].participacaoDaReserva", CadastroDeReservaErrorCodes.ParticipacaoAusente),
+            ("cadastroDeReserva[1].participacaoDaReserva", CadastroDeReservaErrorCodes.ParticipacaoSemReserva),
+            ("cadastroDeReserva[2].participacaoDaReserva", CadastroDeReservaErrorCodes.ParticipacaoDesconhecida));
         await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -81,7 +95,7 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
     {
         Contexto contexto = new(ApoioDaCascataDeRemanejamento.NovoProcessoPublicado());
 
-        Result resultado = await contexto.Definir([new(1, 2)]);
+        Result resultado = await contexto.Definir([new(1, 2, "ASSUME_NA_MESMA_CHAMADA")]);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
         await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -94,7 +108,7 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
         contexto.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException("xmin"));
 
-        Result resultado = await contexto.Definir([new(1, 2)]);
+        Result resultado = await contexto.Definir([new(1, 2, "ASSUME_NA_MESMA_CHAMADA")]);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConflitoDeConcorrencia");
         contexto.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
