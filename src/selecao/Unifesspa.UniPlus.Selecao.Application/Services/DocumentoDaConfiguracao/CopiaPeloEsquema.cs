@@ -21,17 +21,11 @@ internal static class CopiaPeloEsquema
         return copia;
     }
 
-    private static bool TentarObter(JsonObject origem, string nome, FormaDoNo forma, out JsonNode? valor)
-    {
-        if (origem.TryGetPropertyValue(nome, out valor))
-        {
-            return true;
-        }
-
-        return forma.SomenteLeitura && nome.EndsWith("Rotulo", StringComparison.Ordinal)
+    private static bool TentarObter(JsonObject origem, string nome, FormaDoNo forma, out JsonNode? valor) =>
+        origem.TryGetPropertyValue(nome, out valor)
+        || (forma.SomenteLeitura
             && origem["contexto"] is JsonObject contexto
-            && contexto.TryGetPropertyValue(nome[..^"Rotulo".Length], out valor);
-    }
+            && contexto.TryGetPropertyValue(nome, out valor));
 
     private static JsonNode? CopiarValor(JsonNode? valor, FormaDoNo forma) => valor switch
     {

@@ -18,6 +18,12 @@
         "QUANTIDADE_MINIMA_DE_ITENS"
       ]
     },
+    "formaRotulo": {
+      "title": "Rótulo da forma de comprovação",
+      "description": "Rótulo da forma de comprovação da regra. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "exigenciaChave": {
       "title": "Exigência documental",
       "description": "Chave local da exigência citada pela regra de documento.",
@@ -55,6 +61,12 @@
         "EXERCICIO_ANUAL",
         "OCORRENCIA"
       ]
+    },
+    "criterioDeDistincaoRotulo": {
+      "title": "Rótulo do critério de distinção",
+      "description": "Rótulo do critério que distingue apresentações do mesmo documento. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
     },
     "dataReferencia": {
       "title": "Data de referência",

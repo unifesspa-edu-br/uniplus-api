@@ -116,6 +116,15 @@
           "description": "Tipos de decisão que a fase toma e para os quais o processo escolhe motivos.",
           "$ref": "comuns.schema.json#/$defs/tiposDeDecisao"
         },
+        "tiposDeDecisaoRotulos": {
+          "title": "Rótulos dos tipos de decisão da fase",
+          "description": "Rótulos dos tipos de decisão da fase, na mesma ordem dos códigos. Campo só de leitura: ignorado na importação; a referência são os códigos.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true
+        },
         "regraDeHomologacao": {
           "title": "Regra de homologação",
           "description": "Como a fase homologa as inscrições. Exige o tipo HOMOLOGACAO_DAS_INSCRICOES entre os tipos de decisão da fase.",

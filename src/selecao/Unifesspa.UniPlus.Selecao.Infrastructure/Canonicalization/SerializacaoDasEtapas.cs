@@ -138,7 +138,7 @@ internal static class SerializacaoDasEtapas
         new([.. etapa.Recursos
             .Select(static r => (JsonNode)SerializarRecurso(r))]);
 
-    private static JsonObject SerializarRecurso(RecursoDaEtapa recurso)
+    internal static JsonObject SerializarRecurso(RecursoDaEtapa recurso)
     {
         JsonObject objeto = new()
         {

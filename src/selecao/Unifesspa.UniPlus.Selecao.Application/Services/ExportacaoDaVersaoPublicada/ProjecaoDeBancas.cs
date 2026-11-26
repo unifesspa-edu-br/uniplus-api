@@ -16,17 +16,23 @@ internal static class ProjecaoDeBancas
         }
     }
 
+    private static void TransferirTipoDeBanca(JsonObject copia, JsonObject banca)
+    {
+        ProjecaoDeParte.Transferir(copia, "tipoBancaCodigo", banca["codigo"]);
+        ProjecaoDeParte.Transferir(copia, "tipoBancaNome", banca["nome"]);
+    }
+
     private static JsonNode PrepararBancaDaEtapa(JsonObject banca)
     {
         JsonObject copia = (JsonObject)banca.DeepClone();
-        ProjecaoDeParte.Transferir(copia, "tipoBancaCodigo", banca["codigo"]);
+        TransferirTipoDeBanca(copia, banca);
         return copia;
     }
 
     private static JsonNode PrepararBancaDaFase(JsonObject banca)
     {
         JsonObject copia = (JsonObject)banca.DeepClone();
-        ProjecaoDeParte.Transferir(copia, "tipoBancaCodigo", banca["codigo"]);
+        TransferirTipoDeBanca(copia, banca);
         if (banca["candidatosAtendidos"] is JsonArray candidatos)
         {
             if (candidatos.OfType<JsonObject>().All(candidato => candidato["codigo"] is not null))

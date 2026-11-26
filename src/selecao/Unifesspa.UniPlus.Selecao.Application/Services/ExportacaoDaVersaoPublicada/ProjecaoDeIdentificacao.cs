@@ -25,6 +25,7 @@ internal static class ProjecaoDeIdentificacao
         Mapear(origem, congelado["localidade"] as JsonObject, "localidade", "codigoIbge", "nome", "uf");
         ProjecaoDeParte.Transferir(origem, "identificadorLegivel", congelado["identificadorLegivel"]);
         ProjecaoDeParte.Transferir(origem, "origemCandidatos", congelado["cronogramaFases"]?["origemCandidatos"]);
+        ProjecaoDeParte.Transferir(origem, "origemCandidatosRotulo", congelado["cronogramaFases"]?["contexto"]?["origemCandidatosRotulo"]);
     }
 
     private static void Mapear(JsonObject destino, JsonObject? origem, string prefixo, params string[] campos)

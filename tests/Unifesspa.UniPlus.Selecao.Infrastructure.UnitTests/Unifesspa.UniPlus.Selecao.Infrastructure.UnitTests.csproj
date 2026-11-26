@@ -20,6 +20,7 @@
   <ItemGroup>
     <Compile Include="../Shared/CondicaoDeHomologacaoComDefeitoDeTeste.cs" Link="CondicaoDeHomologacaoComDefeitoDeTeste.cs" />
     <Compile Include="../Shared/OrigensCanonicasDeTeste.cs" Link="OrigensCanonicasDeTeste.cs" />
+    <Compile Include="../Shared/EnvelopesDeReferenciaDeTeste.cs" Link="EnvelopesDeReferenciaDeTeste.cs" />
     <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
@@ -29,6 +30,9 @@
     <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
+    <Compile Include="../Shared/DocumentoExigidoDeTeste.cs" Link="DocumentoExigidoDeTeste.cs" />
+    <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
+    <Compile Include="../Shared/ParametrosDoRecursoDeTeste.cs" Link="ParametrosDoRecursoDeTeste.cs" />
     <Compile Include="../Shared/Cenarios/DataDeReferenciaBuilder.cs" Link="Cenarios/DataDeReferenciaBuilder.cs" />
     <Compile Include="../Shared/Cenarios/PrazoDeEmissaoBuilder.cs" Link="Cenarios/PrazoDeEmissaoBuilder.cs" />
     <Compile Include="../Shared/Cenarios/ValidadeDoDocumentoBuilder.cs" Link="Cenarios/ValidadeDoDocumentoBuilder.cs" />
@@ -40,6 +44,11 @@
     <!-- O esquema da configuração do processo seletivo, lido para conferir que os limites dele são os do codec. -->
     <None Include="..\..\contracts\selecao\configuracao\v1\*.json" Link="Contratos\selecao-configuracao\v1\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\contracts\selecao\configuracao\exemplos\*.json" Link="Contratos\selecao-configuracao\exemplos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Os três envelopes de referência, lidos para conferir o que a exportação leva do contexto dos rótulos. -->
+    <None Include="..\Unifesspa.UniPlus.Selecao.IntegrationTests\ProcessosSeletivos\Fixtures\envelope*.json" Link="ProcessosSeletivos\Fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

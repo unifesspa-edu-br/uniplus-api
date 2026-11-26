@@ -30,6 +30,13 @@
       "minLength": 1,
       "maxLength": 60
     },
+    "tipoBancaNome": {
+      "title": "Nome do tipo de banca",
+      "description": "Nome do tipo de banca, guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é o código.",
+      "type": "string",
+      "maxLength": 200,
+      "readOnly": true
+    },
     "categoriasDocumentoCodigos": {
       "title": "Candidatos atendidos",
       "description": "Códigos das categorias de documento que a banca analisa. Lista vazia quando a banca não define candidatos atendidos por categoria.",
@@ -69,6 +76,12 @@
             "ATO_INDIVIDUAL"
           ]
         },
+        "modoRotulo": {
+          "title": "Rótulo do modo de deliberação",
+          "description": "Rótulo do modo de deliberação. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "integrantes": {
           "title": "Integrantes titulares",
           "description": "Número de titulares da banca.",
@@ -96,6 +109,12 @@
             "UNANIMIDADE"
           ]
         },
+        "criterioRotulo": {
+          "title": "Rótulo do critério de votação",
+          "description": "Rótulo do critério de votação. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "desempate": {
           "title": "Desempate",
           "description": "Como se desempata nos critérios de maioria: voto da presidência ou nova votação.",
@@ -103,6 +122,12 @@
             "VOTO_DA_PRESIDENCIA",
             "NOVA_VOTACAO"
           ]
+        },
+        "desempateRotulo": {
+          "title": "Rótulo do desempate",
+          "description": "Rótulo da forma de desempate. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "encerramento": {
           "title": "Encerramento da votação",
@@ -112,6 +137,12 @@
             "PRESIDENCIA_NO_QUORUM"
           ]
         },
+        "encerramentoRotulo": {
+          "title": "Rótulo do encerramento da votação",
+          "description": "Rótulo do encerramento da votação. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "semUnanimidade": {
           "title": "Resultado sem unanimidade",
           "description": "O que vale quando a unanimidade é o critério e ela não ocorre: favorável, desfavorável ou nova votação.",
@@ -120,6 +151,12 @@
             "DESFAVORAVEL",
             "NOVA_VOTACAO"
           ]
+        },
+        "semUnanimidadeRotulo": {
+          "title": "Rótulo do resultado sem unanimidade",
+          "description": "Rótulo do resultado quando não há unanimidade. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         }
       }
     }

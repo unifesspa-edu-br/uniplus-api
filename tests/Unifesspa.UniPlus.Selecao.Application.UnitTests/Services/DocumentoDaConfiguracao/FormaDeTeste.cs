@@ -11,8 +11,8 @@ internal static class FormaDeTeste
     public static FormaDoNo Objeto(Dictionary<string, FormaDoNo> propriedades, ParteComChave? parte = null) =>
         new([], ["object"], somenteLeitura: false, parte, () => propriedades, static () => null);
 
-    public static FormaDoNo Lista(FormaDoNo itens) =>
-        new([], ["array"], somenteLeitura: false, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
+    public static FormaDoNo Lista(FormaDoNo itens, bool somenteLeitura = false) =>
+        new([], ["array"], somenteLeitura, parte: null, static () => new Dictionary<string, FormaDoNo>(), () => itens);
 
     /// <summary>
     /// O documento de teste: raiz com <c>id</c> só de leitura; <c>etapas</c> com chave no documento, cada uma com <c>itens</c> de

@@ -59,14 +59,45 @@ public sealed class CopiaPeloEsquemaTests
     }
 
     [Fact]
-    public void Copiar_Contexto_GeraSomenteRotuloDeLeitura()
+    public void Copiar_CampoSomenteLeituraNoContexto_CopiaPeloNomeExato()
     {
-        JsonObject copia = Copiar("""{"contexto":{"tipo":"Nome","outro":"Ignorado"}}""", new()
+        JsonObject copia = Copiar("""{"contexto":{"tipoRotulo":"Nome","outroRotulo":"Ignorado"}}""", new()
         {
             ["tipoRotulo"] = FormaDeTeste.Valor(true),
             ["outroRotulo"] = FormaDeTeste.Valor(),
         });
         copia.ToJsonString().Should().Be("""{"tipoRotulo":"Nome"}""");
+    }
+
+    [Fact]
+    public void Copiar_CampoSomenteLeituraComNomeSemSufixoNoContexto_NaoCopia()
+    {
+        JsonObject copia = Copiar("""{"contexto":{"tipo":"Nome"}}""", new() { ["tipoRotulo"] = FormaDeTeste.Valor(true) });
+        copia.ToJsonString().Should().Be("{}");
+    }
+
+    [Fact]
+    public void Copiar_ListaDeRotulosNoContexto_CopiaNaMesmaOrdem()
+    {
+        JsonObject copia = Copiar("""{"contexto":{"tiposDeDecisaoRotulos":["Segundo","Primeiro"]}}""", new()
+        {
+            ["tiposDeDecisaoRotulos"] = FormaDeTeste.Lista(FormaDeTeste.Valor(false, "string"), somenteLeitura: true),
+        });
+        copia.ToJsonString().Should().Be("""{"tiposDeDecisaoRotulos":["Segundo","Primeiro"]}""");
+    }
+
+    [Fact]
+    public void Copiar_RotuloNoProprioObjetoEnoContexto_PrefereOProprioObjeto()
+    {
+        JsonObject copia = Copiar("""{"tipoRotulo":"Direto","contexto":{"tipoRotulo":"Contexto"}}""", new() { ["tipoRotulo"] = FormaDeTeste.Valor(true) });
+        copia.ToJsonString().Should().Be("""{"tipoRotulo":"Direto"}""");
+    }
+
+    [Fact]
+    public void Copiar_CampoQueNaoESomenteLeituraNoContexto_NaoCopia()
+    {
+        JsonObject copia = Copiar("""{"contexto":{"tipoRotulo":"Nome"}}""", new() { ["tipoRotulo"] = FormaDeTeste.Valor() });
+        copia.ToJsonString().Should().Be("{}");
     }
 
     [Fact]

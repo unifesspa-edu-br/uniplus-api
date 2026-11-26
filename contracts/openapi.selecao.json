@@ -17116,6 +17116,13 @@
             "minLength": 1,
             "maxLength": 60
           },
+          "tipoBancaNome": {
+            "title": "Nome do tipo de banca",
+            "description": "Nome do tipo de banca, guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
           "categoriasDocumentoCodigos": {
             "title": "Candidatos atendidos",
             "description": "C\u00F3digos das categorias de documento que a banca analisa. Lista vazia quando a banca n\u00E3o define candidatos atendidos por categoria.",
@@ -17155,6 +17162,12 @@
               "ATO_INDIVIDUAL"
             ]
           },
+          "modoRotulo": {
+            "title": "R\u00F3tulo do modo de delibera\u00E7\u00E3o",
+            "description": "R\u00F3tulo do modo de delibera\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "integrantes": {
             "title": "Integrantes titulares",
             "description": "N\u00FAmero de titulares da banca.",
@@ -17182,6 +17195,12 @@
               "UNANIMIDADE"
             ]
           },
+          "criterioRotulo": {
+            "title": "R\u00F3tulo do crit\u00E9rio de vota\u00E7\u00E3o",
+            "description": "R\u00F3tulo do crit\u00E9rio de vota\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "desempate": {
             "title": "Desempate",
             "description": "Como se desempata nos crit\u00E9rios de maioria: voto da presid\u00EAncia ou nova vota\u00E7\u00E3o.",
@@ -17189,6 +17208,12 @@
               "VOTO_DA_PRESIDENCIA",
               "NOVA_VOTACAO"
             ]
+          },
+          "desempateRotulo": {
+            "title": "R\u00F3tulo do desempate",
+            "description": "R\u00F3tulo da forma de desempate. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "encerramento": {
             "title": "Encerramento da vota\u00E7\u00E3o",
@@ -17198,6 +17223,12 @@
               "PRESIDENCIA_NO_QUORUM"
             ]
           },
+          "encerramentoRotulo": {
+            "title": "R\u00F3tulo do encerramento da vota\u00E7\u00E3o",
+            "description": "R\u00F3tulo do encerramento da vota\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "semUnanimidade": {
             "title": "Resultado sem unanimidade",
             "description": "O que vale quando a unanimidade \u00E9 o crit\u00E9rio e ela n\u00E3o ocorre: favor\u00E1vel, desfavor\u00E1vel ou nova vota\u00E7\u00E3o.",
@@ -17206,6 +17237,12 @@
               "DESFAVORAVEL",
               "NOVA_VOTACAO"
             ]
+          },
+          "semUnanimidadeRotulo": {
+            "title": "R\u00F3tulo do resultado sem unanimidade",
+            "description": "R\u00F3tulo do resultado quando n\u00E3o h\u00E1 unanimidade. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           }
         }
       },
@@ -17304,6 +17341,12 @@
                   "FIM_FASE",
                   "DATA_ESPECIFICA"
                 ]
+              },
+              "tipoRotulo": {
+                "title": "R\u00F3tulo do tipo de refer\u00EAncia",
+                "description": "R\u00F3tulo do tipo de refer\u00EAncia temporal dos dados. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+                "type": "string",
+                "readOnly": true
               },
               "data": {
                 "title": "Data espec\u00EDfica",
@@ -17458,6 +17501,12 @@
             "description": "Tipo da decis\u00E3o recorrida, entre os que a fase ou a etapa declara.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
           },
+          "tipoDeDecisaoRotulo": {
+            "title": "R\u00F3tulo do tipo de decis\u00E3o",
+            "description": "R\u00F3tulo do tipo da decis\u00E3o recorrida. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "alvo": {
             "title": "Alvo",
             "description": "A parte da mat\u00E9ria que o procedimento cobre: um item de avalia\u00E7\u00E3o da etapa, pela chave, ou uma \u00E1rea do ENEM, pelo c\u00F3digo. Ausente, o procedimento cobre o tipo de decis\u00E3o inteiro.",
@@ -17520,6 +17569,12 @@
               "DIAS_UTEIS"
             ]
           },
+          "prazoUnidadeRotulo": {
+            "title": "R\u00F3tulo da unidade do prazo",
+            "description": "R\u00F3tulo da unidade do prazo de interposi\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "publicacaoDeReferenciaAtoCodigo": {
             "title": "Ato \u00E2ncora do prazo",
             "description": "C\u00F3digo do tipo de ato, entre os atos preliminares da pr\u00F3pria fase, a partir de cujo instante o prazo corre.",
@@ -17548,12 +17603,24 @@
               "DIAS_UTEIS"
             ]
           },
+          "prazoSegundaInstanciaUnidadeRotulo": {
+            "title": "R\u00F3tulo da unidade do prazo da 2\u00AA inst\u00E2ncia",
+            "description": "R\u00F3tulo da unidade do prazo da 2\u00AA inst\u00E2ncia; ausente quando o recurso n\u00E3o admite inst\u00E2ncia superior. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "efeitoSuspensivo": {
             "title": "Efeito suspensivo na 1\u00AA inst\u00E2ncia",
             "description": "Efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia, escolhido pelo edital. A \u00FAnica op\u00E7\u00E3o aceita \u00E9 sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2\u00AA inst\u00E2ncia sempre tem efeito suspensivo, sem escolha.",
             "enum": [
               "SEM_EFEITO_SUSPENSIVO"
             ]
+          },
+          "efeitoSuspensivoRotulo": {
+            "title": "R\u00F3tulo do efeito suspensivo",
+            "description": "R\u00F3tulo do efeito suspensivo do recurso na 1\u00AA inst\u00E2ncia. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "guardaDaVaga": {
             "title": "Guarda da vaga",
@@ -17562,6 +17629,12 @@
               "ATE_O_RESULTADO_DEFINITIVO",
               "NAO_GUARDA"
             ]
+          },
+          "guardaDaVagaRotulo": {
+            "title": "R\u00F3tulo da guarda da vaga",
+            "description": "R\u00F3tulo da guarda da vaga durante o recurso. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "procedimentosDeRecurso": {
             "title": "Procedimentos de recurso",
@@ -17602,6 +17675,12 @@
               "PRELIMINAR",
               "DEFINITIVO"
             ]
+          },
+          "papelRotulo": {
+            "title": "R\u00F3tulo do papel do ato",
+            "description": "R\u00F3tulo do papel do ato no ciclo de recurso. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           }
         },
         "required": [
@@ -17684,6 +17763,12 @@
               "INTERNA_EDITAL"
             ]
           },
+          "abrangenciaRotulo": {
+            "title": "R\u00F3tulo da abrang\u00EAncia",
+            "description": "R\u00F3tulo da esfera da norma. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "situacao": {
             "title": "Situa\u00E7\u00E3o",
             "description": "Se a refer\u00EAncia foi resolvida ou ainda est\u00E1 pendente.",
@@ -17691,6 +17776,12 @@
               "PENDENTE",
               "RESOLVIDO"
             ]
+          },
+          "situacaoRotulo": {
+            "title": "R\u00F3tulo da situa\u00E7\u00E3o",
+            "description": "R\u00F3tulo da situa\u00E7\u00E3o da refer\u00EAncia da base legal. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "observacao": {
             "title": "Observa\u00E7\u00E3o",
@@ -17730,6 +17821,12 @@
               "MENOR_IGUAL",
               "NENHUM_DE"
             ]
+          },
+          "operadorRotulo": {
+            "title": "R\u00F3tulo do operador",
+            "description": "R\u00F3tulo do operador de compara\u00E7\u00E3o da condi\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "valor": {
             "title": "Valor",
@@ -17818,6 +17915,12 @@
               "NUNCA",
               "QUANDO"
             ]
+          },
+          "tipoRotulo": {
+            "title": "R\u00F3tulo do tipo da obrigatoriedade",
+            "description": "R\u00F3tulo do tipo da obrigatoriedade. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "quando": {
             "title": "Condi\u00E7\u00F5es",
@@ -17972,6 +18075,15 @@
             "title": "Tipos de decis\u00E3o da fase",
             "description": "Tipos de decis\u00E3o que a fase toma e para os quais o processo escolhe motivos.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTiposDeDecisao"
+          },
+          "tiposDeDecisaoRotulos": {
+            "title": "R\u00F3tulos dos tipos de decis\u00E3o da fase",
+            "description": "R\u00F3tulos dos tipos de decis\u00E3o da fase, na mesma ordem dos c\u00F3digos. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia s\u00E3o os c\u00F3digos.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true
           },
           "regraDeHomologacao": {
             "title": "Regra de homologa\u00E7\u00E3o",
@@ -18758,10 +18870,23 @@
               "AMBAS"
             ]
           },
+          "caraterRotulo": {
+            "title": "R\u00F3tulo do car\u00E1ter",
+            "description": "R\u00F3tulo do car\u00E1ter da etapa. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "tipoEtapaCodigo": {
             "title": "Tipo de etapa",
             "description": "C\u00F3digo do tipo de etapa no cat\u00E1logo de tipos de etapa.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro"
+          },
+          "tipoEtapaNome": {
+            "title": "Nome do tipo de etapa",
+            "description": "Nome do tipo de etapa, guardado no processo. Campo s\u00F3 de leitura: a exporta\u00E7\u00E3o o traz para quem l\u00EA o arquivo, e ele \u00E9 ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
           },
           "peso": {
             "title": "Peso",
@@ -18794,6 +18919,12 @@
               "OBJETIVA",
               "HUMANA"
             ]
+          },
+          "formaDeAvaliacaoRotulo": {
+            "title": "R\u00F3tulo da forma de avalia\u00E7\u00E3o",
+            "description": "R\u00F3tulo da forma de avalia\u00E7\u00E3o da etapa. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "regraDeApuracaoDaAvaliacao": {
             "title": "Regra de consolida\u00E7\u00E3o",
@@ -18880,6 +19011,15 @@
             "title": "Tipos de decis\u00E3o da etapa",
             "description": "Tipos de decis\u00E3o que a etapa toma e para os quais o processo escolhe motivos.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTiposDeDecisao"
+          },
+          "tiposDeDecisaoRotulos": {
+            "title": "R\u00F3tulos dos tipos de decis\u00E3o da etapa",
+            "description": "R\u00F3tulos dos tipos de decis\u00E3o da etapa, na mesma ordem dos c\u00F3digos. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia s\u00E3o os c\u00F3digos.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true
           }
         }
       },
@@ -18967,6 +19107,12 @@
               "PUBLICACAO_DO_ATO",
               "CIENCIA_INDIVIDUAL"
             ]
+          },
+          "eventoInicialDoPrazoRotulo": {
+            "title": "R\u00F3tulo do evento que inicia o prazo",
+            "description": "R\u00F3tulo do evento que inicia o prazo do recurso. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           }
         },
         "unevaluatedProperties": false
@@ -19011,6 +19157,12 @@
               "DATA_ESPECIFICA",
               "DATA_DA_APRESENTACAO"
             ]
+          },
+          "tipoRotulo": {
+            "title": "R\u00F3tulo do tipo",
+            "description": "R\u00F3tulo do tipo da data de refer\u00EAncia do documento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "data": {
             "title": "Data",
@@ -19126,6 +19278,12 @@
               "HABILITACAO"
             ]
           },
+          "finalidadeRotulo": {
+            "title": "R\u00F3tulo da finalidade",
+            "description": "R\u00F3tulo da finalidade do formul\u00E1rio a que a exig\u00EAncia pertence. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "aplicabilidade": {
             "title": "Aplicabilidade",
             "description": "GERAL vale para todos os candidatos; CONDICIONAL vale s\u00F3 quando a condi\u00E7\u00E3o de gatilho \u00E9 verdadeira.",
@@ -19133,6 +19291,12 @@
               "GERAL",
               "CONDICIONAL"
             ]
+          },
+          "aplicabilidadeRotulo": {
+            "title": "R\u00F3tulo da aplicabilidade",
+            "description": "R\u00F3tulo da aplicabilidade da exig\u00EAncia. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "obrigatorio": {
             "title": "Obrigat\u00F3rio",
@@ -19198,6 +19362,12 @@
                 "type": "string",
                 "maxLength": 30
               },
+              "formatoRotulo": {
+                "title": "R\u00F3tulo do formato",
+                "description": "R\u00F3tulo do formato do arquivo do modelo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+                "type": "string",
+                "readOnly": true
+              },
               "hashSha256": {
                 "title": "Resumo do conte\u00FAdo",
                 "description": "Resumo SHA-256 do conte\u00FAdo do modelo, em hexadecimal.",
@@ -19248,6 +19418,12 @@
                     "PNG"
                   ]
                 },
+                "formatoRotulo": {
+                  "title": "R\u00F3tulo do formato",
+                  "description": "R\u00F3tulo do formato aceito. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+                  "type": "string",
+                  "readOnly": true
+                },
                 "tamanhoMaximoBytesMax": {
                   "title": "Tamanho m\u00E1ximo",
                   "description": "Tamanho m\u00E1ximo do arquivo nesse formato, em bytes.",
@@ -19273,6 +19449,12 @@
               "COM_PRAZO"
             ]
           },
+          "escolhaRotulo": {
+            "title": "R\u00F3tulo da escolha",
+            "description": "R\u00F3tulo da escolha sobre o prazo de emiss\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "valor": {
             "title": "Valor",
             "description": "Quantidade de unidades do prazo.",
@@ -19288,6 +19470,12 @@
               "ANOS"
             ]
           },
+          "unidadeRotulo": {
+            "title": "R\u00F3tulo da unidade",
+            "description": "R\u00F3tulo da unidade do prazo de emiss\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "referencia": {
             "title": "Refer\u00EAncia",
             "description": "Data usada como refer\u00EAncia.",
@@ -19300,6 +19488,12 @@
               "RECUSAR_DOCUMENTO",
               "ACEITAR_COM_AVISO"
             ]
+          },
+          "efeitoForaDoPrazoRotulo": {
+            "title": "R\u00F3tulo do efeito fora do prazo",
+            "description": "R\u00F3tulo do efeito na an\u00E1lise do documento fora do prazo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           }
         }
       },
@@ -19317,6 +19511,12 @@
               "EXIGE_DOCUMENTO_VALIDO"
             ]
           },
+          "escolhaRotulo": {
+            "title": "R\u00F3tulo da escolha",
+            "description": "R\u00F3tulo da escolha sobre a validade do documento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "referencia": {
             "title": "Refer\u00EAncia",
             "description": "Data usada como refer\u00EAncia.",
@@ -19329,6 +19529,12 @@
               "RECUSAR_DOCUMENTO",
               "ACEITAR_COM_AVISO"
             ]
+          },
+          "efeitoDoVencimentoRotulo": {
+            "title": "R\u00F3tulo do efeito do vencimento",
+            "description": "R\u00F3tulo do efeito na an\u00E1lise do documento vencido. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           }
         }
       },
@@ -19481,6 +19687,12 @@
               "ISENCAO_TAXA",
               "HABILITACAO"
             ]
+          },
+          "finalidadeRotulo": {
+            "title": "R\u00F3tulo da finalidade",
+            "description": "R\u00F3tulo da finalidade do formul\u00E1rio. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "faseChave": {
             "title": "Fase do formul\u00E1rio",
@@ -19664,6 +19876,12 @@
               "BLOCO"
             ]
           },
+          "tipoRotulo": {
+            "title": "R\u00F3tulo do tipo da p\u00E1gina",
+            "description": "R\u00F3tulo do tipo da p\u00E1gina. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "bloco": {
             "title": "Bloco de sistema",
             "description": "Qual bloco de sistema a p\u00E1gina \u00E9. S\u00F3 faz sentido quando o tipo \u00E9 BLOCO; a coer\u00EAncia \u00E9 regra do dom\u00EDnio.",
@@ -19672,6 +19890,12 @@
               "MODALIDADES_CALCULADAS",
               "REVISAO_E_ACEITE"
             ]
+          },
+          "blocoRotulo": {
+            "title": "R\u00F3tulo do bloco de sistema",
+            "description": "R\u00F3tulo do bloco de sistema da p\u00E1gina. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "titulo": {
             "title": "T\u00EDtulo",
@@ -19812,6 +20036,12 @@
             "pattern": "^[A-Z]\u002B(_[A-Z]\u002B)*$",
             "maxLength": 60
           },
+          "tipoRotulo": {
+            "title": "R\u00F3tulo do tipo da condi\u00E7\u00E3o",
+            "description": "R\u00F3tulo do tipo da condi\u00E7\u00E3o de homologa\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "edicaoDoExame": {
             "title": "Edi\u00E7\u00E3o do exame",
             "description": "Ano da edi\u00E7\u00E3o do exame, de 1998 a 2100.",
@@ -19889,6 +20119,12 @@
               "INSCRICAO_PROPRIA",
               "IMPORTACAO_EXTERNA"
             ]
+          },
+          "origemCandidatosRotulo": {
+            "title": "R\u00F3tulo da origem dos candidatos",
+            "description": "R\u00F3tulo da origem dos candidatos do processo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "localidadeCodigoIbge": {
             "title": "Localidade do processo",
@@ -20166,6 +20402,12 @@
             "description": "Tipo de decis\u00E3o a que o motivo pertence.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsTipoDeDecisao"
           },
+          "tipoDeDecisaoCodigoRotulo": {
+            "title": "R\u00F3tulo do tipo de decis\u00E3o",
+            "description": "R\u00F3tulo do tipo de decis\u00E3o a que o motivo pertence. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "codigo": {
             "title": "C\u00F3digo do motivo",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoMotivoCodigoDoMotivo"
@@ -20431,6 +20673,12 @@
               "QUANTIDADE_MINIMA_DE_ITENS"
             ]
           },
+          "formaRotulo": {
+            "title": "R\u00F3tulo da forma de comprova\u00E7\u00E3o",
+            "description": "R\u00F3tulo da forma de comprova\u00E7\u00E3o da regra. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
+          },
           "exigenciaChave": {
             "title": "Exig\u00EAncia documental",
             "description": "Chave local da exig\u00EAncia citada pela regra de documento.",
@@ -20468,6 +20716,12 @@
               "EXERCICIO_ANUAL",
               "OCORRENCIA"
             ]
+          },
+          "criterioDeDistincaoRotulo": {
+            "title": "R\u00F3tulo do crit\u00E9rio de distin\u00E7\u00E3o",
+            "description": "R\u00F3tulo do crit\u00E9rio que distingue apresenta\u00E7\u00F5es do mesmo documento. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "dataReferencia": {
             "title": "Data de refer\u00EAncia",
@@ -20533,6 +20787,12 @@
               "MUNICIPIOS_DA_UF",
               "FAIXA_DE_DATA"
             ]
+          },
+          "tipoRotulo": {
+            "title": "R\u00F3tulo do tipo da restri\u00E7\u00E3o",
+            "description": "R\u00F3tulo do tipo da restri\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia \u00E9 o c\u00F3digo.",
+            "type": "string",
+            "readOnly": true
           },
           "minimo": {
             "title": "M\u00EDnimo",
@@ -20693,6 +20953,15 @@
                 "CARENCIA_SOCIOECONOMICA"
               ]
             }
+          },
+          "fundamentosRotulos": {
+            "title": "R\u00F3tulos dos fundamentos de isen\u00E7\u00E3o",
+            "description": "R\u00F3tulos dos fundamentos de isen\u00E7\u00E3o da taxa, na mesma ordem dos c\u00F3digos. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o; a refer\u00EAncia s\u00E3o os c\u00F3digos.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true
           }
         }
       },

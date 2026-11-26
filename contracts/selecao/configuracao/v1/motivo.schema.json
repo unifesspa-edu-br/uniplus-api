@@ -37,6 +37,12 @@
       "description": "Tipo de decisão a que o motivo pertence.",
       "$ref": "comuns.schema.json#/$defs/tipoDeDecisao"
     },
+    "tipoDeDecisaoCodigoRotulo": {
+      "title": "Rótulo do tipo de decisão",
+      "description": "Rótulo do tipo de decisão a que o motivo pertence. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "codigo": {
       "title": "Código do motivo",
       "$ref": "#/$defs/codigoDoMotivo"

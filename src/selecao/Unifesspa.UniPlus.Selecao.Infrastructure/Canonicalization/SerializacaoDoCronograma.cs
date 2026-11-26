@@ -142,7 +142,7 @@ internal static class SerializacaoDoCronograma
         })]);
     }
 
-    private static JsonObject SerializarRegraRecursoFase(RegraRecursoFase regraRecurso) => new()
+    internal static JsonObject SerializarRegraRecursoFase(RegraRecursoFase regraRecurso) => new()
     {
         ["regra"] = EscritaCanonica.SerializarReferenciaRegra(regraRecurso.Regra),
         ["publicacaoDeReferenciaId"] = regraRecurso.ProdutoAncoraId,

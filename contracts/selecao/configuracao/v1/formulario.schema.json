@@ -18,6 +18,12 @@
         "HABILITACAO"
       ]
     },
+    "finalidadeRotulo": {
+      "title": "Rótulo da finalidade",
+      "description": "Rótulo da finalidade do formulário. Campo só de leitura: ignorado na importação; a referência é o código.",
+      "type": "string",
+      "readOnly": true
+    },
     "faseChave": {
       "title": "Fase do formulário",
       "description": "Chave local da fase do cronograma a que o formulário pertence.",
@@ -108,6 +114,12 @@
             "BLOCO"
           ]
         },
+        "tipoRotulo": {
+          "title": "Rótulo do tipo da página",
+          "description": "Rótulo do tipo da página. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "bloco": {
           "title": "Bloco de sistema",
           "description": "Qual bloco de sistema a página é. Só faz sentido quando o tipo é BLOCO; a coerência é regra do domínio.",
@@ -116,6 +128,12 @@
             "MODALIDADES_CALCULADAS",
             "REVISAO_E_ACEITE"
           ]
+        },
+        "blocoRotulo": {
+          "title": "Rótulo do bloco de sistema",
+          "description": "Rótulo do bloco de sistema da página. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "titulo": {
           "title": "Título",

@@ -73,6 +73,12 @@
             "PRELIMINAR",
             "DEFINITIVO"
           ]
+        },
+        "papelRotulo": {
+          "title": "Rótulo do papel do ato",
+          "description": "Rótulo do papel do ato no ciclo de recurso. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         }
       },
       "required": [
@@ -113,6 +119,12 @@
             "DIAS_UTEIS"
           ]
         },
+        "prazoUnidadeRotulo": {
+          "title": "Rótulo da unidade do prazo",
+          "description": "Rótulo da unidade do prazo de interposição. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "publicacaoDeReferenciaAtoCodigo": {
           "title": "Ato âncora do prazo",
           "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
@@ -141,12 +153,24 @@
             "DIAS_UTEIS"
           ]
         },
+        "prazoSegundaInstanciaUnidadeRotulo": {
+          "title": "Rótulo da unidade do prazo da 2ª instância",
+          "description": "Rótulo da unidade do prazo da 2ª instância; ausente quando o recurso não admite instância superior. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
+        },
         "efeitoSuspensivo": {
           "title": "Efeito suspensivo na 1ª instância",
           "description": "Efeito suspensivo do recurso na 1ª instância, escolhido pelo edital. A única opção aceita é sem efeito suspensivo (SEM_EFEITO_SUSPENSIVO). A 2ª instância sempre tem efeito suspensivo, sem escolha.",
           "enum": [
             "SEM_EFEITO_SUSPENSIVO"
           ]
+        },
+        "efeitoSuspensivoRotulo": {
+          "title": "Rótulo do efeito suspensivo",
+          "description": "Rótulo do efeito suspensivo do recurso na 1ª instância. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "guardaDaVaga": {
           "title": "Guarda da vaga",
@@ -155,6 +179,12 @@
             "ATE_O_RESULTADO_DEFINITIVO",
             "NAO_GUARDA"
           ]
+        },
+        "guardaDaVagaRotulo": {
+          "title": "Rótulo da guarda da vaga",
+          "description": "Rótulo da guarda da vaga durante o recurso. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "procedimentosDeRecurso": {
           "title": "Procedimentos de recurso",
@@ -177,6 +207,12 @@
           "title": "Tipo de decisão",
           "description": "Tipo da decisão recorrida, entre os que a fase ou a etapa declara.",
           "$ref": "#/$defs/tipoDeDecisao"
+        },
+        "tipoDeDecisaoRotulo": {
+          "title": "Rótulo do tipo de decisão",
+          "description": "Rótulo do tipo da decisão recorrida. Campo só de leitura: ignorado na importação; a referência é o código.",
+          "type": "string",
+          "readOnly": true
         },
         "alvo": {
           "title": "Alvo",
