@@ -63,3 +63,7 @@ A renomeação do bônus regional para o termo do PO nos nomes técnicos é trab
 - Issue #1878.
 - [ADR-0013](0013-classificacao-dos-candidatos-como-servicos-de-dominio-puros.md): a classificação dos candidatos como serviços de domínio puros.
 - [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md): os fatos do administrador e os derivados por regra.
+
+## Emenda (2026-11-25) — consequência sobre o acréscimo
+
+Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), `REMOVE_VANTAGEM` passa a `RETIRA_O_ACRESCIMO`, que retira somente o acréscimo do Fator de Atenuação das Desigualdades de Acesso e pode ser declarada em qualquer exigência.

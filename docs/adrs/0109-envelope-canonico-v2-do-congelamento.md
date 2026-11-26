@@ -369,3 +369,7 @@ só, o atual, editado no lugar.
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e os processos
 de homologação são recriados. Versões já publicadas em produção manteriam seus bytes e seu resumo,
 mas ainda não existem versões publicadas em produção.
+
+## Emenda (2026-11-25) — consequências do descumprimento
+
+Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-processo.md), o documento congelado inclui as consequências declaradas na exigência, no grupo de comprovação, na banca e no formulário, e a propriedade `abrePrazoParaReenvio` da exigência e do grupo. Até a primeira publicação em produção, esses campos entram no documento e no resumo editados no lugar, sem versão nova.
