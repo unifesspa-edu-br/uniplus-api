@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -122,18 +124,36 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         AfirmarPendenciaUnicaERecusa(processo, "exigencia_condicional_vazia_determina_resultado", "DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: a fase deixou de responder o formulário que a exigência declara — item vermelho e Publicar recusa com FaseIncoerenteComFinalidade")]
-    public void PreCanon_FaseDeixouDeResponderOFormularioDaExigencia()
+    [Fact(DisplayName = "Pré-canonicalização: o formulário passou para outra fase que a da exigência — o item da exigência fica vermelho e a pendência recusa com ExigenciaEmFormularioDeOutraFase")]
+    public void PreCanon_FormularioPassouParaOutraFaseQueADaExigencia()
+    {
+        ProcessoSeletivo processo = ProcessoConformeComDuasFasesDeIsencao();
+        Guid faseDaExigencia = processo.CronogramaFases.Single(static f => f.Ordem == 1).Id;
+        DefinirFormularioDeIsencaoNaFase(processo, faseDaExigencia);
+        ExigirDocumentos(processo, DocumentoGeral(faseDaExigencia, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
+
+        DefinirFormularioDeIsencaoNaFase(processo, processo.CronogramaFases.Single(static f => f.Ordem == 2).Id);
+
+        Item(processo, "exigencia_finalidade_incoerente_com_a_fase").Ok.Should().BeFalse();
+        PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao())!.Code
+            .Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+    }
+
+    private static ProcessoSeletivo ProcessoConformeComDuasFasesDeIsencao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
         Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
-        processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [])
+        processo.DefinirCronogramaFases(
+            [FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem), FaseQueResponde(2, "SOLICITACAO_ISENCAO_COMPLEMENTAR", inscricao: false, isencao: true)], [])
             .IsSuccess.Should().BeTrue();
-        ExigirDocumentos(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
-        processo.DefinirCronogramaFases([FaseBaseDaImportacao(origem)], []).IsSuccess.Should().BeTrue();
+        return processo;
+    }
 
-        SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
-        ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
+    private static void DefinirFormularioDeIsencaoNaFase(ProcessoSeletivo processo, Guid faseId)
+    {
+        Result definido = processo.DefinirFormulario(
+            FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.IsencaoTaxa, faseId), null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa));
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 
     [Fact(DisplayName = "Pré-canonicalização: exigência não pode retirar acréscimo que não é oferecido")]

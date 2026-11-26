@@ -134,7 +134,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
             .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
-        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([fato]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
@@ -151,7 +151,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             .DoTipo(TipoDeCampo.EscolhaUnica)
             .ComClassificacao("SENSIVEL")
             .Construir();
-        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([fato]).IsSuccess.Should().BeTrue();
 
         RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(processo.Campos.Single(static c => c.FatoCodigo == "TIPO_DEFICIENCIA")).Should().Be(OrigemValoresColeta.Catalogo);
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -173,7 +173,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
-        processo.DefinirItensComFaseDeInscricao([FatoDeTipoDeDeficienciaDoProcesso()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoDeTipoDeDeficienciaDoProcesso()]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
@@ -192,7 +192,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         // ProcessoConforme já oferta atendimento vazio (sem recursos) — só falta o fato coletável.
-        processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
@@ -205,7 +205,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         OfertarSalaDeAmamentacaoELedor(processo);
-        processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
 
         processo.OpcoesDoProcesso(AtendimentoEspecializado.FatoRecursoAcessibilidade)
             .Select(static o => (o.Codigo, o.Rotulo, o.Ordem))
@@ -253,7 +253,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
             .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
-        processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([condicao]).IsSuccess.Should().BeTrue();
 
         ItemDaExclusividadeOk(processo).Should().BeFalse();
     }

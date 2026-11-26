@@ -28,6 +28,7 @@ public sealed class ImpedimentoNoFormularioTests
     public void DefinirItens_ImpedimentoNaHabilitacao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        ApoioDosFormulariosComConsequencia.AcrescentarFaseDaHabilitacao(processo);
 
         Result resultado = processo.DefinirItens([Campo(Obrigatoriedade.Sempre)], finalidade: FinalidadeFormulario.Habilitacao);
 

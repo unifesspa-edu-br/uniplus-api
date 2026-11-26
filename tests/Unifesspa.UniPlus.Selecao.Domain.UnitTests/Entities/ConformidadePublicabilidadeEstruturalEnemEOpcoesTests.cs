@@ -251,7 +251,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void FatoDeFonteDoProcessoSemOpcao_RecusaAtePrimeiraOpcao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");

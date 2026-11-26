@@ -41,7 +41,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             .ComRotulo("Você se enquadra em alguma condição de atendimento?")
             .DoTipo(TipoDeCampo.EscolhaMultipla)
             .Construir();
-        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([fato]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
@@ -57,7 +57,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         // Mesmo código de fato da conferência, mas TipoDeCampo fora de {SelecaoUnica, SelecaoMultipla}
         // — a conferência só se aplica a campo com opções, que é o que fica vazio sem oferta.
         FatoColetado fato = FatoColetadoDeTeste.Coletando("CONDICAO_ATENDIMENTO", 0).ComRotulo("Possui alguma condição de atendimento?").Construir();
-        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([fato]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);

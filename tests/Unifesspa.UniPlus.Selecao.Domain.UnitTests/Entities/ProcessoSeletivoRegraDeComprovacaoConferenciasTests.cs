@@ -21,8 +21,8 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
-    private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+    private static ProcessoSeletivo NovoProcesso(OrigemCandidatos origem = OrigemCandidatos.ImportacaoExterna) =>
+        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.Sisu, origem, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
@@ -201,7 +201,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
     [Fact(DisplayName = "Regra de documento com repetição por grupo não impede a preparação da publicação")]
     public void RegraDeDocumentoSemGrupo_GrupoDoFormularioParaRepeticao_NaoBloqueia()
     {
-        ProcessoSeletivo processo = NovoProcesso();
+        ProcessoSeletivo processo = NovoProcesso(OrigemCandidatos.InscricaoPropria);
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirComposicaoFamiliarNaInscricao(processo, fase);

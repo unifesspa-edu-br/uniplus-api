@@ -39,6 +39,7 @@ internal static class ApoioDosFormulariosComConsequencia
     internal static void ExigirNoFormulario(ProcessoSeletivo processo, FinalidadeFormulario finalidade, string modalidade)
     {
         Guid fase = finalidade == FinalidadeFormulario.Habilitacao ? AcrescentarFaseDaHabilitacao(processo) : processo.CronogramaFases.Single().Id;
+        LigarFormularioAFase(processo, finalidade, fase);
         DocumentoExigido exigencia = new DocumentoExigidoBuilder()
             .ComMomento(new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
@@ -47,6 +48,15 @@ internal static class ApoioDosFormulariosComConsequencia
             .Construir();
         Result definido = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definido.IsSuccess.Should().BeTrue(string.Join("; ", definido.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
+    }
+
+    /// <summary>Liga o formulário do papel à fase dada, mantendo a consequência da falta de envio que ele declara: a exigência só vale no formulário ligado à fase dela.</summary>
+    internal static void LigarFormularioAFase(ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid fase)
+    {
+        FormularioProcesso formulario = processo.FormularioDe(finalidade)!;
+        Result ligado = processo.DefinirFormulario(
+            FormularioDeTeste.DeclaradoNoPapel(finalidade, fase), formulario.Titulo, FormularioDeTeste.Paginas(finalidade), null, formulario.ConsequenciaDaFaltaDeEnvio);
+        ligado.IsSuccess.Should().BeTrue(ligado.Error?.Message);
     }
 
     internal static Guid AcrescentarFaseDaHabilitacao(ProcessoSeletivo processo, bool coletaInscricao = false)

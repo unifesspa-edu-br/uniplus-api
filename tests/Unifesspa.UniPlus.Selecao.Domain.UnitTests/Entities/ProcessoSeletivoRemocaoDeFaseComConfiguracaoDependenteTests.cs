@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
@@ -83,6 +84,8 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO");
         FaseCronograma habilitacao = Fase(2, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoComFases(isencao, habilitacao);
+        processo.DefinirFormulario(FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.Habilitacao, habilitacao.Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao))
+            .IsSuccess.Should().BeTrue();
         ExigirDocumentos(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, finalidade: FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirCronogramaFases(

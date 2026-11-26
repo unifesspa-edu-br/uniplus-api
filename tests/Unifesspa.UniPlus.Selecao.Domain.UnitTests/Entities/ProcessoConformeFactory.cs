@@ -82,16 +82,17 @@ internal static class ProcessoConformeFactory
 
     /// <summary>
     /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado, coleta inscrição (há
-    /// vagas e a origem é inscrição própria) e homologa as inscrições, com a regra que aponta o resultado dela. A asserção de sucesso impede que uma fase recusada
+    /// vagas e a origem é inscrição própria; coleta também o pedido de isenção quando pedido) e homologa as inscrições, com a regra que aponta o resultado dela. A asserção de sucesso impede que uma fase recusada
     /// vire null e o teste siga com um cronograma vazio, passando por não exercitar nada.
     /// </summary>
     internal static FaseCronograma FaseConforme(
-        RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false, IReadOnlyList<BancaRequerida>? bancas = null)
+        RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false, IReadOnlyList<BancaRequerida>? bancas = null,
+        bool coletaSolicitacaoIsencao = false)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
                 OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-                ColetaSolicitacaoIsencao: false)),
+                ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao)),
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), regraRecurso),

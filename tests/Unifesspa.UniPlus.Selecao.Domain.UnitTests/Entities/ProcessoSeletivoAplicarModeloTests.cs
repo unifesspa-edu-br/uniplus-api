@@ -34,17 +34,17 @@ public sealed class ProcessoSeletivoAplicarModeloTests
         processo.FatosColetados.Should().Equal(antes);
     }
 
-    [Fact(DisplayName = "A cópia num processo sem o formulário cria o formulário, com a origem")]
-    public void AplicarModeloDeFormulario_SemFormulario_CriaComAOrigem()
+    [Fact(DisplayName = "A cópia num processo sem o formulário é recusada, sem criar formulário nem origem")]
+    public void AplicarModeloDeFormulario_SemFormulario_RecusaSemCriar()
     {
         ProcessoSeletivo processo = Processo();
 
         Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.Inscricao, Item("COR_RACA", 0)));
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        FormularioProcesso formulario = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
-        formulario.ModeloDeOrigem.Should().Be(Origem);
-        processo.FatosColetados.Should().ContainSingle(static f => f.FatoCodigo == "COR_RACA" && f.Finalidade == FinalidadeFormulario.Inscricao);
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            recusa => recusa.Field == "formularioCodigo" && recusa.Error.Code == FormularioProcessoErrorCodes.FormularioInexistente);
+        processo.Formularios.Should().BeEmpty();
+        processo.FatosColetados.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A reaplicação substitui os itens da finalidade, preserva a fase e registra a origem")]
@@ -68,6 +68,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     {
         ProcessoSeletivo processo = Processo();
         CopiaDeModeloDeFormulario copia = Copia(FinalidadeFormulario.Inscricao, Item("COR_RACA", 0));
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.AplicarModeloDeFormulario(copia with { Origem = Origem with { Nome = "Modelo atualizado" } });
@@ -80,6 +81,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     public void AplicarModeloDeFormulario_InscricaoComFatoDeOutraFinalidade_TrazOFato()
     {
         ProcessoSeletivo processo = Processo();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("CERTIFICADO", 0)], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.Inscricao, Item("CERTIFICADO", 0)));
@@ -93,19 +95,21 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     {
         ProcessoSeletivo processo = Processo();
         processo.DefinirItens([Item("CERTIFICADO", 0), Item("PROCURADOR", 1)], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
 
         Result resultado = processo.AplicarModeloDeFormulario(
             Copia(FinalidadeFormulario.Habilitacao, Item("CERTIFICADO", 0), Item("PROCURADOR", 1)));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(FatoColetadoErrorCodes.FatoDuplicado, FatoColetadoErrorCodes.FatoDuplicado);
-        processo.FormularioDe(FinalidadeFormulario.Habilitacao).Should().BeNull();
+        processo.FormularioDe(FinalidadeFormulario.Habilitacao)!.ModeloDeOrigem.Should().BeNull();
+        processo.Campos.Should().OnlyContain(static f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa);
     }
 
     [Fact(DisplayName = "A cópia que deixaria sem o fato citado outro formulário é recusada, sem mudar o processo")]
     public void AplicarModeloDeFormulario_CitacaoQueFicariaOrfa_RecusaSemMudar()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "QUILOMBOLA")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.Inscricao, Item("COR_RACA", 0)));
@@ -119,7 +123,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     public void AplicarModeloDeFormulario_OrfasEmDoisFormularios_RecusaTodas()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "QUILOMBOLA")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("COMPROVANTE", 0, exibidoQuando: "QUILOMBOLA")], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
 
@@ -132,10 +136,11 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     public void AplicarModeloDeFormulario_CitacaoJaInvalidaEmOutroFormulario_Aplica()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([Derivacao("PERFIL", "QUILOMBOLA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("DECLARACAO", 0, exibidoQuando: "PERFIL")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([]).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Paginas(), null).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.AplicarModeloDeFormulario(Copia(FinalidadeFormulario.IsencaoTaxa, Item("COMPROVANTE", 0)));
 
@@ -146,7 +151,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     public void AplicarModeloDeFormulario_FormularioComCitacaoJaInvalida_RecusaANovaOrfa()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirItens([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([Item("QUILOMBOLA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([Derivacao("PERFIL", "QUILOMBOLA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [Item("DECLARACAO", 0, exibidoQuando: "PERFIL"), Item("DOC", 1, exibidoQuando: "QUILOMBOLA")],

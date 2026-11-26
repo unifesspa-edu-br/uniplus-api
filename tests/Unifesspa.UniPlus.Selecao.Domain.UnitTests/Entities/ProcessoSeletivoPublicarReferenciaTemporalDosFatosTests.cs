@@ -272,9 +272,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
         // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
         FormularioDeTeste.TrocarCronograma(processo, [ColetaNaSegundaQuinzena(), ColetaNaPrimeiraQuinzena()]).IsSuccess.Should().BeTrue();
-        Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+        // A exigência fica na fase em que o formulário de inscrição é respondido: a conferência recusa a de outra fase.
+        Guid faseDoFormularioId = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId!.Value;
 
-        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
+        processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseDoFormularioId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)

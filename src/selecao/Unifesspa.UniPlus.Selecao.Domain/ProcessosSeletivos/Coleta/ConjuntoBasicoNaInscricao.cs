@@ -1,42 +1,38 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// No processo com inscrição pelo sistema, o conjunto básico de dados do candidato (UNI-REQ-0151) está em
-/// formulário obrigatório da fase que coleta inscrição, em campo de resposta única, e não em campo de grupo
-/// repetível; o conjunto só em formulário facultativo, ou fora dessa fase, é recusado. O processo de resultado importado não é conferido, e a falta de qualquer
-/// formulário obrigatório na inscrição é recusa da obrigatoriedade, e não desta.
+/// Quem guarda o conjunto básico de dados do candidato (UNI-REQ-0151) quando a inscrição tem mais de um
+/// formulário: cada fato é coletado por um só formulário do processo, e o conjunto fica em um só dos
+/// formulários da inscrição. A falta de dado básico nos formulários da inscrição é recusa da publicação, e não desta regra.
 /// </summary>
 public static class ConjuntoBasicoNaInscricao
 {
-    public static IReadOnlyList<FieldError> Conferir(
-        ProcessoDosFormularios processo, IReadOnlyList<ColetaDoFormulario> coletas, IReadOnlyCollection<FaseCronograma> cronograma)
+    /// <summary>
+    /// O formulário declarado guarda o conjunto básico quando é o formulário da inscrição que já tem algum dado
+    /// básico; se nenhum tem, é o primeiro dos formulários da inscrição, contado o declarado, pela ordem do código.
+    /// </summary>
+    public static bool Guarda(ConfiguracaoDeclarada configuracao, FormularioDeclarado declarado)
     {
-        ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(coletas);
-        ArgumentNullException.ThrowIfNull(cronograma);
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(declarado);
 
-        ColetaDoFormulario[] daInscricao = ObrigatoriasDaInscricao(coletas, cronograma);
-        return processo.InscricaoPeloSistema && daInscricao.Length > 0 && !TemTodoOConjuntoBasico(daInscricao)
-            ? [new FieldError("formularios", new DomainError(
-                FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico,
-                "O conjunto básico de dados do candidato não está todo em formulário obrigatório da fase que coleta inscrição."))]
-            : [];
+        IReadOnlyList<FormularioDeclarado> daInscricao = FormulariosDaInscricao.De(
+            [.. configuracao.Coleta.FormulariosDeclarados.Where(f => f.Codigo != declarado.Codigo), declarado],
+            configuracao.Cronograma.CronogramaFases);
+        if (daInscricao.All(f => f.Codigo != declarado.Codigo))
+        {
+            return false;
+        }
+
+        FormularioDeclarado guardiao = daInscricao.FirstOrDefault(f => TemDadoBasico(configuracao, f)) ?? daInscricao[0];
+        return guardiao.Codigo == declarado.Codigo;
     }
 
-    private static bool TemTodoOConjuntoBasico(ColetaDoFormulario[] coletas)
-    {
-        HashSet<string> coletados = [.. coletas.SelectMany(static coleta => coleta.FatosDosItens)];
-        return ConjuntoBasicoDaInscricao.Fatos.All(coletados.Contains);
-    }
-
-    private static ColetaDoFormulario[] ObrigatoriasDaInscricao(IReadOnlyList<ColetaDoFormulario> coletas, IReadOnlyCollection<FaseCronograma> cronograma)
-    {
-        HashSet<Guid> fasesDeInscricao = [.. cronograma.Where(static fase => fase.ColetaInscricao).Select(static fase => fase.Id)];
-        return [.. coletas.Where(coleta => coleta.Formulario.Obrigatorio && coleta.Formulario.FaseId is { } faseId && fasesDeInscricao.Contains(faseId))];
-    }
+    private static bool TemDadoBasico(ConfiguracaoDeclarada configuracao, FormularioDeclarado declarado) =>
+        configuracao.Coleta.FormularioDe(declarado.Codigo) is { } formulario
+        && configuracao.Coleta.Itens.Any(item => item.FormularioId == formulario.Id && ConjuntoBasicoDaInscricao.Fatos.Contains(item.FatoCodigo));
 }

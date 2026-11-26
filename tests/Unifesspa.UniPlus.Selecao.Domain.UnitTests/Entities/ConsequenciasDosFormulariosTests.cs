@@ -65,7 +65,7 @@ public sealed class ConsequenciasDosFormulariosTests
         FieldError recusa = ConsequenciasDosFormularios.DaInscricao(processo.Declaracao(), Cronograma(processo.Declaracao())).Should().ContainSingle().Subject;
 
         recusa.Error.Code.Should().Be(FormularioProcessoErrorCodes.ConsequenciaEmFormularioDaInscricao);
-        recusa.Field.Should().Be("formularios[1].consequenciaDaFaltaDeEnvio");
+        recusa.Field.Should().Be("formularios[0].consequenciaDaFaltaDeEnvio");
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class ConsequenciasDosFormulariosTests
         ProcessoSeletivo processo = ProcessoCom(FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraOAcrescimo);
 
         ConsequenciasDosFormularios.Acrescimo(processo.Declaracao(), Cronograma(processo.Declaracao())).Should().ContainSingle()
-            .Which.Field.Should().Be("formularios[1].consequenciaDaFaltaDeEnvio");
+            .Which.Field.Should().Be("formularios[0].consequenciaDaFaltaDeEnvio");
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public sealed class ConsequenciasDosFormulariosTests
         ProcessoSeletivo processo = ProcessoCom(FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
 
         ConsequenciasDosFormularios.SemModalidade(processo.Declaracao(), Fatos(processo), Cronograma(processo.Declaracao())).Should().ContainSingle()
-            .Which.Field.Should().Be("formularios[1].consequenciaDaFaltaDeEnvio");
+            .Which.Field.Should().Be("formularios[0].consequenciaDaFaltaDeEnvio");
     }
 
     [Theory]
@@ -139,11 +139,12 @@ public sealed class ConsequenciasDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoCom(FinalidadeFormulario.Habilitacao, ConsequenciaDoDescumprimento.RetiraAModalidade);
         Guid fase = AcrescentarFaseDaHabilitacao(processo);
+        LigarFormularioAFase(processo, FinalidadeFormulario.Habilitacao, fase);
         DocumentoExigido geral = DocumentoGeral(fase, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.Habilitacao);
         processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(geral, 0).Value!]).IsSuccess.Should().BeTrue();
 
         ConsequenciasDosFormularios.SemModalidade(processo.Declaracao(), Fatos(processo), Cronograma(processo.Declaracao())).Should().ContainSingle()
-            .Which.Field.Should().Be("formularios[1].consequenciaDaFaltaDeEnvio");
+            .Which.Field.Should().Be("formularios[0].consequenciaDaFaltaDeEnvio");
     }
 
     [Fact]
@@ -193,8 +194,8 @@ public sealed class ConsequenciasDosFormulariosTests
             .IsSuccess.Should().BeTrue();
 
         Causas(processo.Declaracao(), processo).Select(static c => (c.Field, c.Error.Code)).Should().Equal(
-            ("formularios[1].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo),
-            ("formularios[2].consequenciaDaFaltaDeEnvio", "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao"));
+            ("formularios[2].consequenciaDaFaltaDeEnvio", FormularioProcessoErrorCodes.ConsequenciaEmFormularioFacultativo),
+            ("formularios[0].consequenciaDaFaltaDeEnvio", "ConsequenciasDoDescumprimento.SemModalidadeEmQuestao"));
     }
 
     [Fact]
@@ -208,9 +209,9 @@ public sealed class ConsequenciasDosFormulariosTests
             .IsSuccess.Should().BeTrue();
 
         Causas(processo.Declaracao(), processo).Select(static c => c.Field).Should().Equal(
+            "formularios[2].consequenciaDaFaltaDeEnvio",
             "formularios[1].consequenciaDaFaltaDeEnvio",
-            "formularios[0].consequenciaDaFaltaDeEnvio",
-            "formularios[2].consequenciaDaFaltaDeEnvio");
+            "formularios[0].consequenciaDaFaltaDeEnvio");
     }
 
     [Fact]

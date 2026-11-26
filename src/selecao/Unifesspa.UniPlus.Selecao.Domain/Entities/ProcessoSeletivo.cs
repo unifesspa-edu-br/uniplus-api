@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -333,14 +334,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Define o formulário de uma finalidade; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
     public Result DefinirFormulario(
         FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas,
-        IReadOnlyList<FatoColetado>? itensDaCriacao = null, ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null)
-    {
-        ArgumentNullException.ThrowIfNull(paginas);
-
-        return Editar(
-            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), finalidade, faseId, titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio),
-            Aplicar);
-    }
+        IReadOnlyList<FatoColetado>? itensDaCriacao = null, ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null) =>
+        DefinirFormulario(FormularioDeclarado.DaFinalidade(finalidade, faseId), titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio);
 
     /// <summary>Define o formulário do código declarado; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
     public Result DefinirFormulario(
@@ -348,19 +343,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IReadOnlyList<FatoColetado>? itensDaCriacao = null, ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null)
     {
         ArgumentNullException.ThrowIfNull(declarado);
+        ArgumentNullException.ThrowIfNull(paginas);
 
-        return DefinirFormulario(declarado.FinalidadeProvisoria, declarado.FaseId, titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio);
+        return Editar(
+            () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), declarado, titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio),
+            Aplicar);
     }
 
     public Result RemoverFormulario(FinalidadeFormulario finalidade) =>
-        Editar(() => RegrasDosFormularios.PlanejarRemocao(Declaracao(), finalidade), AplicarMudanca);
+        RemoverFormulario(CodigoDaFinalidade(finalidade));
 
     /// <summary>Remove o formulário do código, com os itens e os termos dele.</summary>
     public Result RemoverFormulario(CodigoDoFormulario codigo)
     {
         ArgumentNullException.ThrowIfNull(codigo);
 
-        return FinalidadeDoFormularioExistente(codigo) is { } finalidade ? RemoverFormulario(finalidade) : SemFormulario(codigo);
+        return Editar(() => RegrasDosFormularios.PlanejarRemocao(Declaracao(), codigo), AplicarMudanca);
     }
 
     public Result AplicarModeloDeFormulario(CopiaDeModeloDeFormulario copia)
@@ -371,33 +369,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     public Result DefinirTermosDoFormulario(
-        FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
-    {
-        ArgumentNullException.ThrowIfNull(termos);
-
-        return Editar(
-            () => RegrasDosFormularios.PlanejarTermos(Declaracao(), finalidade, termos),
-            AplicarMudanca);
-    }
+        FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos) =>
+        DefinirTermosDoFormulario(CodigoDaFinalidade(finalidade), termos);
 
     /// <summary>Substitui os termos exigidos pelo formulário do código.</summary>
     public Result DefinirTermosDoFormulario(CodigoDoFormulario codigo, IReadOnlyList<TermoExigidoFormulario> termos)
     {
         ArgumentNullException.ThrowIfNull(codigo);
+        ArgumentNullException.ThrowIfNull(termos);
 
-        return FinalidadeDoFormularioExistente(codigo) is { } finalidade ? DefinirTermosDoFormulario(finalidade, termos) : SemFormulario(codigo);
+        return Editar(() => RegrasDosFormularios.PlanejarTermos(Declaracao(), codigo, termos), AplicarMudanca);
     }
 
     /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
     public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
         _formularios.FirstOrDefault(f => f.Finalidade == finalidade);
 
-    // Provisório até a retirada da finalidade: o planejamento das operações por código ainda recebe a finalidade do formulário existente.
-    private FinalidadeFormulario? FinalidadeDoFormularioExistente(CodigoDoFormulario codigo) =>
-        _formularios.FirstOrDefault(f => f.Codigo == codigo)?.Finalidade;
+    /// <summary>O formulário do código, quando o processo o tem.</summary>
+    public FormularioProcesso? FormularioDe(CodigoDoFormulario codigo) =>
+        _formularios.FirstOrDefault(f => f.Codigo == codigo);
 
-    private Result SemFormulario(CodigoDoFormulario codigo) =>
-        Editar(() => Result<MudancaDaConfiguracao>.Failure(RegrasDosFormularios.FormularioInexistente(codigo)), AplicarMudanca);
+    // Provisório até a retirada da finalidade: a operação que ainda recebe a finalidade fala do formulário pelo código dela.
+    private static CodigoDoFormulario CodigoDaFinalidade(FinalidadeFormulario finalidade) =>
+        CodigoDoFormulario.Criar(finalidade.Codigo()).Value!;
 
     /// <summary>Substitui o cronograma. O grafo de precedências é parâmetro: o domínio não consulta a Configuração.</summary>
     public Result DefinirCronogramaFases(
@@ -423,24 +417,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui os itens do formulário de uma finalidade — quais fatos ele coleta, em que ordem e sob
-    /// qual pré-condição cada campo aparece — sem mexer nos dos outros formulários. Sem grupos
-    /// informados, os do formulário ficam como estão; a lista vazia os remove. Editável só em rascunho.
+    /// Substitui os itens do formulário de uma finalidade, com as mesmas regras de
+    /// <see cref="DefinirFatosColetados(CodigoDoFormulario, IReadOnlyList{FatoColetado}, IReadOnlyList{GrupoColetado}?)"/>.
     /// </summary>
     public Result DefinirFatosColetados(
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetado> fatosColetados,
-        IReadOnlyList<GrupoColetado>? grupos = null)
-    {
-        ArgumentNullException.ThrowIfNull(fatosColetados);
-
-        return Editar(
-            () => RegrasDaColeta.Planejar(Declaracao(), finalidade, fatosColetados, grupos),
-            AplicarMudanca);
-    }
+        IReadOnlyList<GrupoColetado>? grupos = null) =>
+        DefinirFatosColetados(CodigoDaFinalidade(finalidade), fatosColetados, grupos);
 
     /// <summary>
-    /// Substitui os itens do formulário do código, com as mesmas regras de <see cref="DefinirFatosColetados(FinalidadeFormulario, IReadOnlyList{FatoColetado}, IReadOnlyList{GrupoColetado}?)"/>.
+    /// Substitui os itens do formulário do código — quais fatos ele coleta, em que ordem e sob qual
+    /// pré-condição cada campo aparece — sem mexer nos dos outros formulários. Sem grupos informados, os do
+    /// formulário ficam como estão; a lista vazia os remove. Editável só em rascunho.
     /// </summary>
     public Result DefinirFatosColetados(
         CodigoDoFormulario codigo,
@@ -448,8 +437,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ArgumentNullException.ThrowIfNull(codigo);
+        ArgumentNullException.ThrowIfNull(fatosColetados);
 
-        return FinalidadeDoFormularioExistente(codigo) is { } finalidade ? DefinirFatosColetados(finalidade, fatosColetados, grupos) : SemFormulario(codigo);
+        return Editar(() => RegrasDaColeta.Planejar(Declaracao(), codigo, fatosColetados, grupos), AplicarMudanca);
     }
 
     /// <summary>Refaz a cópia dos itens, a das unidades das fases, a proteção das exigências e os nomes dos municípios de prova vindos do Geo, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>

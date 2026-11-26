@@ -156,7 +156,7 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 
     /// <summary>Indica se o item é solicitado a todo candidato que responde o formulário.</summary>
     internal bool PedeATodoCandidato(FatoColetado item) =>
-        item.Finalidade == Finalidade && item.GrupoColetadoId is null && item.SemPrecondicao && item.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre
+        item.FormularioId == Id && item.GrupoColetadoId is null && item.SemPrecondicao && item.Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre
         && !_paginas.Any(e => string.Equals(e.Codigo, item.PaginaCodigo, StringComparison.Ordinal) && e.Exibicao is not null);
 
     /// <summary>O formulário no que as regras de alcance e de código conferem.</summary>
@@ -172,9 +172,10 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
     public void DeclararConsequenciaDaFaltaDeEnvio(ConsequenciaDoDescumprimento? consequencia) =>
         ConsequenciaDaFaltaDeEnvio = consequencia;
 
-    /// <summary>Substitui o conteúdo por outro formulário já validado da mesma finalidade.</summary>
+    /// <summary>Substitui o conteúdo por outro formulário já validado do mesmo código.</summary>
     internal void Substituir(FormularioProcesso outro)
     {
+        Obrigatorio = outro.Obrigatorio;
         FaseId = outro.FaseId;
         Titulo = outro.Titulo;
         ConsequenciaDaFaltaDeEnvio = outro.ConsequenciaDaFaltaDeEnvio;
@@ -276,8 +277,11 @@ public static class FormularioProcessoErrorCodes
     /// <summary>Formulário de isenção num processo que não cobra taxa.</summary>
     public const string IsencaoSemTaxa = "FormularioProcesso.IsencaoSemTaxa";
 
-    /// <summary>Item ou termo para finalidade sem formulário.</summary>
+    /// <summary>A aplicação de modelo cita um código de formulário que o processo não tem.</summary>
     public const string FormularioInexistente = "FormularioProcesso.FormularioInexistente";
+
+    /// <summary>A remoção, os itens ou os termos citam, no caminho, um código de formulário que o processo não tem.</summary>
+    public const string NaoEncontrado = "FormularioProcesso.NaoEncontrado";
 
     /// <summary>Processo com inscrição própria publicado sem formulário de inscrição.</summary>
     public const string InscricaoSemFormulario = "ProcessoSeletivo.InscricaoSemFormulario";

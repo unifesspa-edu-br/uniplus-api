@@ -81,7 +81,7 @@ internal sealed record ViolacaoDeRegra(
             static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Paginas])]),
         [nameof(ProcessoSeletivo.DefinirTermosDoFormulario)] = new(
             p => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, []),
-            FormularioProcessoErrorCodes.FormularioInexistente,
+            FormularioProcessoErrorCodes.NaoEncontrado,
             static p => [.. p.TermosExigidos]),
         [nameof(ProcessoSeletivo.DefinirCronogramaFases)] = new(
             p => p.DefinirCronogramaFases([ProcessoConformeFactory.FaseConforme(), ProcessoConformeFactory.FaseConforme()], []),
@@ -93,7 +93,7 @@ internal sealed record ViolacaoDeRegra(
             static p => [.. p.RegrasDeComprovacao]),
         [nameof(ProcessoSeletivo.DefinirFatosColetados)] = new(
             p => p.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, []),
-            FormularioProcessoErrorCodes.FormularioInexistente,
+            FormularioProcessoErrorCodes.NaoEncontrado,
             static p => [.. p.Campos]),
         [nameof(ProcessoSeletivo.DefinirRegrasDerivacao)] = new(
             p => p.DefinirRegrasDerivacao([Derivado("D1"), Derivado("D1")]),

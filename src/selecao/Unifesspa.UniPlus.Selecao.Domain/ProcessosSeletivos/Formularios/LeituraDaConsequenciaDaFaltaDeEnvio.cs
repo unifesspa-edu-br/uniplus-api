@@ -14,8 +14,14 @@ public static class LeituraDaConsequenciaDaFaltaDeEnvio
 {
     public const string Campo = "consequenciaDaFaltaDeEnvio";
 
-    public static Result<ConsequenciaDoDescumprimento?> Ler(string? codigo, FinalidadeFormulario finalidade)
+    // Provisório até a retirada da finalidade: quem ainda declara o formulário pela finalidade lê com o código dela.
+    public static Result<ConsequenciaDoDescumprimento?> Ler(string? codigo, FinalidadeFormulario finalidade) =>
+        Ler(codigo, CodigoDoFormulario.Criar(finalidade.Codigo()).Value!);
+
+    public static Result<ConsequenciaDoDescumprimento?> Ler(string? codigo, CodigoDoFormulario formulario)
     {
+        ArgumentNullException.ThrowIfNull(formulario);
+
         if (codigo is null)
         {
             return Result<ConsequenciaDoDescumprimento?>.Success(null);
@@ -25,6 +31,6 @@ public static class LeituraDaConsequenciaDaFaltaDeEnvio
             ? Result<ConsequenciaDoDescumprimento?>.Success(valor)
             : Result<ConsequenciaDoDescumprimento?>.ValidationFailure([new(Campo, new DomainError(
                 FormularioProcessoErrorCodes.ConsequenciaDaFaltaDeEnvioInvalida,
-                $"A consequência da falta de envio do formulário '{finalidade.Codigo()}' não é uma opção conhecida."))]);
+                $"A consequência da falta de envio do formulário '{formulario.Valor}' não é uma opção conhecida."))]);
     }
 }
