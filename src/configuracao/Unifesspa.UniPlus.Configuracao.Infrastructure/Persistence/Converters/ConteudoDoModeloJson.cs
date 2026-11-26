@@ -164,9 +164,12 @@ internal static class ConteudoDoModeloJson
     /// Remonta o conteúdo gravado. O documento só é escrito por <see cref="Serializar"/>, sobre um
     /// modelo que passou pelas regras; uma forma que não remonta é dado corrompido, e por isso lança.
     /// </summary>
-    public static ConteudoDoModelo Desserializar(string json)
+    public static ConteudoDoModelo Desserializar(string json) =>
+        DesserializarDocumento(() => Remontar(json), nameof(ConteudoDoModelo));
+
+    private static ConteudoDoModelo Remontar(string json)
     {
-        using JsonDocument documento = DesserializarDocumento(() => JsonDocument.Parse(json), nameof(ConteudoDoModelo));
+        using JsonDocument documento = JsonDocument.Parse(json);
         JsonElement elementoPrincipal = documento.RootElement;
         return new ConteudoDoModelo(
             Texto(elementoPrincipal, "titulo"),

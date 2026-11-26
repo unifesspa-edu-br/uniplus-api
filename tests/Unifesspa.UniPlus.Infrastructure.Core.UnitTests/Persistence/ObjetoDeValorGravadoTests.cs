@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Persistence;
 
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -10,6 +12,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ObjetoDeValorGravadoTests
 {
+    private const string Marcador = "valor-gravado-ficticio-7f3a";
+
+    private const string OrientacaoDaMensagem = "Verifique se houve alteração manual da coluna fora do fluxo da aplicação.";
+
     [Fact(DisplayName = "A leitura devolve a mesma instância de um valor válido")]
     public void Reidratar_ClasseValida_DevolveAMesmaInstancia()
     {
@@ -64,6 +70,45 @@ public sealed class ObjetoDeValorGravadoTests
             () => JsonDocument.Parse(json), "Valor")).Should().Throw<InvalidOperationException>().Which;
         erro.Message.Should().Be("Dado inválido no banco ao reidratar Valor: documento JSON inválido. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
         erro.Message.Should().NotContain("valor-gravado-ficticio-7f3a");
+        erro.InnerException.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Texto fora do formato não expõe o valor lido nem carrega a causa")]
+    public void DesserializarDocumento_FormatoInvalido_OcultaConteudoECausa()
+    {
+        Func<DateOnly> conversao = () => DateOnly.ParseExact(Marcador, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        InvalidOperationException erro = FluentActions.Invoking(() => ObjetoDeValorGravado.DesserializarDocumento(conversao, "Valor"))
+            .Should().Throw<InvalidOperationException>().Which;
+
+        erro.Message.Should().Be($"Dado inválido no banco ao reidratar Valor: valor fora do formato esperado. {OrientacaoDaMensagem}");
+        erro.Message.Should().NotContain(Marcador);
+        erro.InnerException.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Bytes de JSON malformado não expõem o documento nem carregam a causa")]
+    public void DesserializarDocumento_BytesDeJsonMalformado_OcultaConteudoECausa()
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes($"{{\"{Marcador}\":");
+
+        RecusarBytes(bytes);
+    }
+
+    [Fact(DisplayName = "Bytes que não são UTF-8 válido não expõem o documento nem carregam a causa")]
+    public void DesserializarDocumento_BytesUtf8Invalidos_OcultaConteudoECausa()
+    {
+        byte[] bytes = [.. Encoding.UTF8.GetBytes($"\"{Marcador}"), 0xFF, 0xFE, (byte)'"'];
+
+        RecusarBytes(bytes);
+    }
+
+    private static void RecusarBytes(byte[] bytes)
+    {
+        InvalidOperationException erro = FluentActions.Invoking(() => ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<string>(bytes), "Valor")).Should().Throw<InvalidOperationException>().Which;
+
+        erro.Message.Should().Be($"Dado inválido no banco ao reidratar Valor: documento JSON inválido. {OrientacaoDaMensagem}");
+        erro.Message.Should().NotContain(Marcador);
         erro.InnerException.Should().BeNull();
     }
 
