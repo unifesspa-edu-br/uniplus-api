@@ -18404,7 +18404,7 @@
         "UNI-REQ-0019"
       ],
       "oQueAconteceu": [
-        "Cada versão do formato da configuração publicada usa um algoritmo próprio para o hash. Ao conferir o hash da versão, a leitura é recusada quando o algoritmo registrado é diferente do esperado para o formato; a mensagem informa ambos.",
+        "Cada versão do formato da configuração publicada usa um algoritmo próprio para o hash. Ao conferir o hash da versão, a leitura é recusada quando o algoritmo registrado é diferente do esperado para o formato; a mensagem informa que o algoritmo não é suportado.",
         "Sem o algoritmo correto, não é possível conferir o hash e demonstrar a integridade da configuração publicada."
       ],
       "comoResolver": [
@@ -18503,7 +18503,7 @@
       ],
       "oQueAconteceu": [
         "Ao publicar um processo seletivo, o sistema guarda sua configuração junto da versão do formato usada. Esta recusa indica que o sistema atual não conhece essa versão e não consegue recuperar a configuração.",
-        "Isso pode ocorrer após uma atualização do formato. A mensagem informa a versão encontrada (por exemplo, `0.0.33`) e a consequência para a operação solicitada. O sistema recusa a leitura antes de a operação em curso, como retificar ou conferir os dados coletados, prosseguir, para evitar apresentar uma configuração diferente da publicada."
+        "Isso pode ocorrer após uma atualização do formato. A mensagem informa que a versão do formato não é reconhecida. O sistema recusa a leitura antes de a operação em curso, como retificar ou conferir os dados coletados, prosseguir, para evitar apresentar uma configuração diferente da publicada."
       ],
       "comoResolver": [
         "Acione o suporte, informando o `instance` e o `traceId` do ProblemDetails recebido. O processo foi congelado por uma versão do formato que o sistema não lê mais, e nada que se edite na tela muda isso: a leitura desse processo depende da equipe responsável pelo sistema. Com o suporte acionado, o processo permanece como estava, sem alteração, até a análise."

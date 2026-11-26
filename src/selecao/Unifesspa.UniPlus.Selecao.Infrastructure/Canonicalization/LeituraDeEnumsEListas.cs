@@ -57,7 +57,7 @@ internal static class LeituraDeEnumsEListas
     /// <c>valoresDominio</c>) é um <b>código que não diz nada</b>; um item com espaços nas
     /// pontas (<c>" PCD "</c>) é pior: ele é um código que <b>ninguém reconhece</b>. Os dois
     /// entram no jsonb, fazem round-trip perfeito (o encoder reemite o array item a item,
-    /// verbatim) e viram valores que o motor teria de avaliar por <b>comparação exata</b>. O
+    /// verbatim) e viram valores que a classificação dos candidatos teria de avaliar por <b>comparação exata</b>. O
     /// cadastro nunca os produz, porque normaliza o que grava.
     /// </para>
     /// <para>

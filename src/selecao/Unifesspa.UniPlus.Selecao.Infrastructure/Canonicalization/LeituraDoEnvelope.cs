@@ -162,7 +162,7 @@ internal static class LeituraDoEnvelope
 
         return duplicados.Count > 0
             ? leitor.Recusar<Dictionary<Guid, DocumentoExigido>>(
-                $"'documentosExigidos.exigencias': o exigenciaId '{duplicados[0]}' aparece mais de uma vez.") ?? []
+                "'documentosExigidos.exigencias': um identificador de exigência aparece mais de uma vez.") ?? []
             : documentosExigidos.ToDictionary(static d => d.Id);
     }
 }

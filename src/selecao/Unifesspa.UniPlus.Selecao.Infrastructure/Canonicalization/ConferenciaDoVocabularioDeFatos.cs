@@ -56,12 +56,12 @@ internal static class ConferenciaDoVocabularioDeFatos
         {
             if (!coletados.Add(fato.FatoCodigo))
             {
-                return Malformado($"'dadosDosFormularios': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
+                return Malformado("'dadosDosFormularios': um fato aparece mais de uma vez.");
             }
 
             if (!ordens.Add((fato.Finalidade, fato.Ordem)))
             {
-                return Malformado($"'dadosDosFormularios': a ordem {fato.Ordem} é usada por mais de um fato do mesmo formulário.");
+                return Malformado("'dadosDosFormularios': a mesma ordem é usada por mais de um fato do formulário.");
             }
         }
 
@@ -76,12 +76,12 @@ internal static class ConferenciaDoVocabularioDeFatos
     {
         if (!codigosDeGrupo.Add(grupo.Codigo))
         {
-            return Malformado($"'gruposDosFormularios': o código '{grupo.Codigo}' aparece em mais de um grupo.");
+            return Malformado("'gruposDosFormularios': o mesmo código aparece em mais de um grupo.");
         }
 
         if (!ordens.Add((grupo.Finalidade, grupo.Ordem)))
         {
-            return Malformado($"'gruposDosFormularios': a ordem {grupo.Ordem} é usada por mais de um item ou grupo do mesmo formulário.");
+            return Malformado("'gruposDosFormularios': a mesma ordem é usada por mais de um item ou grupo do formulário.");
         }
 
         return ConferirCamposDoGrupo(grupo, coletados);
@@ -105,11 +105,11 @@ internal static class ConferenciaDoVocabularioDeFatos
     {
         if (!coletados.Add(campo.FatoCodigo))
         {
-            return Malformado($"'gruposDosFormularios': o fato '{campo.FatoCodigo}' aparece mais de uma vez.");
+            return Malformado("'gruposDosFormularios': um fato aparece mais de uma vez.");
         }
 
         return !ordens.Add(campo.Ordem)
-            ? Malformado($"'gruposDosFormularios': a ordem {campo.Ordem} é usada por mais de um campo do grupo '{grupo.Codigo}'.")
+            ? Malformado("'gruposDosFormularios': a mesma ordem é usada por mais de um campo do grupo.")
             : null;
     }
 
@@ -139,13 +139,13 @@ internal static class ConferenciaDoVocabularioDeFatos
     {
         if (!derivados.Add(config.CodigoFato))
         {
-            return Malformado($"'calculosDosDados': o fato '{config.CodigoFato}' tem mais de uma configuração de derivação.");
+            return Malformado("'calculosDosDados': um fato tem mais de uma configuração de derivação.");
         }
 
         // A modalidade do candidato e a opção pelas cotas saem da oferta, e o encoder não as grava.
         if (DerivacoesDaOferta.Deriva(config.CodigoFato))
         {
-            return Malformado($"'calculosDosDados': o fato '{config.CodigoFato}' é derivado da oferta de vagas, e não se grava.");
+            return Malformado("'calculosDosDados': um fato derivado da oferta de vagas não pode ser gravado.");
         }
 
         return ConferirColisaoDoDerivado(config.CodigoFato, coletados, codigosDeGrupo);
@@ -173,7 +173,7 @@ internal static class ConferenciaDoVocabularioDeFatos
             if (ausente is not null)
             {
                 return Malformado(
-                    $"'calculosDosDados': a derivação de '{config.CodigoFato}' cita '{ausente.Fato}', que o processo não coleta nem deriva.");
+                    "'calculosDosDados': a derivação cita um fato que o processo não coleta nem deriva.");
             }
         }
 

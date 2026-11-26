@@ -41,7 +41,7 @@ internal static class LeituraDosTiposDeAto
             TipoDeAtoCongelado? tipo = LerTipoDeAto(leitor, leitor.ItemObjeto(array, indice, "tiposDeAto"), $"tiposDeAto[{indice}]");
             if (tipo is not null && !tipos.TryAdd(tipo.Codigo, tipo))
             {
-                leitor.Recusar<object>($"Envelope malformado em 'tiposDeAto': o tipo '{tipo.Codigo}' aparece mais de uma vez.");
+                leitor.Recusar<object>("Envelope malformado em 'tiposDeAto': um tipo aparece mais de uma vez.");
             }
         }
     }
@@ -55,7 +55,7 @@ internal static class LeituraDosTiposDeAto
         if (!leitor.Falhou && AtoDeclaradoSemClassificacao(cronogramaFases, etapas, tipos) is { } semClassificacao)
         {
             leitor.Recusar<object>(
-                $"Envelope malformado em 'tiposDeAto': o tipo '{semClassificacao}', declarado no cronograma, não tem classificação congelada.");
+                "Envelope malformado em 'tiposDeAto': um tipo declarado no cronograma não tem classificação congelada.");
         }
     }
 

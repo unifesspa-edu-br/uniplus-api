@@ -50,7 +50,7 @@ internal static class LeituraDosFatosDerivados
             return true;
         }
 
-        leitor.Recusar<object>($"Envelope malformado em 'dadosCalculados': o fato '{fato.Codigo}' aparece mais de uma vez.");
+        leitor.Recusar<object>("Envelope malformado em 'dadosCalculados': um fato aparece mais de uma vez.");
         return false;
     }
 

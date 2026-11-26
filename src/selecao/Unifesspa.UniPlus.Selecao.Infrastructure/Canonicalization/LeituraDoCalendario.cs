@@ -136,7 +136,7 @@ internal static class LeituraDoCalendario
         Result<DiaNaoUtilCongelado> dia = DiaNaoUtilCongelado.Criar(data, abrangencia, municipioIbge, municipioNome, uf);
         if (dia.IsFailure)
         {
-            return leitor.Recusar<DiaNaoUtilCongelado?>($"'{path}' congelado não é um dia não útil válido: {dia.Error!.Message}");
+            return leitor.Recusar<DiaNaoUtilCongelado?>($"'{path}' congelado não é um dia não útil válido.");
         }
 
         // A factory normaliza (apara espaço e sobe a UF), porque é o caminho de escrita. Aqui isso aceitaria
@@ -167,7 +167,7 @@ internal static class LeituraDoCalendario
         Result<CalendarioDiasUteisCongelado> calendario = CalendarioDiasUteisCongelado.Criar(origemId, versaoDoCalendario, congelados);
         if (calendario.IsFailure)
         {
-            return leitor.Recusar<CalendarioDiasUteisCongelado?>($"'calendarioDiasUteis' congelado é inválido: {calendario.Error!.Message}");
+            return leitor.Recusar<CalendarioDiasUteisCongelado?>("'calendarioDiasUteis' deve ter identificador de origem, versão de até 60 caracteres e ao menos um dia não útil, sem repetir data, abrangência e território.");
         }
 
         // Mesma razão da conferência por dia: a factory apara espaço da versão.
@@ -290,13 +290,13 @@ internal static class LeituraDoCalendario
         Result<LocalidadeRegente> localidade = LocalidadeRegente.Criar(codigoIbge, nome, uf);
         if (localidade.IsFailure)
         {
-            leitor.Recusar<object>($"'localidade' congelada não é uma referência de cidade válida: {localidade.Error!.Message}");
+            leitor.Recusar<object>("'localidade' deve ter nome de cidade válido, código IBGE de sete dígitos e UF correspondente ao prefixo do código.");
             return (null, null);
         }
 
         if (!TimeZoneInfo.TryFindSystemTimeZoneById(fusoHorario, out _))
         {
-            leitor.Recusar<object>($"'localidade.fusoHorario' congelado ('{fusoHorario}') não é uma zona reconhecida por este ambiente.");
+            leitor.Recusar<object>("'localidade.fusoHorario' congelado deve ser uma zona de fuso horário reconhecida por este ambiente.");
             return (null, null);
         }
 

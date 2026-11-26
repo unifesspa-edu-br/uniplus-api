@@ -58,11 +58,15 @@ public sealed class ChaveDaEtapaNoEnvelopeTests
     [Fact]
     public void Leitura_ChaveRepetida_Recusa()
     {
+        const string valor = "chave_exemplo_repetida";
         JsonObject gravada = EtapaGravada();
+        gravada["chave"] = valor;
         LeitorEnvelope leitor = new();
         Ler(leitor, gravada, (JsonObject)gravada.DeepClone());
 
         leitor.Falhou.Should().BeTrue();
-        leitor.Erro.Message.Should().Contain("etapa_prova_2");
+        leitor.Erro.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
+        leitor.Erro.Message.Should().Contain("etapas").And.Contain("a chave aparece mais de uma vez").And.NotContain(valor);
+        leitor.Falha<object>().Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 }

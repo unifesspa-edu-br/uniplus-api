@@ -260,7 +260,7 @@ internal static class LeituraDoEdital
             return true;
         }
 
-        leitor.Recusar<object>($"Envelope malformado em 'dadosCitadosSemPergunta': o fato '{fato.FatoCodigo}' aparece mais de uma vez.");
+        leitor.Recusar<object>("Envelope malformado em 'dadosCitadosSemPergunta': um fato aparece mais de uma vez.");
         return false;
     }
 

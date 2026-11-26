@@ -87,11 +87,11 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         {
             return ComoObjeto(JsonNode.Parse(bytes, nodeOptions: null, OpcoesDocumento));
         }
-        catch (JsonException excecao)
+        catch (JsonException)
         {
             return Falha(
                 ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}");
+                "Os bytes congelados devem ser um JSON válido e sem chaves duplicadas.");
         }
     }
 
@@ -106,11 +106,11 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         {
             return ConferirIgualdade(perfil.Serializar(payload), bytes);
         }
-        catch (PayloadForaDoPerfilCanonicoException excecao)
+        catch (PayloadForaDoPerfilCanonicoException)
         {
             return new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}");
+                "Os bytes congelados contêm dados que o perfil canônico não representa.");
         }
     }
 
@@ -143,7 +143,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         LeAVersao(versao.SchemaVersion)
             ? ConferirEvidencia(versao)
             : new DomainError(ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope não é reconhecida.");
+                "A versão do envelope não é reconhecida.");
 
     private static DomainError? ConferirEvidencia(VersaoConfiguracao versao)
     {
@@ -151,7 +151,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
         if (!string.Equals(versao.AlgoritmoHash, perfil.Algoritmo, StringComparison.Ordinal))
         {
             return new DomainError(ErrosCodecEnvelope.AlgoritmoNaoSuportado,
-                $"A versão de configuração declara o algoritmo '{versao.AlgoritmoHash}', mas o esperado é '{perfil.Algoritmo}'.");
+                "A versão de configuração declara um algoritmo de hash não suportado.");
         }
 
         return string.Equals(perfil.HashHex(versao.ConfiguracaoCongeladaCanonica), versao.HashConfiguracao, StringComparison.Ordinal)
