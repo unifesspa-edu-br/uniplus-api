@@ -36,45 +36,44 @@ public sealed record GrupoAreaEnemSnapshot
 
     public static Result<GrupoAreaEnemSnapshot> Criar(string? codigo, string? rotulo)
     {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Falha("GrupoAreaEnemSnapshot.CodigoObrigatorio", "Código do grupo de área do ENEM é obrigatório.");
-        }
-
-        if (string.IsNullOrWhiteSpace(rotulo))
-        {
-            return Falha("GrupoAreaEnemSnapshot.RotuloObrigatorio", "Rótulo do grupo de área do ENEM é obrigatório.");
-        }
-
-        // Código e rótulo entram no envelope canônico em NFC. A normalização na fronteira de
-        // congelamento evita que o mesmo texto, em forma decomposta, vire outro valor depois
-        // de um ciclo de retificação. O código vindo do cadastro é ASCII, mas este tipo também
-        // recebe o que o decodificador leu do envelope, e ali nada garante a forma.
-        string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
-        string? rotuloNormalizado = TextoCongelado.Normalizar(rotulo);
-
-        // Defesa de decode: um envelope adulterado não pode injetar nulo, controle ou formatação e só falhar
-        // depois, na constraint do Postgres.
-        if (codigoNormalizado is null || rotuloNormalizado is null
-            || TextoCongelado.TemCaractereInvalido(codigoNormalizado) || TextoCongelado.TemCaractereInvalido(rotuloNormalizado))
-        {
-            return Falha(
-                "GrupoAreaEnemSnapshot.CaractereInvalido",
-                "Grupo de área do ENEM não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
-        }
-
-        if (codigoNormalizado.Length > CodigoMaxLength || rotuloNormalizado.Length > RotuloMaxLength)
-        {
-            return Falha(
-                "GrupoAreaEnemSnapshot.TamanhoInvalido",
-                $"Grupo de área do ENEM excede o tamanho permitido (código até {CodigoMaxLength} e rótulo até {RotuloMaxLength} caracteres).");
-        }
-
-        return Result<GrupoAreaEnemSnapshot>.Success(new GrupoAreaEnemSnapshot(codigoNormalizado, rotuloNormalizado));
+        SituacaoDoTexto? situacaoCodigo = SituacaoDoCampo(codigo, CodigoMaxLength, out string codigoCongelado);
+        SituacaoDoTexto? situacaoRotulo = SituacaoDoCampo(rotulo, RotuloMaxLength, out string rotuloCongelado);
+        DomainError? recusa = RecusaDoGrupo(situacaoCodigo, situacaoRotulo);
+        return recusa is not null
+            ? Result<GrupoAreaEnemSnapshot>.Failure(recusa)
+            : Result<GrupoAreaEnemSnapshot>.Success(new GrupoAreaEnemSnapshot(codigoCongelado, rotuloCongelado));
     }
 
     public override string ToString() => Codigo;
 
-    private static Result<GrupoAreaEnemSnapshot> Falha(string code, string message) =>
-        Result<GrupoAreaEnemSnapshot>.Failure(new DomainError(code, message));
+    private static SituacaoDoTexto? SituacaoDoCampo(string? texto, int tamanhoMaximo, out string congelado)
+    {
+        congelado = string.Empty;
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return null;
+        }
+        // NFC no envelope evita mudanças após retificação; o texto decodificado pode não estar nessa forma.
+        string? normalizado = TextoCongelado.Normalizar(texto);
+        // Defesa contra envelope adulterado antes da constraint do Postgres.
+        if (normalizado is null || TextoCongelado.TemCaractereInvalido(normalizado))
+        {
+            return SituacaoDoTexto.CaractereInvalido;
+        }
+        congelado = normalizado;
+        return congelado.Length > tamanhoMaximo ? SituacaoDoTexto.TamanhoExcedido : SituacaoDoTexto.Valido;
+    }
+
+    private static DomainError? RecusaDoGrupo(SituacaoDoTexto? codigo, SituacaoDoTexto? rotulo) => (codigo, rotulo) switch
+    {
+        (null, _) => new("GrupoAreaEnemSnapshot.CodigoObrigatorio", "Código do grupo de área do ENEM é obrigatório."),
+        (_, null) => new("GrupoAreaEnemSnapshot.RotuloObrigatorio", "Rótulo do grupo de área do ENEM é obrigatório."),
+        (SituacaoDoTexto.CaractereInvalido, _) or (_, SituacaoDoTexto.CaractereInvalido) => new(
+            "GrupoAreaEnemSnapshot.CaractereInvalido",
+            "Grupo de área do ENEM não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto."),
+        (SituacaoDoTexto.TamanhoExcedido, _) or (_, SituacaoDoTexto.TamanhoExcedido) => new(
+            "GrupoAreaEnemSnapshot.TamanhoInvalido",
+            $"Grupo de área do ENEM excede o tamanho permitido (código até {CodigoMaxLength} e rótulo até {RotuloMaxLength} caracteres)."),
+        _ => null,
+    };
 }
