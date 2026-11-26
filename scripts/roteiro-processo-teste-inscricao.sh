@@ -1154,8 +1154,7 @@ definir_documentos_exigidos() {
     # O PUT substitui todas as regras: os documentos que o modelo de inscrição trouxer voltam na
     # entrada, com a base legal resolvida — o modelo a deixa pendente até o CEPS indicar a norma, e
     # a publicação a exige resolvida. O modelo sem prova não traz nenhum.
-    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '
-    def codigo: if type == "object" then .codigo else . end;
+    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" "$JQ_CODIGO"'
     def referencia: if . == null then null else {tipo: (.tipo | codigo), data, faseId} end;
     [(.regrasDeComprovacao // [])[] | {
         forma: "DOCUMENTO",

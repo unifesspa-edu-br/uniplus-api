@@ -30,6 +30,9 @@
 
 REPRESENTANTES="${REPRESENTANTES:-betina.neves caroline.jesus}"
 SENHA_REPRESENTANTES="${SENHA_REPRESENTANTES:-$ADMIN_PASS}"
+# Campo de vocabulário fechado: a API devolve {codigo, rotulo}, e o corpo das entradas pede só o código em texto.
+# Definição para os filtros do jq, também usada pelo roteiro do processo de teste.
+JQ_CODIGO='def codigo: if type == "object" then .codigo else . end;'
 PERFIL_REPRESENTANTE_ID="019a0000-0000-7000-8000-000000000002"
 PDF_DE_DESIGNACAO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf"
 
@@ -167,8 +170,8 @@ itens_da_protecao() {
 decidir_item_da_protecao() {
     local item="$1" token="$2"
     como "a aprovação da proteção de $(jq -r '.codigo' <<< "$item")" "$token" POST "/api/configuracao/admin/protecao-do-catalogo" \
-        "$(jq -c '{cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVACAO",
-                   classificacaoProtecao, hipoteseLegal, finalidadeTratamento,
+        "$(jq -c "$JQ_CODIGO"'{cadastro: (if .tipo == "DADO_DO_CANDIDATO" then "DADO_DO_CANDIDATO" else "TIPO_DOCUMENTO" end), itemId: .id, decisao: "APROVACAO",
+                   classificacaoProtecao: (.classificacaoProtecao | codigo), hipoteseLegal: (.hipoteseLegal | codigo), finalidadeTratamento,
                    ciclo: .aprovacao.ciclo, manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo}
                   + (if .aprovacao.manifestacaoDesfavoravel
                      then {justificativa: "Aprovação com ciência da manifestação técnica desfavorável, para o ambiente local de desenvolvimento."}
