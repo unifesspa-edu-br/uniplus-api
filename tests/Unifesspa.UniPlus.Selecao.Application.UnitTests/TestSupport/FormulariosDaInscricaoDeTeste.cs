@@ -29,8 +29,8 @@ internal sealed record FormularioDaInscricaoDeTeste(string Codigo, bool Obrigato
         return new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, [.. processo.CronogramaFases]),
             new AvaliacaoDeclarada([.. processo.Etapas], [.. processo.CriteriosDesempate], processo.Classificacao!),
-            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.BonusRegional is not null,
-                processo.BonusRegional, null, processo.AtendimentoEspecializado!),
+            new VagasDeclaradas([.. processo.DistribuicaoVagas], 1, processo.Fada is not null,
+                processo.Fada, null, processo.AtendimentoEspecializado!),
             new ExigenciasDeclaradas([.. processo.DocumentosExigidos], []),
             ColetaDosFormularios(formularios, faseDaInscricao, CronogramaDoProcesso.Do(processo.CronogramaFases)),
             new DivulgacaoETaxaDeclaradas(null, null), null);

@@ -39,15 +39,6 @@ public sealed class ProjecaoDoFormularioApresentadoTests
         configuracao.Projetar(CodigoDaHabilitacao).Should().BeNull();
     }
 
-    [Fact(DisplayName = "O formulário projetado diz o código do formulário que o processo declara")]
-    public void Projetar_Formulario_TrazOCodigo()
-    {
-        Cenario cenario = new();
-        Configuracao configuracao = new(cenario, [cenario.Inscricao, cenario.Habilitacao], [], [], []);
-
-        configuracao.Projetar(CodigoDaHabilitacao)!.Finalidade.Should().Be(CodigoDaHabilitacao);
-    }
-
     [Fact(DisplayName = "A seção e o termo trazem o código com que aparecem nas regras; o bloco não tem")]
     public void Projetar_SecaoETermo_TrazemOCodigoNasRegras()
     {

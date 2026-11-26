@@ -18,14 +18,13 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Regras e pressupostos do formulário público lido do banco real: as regras são as da
-/// configuração publicada, filtradas para a finalidade, e os pressupostos saem com a apresentação
+/// configuração publicada, filtradas para o formulário da inscrição, e os pressupostos saem com a apresentação
 /// congelada na publicação, não com a do catálogo vivo.
 /// </summary>
 [Collection(FormularioApresentadoPersistenciaColecao.Nome)]
@@ -38,7 +37,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         _cenario = new CenarioDeFormularioPublicado(fixture);
     }
 
-    [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, filtradas para a finalidade, sem derivado que o formulário não cita")]
+    [Fact(DisplayName = "As regras do formulário público são as da configuração publicada, filtradas para o formulário da inscrição, sem derivado que o formulário não cita")]
     public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaFiltradas()
     {
         // O exemplo rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
@@ -51,19 +50,19 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
         FormularioApresentadoDoProcessoDto lido = await _cenario.LerPublicadoAsync(processo.Id);
 
-        RecorteDaFinalidade esperado = FiltroEsperado(processo, entrada);
+        RecorteDoFormulario esperado = FiltroEsperado(processo, entrada);
         ConferirRegras(lido, esperado);
         ConferirConteudo(lido, esperado, processo);
     }
 
-    private static RecorteDaFinalidade FiltroEsperado(ProcessoSeletivo processo, EntradaCanonicalizacao entrada)
+    private static RecorteDoFormulario FiltroEsperado(ProcessoSeletivo processo, EntradaCanonicalizacao entrada)
     {
         // A mesma montagem sobre a configuração viva, antes de passar pelo envelope: o que o front
         // interpreta é o que a configuração declarou.
         EnvelopeReidratado vivo = EnvelopeVivo(processo, entrada);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
-        return RecorteDaFinalidade.De(
-            daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao), null), daConfiguracao.Ofertas);
+        return RecorteDoFormulario.De(
+            daConfiguracao.Definicao, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao).Valor, daConfiguracao.Ofertas);
     }
 
     private static EnvelopeReidratado EnvelopeVivo(ProcessoSeletivo processo, EntradaCanonicalizacao entrada) =>
@@ -80,7 +79,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
             entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
             dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: entrada.DadosDeCatalogo.ValoresSelecionaveisCongelados, AgregadosDosGrupos: entrada.DadosDeCatalogo.AgregadosDosGrupos, ApresentacaoDosPressupostos: entrada.DadosDeCatalogo.ApresentacaoDosPressupostos));
 
-    private static void ConferirRegras(FormularioApresentadoDoProcessoDto lido, RecorteDaFinalidade esperado)
+    private static void ConferirRegras(FormularioApresentadoDoProcessoDto lido, RecorteDoFormulario esperado)
     {
         // O envelope guarda as condições na ordem canônica: a equivalência é a da avaliação, em cada
         // combinação das respostas que as regras da inscrição citam.
@@ -97,7 +96,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         }
     }
 
-    private static void ConferirConteudo(FormularioApresentadoDoProcessoDto lido, RecorteDaFinalidade esperado, ProcessoSeletivo processo)
+    private static void ConferirConteudo(FormularioApresentadoDoProcessoDto lido, RecorteDoFormulario esperado, ProcessoSeletivo processo)
     {
         lido.Formulario.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Formulario.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");

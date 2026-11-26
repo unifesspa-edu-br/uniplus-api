@@ -52,7 +52,7 @@ public sealed class AplicarModeloFormularioCodigoDoFormularioTests
     {
         ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO", 0)]);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(PapelDoFormularioDeTeste.Habilitacao, modelo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FormularioCodigo.Should().Be(PapelDoFormularioDeTeste.Habilitacao.Codigo());

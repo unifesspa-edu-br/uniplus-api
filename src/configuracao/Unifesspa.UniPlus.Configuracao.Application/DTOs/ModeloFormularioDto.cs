@@ -21,8 +21,7 @@ public sealed record ModeloFormularioDto(
 
 /// <summary>
 /// O que o modelo declara de si: se serve à fase que coleta a inscrição, caso em que traz o conjunto básico de
-/// dados do candidato, e se é obrigatório. Até o formulário do processo deixar de ter finalidade, ele deriva a
-/// finalidade dessa declaração ao aplicar o modelo, e o modelo que serve à inscrição é tratado como obrigatório.
+/// dados do candidato, e se é obrigatório.
 /// </summary>
 public sealed record DeclaracaoDoModeloDto(bool ServeAFaseDeInscricao, bool Obrigatorio);
 

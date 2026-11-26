@@ -29,7 +29,7 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
         builder.Property(modelo => modelo.Nome).HasMaxLength(ModeloFormulario.NomeMaxLength).IsRequired().HasComment("Nome do modelo de formulário.");
         builder.Property(modelo => modelo.Descricao).HasMaxLength(ModeloFormulario.DescricaoMaxLength).HasComment("Descrição do modelo de formulário.");
         builder.Property(modelo => modelo.ServeAFaseDeInscricao).IsRequired().HasComment("Indica se o modelo serve à fase que coleta a inscrição e traz o conjunto básico de dados do candidato.");
-        builder.Property(modelo => modelo.Obrigatorio).IsRequired().HasComment("Indica se o modelo é obrigatório. Até a finalidade do formulário do processo sair, o modelo que serve à inscrição é tratado como obrigatório ao ser aplicado.");
+        builder.Property(modelo => modelo.Obrigatorio).IsRequired().HasComment("Indica se o modelo é obrigatório no processo em que for aplicado.");
         builder.Property(modelo => modelo.TipoProcessoCodigo).HasMaxLength(ModeloFormulario.TipoProcessoCodigoMaxLength).HasComment("Código do tipo de processo ao qual o modelo se aplica.");
         builder.Property(modelo => modelo.Ativo).IsRequired().HasComment("Indica se o modelo está disponível para uso.");
 

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Os fatos de que uma regra do formulário pode depender (UNI-REQ-0145): as respostas a campos
-/// anteriores na ordem do formulário, os fatos já conhecidos antes dele — em outra finalidade, os
+/// anteriores na ordem do formulário, os fatos já conhecidos antes dele — os de outro formulário, os
 /// coletados pela inscrição (UNI-REQ-0144) — e os fatos derivados por regra cujas dependências
 /// estão todas entre esses.
 /// </summary>
@@ -66,35 +66,51 @@ public sealed class DependenciasDoFormulario
             return calculado;
         }
 
-        long? posicao;
-        if (_conhecidosAntes.Contains(fato))
-        {
-            posicao = ConhecidoAntes;
-        }
-        else if (_posicoes.TryGetValue(fato, out int doCampo))
-        {
-            posicao = doCampo;
-        }
-        else if (_derivacoes.TryGetValue(fato, out IReadOnlyCollection<string>? dependencias) && emAvaliacao.Add(fato))
-        {
-            posicao = ConhecidoAntes;
-            foreach (string dependencia in dependencias)
-            {
-                posicao = ConhecidoEm(dependencia, emAvaliacao) is { } daDependencia ? Math.Max(posicao.Value, daDependencia) : null;
-                if (posicao is null)
-                {
-                    break;
-                }
-            }
-
-            emAvaliacao.Remove(fato);
-        }
-        else
+        if (!TentarPosicionar(fato, emAvaliacao, out long? posicao))
         {
             return null;
         }
 
         _conhecidoEm[fato] = posicao;
+        return posicao;
+    }
+
+    private bool TentarPosicionar(string fato, HashSet<string> emAvaliacao, out long? posicao)
+    {
+        posicao = PosicaoDoCampoOuDoPressuposto(fato);
+        if (posicao is not null)
+        {
+            return true;
+        }
+
+        if (!_derivacoes.TryGetValue(fato, out IReadOnlyCollection<string>? dependencias) || !emAvaliacao.Add(fato))
+        {
+            return false;
+        }
+
+        posicao = PosicaoDoDerivado(dependencias, emAvaliacao);
+        emAvaliacao.Remove(fato);
+        return true;
+    }
+
+    private long? PosicaoDoCampoOuDoPressuposto(string fato) =>
+        _conhecidosAntes.Contains(fato) ? ConhecidoAntes
+        : _posicoes.TryGetValue(fato, out int doCampo) ? doCampo
+        : null;
+
+    private long? PosicaoDoDerivado(IReadOnlyCollection<string> dependencias, HashSet<string> emAvaliacao)
+    {
+        long posicao = ConhecidoAntes;
+        foreach (string dependencia in dependencias)
+        {
+            if (ConhecidoEm(dependencia, emAvaliacao) is not { } daDependencia)
+            {
+                return null;
+            }
+
+            posicao = Math.Max(posicao, daDependencia);
+        }
+
         return posicao;
     }
 }

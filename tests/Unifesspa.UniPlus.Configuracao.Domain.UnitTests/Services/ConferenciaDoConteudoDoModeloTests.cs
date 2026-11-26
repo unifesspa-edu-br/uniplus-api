@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.ConteudosDoModeloDeTeste;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 /// <summary>
 /// A forma do conteúdo do modelo, parte a parte, e o acúmulo das recusas na ordem das regras. As regras
@@ -201,7 +201,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
             "O fato é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição.");
     }
 
-    [Fact(DisplayName = "A estrutura por finalidade só é conferida sobre partes bem formadas")]
+    [Fact(DisplayName = "A estrutura da declaração só é conferida sobre partes bem formadas")]
     public void Estrutura_NaoEConferidaComParteMalFormada()
     {
         ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null });

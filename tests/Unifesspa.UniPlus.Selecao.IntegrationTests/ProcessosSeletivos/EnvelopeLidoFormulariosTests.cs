@@ -15,7 +15,6 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -190,8 +189,8 @@ public sealed class EnvelopeLidoFormulariosTests
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaPagina(FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao), null));
+        RecorteDoFormulario recorte = RecorteDoFormulario.De(
+            avaliavel.Value!.Definicao, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao).Valor);
         recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo)
             .Should().Contain([OpcaoPelasCotasDaLei.Fato, OrigemEscolar.FatoEgresso]);
         recorte.Pressupostos.Should().NotContain(OpcaoPelasCotasDaLei.Fato);

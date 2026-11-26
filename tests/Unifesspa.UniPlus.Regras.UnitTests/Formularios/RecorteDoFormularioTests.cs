@@ -10,18 +10,18 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O formulário de uma finalidade sai com as regras dele e só com elas: as derivações que ele cita,
-/// com o que elas citam, e os fatos de outra finalidade como pressupostos — e avalia como a definição
+/// O formulário sai com as regras dele e só com elas: as derivações que ele cita,
+/// com o que elas citam, e os fatos de outro formulário como pressupostos — e avalia como a definição
 /// do processo inteiro, quando os pressupostos chegam como fatos conhecidos (ADR-0139).
 /// </summary>
-public sealed class RecorteDaFinalidadeTests
+public sealed class RecorteDoFormularioTests
 {
     private const string Habilitacao = "HABILITACAO";
 
-    [Fact(DisplayName = "O recorte leva só as seções, os termos e as derivações que a finalidade cita")]
-    public void Recorte_LevaSoOQueAFinalidadeCita()
+    [Fact(DisplayName = "O recorte leva só as seções, os termos e as derivações que o formulário cita")]
+    public void Recorte_LevaSoOQueOFormularioCita()
     {
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(Processo(), Habilitacao);
+        RecorteDoFormulario recorte = RecorteDoFormulario.De(Processo(), Habilitacao);
 
         recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("HABILITACAO:DOCUMENTOS");
         recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("HABILITACAO:VERACIDADE");
@@ -40,7 +40,7 @@ public sealed class RecorteDaFinalidadeTests
         DefinicaoFormulario processo = Processo();
         Dictionary<string, FatoResolvido> conhecidos = ConhecidosDaConvocacao(tipoEscola, modalidade);
 
-        Result<AvaliacaoFormulario> doRecorte = RecorteDaFinalidade.De(processo, Habilitacao).Regras.Avaliar(Entrada(new(StringComparer.Ordinal), conhecidos));
+        Result<AvaliacaoFormulario> doRecorte = RecorteDoFormulario.De(processo, Habilitacao).Regras.Avaliar(Entrada(new(StringComparer.Ordinal), conhecidos));
         AvaliacaoFormulario doProcesso = AvaliadorFormulario.Avaliar(processo, Entrada(
             new(StringComparer.Ordinal) { ["TIPO_ESCOLA"] = Json(tipoEscola) },
             new(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = conhecidos["MODALIDADE_CONVOCACAO"] }));
@@ -56,8 +56,8 @@ public sealed class RecorteDaFinalidadeTests
         ["MODALIDADE_CONVOCACAO"] = FatoResolvido.Resolvido(Json(modalidade)),
     };
 
-    [Fact(DisplayName = "A oferta de valores sai só para os campos da finalidade")]
-    public void Recorte_LevaSoAOfertaDosCamposDaFinalidade()
+    [Fact(DisplayName = "A oferta de valores sai só para os campos do formulário")]
+    public void Recorte_LevaSoAOfertaDosCamposDoFormulario()
     {
         Dictionary<string, IReadOnlySet<string>> ofertas = new(StringComparer.Ordinal)
         {
@@ -65,12 +65,12 @@ public sealed class RecorteDaFinalidadeTests
             ["CERTIFICADO"] = new HashSet<string>(["EMITIDO", "PENDENTE"], StringComparer.Ordinal),
         };
 
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(Processo(), Habilitacao, ofertas);
+        RecorteDoFormulario recorte = RecorteDoFormulario.De(Processo(), Habilitacao, ofertas);
 
         recorte.Regras.Ofertas().Keys.Should().Equal("CERTIFICADO");
     }
 
-    private static DefinicaoFormulario ProcessoComAgregadosDeDuasFinalidades() => new(
+    private static DefinicaoFormulario ProcessoComAgregadosDeDoisFormularios() => new(
         [
             new DefinicaoPagina("INSCRICAO:FAMILIA", null, [], [Grupo("FAMILIA_INSCRICAO", "TRABALHA_NO_CAMPO")]),
             new DefinicaoPagina("HABILITACAO:FAMILIA", null,
@@ -84,24 +84,24 @@ public sealed class RecorteDaFinalidadeTests
             new DefinicaoAgregado("PROPRIEDADE_NA_FAMILIA", "PROPRIEDADES", "TEM_PROPRIEDADE", OperacaoAgregado.Existe),
         ]);
 
-    [Fact(DisplayName = "O agregado sai quando a regra o cita e o grupo é da finalidade; o de grupo de outra finalidade é pressuposto")]
-    public void Recorte_AgregadoCitado_SaiComOGrupoDaFinalidade()
+    [Fact(DisplayName = "O agregado sai quando a regra o cita e o grupo é do formulário; o de grupo de outro formulário é pressuposto")]
+    public void Recorte_AgregadoCitado_SaiComOGrupoDoFormulario()
     {
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(ProcessoComAgregadosDeDuasFinalidades(), Habilitacao);
+        RecorteDoFormulario recorte = RecorteDoFormulario.De(ProcessoComAgregadosDeDoisFormularios(), Habilitacao);
 
         recorte.Regras.Agregados.Select(static a => a.Codigo).Should().Equal("PROPRIEDADE_NA_FAMILIA");
         recorte.Pressupostos.Should().Equal(["RURAL_NA_FAMILIA"], "o grupo que o agregado agrega foi respondido na inscrição");
     }
 
     [Fact(DisplayName = "O recorte de um formulário só leva todas as seções e termos, e ainda poda a derivação que ninguém cita")]
-    public void DoFormulario_LevaTudoEPodaODerivadoNaoCitado()
+    public void DaDefinicaoInteira_LevaTudoEPodaODerivadoNaoCitado()
     {
         DefinicaoFormulario modelo = new(
             [new DefinicaoPagina("DOCUMENTOS", null, [new DefinicaoItem("CERTIFICADO", Quando("ESCOLA_PUBLICA", true), Obrigatoriedade.Sempre, [])])],
             [new DefinicaoTermo("VERACIDADE", null, Obrigatoriedade.Sempre)],
             [Booleana("ESCOLA_PUBLICA", Quando("TIPO_ESCOLA", "PUBLICA")), Booleana("NAO_CITADO", Quando("TIPO_ESCOLA", "PRIVADA"))]);
 
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(modelo);
+        RecorteDoFormulario recorte = RecorteDoFormulario.DaDefinicaoInteira(modelo);
 
         recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
         recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
@@ -113,7 +113,7 @@ public sealed class RecorteDaFinalidadeTests
         new(codigo, exibicao, Obrigatoriedade.Nunca, 0, null, [new DefinicaoItem(subitem, null, Obrigatoriedade.Sempre, [])], incluiCandidato: false);
 
     /// <summary>
-    /// A inscrição pergunta o tipo de escola; a habilitação pede o certificado de quem estudou em escola
+    /// O formulário INSCRICAO pergunta o tipo de escola; o HABILITACAO pede o certificado de quem estudou em escola
     /// pública e a declaração de quem foi convocado em vaga de escola pública. A derivação que nenhum
     /// formulário da habilitação cita fica de fora do recorte.
     /// </summary>

@@ -96,7 +96,7 @@ public sealed record PressupostosDoFormulario(
     string? FusoDoEnvio);
 
 /// <summary>
-/// O formulário de uma finalidade pronto para o interpretador do front (UNI-REQ-0144, ADR-0139): a
+/// O formulário pronto para o interpretador do front (UNI-REQ-0144, ADR-0139): a
 /// apresentação — título, seções, termos e a coleta de campos e grupos —, as regras que o front interpreta
 /// e os pressupostos. É o mesmo formato para o certame divulgado, o rascunho do processo e o modelo, e o
 /// que a simulação importa e exporta.
@@ -110,7 +110,6 @@ public sealed record PressupostosDoFormulario(
 /// Os fatos que as regras citam e o formulário não pergunta, com a data de referência e o fuso do envio.
 /// </param>
 public sealed record FormularioApresentado(
-    string Finalidade,
     string? Titulo,
     IReadOnlyList<PaginaApresentada> Paginas,
     IReadOnlyList<TermoApresentado> Termos,

@@ -172,10 +172,6 @@ public static class EstruturaFormulario
 
         return [];
     }
-
-    /// <summary>A finalidade do código; código ausente ou desconhecido não é finalidade.</summary>
-    public static FinalidadeFormulario? FinalidadeDoCodigo(string? codigo) =>
-        CatalogoDe<FinalidadeFormulario>.TentarObter(codigo, out FinalidadeFormulario finalidade) ? finalidade : null;
 }
 
 /// <summary>Códigos de erro da estrutura do formulário.</summary>
@@ -196,7 +192,6 @@ public static class EstruturaFormularioErrorCodes
     public const string PaginaTituloInvalido = "EstruturaFormulario.PaginaTituloInvalido";
     public const string PaginaTextoTamanho = "EstruturaFormulario.PaginaTextoTamanho";
     public const string ExibicaoForaDeSecao = "EstruturaFormulario.ExibicaoForaDeSecao";
-    public const string FinalidadeInvalida = "EstruturaFormulario.FinalidadeInvalida";
     public const string TituloTamanho = "EstruturaFormulario.TituloTamanho";
     public const string SecaoReservada = "EstruturaFormulario.SecaoReservada";
     public const string SecaoReservadaAlterada = "EstruturaFormulario.SecaoReservadaAlterada";

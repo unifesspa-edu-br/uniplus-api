@@ -46,7 +46,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     /// <summary>Se o modelo serve à fase que coleta a inscrição e traz o conjunto básico de dados do candidato.</summary>
     public bool ServeAFaseDeInscricao { get; private set; }
 
-    /// <summary>Se o modelo é obrigatório. Até a finalidade do formulário do processo sair, o modelo que serve à inscrição é tratado como obrigatório ao ser aplicado.</summary>
+    /// <summary>Se o modelo é obrigatório no processo em que for aplicado.</summary>
     public bool Obrigatorio { get; private set; }
 
     /// <summary>A declaração do modelo, imutável depois da criação.</summary>
