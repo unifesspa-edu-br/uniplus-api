@@ -40,12 +40,12 @@
       "description": "Indica se será aberto prazo para reenvio.",
       "type": "boolean"
     },
-    "consequencia": {
+    "consequenciaDoDescumprimento": {
       "title": "Consequência",
       "description": "Consequência quando a regra não é cumprida.",
       "$ref": "comuns.schema.json#/$defs/consequenciaDoDescumprimento"
     },
-    "consequenciaRotulo": {
+    "consequenciaDoDescumprimentoRotulo": {
       "title": "Rótulo da consequência do descumprimento",
       "description": "Rótulo registrado na publicação, só de leitura e ignorado na importação.",
       "type": "string",

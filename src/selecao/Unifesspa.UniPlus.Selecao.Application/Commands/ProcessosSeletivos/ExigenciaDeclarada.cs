@@ -23,7 +23,7 @@ internal static class ExigenciaDeclarada
 
     public static bool Obrigatorio(this ItemDocumentoExigidoInput item) => item.Indeferimento?.Obrigatorio ?? false;
 
-    public static string? Consequencia(this ItemDocumentoExigidoInput item) => item.Indeferimento?.Consequencia;
+    public static string? ConsequenciaDoDescumprimento(this ItemDocumentoExigidoInput item) => item.Indeferimento?.ConsequenciaDoDescumprimento;
 
     public static IReadOnlyList<BaseLegalInput> BasesLegais(this ItemDocumentoExigidoInput item) =>
         item.Indeferimento?.BasesLegais ?? [];
@@ -42,7 +42,7 @@ internal static class ExigenciaDeclarada
 
     public static DistincaoDasApresentacoesInput? Distincao(this RegraDeComprovacaoInformada no) => no.Cardinalidade?.Distincao;
 
-    public static string? ConsequenciaDoGrupo(this RegraDeComprovacaoInformada no) => no.Indeferimento?.Consequencia;
+    public static string? ConsequenciaDoDescumprimentoDoGrupo(this RegraDeComprovacaoInformada no) => no.Indeferimento?.ConsequenciaDoDescumprimento;
 
     public static IReadOnlyList<BaseLegalInput> BasesLegaisDoGrupo(this RegraDeComprovacaoInformada no) =>
         no.Indeferimento?.BasesLegais ?? [];

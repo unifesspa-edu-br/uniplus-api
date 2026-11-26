@@ -154,7 +154,7 @@ public sealed class ConteudoLidoTests
         LeituraDoConteudo leitura = new(Formatos);
         ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, new([documento], [grupo])));
         leitura.Recusas.Should().BeEmpty();
-        lido.Documentos.DocumentosExigidos.Single().Documento.Indeferimento.Consequencia.Should().BeNull();
+        lido.Documentos.DocumentosExigidos.Single().Documento.Indeferimento.ConsequenciaDoDescumprimento.Should().BeNull();
         lido.Documentos.GruposDeDocumentos.Single().Grupo.Grupo.Indeferimento!.AbrePrazoParaReenvio.Should().BeTrue();
     }
 
@@ -187,7 +187,7 @@ public sealed class ConteudoLidoTests
         ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
 
         leitura.Recusas.Select(static e => e.Field).Should().Equal(
-            "conjuntoDeDocumentos.documentosExigidos[0].indeferimento.consequencia", "conjuntoDeDocumentos.documentosExigidos[0].requisitos.prazoDeEmissao.escolha", "conjuntoDeDocumentos.documentosExigidos[0].porOpcao.fatoCodigo");
+            "conjuntoDeDocumentos.documentosExigidos[0].indeferimento.consequenciaDoDescumprimento", "conjuntoDeDocumentos.documentosExigidos[0].requisitos.prazoDeEmissao.escolha", "conjuntoDeDocumentos.documentosExigidos[0].porOpcao.fatoCodigo");
         lido.Documentos.DocumentosExigidos.Should().BeEmpty();
     }
 

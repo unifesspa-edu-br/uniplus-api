@@ -46,7 +46,7 @@ internal static class ColunasDosLimitesDoEnvelope
         (nameof(LimitesDoEnvelope.TipoDocumentoCategoria), typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCategoria)),
         (nameof(LimitesDoEnvelope.FinalidadeTratamento), typeof(DocumentoExigido), nameof(DocumentoExigido.FinalidadeTratamento)),
         (nameof(LimitesDoEnvelope.HipoteseLegal), typeof(DocumentoExigido), nameof(DocumentoExigido.HipoteseLegal)),
-        (nameof(LimitesDoEnvelope.Token), typeof(DocumentoExigido), nameof(DocumentoExigido.ConsequenciaIndeferimento)),
+        (nameof(LimitesDoEnvelope.Token), typeof(DocumentoExigido), nameof(DocumentoExigido.ConsequenciaDoDescumprimento)),
         (nameof(LimitesDoEnvelope.BaseLegal), typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Referencia)),
         (nameof(LimitesDoEnvelope.ObservacaoBaseLegal), typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Observacao)),
         (nameof(LimitesDoEnvelope.Fato), typeof(CondicaoGatilho), nameof(CondicaoGatilho.Fato)),

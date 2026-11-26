@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<RegraDeComprovacao>
 {
-    private const int ConsequenciaMaxLength = 30;
+    private const int ConsequenciaDoDescumprimentoMaxLength = 30;
 
     private static readonly JsonSerializerOptions OpcoesJson = OpcoesJsonDeDocumento.Criar(new());
 
@@ -37,10 +37,10 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
     private static void ConfigurarRestricoes(TableBuilder<RegraDeComprovacao> t)
     {
         t.HasCheckConstraint("ck_regras_de_comprovacao_forma_coerente",
-            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.Documento)} AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
-            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.TodosOsItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
+            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.Documento)} AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia_do_descumprimento IS NULL) OR " +
+            $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.TodosOsItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia_do_descumprimento IS NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
             $"(forma = {SqlDosCodigosDeContrato.Literal(FormaDeComprovacao.QuantidadeMinimaDeItens)} AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND criterio_de_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
-        t.HasCheckConstraint("ck_regras_de_comprovacao_consequencia", $"consequencia IS NULL OR consequencia IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
+        t.HasCheckConstraint("ck_regras_de_comprovacao_consequencia_do_descumprimento", $"consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
         t.HasCheckConstraint("ck_regras_de_comprovacao_id_diferente_de_regra_que_contem_id", "id <> regra_que_contem_id");
         t.HasCheckConstraint("ck_regras_de_comprovacao_ordem_nao_negativa", "ordem >= 0");
         t.HasCheckConstraint("ck_regras_de_comprovacao_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
@@ -59,7 +59,7 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         builder.Property(n => n.Ordem).IsRequired();
         builder.Property(n => n.Forma).HasColumnName("forma").IsRequired();
         builder.Property(n => n.AbrePrazoParaReenvio).HasComment("Indica se o grupo abre prazo para reenvio dos documentos.");
-        builder.Property(n => n.Consequencia).HasMaxLength(ConsequenciaMaxLength);
+        builder.Property(n => n.ConsequenciaDoDescumprimento).HasMaxLength(ConsequenciaDoDescumprimentoMaxLength);
 
         builder.OwnsOne(n => n.Distincao, ConfigurarDistincao);
         builder.Property(n => n.GrupoDoFormularioParaRepeticao)

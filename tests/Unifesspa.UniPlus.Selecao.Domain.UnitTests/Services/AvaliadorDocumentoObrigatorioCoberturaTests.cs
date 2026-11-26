@@ -62,7 +62,7 @@ public sealed class AvaliadorDocumentoObrigatorioCoberturaTests
         ProcessoSeletivo processo = ProcessoCom(fase => ExigenciaGeral(fase, Tipo, obrigatorio: false));
 
         Avaliar(processo, Regra()).Aprovada.Should().BeFalse(
-            "uma exigência que não determina resultado (Obrigatorio=false, sem ConsequenciaIndeferimento) é meramente opcional " +
+            "uma exigência que não determina resultado (Obrigatorio=false, sem ConsequenciaDoDescumprimento) é meramente opcional " +
             "— não satisfaz a obrigação legal \"a modalidade X DEVE exigir o documento Y\"");
     }
 

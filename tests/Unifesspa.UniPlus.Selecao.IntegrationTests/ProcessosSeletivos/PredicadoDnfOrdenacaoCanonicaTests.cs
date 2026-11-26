@@ -140,7 +140,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         return fase;
     }
 
-    // obrigatorio: false, consequenciaIndeferimento: null — DeterminaResultado() fica falso,
+    // obrigatorio: false, consequenciaDoDescumprimento: null — DeterminaResultado() fica falso,
     // então nem PendenciaDasExigenciasDocumentais (CA-01) nem a checagem de base legal de
     // AvaliadorConformidadeLegal exigem nada além do gatilho em si (mesmo raciocínio já
     // usado nos testes de leitura do envelope).

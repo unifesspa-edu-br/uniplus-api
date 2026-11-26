@@ -76,7 +76,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
     {
         DocumentoExigido laudo = _cenario.Processo.DocumentosExigidos.First(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO");
         laudo.ExigidoNaFaseId.Should().Be(fase.Id);
-        laudo.ConsequenciaIndeferimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
+        laudo.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.RetiraOAcrescimo);
         laudo.Condicoes.Select(static c => (c.Fato, c.Clausula)).Should().BeEquivalentTo(
             [("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 0), ("CONDICAO_ATENDIMENTO", 0)]);
     }

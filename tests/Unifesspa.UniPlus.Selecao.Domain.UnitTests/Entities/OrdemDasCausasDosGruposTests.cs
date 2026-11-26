@@ -25,8 +25,8 @@ public sealed class OrdemDasCausasDosGruposTests
         ProcessoSeletivo processo = ProcessoComDoisGruposQueRetiramOAcrescimo();
 
         CaminhosDasCausas(processo.Declaracao()).Should().Equal(
-            "documentosExigidos.regrasDeComprovacao[0].consequencia",
-            "documentosExigidos.regrasDeComprovacao[1].consequencia");
+            "documentosExigidos.regrasDeComprovacao[0].consequenciaDoDescumprimento",
+            "documentosExigidos.regrasDeComprovacao[1].consequenciaDoDescumprimento");
     }
 
     [Fact]
@@ -37,8 +37,8 @@ public sealed class OrdemDasCausasDosGruposTests
         ConfiguracaoDeclarada configuracao = Lida([.. processo.CronogramaFases], [.. processo.Etapas], origem, processo.Declaracao());
 
         CaminhosDasCausas(configuracao).Should().Equal(
-            "documentosExigidos.regrasDeComprovacao[1].consequencia",
-            "documentosExigidos.regrasDeComprovacao[0].consequencia");
+            "documentosExigidos.regrasDeComprovacao[1].consequenciaDoDescumprimento",
+            "documentosExigidos.regrasDeComprovacao[0].consequenciaDoDescumprimento");
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class OrdemDasCausasDosGruposTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirDocumentosExigidos([Grupo(processo, 1, "ELIMINA_DO_PROCESSO"), Grupo(processo, 0)]).IsSuccess.Should().BeTrue();
 
-        CaminhosDasCausas(processo.Declaracao()).Should().Equal("documentosExigidos.regrasDeComprovacao[0].consequencia");
+        CaminhosDasCausas(processo.Declaracao()).Should().Equal("documentosExigidos.regrasDeComprovacao[0].consequenciaDoDescumprimento");
     }
 
     private static IEnumerable<string> CaminhosDasCausas(ConfiguracaoDeclarada configuracao) =>

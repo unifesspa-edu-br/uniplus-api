@@ -19,9 +19,10 @@ internal static class EscritaDasRegrasDeComprovacao
     private static RegraInformadaConferida ConferirRegra(RegraDeComprovacaoInformada regra, IReadOnlySet<string> grupos, string caminho, int indice, RepeticaoDaRegra repeticaoDoGrupoQueContem)
     {
         DeclaracaoDaRegraDeComprovacao declaracao = DeclaracaoDaRegraDeComprovacao.Interpretar(regra.Forma, regra.Documento is not null, regra.Itens?.Count ?? 0,
-            regra.QuantidadeMinima(), regra.ConsequenciaDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
+            regra.QuantidadeMinima(), regra.ConsequenciaDoDescumprimentoDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
         List<FieldError> recusas = [.. declaracao.Recusas.Select(erro => Contextualizar(erro, caminho, indice))];
         recusas.AddRange(FormaDaRegra(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
+        recusas.AddRange(ReenvioProprioDaRegraDeDocumento(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
         DomainError? repeticao = ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, grupos);
         if (repeticao is not null)
         {
@@ -63,10 +64,14 @@ internal static class EscritaDasRegrasDeComprovacao
         "criterioDeDistincao" => "cardinalidade.distincao.criterioDeDistincao",
         "dataReferencia" => "cardinalidade.distincao.dataReferencia",
         "ocorrenciasEsperadas" => "cardinalidade.distincao.ocorrenciasEsperadas",
-        "consequencia" => "indeferimento.consequencia",
+        "consequenciaDoDescumprimento" => "indeferimento.consequenciaDoDescumprimento",
         "basesLegais" => "indeferimento.basesLegais",
         _ => campo,
     };
+
+    private static IEnumerable<FieldError> ReenvioProprioDaRegraDeDocumento(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma) =>
+        forma == FormaDeComprovacao.Documento && CombinacaoDoGrupo.RecusaDoReenvioEmRegraDeDocumento(regra.Indeferimento?.AbrePrazoParaReenvio ?? false) is { } recusa
+            ? [new("indeferimento.abrePrazoParaReenvio", recusa)] : [];
 
     private static List<FieldError> FormaDaRegra(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma)
     {
@@ -88,7 +93,7 @@ internal static class EscritaDasRegrasDeComprovacao
         .. EscritaDaExigencia.RecusaDaFinalidadeDesconhecida(documento.Finalidade())
             .Concat(DocumentoExigido.ValidarFormaBasica(
                 EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade()),
-                documento.Consequencia(),
+                documento.ConsequenciaDoDescumprimento(),
                 documento.Condicoes().Count,
                 EscritaDaExigencia.FinalidadeDoCodigo(documento.Finalidade()),
                 documento.FatosComprovados))

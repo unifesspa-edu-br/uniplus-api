@@ -17,7 +17,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     private const string ExigenciaCompleta = """
         { "chave": "exigencia_comprovante_renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
           "faseChave": "inscricao", "etapaChave": "etapa_prova_objetiva", "finalidade": "ISENCAO_TAXA",
-          "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "consequenciaIndeferimento": "ABRE_PRAZO_PARA_REENVIO",
+          "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "consequenciaDoDescumprimento": "RETIRA_O_ACRESCIMO",
           "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
           "prazoDeEmissao": { "escolha": "COM_PRAZO", "valor": 90, "unidade": "DIAS", "referencia": { "tipo": "FIM_DAS_INSCRICOES" }, "efeitoForaDoPrazo": "RECUSAR_DOCUMENTO" },
@@ -39,7 +39,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
 
     [Theory(DisplayName = "O valor fora do vocabulário fechado da exigência é recusado com o caminho")]
     [InlineData("aplicabilidade", "\"Qualquer\"")]
-    [InlineData("consequenciaIndeferimento", "\"ANULA\"")]
+    [InlineData("consequenciaDoDescumprimento", "\"ANULA\"")]
     [InlineData("finalidade", "\"OUTRA\"")]
     [InlineData("classificacaoProtecao", "\"SECRETO\"")]
     [InlineData("tamanhoMaximoBytes", "0")]

@@ -32,8 +32,8 @@ public sealed class ConjuntoLidoDeDocumentosTests
         new("INSCRICAO", tipo, [[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
             new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []));
 
-    private static Grupo GrupoQueIndefere(string consequencia, params DocumentoExigidoDoModeloInput[] documentos) =>
-        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]), documentos);
+    private static Grupo GrupoQueIndefere(string consequenciaDoDescumprimento, params DocumentoExigidoDoModeloInput[] documentos) =>
+        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequenciaDoDescumprimento, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]), documentos);
 
     [Fact(DisplayName = "O grupo lido guarda a quantidade mínima como veio, o indeferimento e os documentos, sem recusa")]
     public void Ler_GrupoValido_GuardaQuantidadeIndeferimentoEDocumentos()
@@ -43,7 +43,7 @@ public sealed class ConjuntoLidoDeDocumentosTests
         leitura.Recusas.Should().BeEmpty();
         GrupoDeDocumentosDoModelo grupo = lido.ParaConteudo().Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
         grupo.QuantidadeMinima.Should().Be(2);
-        grupo.Indeferimento!.Consequencia.Should().Be("RETIRA_O_ACRESCIMO");
+        grupo.Indeferimento!.ConsequenciaDoDescumprimento.Should().Be("RETIRA_O_ACRESCIMO");
         grupo.Indeferimento.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Lei 12.711/2012");
         grupo.Documentos.Select(static d => d.TipoDocumentoCodigo).Should().Equal("RG", "CPF");
     }
@@ -91,7 +91,7 @@ public sealed class ConjuntoLidoDeDocumentosTests
         ConteudoLido lido = Ler(ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(grupo).Construir(), out LeituraDoConteudo leitura);
 
         leitura.Recusas.Select(static e => e.Field).Should().Equal(
-            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequencia",
+            "conjuntoDeDocumentos.gruposDeDocumentos[0].indeferimento.consequenciaDoDescumprimento",
             "conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[0].faseCodigo");
         lido.Documentos.GruposDeDocumentos.Should().BeEmpty();
     }

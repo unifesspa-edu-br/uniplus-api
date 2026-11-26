@@ -77,7 +77,7 @@ public sealed class ComprovanteInscricaoTests
     {
         { "situação do documento", static c => c with { Documentos = [Laudo() with { Situacao = "PENDENTE", Arquivos = [] }] } },
         { "arquivo do documento", static c => c with { Documentos = [Laudo() with { Arquivos = [new ArquivoDoComprovante(new string('c', 64), 2048, "PDF")] }] } },
-        { "consequência do documento", static c => c with { Documentos = [Laudo() with { Consequencia = null }] } },
+        { "consequência do documento", static c => c with { Documentos = [Laudo() with { ConsequenciaDoDescumprimento = null }] } },
         { "lista de documentos", static c => c with { Documentos = [] } },
     };
 
@@ -107,7 +107,7 @@ public sealed class ComprovanteInscricaoTests
         Conteudo c = Base() with { Oferta = Guid.Parse("01a12693-0000-7000-8000-0000000000aa") };
 
         ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Documentos, c.Modalidades, new Dictionary<string, JsonElement>())
-            .HashIntegridade.Should().Be(Hash(c)).And.Be("a3ed75f543a166c4d712fe978b8375f7d11b56a178735fc293ffd32ae2ea37cb", "o hash do conteúdo canônico, com a lista de documentos, é estável");
+            .HashIntegridade.Should().Be(Hash(c)).And.Be("0fe3cfaec2063ad634bae3bdba671d24f90810aa22f7d4ae33e22d0a07a77458", "o hash do conteúdo canônico, com a lista de documentos, é estável");
     }
 
     [Fact(DisplayName = "O comprovante sem documentos tem o hash golden")]

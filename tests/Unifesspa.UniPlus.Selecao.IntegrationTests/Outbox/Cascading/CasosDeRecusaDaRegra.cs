@@ -34,12 +34,12 @@ internal static class CasosDeRecusaDaRegra
 
     private static IReadOnlyList<CasoDeRecusaDaRegra> ConsequenciasEBases() =>
     [
-        Caso(Grupo("TODOS_OS_ITENS", consequencia: "ELIMINA_DO_PROCESSO"), "consequencia_proibida_quando_exige_todos", "indeferimento.consequencia",
+        Caso(Grupo("TODOS_OS_ITENS", consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO"), "consequencia_proibida_quando_exige_todos", "indeferimento.consequenciaDoDescumprimento",
             "Este grupo exige todos os itens, mas informa uma consequência própria. Retire a consequência do grupo."),
         Caso(Grupo("TODOS_OS_ITENS", bases: [BaseLegal()]), "base_legal_proibida_quando_exige_todos", "indeferimento.basesLegais",
             "Este grupo exige todos os itens, mas informa base legal própria. Retire a base legal do grupo."),
-        Caso(Grupo("QUANTIDADE_MINIMA_DE_ITENS", consequencia: "INVALIDA"), "consequencia_invalida", "indeferimento.consequencia",
-            "A consequência deste grupo não é reconhecida. Escolha \"ELIMINA\" para retirar a pessoa do processo, \"RETIRA_A_MODALIDADE\" para a ampla concorrência, \"RETIRA_O_ACRESCIMO\" para retirar a vantagem ou \"ABRE_PRAZO_PARA_REENVIO\" para permitir reenvio."),
+        Caso(Grupo("QUANTIDADE_MINIMA_DE_ITENS", consequenciaDoDescumprimento: "INVALIDA"), "consequencia_invalida", "indeferimento.consequenciaDoDescumprimento",
+            "A consequência deste grupo não é reconhecida."),
         Caso(Grupo("QUANTIDADE_MINIMA_DE_ITENS", bases: [BaseLegal()]), "base_legal_sem_consequencia", "indeferimento.basesLegais",
             "Este grupo tem base legal, mas não tem consequência. Informe a consequência ou retire a base legal."),
     ];
@@ -83,8 +83,8 @@ internal static class CasosDeRecusaDaRegra
     private static CasoDeRecusaDaRegra Caso(object regra, string codigo, string campo, string mensagem) =>
         new([regra], Prefixo + codigo, $"regrasDeComprovacao[0].{campo}", Item + mensagem);
 
-    private static object Grupo(string tipo, object? documento = null, int? quantidade = null, string? consequencia = null, object[]? bases = null) =>
-        new { forma = tipo, documento, cardinalidade = new { quantidadeMinima = quantidade }, indeferimento = new { consequencia, basesLegais = bases }, itens = new[] { RegraDeDocumento() } };
+    private static object Grupo(string tipo, object? documento = null, int? quantidade = null, string? consequenciaDoDescumprimento = null, object[]? bases = null) =>
+        new { forma = tipo, documento, cardinalidade = new { quantidadeMinima = quantidade }, indeferimento = new { consequenciaDoDescumprimento, basesLegais = bases }, itens = new[] { RegraDeDocumento() } };
 
     private static object RegraDeDocumento(int? quantidade = null, object[]? itens = null, string? criterio = null,
         DateOnly? data = null, string[]? ocorrencias = null, string? repete = null) =>

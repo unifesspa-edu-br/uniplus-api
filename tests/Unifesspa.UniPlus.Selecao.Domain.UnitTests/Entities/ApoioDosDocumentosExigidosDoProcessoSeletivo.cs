@@ -35,13 +35,13 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         Fase(ordem, fase.Codigo, fase.FaseCanonicaOrigemId);
 
     internal static DocumentoExigido Exigencia(
-        Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null,
+        Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaDoDescumprimento = null,
         FinalidadeFormulario? finalidade = null, bool abrePrazoParaReenvio = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, finalidade))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaIndeferimento is null, consequenciaIndeferimento, [], abrePrazoParaReenvio))
+            .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaDoDescumprimento is null, consequenciaDoDescumprimento, [], abrePrazoParaReenvio))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;

@@ -46,7 +46,7 @@ public sealed class IdentificadorDeExigenciaRecusadoNoEnvelopeTests
              "tipoDocumentoNome":"Identidade","tipoDocumentoCategoria":"PESSOAL","classificacaoProtecao":"PESSOAL",
              "finalidadeTratamento":"Comprovação","hipoteseLegal":"Obrigação legal","dadosComprovados":[],
              "exigidoNaFaseId":"33333333-3333-4333-8333-333333333333","exigidoNaEtapaId":null,
-             "finalidade":null,"aplicabilidade":"GERAL","obrigatorio":true,"consequenciaIndeferimento":null,
+             "finalidade":null,"aplicabilidade":"GERAL","obrigatorio":true,"abrePrazoParaReenvio":false,"consequenciaDoDescumprimento":null,
              "condicoes":null,"basesLegais":[],"prazoDeEmissao":null,"validade":null,
              "formatosPermitidos":{"qualquer":true,"lista":null},"tamanhoMaximoBytes":null,"modelo":null}
             """)!.AsObject();

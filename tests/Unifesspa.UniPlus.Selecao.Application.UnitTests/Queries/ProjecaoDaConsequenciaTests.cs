@@ -16,8 +16,8 @@ public sealed class ProjecaoDaConsequenciaTests
     {
         DocumentoExigidoDto documento = await ProjetarAUnicaExigenciaAsync(new ExigenciaParaProjetar { Consequencia = "ELIMINA_DO_PROCESSO" });
 
-        documento.Indeferimento.Consequencia!.Codigo.Should().Be("ELIMINA_DO_PROCESSO");
-        documento.Indeferimento.Consequencia.Rotulo.Should().Be("Eliminação do processo");
+        documento.Indeferimento.ConsequenciaDoDescumprimento!.Codigo.Should().Be("ELIMINA_DO_PROCESSO");
+        documento.Indeferimento.ConsequenciaDoDescumprimento.Rotulo.Should().Be("Eliminação do processo");
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public sealed class ProjecaoDaConsequenciaTests
     {
         DocumentoExigidoDto documento = await ProjetarAUnicaExigenciaAsync(new ExigenciaParaProjetar());
 
-        documento.Indeferimento.Consequencia.Should().BeNull();
+        documento.Indeferimento.ConsequenciaDoDescumprimento.Should().BeNull();
     }
 
     [Fact]
@@ -38,8 +38,8 @@ public sealed class ProjecaoDaConsequenciaTests
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacaoDto projetado = ProjecaoDaColeta.ProjetarRegrasDeComprovacaoSemGrupo(processo).Should().ContainSingle().Which;
-        projetado.Indeferimento.Consequencia!.Codigo.Should().Be("ELIMINA_DO_PROCESSO");
-        projetado.Indeferimento.Consequencia.Rotulo.Should().Be("Eliminação do processo");
-        projetado.Itens[0].Indeferimento.Consequencia.Should().BeNull();
+        projetado.Indeferimento.ConsequenciaDoDescumprimento!.Codigo.Should().Be("ELIMINA_DO_PROCESSO");
+        projetado.Indeferimento.ConsequenciaDoDescumprimento.Rotulo.Should().Be("Eliminação do processo");
+        projetado.Itens[0].Indeferimento.ConsequenciaDoDescumprimento.Should().BeNull();
     }
 }

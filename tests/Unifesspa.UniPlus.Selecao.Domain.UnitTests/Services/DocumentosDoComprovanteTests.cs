@@ -42,7 +42,7 @@ public sealed class DocumentosDoComprovanteTests
 
         item.Obrigatorio.Should().BeTrue();
         item.Situacao.Should().Be(SituacaoDoDocumento.Pendente.Codigo());
-        item.Consequencia.Should().Be("Sem o documento Laudo médico, o acréscimo do Fator de Atenuação das Desigualdades de Acesso não será concedido.");
+        item.ConsequenciaDoDescumprimento.Should().Be("Sem o documento Laudo médico, o acréscimo do Fator de Atenuação das Desigualdades de Acesso não será concedido.");
     }
 
     [Theory(DisplayName = "Cada consequência declarada tem texto próprio; sem consequência declarada, não há texto")]
@@ -116,7 +116,7 @@ public sealed class DocumentosDoComprovanteTests
 
         itens[0].Situacao.Should().Be(SituacaoDoDocumento.Satisfeita.Codigo());
         itens[1].Situacao.Should().Be(DocumentosDoComprovante.SituacaoDispensada);
-        itens[1].Consequencia.Should().BeNull("o grupo está atendido: a CNH não precisava ser enviada");
+        itens[1].ConsequenciaDoDescumprimento.Should().BeNull("o grupo está atendido: a CNH não precisava ser enviada");
     }
 
     [Fact(DisplayName = "No grupo que exige um item ainda não cumprido, a alternativa segue pendente e a consequência do grupo vale para todas")]
@@ -130,7 +130,7 @@ public sealed class DocumentosDoComprovanteTests
             ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
         itens.Should().OnlyContain(static d => d.Situacao == SituacaoDoDocumento.Pendente.Codigo());
-        itens.Should().OnlyContain(static d => d.Consequencia!.Contains("RG, CNH") && d.Consequencia.Contains("modalidade"));
+        itens.Should().OnlyContain(static d => d.ConsequenciaDoDescumprimento!.Contains("RG, CNH") && d.ConsequenciaDoDescumprimento.Contains("modalidade"));
     }
 
     [Fact(DisplayName = "No grupo que exige um item com consequência própria, a alternativa mostra a do grupo, e não a própria")]
@@ -143,7 +143,7 @@ public sealed class DocumentosDoComprovanteTests
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
             ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
-        itens.Should().OnlyContain(static d => d.Consequencia!.Contains("modalidade"));
+        itens.Should().OnlyContain(static d => d.ConsequenciaDoDescumprimento!.Contains("modalidade"));
     }
 
     [Fact(DisplayName = "No grupo que exige um item sem consequência própria, a alternativa não traz texto, mesmo declarando a própria")]
@@ -156,6 +156,6 @@ public sealed class DocumentosDoComprovanteTests
         IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
             ComGrupo(grupo, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
 
-        itens.Should().OnlyContain(static d => d.Consequencia == null);
+        itens.Should().OnlyContain(static d => d.ConsequenciaDoDescumprimento == null);
     }
 }

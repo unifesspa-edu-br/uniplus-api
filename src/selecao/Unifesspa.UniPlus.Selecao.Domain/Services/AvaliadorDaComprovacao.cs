@@ -287,7 +287,7 @@ public sealed class AvaliadorDaComprovacao
 
     private static void DeterminarConsequenciaDoDocumento(RegraDeComprovacao regra, List<ConsequenciaAplicavel> consequencias)
     {
-        if (regra.DocumentoExigido!.ConsequenciaIndeferimento is { } consequencia)
+        if (regra.DocumentoExigido!.ConsequenciaDoDescumprimento is { } consequencia)
         {
             consequencias.Add(new(regra.Id, FormaDeComprovacao.Documento, consequencia.Codigo()));
         }
@@ -305,7 +305,7 @@ public sealed class AvaliadorDaComprovacao
     private static void DeterminarConsequenciaDoGrupo(RegraDeComprovacao regra, IReadOnlyDictionary<Guid, SituacaoDaComprovacao> situacoesPorRegra,
         IReadOnlySet<Guid> regrasComConsequenciaAdiada, List<ConsequenciaAplicavel> consequencias, List<PendenciaDeOrientacao> pendencias)
     {
-        if (regra.Consequencia is { } consequencia)
+        if (regra.ConsequenciaDoDescumprimento is { } consequencia)
         {
             consequencias.Add(new(regra.Id, FormaDeComprovacao.QuantidadeMinimaDeItens, consequencia.Codigo()));
         }

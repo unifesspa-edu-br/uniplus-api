@@ -114,7 +114,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
     {
         RegraDeComprovacao regraSemGrupo = processo.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
         regraSemGrupo.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
-        regraSemGrupo.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        regraSemGrupo.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         regraSemGrupo.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
         regraSemGrupo.Itens.Should().HaveCount(2);
         ConferirRegraDeRgRecarregada(regraSemGrupo.Itens.Should().ContainSingle(static f => f.Distincao != null).Which);

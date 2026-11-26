@@ -181,7 +181,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     }
 
     [Fact]
-    public void Causas_DuasFamiliasEmExigenciaEGrupo_AcumulaNaOrdemDoDocumento()
+    public void Causas_AcrescimoEmExigenciaEGrupoSemOferta_NaoCompareComAcaoDaModalidade()
     {
         ModalidadeSelecionada modalidade = NovaModalidadeComAcao("LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RETIRA_A_MODALIDADE");
         ProcessoSeletivo processo = NovoProcessoComModalidade(modalidade);
@@ -191,29 +191,29 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_O_ACRESCIMO"), 0, [BaseLegalDaComprovacao.Criar("Lei 12.711/2012", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, null).Value!], [item]).Value!;
         processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
         FieldError[] causas = [.. CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Para(processo).FatosDeModalidade, CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))];
-        causas.Select(causa => causa.Error.Code).Should().Equal("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", "RegraDeComprovacao.ConsequenciaIncoerenteComAcaoDaVaga");
-        causas.Select(causa => causa.Field).Should().Equal("documentosExigidos.exigencias[0].consequenciaIndeferimento", "documentosExigidos.regrasDeComprovacao[0].consequencia", "documentosExigidos.exigencias[0].consequenciaIndeferimento", "documentosExigidos.regrasDeComprovacao[0].consequencia");
+        causas.Select(causa => causa.Error.Code).Should().Equal("ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido");
+        causas.Select(causa => causa.Field).Should().Equal("documentosExigidos.exigencias[0].consequenciaDoDescumprimento", "documentosExigidos.regrasDeComprovacao[0].consequenciaDoDescumprimento");
     }
 
     private static DocumentoExigido ExigenciaGeralComConsequencia(
-        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria, string consequenciaIndeferimento) =>
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria, string consequenciaDoDescumprimento) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaIndeferimento, [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaDoDescumprimento, [BaseLegalResolvidaQualquer()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorFaixaEtariaComConsequencia(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria,
-        string consequenciaIndeferimento) =>
+        string consequenciaDoDescumprimento) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaIndeferimento, [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaDoDescumprimento, [BaseLegalResolvidaQualquer()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;

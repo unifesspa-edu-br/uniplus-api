@@ -1523,7 +1523,7 @@ selecao.documentos_a_publicar.updated_at: Interno
 selecao.documentos_exigidos.aplicabilidade: Interno
 selecao.documentos_exigidos.chave_local: Interno
 selecao.documentos_exigidos.classificacao_protecao: Interno
-selecao.documentos_exigidos.consequencia_indeferimento: Interno
+selecao.documentos_exigidos.consequencia_do_descumprimento: Interno
 selecao.documentos_exigidos.created_at: Interno
 selecao.documentos_exigidos.dados_comprovados: Interno
 selecao.documentos_exigidos.exigido_na_etapa_id: Interno
@@ -1970,7 +1970,7 @@ selecao.regras_de_calculo_dos_dados.created_at: Interno
 selecao.regras_de_calculo_dos_dados.id: Interno
 selecao.regras_de_calculo_dos_dados.ordem: Interno
 selecao.regras_de_calculo_dos_dados.updated_at: Interno
-selecao.regras_de_comprovacao.consequencia: Interno
+selecao.regras_de_comprovacao.consequencia_do_descumprimento: Interno
 selecao.regras_de_comprovacao.created_at: Interno
 selecao.regras_de_comprovacao.criterio_de_distincao: Interno
 selecao.regras_de_comprovacao.data_referencia: Interno

@@ -69,7 +69,7 @@ internal static class TiposDocumentoCenario
     {
         string[] propriedadesMateriaisProibidas =
             ["validade", "validadeMeses", "idadeMaximaMeses", "exigeAssinatura", "exigeAssinaturaDigital",
-             "numeroAssinaturas", "lideranças", "lideranca", "aplicabilidade", "consequenciaIndeferimento"];
+             "numeroAssinaturas", "lideranças", "lideranca", "aplicabilidade", "consequenciaDoDescumprimento"];
         foreach (string proibida in propriedadesMateriaisProibidas)
         {
             tipo.TryGetProperty(proibida, out _)

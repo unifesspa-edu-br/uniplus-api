@@ -187,7 +187,7 @@ public sealed class RegraDeComprovacaoTests
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegalResolvida()], [item]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        resultado.Value!.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         resultado.Value!.BasesLegais.Should().ContainSingle();
         resultado.Value!.DeterminaResultado().Should().BeTrue();
     }

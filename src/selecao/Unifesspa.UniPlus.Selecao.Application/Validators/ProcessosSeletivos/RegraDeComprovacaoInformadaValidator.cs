@@ -46,7 +46,7 @@ public sealed class RegraDeComprovacaoInformadaValidator : AbstractValidator<Reg
     }
 
     private void RegrasDaConsequencia() =>
-        RuleFor(x => x.Indeferimento!.Consequencia)
+        RuleFor(x => x.Indeferimento!.ConsequenciaDoDescumprimento)
             .Null()
             .When(static x => FormaDe(x) == FormaDeComprovacao.Documento && x.Indeferimento is not null)
             .WithMessage("A consequência própria só é permitida no grupo que exige uma quantidade mínima de itens.");

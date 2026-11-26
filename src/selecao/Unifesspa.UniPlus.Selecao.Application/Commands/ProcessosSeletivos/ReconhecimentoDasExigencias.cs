@@ -47,7 +47,7 @@ internal sealed class ReconhecimentoDasExigencias
         {
             return criado;
         }
-        IndeferimentoDoDocumento indeferimento = declarado.Indeferimento with { Consequencia = criado.Value!.ConsequenciaIndeferimento?.Codigo() };
+        IndeferimentoDoDocumento indeferimento = declarado.Indeferimento with { ConsequenciaDoDescumprimento = criado.Value!.ConsequenciaDoDescumprimento?.Codigo() };
         return Result<DocumentoExigido>.Success(DocumentoExigido.Reidratar(chave, existente.Id, declarado with { Indeferimento = indeferimento }));
     }
 }

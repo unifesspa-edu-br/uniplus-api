@@ -96,7 +96,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
 
         RegraDeComprovacao regraSemGrupoRecarregada = recarregado.RegrasDeComprovacaoSemGrupo.Should().ContainSingle().Which;
         regraSemGrupoRecarregada.Forma.Should().Be(FormaDeComprovacao.QuantidadeMinimaDeItens);
-        regraSemGrupoRecarregada.Consequencia.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
+        regraSemGrupoRecarregada.ConsequenciaDoDescumprimento.Should().Be(Unifesspa.UniPlus.Regras.Enums.ConsequenciaDoDescumprimento.EliminaDoProcesso);
         regraSemGrupoRecarregada.BasesLegais.Should().ContainSingle().Which.Situacao.Should().Be(StatusBaseLegal.Resolvido);
         regraSemGrupoRecarregada.Itens.Should().HaveCount(2, "grupo de todos os itens e regra de documento");
 

@@ -38,7 +38,7 @@ internal static class TermosEDocumentosDoComprovante
             documento.OcorrenciaId is { } ocorrencia ? integrantes.GetValueOrDefault(ocorrencia) : null,
             documento.Obrigatorio,
             RotuloDaSituacao(documento.Situacao),
-            documento.Consequencia,
+            documento.ConsequenciaDoDescumprimento,
             [.. documento.Arquivos.Select(static a => new ArquivoDoComprovanteDto(a.HashSha256, a.TamanhoBytes, a.Formato))]);
     private static string RotuloDaSituacao(string codigo) => codigo == DocumentosDoComprovante.SituacaoDispensada
         ? "Dispensado"

@@ -52,7 +52,7 @@ public static class DocumentosDoComprovante
 
     /// <summary>A consequência de não atender a exigência, em linguagem do candidato; nula sem consequência declarada.</summary>
     /// <param name="referencia">O que falta, no meio da frase, como "o documento RG".</param>
-    public static string? ConsequenciaPorEscrito(string? consequencia, string referencia) => (CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(consequencia, out ConsequenciaDoDescumprimento valor) ? valor : (ConsequenciaDoDescumprimento?)null) switch
+    public static string? ConsequenciaPorEscrito(string? consequenciaDoDescumprimento, string referencia) => (CatalogoDe<ConsequenciaDoDescumprimento>.TentarObter(consequenciaDoDescumprimento, out ConsequenciaDoDescumprimento valor) ? valor : (ConsequenciaDoDescumprimento?)null) switch
     {
         ConsequenciaDoDescumprimento.EliminaDoProcesso => $"Sem {referencia}, você será eliminado do processo seletivo.",
         ConsequenciaDoDescumprimento.RetiraAModalidade => $"Sem {referencia}, você perderá a modalidade e continuará nas demais em que concorre.",
@@ -71,11 +71,11 @@ public static class DocumentosDoComprovante
         GrupoDeComprovacao? grupo = avaliado.Grupos.FirstOrDefault(static g => g.Forma == FormaDeComprovacao.QuantidadeMinimaDeItens);
         if (grupo is null)
         {
-            return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaIndeferimento?.Codigo(), $"o documento {avaliado.Documento.TipoDocumentoNome}");
+            return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaDoDescumprimento?.Codigo(), $"o documento {avaliado.Documento.TipoDocumentoNome}");
         }
 
         string nomes = string.Join(", ", NoGrupo(grupo, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));
-        return ConsequenciaPorEscrito(grupo.Consequencia, $"os documentos exigidos ({nomes})");
+        return ConsequenciaPorEscrito(grupo.ConsequenciaDoDescumprimento, $"os documentos exigidos ({nomes})");
     }
 
     private static IEnumerable<DocumentoAvaliado> NoGrupo(GrupoDeComprovacao grupo, IReadOnlyList<DocumentoAvaliado> todos) =>
