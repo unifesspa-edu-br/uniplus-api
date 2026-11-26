@@ -9,7 +9,10 @@ public sealed class RequestLoggingOptions
     /// <summary>
     /// Nomes de parâmetros de query string cujo valor deve ser mascarado no log
     /// (comparação case-insensitive após decodificação percent-encoding). Defaults
-    /// cobrem o mínimo regulatório LGPD: cpf, email, senha, password, token.
+    /// cobrem o mínimo regulatório LGPD: cpf, email, senha, password, token, e os
+    /// parâmetros de texto livre que o cliente informa: de busca (<c>q</c>, <c>busca</c>), que pode ser nome,
+    /// e-mail ou número de documento; <c>contaId</c>, que identifica a pessoa; e <c>ocorrencia</c>, sem
+    /// validação de formato.
     /// Configuração amplia os defaults em vez de substituir — é impossível
     /// acidentalmente remover um parâmetro sensível via appsettings. Para substituir
     /// integralmente os defaults, chamar <c>Clear()</c> antes de adicionar novos
@@ -38,7 +41,7 @@ public sealed class RequestLoggingOptions
     public string ValorMascarado { get; set; } = "***";
 
     public static IList<string> DefaultsNomesParametrosSensiveis() =>
-        ["cpf", "email", "senha", "password", "token"];
+        ["cpf", "email", "senha", "password", "token", "q", "busca", "contaId", "ocorrencia"];
 
     public static IList<string> DefaultsPrefixosSilenciados() =>
         ["/health", "/metrics"];

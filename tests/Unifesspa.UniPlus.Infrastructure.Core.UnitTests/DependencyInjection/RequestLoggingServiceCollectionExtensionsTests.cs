@@ -25,7 +25,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
         QueryStringMasker masker = provider.GetRequiredService<QueryStringMasker>();
         IOptions<RequestLoggingOptions> options = provider.GetRequiredService<IOptions<RequestLoggingOptions>>();
 
-        options.Value.NomesParametrosSensiveis.Should().Contain(["cpf", "email", "senha", "password", "token"]);
+        options.Value.NomesParametrosSensiveis.Should().Contain(["cpf", "email", "senha", "password", "token", "q", "busca", "contaId", "ocorrencia"]);
         masker.Mascarar(new QueryString("?cpf=123")).Should().Be("?cpf=***");
     }
 
@@ -55,7 +55,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
         RequestLoggingOptions options = provider.GetRequiredService<IOptions<RequestLoggingOptions>>().Value;
 
         options.NomesParametrosSensiveis.Should()
-            .BeEquivalentTo(["cpf", "email", "senha", "password", "token", "documento", "rg"]);
+            .BeEquivalentTo([.. RequestLoggingOptions.DefaultsNomesParametrosSensiveis(), "documento", "rg"]);
         options.ValorMascarado.Should().Be("[REDACTED]");
     }
 
@@ -70,7 +70,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
         RequestLoggingOptions options = provider.GetRequiredService<IOptions<RequestLoggingOptions>>().Value;
 
         options.NomesParametrosSensiveis.Should()
-            .BeEquivalentTo(["cpf", "email", "senha", "password", "token", "rg"]);
+            .BeEquivalentTo([.. RequestLoggingOptions.DefaultsNomesParametrosSensiveis(), "rg"]);
     }
 
     [Fact]
