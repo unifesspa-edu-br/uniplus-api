@@ -14,13 +14,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class ClassificacaoRecomendadaTests
 {
-    [Theory(DisplayName = "A recomendação ausente e a fora da escala são recusadas uma vez no campo classificacaoRecomendada")]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("INEXISTENTE")]
-    public void ConferirClassificacaoRecomendada_Invalida_RecusaUmaVez(string? codigo) =>
-        AprovacaoDaProtecao.ConferirClassificacaoRecomendada(CodigoInformado<ClassificacaoDeProtecao>.Ler(codigo)).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
-            e.Field == "classificacaoRecomendada" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
+    [Theory]
+    [InlineData(null, ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria)]
+    [InlineData("", ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria)]
+    [InlineData("INEXISTENTE", ProtecaoDoCatalogoErrorCodes.RecomendacaoInvalida)]
+    public void ConferirClassificacaoRecomendada_AusenteOuDesconhecida_RecusaNoCampo(string? codigo, string recusa)
+    {
+        FieldError erro = AprovacaoDaProtecao.ConferirClassificacaoRecomendada(
+            CodigoInformado<ClassificacaoDeProtecao>.Ler(codigo)).Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("classificacaoRecomendada");
+        erro.Error.Code.Should().Be(recusa);
+        erro.Error.Message.Should().NotContain("INEXISTENTE");
+    }
 
     [Fact(DisplayName = "A recomendação da escala é aceita")]
     public void ConferirClassificacaoRecomendada_DaEscala_Aceita() =>

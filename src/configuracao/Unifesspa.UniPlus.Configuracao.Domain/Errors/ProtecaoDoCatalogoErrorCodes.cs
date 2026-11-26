@@ -16,6 +16,7 @@ public static class ProtecaoDoCatalogoErrorCodes
     public const string ItemForaDeSolicitacao = "ProtecaoDoCatalogo.ItemForaDeSolicitacao";
 
     /// <summary>Ajuste recomendado sem a classificação recomendada, ou com uma fora do vocabulário.</summary>
+    public const string RecomendacaoInvalida = "ProtecaoDoCatalogo.RecomendacaoInvalida";
     public const string RecomendacaoObrigatoria = "ProtecaoDoCatalogo.RecomendacaoObrigatoria";
 
     /// <summary>Aceite da recomendação num item em que o Representante do controlador não recomendou ajuste.</summary>

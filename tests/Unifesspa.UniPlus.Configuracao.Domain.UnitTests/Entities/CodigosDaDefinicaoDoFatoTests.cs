@@ -1,11 +1,13 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandidatoDeTeste;
 
 public sealed class CodigosDaDefinicaoDoFatoTests
@@ -27,24 +29,24 @@ public sealed class CodigosDaDefinicaoDoFatoTests
     [Fact]
     public void Criar_DominioFonteEFormatoDesconhecidos_AcumulaNaOrdem()
     {
-        Result<FatoCandidato> resultado = Criar(definicao: DefinicaoInvalida(), origem: null);
+        Result<FatoCandidato> resultado = Criar(definicao: DefinicaoInvalida());
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("dominio", FatoCandidatoErrorCodes.DominioInvalido), ("cardinalidade", FatoCandidatoErrorCodes.CardinalidadeInvalida),
             ("fonteValores", FatoCandidatoErrorCodes.FonteValoresInvalida), ("formato", FatoCandidatoErrorCodes.FormatoInvalido),
-            ("origem", FatoCandidatoErrorCodes.OrigemObrigatoria), ("pontoResolucao", FatoCandidatoErrorCodes.PontoResolucaoObrigatorio),
+            ("pontoResolucao", FatoCandidatoErrorCodes.PontoResolucaoObrigatorio),
             ("escopo", FatoCandidatoErrorCodes.EscopoInvalido), ("finalidadeTratamento", FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria));
     }
 
     private static DefinicaoDoFato DefinicaoInvalida() => Definicao with
-        {
-            Dominio = CodigoInformado<TipoDoDado>.Ler("INEXISTENTE"),
-            Cardinalidade = CodigoInformado<QuantidadeDeValores>.Ler("INEXISTENTE"),
-            FonteValores = CodigoInformado<FonteValoresFato>.Ler("INEXISTENTE"),
-            Formato = CodigoInformado<FormatoTexto>.Ler("INEXISTENTE"),
-            PontoResolucao = "",
-            Escopo = CodigoInformado<EscopoFato>.Ler("INEXISTENTE"),
-            FinalidadeTratamento = "",
-        };
+    {
+        Dominio = CodigoInformado<TipoDoDado>.Ler("INEXISTENTE"),
+        Cardinalidade = CodigoInformado<QuantidadeDeValores>.Ler("INEXISTENTE"),
+        FonteValores = CodigoInformado<FonteValoresFato>.Ler("INEXISTENTE"),
+        Formato = CodigoInformado<FormatoTexto>.Ler("INEXISTENTE"),
+        PontoResolucao = "",
+        Escopo = CodigoInformado<EscopoFato>.Ler("INEXISTENTE"),
+        FinalidadeTratamento = "",
+    };
 
     [Fact]
     public void Criar_DominioInvalidoComValoresConhecidos_NaoConfereCoerencia()

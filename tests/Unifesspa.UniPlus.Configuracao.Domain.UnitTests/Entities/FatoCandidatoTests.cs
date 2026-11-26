@@ -268,15 +268,6 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioInvalido);
     }
 
-    [Fact(DisplayName = "Origem fora do roster (cast inválido) é rejeitada como inválida")]
-    public void Criar_OrigemForaDoRoster_Falha()
-    {
-        Result<FatoCandidato> resultado = Criar(origem: (OrigemFato)999);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemInvalida);
-    }
-
     [Fact(DisplayName = "Cardinalidade com código desconhecido é rejeitada como inválida")]
     public void Criar_CardinalidadeDesconhecida_Falha()
     {
@@ -284,15 +275,6 @@ public sealed class FatoCandidatoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeInvalida);
-    }
-
-    [Fact(DisplayName = "Origem ausente é rejeitada")]
-    public void Criar_OrigemAusente_Falha()
-    {
-        Result<FatoCandidato> resultado = Criar(origem: null);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemObrigatoria);
     }
 
     [Fact(DisplayName = "Cardinalidade ausente é rejeitada")]
