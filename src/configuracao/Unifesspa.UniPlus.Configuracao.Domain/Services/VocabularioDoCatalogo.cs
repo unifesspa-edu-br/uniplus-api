@@ -147,6 +147,7 @@ public static class VocabularioDoCatalogo
     private static FatoDoCatalogo FatoParaRegras(FatoCandidato fato, IReadOnlyDictionary<string, FatoCandidato> porCodigo) =>
         new(
             fato.Codigo,
+            fato.Nome,
             fato.Dominio,
             fato.Cardinalidade,
             fato.Origem,
