@@ -38,7 +38,7 @@ public static class DefinirFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result definido = processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
             : await DefinirAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         if (definido.IsSuccess)
         {
@@ -171,7 +171,7 @@ public static class RemoverFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result removido = processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
             : Remover(processo, command.FormularioCodigo);
         if (removido.IsSuccess)
         {

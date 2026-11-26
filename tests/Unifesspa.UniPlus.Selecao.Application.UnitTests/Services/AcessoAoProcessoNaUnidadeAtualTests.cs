@@ -43,7 +43,7 @@ public sealed class AcessoAoProcessoNaUnidadeAtualTests
 
         Result resultado = await Exigir();
 
-        resultado.Error.Should().BeEquivalentTo(AcessoAoProcesso.NaoEncontrado(_processoId));
+        resultado.Error.Should().BeEquivalentTo(AcessoAoProcesso.NaoEncontrado());
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 

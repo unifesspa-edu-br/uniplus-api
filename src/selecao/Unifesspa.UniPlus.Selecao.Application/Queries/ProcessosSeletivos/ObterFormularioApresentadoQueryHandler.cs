@@ -76,20 +76,20 @@ public static class ObterFormularioApresentadoQueryHandler
         // Código fora do formato não designa formulário nenhum: é o mesmo não encontrado do formulário ausente.
         if (CodigoDoFormulario.Criar(query.FormularioCodigo) is not { IsSuccess: true } codigo)
         {
-            return NaoEncontrado(query.ProcessoSeletivoId);
+            return NaoEncontrado();
         }
 
         DocumentosDoAtoNoAcervo acervo = await enderecos
             .DoAtoAsync(query.ProcessoSeletivoId, divulgada.AtoDaDivulgacao, cancellationToken)
             .ConfigureAwait(false);
         return ComoLeituraPublica(
-            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, codigo.Value!, registroCodecs, acervo), query.ProcessoSeletivoId);
+            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, codigo.Value!, registroCodecs, acervo));
     }
 
     // A ausência do formulário do código colapsa no mesmo não encontrado dos demais casos sem
     // linha (ver remarks).
     private static Result<FormularioApresentadoDoProcessoDto> ComoLeituraPublica(
-        Result<FormularioApresentadoDoProcessoDto?> projetado, Guid processoSeletivoId)
+        Result<FormularioApresentadoDoProcessoDto?> projetado)
     {
         if (projetado.IsFailure)
         {
@@ -98,15 +98,13 @@ public static class ObterFormularioApresentadoQueryHandler
 
         return projetado.Value is { } formulario
             ? Result<FormularioApresentadoDoProcessoDto>.Success(formulario)
-            : NaoEncontrado(processoSeletivoId);
+            : NaoEncontrado();
     }
 
     /// <summary>
     /// A recusa única da leitura pública: inexistente, rascunho, sem versão vigente e sem
     /// divulgação recebem a mesma resposta, porque nenhum deles tem linha.
     /// </summary>
-    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado(Guid processoSeletivoId) =>
-        Result<FormularioApresentadoDoProcessoDto>.Failure(new DomainError(
-            "ProcessoSeletivo.NaoEncontrado",
-            $"Processo Seletivo {processoSeletivoId} não encontrado."));
+    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado() =>
+        Result<FormularioApresentadoDoProcessoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
 }

@@ -44,6 +44,6 @@ public sealed class ExigeLeituraDoProcessoAttribute : Attribute, IAsyncAuthoriza
             resultado = ResultadoDoAcesso.Negado;
         }
 
-        context.Result = RespostaDoAcesso.Para(resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId));
+        context.Result = RespostaDoAcesso.Para(resultado, () => RotaDoProcesso.NaoEncontrado(servicos));
     }
 }

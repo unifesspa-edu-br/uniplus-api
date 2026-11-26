@@ -93,7 +93,8 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
         administrador.StatusCode.Should().Be(HttpStatusCode.NotFound, motivo);
         outroRecurso.StatusCode.Should().Be(HttpStatusCode.NotFound, motivo);
-        (await administrador.Content.ReadAsStringAsync()).Should().Contain(processo.ToString());
+        string corpo = await administrador.Content.ReadAsStringAsync();
+        corpo.Should().Contain("Processo seletivo não encontrado.").And.NotContain(processo.ToString());
     }
 
     [Theory(DisplayName = "Recurso do processo: sem login responde 401")]

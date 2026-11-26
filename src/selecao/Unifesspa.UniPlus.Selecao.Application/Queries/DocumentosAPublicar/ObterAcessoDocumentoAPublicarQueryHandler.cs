@@ -47,7 +47,7 @@ public static class ObterAcessoDocumentoAPublicarQueryHandler
 
         if (await donos.DoProcessoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
         {
-            return Result<AcessoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(query.ProcessoSeletivoId));
+            return Result<AcessoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
         Result<DocumentoAPublicar> confirmado = await DocumentoConfirmadoDoProcessoAsync(query, documentoAPublicarRepository, cancellationToken).ConfigureAwait(false);
         return confirmado.IsFailure

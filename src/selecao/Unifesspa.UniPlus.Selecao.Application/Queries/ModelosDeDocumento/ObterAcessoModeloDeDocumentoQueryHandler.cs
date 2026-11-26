@@ -32,7 +32,7 @@ public static class ObterAcessoModeloDeDocumentoQueryHandler
 
         if (await donos.DoProcessoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
         {
-            return Result<AcessoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(query.ProcessoSeletivoId));
+            return Result<AcessoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         return await ObterDoProcessoAsync(query, modeloDeDocumentoRepository, storage, clock, cancellationToken).ConfigureAwait(false);

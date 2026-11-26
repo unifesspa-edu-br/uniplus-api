@@ -6,6 +6,8 @@ using Domain.ValueObjects;
 
 using DTOs;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -135,7 +137,5 @@ public static class ObterCertamePublicadoQueryHandler
     }
 
     private static Result<CertamePublicadoDto> NaoEncontrado() =>
-        Result<CertamePublicadoDto>.Failure(new DomainError(
-            "ProcessoSeletivo.NaoEncontrado",
-            "Processo Seletivo não encontrado."));
+        Result<CertamePublicadoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
 }

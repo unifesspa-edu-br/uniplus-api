@@ -50,7 +50,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
         ResultadoDoAcesso resultado = await DecidirAsync(servicos, processoId, context.HttpContext.RequestAborted).ConfigureAwait(false);
 
         context.Result = RespostaDoAcesso.Para(
-            resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId), () => RotaDoProcesso.Impedido(servicos));
+            resultado, () => RotaDoProcesso.NaoEncontrado(servicos), () => RotaDoProcesso.Impedido(servicos));
     }
 
     private Task<ResultadoDoAcesso> DecidirAsync(IServiceProvider servicos, Guid processoId, CancellationToken cancellationToken) =>

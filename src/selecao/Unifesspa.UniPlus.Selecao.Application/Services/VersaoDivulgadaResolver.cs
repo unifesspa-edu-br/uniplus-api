@@ -29,9 +29,7 @@ public static class VersaoDivulgadaResolver
             .ConfigureAwait(false);
         if (divulgado is null)
         {
-            return Result<VersaoDivulgada>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {processoSeletivoId} não encontrado."));
+            return Result<VersaoDivulgada>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository

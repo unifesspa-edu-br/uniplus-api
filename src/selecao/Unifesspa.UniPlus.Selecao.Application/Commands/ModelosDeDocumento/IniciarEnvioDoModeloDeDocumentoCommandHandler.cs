@@ -36,7 +36,7 @@ public static class IniciarEnvioDoModeloDeDocumentoCommandHandler
         ArgumentNullException.ThrowIfNull(clock);
 
         return await donos.DoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null
-            ? Result<IniciarEnvioDoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result<IniciarEnvioDoModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado())
             : await IniciarAsync(command, modeloDeDocumentoRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
     }
 

@@ -51,7 +51,7 @@ public static class ConfirmarEnvioDoDocumentoAPublicarCommandHandler
 
         return await bloqueio.BloquearSeExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false)
             ? await ConfirmarAsync(command, documentoAPublicarRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false)
-            : Result<DocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId));
+            : Result<DocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado());
     }
 
     private static async Task<Result<DocumentoAPublicarDto>> ConfirmarAsync(

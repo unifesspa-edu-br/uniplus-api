@@ -27,7 +27,7 @@ public static class RetirarMotivoDeDecisaoDoProcessoCommandHandler
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
             : await RetirarAsync(processo, command, motivoDoProcessoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 

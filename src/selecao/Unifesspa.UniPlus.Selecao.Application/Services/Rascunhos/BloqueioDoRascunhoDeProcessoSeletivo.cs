@@ -60,5 +60,5 @@ public sealed class BloqueioDoRascunhoDeProcessoSeletivo(
             ? new DomainError(
                 RascunhoDeProcessoSeletivoErrorCodes.JaPublicado,
                 "O rascunho já foi publicado e virou o processo seletivo de mesmo identificador; consulte o processo publicado.")
-            : AcessoAoProcesso.NaoEncontrado(id);
+            : AcessoAoProcesso.NaoEncontrado();
 }

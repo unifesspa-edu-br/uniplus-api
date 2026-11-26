@@ -6,6 +6,8 @@ using Domain.ProcessosSeletivos.Publicacao;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// Handler convention-based do <see cref="RetificarProcessoSeletivoCommand"/>
 /// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101 + ADR-0005): carrega o agregado com a
@@ -33,9 +35,7 @@ public static class RetificarProcessoSeletivoCommandHandler
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         return processo is null
-            ? (Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), [])
+            ? (Result.Failure(AcessoAoProcesso.NaoEncontrado()), [])
             : await RetificarAsync(processo, command, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
     }
 

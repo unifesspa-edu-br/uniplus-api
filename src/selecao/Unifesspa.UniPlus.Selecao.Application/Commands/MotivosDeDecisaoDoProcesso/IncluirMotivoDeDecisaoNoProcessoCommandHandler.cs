@@ -54,7 +54,7 @@ public static class IncluirMotivoDeDecisaoNoProcessoCommandHandler
 
     private static DomainError? RecusaAntesDeLerOCadastro(ProcessoSeletivo? processo, IncluirMotivoDeDecisaoNoProcessoCommand command) =>
         processo is null
-            ? AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId)
+            ? AcessoAoProcesso.NaoEncontrado()
             : EscolhaDosMotivos.RecusaDoLugarOuDoBloqueio(processo, command.Lugar);
 
     private static async Task<Result> IncluirAsync(

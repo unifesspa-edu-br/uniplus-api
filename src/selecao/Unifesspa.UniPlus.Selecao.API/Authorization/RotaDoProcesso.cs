@@ -24,8 +24,8 @@ internal static class RotaDoProcesso
             : Guid.Empty;
 
     /// <summary>A mesma resposta de processo inexistente: quem não pode alcançar o processo não descobre que ele existe.</summary>
-    public static IActionResult NaoEncontrado(IServiceProvider servicos, Guid processoId) =>
-        Result.Failure(AcessoAoProcesso.NaoEncontrado(processoId))
+    public static IActionResult NaoEncontrado(IServiceProvider servicos) =>
+        Result.Failure(AcessoAoProcesso.NaoEncontrado())
             .ToActionResult(servicos.GetRequiredService<IDomainErrorMapper>());
 
     /// <summary>O <c>403</c> de quem tem a permissão mas está inscrito no processo.</summary>

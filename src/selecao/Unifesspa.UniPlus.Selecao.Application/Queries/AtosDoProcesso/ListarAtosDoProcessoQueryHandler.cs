@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -31,9 +32,7 @@ public static class ListarAtosDoProcessoQueryHandler
             .ConfigureAwait(false);
         if (!existe)
         {
-            return Result<ListarAtosDoProcessoResult>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<ListarAtosDoProcessoResult>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository

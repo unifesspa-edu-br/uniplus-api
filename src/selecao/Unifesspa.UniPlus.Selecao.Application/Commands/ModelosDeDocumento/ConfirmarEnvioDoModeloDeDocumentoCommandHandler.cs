@@ -48,7 +48,7 @@ public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
 
         return await bloqueio.BloquearSeExisteAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false)
             ? await ConfirmarAsync(command, modeloDeDocumentoRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false)
-            : Result<ModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId));
+            : Result<ModeloDeDocumentoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
     }
 
     private static async Task<Result<ModeloDeDocumentoDto>> ConfirmarAsync(

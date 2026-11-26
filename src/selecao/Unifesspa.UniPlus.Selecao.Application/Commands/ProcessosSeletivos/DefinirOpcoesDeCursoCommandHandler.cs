@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -29,9 +31,7 @@ public static class DefinirOpcoesDeCursoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         // Fora do rascunho a recusa vem antes de consultar cadastros.

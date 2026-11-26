@@ -19,7 +19,7 @@ internal static class ProcessoSeletivoEmEdicao
         ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<ProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado(processoSeletivoId));
+            return Result<ProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         return processo.MutacaoBloqueada() is { } bloqueio

@@ -62,6 +62,6 @@ public sealed class ConfiguracaoVigenteDoProcesso(
         bool existe = await processoSeletivoRepository.ExisteAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         return Result<ConfiguracaoVigente>.Failure(existe
             ? new DomainError("Snapshot.VigenteAusente", $"Nenhuma publicação vigente para o instante {instante:O}.")
-            : new DomainError("ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado."));
+            : AcessoAoProcesso.NaoEncontrado());
     }
 }

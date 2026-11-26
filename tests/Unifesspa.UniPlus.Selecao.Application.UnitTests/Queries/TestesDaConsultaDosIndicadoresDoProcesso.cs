@@ -77,7 +77,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
 
         Result<IndicadoresDoProcessoDto> resultado = await ExecutarAsync(cenario);
 
-        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(ProcessoId).Code);
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
         await cenario.Verificador.DidNotReceiveWithAnyArgs()
             .ExigirAsync(default!, default, default);
     }
@@ -89,7 +89,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso
 
         Result<IndicadoresDoProcessoDto> resultado = await ExecutarAsync(cenario);
 
-        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(ProcessoId).Code);
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
         await cenario.Leitor.DidNotReceiveWithAnyArgs().LerAsync(default, default);
         await ConferirPermissaoAsync(cenario.Verificador, PermissaoSelecao.ProcessosConfigurar);
     }

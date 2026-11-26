@@ -47,7 +47,7 @@ public static class ObterRascunhoDeProcessoSeletivoQueryHandler
         RascunhoDeProcessoSeletivo? rascunho = await rascunhos.ObterAsync(id, cancellationToken).ConfigureAwait(false);
         if (rascunho is null)
         {
-            return Result<RascunhoDeProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado(id));
+            return Result<RascunhoDeProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         Result acesso = await AcessoAoProcesso

@@ -33,7 +33,7 @@ public sealed class EnvioDoModeloSemDonoTests
         Result<IniciarEnvioDoModeloDeDocumentoDto> resultado = await IniciarEnvioDoModeloDeDocumentoCommandHandler.Handle(
             new(_id, "Declaração", "DOCX"), _donos, _modelos, _storage, _unidadeDeTrabalho, _relogio, default);
 
-        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(_id).Code);
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
         await _storage.DidNotReceiveWithAnyArgs().GerarUrlUploadAsync(default!, default!, default, default);
     }
 
@@ -44,7 +44,7 @@ public sealed class EnvioDoModeloSemDonoTests
             new(_id, Guid.CreateVersion7()), new BloqueioCompartilhadoDoProcessoSeletivo(_rascunhos, _processos),
             _modelos, _storage, _unidadeDeTrabalho, _relogio, default);
 
-        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(_id).Code);
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
         await _modelos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 
@@ -54,7 +54,7 @@ public sealed class EnvioDoModeloSemDonoTests
         Result<AcessoModeloDeDocumentoDto> resultado = await ObterAcessoModeloDeDocumentoQueryHandler.Handle(
             new(_id, Guid.CreateVersion7()), _donos, _modelos, _storage, _relogio, default);
 
-        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado(_id).Code);
+        resultado.Error!.Code.Should().Be(AcessoAoProcesso.NaoEncontrado().Code);
         await _modelos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
     [Fact]

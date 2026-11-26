@@ -35,7 +35,7 @@ public static class AplicarModeloFormularioCommandHandler
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result<AplicacaoDeModeloDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result<AplicacaoDeModeloDto>.Failure(AcessoAoProcesso.NaoEncontrado())
             : await ConferirEAplicarAsync(command, processo, cadastros, modeloFormularioReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 

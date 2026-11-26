@@ -49,7 +49,7 @@ public static class ObterFormularioApresentadoDoRascunhoQueryHandler
         ProcessoSeletivo? processo = await repository.ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         // Código fora do formato não designa formulário nenhum: é o mesmo não encontrado do formulário ausente.
         return processo is null || CodigoDoFormulario.Criar(query.FormularioCodigo) is not { IsSuccess: true } codigo
-            ? NaoEncontrado(query.ProcessoSeletivoId)
+            ? NaoEncontrado()
             : await ProjetarAsync(processo, codigo.Value!, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
     }
 
@@ -81,14 +81,12 @@ public static class ObterFormularioApresentadoDoRascunhoQueryHandler
             codigo, avaliavel, declaracao.Coleta, CronogramaDoProcesso.Do(declaracao.Cronograma.CronogramaFases),
             ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(declaracao, fuso)) is { } formulario
             ? Result<FormularioApresentadoDoProcessoDto>.Success(DoRascunho(formulario, declaracao.Coleta.FormularioDe(codigo)!))
-            : NaoEncontrado(processo.Id);
+            : NaoEncontrado();
     }
 
     private static FormularioApresentadoDoProcessoDto DoRascunho(FormularioApresentado apresentado, FormularioProcesso formulario) =>
         new(apresentado, formulario.Codigo.Valor, formulario.FaseId, formulario.Obrigatorio, null, null, null);
 
-    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado(Guid processoSeletivoId) =>
-        Result<FormularioApresentadoDoProcessoDto>.Failure(new DomainError(
-            "ProcessoSeletivo.NaoEncontrado",
-            $"Processo Seletivo {processoSeletivoId} não encontrado, ou sem o formulário pedido."));
+    private static Result<FormularioApresentadoDoProcessoDto> NaoEncontrado() =>
+        Result<FormularioApresentadoDoProcessoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
 }

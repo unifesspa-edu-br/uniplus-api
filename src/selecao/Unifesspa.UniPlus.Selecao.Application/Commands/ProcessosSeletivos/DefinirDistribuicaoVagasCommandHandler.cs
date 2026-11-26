@@ -10,6 +10,8 @@ using Kernel.Results;
 
 using Queries.ProcessosSeletivos;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
@@ -80,8 +82,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result<ProcessoSeletivo>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."))
+            ? Result<ProcessoSeletivo>.Failure(AcessoAoProcesso.NaoEncontrado())
             : processo.MutacaoBloqueada() is { } bloqueio
                 ? Result<ProcessoSeletivo>.Failure(bloqueio)
                 : Result<ProcessoSeletivo>.Success(processo);
