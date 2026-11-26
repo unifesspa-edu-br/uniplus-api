@@ -10323,7 +10323,7 @@
       "codigo": "uniplus.estrutura_formulario.bloco_exigido_ausente",
       "requisitos": [],
       "oQueAconteceu": [
-        "As páginas de um formulário, de qualquer finalidade (inscrição, pedido de isenção da taxa ou habilitação), precisam trazer o bloco de sistema `REVISAO_E_ACEITE`, em que o candidato revisa as respostas e aceita o envio. As páginas enviadas não o trazem; a lista de páginas vazia cai aqui também. A mensagem é \"O formulário precisa do bloco REVISAO_E_ACEITE.\"",
+        "As páginas de qualquer formulário precisam trazer o bloco de sistema `REVISAO_E_ACEITE`, em que o candidato revisa as respostas e aceita o envio. As páginas enviadas não o trazem; a lista de páginas vazia cai aqui também. A mensagem é \"O formulário precisa do bloco REVISAO_E_ACEITE.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `paginas`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. O bloco não é acrescentado pelo sistema: ele precisa vir nas páginas enviadas.",
         "A estrutura das páginas só é conferida quando todas as páginas têm forma válida, e as recusas da estrutura saem juntas, na mesma lista. Na gravação do formulário do processo, a forma de cada página é conferida primeiro e, havendo recusa, a estrutura só é conferida se todas as páginas foram formadas. No modelo, a estrutura só é conferida quando o conteúdo não tem nenhuma outra recusa de forma, e os itens são conferidos contra as páginas só depois que a estrutura das páginas passa.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
@@ -10360,7 +10360,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Duas ou mais páginas do formulário declaram o mesmo bloco de sistema (`COMPROVACAO_DOCUMENTAL`, `MODALIDADES_CALCULADAS` ou `REVISAO_E_ACEITE`). Cada bloco entra uma vez, porque o sistema monta o bloco a partir da configuração do processo e não há o que repetir. A mensagem é \"O bloco aparece mais de uma vez no formulário.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `paginas[i].bloco`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A entrada aponta cada repetição, da segunda em diante, e a primeira ocorrência do bloco fica de fora da recusa. O bloco que a finalidade nem admite é recusado antes como [bloco não admitido](/erros/uniplus.estrutura_formulario.bloco_nao_admitido), a cada ocorrência, sem passar por esta conferência.",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `paginas[i].bloco`; nos modelos de formulário o `field` começa por `conteudo.`. Nada é gravado. A entrada aponta cada repetição, da segunda em diante, e a primeira ocorrência do bloco fica de fora da recusa. O bloco que a declaração do formulário nem admite é recusado antes como [bloco não admitido](/erros/uniplus.estrutura_formulario.bloco_nao_admitido), a cada ocorrência, sem passar por esta conferência.",
         "A estrutura das páginas só é conferida quando todas as páginas têm forma válida, e as recusas da estrutura saem juntas, na mesma lista. Na gravação do formulário do processo, a forma de cada página é conferida primeiro e, havendo recusa, a estrutura só é conferida se todas as páginas foram formadas. No modelo, a estrutura só é conferida quando o conteúdo não tem nenhuma outra recusa de forma, e os itens são conferidos contra as páginas só depois que a estrutura das páginas passa.",
         "Nos modelos de formulário, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
       ],
@@ -10407,21 +10407,6 @@
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
         "Gravação do formulário do processo"
-      ]
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.finalidade_invalida",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A finalidade informada não é `INSCRICAO`, `ISENCAO_TAXA` nem `HABILITACAO`, que são as três para as quais o formulário coleta respostas. A mensagem é \"A finalidade do formulário é inscrição, isenção de taxa ou habilitação.\"",
-        "Na definição de documentos exigidos do processo, a finalidade é declarada na exigência, para dizer em que formulário o documento é apresentado, e a recusa traz `field` igual a `finalidade`. Nada é gravado. O modelo de formulário não tem finalidade: ele declara se serve à fase de inscrição e se é obrigatório, e a recusa dessa declaração é a de [declaração do modelo ausente ou incompleta](/erros/uniplus.configuracao.modelo_formulario.declaracao_incompleta).",
-        "A finalidade do formulário do processo, que vai na rota, não passa por esta recusa: uma finalidade que não existe na rota é respondida com 404."
-      ],
-      "comoResolver": [
-        "Use um dos três valores: `INSCRICAO`, `ISENCAO_TAXA` ou `HABILITACAO`, em maiúsculas e com o sublinhado."
-      ],
-      "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo"
       ]
     },
     {

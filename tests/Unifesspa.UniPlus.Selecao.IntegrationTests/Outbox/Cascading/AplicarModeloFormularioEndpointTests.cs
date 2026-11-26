@@ -36,6 +36,8 @@ public sealed class AplicarModeloFormularioEndpointTests
 {
     private const string FormularioComplementar = "DADOS_COMPLEMENTARES";
 
+    private static readonly DeclaracaoDoFormulario DeOutraFase = new(ServeAFaseDeInscricao: false, Obrigatorio: true);
+
     private readonly CascadingFixture _fixture;
 
     public AplicarModeloFormularioEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -44,7 +46,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
+        Guid modeloId = await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, "QUILOMBOLA");
 
         HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao);
 
@@ -61,9 +63,9 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_FatoDeOutroFormulario_MudaDeFormularioNaMesmaGravacao()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FatoDeOutroFormulario_MudaDeFormularioNaMesmaGravacao), comFormularioComplementar: true);
-        (await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Habilitacao, "QUILOMBOLA"), FormularioComplementar)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AplicarAsync(processoId, await SemearModeloAsync(DeOutraFase, "QUILOMBOLA"), FormularioComplementar)).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA"), FormulariosDoProcessoDeTeste.Inscricao);
+        HttpResponseMessage resposta = await AplicarAsync(processoId, await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, "QUILOMBOLA"), FormulariosDoProcessoDeTeste.Inscricao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         ProcessoSeletivo processo = await LerProcessoAsync(processoId);
@@ -77,7 +79,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_FormularioInexistente_422()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_FormularioInexistente_422));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
+        Guid modeloId = await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, "QUILOMBOLA");
 
         HttpResponseMessage resposta = await AplicarAsync(processoId, modeloId, "FORMULARIO_QUE_NAO_EXISTE");
 
@@ -93,7 +95,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     public async Task AplicarModelo_ComGrupo_GravaESubstitui()
     {
         Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_ComGrupo_GravaESubstitui));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, ConteudoComGrupoDaComposicaoFamiliar());
+        Guid modeloId = await SemearModeloAsync(DeclaracaoDoFormulario.DaInscricao, ConteudoComGrupoDaComposicaoFamiliar());
 
         (await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao)).StatusCode.Should().Be(HttpStatusCode.OK);
         HttpResponseMessage reaplicado = await AplicarAsync(processoId, modeloId, FormulariosDoProcessoDeTeste.Inscricao);
@@ -137,12 +139,12 @@ public sealed class AplicarModeloFormularioEndpointTests
         return processo.Id;
     }
 
-    private Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, params string[] fatos) => SemearModeloAsync(finalidade, Conteudo(fatos));
+    private Task<Guid> SemearModeloAsync(DeclaracaoDoFormulario declaracao, params string[] fatos) => SemearModeloAsync(declaracao, Conteudo(fatos));
 
-    private async Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+    private async Task<Guid> SemearModeloAsync(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, finalidade, null, conteudo,
+            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, declaracao, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

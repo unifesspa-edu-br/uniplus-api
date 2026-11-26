@@ -45,7 +45,7 @@
     "chave": "EstruturaFormulario.BlocoNaoAdmitido",
     "status": 422,
     "codigo": "uniplus.estrutura_formulario.bloco_nao_admitido",
-    "titulo": "O bloco não é admitido pela finalidade do formulário"
+    "titulo": "O bloco não é admitido pela declaração do formulário"
   },
   {
     "chave": "EstruturaFormulario.BlocoRepetido",
@@ -57,7 +57,7 @@
     "chave": "EstruturaFormulario.BlocoExigidoAusente",
     "status": 422,
     "codigo": "uniplus.estrutura_formulario.bloco_exigido_ausente",
-    "titulo": "Falta um bloco que a finalidade exige"
+    "titulo": "Falta um bloco que a declaração do formulário exige"
   },
   {
     "chave": "EstruturaFormulario.RevisaoEAceiteForaDoFim",
@@ -76,12 +76,6 @@
     "status": 422,
     "codigo": "uniplus.estrutura_formulario.item_fora_da_ordem_das_secoes",
     "titulo": "A ordem dos itens não acompanha a ordem das seções"
-  },
-  {
-    "chave": "EstruturaFormulario.FinalidadeInvalida",
-    "status": 422,
-    "codigo": "uniplus.estrutura_formulario.finalidade_invalida",
-    "titulo": "A finalidade do formulário é inscrição, isenção de taxa ou habilitação"
   },
   {
     "chave": "EstruturaFormulario.TituloTamanho",

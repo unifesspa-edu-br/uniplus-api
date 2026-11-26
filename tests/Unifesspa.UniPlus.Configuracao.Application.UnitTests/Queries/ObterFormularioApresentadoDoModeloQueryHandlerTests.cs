@@ -57,14 +57,13 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
     }
 
-    [Fact(DisplayName = "As seções e os campos saem na ordem, com a finalidade derivada da declaração do modelo e o título")]
+    [Fact(DisplayName = "As seções e os campos saem na ordem, com o título")]
     public async Task Handle_Modelo_ProjetaSecoesECamposNaOrdem()
     {
         ModeloFormulario modelo = Modelo(itens: [Item("SEGUNDO", 1), Item("PRIMEIRO", 0)]);
 
         FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
-        resultado.Finalidade.Should().Be("HABILITACAO");
         resultado.Titulo.Should().Be("Habilitação");
         resultado.Coleta.Itens.Select(static c => (c.FatoCodigo, c.Ordem, c.PaginaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
         resultado.Paginas.Should().Equal(
@@ -159,7 +158,6 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 
         FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
-        resultado.Finalidade.Should().Be("INSCRICAO");
         resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
     }
 
@@ -170,7 +168,6 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 
         FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
-        resultado.Finalidade.Should().Be("ISENCAO_TAXA");
         resultado.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Equal("CERTIFICADO");
     }
 
@@ -181,7 +178,6 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
 
         FormularioApresentado resultado = (await ObterAsync(modelo))!;
 
-        resultado.Finalidade.Should().Be("INSCRICAO");
         resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
     }
 

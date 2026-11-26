@@ -64,7 +64,8 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         FatoColetadoInput porAmarela = ItemQueCita(Item("QUILOMBOLA", 1), "COR_RACA", "IGUAL", "AMARELA");
         FatoColetadoInput porIndigena = ItemQueCita(Item("CERTIFICADO", 2), "COR_RACA", "IGUAL", "INDIGENA");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("COR_RACA", 0, "ESCOLHA_UNICA"), porAmarela, porIndigena]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(
+            PapelDoFormularioDeTeste.Habilitacao, Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("COR_RACA", 0, "ESCOLHA_UNICA"), porAmarela, porIndigena]));
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(VinculoCatalogoErrorCodes.ValorDesativado, VinculoCatalogoErrorCodes.ValorDesativado);
     }

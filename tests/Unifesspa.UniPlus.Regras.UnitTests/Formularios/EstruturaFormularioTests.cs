@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// As regras de forma do formulário, as mesmas no processo e no modelo (ADR-0137): blocos que a
-/// finalidade admite e exige, a revisão e aceite por último, e os itens em seções, na ordem delas.
+/// declaração admite e exige, a revisão e aceite por último, e os itens em seções, na ordem delas.
 /// </summary>
 public sealed class EstruturaFormularioTests
 {

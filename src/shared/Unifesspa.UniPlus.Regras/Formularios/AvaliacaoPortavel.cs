@@ -52,7 +52,7 @@ public sealed record AvaliacaoPortavel(
 
 /// <summary>
 /// Uma página das regras avaliada, pelo código nas regras: se ela aparece. As páginas são as seções do
-/// formulário e, no rascunho com campo ainda sem seção, a página da finalidade; os blocos que o sistema
+/// formulário e, no rascunho com campo ainda sem seção, a página do formulário; os blocos que o sistema
 /// monta não têm regra e não entram.
 /// </summary>
 public sealed record PaginaAvaliada(string Codigo, [property: AceitaCodigosDe<Ternario>] string Visivel);

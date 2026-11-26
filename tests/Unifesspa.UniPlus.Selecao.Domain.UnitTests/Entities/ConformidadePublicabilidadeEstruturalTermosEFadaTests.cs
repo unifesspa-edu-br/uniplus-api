@@ -118,7 +118,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirFada(aplica: false, configuracao: null).IsSuccess.Should().BeTrue();
-        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
 
@@ -129,7 +129,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
 
     private static DocumentoExigido ExigenciaPorMunicipioDeParauapebas(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_PARAUAPEBAS", "Comprovante de escolaridade em Parauapebas", "ACADEMICO", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.FormularioDaInscricao))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "MUNICIPIO_EM_AREA_FADA", Operador.Igual, JsonSerializer.SerializeToElement("1505536")).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -142,7 +142,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
         ExigirDocumentos(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA")))
@@ -157,12 +157,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
         ExigirDocumentos(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
-        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();
-        processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.MunicipioDoFadaReferenciadoPorCondicaoViva");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()

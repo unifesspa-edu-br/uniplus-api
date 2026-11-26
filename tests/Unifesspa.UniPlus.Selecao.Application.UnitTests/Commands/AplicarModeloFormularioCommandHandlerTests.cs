@@ -38,7 +38,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         ];
         modelo = modelo with { Conteudo = modelo.Conteudo with { Paginas = paginas } };
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(PapelDoFormularioDeTeste.Habilitacao, modelo);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
             .Contain(("modelo.paginas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
@@ -68,7 +68,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     {
         ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO", 0)], pressupostos: ["QUILOMBOLA"]);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(PapelDoFormularioDeTeste.Habilitacao, modelo);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.pressupostos[0]");
     }
@@ -87,7 +87,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
 
         // Na habilitação, que não tem a seção do conjunto básico, a data de nascimento é coletada só se o modelo a pede.
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Habilitacao, itens, termos: [termo]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(
+            PapelDoFormularioDeTeste.Habilitacao, Modelo(PapelDoFormularioDeTeste.Habilitacao, itens, termos: [termo]));
 
         resultado.IsSuccess.Should().Be(coletaDataDeNascimento, resultado.Error?.Message);
     }
@@ -189,7 +190,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             .ExibidoQuando([[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]]).Construir();
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(
-            Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
+            PapelDoFormularioDeTeste.Habilitacao, Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("QUILOMBOLA", 0)], termos: [removido, citaIsencao]));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("modelo.termos[1]");
     }

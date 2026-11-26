@@ -67,11 +67,10 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
     private static FormularioApresentado Montar(DeclaracaoDoFormulario declaracao, SimulacaoDoModelo simulacao, IReadOnlyList<TermoApresentado> termos)
     {
         ConteudoDoModelo conteudo = simulacao.Conteudo;
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(simulacao.Definicao(), simulacao.Ofertas);
+        RecorteDoFormulario recorte = RecorteDoFormulario.DaDefinicaoInteira(simulacao.Definicao(), simulacao.Ofertas);
         DescricaoDosPressupostos descricao = new([], VocabularioDoCatalogo.ApresentacaoDos(simulacao.Fatos, recorte.Pressupostos), [.. simulacao.Agregados]);
 
         return new FormularioApresentado(
-            CorrespondenciaDaFinalidade.FinalidadeDa(declaracao).Codigo(),
             conteudo.Titulo,
             [.. conteudo.Paginas.OrderBy(static e => e.Ordem).Select(Secao)],
             termos,

@@ -39,7 +39,7 @@ public sealed class AplicarModeloFormularioEConjuntoBasicoTests
         _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("QUILOMBOLA", "Quilombola")]).IsSuccess.Should().BeTrue();
         ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(PapelDoFormularioDeTeste.Habilitacao, modelo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosMantidosNaInscricao.Should().Equal("QUILOMBOLA");

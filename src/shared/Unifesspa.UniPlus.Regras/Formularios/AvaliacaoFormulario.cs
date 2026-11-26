@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O que o avaliador recebe além da descrição do formulário: as respostas do candidato, as páginas
-/// que ele já concluiu, os fatos já conhecidos de fora do formulário — os coletados por uma
-/// finalidade anterior e os derivados pelo sistema, como o grupo da convocação — e o envio das
+/// que ele já concluiu, os fatos já conhecidos de fora do formulário — os coletados por um
+/// formulário anterior e os derivados pelo sistema, como o grupo da convocação — e o envio das
 /// respostas, de que se contam os limites da faixa de data.
 /// </summary>
 /// <remarks>

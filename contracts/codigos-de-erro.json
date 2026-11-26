@@ -3229,12 +3229,12 @@
     {
       "codigo": "uniplus.estrutura_formulario.bloco_exigido_ausente",
       "status": 422,
-      "titulo": "Falta um bloco que a finalidade exige"
+      "titulo": "Falta um bloco que a declaração do formulário exige"
     },
     {
       "codigo": "uniplus.estrutura_formulario.bloco_nao_admitido",
       "status": 422,
-      "titulo": "O bloco não é admitido pela finalidade do formulário"
+      "titulo": "O bloco não é admitido pela declaração do formulário"
     },
     {
       "codigo": "uniplus.estrutura_formulario.bloco_repetido",
@@ -3250,11 +3250,6 @@
       "codigo": "uniplus.estrutura_formulario.exibicao_fora_de_secao",
       "status": 422,
       "titulo": "Só a seção do formulário tem exibição condicional"
-    },
-    {
-      "codigo": "uniplus.estrutura_formulario.finalidade_invalida",
-      "status": 422,
-      "titulo": "A finalidade do formulário é inscrição, isenção de taxa ou habilitação"
     },
     {
       "codigo": "uniplus.estrutura_formulario.item_fora_da_ordem_das_secoes",

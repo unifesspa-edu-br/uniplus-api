@@ -54,10 +54,9 @@ public static class ProjecaoDoFormularioApresentado
         DateOnly? dataReferenciaFatos)
     {
         CamposApresentados campos = new(avaliavel.ValoresSelecionaveis, DeclaracoesDosFormularios(coleta, cronograma));
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(avaliavel.Definicao, formulario.Codigo.Valor, avaliavel.Ofertas);
+        RecorteDoFormulario recorte = RecorteDoFormulario.De(avaliavel.Definicao, formulario.Codigo.Valor, avaliavel.Ofertas);
 
         return new FormularioApresentado(
-            formulario.Codigo.Valor,
             formulario.Titulo,
             [.. formulario.Paginas.OrderBy(static e => e.Ordem).Select(e => Secao(formulario.Codigo, e))],
             [.. coleta.TermosExigidos.Where(t => t.FormularioId == formulario.Id).OrderBy(static t => t.Ordem).Select(t => Termo(formulario.Codigo, t))],
@@ -71,7 +70,7 @@ public static class ProjecaoDoFormularioApresentado
         ColetaDeclarada coleta,
         CamposApresentados campos,
         DefinicaoAvaliavel avaliavel,
-        RecorteDaFinalidade recorte,
+        RecorteDoFormulario recorte,
         DateOnly? dataReferenciaFatos)
     {
         DescricaoDosPressupostos descricao = new(
