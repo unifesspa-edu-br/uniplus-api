@@ -9,8 +9,12 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 
-public sealed class RecusasDasCondicoesDoModeloTests : ModeloFormularioHandlerTestBase
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
+
+public sealed class RecusasDasCondicoesDoModeloTests
 {
+    private readonly CenarioDoHandlerDoModelo _cenario = new();
+
     [Fact]
     public async Task Criar_ExibicaoComDuasCondicoesInvalidas_RecusaCadaPosicao()
     {
@@ -23,7 +27,7 @@ public sealed class RecusasDasCondicoesDoModeloTests : ModeloFormularioHandlerTe
         ];
         conteudo = conteudo with { Grupos = [grupo with { Regras = grupo.Regras! with { Exibicao = [condicoes] } }] };
 
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
 
         resultado.Errors.Select(static e => e.Field).Should().Contain(
             ["conteudo.grupos[0].regras.exibicao[0][0].fato", "conteudo.grupos[0].regras.exibicao[0][1].operador"]);

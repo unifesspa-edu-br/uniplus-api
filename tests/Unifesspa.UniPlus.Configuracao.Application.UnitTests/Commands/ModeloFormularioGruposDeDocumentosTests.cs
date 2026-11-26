@@ -10,12 +10,16 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
+
 /// <summary>
 /// Os grupos de documentos do conjunto padrão do modelo na escrita: o documento de um grupo é conferido
 /// contra o catálogo como o avulso, o grupo é gravado como veio, e o PUT substitui o conjunto inteiro.
 /// </summary>
-public sealed class ModeloFormularioGruposDeDocumentosTests : ModeloFormularioHandlerTestBase
+public sealed class ModeloFormularioGruposDeDocumentosTests
 {
+    private readonly CenarioDoHandlerDoModelo _cenario = new();
+
     private static DocumentoExigidoDoModeloInput LaudoQueExigeAoMenos(string fato) =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando(fato, true), new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []));
 
@@ -38,11 +42,11 @@ public sealed class ModeloFormularioGruposDeDocumentosTests : ModeloFormularioHa
     public async Task Criar_GrupoComDocumentoQueCitaFatoColetado_GravaOGrupo()
     {
         ModeloFormulario? gravado = null;
-        await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
+        await _cenario.Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
         GrupoDeDocumentosDoModeloInput grupo = new(
             2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput("REMOVE_VANTAGEM", []), [LaudoQueExigeAoMenos("CERTIFICADO")]);
 
-        Result<Guid> resultado = await CriarAsync(ComGrupoDeDocumentos(grupo));
+        Result<Guid> resultado = await _cenario.CriarAsync(ComGrupoDeDocumentos(grupo));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         GrupoDeDocumentosDoModelo gravada = gravado!.Conteudo.Documentos.GruposDeDocumentos.Should().ContainSingle().Subject;
@@ -54,7 +58,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests : ModeloFormularioHa
     [Fact(DisplayName = "A condição de um documento de grupo que cita fato fora do catálogo é recusada no caminho do documento do grupo")]
     public async Task Criar_DocumentoDeGrupoCitaFatoForaDoCatalogo_RecusaNoCaminhoDoGrupo()
     {
-        Result<Guid> resultado = await CriarAsync(ComGrupoDeDocumentos(ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, LaudoQueExigeAoMenos("NAO_EXISTE"))));
+        Result<Guid> resultado = await _cenario.CriarAsync(ComGrupoDeDocumentos(ConjuntoDeDocumentosDoModeloBuilder.Grupo(1, LaudoQueExigeAoMenos("NAO_EXISTE"))));
 
         resultado.Errors.Should().Contain(static e =>
             e.Field == "conteudo.conjuntoDeDocumentos.gruposDeDocumentos[0].documentos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
@@ -66,7 +70,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests : ModeloFormularioHa
         ModeloFormulario existente = ExistenteComDocumentosEGrupo();
         existente.Conteudo.Documentos.GruposDeDocumentos.Should().ContainSingle();
 
-        Result resultado = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), null);
+        Result resultado = await _cenario.AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), null);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         existente.Conteudo.Documentos.DocumentosExigidos.Should().BeEmpty();

@@ -101,7 +101,7 @@ internal static class ConferenciaDoModelo
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
             .Concat(campos.SelectMany(static i => i.Regras.Restricoes.SelectMany(static r => r.FatosCitados)))
-            .Concat(conteudo.Documentos.ComCaminho().Select(static c => c.Documento.PorOpcao?.FatoCodigo).OfType<string>().Select(TextoGravavel.CodigoNaFormaGravada));
+            .Concat(conteudo.Documentos.ComCaminho().Select(static c => c.Documento.PorOpcao?.FatoCodigo).OfType<string>());
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
@@ -154,8 +154,8 @@ internal static class ConferenciaDoModelo
 
     private static IEnumerable<FieldError> ConferirPressuposto(string pressuposto, string caminho, CatalogoDoModelo catalogo)
     {
-        string codigo = TextoGravavel.CodigoNaFormaGravada(pressuposto);
-        return !string.IsNullOrWhiteSpace(pressuposto) && ConferenciaNoCatalogo.FatoDoItem(codigo, catalogo.Fatos) is { } recusa
+        string codigo = pressuposto;
+        return CodigoFatoCandidato.EhValido(pressuposto) && ConferenciaNoCatalogo.FatoDoItem(codigo, catalogo.Fatos) is { } recusa
             ? [new FieldError(caminho, recusa, codigo)]
             : [];
     }
@@ -260,7 +260,7 @@ internal static class ConferenciaDoModelo
     }
 
     private static IEnumerable<FieldError> ConferirExigenciaPorOpcao(ExigenciaPorOpcao? porOpcao, string caminho, CatalogoDoModelo catalogo) =>
-        porOpcao is not null && RecusaDoFatoPorOpcao(porOpcao.FatoCodigo, catalogo) is { } recusa
+        porOpcao is not null && CodigoFatoCandidato.EhValido(porOpcao.FatoCodigo) && RecusaDoFatoPorOpcao(porOpcao.FatoCodigo, catalogo) is { } recusa
             ? [new FieldError($"{caminho}.porOpcao.fatoCodigo", recusa, porOpcao.FatoCodigo)]
             : [];
 
@@ -270,7 +270,7 @@ internal static class ConferenciaDoModelo
     /// </summary>
     private static DomainError? RecusaDoFatoPorOpcao(string fatoCodigoInformado, CatalogoDoModelo catalogo)
     {
-        string fatoCodigo = TextoGravavel.CodigoNaFormaGravada(fatoCodigoInformado);
+        string fatoCodigo = fatoCodigoInformado;
         if (!catalogo.Fatos.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
             return new(ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato.");

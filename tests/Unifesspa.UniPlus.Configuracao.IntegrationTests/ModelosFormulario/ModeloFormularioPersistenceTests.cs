@@ -92,7 +92,7 @@ public sealed class ModeloFormularioPersistenceTests
     private static ModeloFormulario NovoDeInscricaoComImpedimento(Impedimento impedimento)
     {
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
-            $"INS_{Guid.NewGuid():N}"[..30], "Inscrição PSIQ 2027", null, FinalidadeFormulario.Inscricao, "INDIGENA_E_QUILOMBOLA",
+            $"INS_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Inscrição PSIQ 2027", null, FinalidadeFormulario.Inscricao, "INDIGENA_E_QUILOMBOLA",
             ConteudoDaInscricaoComImpedimento(impedimento),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
@@ -115,7 +115,7 @@ public sealed class ModeloFormularioPersistenceTests
     [Fact(DisplayName = "O conteúdo do modelo volta do documento jsonb igual ao gravado")]
     public async Task Conteudo_IdaEVolta()
     {
-        ModeloFormulario modelo = Novo($"HAB_{Guid.NewGuid():N}"[..30]);
+        ModeloFormulario modelo = Novo($"HAB_{Guid.NewGuid():N}"[..30].ToUpperInvariant());
         await GravarAsync(modelo);
 
         ModeloFormulario lido = await LerAsync(modelo.Id);
@@ -144,7 +144,7 @@ public sealed class ModeloFormularioPersistenceTests
     [Fact(DisplayName = "O código do modelo é único entre todos os modelos")]
     public async Task CodigoRepetido_Recusado()
     {
-        string codigo = $"HAB_{Guid.NewGuid():N}"[..30];
+        string codigo = $"HAB_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
         await GravarAsync(Novo(codigo));
 
         await using UniPlusDbContext segundo = _fixture.CreateDbContext("admin-a");

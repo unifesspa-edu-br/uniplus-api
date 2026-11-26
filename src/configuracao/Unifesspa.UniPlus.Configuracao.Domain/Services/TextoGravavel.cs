@@ -27,10 +27,4 @@ public static class TextoGravavel
         }
     }
 
-    /// <summary>O código aparado e em NFC; o que não se normaliza fica como veio, para a recusa de texto não gravável.</summary>
-    public static string CodigoNaFormaGravada(string? codigo)
-    {
-        string aparado = (codigo ?? string.Empty).Trim();
-        return TextoNormalizavel.TentarNormalizar(aparado, out string normalizado) ? normalizado : aparado;
-    }
 }

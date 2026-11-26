@@ -112,7 +112,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     private async Task<Guid> SemearModeloAsync(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            $"MODELO_{Guid.NewGuid():N}"[..30], "Modelo", null, finalidade, null, conteudo,
+            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, finalidade, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

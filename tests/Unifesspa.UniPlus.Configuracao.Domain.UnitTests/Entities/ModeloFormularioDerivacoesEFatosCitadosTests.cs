@@ -84,12 +84,12 @@ public sealed class ModeloFormularioDerivacoesEFatosCitadosTests
         naoCitado.IsSuccess.Should().BeTrue(naoCitado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Pressuposto que só difere do item por espaço é o próprio item")]
-    public void PressupostoQueEItemPorEspaco_Recusa()
+    [Fact(DisplayName = "Pressuposto com espaço no fim é recusado pelo formato, e não tomado pelo item")]
+    public void PressupostoComEspacoNoFim_RecusaPeloFormato()
     {
         Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], "CONCLUSAO_REGULAR "));
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoTambemItem);
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoDoConteudoFormatoInvalido);
     }
 
     [Theory(DisplayName = "Documento do conjunto padrão que cita fato que o modelo não coleta é recusado, e o que cita fato coletado passa")]

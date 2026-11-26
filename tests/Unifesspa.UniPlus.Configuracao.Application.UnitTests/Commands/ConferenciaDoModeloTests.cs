@@ -118,7 +118,7 @@ public sealed class ConferenciaDoModeloTests
                 .ComObrigatoriedade("QUANDO", CitandoFatoInexistente).Construir(),
             EntradaDoTermoExigidoDeTeste.Exigindo("TERMO_USO", 1).DaVersao(TermoJaVinculado, VersaoJaVinculada).ExibidoQuando(CitandoFatoInexistente).Construir(),
         ],
-        ["NAO_EXISTE", string.Empty, " CERTIFICADO ", "MAIOR_IDADE"],
+        ["NAO_EXISTE", string.Empty, "CERTIFICADO", "MAIOR_IDADE"],
         [GrupoQueRecusa()],
         ConjuntoQueRecusa());
 
@@ -166,7 +166,7 @@ public sealed class ConferenciaDoModeloTests
     [
         new(string.Empty, "LAUDO_MEDICO", null, Indeferimento()),
         new("INSCRICAO", "LAUDO_MEDICO", CitandoFatoInexistente, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput("CERTIFICADO", [])),
-        new("INSCRICAO", "LAUDO_MEDICO", null, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput(" NAO_EXISTE ", [])),
+        new("INSCRICAO", "LAUDO_MEDICO", null, Indeferimento(), PorOpcao: new ExigenciaPorOpcaoInput("NAO_EXISTE", [])),
     ];
 
     private static IndeferimentoDoDocumentoDoModeloInput Indeferimento() => new(true, "REMOVE_VANTAGEM", []);

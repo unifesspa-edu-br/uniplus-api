@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -11,9 +10,9 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public sealed record DataDeReferenciaDoDocumentoDoModelo(TipoDaDataDeReferencia Tipo, string? FaseCodigo, DateOnly? Data)
 {
-    /// <summary>O código da fase na forma gravada: em NFC, ausente como ausente.</summary>
+    /// <summary>A referência preservada como recebida.</summary>
     public DataDeReferenciaDoDocumentoDoModelo NaFormaGravada() =>
-        this with { FaseCodigo = FaseCodigo is null ? null : TextoGravavel.CodigoNaFormaGravada(FaseCodigo) };
+        this;
 }
 
 /// <summary>

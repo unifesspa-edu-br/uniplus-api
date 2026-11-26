@@ -27,19 +27,23 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
+
 /// <summary>
 /// A escrita do modelo de formulário confere o conteúdo contra o catálogo de fatos, de termos e de
 /// tipos de processo pelas mesmas regras do formulário do processo (UNI-REQ-0144).
 /// </summary>
-public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandlerTestBase
+public sealed class ModeloFormularioCommandHandlerTests
 {
+    private readonly CenarioDoHandlerDoModelo _cenario = new();
+
     [Fact(DisplayName = "Cria o modelo conferido contra o catálogo, com o formato do campo de texto vindo do fato")]
     public async Task Criar_ConteudoValido_GravaComOFormatoDoCatalogo()
     {
         ModeloFormulario? gravado = null;
-        await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
+        await _cenario.Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CPF_RESPONSAVEL", 0, "TEXTO")), tipo: "REGULAR_UNIFICADO");
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CPF_RESPONSAVEL", 0, "TEXTO")), tipo: "REGULAR_UNIFICADO");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         gravado!.Conteudo.Itens.Single().Formato.Should().Be("CPF");
@@ -51,7 +55,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         CriarModeloFormularioCommand comando = new("HABILITACAO_MEDICINA", "HABILITACAO", null, Conteudo(Item("CERTIFICADO", 0)));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
-            comando, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
+            comando, _cenario.Repository, _cenario.Fatos, _cenario.Termos, _cenario.Tipos, _cenario.UnitOfWork, CancellationToken.None);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
             e => e.Field == "descritivo.nome" && e.Error.Code == ModeloFormularioErrorCodes.NomeObrigatorio);
@@ -60,7 +64,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "O tipo de processo inexistente é recusado no caminho do descritivo")]
     public async Task Criar_TipoDeProcessoInexistente_RecusaNoCaminhoDoDescritivo()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "NAO_EXISTE");
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "NAO_EXISTE");
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
             e => e.Field == "descritivo.tipoProcessoCodigo" && e.Error.Code == ModeloFormularioErrorCodes.TipoProcessoInexistente);
@@ -70,9 +74,9 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     public async Task Criar_CampoDoGrupoCitaCampoAnterior_Grava()
     {
         ModeloFormulario? gravado = null;
-        await Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
+        await _cenario.Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await CriarAsync(ComComposicao(
+        Result<Guid> resultado = await _cenario.CriarAsync(ComComposicao(
             Campo("MAIOR_IDADE", 0), Montar("SEM_RENDA", 1).NaSecao(null).ExibidoQuando(Quando("MAIOR_IDADE", true)).Construir()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -85,7 +89,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
         conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(1, IncluiCandidato: true, Maximo: 10) }] };
 
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
             e.Field == "conteudo.grupos[0].subitens" && e.Error.Code == GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto);
@@ -97,22 +101,22 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         ConteudoDoModeloInput conteudo = ComComposicao(Campo("MAIOR_IDADE", 0));
         conteudo = conteudo with { Grupos = [conteudo.Grupos![0] with { Ocorrencias = new OcorrenciasDoGrupoInput(null, IncluiCandidato: true, Maximo: 10) }] };
 
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle(static e => e.Field == "conteudo.grupos[0].ocorrencias.minimo").Subject;
         recusa.Error.Code.Should().Be(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
-        await Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Grupo sem as ocorrências é recusado no mínimo e na inclusão do candidato, antes das regras do grupo")]
     public async Task Criar_GrupoSemOcorrencias_RecusaOMinimoEAInclusaoAntesDasRegras()
     {
-        Result<Guid> resultado = await CriarAsync(SemOcorrenciasEComObrigatoriedadeInvalida(ComComposicao(Campo("MAIOR_IDADE", 0))));
+        Result<Guid> resultado = await _cenario.CriarAsync(SemOcorrenciasEComObrigatoriedadeInvalida(ComComposicao(Campo("MAIOR_IDADE", 0))));
 
         resultado.Errors.Select(static e => e.Field).Should().ContainInOrder(
             "conteudo.grupos[0].ocorrencias.minimo", "conteudo.grupos[0].ocorrencias.incluiCandidato", "conteudo.grupos[0].regras.obrigatoriedade");
         resultado.Errors.Take(2).Select(static e => e.Error.Code).Should().AllBe(GrupoFormularioErrorCodes.OcorrenciasObrigatorias);
-        await Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ModeloFormulario>(), Arg.Any<CancellationToken>());
     }
 
     private static ConteudoDoModeloInput SemOcorrenciasEComObrigatoriedadeInvalida(ConteudoDoModeloInput conteudo)
@@ -124,7 +128,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Campo do grupo com fato do candidato não é coletável na ocorrência")]
     public async Task Criar_CampoDoGrupoComFatoDoCandidato_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0, "TEXTO")));
+        Result<Guid> resultado = await _cenario.CriarAsync(ComComposicao(Campo("CPF_RESPONSAVEL", 0, "TEXTO")));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.grupos[0].subitens[0].fatoCodigo");
     }
@@ -132,9 +136,9 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Campo do grupo com fato de membro desativado é recusado como vínculo novo")]
     public async Task Criar_CampoDoGrupoDesativado_Recusa()
     {
-        MaiorIdade.Desativar().IsSuccess.Should().BeTrue();
+        _cenario.MaiorIdade.Desativar().IsSuccess.Should().BeTrue();
 
-        Result<Guid> resultado = await CriarAsync(ComComposicao(Campo("MAIOR_IDADE", 0)));
+        Result<Guid> resultado = await _cenario.CriarAsync(ComComposicao(Campo("MAIOR_IDADE", 0)));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
@@ -147,19 +151,19 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
             ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("NAO_EXISTE", true), new IndeferimentoDoDocumentoDoModeloInput(false, "REMOVE_VANTAGEM", []))),
         };
 
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
 
         resultado.Errors.Should().Contain(static e => e.Field == "conteudo.conjuntoDeDocumentos.documentosExigidos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
     }
 
     [Theory(DisplayName = "O documento só se multiplica pelas opções de fato cujas opções o processo declara")]
     [InlineData("CONDICAO", null)]
-    [InlineData(" CONDICAO ", null)]
+    [InlineData(" CONDICAO ", ModeloFormularioErrorCodes.CodigoDoConteudoFormatoInvalido)]
     [InlineData("CERTIFICADO", ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida)]
     [InlineData("NAO_EXISTE", ItemFormularioErrorCodes.FatoDesconhecido)]
     public async Task Criar_DocumentoPorOpcao_SoComOpcoesDoProcesso(string fato, string? recusa)
     {
-        Result<Guid> resultado = await CriarAsync(ComDocumentoPorOpcao(fato));
+        Result<Guid> resultado = await _cenario.CriarAsync(ComDocumentoPorOpcao(fato));
 
         if (recusa is null)
         {
@@ -179,7 +183,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
         FatoColetadoInput cita = Montar("CERTIFICADO", 1).ExibidoQuando(Quando("FAIXA_ETARIA", 18)).Construir();
         ConteudoDoModeloInput conteudo = coletaDataDeNascimento ? Conteudo(Item("DATA_NASCIMENTO", 0, "DATA"), cita) : Conteudo(cita);
 
-        Result<Guid> resultado = await CriarAsync(conteudo);
+        Result<Guid> resultado = await _cenario.CriarAsync(conteudo);
 
         if (coletaDataDeNascimento)
         {
@@ -194,7 +198,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     [Fact(DisplayName = "Item de fato calculado pelo sistema não é coletável")]
     public async Task Criar_ItemDeFatoCalculado_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("IDADE", 0, "NUMERO")));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("IDADE", 0, "NUMERO")));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.itens[0].fatoCodigo", new DomainError(ItemFormularioErrorCodes.FatoNaoColetavel, string.Empty)),
@@ -206,7 +210,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     {
         FatoColetadoInput exibido = Montar("CPF_RESPONSAVEL", 1, "TEXTO").ExibidoQuando(Quando("CERTIFICADO", "SIM")).Construir();
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), exibido));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0), exibido));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("conteudo.itens[1].regras.exibicao");
     }
@@ -216,7 +220,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     {
         FatoColetadoInput exibido = Montar("CERTIFICADO", 0).ExibidoQuando(Quando("IDADE", 18)).Construir();
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(exibido));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(exibido));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
             .Contain(("conteudo.itens[0].regras.exibicao", GrafoFormularioErrorCodes.CitaAtributoDoCandidato));
@@ -227,7 +231,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
     {
         TermoExigidoInput termo = EntradaDoTermoExigidoDeTeste.Exigindo("LGPD").DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Termos = [termo] });
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Termos = [termo] });
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.termos[0].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
@@ -240,7 +244,7 @@ public sealed class ModeloFormularioCommandHandlerTests : ModeloFormularioHandle
             new DescritivoDoFato("CONDICAO", "Condição", "Descrição do fato."),
             new DefinicaoDoFato(TipoDoDado.Opcao, QuantidadeDeValores.VariosValores, FonteValoresFato.OpcoesDoProcesso, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)).Value!;
         Aprovar(condicao);
-        Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, condicao]);
+        _cenario.Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_cenario.Certificado, condicao]);
         return Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "ESCOLHA_MULTIPLA")) with
         {
             ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(new DocumentoExigidoDoModeloInput("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO", true), new IndeferimentoDoDocumentoDoModeloInput(true, "REMOVE_VANTAGEM", []), PorOpcao: new ExigenciaPorOpcaoInput(fato, []))),
