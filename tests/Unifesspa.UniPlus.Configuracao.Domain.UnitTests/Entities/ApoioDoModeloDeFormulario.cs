@@ -35,11 +35,11 @@ internal static class ApoioDoModeloDeFormulario
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, []);
 
     internal static Result<ModeloFormulario> Criar(
-        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
-        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, finalidade, "REGULAR_UNIFICADO", conteudo, derivacoes ?? SemDerivacoes);
+        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
+        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, declaracao, "REGULAR_UNIFICADO", conteudo, derivacoes ?? SemDerivacoes);
 
     internal static Result<ModeloFormulario> CriarInscricao(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
-        ModeloFormulario.Criar("INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, FinalidadeFormulario.Inscricao, null, conteudo, derivacoes);
+        ModeloFormulario.Criar("INSCRICAO_MEDICINA", "Inscrição Medicina 2027", null, DeclaracaoDoFormulario.DaInscricao, null, conteudo, derivacoes);
 
     internal static GrupoDoModelo Composicao(params ItemDoModelo[] campos) =>
         new("COMPOSICAO_FAMILIAR", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 10, IncluiCandidato: false),

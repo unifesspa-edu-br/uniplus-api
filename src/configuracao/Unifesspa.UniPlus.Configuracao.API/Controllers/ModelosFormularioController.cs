@@ -17,7 +17,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -49,7 +48,8 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>
     /// Lista paginada, com filtros opcionais: o tipo de processo traz os modelos que servem a ele,
-    /// inclusive os que servem a todos; a finalidade é um dos códigos de finalidade do formulário.
+    /// inclusive os que servem a todos; <c>serveAFaseDeInscricao</c> separa os modelos que servem à fase de
+    /// inscrição dos que servem a outra fase.
     /// </summary>
     [HttpGet("admin/modelos-formulario")]
     [EndpointName("ListarModelosDeFormulario")]
@@ -61,25 +61,20 @@ public sealed class ModelosFormularioController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery] string? tipoProcesso = null,
-        [FromQuery, AceitaCodigosDe<FinalidadeFormulario>] string? finalidade = null,
+        [FromQuery] bool? serveAFaseDeInscricao = null,
         [FromQuery] bool? ativo = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
-        Result<ListarModelosFormularioResult> resultado = await _queryBus.Send(
-            new ListarModelosFormularioQuery(page.AfterId, page.Limit, page.Direction, tipoProcesso, finalidade, ativo), cancellationToken)
+        ListarModelosFormularioResult resultado = await _queryBus.Send(
+            new ListarModelosFormularioQuery(page.AfterId, page.Limit, page.Direction, tipoProcesso, serveAFaseDeInscricao, ativo), cancellationToken)
             .ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
 
         return await this.OkPaginatedAsync(
-            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, cancellationToken: cancellationToken)
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -170,7 +165,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>
     /// Cadastra o modelo desativado; ele entra na escolha de processos novos pela ativação. O código
-    /// e a finalidade são imutáveis; o conteúdo é conferido contra o catálogo de fatos, de termos e de
+    /// e a declaração — se serve à fase de inscrição e se é obrigatório — são imutáveis; o conteúdo é conferido contra o catálogo de fatos, de termos e de
     /// tipos de processo.
     /// </summary>
     [HttpPost("admin/modelos-formulario")]
@@ -193,7 +188,7 @@ public sealed class ModelosFormularioController : ControllerBase
 
     /// <summary>
     /// Substitui o descritivo e o conteúdo do modelo. O corpo é o <c>descritivo</c> e o <c>conteudo</c> da leitura
-    /// do modelo, e o conteúdo substitui o gravado em bloco; <c>id</c>, <c>codigo</c>, <c>finalidade</c> e
+    /// do modelo, e o conteúdo substitui o gravado em bloco; <c>id</c>, <c>codigo</c>, <c>declaracao</c> e
     /// <c>ativo</c> são ignorados.
     /// </summary>
     [HttpPut("admin/modelos-formulario/{id:guid}")]

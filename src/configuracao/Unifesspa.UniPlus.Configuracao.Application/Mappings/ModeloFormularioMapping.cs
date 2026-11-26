@@ -24,7 +24,7 @@ public static class ModeloFormularioMapping
         return new ModeloFormularioDto(
             modelo.Id,
             modelo.Codigo,
-            CodigoComRotulo<FinalidadeFormulario>.De(modelo.Finalidade),
+            new DeclaracaoDoModeloDto(modelo.ServeAFaseDeInscricao, modelo.Obrigatorio),
             modelo.Ativo,
             new DescritivoDoModeloDto(modelo.Nome, modelo.Descricao, modelo.TipoProcessoCodigo),
             modelo.Conteudo.ToDto());
@@ -67,7 +67,7 @@ public static class ModeloFormularioMapping
             modelo.Codigo,
             modelo.Nome,
             modelo.Descricao,
-            modelo.Finalidade.Codigo(),
+            modelo.Declaracao,
             modelo.TipoProcessoCodigo,
             modelo.Ativo,
             modelo.Conteudo.ParaEntrada());

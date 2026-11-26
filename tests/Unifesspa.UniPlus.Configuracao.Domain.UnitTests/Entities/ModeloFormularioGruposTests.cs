@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDoModeloDeFormulario;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 /// <summary>
 /// Os grupos repetíveis do modelo de formulário: o grafo de coleta dentro da ocorrência e o teto de itens.
@@ -19,7 +20,7 @@ public sealed class ModeloFormularioGruposTests
     public void Grupo_CampoCitaCampoAnteriorDaOcorrencia_Aceita()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([Item("RENDA_FAMILIAR", 0)]) with
             {
                 Grupos = [Composicao(Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1, exibicao: Quando("MAIOR_IDADE")))],
@@ -33,7 +34,7 @@ public sealed class ModeloFormularioGruposTests
     public void Grupo_ItemCitaCampoDoGrupo_Recusa()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([Item("RENDA_FAMILIAR", 2, exibicao: Quando("MAIOR_IDADE"))]) with { Grupos = [Composicao(Campo("MAIOR_IDADE", 0))] });
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoDeMembroForaDoGrupo);
@@ -43,7 +44,7 @@ public sealed class ModeloFormularioGruposTests
     public void Grupo_CampoOpcionalQueAlimentaNegacao_Recusa()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([]) with
             {
                 Grupos = [Composicao(Campo("MAIOR_IDADE", 0, Obrigatoriedade.Nunca), Campo("SEM_RENDA", 1, exibicao: Quando("MAIOR_IDADE", Operador.Diferente)))],
@@ -58,7 +59,7 @@ public sealed class ModeloFormularioGruposTests
         Dictionary<string, IReadOnlyCollection<string>> derivacoes = new(StringComparer.Ordinal) { ["BAIXA_RENDA"] = ["RENDA_DECLARADA"] };
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([Item("RENDA_DECLARADA", 0, Obrigatoriedade.Nunca)]) with
             {
                 Grupos = [Composicao(Campo("SEM_RENDA", 0, exibicao: Quando("BAIXA_RENDA")))],
@@ -72,7 +73,7 @@ public sealed class ModeloFormularioGruposTests
     public void Grupo_TetoContaGrupoECampos_Recusa()
     {
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([.. Enumerable.Range(0, FormaDoItem.MaximoDeItens - 2).Select(static i => Item($"ITEM_{i}", i + 1))]) with
             {
                 Grupos = [Composicao(Campo("MAIOR_IDADE", 0), Campo("SEM_RENDA", 1)) with { Ordem = 0 }],

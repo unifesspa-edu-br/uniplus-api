@@ -111,7 +111,7 @@ public sealed class ModeloFormularioInscricaoSemeadaEndpointTests
     }
 
     private static async Task<Guid> ModeloDaMedicinaAsync(HttpClient client) =>
-        await IdDoModeloAsync(client, "INSCRICAO", "PSR_INSCRICAO_SEM_PROVA");
+        await IdDoModeloAsync(client, serveAFaseDeInscricao: true, "PSR_INSCRICAO_SEM_PROVA");
 
     private static void ConferirLocalidadeAntesDoEndereco(JsonObject formulario)
     {

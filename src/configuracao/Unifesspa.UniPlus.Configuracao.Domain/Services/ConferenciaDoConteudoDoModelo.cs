@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// As regras do conteúdo do modelo de formulário, as mesmas do formulário do processo, aplicadas por
 /// <c>Unifesspa.UniPlus.Regras</c>. As recusas acumulam (ADR-0125) na ordem das regras: o cabeçalho, a forma
-/// de cada página, item, grupo e termo, o teto de itens e os pressupostos; a estrutura por finalidade e o
+/// de cada página, item, grupo e termo, o teto de itens e os pressupostos; a estrutura pela declaração e o
 /// grafo de coleta só são conferidos sobre partes bem formadas, porque dependem delas.
 /// </summary>
 public static class ConferenciaDoConteudoDoModelo
@@ -23,40 +23,40 @@ public static class ConferenciaDoConteudoDoModelo
     /// regra do catálogo, para o grafo.
     /// </summary>
     public static List<FieldError> Conferir(
-        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(derivacoes);
 
-        return [.. NoConteudo(ConferirNormalizado(finalidade, conteudo, derivacoes))];
+        return [.. NoConteudo(ConferirNormalizado(declaracao, conteudo, derivacoes))];
     }
 
     private static List<FieldError> ConferirNormalizado(
-        FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        List<FieldError> erros = ConferirPartesDoConteudo(finalidade, conteudo);
+        List<FieldError> erros = ConferirPartesDoConteudo(declaracao, conteudo);
 
-        // A estrutura depende da finalidade, recusada no cadastro.
-        return erros.Count > 0 || FormaDoCabecalho.ValidarFinalidade(finalidade).Count > 0 || finalidade is not { } declarada
+        // A estrutura depende da declaração, recusada no cadastro quando incompleta.
+        return erros.Count > 0 || declaracao is not { } declarada
             ? erros
             : ConferirEstruturaEGrafo(declarada, conteudo, derivacoes);
     }
 
-    private static List<FieldError> ConferirPartesDoConteudo(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo) =>
+    private static List<FieldError> ConferirPartesDoConteudo(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo) =>
     [
         .. conteudo.TextosNaoGravaveis(),
         .. FormaDoCabecalho.ValidarTitulo(conteudo.Titulo),
         .. ConferirFormaDasPaginas(conteudo),
-        .. ConferirCamposEGrupos(finalidade, conteudo),
+        .. ConferirCamposEGrupos(declaracao, conteudo),
         .. ConferirFormaDosTermos(conteudo),
-        .. ConferirPressupostos(finalidade, conteudo),
+        .. ConferirPressupostos(declaracao, conteudo),
         .. FormatoDosCodigosDoConteudo.Conferir(conteudo),
     ];
 
     private static List<FieldError> ConferirEstruturaEGrafo(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        List<FieldError> erros = ConferirEstruturaPorFinalidade(finalidade, conteudo);
+        List<FieldError> erros = ConferirEstruturaPelaDeclaracao(declaracao, conteudo);
         if (erros.Count == 0 && ConferirGrafo(conteudo, derivacoes) is { } recusa)
         {
             erros.Add(recusa);
@@ -70,7 +70,7 @@ public static class ConferenciaDoConteudoDoModelo
             FormaDaPagina.Conferir(pagina.Codigo, pagina.Ordem, pagina.Tipo, pagina.Titulo, pagina.Descricao, pagina.Aviso, pagina.Exibicao is not null),
             $"paginas[{i}]"));
 
-    private static List<FieldError> ConferirCamposEGrupos(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo)
+    private static List<FieldError> ConferirCamposEGrupos(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo)
     {
         List<FieldError> excesso = FormaDoItem.ValidarQuantidade(
             FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)));
@@ -79,7 +79,7 @@ public static class ConferenciaDoConteudoDoModelo
             :
             [
                 .. conteudo.Itens.SelectMany((item, i) => ConferirCampo(item, $"itens[{i}]")),
-                .. Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), conteudo.Itens.Select(static i => i.Regras.Impedimento)),
+                .. Impedimento.ConferirDeclaracao(declaracao, conteudo.Itens.Select(static i => i.Regras.Impedimento)),
                 .. conteudo.Grupos.SelectMany((grupo, i) => ConferirGrupo(grupo, $"grupos[{i}]")),
             ];
     }
@@ -123,11 +123,11 @@ public static class ConferenciaDoConteudoDoModelo
         erros.Select(e => e.NoCaminhoDoItem(caminho));
 
     /// <summary>
-    /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo de inscrição não tem, e o
-    /// fato não é pressuposto e item do mesmo modelo.
+    /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo que serve à fase de inscrição não
+    /// tem, e o fato não é pressuposto e item do mesmo modelo.
     /// </summary>
-    private static List<FieldError> ConferirPressupostos(FinalidadeFormulario? finalidade, ConteudoDoModelo conteudo) =>
-        finalidade == FinalidadeFormulario.Inscricao && conteudo.Pressupostos.Count > 0
+    private static List<FieldError> ConferirPressupostos(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo) =>
+        declaracao is { ServeAFaseDeInscricao: true } && conteudo.Pressupostos.Count > 0
             ? [new("pressupostos", new DomainError(
                 ModeloFormularioErrorCodes.PressupostoNaInscricao,
                 "O modelo de inscrição não tem pressupostos: nenhum formulário é respondido antes dele."))]
@@ -175,10 +175,10 @@ public static class ConferenciaDoConteudoDoModelo
             ModeloFormularioErrorCodes.PressupostoTambemItem,
             "O fato é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição."));
 
-    private static List<FieldError> ConferirEstruturaPorFinalidade(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
+    private static List<FieldError> ConferirEstruturaPelaDeclaracao(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo)
     {
         PaginaEstrutura[] paginas = [.. conteudo.Paginas.Select(static e => new PaginaEstrutura(e.Codigo, e.Ordem, e.Tipo, e.Bloco))];
-        List<FieldError> erros = [.. EstruturaFormulario.ValidarPaginas(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), paginas)];
+        List<FieldError> erros = [.. EstruturaFormulario.ValidarPaginas(declaracao, paginas)];
         if (erros.Count == 0)
         {
             erros.AddRange(EstruturaFormulario.ValidarItens(

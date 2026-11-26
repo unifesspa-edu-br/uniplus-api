@@ -22,6 +22,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
+
 /// <summary>
 /// A alteração da definição do fato do administrador é recusada, sem gravar, quando deixaria de
 /// valer o que o cita dentro da Configuração: regra padrão de outro derivado, agregado, modelo de
@@ -375,7 +377,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     private static ModeloFormulario ModeloHabilitacao(ConteudoDoModelo conteudo, bool ativo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, FinalidadeFormulario.Habilitacao, null, conteudo,
+            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, null, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         if (ativo)
         {

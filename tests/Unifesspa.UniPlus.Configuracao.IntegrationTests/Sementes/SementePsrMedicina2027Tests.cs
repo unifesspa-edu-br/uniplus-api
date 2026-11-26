@@ -45,7 +45,7 @@ public sealed class SementePsrMedicina2027Tests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Depois da preparaÃ§Ã£o do banco, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
+    [Fact(DisplayName = "Depois da preparação do banco, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
     public async Task PreparacaoDoBanco_GravaOTipoOsTermosEOsFatos()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -125,6 +125,25 @@ public sealed class SementePsrMedicina2027Tests
 
         ConferirTermoDoBancoCentralSoNaHabilitacao(inscricao, habilitacao);
         ConferirFatorDeAtenuacaoPedidoUmaVez(inscricao);
+    }
+
+    [Fact(DisplayName = "Os modelos semeados declaram a fase e a obrigatoriedade: a inscrição serve à fase de inscrição e é obrigatória, e a habilitação é obrigatória e serve a outra fase")]
+    public async Task Modelos_DeclaramAFaseEAObrigatoriedade()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Dictionary<string, DeclaracaoDoFormulario> declaracoes = await ctx.ModelosFormulario
+            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
+            .ToDictionaryAsync(static m => m.Codigo, static m => m.Declaracao);
+
+        declaracoes.Should().Equal(new Dictionary<string, DeclaracaoDoFormulario>
+        {
+            [SementePsrMedicina2027.ModeloDeInscricaoSemProva] = DeclaracaoDoFormulario.DaInscricao,
+            [SementePsrMedicina2027.ModeloDeInscricaoComProva] = DeclaracaoDoFormulario.DaInscricao,
+            [SementePsrMedicina2027.ModeloDeHabilitacao] = new(ServeAFaseDeInscricao: false, Obrigatorio: true),
+        });
     }
 
     private static void ConferirTermoDoBancoCentralSoNaHabilitacao(ModeloFormulario inscricao, ModeloFormulario habilitacao)

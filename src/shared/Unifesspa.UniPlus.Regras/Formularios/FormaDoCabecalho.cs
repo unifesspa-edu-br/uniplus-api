@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 
-/// <summary>O cabeçalho do formulário, o mesmo no processo e no modelo: a finalidade e o título.</summary>
+/// <summary>O cabeçalho do formulário do processo: a finalidade e o título.</summary>
 public static class FormaDoCabecalho
 {
     public const int TituloMaxLength = 300;

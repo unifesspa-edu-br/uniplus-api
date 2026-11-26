@@ -31,7 +31,7 @@ public sealed class SementeIsencaoDaTaxaTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Depois da preparaÃ§Ã£o do banco, o modelo de isenção é ativo, sem tipo de processo, e coleta ou pressupõe todo fato que a condição da Lei nº 12.799/2013 cita")]
+    [Fact(DisplayName = "Depois da preparação do banco, o modelo de isenção é ativo, sem tipo de processo, e coleta ou pressupõe todo fato que a condição da Lei nº 12.799/2013 cita")]
     public async Task PreparacaoDoBanco_GravaOModeloDeIsencao()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -39,7 +39,7 @@ public sealed class SementeIsencaoDaTaxaTests
         ModeloFormulario modelo = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementeIsencaoDaTaxa.ModeloDeIsencao);
 
         modelo.Ativo.Should().BeTrue();
-        modelo.Finalidade.Should().Be(FinalidadeFormulario.IsencaoTaxa);
+        modelo.Declaracao.Should().Be(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: false));
         modelo.TipoProcessoCodigo.Should().BeNull("o modelo de isenção serve a qualquer processo que cobre taxa");
         modelo.Conteudo.Pressupostos.Should().BeEquivalentTo(IsencaoPorCarenciaSocioeconomica.FatosDaInscricao);
         modelo.Conteudo.Itens.Select(static i => i.FatoCodigo).Concat(modelo.Conteudo.Pressupostos)
@@ -52,7 +52,7 @@ public sealed class SementeIsencaoDaTaxaTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string antes = await RetratoAsync(ctx);
-        antes.Should().NotBeEmpty("a preparaÃ§Ã£o do banco já gravou os termos e o modelo");
+        antes.Should().NotBeEmpty("a preparação do banco já gravou os termos e o modelo");
 
         foreach (ComandoDaSemente comando in SementeIsencaoDaTaxa.Comandos())
         {

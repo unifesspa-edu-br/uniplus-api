@@ -42,6 +42,14 @@ public sealed class ModeloFormularioReaderTests
         lido!.Ativo.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "O modelo é lido com a declaração de servir à fase de inscrição e de ser obrigatório")]
+    public async Task Obter_Modelo_TrazADeclaracao()
+    {
+        ModeloFormularioView? lido = await GravarELerAsync(Novo());
+
+        lido!.Declaracao.Should().Be(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true));
+    }
+
     [Fact(DisplayName = "O item e o grupo do modelo são lidos como foram gravados")]
     public async Task Obter_Conteudo_TrazItemEGrupoGravados()
     {
@@ -77,7 +85,7 @@ public sealed class ModeloFormularioReaderTests
 
     private static ModeloFormulario Novo() =>
         ModeloFormulario.Criar(
-            $"A_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
+            $"A_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Habilitação", null, new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), null,
             ConteudoDeHabilitacao(),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
 

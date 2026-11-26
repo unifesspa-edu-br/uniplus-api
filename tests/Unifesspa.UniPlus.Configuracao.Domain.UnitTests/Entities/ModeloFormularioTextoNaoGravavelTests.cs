@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDoModeloDeFormulario;
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport.DeclaracoesDeModeloDeTeste;
 
 /// <summary>
 /// Os textos que o banco não grava (caractere nulo, surrogate sem par, código que cresce na normalização) são recusados no cadastro.
@@ -35,7 +36,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
     public void TextoComCaractereNulo_NaDescricao_Recusa()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", "texto\0", FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            "HABILITACAO_MEDICINA", "Habilitação", "texto\0", DeOutraFaseObrigatoria, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         DeveRecusarTextoNaoGravavelEm(modelo, "descritivo.descricao");
     }
@@ -43,7 +44,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
     [Fact(DisplayName = "Texto com caractere nulo no rótulo do item é recusado no caminho do conteúdo")]
     public void TextoComCaractereNulo_NoRotuloDoItem_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0).ComRotulo("Certificado\0")]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0).ComRotulo("Certificado\0")]));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].apresentacao.rotulo");
     }
@@ -54,7 +55,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         PredicadoDnf valorNulo = QuandoOValorE(Operador.Igual, JsonSerializer.SerializeToElement("A\0"));
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: valorNulo)], "CONCLUSAO_REGULAR"));
+            DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0, exibicao: valorNulo)], "CONCLUSAO_REGULAR"));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.exibicao");
     }
@@ -65,7 +66,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         PredicadoDnf valorNulo = QuandoOValorE(Operador.Igual, JsonSerializer.SerializeToElement("A\0"));
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, Obrigatoriedade.Quando(valorNulo))], "CONCLUSAO_REGULAR"));
+            DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0, Obrigatoriedade.Quando(valorNulo))], "CONCLUSAO_REGULAR"));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.obrigatoriedade.predicado");
     }
@@ -76,7 +77,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         JsonElement objetoNulo = JsonSerializer.SerializeToElement(new[] { new Dictionary<string, string> { ["a\0"] = "b" } });
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.AlgumDe, objetoNulo))], "CONCLUSAO_REGULAR"));
+            DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0, exibicao: QuandoOValorE(Operador.AlgumDe, objetoNulo))], "CONCLUSAO_REGULAR"));
 
         DeveRecusarTextoNaoGravavelEm(modelo, "conteudo.itens[0].regras.exibicao");
     }
@@ -89,12 +90,12 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
             "INSCRICAO", tipo, quando, new IndeferimentoDoDocumentoDoModelo(false, "RETIRA_O_ACRESCIMO", [new("Edital", "INTERNA_EDITAL", "PENDENTE", observacao)]),
             RequisitosDoDocumentoDoModelo.AindaNaoEscolhidos);
 
-        return Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(documento) });
+        return Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(documento) });
     }
 
     private static Result<ModeloFormulario> CriarComRequisitos(RequisitosDoDocumentoDoModelo requisitos) =>
         Criar(
-            FinalidadeFormulario.Habilitacao,
+            DeOutraFaseObrigatoria,
             Conteudo([Item("CERTIFICADO", 0)]) with { ConjuntoDeDocumentos = ConteudosDoModeloDeTeste.Conjunto(ConteudosDoModeloDeTeste.Documento("LAUDO", requisitos: requisitos)) });
 
     [Fact(DisplayName = "Caractere nulo no código da fase da referência do prazo de emissão é recusado no caminho dela")]
@@ -124,7 +125,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
     [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
     public void CodigoComSurrogateSemPar_Recusa()
     {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO\uD800", 0).ComRotulo("Certificado")]));
+        Result<ModeloFormulario> modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO\uD800", 0).ComRotulo("Certificado")]));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
     }
@@ -135,7 +136,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         TermoDoModelo termo = new("LGPD\uD800", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
 
         Result<ModeloFormulario> modelo = Criar(
-            FinalidadeFormulario.Habilitacao, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], [], []));
+            DeOutraFaseObrigatoria, new ConteudoDoModelo("Habilitação", [Dados, Revisao], [Item("CERTIFICADO", 0)], [termo], [], []));
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TermoFormularioErrorCodes.CodigoFormatoInvalido);
     }
@@ -146,7 +147,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         string codigo = string.Concat(Enumerable.Repeat("\u0958", ModeloFormulario.CodigoMaxLength));
 
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            codigo, "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            codigo, "Habilitação", null, DeOutraFaseObrigatoria, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoFormatoInvalido);
     }
