@@ -4481,7 +4481,7 @@
       ],
       "oQueAconteceu": [
         "O administrador cadastrou um fato derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`) ou alterou a definição de um fato derivado (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) com um `dominio` de número, texto, data ou endereço. O fato derivado por regra é verdadeiro quando alguma regra se aplica (booleano) ou reúne os valores que as regras contribuem (categórico), e só esses dois tipos de dado têm esse resultado (UNI-REQ-0075).",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o tipo de dado recusado, o que depende dele, como a fonte dos valores, não é conferido. Nada é gravado. Um `dominio` fora do vocabulário recebe [a recusa de domínio fora do vocabulário](/erros/uniplus.configuracao.fato_candidato.dominio_invalido)."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o tipo de dado recusado, a coerência da fonte e do formato com ele não é conferida; códigos desconhecidos desses campos continuam sendo recusados. Nada é gravado. Um `dominio` fora do vocabulário recebe [a recusa de domínio fora do vocabulário](/erros/uniplus.configuracao.fato_candidato.dominio_invalido)."
       ],
       "comoResolver": [
         "Informe `SIM_OU_NAO` ou `OPCAO`. O fato derivado por regra não produz número, texto, data nem endereço: um dado desses tipos é coletado de quem se inscreve, num fato declarado (`POST /api/configuracao/admin/fatos-candidato`)."
@@ -4532,7 +4532,7 @@
       ],
       "oQueAconteceu": [
         "O administrador cadastrou um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`), ou alterou a definição de um fato (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`), com um `dominio` que não pertence ao vocabulário fechado. O domínio é o tipo de dado do fato (UNI-REQ-0143). A comparação diferencia maiúsculas de minúsculas, e os espaços nas pontas são desconsiderados.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o domínio recusado, o que depende dele, como a fonte dos valores e o formato, não é conferido. Nada é gravado. Um `dominio` vazio recebe [a recusa de domínio obrigatório](/erros/uniplus.configuracao.fato_candidato.dominio_obrigatorio). No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, o domínio fora do vocabulário recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o domínio recusado, a coerência da fonte e do formato com ele não é conferida; códigos desconhecidos desses campos continuam sendo recusados. Nada é gravado. Um `dominio` vazio recebe [a recusa de domínio obrigatório](/erros/uniplus.configuracao.fato_candidato.dominio_obrigatorio). No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, o domínio fora do vocabulário recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
       ],
       "comoResolver": [
         "Envie um destes domínios, escrito exatamente assim, em maiúsculas: `SIM_OU_NAO`, `OPCAO`, `NUMERICO`, `TEXTO`, `DATA` ou `ENDERECO`. O fato derivado por regra aceita só `SIM_OU_NAO` e `OPCAO`, e o resumo de grupo não informa o domínio, porque o infere do fato de membro."
@@ -4568,7 +4568,7 @@
       ],
       "oQueAconteceu": [
         "O tipo de dado (`dominio`) é um dos eixos do fato (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`) chegou com o `dominio` vazio ou só com espaços, ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado ou derivado chegou sem ele. Na alteração, todos os eixos do tipo do fato são enviados de novo, e o que não vem é tratado como não informado.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o domínio ausente, o que depende dele, como a fonte dos valores e o formato, não é conferido. Nada é gravado. Um domínio preenchido e desconhecido recebe [a recusa de domínio fora do vocabulário](/erros/uniplus.configuracao.fato_candidato.dominio_invalido). O campo ausente do corpo do cadastro é recusado antes, como erro de requisição (400)."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `dominio`. Com o domínio ausente, a coerência da fonte e do formato com ele não é conferida; códigos desconhecidos desses campos continuam sendo recusados. Nada é gravado. Um domínio preenchido e desconhecido recebe [a recusa de domínio fora do vocabulário](/erros/uniplus.configuracao.fato_candidato.dominio_invalido). O campo ausente do corpo do cadastro é recusado antes, como erro de requisição (400)."
       ],
       "comoResolver": [
         "Informe o domínio: `SIM_OU_NAO`, `OPCAO`, `NUMERICO`, `TEXTO`, `DATA` ou `ENDERECO`. No fato derivado por regra, só `SIM_OU_NAO` e `OPCAO`. O resumo de grupo não informa o domínio, e por isso não recebe esta recusa."
@@ -4597,6 +4597,25 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.fato_candidato.escopo_invalido",
+      "requisitos": [
+        "UNI-REQ-0143",
+        "UNI-REQ-0159"
+      ],
+      "oQueAconteceu": [
+        "O campo `escopo` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "A recusa aparece em `errors`, no campo `escopo`. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe o escopo, escrito exatamente assim, em maiúsculas:",
+        "- `CANDIDATO`: o próprio candidato responde, uma única vez;\n- `MEMBRO_GRUPO`: cada membro de um grupo repetível responde."
+      ],
+      "ondeAparece": [
+        "Cadastro de um fato declarado do catálogo",
+        "Alteração da definição de um fato do catálogo"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.fato_candidato.escopo_obrigatorio",
       "requisitos": [
         "UNI-REQ-0143",
@@ -4604,8 +4623,9 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O escopo diz quem responde ao fato: o próprio candidato, uma única vez, ou cada membro de um grupo repetível, como a composição familiar (UNI-REQ-0146). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou derivado por regra (`POST /api/configuracao/admin/fatos-candidato/derivados`) chegou com o `escopo` vazio, só com espaços ou com um valor que não é do vocabulário, ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado ou derivado chegou sem ele. Para o escopo, as duas situações recebem este mesmo código de erro.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `escopo`. Nada é gravado. O campo ausente do corpo do cadastro é recusado antes, como erro de requisição (400). No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, um escopo fora do vocabulário também recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada). O resumo de grupo não informa o escopo: quem o envia recebe [a recusa de eixo que o tipo do fato não permite alterar](/erros/uniplus.configuracao.fato_candidato.eixo_nao_editavel_no_tipo_do_fato)."
+        "O cadastro ou a alteração da definição de um fato declarado ou derivado por regra chegou com o escopo ausente, vazio ou só com espaços.",
+        "A recusa aparece em `errors`, no campo `escopo`. Nada é gravado.",
+        "Um código desconhecido recebe [a recusa própria](/erros/uniplus.configuracao.fato_candidato.escopo_invalido)."
       ],
       "comoResolver": [
         "Informe o escopo, escrito exatamente assim, em maiúsculas:",
@@ -4690,11 +4710,29 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "A fonte dos valores diz de onde vêm as opções de um fato categórico, que é escolhido numa lista. Os outros tipos de dado não têm opções (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe uma `fonteValores` junto de um `dominio` que não é `OPCAO`. A fonte preenchida com um valor fora do vocabulário também cai aqui.",
+        "A fonte dos valores diz de onde vêm as opções de um fato categórico, que é escolhido numa lista. Os outros tipos de dado não têm opções (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe uma `fonteValores` junto de um `dominio` que não é `OPCAO`.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `fonteValores`. Ela só é dada quando o domínio é válido. Nada é gravado. O fato derivado por regra e o resumo de grupo não informam a fonte: quem a envia na alteração recebe [a recusa de eixo que o tipo do fato não permite alterar](/erros/uniplus.configuracao.fato_candidato.eixo_nao_editavel_no_tipo_do_fato)."
       ],
       "comoResolver": [
         "Retire a `fonteValores` do corpo, ou mude o `dominio` para `OPCAO` se o fato é mesmo uma lista de opções."
+      ],
+      "ondeAparece": [
+        "Cadastro de um fato declarado do catálogo",
+        "Alteração da definição de um fato do catálogo"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.fato_candidato.fonte_valores_invalida",
+      "requisitos": [
+        "UNI-REQ-0143",
+        "UNI-REQ-0159"
+      ],
+      "oQueAconteceu": [
+        "O campo `fonteValores` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "A recusa aparece em `errors`, no campo `fonteValores`. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS` ou `TIPOS_DE_DEFICIENCIA`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
       ],
       "ondeAparece": [
         "Cadastro de um fato declarado do catálogo",
@@ -4708,8 +4746,9 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O fato categórico é escolhido numa lista, e a fonte dos valores diz de onde vêm as opções (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe o `dominio` `OPCAO` com a `fonteValores` ausente, vazia ou com um valor que não pertence ao vocabulário. Para a fonte, as duas situações recebem este mesmo código de erro.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `fonteValores`. Ela só é dada quando o domínio é válido. Nada é gravado. No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, uma fonte fora do vocabulário também recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
+        "Um fato categórico chegou sem a fonte dos valores, que indica de onde vêm suas opções.",
+        "A recusa aparece em `errors`, no campo `fonteValores`. Nada é gravado.",
+        "Um código desconhecido recebe [a recusa própria](/erros/uniplus.configuracao.fato_candidato.fonte_valores_invalida)."
       ],
       "comoResolver": [
         "Informe uma destas fontes, escrita exatamente assim, em maiúsculas: `CATALOGO`, `OPCOES_DO_PROCESSO`, `MODALIDADE`, `MUNICIPIOS_DO_FADA`, `UNIDADES_FEDERATIVAS`, `MUNICIPIOS` ou `TIPOS_DE_DEFICIENCIA`. Com `CATALOGO`, as opções são cadastradas no próprio fato (`POST /api/configuracao/admin/fatos-candidato/{id}/valores`); nas demais, vêm do processo ou de outro cadastro, e o fato não guarda valores. O fato derivado por regra categórico usa a fonte `CATALOGO`, inferida, e o resumo de grupo herda a do fato de membro."
@@ -4726,11 +4765,29 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O formato diz como o texto do fato é conferido e apresentado, como CPF, e-mail ou telefone, e só existe no fato de tipo de dado texto (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe um `formato` junto de um `dominio` que não é `TEXTO`. O formato preenchido com um valor fora do vocabulário também cai aqui.",
+        "O formato diz como o texto do fato é conferido e apresentado, como CPF, e-mail ou telefone, e só existe no fato de tipo de dado texto (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe um `formato` junto de um `dominio` que não é `TEXTO`.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `formato`. Ela só é dada quando o domínio é válido. Nada é gravado. O fato derivado por regra e o resumo de grupo não informam o formato: quem o envia na alteração recebe [a recusa de eixo que o tipo do fato não permite alterar](/erros/uniplus.configuracao.fato_candidato.eixo_nao_editavel_no_tipo_do_fato)."
       ],
       "comoResolver": [
         "Retire o `formato` do corpo, ou mude o `dominio` para `TEXTO` se o fato é mesmo um texto."
+      ],
+      "ondeAparece": [
+        "Cadastro de um fato declarado do catálogo",
+        "Alteração da definição de um fato do catálogo"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.fato_candidato.formato_invalido",
+      "requisitos": [
+        "UNI-REQ-0143",
+        "UNI-REQ-0159"
+      ],
+      "oQueAconteceu": [
+        "O campo `formato` foi preenchido com um código que não pertence ao vocabulário aceito.",
+        "A recusa aparece em `errors`, no campo `formato`. Nada é gravado."
+      ],
+      "comoResolver": [
+        "Informe um destes formatos, escrito exatamente assim, em maiúsculas: `LIVRE`, `CPF`, `EMAIL`, `TELEFONE`, `CEP` ou `NOME_PESSOA`. Um fato de texto nunca fica abaixo de `PESSOAL` na proteção de dados, o que vale também para o formato `LIVRE`, que pode conter qualquer coisa: veja [a classificação incompatível com o domínio do fato](/erros/uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio)."
       ],
       "ondeAparece": [
         "Cadastro de um fato declarado do catálogo",
@@ -4744,8 +4801,9 @@
         "UNI-REQ-0159"
       ],
       "oQueAconteceu": [
-        "O fato de tipo de dado texto declara o formato do texto (UNI-REQ-0143). O cadastro de um fato declarado (`POST /api/configuracao/admin/fatos-candidato`) ou a alteração da definição (`PUT /api/configuracao/admin/fatos-candidato/{id}/definicao`) de um fato declarado trouxe o `dominio` `TEXTO` com o `formato` ausente, vazio ou com um valor que não pertence ao vocabulário. Para o formato, as duas situações recebem este mesmo código de erro.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `formato`. Ela só é dada quando o domínio é válido. Nada é gravado. No fato de sistema, que só aceita mudar o nome, a descrição, a forma de exibição e a proteção de dados, um formato fora do vocabulário também recebe esta recusa, antes da recusa de [definição do fato de sistema travada](/erros/uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada)."
+        "Um fato de texto chegou sem o formato que descreve seu conteúdo.",
+        "A recusa aparece em `errors`, no campo `formato`. Nada é gravado.",
+        "Um código desconhecido recebe [a recusa própria](/erros/uniplus.configuracao.fato_candidato.formato_invalido)."
       ],
       "comoResolver": [
         "Informe um destes formatos, escrito exatamente assim, em maiúsculas: `LIVRE`, `CPF`, `EMAIL`, `TELEFONE`, `CEP` ou `NOME_PESSOA`. Um fato de texto nunca fica abaixo de `PESSOAL` na proteção de dados, o que vale também para o formato `LIVRE`, que pode conter qualquer coisa: veja [a classificação incompatível com o domínio do fato](/erros/uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio)."

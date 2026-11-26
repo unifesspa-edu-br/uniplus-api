@@ -64,7 +64,9 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
             ConferirEixos();
         }
 
-        return Proposta(ConferirPontoDeResolucao(), ConferirProtecao());
+        Result<string> ponto = ConferirPontoDeResolucao();
+        ConferirEscopoDaRedefinicao();
+        return Proposta(ponto, ConferirProtecao());
     }
 
     private Result<string> ConferirPontoDeResolucao()
@@ -110,14 +112,12 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
         RecusarSeInformado("cardinalidade", _definicao.Cardinalidade.Informado, MensagemDoAgregado);
         RecusarSeInformado("fonteValores", _definicao.FonteValores.Informado, MensagemDoAgregado);
         RecusarSeInformado("formato", _definicao.Formato.Informado, MensagemDoAgregado);
-        RecusarSeInformado("escopo", _definicao.Escopo.Informado, MensagemDoAgregado);
     }
 
     private void ConferirEixos()
     {
         _dominio = _definicao.Dominio.Valor;
         _escopo = _definicao.Escopo.Valor;
-        ConferirEscopo(_erros, _definicao.Escopo);
         if (_fato.DerivadoPorRegra)
         {
             ConferirEixosDoDerivado();
@@ -130,14 +130,26 @@ internal sealed class ConferenciaDaRedefinicaoDoFato
         RecusarValoresQueOEixoNaoComporta();
     }
 
+    private void ConferirEscopoDaRedefinicao()
+    {
+        if (_fato.FatoDeMembroAgregado is not null)
+        {
+            RecusarSeInformado("escopo", _definicao.Escopo.Informado, MensagemDoAgregado);
+        }
+        else
+        {
+            ConferirEscopo(_erros, _definicao.Escopo);
+        }
+    }
+
     private void ConferirEixosDoDerivado()
     {
+        _eixosDeValorValidos = _dominioAplicavel = ConferirDominioDoDerivado(_erros, _definicao.Dominio);
         RecusarSeInformado("cardinalidade", _definicao.Cardinalidade.Informado, MensagemDoDerivado);
         RecusarSeInformado("fonteValores", _definicao.FonteValores.Informado, MensagemDoDerivado);
         RecusarSeInformado("formato", _definicao.Formato.Informado, MensagemDoDerivado);
         (_cardinalidade, _fonteValores) = EixosInferidosDoDerivado(_dominio);
         _formato = null;
-        _eixosDeValorValidos = _dominioAplicavel = ConferirDominioDoDerivado(_erros, _definicao.Dominio);
     }
 
     private void ConferirEixosDeValorInformados()

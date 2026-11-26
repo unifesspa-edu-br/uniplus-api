@@ -38,13 +38,13 @@ public sealed class FatoCandidatoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
 
     [Theory(DisplayName = "Escopo ausente ou fora do vocabulário é recusado")]
-    [InlineData(null)]
-    [InlineData("  ")]
-    [InlineData("TODOS")]
-    [InlineData("candidato")]
-    public void Criar_EscopoInvalido_Recusa(string? codigo) =>
+    [InlineData(null, FatoCandidatoErrorCodes.EscopoObrigatorio)]
+    [InlineData("  ", FatoCandidatoErrorCodes.EscopoObrigatorio)]
+    [InlineData("TODOS", FatoCandidatoErrorCodes.EscopoInvalido)]
+    [InlineData("candidato", FatoCandidatoErrorCodes.EscopoInvalido)]
+    public void Criar_EscopoInvalido_Recusa(string? codigo, string esperado) =>
         Criar(definicao: Definicao with { Escopo = CodigoInformado<EscopoFato>.Ler(codigo) })
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.EscopoObrigatorio);
+            .Error!.Code.Should().Be(esperado);
 
     [Theory(DisplayName = "Fato de texto declara formato, e só ele")]
     [InlineData(TipoDoDado.Texto, null, FatoCandidatoErrorCodes.FormatoObrigatorio)]

@@ -38,9 +38,9 @@ internal static class RedefinicaoDoFatoDeSistema
     private static IEnumerable<FieldError> ForaDoVocabulario(DefinicaoDoFato definicao) => Presentes(
         ForaDoVocabularioFechado(definicao.Dominio, "dominio", FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado."),
         ForaDoVocabularioFechado(definicao.Cardinalidade, "cardinalidade", FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado."),
-        ForaDoVocabularioFechado(definicao.Escopo, "escopo", FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato fora do vocabulário fechado."),
-        ForaDoVocabularioFechado(definicao.FonteValores, "fonteValores", FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fonte dos valores do fato fora do vocabulário fechado."),
-        ForaDoVocabularioFechado(definicao.Formato, "formato", FatoCandidatoErrorCodes.FormatoObrigatorio, "Formato do fato fora do vocabulário fechado."));
+        ForaDoVocabularioFechado(definicao.FonteValores, "fonteValores", FatoCandidatoErrorCodes.FonteValoresInvalida, "Fonte dos valores do fato fora do vocabulário fechado."),
+        ForaDoVocabularioFechado(definicao.Formato, "formato", FatoCandidatoErrorCodes.FormatoInvalido, "Formato do fato fora do vocabulário fechado."),
+        ForaDoVocabularioFechado(definicao.Escopo, "escopo", FatoCandidatoErrorCodes.EscopoInvalido, "Escopo do fato fora do vocabulário fechado."));
 
     private static FieldError? ForaDoVocabularioFechado<T>(CodigoInformado<T> informado, string campo, string codigo, string mensagem)
         where T : struct, Enum =>
