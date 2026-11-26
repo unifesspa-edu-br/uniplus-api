@@ -94,12 +94,25 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemForaDoQuadro");
-        result.Error.Message.Should().Contain("FISICA")
+        result.Error.Message.Should().NotContain("FISICA")
             .And.Contain("CIENCIAS_DA_NATUREZA (Ciências da Natureza e suas Tecnologias)")
             .And.Contain("CIENCIAS_HUMANAS (Ciências Humanas e suas Tecnologias)")
             .And.Contain("LINGUAGENS (Linguagens e suas Tecnologias)")
             .And.Contain("MATEMATICA (Matemática e suas Tecnologias)")
             .And.Contain("REDACAO (Redação)");
+    }
+
+    [Fact(DisplayName = "A recusa da área fora do quadro não repete o código enviado e mantém o código de erro e o campo")]
+    public void DefinirCriteriosDesempate_AreaForaDoQuadro_MensagemSemOCodigoEnviado()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirClassificacao(ClassificacaoEnem()).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "AREA_FORA_DO_QUADRO")]);
+
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[0].parametros.areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+        erro.Error.Message.Should().NotContain("AREA_FORA_DO_QUADRO").And.Contain("Áreas aceitas:");
     }
 
     [Fact(DisplayName = "Áreas fora do quadro em dois critérios acumulam, cada recusa no campo da área")]
@@ -115,8 +128,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("criterios[0].parametros.areas[1]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"),
             ("criterios[2].parametros.areas[0]", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
-        result.Errors[0].Error.Message.Should().Contain("FISICA").And.Contain("ordem 1");
-        result.Errors[1].Error.Message.Should().Contain("QUIMICA").And.Contain("ordem 3");
+        result.Errors[0].Error.Message.Should().NotContain("FISICA").And.Contain("ordem 1");
+        result.Errors[1].Error.Message.Should().NotContain("QUIMICA").And.Contain("ordem 3");
     }
 
     [Fact(DisplayName = "Lista de critérios acima do teto é recusada inteira, com um único erro")]

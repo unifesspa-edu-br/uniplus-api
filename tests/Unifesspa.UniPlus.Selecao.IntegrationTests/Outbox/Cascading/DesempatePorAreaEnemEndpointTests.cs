@@ -94,7 +94,8 @@ public sealed class DesempatePorAreaEnemEndpointTests
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         string[] textos = [.. Textos(problema.RootElement)];
         textos.Should().Contain("uniplus.selecao.processo_seletivo.desempate_area_enem_fora_do_quadro");
-        textos.Should().Contain(texto => texto.Contains("FISICA", StringComparison.Ordinal)
+        textos.Should().NotContain(texto => texto.Contains("FISICA", StringComparison.Ordinal));
+        textos.Should().Contain(texto => texto.Contains("Áreas aceitas:", StringComparison.Ordinal)
             && texto.Contains("REDACAO (Redação)", StringComparison.Ordinal)
             && texto.Contains("MATEMATICA (Matemática e suas Tecnologias)", StringComparison.Ordinal));
 

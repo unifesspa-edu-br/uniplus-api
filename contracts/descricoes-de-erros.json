@@ -17169,32 +17169,28 @@
       "oQueAconteceu": [
         "Cada área da ordem de desempate pela maior nota em área do ENEM é um código de\nárea. O código precisa ter a forma de código: até 30 caracteres, hoje, só com letras\nmaiúsculas sem acento, algarismos e sublinhado, e não pode ser vazio. A recusa vem\nem `criterios[n].parametros.areas[m]`, na posição da área inválida, e uma área em branco ou\nnula conta como vazia.",
         "A conferência é só de forma. A área bem formada que o quadro de pesos por área da\nclassificação não tem é outra recusa\n([`desempate_area_enem_fora_do_quadro`](/erros/uniplus.selecao.processo_seletivo.desempate_area_enem_fora_do_quadro)),\ne a área repetida no mesmo critério também\n([`area_repetida`](/erros/uniplus.selecao.criterio_desempate.area_repetida)).",
-        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) as recusas de todas as\náreas e de todos os critérios se acumulam na lista `errors[]`. Uma área enviada\ncomo número recebe 400 com o código `uniplus.requisicao.malformada`. Quando a classificação já\ntem o quadro de pesos por área, a primeira recusa de área traz a lista das áreas\naceitas. Na publicação e na retificação em ato único é uma pendência da configuração,\nconferida na ordem fixa das verificações, e a mensagem traz a ordem do critério."
+        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) as recusas de todas as\náreas e de todos os critérios se acumulam na lista `errors[]`. Uma área enviada\ncomo número recebe 400 com o código `uniplus.requisicao.malformada`. Quando a classificação já\ntem o quadro de pesos por área, a primeira recusa de área traz a lista das áreas\naceitas."
       ],
       "comoResolver": [
-        "Corrija o código da área na posição indicada, usando um dos códigos do quadro de\npesos por área da classificação, ou retire a área da lista. Na publicação e na\nretificação em ato único, corrija os critérios de desempate e repita a operação."
+        "Corrija o código da área na posição indicada, usando um dos códigos do quadro de\npesos por área da classificação, ou retire a área da lista."
       ],
       "ondeAparece": [
-        "Definição de critérios de desempate do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "Definição de critérios de desempate do processo seletivo"
       ]
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.area_repetida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A ordem de áreas de um critério de desempate pela maior nota em área do ENEM lista\na mesma área mais de uma vez. A segunda comparação, e as seguintes, nunca\ndesempatariam: quem chega a elas já tem a mesma nota nessa área. A recusa vem em\n`criterios[n].areas[m]`, na posição da repetição (a primeira ocorrência é aceita), e\na mensagem traz o código da área.",
+        "A ordem de áreas de um critério de desempate pela maior nota em área do ENEM lista\na mesma área mais de uma vez. A segunda comparação, e as seguintes, nunca\ndesempatariam: quem chega a elas já tem a mesma nota nessa área. A recusa vem em\n`criterios[n].parametros.areas[m]`, na posição da repetição (a primeira ocorrência é aceita), e a mensagem não repete o código da área enviado; o campo aponta a posição.",
         "A conferência é feita dentro de um mesmo critério e só para o código bem formado,\ncom comparação exata de letras. A área citada em dois critérios diferentes é outra\nrecusa\n([`area_enem_citada_por_outro_criterio`](/erros/uniplus.selecao.processo_seletivo.area_enem_citada_por_outro_criterio)).",
-        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) as recusas se acumulam no\narray `errors[]`. Na publicação e na retificação em ato único é uma pendência da\nconfiguração, conferida na ordem fixa das verificações, e a mensagem traz a ordem do\ncritério."
+        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) as recusas se acumulam no\narray `errors[]`."
       ],
       "comoResolver": [
-        "Retire a área repetida da lista, deixando cada área uma única vez, na ordem em que\nas notas devem ser comparadas. Na publicação e na retificação em ato único,\ncorrija os critérios de desempate e repita a operação."
+        "Retire a área repetida da lista, deixando cada área uma única vez, na ordem em que\nas notas devem ser comparadas."
       ],
       "ondeAparece": [
-        "Definição de critérios de desempate do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "Definição de critérios de desempate do processo seletivo"
       ]
     },
     {
@@ -17202,15 +17198,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A ordem de áreas do critério de desempate pela maior nota em área do ENEM tem mais\náreas do que o máximo que o critério admite, hoje 20. A recusa vem em\n`criterios[n].areas`, e a lista é recusada inteira, sem um erro por área: ao passar\ndo máximo, o resto da lista nem é conferido.",
-        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) a recusa acumula com as\ndos demais critérios no array `errors[]`. Na publicação e na retificação em ato\núnico é uma pendência da configuração, conferida na ordem fixa das verificações, e a\nmensagem traz a ordem do critério."
+        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) a recusa acumula com as\ndos demais critérios no array `errors[]`."
       ],
       "comoResolver": [
-        "Reduza a lista ao que o edital pede: cada área só pode aparecer uma vez e só as\náreas do quadro de pesos da classificação servem ao desempate. Na publicação e na\nretificação em ato único, corrija os critérios de desempate e repita a operação."
+        "Reduza a lista ao que o edital pede: cada área só pode aparecer uma vez e só as\náreas do quadro de pesos da classificação servem ao desempate."
       ],
       "ondeAparece": [
-        "Definição de critérios de desempate do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "Definição de critérios de desempate do processo seletivo"
       ]
     },
     {
@@ -17218,15 +17212,13 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O critério de desempate pela maior nota em área do ENEM compara, em sequência, a\nnota do candidato nas áreas indicadas, na ordem em que vêm. O critério foi\ndeclarado sem `areas`, ou com a lista vazia, e sem nenhuma área não há o que\ncomparar. A recusa vem em `criterios[n].areas`.",
-        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) a recusa acumula com as\ndos demais critérios no array `errors[]`; quando a lista de áreas é vazia ela é a\núnica recusa de área daquele critério. Na publicação e na retificação em ato único\né uma pendência da configuração: a conferência roda na ordem fixa das verificações e\ndevolve a primeira pendência, e a mensagem traz a ordem do critério."
+        "Na definição dos critérios de desempate\n(`PUT .../processos-seletivos/{id}/criterios-desempate`) a recusa acumula com as\ndos demais critérios no array `errors[]`; quando a lista de áreas é vazia ela é a\núnica recusa de área daquele critério."
       ],
       "comoResolver": [
-        "Na definição, informe ao menos uma área no critério, ou retire o critério da\nordem de desempate. Na publicação e na retificação em ato único, corrija os\ncritérios de desempate com a lista de áreas preenchida e repita a operação."
+        "Informe ao menos uma área no critério, ou retire o critério da\nordem de desempate."
       ],
       "ondeAparece": [
-        "Definição de critérios de desempate do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "Definição de critérios de desempate do processo seletivo"
       ]
     },
     {
@@ -23362,7 +23354,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Dois critérios de desempate pela maior nota em área do ENEM citam a mesma área. A\nprimeira citação, na ordem do desempate, já compara a nota nessa área; o empate que\nchega ao critério seguinte já tem a mesma nota nela, de modo que a segunda citação\nnunca desempata. A recusa sai com **422**.",
-        "\"Primeiro\" vale pela ordem do desempate declarada em cada critério, e não pela posição\nna lista enviada. A mensagem de detalhe diz qual área se repete e em qual critério ela\njá tinha sido citada; o campo do erro aponta o critério e a posição da área repetida.",
+        "\"Primeiro\" vale pela ordem do desempate declarada em cada critério, e não pela posição\nna lista enviada. A mensagem diz em qual critério a área repetida está e em qual critério ela já tinha sido citada, sem repetir\no código da área; o campo do erro aponta o critério e a posição da área repetida.",
         "Na definição dos critérios, nada foi gravado. Na publicação e na retificação em ato único, a mesma conferência roda sobre a\nconfiguração do processo, e a operação é recusada antes de gerar a versão."
       ],
       "comoResolver": [
@@ -23641,16 +23633,13 @@
       "codigo": "uniplus.selecao.processo_seletivo.criterios_desempate_em_excesso",
       "requisitos": [],
       "oQueAconteceu": [
-        "A ordem de desempate do processo traz mais critérios do que o limite de **20**. A\nmensagem de detalhe diz o limite e quantos critérios vieram. O limite é fixo do\nsistema, e não um valor que o processo configure. Na definição dos critérios o erro\nvem com o campo `criterios`, e a recusa sai com **422** sem gravar nada.",
-        "A mesma conferência roda como defesa na publicação e na retificação em ato único,\npara que um rascunho gravado antes do limite, ou por outro caminho, não gere versão\npublicada."
+        "A ordem de desempate do processo traz mais critérios do que o limite de **20**. A\nmensagem de detalhe diz o limite, mas não quantos critérios vieram. O limite é fixo do\nsistema, e não um valor que o processo configure. Na definição dos critérios o erro\nvem com o campo `criterios`, e a recusa sai com **422** sem gravar nada."
       ],
       "comoResolver": [
-        "Reduza a ordem de desempate a, no máximo, 20 critérios e reenvie\n(`PUT /api/selecao/processos-seletivos/{id}/criterios-desempate`). Quando o erro vier\nna publicação ou na retificação, ajuste a ordem de desempate do processo e repita a\noperação."
+        "Reduza a ordem de desempate a, no máximo, 20 critérios e reenvie\n(`PUT /api/selecao/processos-seletivos/{id}/criterios-desempate`)."
       ],
       "ondeAparece": [
-        "Definição de critérios de desempate do processo seletivo",
-        "Publicação inicial do processo seletivo",
-        "Retificação em ato único"
+        "Definição de critérios de desempate do processo seletivo"
       ]
     },
     {
@@ -23688,7 +23677,7 @@
       "oQueAconteceu": [
         "Um critério de desempate pela maior nota em área do ENEM cita uma área que a\nclassificação do processo não tem em todos os grupos do quadro de pesos por área. O\ndesempate compara a nota naquela área, e ele só faz sentido para as áreas que compõem\na nota de todos os grupos de cursos. A recusa sai com **422**.",
         "O erro aparece em três momentos, sempre sobre a mesma regra:",
-        "- ao definir os critérios de desempate, com a área e a ordem do critério na mensagem;\n- ao definir a classificação, quando o novo quadro de pesos deixa de ter uma área que\n  um critério já cita; nesse caso há um erro por critério afetado, com as áreas em\n  falta;\n- na publicação e na retificação em ato único, em que a conferência roda sobre a configuração do processo antes de gerar a versão.",
+        "- ao definir os critérios de desempate, com a ordem do critério na mensagem;\n- ao definir a classificação, quando o novo quadro de pesos deixa de ter uma área que\n  um critério já cita; nesse caso há um erro por critério afetado, sem repetir os\n  códigos das áreas;\n- na publicação e na retificação em ato único, em que a conferência roda sobre a configuração do processo antes de gerar a versão.",
         "A primeira recusa por área traz a lista das áreas aceitas, com o rótulo de cada uma."
       ],
       "comoResolver": [

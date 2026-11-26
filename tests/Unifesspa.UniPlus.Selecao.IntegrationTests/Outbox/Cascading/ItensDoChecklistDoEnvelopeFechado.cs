@@ -193,8 +193,6 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "modalidade_cotas_da_lei_diferentes_entre_ofertas",
         "derivacao_cota_e_acao_afirmativa_juntas",
         "grafo_dependencia_com_ciclo",
-        "criterios_desempate_em_excesso",
-        "desempate_area_enem_areas_mal_formadas",
         "desempate_area_enem_citada_por_dois_criterios",
         "desempate_area_enem_sem_quadro",
         "desempate_area_enem_fora_do_quadro",
