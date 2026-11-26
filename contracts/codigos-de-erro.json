@@ -1837,6 +1837,16 @@
       "titulo": "Abrangência da base legal desconhecida"
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.codigo_do_conteudo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do conteúdo fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do modelo de formulário fora do formato"
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.codigo_ja_existe",
       "status": 409,
       "titulo": "Já existe modelo de formulário com este código"
@@ -1845,11 +1855,6 @@
       "codigo": "uniplus.configuracao.modelo_formulario.codigo_obrigatorio",
       "status": 422,
       "titulo": "Código do modelo de formulário é obrigatório"
-    },
-    {
-      "codigo": "uniplus.configuracao.modelo_formulario.codigo_tamanho",
-      "status": 422,
-      "titulo": "Código do modelo de formulário excede o tamanho máximo"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.conflito_de_concorrencia",
@@ -1957,9 +1962,9 @@
       "titulo": "O código do tipo de processo do modelo veio em branco"
     },
     {
-      "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_tamanho",
+      "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_formato_invalido",
       "status": 422,
-      "titulo": "Código do tipo de processo excede o tamanho máximo"
+      "titulo": "Código do tipo de processo fora do formato"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_inexistente",

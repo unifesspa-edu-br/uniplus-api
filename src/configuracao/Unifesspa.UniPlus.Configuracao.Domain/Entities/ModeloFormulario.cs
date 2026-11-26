@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -26,7 +26,13 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     public const int CodigoMaxLength = 60;
     public const int NomeMaxLength = 200;
     public const int DescricaoMaxLength = 1000;
-    public const int TipoProcessoCodigoMaxLength = 64;
+    public const int TipoProcessoCodigoMaxLength = FormatoDoCodigo.ComprimentoMaximo;
+
+    private static readonly CampoDeCodigo CampoCodigo = new(
+        "Código do modelo", CodigoMaxLength, ModeloFormularioErrorCodes.CodigoObrigatorio, ModeloFormularioErrorCodes.CodigoFormatoInvalido);
+    private static readonly CampoDeCodigo CampoTipoProcesso = new(
+        "Código do tipo de processo", TipoProcessoCodigoMaxLength, ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco,
+        ModeloFormularioErrorCodes.TipoProcessoCodigoFormatoInvalido);
 
     /// <summary>O caminho do descritivo — nome, descrição e tipo de processo — no corpo da escrita, onde as recusas dele se apontam.</summary>
     public const string CaminhoDoDescritivo = "descritivo";
@@ -72,7 +78,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
-        ModeloFormulario modelo = new() { Codigo = TextoGravavel.CodigoNaFormaGravada(codigo), Finalidade = finalidade!.Value, Ativo = false };
+        ModeloFormulario modelo = new() { Codigo = codigo!, Finalidade = finalidade!.Value, Ativo = false };
         modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
         return Result<ModeloFormulario>.Success(modelo);
     }
@@ -136,21 +142,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     public static List<FieldError> ConferirDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
         ValidarDescritivo(nome, descricao, tipoProcessoCodigo);
 
-    private static List<FieldError> ValidarCodigo(string? codigo)
-    {
-        List<FieldError> erros = [.. TextoGravavel.Recusar("codigo", codigo)];
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            erros.Add(new("codigo", new DomainError(ModeloFormularioErrorCodes.CodigoObrigatorio, "O código do modelo é obrigatório.")));
-        }
-        else if (TextoGravavel.CodigoNaFormaGravada(codigo).Length > CodigoMaxLength)
-        {
-            erros.Add(new("codigo", new DomainError(
-                ModeloFormularioErrorCodes.CodigoTamanho, $"O código do modelo deve ter no máximo {CodigoMaxLength} caracteres.")));
-        }
-
-        return erros;
-    }
+    private static List<FieldError> ValidarCodigo(string? codigo) =>
+        CampoCodigo.Recusa(codigo, "codigo") is { } erro ? [erro] : [];
 
     private static List<FieldError> ValidarDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
     [
@@ -158,7 +151,6 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         [
             .. TextoGravavel.Recusar("nome", nome),
             .. TextoGravavel.Recusar("descricao", descricao),
-            .. TextoGravavel.Recusar("tipoProcessoCodigo", tipoProcessoCodigo),
             .. ValidarNome(nome),
             .. ValidarDescricao(descricao),
             .. ValidarTipoProcesso(tipoProcessoCodigo),
@@ -192,18 +184,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static IEnumerable<FieldError> ValidarTipoProcesso(string? tipoProcessoCodigo)
     {
-        if (tipoProcessoCodigo is not null && string.IsNullOrWhiteSpace(tipoProcessoCodigo))
+        if (tipoProcessoCodigo is not null && CampoTipoProcesso.Recusa(tipoProcessoCodigo, "tipoProcessoCodigo") is { } erro)
         {
-            // Só espaços viraria nulo, que é "todos os tipos": o modelo mudaria de alcance sem que ninguém o pedisse.
-            yield return new("tipoProcessoCodigo", new DomainError(
-                ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco,
-                "O tipo de processo é um código, ou ausente quando o modelo serve a todos os tipos."));
-        }
-        else if (FormaDoItem.TextoOpcional(tipoProcessoCodigo) is { Length: > TipoProcessoCodigoMaxLength })
-        {
-            yield return new("tipoProcessoCodigo", new DomainError(
-                ModeloFormularioErrorCodes.TipoProcessoCodigoTamanho,
-                $"O código do tipo de processo deve ter no máximo {TipoProcessoCodigoMaxLength} caracteres."));
+            yield return erro;
         }
     }
 
@@ -212,7 +195,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     {
         Nome = nome.Trim();
         Descricao = FormaDoItem.TextoOpcional(descricao);
-        TipoProcessoCodigo = FormaDoItem.TextoOpcional(tipoProcessoCodigo) is { } tipo ? TextoNormalizavel.AparadoEmNfc(tipo) : null;
+        TipoProcessoCodigo = tipoProcessoCodigo;
         Conteudo = conteudo.EmOrdem();
     }
 }

@@ -77,7 +77,7 @@ public sealed class ModeloFormularioReaderTests
 
     private static ModeloFormulario Novo() =>
         ModeloFormulario.Criar(
-            $"A_{Guid.NewGuid():N}"[..30], "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
+            $"A_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Habilitação", null, FinalidadeFormulario.Habilitacao, null,
             ConteudoDeHabilitacao(),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
 

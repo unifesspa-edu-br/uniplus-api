@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -49,12 +48,6 @@ public sealed record ConjuntoDeDocumentosDoModelo(
 
     private static DocumentoExigidoDoModelo DocumentoNaFormaGravada(DocumentoExigidoDoModelo documento) => documento with
     {
-        FaseCodigo = TextoGravavel.CodigoNaFormaGravada(documento.FaseCodigo),
-        TipoDocumentoCodigo = TextoGravavel.CodigoNaFormaGravada(documento.TipoDocumentoCodigo),
         Requisitos = documento.Requisitos.NaFormaGravada(),
-        PorOpcao = documento.PorOpcao is { } porOpcao
-            ? new ExigenciaPorOpcao(
-                TextoGravavel.CodigoNaFormaGravada(porOpcao.FatoCodigo), [.. porOpcao.Exceto.Select(static v => TextoGravavel.CodigoNaFormaGravada(v))])
-            : null,
     };
 }

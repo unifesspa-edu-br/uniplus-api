@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>O texto que o banco grava — sem caractere nulo e em Unicode válido — e a forma gravada do código.</summary>
+/// <summary>O texto que o banco grava — sem caractere nulo e em Unicode válido.</summary>
 public sealed class TextoGravavelTests
 {
     [Theory(DisplayName = "O texto gravável não tem caractere nulo e é Unicode válido")]
@@ -37,14 +37,4 @@ public sealed class TextoGravavelTests
     [InlineData(null)]
     public void Recusar_TextoGravavelOuAusente_SemRecusa(string? texto) => TextoGravavel.Recusar("nome", texto).Should().BeEmpty();
 
-    [Fact(DisplayName = "O código é aparado e levado a NFC")]
-    public void CodigoNaFormaGravada_AparaENormaliza() =>
-        TextoGravavel.CodigoNaFormaGravada("  Ç ").Should().Be("Ç");
-
-    [Fact(DisplayName = "O código ausente é o vazio")]
-    public void CodigoNaFormaGravada_Ausente_Vazio() => TextoGravavel.CodigoNaFormaGravada(null).Should().BeEmpty();
-
-    [Fact(DisplayName = "O código que não se normaliza fica como veio, só aparado")]
-    public void CodigoNaFormaGravada_SurrogateSemPar_FicaComoVeio() =>
-        TextoGravavel.CodigoNaFormaGravada(" A\uD800 ").Should().Be("A\uD800");
 }

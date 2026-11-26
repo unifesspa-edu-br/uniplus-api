@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<ModeloFormulario>
@@ -23,6 +24,8 @@ public sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<Mod
         // Domínio fechado da finalidade (defesa em profundidade contra inserts crus).
         builder.ToTable("modelos_formulario", static tabela =>
         {
+            tabela.HasCheckConstraint("ck_modelos_formulario_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+            tabela.HasCheckConstraint("ck_modelos_formulario_tipo_processo_codigo_formato", $"tipo_processo_codigo IS NULL OR tipo_processo_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             tabela.HasComment("Modelos de formulário e seu conteúdo para processos seletivos.");
             tabela.HasCheckConstraint(
                 "ck_modelos_formulario_finalidade",

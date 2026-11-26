@@ -24,9 +24,8 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
 {
     private static void DeveRecusarTextoNaoGravavelEm(Result<ModeloFormulario> modelo, string campo)
     {
-        FieldError recusa = modelo.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be(campo);
-        recusa.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        modelo.Errors.Should().Contain(
+            e => e.Field == campo && e.Error.Code == ModeloFormularioErrorCodes.TextoNaoGravavel);
     }
 
     private static PredicadoDnf QuandoOValorE(Operador operador, JsonElement valor) =>
@@ -141,14 +140,14 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TermoFormularioErrorCodes.CodigoFormatoInvalido);
     }
 
-    [Fact(DisplayName = "O tamanho do código do modelo é o do código normalizado, que é o gravado")]
-    public void CodigoQueCresceNaNormalizacao_Recusa()
+    [Fact(DisplayName = "Código fora do formato é recusado sem normalização")]
+    public void CodigoForaDoFormato_Recusa()
     {
         string codigo = string.Concat(Enumerable.Repeat("\u0958", ModeloFormulario.CodigoMaxLength));
 
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
             codigo, "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoTamanho);
+        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoFormatoInvalido);
     }
 }

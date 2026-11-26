@@ -94,7 +94,7 @@ public sealed record ConteudoDoModelo(
         [.. (Paginas ?? []).Select(PaginaNaFormaGravada)],
         [.. (Itens ?? []).Select(CampoNaFormaGravada)],
         [.. (Termos ?? [])],
-        [.. (Pressupostos ?? []).Select(static p => TextoGravavel.CodigoNaFormaGravada(p))],
+        [.. (Pressupostos ?? [])],
         [.. (Grupos ?? []).Select(GrupoNaFormaGravada)],
         Documentos.NaFormaGravada());
 

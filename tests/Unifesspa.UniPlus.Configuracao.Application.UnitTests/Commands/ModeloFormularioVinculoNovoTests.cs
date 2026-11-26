@@ -27,12 +27,16 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.CenarioDoHandlerDoModelo;
+
 /// <summary>
 /// A escrita do modelo de formulário recusa só o vínculo novo a fato, termo ou tipo desativado ou
 /// pendente, e o que a atualização e a concorrência exigem (ADR-0136).
 /// </summary>
-public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTestBase
+public sealed class ModeloFormularioVinculoNovoTests
 {
+    private readonly CenarioDoHandlerDoModelo _cenario = new();
+
     private static ModeloFormulario ExistenteComOTermo(TermoDoModelo termo)
     {
         ItemDoModelo item = new(
@@ -51,7 +55,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         TermoExigidoInput mantido = EntradaDoTermoExigidoDeTeste.Exigindo(gravado.Codigo).DaVersao(gravado.TermoId, gravado.VersaoId).Construir();
         TermoExigidoInput novo = EntradaDoTermoExigidoDeTeste.Exigindo("IMAGEM", 1).DaVersao(Guid.NewGuid(), Guid.NewGuid()).Construir();
 
-        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)) with { Termos = [mantido, novo] }, tipo: null);
+        Result editar = await _cenario.AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)) with { Termos = [mantido, novo] }, tipo: null);
 
         editar.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.termos[1].termo.versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
@@ -61,10 +65,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Tipo de processo inexistente ou desativado é recusado; o que o modelo já usava continua na edição")]
     public async Task TipoDeProcesso_RecusaSoONovo()
     {
-        Result<Guid> criar = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
+        Result<Guid> criar = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
         ModeloFormulario existente = Existente("INDIGENA_E_QUILOMBOLA");
 
-        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
+        Result editar = await _cenario.AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: "INDIGENA_E_QUILOMBOLA");
 
         criar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TipoProcessoInexistente);
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
@@ -75,10 +79,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     {
         ModeloFormulario existente = Existente(tipo: null);
         FatoCandidato pendente = Declarado("PENDENTE_DE_APROVACAO");
-        Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Certificado, pendente]);
+        _cenario.Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_cenario.Certificado, pendente]);
 
-        Result<Guid> criar = await CriarAsync(Conteudo(Item("PENDENTE_DE_APROVACAO", 0)));
-        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: null);
+        Result<Guid> criar = await _cenario.CriarAsync(Conteudo(Item("PENDENTE_DE_APROVACAO", 0)));
+        Result editar = await _cenario.AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: null);
 
         criar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
@@ -88,10 +92,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     public async Task FatoDesativado_RecusaSoOVinculoNovo()
     {
         ModeloFormulario existente = Existente(tipo: null);
-        Certificado.Desativar().IsSuccess.Should().BeTrue();
+        _cenario.Certificado.Desativar().IsSuccess.Should().BeTrue();
 
-        Result<Guid> criar = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)));
-        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: null);
+        Result<Guid> criar = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)));
+        Result editar = await _cenario.AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: null);
 
         criar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
@@ -100,9 +104,9 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Código de fato com espaço não existe no catálogo")]
     public async Task Criar_FatoComEspaco_RecusaComoDesconhecido()
     {
-        Certificado.Desativar().IsSuccess.Should().BeTrue();
+        _cenario.Certificado.Desativar().IsSuccess.Should().BeTrue();
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item(" CERTIFICADO", 0)));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item(" CERTIFICADO", 0)));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.FatoDesconhecido);
     }
@@ -112,10 +116,10 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     {
         FatoCandidato opcao = OpcaoComUmValor();
         FatoCandidato perfil = PerfilDerivadoDesativado(opcao);
-        Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Certificado, opcao, perfil]);
+        _cenario.Fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([_cenario.Certificado, opcao, perfil]);
         FatoColetadoInput comOpcoes = Montar("OPCAO", 1, "ESCOLHA_UNICA").ComRestricoes(new RestricaoValorInput("OPCOES_DAS_RESPOSTAS", Fatos: ["PERFIL"])).Construir();
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0), comOpcoes));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
@@ -123,7 +127,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Pressuposto é fato coletável: o calculado pelo sistema é recusado")]
     public async Task Criar_PressupostoNaoColetavel_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Pressupostos = ["IDADE"] });
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)) with { Pressupostos = ["IDADE"] });
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
             .Contain(("conteudo.pressupostos[0]", ItemFormularioErrorCodes.FatoNaoColetavel));
@@ -132,7 +136,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "Obrigatoriedade QUANDO sem predicado é recusada na leitura")]
     public async Task Criar_QuandoSemPredicado_Recusa()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.itens[0].regras.obrigatoriedade", new DomainError(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, string.Empty)),
@@ -142,7 +146,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
     [Fact(DisplayName = "As recusas do catálogo e as do modelo saem no mesmo lote")]
     public async Task Criar_RecusasDoCatalogoEDoModelo_Acumulam()
     {
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("IDADE", 0, "NUMERO")) with { Titulo = new string('T', 301) });
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("IDADE", 0, "NUMERO")) with { Titulo = new string('T', 301) });
 
         resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             [ItemFormularioErrorCodes.FatoNaoColetavel, EstruturaFormularioErrorCodes.TituloTamanho]);
@@ -155,7 +159,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
             "", "XYZ", new DescritivoDoModeloInput("Habilitação", null, null), Conteudo(Montar("CERTIFICADO", 0).ComObrigatoriedade("QUANDO").Construir()));
 
         Result<Guid> resultado = await CriarModeloFormularioCommandHandler.Handle(
-            command, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
+            command, _cenario.Repository, _cenario.Fatos, _cenario.Termos, _cenario.Tipos, _cenario.UnitOfWork, CancellationToken.None);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -165,29 +169,29 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         ]);
     }
 
-    [Fact(DisplayName = "O tipo de processo é conferido e guardado na forma em que o cadastro o grava (NFC), ainda que chegue decomposto")]
-    public async Task Criar_TipoDecomposto_ConsultaEGuardaONormalizado()
+    [Fact(DisplayName = "O tipo de processo válido é conferido e guardado como recebido")]
+    public async Task Criar_TipoValido_ConsultaEGuardaORecebido()
     {
-        const string Composto = "ADMISSÃO";
-        Tipos.ObterAtivoPorCodigoAsync(Composto, Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), Composto, "Admissão", null));
+        const string Codigo = "ADMISSAO";
+        _cenario.Tipos.ObterAtivoPorCodigoAsync(Codigo, Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), Codigo, "Admissão", null));
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: " ADMISSA\u0303O ");
+        Result<Guid> resultado = await _cenario.CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: Codigo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        await Repository.Received(1).AdicionarAsync(
-            Arg.Is<ModeloFormulario>(m => m.TipoProcessoCodigo == Composto), Arg.Any<CancellationToken>());
+        await _cenario.Repository.Received(1).AdicionarAsync(
+            Arg.Is<ModeloFormulario>(m => m.TipoProcessoCodigo == Codigo), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Corrida de concorrência (xmin) na gravação descarta o rastreamento e devolve conflito")]
     public async Task Atualizar_ConflitoDeConcorrencia_DescartaEDevolveConflito()
     {
-        UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+        _cenario.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
-        Result resultado = await AtualizarAsync(Existente(tipo: null), Conteudo(Item("CERTIFICADO", 0)), tipo: null);
+        Result resultado = await _cenario.AtualizarAsync(Existente(tipo: null), Conteudo(Item("CERTIFICADO", 0)), tipo: null);
 
         resultado.Error!.Code.Should().Be(ModeloFormularioErrorCodes.ConflitoDeConcorrencia);
-        UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        _cenario.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
     private static FatoCandidato OpcaoComUmValor()
     {
@@ -209,7 +213,7 @@ public sealed class ModeloFormularioVinculoNovoTests : ModeloFormularioHandlerTe
         RegraDerivacao regra = RegraDerivacao.Criar(
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
             "A").Value!;
-        perfil.DefinirRegrasPadrao([regra], new CatalogoDeFatos([Certificado, opcao, perfil], [])).IsSuccess.Should().BeTrue();
+        perfil.DefinirRegrasPadrao([regra], new CatalogoDeFatos([_cenario.Certificado, opcao, perfil], [])).IsSuccess.Should().BeTrue();
         perfil.Desativar().IsSuccess.Should().BeTrue();
         return perfil;
     }

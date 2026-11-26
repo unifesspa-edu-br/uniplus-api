@@ -5,12 +5,13 @@ public static class ModeloFormularioErrorCodes
 {
     public const string FiltroDeFinalidadeInvalida = "ModeloFormulario.FiltroDeFinalidadeInvalida";
     public const string CodigoObrigatorio = "ModeloFormulario.CodigoObrigatorio";
-    public const string CodigoTamanho = "ModeloFormulario.CodigoTamanho";
+    public const string CodigoFormatoInvalido = "ModeloFormulario.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "ModeloFormulario.CodigoJaExiste";
     public const string NomeObrigatorio = "ModeloFormulario.NomeObrigatorio";
     public const string NomeTamanho = "ModeloFormulario.NomeTamanho";
     public const string DescricaoTamanho = "ModeloFormulario.DescricaoTamanho";
-    public const string TipoProcessoCodigoTamanho = "ModeloFormulario.TipoProcessoCodigoTamanho";
+    public const string TipoProcessoCodigoFormatoInvalido = "ModeloFormulario.TipoProcessoCodigoFormatoInvalido";
+    public const string CodigoDoConteudoFormatoInvalido = "ModeloFormulario.CodigoDoConteudoFormatoInvalido";
     public const string PressupostoNaInscricao = "ModeloFormulario.PressupostoNaInscricao";
     public const string PressupostoRepetido = "ModeloFormulario.PressupostoRepetido";
     public const string PressupostoEmBranco = "ModeloFormulario.PressupostoEmBranco";

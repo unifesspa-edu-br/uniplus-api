@@ -5929,10 +5929,37 @@
       ]
     },
     {
+      "codigo": "uniplus.configuracao.modelo_formulario.codigo_do_conteudo_formato_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Um código do conteúdo não segue o formato ou ultrapassa o limite do campo. O valor é conferido como recebido."
+      ],
+      "comoResolver": [
+        "Informe letras maiúsculas sem acento, algarismos e sublinhados entre palavras, começando com letra maiúscula e respeitando o limite indicado na mensagem."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário",
+        "Atualização de um modelo de formulário"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modelo_formulario.codigo_formato_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O código do modelo não segue o formato ou ultrapassa 60 caracteres. O valor é conferido como recebido."
+      ],
+      "comoResolver": [
+        "Use até 60 caracteres, começando com letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras."
+      ],
+      "ondeAparece": [
+        "Criação de um modelo de formulário"
+      ]
+    },
+    {
       "codigo": "uniplus.configuracao.modelo_formulario.codigo_ja_existe",
       "requisitos": [],
       "oQueAconteceu": [
-        "A criação de um modelo de formulário (`POST /api/configuracao/admin/modelos-formulario`) usou um `codigo` que já pertence a outro modelo. A comparação considera todos os modelos, ativos ou desativados, e é feita com o código aparado nas pontas e normalizado; maiúsculas e minúsculas contam. O modelo nunca é apagado, só desativado, e o código não muda depois de criado, por isso o código de um modelo desativado continua ocupado.",
+        "A criação de um modelo de formulário (`POST /api/configuracao/admin/modelos-formulario`) usou um `codigo` que já pertence a outro modelo. A comparação considera todos os modelos, ativos ou desativados, e é feita com o código recebido, sem aparar nem normalizar. O modelo nunca é apagado, só desativado, e o código não muda depois de criado, por isso o código de um modelo desativado continua ocupado.",
         "A resposta é a mesma quando a colisão é descoberta na conferência prévia e quando dois pedidos criam o mesmo código ao mesmo tempo e o banco recusa o segundo. A recusa vem depois das conferências do corpo: com um corpo inválido e um código já usado, a resposta é a recusa do corpo, e só com o corpo válido vem esta. Nada é gravado."
       ],
       "comoResolver": [
@@ -5952,20 +5979,6 @@
       ],
       "comoResolver": [
         "Informe um código de até 60 caracteres e repita o pedido."
-      ],
-      "ondeAparece": [
-        "Criação de um modelo de formulário"
-      ]
-    },
-    {
-      "codigo": "uniplus.configuracao.modelo_formulario.codigo_tamanho",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A criação de um modelo de formulário (`POST /api/configuracao/admin/modelos-formulario`) trouxe um `codigo` com mais de 60 caracteres. Os espaços nas pontas são desconsiderados e o texto é normalizado antes da conferência, de modo que o limite vale para o código como será gravado. Fora o tamanho, o código do modelo não tem formato fixo.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `codigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado."
-      ],
-      "comoResolver": [
-        "Use um código de até 60 caracteres. O texto mais longo vai no nome do modelo, que aceita até 200, e na descrição."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário"
@@ -6298,14 +6311,13 @@
       ]
     },
     {
-      "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_tamanho",
+      "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_formato_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `tipoProcessoCodigo` enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`) tem mais de 64 caracteres, depois de aparados os espaços nas pontas. É o mesmo limite do código do tipo de processo no cadastro de tipos.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `tipoProcessoCodigo`. Um código desse tamanho não existe no cadastro de tipos de processo, então a resposta traz também [tipo de processo inexistente](/erros/uniplus.configuracao.modelo_formulario.tipo_processo_inexistente), e essa recusa vem antes na lista: o `code` principal da resposta da resposta é o da primeira recusa, e esta fica em `errors`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente."
+        "O código do tipo de processo não segue o formato ou ultrapassa 80 caracteres. O valor é conferido como recebido."
       ],
       "comoResolver": [
-        "Use o código de um tipo de processo cadastrado, que tem até 64 caracteres. Consulte os tipos em `GET /api/configuracao/tipos-processo`."
+        "Use até 80 caracteres, começando com letra maiúscula, com letras maiúsculas sem acento, algarismos e sublinhado entre palavras; omita o código para todos os tipos."
       ],
       "ondeAparece": [
         "Criação de um modelo de formulário",
@@ -6318,7 +6330,7 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "O `tipoProcessoCodigo` enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`) não corresponde a um tipo de processo ativo. O modelo de inscrição é por tipo de processo (UNI-REQ-0144), e o tipo é procurado no cadastro de tipos de processo pelo código exato, depois de aparados os espaços nas pontas, sem normalizar a grafia. Um tipo desativado não serve a vínculo novo. A mensagem cita o código informado.",
+        "O `tipoProcessoCodigo` enviado na criação (`POST /api/configuracao/admin/modelos-formulario`) ou na atualização (`PUT /api/configuracao/admin/modelos-formulario/{id}`) não corresponde a um tipo de processo ativo. O modelo de inscrição é por tipo de processo (UNI-REQ-0144), e o tipo é procurado no cadastro de tipos de processo pelo código exato recebido. Um tipo desativado não serve a vínculo novo.",
         "Na criação, o tipo é sempre conferido. Na atualização, só quando o código mudou em relação ao que o modelo já tem: o modelo que já usava um tipo, desativado depois, continua com ele. O campo ausente, ou `null`, não é conferido, porque significa que o modelo serve a todos os tipos.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `tipoProcessoCodigo`. As demais recusas do corpo vêm na mesma resposta, e nada é gravado. Na atualização, a busca do modelo vem antes das validações de domínio do conteúdo: com um `{id}` que não existe, a resposta é [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado). Só a leitura do corpo vem antes da busca: campo não anulável ausente ou nulo (como `nome`) é recusado com 400, sem código deste catálogo, mesmo com `{id}` inexistente."
       ],

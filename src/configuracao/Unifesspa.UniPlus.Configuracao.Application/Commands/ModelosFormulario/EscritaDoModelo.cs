@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -72,8 +72,7 @@ internal sealed class EscritaDoModelo(
             : null;
     }
 
-    // O texto que o banco não grava não é consultado: a recusa dele é a do modelo. O código é
-    // comparado aparado, em NFC, a forma em que o cadastro de tipo de processo o grava.
     private static string? CodigoGravavelDoTipoDeProcesso(string? informado) =>
-        string.IsNullOrWhiteSpace(informado) || !TextoGravavel.EhGravavel(informado) ? null : TextoNormalizavel.AparadoEmNfc(informado);
+        informado is not null && informado.Length <= ModeloFormulario.TipoProcessoCodigoMaxLength && FormatoDoCodigo.TemFormatoValido(informado)
+            ? informado : null;
 }

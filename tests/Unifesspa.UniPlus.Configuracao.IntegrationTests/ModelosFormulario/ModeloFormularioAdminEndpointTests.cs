@@ -125,7 +125,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso=%00");
 
         criar.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        await ConferirCodigoDoErroAsync(criar, "uniplus.configuracao.modelo_formulario.texto_nao_gravavel");
+        await ConferirCodigoDoErroAsync(criar, "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_formato_invalido");
         listar.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         lista.RootElement.GetArrayLength().Should().Be(0);

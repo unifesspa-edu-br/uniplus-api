@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O tipo de processo do modelo é guardado na forma em que o cadastro grava o código — sem espaços nas bordas —, por qualquer caminho que o grave, porque o processo o compara de forma ordinal.
+/// O tipo de processo é guardado como recebido em criação e atualização.
 /// </summary>
 public sealed class ModeloFormularioTipoDeProcessoTests
 {
@@ -29,22 +29,22 @@ public sealed class ModeloFormularioTipoDeProcessoTests
         [],
         []);
 
-    [Fact(DisplayName = "Criar com espaços no código do tipo guarda o código sem espaços")]
-    public void Criar_TipoComEspacos_GuardaCodigoSemEspacos()
+    [Fact(DisplayName = "Criar com código válido do tipo guarda o código recebido")]
+    public void Criar_TipoValido_GuardaCodigoRecebido()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, $" {Codigo} ", Conteudo(), SemDerivacoes);
+            "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, Codigo, Conteudo(), SemDerivacoes);
 
         modelo.Value!.TipoProcessoCodigo.Should().Be(Codigo);
     }
 
-    [Fact(DisplayName = "Atualizar com espaços no código do tipo guarda o código sem espaços")]
-    public void Atualizar_TipoComEspacos_GuardaCodigoSemEspacos()
+    [Fact(DisplayName = "Atualizar com código válido do tipo guarda o código recebido")]
+    public void Atualizar_TipoValido_GuardaCodigoRecebido()
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
             "HABILITACAO", "Habilitação", null, FinalidadeFormulario.Habilitacao, null, Conteudo(), SemDerivacoes).Value!;
 
-        Result atualizado = modelo.Atualizar("Habilitação", null, $" {Codigo} ", Conteudo(), SemDerivacoes);
+        Result atualizado = modelo.Atualizar("Habilitação", null, Codigo, Conteudo(), SemDerivacoes);
 
         atualizado.IsSuccess.Should().BeTrue(atualizado.Error?.Message);
         modelo.TipoProcessoCodigo.Should().Be(Codigo);

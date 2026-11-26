@@ -50,6 +50,7 @@ public static class ConferenciaDoConteudoDoModelo
         .. ConferirCamposEGrupos(finalidade, conteudo),
         .. ConferirFormaDosTermos(conteudo),
         .. ConferirPressupostos(finalidade, conteudo),
+        .. FormatoDosCodigosDoConteudo.Conferir(conteudo),
     ];
 
     private static List<FieldError> ConferirEstruturaEGrafo(
@@ -148,7 +149,7 @@ public static class ConferenciaDoConteudoDoModelo
     }
 
     private static IEnumerable<FieldError> ConferirPressuposto(string fato, string campo, IReadOnlySet<string> vistos, IReadOnlySet<string> itens) =>
-        fato.Length == 0
+        string.IsNullOrWhiteSpace(fato)
             ? [new(campo, new DomainError(ModeloFormularioErrorCodes.PressupostoEmBranco, "O pressuposto nomeia um fato."))]
             : ConferirFatoDoPressuposto(fato, campo, vistos, itens);
 
