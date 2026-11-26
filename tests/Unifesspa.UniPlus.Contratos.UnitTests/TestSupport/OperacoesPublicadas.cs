@@ -54,5 +54,6 @@ internal static class OperacoesPublicadas
     private static DocumentoPublicado Publicar(string executavel, string nome, OpenApiDocument documento) =>
         new(executavel, nome,
         [.. documento.Paths.SelectMany(caminho => (caminho.Value.Operations ?? []).Select(operacao =>
-            new OperacaoPublicada(executavel, nome, operacao.Key.Method, caminho.Key, operacao.Value.OperationId)))]);
+            new OperacaoPublicada(executavel, nome, operacao.Key.Method, caminho.Key, operacao.Value.OperationId,
+                ParametrosDeConsultaPublicados.De(caminho.Value, operacao.Value))))]);
 }
