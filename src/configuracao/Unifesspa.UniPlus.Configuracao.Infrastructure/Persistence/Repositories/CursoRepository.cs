@@ -86,7 +86,7 @@ public sealed class CursoRepository : ICursoRepository
 
     /// <summary>
     /// O que reduziu a coleção antes da paginação. Entra na assinatura do cursor
-    /// para que a continuação de uma busca não retome dentro de outra: a âncora é
+    /// para que a continuação de uma busca não retome dentro de outra: o ponto de continuação é
     /// uma posição num conjunto, e trocar o conjunto a torna sem sentido.
     /// </summary>
     private static IReadOnlyList<string> CondicoesDoFiltroDeCursos(string? termo) =>

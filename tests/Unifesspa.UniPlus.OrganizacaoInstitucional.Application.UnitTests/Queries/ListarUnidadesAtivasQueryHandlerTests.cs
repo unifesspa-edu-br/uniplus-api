@@ -49,7 +49,7 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
         _repositorio.ReceivedCalls().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Com a busca e o tipo válidos, projeta a página do repositório em DTO com as âncoras")]
+    [Fact(DisplayName = "Com a busca e o tipo válidos, projeta a página do repositório em DTO com os pontos de continuação")]
     public async Task FiltroValido_ProjetaAPaginaEmDto()
     {
         Unidade ceps = UnidadeDeTeste.Criar().Value!;

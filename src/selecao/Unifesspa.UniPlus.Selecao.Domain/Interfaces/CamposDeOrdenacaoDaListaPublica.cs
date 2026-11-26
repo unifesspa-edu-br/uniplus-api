@@ -11,10 +11,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </remarks>
 public static class CamposDeOrdenacaoDaListaPublica
 {
-    /// <summary>Encerramento da janela de inscrição.</summary>
+    /// <summary>Encerramento do período de inscrição.</summary>
     public const string InscricoesAte = "inscricoesAte";
 
-    /// <summary>Abertura da janela de inscrição.</summary>
+    /// <summary>Abertura do período de inscrição.</summary>
     public const string InscricoesDe = "inscricoesDe";
 
     /// <summary>Título do certame, em ordem alfabética real — sem acento e sem caixa.</summary>

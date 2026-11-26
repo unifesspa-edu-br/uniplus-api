@@ -18,12 +18,12 @@ public sealed class SituacaoDasInscricoesDoCertameTests
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Limiar = TimeSpan.FromDays(7);
 
-    [Theory(DisplayName = "Cada janela recebe a situação do ponto em que está")]
+    [Theory(DisplayName = "Cada perÃ­odo recebe a situação do ponto em que está")]
     [InlineData(5, 30, SituacaoDoCertame.EmBreve)]
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
     [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
-    public void Classificar_QuandoJanelaEmCadaPonto_DeveResolverASituacao(
+    public void Classificar_QuandoPeriodoEmCadaPonto_DeveResolverASituacao(
         int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada) =>
         SituacaoDasInscricoesDoCertame.Classificar(
             Agora.AddDays(diasAteAbrir), Agora.AddDays(diasAteFechar), Agora, Limiar)
@@ -31,7 +31,7 @@ public sealed class SituacaoDasInscricoesDoCertameTests
 
     [Fact(DisplayName = "No instante exato da abertura o certame já recebe inscrição")]
     public void Classificar_NaAberturaExata_NaoEEmBreve() =>
-        // A janela é fechada nas duas pontas: quem já pode se inscrever não é "em breve".
+        // O período é fechado nas duas pontas: quem já pode se inscrever não é "em breve".
         SituacaoDasInscricoesDoCertame.Classificar(Agora, Agora.AddDays(30), Agora, Limiar)
             .Should().Be(SituacaoDoCertame.InscricoesAbertas);
 
@@ -46,13 +46,13 @@ public sealed class SituacaoDasInscricoesDoCertameTests
         SituacaoDasInscricoesDoCertame.Classificar(Agora.AddDays(-1), Agora + Limiar, Agora, Limiar)
             .Should().Be(SituacaoDoCertame.InscricoesAbertas);
 
-    [Fact(DisplayName = "Janela invertida cai numa situação só, em vez de em duas")]
-    public void Classificar_JanelaInvertida_NaoDuplica() =>
-        // O agregado não produz janela invertida, mas a partição não pode depender disso.
+    [Fact(DisplayName = "PerÃ­odo invertido cai numa situação só, em vez de em duas")]
+    public void Classificar_PeriodoInvertido_NaoDuplica() =>
+        // O agregado não produz perÃ­odo invertido, mas a partição não pode depender disso.
         SituacaoDasInscricoesDoCertame.Classificar(Agora.AddDays(5), Agora.AddDays(-5), Agora, Limiar)
             .Should().Be(SituacaoDoCertame.Encerradas);
 
-    [Fact(DisplayName = "Toda janela possível recebe exatamente uma das quatro situações")]
+    [Fact(DisplayName = "Todo perÃ­odo possível recebe exatamente uma das quatro situações")]
     public void Classificar_QuandoVarreTodasAsBordas_DeveDevolverSempreUmaSituacaoValida()
     {
         // Produto das bordas de cada ponto que a regra usa: a função é total.

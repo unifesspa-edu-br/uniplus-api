@@ -125,15 +125,15 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Cursor emitido sob uma busca é recusado sob outra")]
     public async Task ListarVitrine_QuandoCursorVemDeOutroFiltro_DeveRecusarAContinuacao()
     {
-        // A âncora é posição dentro de um conjunto: sob outro filtro, a página volta vazia —
+        // O ponto de continuação é posição dentro de um conjunto: sob outro filtro, a página volta vazia —
         // indistinguível de fim de coleção.
         (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("a").Value), limite: 1);
 
         emitido.Should().NotBeNull("a busca precisa ter mais de uma página para o cursor existir");
-        (string SortKey, Guid Id) ancora = emitido!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = emitido!.Value;
 
         Func<Task> continuarSobOutroFiltro = () => _vitrine.ListarAsync(
-            new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("sisu").Value), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(Busca: TermoDeBusca.Criar("sisu").Value), [], pontoDeContinuacao.SortKey, pontoDeContinuacao.Id);
 
         await continuarSobOutroFiltro.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -144,15 +144,15 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
         (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1);
 
         emitido.Should().NotBeNull();
-        (string SortKey, Guid Id) ancora = emitido!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = emitido!.Value;
 
         await RetificarDivulgacaoAsync();
 
         Func<Task> continuarDepoisDaMudanca = () => _vitrine.ListarAsync(
-            new FiltroDosCertamesPublicados(), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(), [], pontoDeContinuacao.SortKey, pontoDeContinuacao.Id);
 
         await continuarDepoisDaMudanca.Should().ThrowAsync<CursorAnchorMismatchException>(
-            "a âncora é uma posição na coleção que a emitiu, e essa coleção mudou");
+            "o ponto de continuação é uma posição na coleção que a emitiu, e essa coleção mudou");
     }
 
     [Fact(DisplayName = "Cursor é recusado quando entra certame divulgado antes do mais recente")]
@@ -161,12 +161,12 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
         (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1);
 
         emitido.Should().NotBeNull();
-        (string SortKey, Guid Id) ancora = emitido!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = emitido!.Value;
 
         await InserirDivulgacaoAnteriorAsync();
 
         Func<Task> continuarDepoisDaEntrada = () => _vitrine.ListarAsync(
-            new FiltroDosCertamesPublicados(), [], ancora.SortKey, ancora.Id);
+            new FiltroDosCertamesPublicados(), [], pontoDeContinuacao.SortKey, pontoDeContinuacao.Id);
 
         await continuarDepoisDaEntrada.Should().ThrowAsync<CursorAnchorMismatchException>(
             "um certame a mais desloca as posições seguintes, mesmo trazendo instante anterior ao máximo");
@@ -179,18 +179,18 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
         (string SortKey, Guid Id)? emitido = await _vitrine.PrimeiraPaginaAsync(new FiltroDosCertamesPublicados(), limite: 1, ordenacao: porNome);
 
         emitido.Should().NotBeNull();
-        (string SortKey, Guid Id) ancora = emitido!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = emitido!.Value;
 
         Func<Task> continuarNoutraOrdem = () => _vitrine.ListarAsync(
             new FiltroDosCertamesPublicados(),
             [new SortField(CamposDeOrdenacaoDaListaPublica.Nome, SortDirection.Descending)],
-            ancora.SortKey,
-            ancora.Id);
+            pontoDeContinuacao.SortKey,
+            pontoDeContinuacao.Id);
 
         await continuarNoutraOrdem.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
 
-    [Theory(DisplayName = "A travessia página a página não repete nem omite certame")]
+    [Theory(DisplayName = "O percurso página a página não repete nem omite certame")]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ListarVitrine_QuandoPercorrePaginaAPagina_NaoDeveRepetirNemOmitir(bool ordenacaoEscolhida)
@@ -201,15 +201,15 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
 
         List<string> percorridos = await PercorrerVitrineAsync(ordenacao);
 
-        percorridos.Should().HaveCount(3, "a travessia inteira devolve cada certame uma vez");
+        percorridos.Should().HaveCount(3, "o percurso inteira devolve cada certame uma vez");
         percorridos.Should().OnlyHaveUniqueItems();
         percorridos.Should().Equal("Ingresso à Pós-Graduação", "SISU 2026.1", "Vestibular de Música");
     }
 
     [Fact(DisplayName = "Voltar uma página devolve exatamente a página anterior")]
-    public async Task Travessia_ParaTras_VoltaAPaginaAnterior()
+    public async Task Percurso_ParaTras_VoltaAPaginaAnterior()
     {
-        // A âncora de volta é a que a página emite. Errar o lado da desigualdade do seek desloca
+        // O ponto de continuação de volta é a que a página emite. Errar o lado da desigualdade do seek desloca
         // a página em um.
         (IReadOnlyList<CertameDivulgado> primeira, (string SortKey, Guid Id)? anteriorDaSegunda) =
             await ObterCursorDaSegundaPaginaAsync();
@@ -311,7 +311,7 @@ public sealed class BuscaEOrdenacaoDaListaPublicaTests : IClassFixture<ProcessoS
         return percorridos;
     }
 
-    private async Task<(IReadOnlyList<CertameDivulgado> Primeira, (string SortKey, Guid Id)? Ancora)> ObterCursorDaSegundaPaginaAsync()
+    private async Task<(IReadOnlyList<CertameDivulgado> Primeira, (string SortKey, Guid Id)? PontoDeContinuacao)> ObterCursorDaSegundaPaginaAsync()
     {
         (IReadOnlyList<CertameDivulgado> primeira, (string SortKey, Guid Id)? anteriorDaPrimeira, (string SortKey, Guid Id)? aposPrimeira) =
             await _vitrine.PaginaCompletaAsync(cursor: null, PaginationDirection.Next);

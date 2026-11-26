@@ -59,7 +59,7 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
-        // Toda combinação das bordas, inclusive janelas invertidas.
+        // Toda combinação das bordas, inclusive perÃ­odos invertidos.
         foreach (int de in Deslocamentos)
         {
             foreach (int ate in Deslocamentos)
@@ -129,7 +129,7 @@ public sealed class FiltroDosCertamesPublicadosPersistenciaTests : IClassFixture
     }
 
     // Contar o que a página não pode mostrar faz o número ao lado do filtro prometer item que
-    // filtro nenhum alcança. Numa janela de deploy em fases, o documento gravado por um
+    // filtro nenhum alcança. Num perÃ­odo de implantaÃ§Ã£o em fases, o documento gravado por um
     // processo já atualizado é ilegível para este — e a linha existe no banco.
     [Fact(DisplayName = "Certame de outra versão de projeção fica fora da página e da contagem")]
     public async Task ListarVitrine_QuandoHaLinhaDeOutraVersaoDeProjecao_DeveOmitiLaDosDois()

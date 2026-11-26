@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// Critérios opcionais de filtragem da listagem de unidades (issue #640),
 /// aplicados no read-side sobre a paginação por cursor keyset (ADR-0026).
 /// Ambos os critérios combinam (AND) e são ortogonais ao cursor: como o
-/// keyset ordena por <c>Id</c>, a janela permanece coerente sobre o conjunto
+/// keyset ordena por <c>Id</c>, o intervalo percorrido permanece coerente sobre o conjunto
 /// já filtrado.
 /// </summary>
 /// <param name="Termo">

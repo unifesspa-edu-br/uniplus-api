@@ -62,7 +62,7 @@ public sealed class LeituraPublicaDoCertameTests
         resultado.Value.Nome.Should().Be("SISU 2026.1", "o título é congelado na divulgação, não lido do agregado vivo");
     }
 
-    [Theory(DisplayName = "O detalhe traz a situação da janela no instante da leitura, pela regra da vitrine")]
+    [Theory(DisplayName = "O detalhe traz a situação do período no instante da leitura, pela regra da vitrine")]
     [InlineData(5, 30, SituacaoDoCertame.EmBreve)]
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
@@ -230,9 +230,9 @@ public sealed class LeituraPublicaDoCertameTests
     [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
     [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
     [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
-    public async Task Handle_QuandoJanelaEmCadaPonto_DeveMarcarASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
+    public async Task Handle_QuandoPeriodoEmCadaPonto_DeveMarcarASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
     {
-        // O fuso de quem lê não decide prazo de edital, e a janela tem dois lados: um edital
+        // O fuso de quem lê não decide prazo de edital, e o perÃ­odo tem dois lados: um edital
         // publicado antes de a inscrição abrir não está recebendo inscrição.
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado linha = Divulgado(

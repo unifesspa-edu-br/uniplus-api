@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// Duas dessas colunas não existem na entidade materializada. A chave alfabética é coluna gerada,
 /// mapeada como propriedade sombra; e o segmento aberto/encerrado é uma comparação com o instante
 /// da consulta, que não é atributo de linha nenhuma. Projetar para este carregador resolve as duas
-/// sem levá-las ao domínio, e a instância ainda serve de âncora ao motor de paginação.
+/// sem levá-las ao domínio, e a instância ainda serve de ponto de continuação ao motor de paginação.
 /// </para>
 /// </remarks>
 internal sealed class CertameNaVitrine : IIdentificavel
@@ -25,7 +25,7 @@ internal sealed class CertameNaVitrine : IIdentificavel
     public Guid Id { get; init; }
 
     /// <summary>
-    /// Se a janela já encerrou no instante congelado da travessia. É a primeira coluna da ordem
+    /// Se o período já encerrou no instante congelado do percurso. É a primeira coluna da ordem
     /// canônica: ela joga os encerrados para o fim sem inverter o prazo dentro de cada grupo.
     /// </summary>
     public bool Encerrado { get; init; }
@@ -49,7 +49,7 @@ internal sealed class CertameNaVitrine : IIdentificavel
 /// <para>
 /// Os nomes dos campos são contrato público e vivem em <see cref="CamposDeOrdenacaoDaListaPublica"/>,
 /// visíveis à borda que valida o parâmetro e documenta a rota. O que mora aqui é o outro lado da
-/// ponte: a coluna que cada nome designa e como o valor dela vira texto na âncora do cursor. Um
+/// ponte: a coluna que cada nome designa e como o valor dela vira texto no ponto de continuação do cursor. Um
 /// teste confere que os dois conjuntos coincidem, de modo que declarar um campo sem mapeá-lo — ou o
 /// contrário — quebra a suíte em vez de virar uma recusa inexplicável em produção.
 /// </para>
@@ -81,11 +81,11 @@ internal static class OrdenacaoDaListaPublica
         campos.Count == 0
             ? new KeysetSort<CertameNaVitrine>(
                 [ColunaDoSegmento(), Coluna(new SortField(CamposDeOrdenacaoDaListaPublica.InscricoesAte, SortDirection.Ascending))],
-                AncoraDaOrdemCanonica,
+                PontoDeContinuacaoDaOrdemCanonica,
                 filtro)
             : new KeysetSort<CertameNaVitrine>(
                 [.. campos.Select(Coluna)],
-                (partes, id) => Ancora(campos, partes, id),
+                (partes, id) => PontoDeContinuacao(campos, partes, id),
                 filtro);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CertameNaVitrine>>> Campos =
@@ -113,12 +113,12 @@ internal static class OrdenacaoDaListaPublica
 
     /// <summary>
     /// Instante em ISO-8601 com deslocamento zero. A ordem lexicográfica desse formato coincide com
-    /// a cronológica, que é o que a âncora precisa para comparar como o banco compara.
+    /// a cronológica, que é o que o ponto de continuação precisa para comparar como o banco compara.
     /// </summary>
     private static string ChaveDeInstante(DateTimeOffset instante) =>
         instante.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 
-    private static CertameNaVitrine AncoraDaOrdemCanonica(IReadOnlyList<string> partes, Guid id) =>
+    private static CertameNaVitrine PontoDeContinuacaoDaOrdemCanonica(IReadOnlyList<string> partes, Guid id) =>
         new()
         {
             Id = id,
@@ -126,7 +126,7 @@ internal static class OrdenacaoDaListaPublica
             InscricoesAte = partes.Count > 1 ? InstanteDaChave(partes[1]) : default,
         };
 
-    private static CertameNaVitrine Ancora(IReadOnlyList<SortField> campos, IReadOnlyList<string> partes, Guid id)
+    private static CertameNaVitrine PontoDeContinuacao(IReadOnlyList<SortField> campos, IReadOnlyList<string> partes, Guid id)
     {
         Dictionary<string, string> valores = new(StringComparer.Ordinal);
         for (int i = 0; i < campos.Count && i < partes.Count; i++)

@@ -20,7 +20,7 @@ public interface ICursoRepository
     /// <summary>
     /// Lista cursos vivos paginados por cursor keyset bidirecional
     /// (ADR-0026 + ADR-0089), na ordenação pedida (ADR-0094) e restritos ao termo
-    /// pesquisado. Devolve as âncoras de <c>prev</c>/<c>next</c> — o par chave de
+    /// pesquisado. Devolve os pontos de continuação de <c>prev</c>/<c>next</c> — o par chave de
     /// ordenação + <c>Id</c>, nulo quando não há aquele lado.
     /// </summary>
     /// <param name="ordenacao">
@@ -32,7 +32,7 @@ public interface ICursoRepository
     /// <c>null</c> lista tudo.
     /// </param>
     /// <param name="afterSortKey">
-    /// Chave de ordenação da âncora de continuação; <c>null</c> na primeira página.
+    /// Chave de ordenação do ponto de continuação de continuação; <c>null</c> na primeira página.
     /// </param>
     Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPaginadoAsync(

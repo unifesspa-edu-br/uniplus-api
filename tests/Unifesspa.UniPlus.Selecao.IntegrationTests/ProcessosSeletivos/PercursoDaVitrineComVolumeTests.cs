@@ -23,7 +23,7 @@ using Xunit;
 /// <para>
 /// Volume importa aqui por um motivo específico, e não por realismo: o defeito do seek keyset é o
 /// da <b>fronteira entre páginas</b>. Com três linhas e uma página, nenhuma fronteira é exercitada;
-/// o erro de um lado da desigualdade, o desempate que falta, a coluna que a âncora não carrega —
+/// o erro de um lado da desigualdade, o desempate que falta, a coluna que o ponto de continuação não carrega —
 /// todos passam despercebidos. Com muitas páginas e empates deliberados em toda coluna de
 /// ordenação, cada fronteira vira uma chance de o defeito aparecer.
 /// </para>
@@ -33,7 +33,7 @@ using Xunit;
 /// única e o desempate por identificador — que é o que garante ordem total — nunca seria testado.
 /// </para>
 /// </remarks>
-public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
+public sealed class PercursoDaVitrineComVolumeTests : IClassFixture<ProcessoSeletivoDbFixture>, IAsyncLifetime
 {
     private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
@@ -50,14 +50,14 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     private readonly ProcessoSeletivoDbFixture _fixture;
 
     /// <summary>
-    /// Teto de páginas de uma travessia. Uma que não termina é defeito, e sem o teto ela vira um
+    /// Teto de páginas de um percurso. Uma que não termina é defeito, e sem o teto ela vira um
     /// teste que roda para sempre em vez de falhar.
     /// </summary>
     private static readonly int TetoDePaginas = (Volume / TamanhoDaPagina) + 5;
 
     private readonly List<Guid> _semeados = [];
 
-    public TravessiaDaVitrineComVolumeTests(ProcessoSeletivoDbFixture fixture)
+    public PercursoDaVitrineComVolumeTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
     }
@@ -92,22 +92,22 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Theory(DisplayName = "A travessia para a frente devolve cada certame exatamente uma vez")]
+    [Theory(DisplayName = "O percurso para a frente devolve cada certame exatamente uma vez")]
     [InlineData(null, null)]
     [InlineData(CamposDeOrdenacaoDaListaPublica.Nome, "asc")]
     [InlineData(CamposDeOrdenacaoDaListaPublica.Nome, "desc")]
     [InlineData(CamposDeOrdenacaoDaListaPublica.DivulgadoEm, "asc")]
     [InlineData(CamposDeOrdenacaoDaListaPublica.InscricoesDe, "desc")]
-    public async Task Travessia_QuandoPercorreParaAFrente_DeveCobrirOConjuntoUmaVez(string? campo, string? sentido)
+    public async Task Percurso_QuandoPercorreParaAFrente_DeveCobrirOConjuntoUmaVez(string? campo, string? sentido)
     {
         IReadOnlyList<Guid> percorridos = await PercorrerAsync(Ordenacao(campo, sentido), PaginationDirection.Next);
 
         percorridos.Should().OnlyHaveUniqueItems("um certame repetido entre páginas é o seek partindo do lugar errado");
-        percorridos.Should().BeEquivalentTo(_semeados, "nenhum certame pode ficar de fora da travessia");
+        percorridos.Should().BeEquivalentTo(_semeados, "nenhum certame pode ficar de fora do percurso");
     }
 
-    [Fact(DisplayName = "A travessia para trás cobre o mesmo conjunto que a de ida")]
-    public async Task Travessia_QuandoPercorreParaTras_DeveCobrirOMesmoConjunto()
+    [Fact(DisplayName = "O percurso para trás cobre o mesmo conjunto que a de ida")]
+    public async Task Percurso_QuandoPercorreParaTras_DeveCobrirOMesmoConjunto()
     {
         // O sentido reverso tem seek e ordenação próprios: erro só nele dá ida correta e volta
         // com buraco.
@@ -118,14 +118,14 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     }
 
     [Fact(DisplayName = "A ordem canônica por urgência vale para a coleção inteira, não por página")]
-    public async Task Travessia_QuandoNaoPedeOrdenacao_DeveManterAUrgenciaNaColecaoInteira()
+    public async Task Percurso_QuandoNaoPedeOrdenacao_DeveManterAUrgenciaNaColecaoInteira()
     {
         // Ordenar por página, e não pela coleção, só se revela olhando a sequência inteira.
         IReadOnlyList<(bool Encerrado, DateTimeOffset Prazo)> chaves = await PercorrerChavesAsync([]);
 
         chaves.Should().BeInAscendingOrder(
             static c => c.Encerrado,
-            "os que ainda não encerraram vêm antes, e o segmento não se alterna no meio da travessia");
+            "os que ainda não encerraram vêm antes, e o segmento não se alterna no meio do percurso");
 
         chaves.Where(static c => !c.Encerrado).Select(static c => c.Prazo)
             .Should().BeInAscendingOrder("dentro dos abertos, o prazo mais próximo vem primeiro");
@@ -135,7 +135,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     }
 
     [Fact(DisplayName = "A ordenação decrescente pedida vale para a coleção inteira")]
-    public async Task Travessia_QuandoPedeOrdenacaoDecrescente_DeveValerNaColecaoInteira()
+    public async Task Percurso_QuandoPedeOrdenacaoDecrescente_DeveValerNaColecaoInteira()
     {
         IReadOnlyList<string> nomes = await PercorrerNomesAsync(
             [new SortField(CamposDeOrdenacaoDaListaPublica.Nome, SortDirection.Descending)]);
@@ -165,7 +165,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         [.. (await PercorrerItensAsync(ordenacao)).Select(static c => c.Nome)];
 
     /// <summary>
-    /// Percorre a vitrine para a frente seguindo as âncoras que cada página emite, exatamente como o
+    /// Percorre a vitrine para a frente seguindo os pontos de continuação que cada página emite, exatamente como o
     /// cliente faria pelo header de navegação.
     /// </summary>
     private async Task<IReadOnlyList<CertameDivulgado>> PercorrerItensAsync(IReadOnlyList<SortField> ordenacao)
@@ -183,7 +183,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         }
 
         throw new InvalidOperationException(
-            $"A travessia não terminou em {TetoDePaginas} páginas — o cursor não converge.");
+            $"O percurso não terminou em {TetoDePaginas} páginas — o cursor não converge.");
     }
 
     private async Task<(string SortKey, Guid Id)?> AcrescentarProximaPaginaAsync(
@@ -204,8 +204,8 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
     /// Percorre a vitrine de trás para a frente, como o cliente que chegou ao fim e volta.
     /// </summary>
     /// <remarks>
-    /// A volta parte do <b>Anterior</b> que a última página emitiu, e não da âncora que a buscou: é
-    /// a âncora que o header de navegação carrega em <c>rel="prev"</c>, e é a posição do PRIMEIRO
+    /// A volta parte do <b>Anterior</b> que a última página emitiu, e não do ponto de continuação que a buscou: é
+    /// o ponto de continuação que o header de navegação carrega em <c>rel="prev"</c>, e é a posição do PRIMEIRO
     /// item da página corrente. A última página entra no conjunto por já estar em mãos — é onde o
     /// cliente está quando decide voltar.
     /// </remarks>
@@ -252,7 +252,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
         return (anterior, false);
     }
 
-    /// <summary>A última página da coleção e a âncora que leva dela para a anterior.</summary>
+    /// <summary>A última página da coleção e o ponto de continuação que leva dela para a anterior.</summary>
     private async Task<(IReadOnlyList<CertameDivulgado> Itens, (string SortKey, Guid Id)? Anterior)> UltimaPaginaAsync(
         IReadOnlyList<SortField> ordenacao)
     {

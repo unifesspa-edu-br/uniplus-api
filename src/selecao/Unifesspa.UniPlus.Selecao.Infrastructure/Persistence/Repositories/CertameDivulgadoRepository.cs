@@ -54,7 +54,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         PaginationDirection direction, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(consulta);
-        DateTimeOffset instanteUtc = (InstanteDaAncora(afterSortKey, consulta.Ordenacao.Count)
+        DateTimeOffset instanteUtc = (InstanteDoPontoDeContinuacao(afterSortKey, consulta.Ordenacao.Count)
             ?? consulta.InstanteSeForAPrimeiraPagina).ToUniversalTime();
         IDbContextTransaction instantaneo = await _context.Database
             .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken).ConfigureAwait(false);
@@ -152,11 +152,11 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
     /// </para>
     /// <para>
     /// Devolve nulo quando a chave não tem essa forma, e a consulta parte do instante de agora.
-    /// Isso NÃO abre porta para paginar do lugar errado: a âncora é reconstruída em seguida pela
+    /// Isso NÃO abre porta para paginar do lugar errado: o ponto de continuação é reconstruída em seguida pela
     /// própria ordenação, que confere a assinatura inteira e recusa o que não bater.
     /// </para>
     /// </remarks>
-    private static DateTimeOffset? InstanteDaAncora(string? sortKey, int colunasPedidas)
+    private static DateTimeOffset? InstanteDoPontoDeContinuacao(string? sortKey, int colunasPedidas)
     {
         int colunas = colunasPedidas == 0 ? ColunasDaOrdemCanonica : colunasPedidas;
 
@@ -171,11 +171,11 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
     }
 
     /// <summary>
-    /// Lê um instante da âncora assumindo UTC na ausência de designador de fuso.
+    /// Lê um instante do ponto de continuação assumindo UTC na ausência de designador de fuso.
     /// </summary>
     /// <remarks>
     /// Sem <see cref="DateTimeStyles.AssumeUniversal"/>, um texto sem o <c>Z</c> receberia o fuso
-    /// LOCAL do processo que lê, e a mesma âncora retomaria de posições diferentes conforme a
+    /// LOCAL do processo que lê, e a mesmo ponto de continuação retomaria de posições diferentes conforme a
     /// máquina que serve a requisição.
     /// </remarks>
     private static bool TentarLerInstante(string texto, out DateTimeOffset valor) =>
