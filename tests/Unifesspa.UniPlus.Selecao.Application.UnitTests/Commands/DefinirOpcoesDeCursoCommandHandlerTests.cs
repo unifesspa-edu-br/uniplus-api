@@ -61,6 +61,21 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Handle com processo publicado recusa a mutação sem alterar a declaração nem persistir")]
+    public async Task Handle_ProcessoPublicado_RecusaSemPersistir()
+    {
+        ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
+        int? declarada = processo.NumeroDeOpcoesDeCurso;
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
+
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(processo.Id, 1), repository, unitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+        processo.NumeroDeOpcoesDeCurso.Should().Be(declarada);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle com conflito de concorrência descarta o rastreamento e devolve o conflito, sem relançar")]
     public async Task Handle_ConflitoDeConcorrencia_DescartaEDevolveConflito()
     {
