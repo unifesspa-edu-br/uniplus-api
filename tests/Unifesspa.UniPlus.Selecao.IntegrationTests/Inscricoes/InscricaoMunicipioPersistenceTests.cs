@@ -100,7 +100,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
     {
         JsonElement valor = enviada ? Gravado(Salvador, "Salvador") : Json(Salvador);
         Inscricao inscricao = Reidratada(
-            enviada ? SituacaoInscricao.Submetida : SituacaoInscricao.Rascunho,
+            enviada ? SituacaoInscricao.Enviada : SituacaoInscricao.Rascunho,
             new(StringComparer.Ordinal) { ["NATURALIDADE_MUNICIPIO"] = valor },
             new(StringComparer.Ordinal),
             new(StringComparer.Ordinal),
@@ -128,7 +128,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
 
     [Theory(DisplayName = "O município na forma que a situação não grava é defeito de quem grava: o rascunho não leva nome, e a enviada não leva só o código")]
     [InlineData(SituacaoInscricao.Rascunho, true)]
-    [InlineData(SituacaoInscricao.Submetida, false)]
+    [InlineData(SituacaoInscricao.Enviada, false)]
     public async Task FormaTrocada_NaoGrava(SituacaoInscricao situacao, bool comNome)
     {
         Inscricao inscricao = Reidratada(
@@ -178,7 +178,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
     private static Inscricao EnviadaComMunicipios()
     {
         return Reidratada(
-            SituacaoInscricao.Submetida,
+            SituacaoInscricao.Enviada,
             new(StringComparer.Ordinal) { ["NATURALIDADE_MUNICIPIO"] = Gravado(Salvador, "Salvador") },
             new(StringComparer.Ordinal) { ["MUNICIPIO_RESIDENCIA"] = Gravado(Maraba, "Marabá") },
             new(StringComparer.Ordinal)
@@ -191,7 +191,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
     private static Inscricao ComMunicipioCifradoEmGrupo(bool enviada, JsonElement valor)
     {
         return Reidratada(
-            enviada ? SituacaoInscricao.Submetida : SituacaoInscricao.Rascunho,
+            enviada ? SituacaoInscricao.Enviada : SituacaoInscricao.Rascunho,
             new(StringComparer.Ordinal),
             new(StringComparer.Ordinal),
             new(StringComparer.Ordinal)

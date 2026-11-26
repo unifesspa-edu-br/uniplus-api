@@ -85,7 +85,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         linha.Id.Should().NotBeEmpty();
         linha.NumeroInscricao.Should().Be("000001");
-        linha.SubmetidaEm.Should().NotBeNull();
+        linha.EnviadaEm.Should().NotBeNull();
         (linha.Situacao, linha.Ofertas).Should().Be((null, null));
     }
 
@@ -143,9 +143,9 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(leandro);
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
-        linha.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Submetida));
+        linha.Situacao.Should().Be(CodigoComRotulo<SituacaoInscricao>.De(SituacaoInscricao.Enviada));
         linha.Ofertas.Should().Equal(new OfertaEscolhidaDto(Curso, null, 1));
-        (linha.Nome, linha.Cpf, linha.NumeroInscricao, linha.SubmetidaEm).Should().Be((null, null, null, null));
+        (linha.Nome, linha.Cpf, linha.NumeroInscricao, linha.EnviadaEm).Should().Be((null, null, null, null));
     }
 
     [Fact(DisplayName = "Só com a permissão de acesso a linha traz apenas o id, e o registro vai pela decisão do acesso ao resource")]
@@ -452,6 +452,6 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             .Returns((pagina, (Guid?)null, (Guid?)null));
 
     private static ResumoDaInscricaoDoProcesso Resumo(int numero) => new(
-        Guid.CreateVersion7(), $"{numero:000000}", SituacaoInscricao.Submetida, VersaoDoProcesso, Curso, null,
+        Guid.CreateVersion7(), $"{numero:000000}", SituacaoInscricao.Enviada, VersaoDoProcesso, Curso, null,
         PersonasDeTeste.NomeFernandaDrumond, PersonasDeTeste.FernandaDrumond, DateTimeOffset.UtcNow);
 }

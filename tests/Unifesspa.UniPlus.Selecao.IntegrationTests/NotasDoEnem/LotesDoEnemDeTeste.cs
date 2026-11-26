@@ -32,7 +32,7 @@ internal static class LotesDoEnemDeTeste
         InscricaoDbFixture fixture,
         Escopo escopo,
         PersonasDeTeste.PessoaFicticia pessoa,
-        SituacaoInscricao situacao = SituacaoInscricao.Submetida,
+        SituacaoInscricao situacao = SituacaoInscricao.Enviada,
         string? edicao = Edicao) =>
         InscricoesDoEnemDeTeste.NovaInscricaoAsync(fixture, new(escopo.ProcessoId, pessoa, situacao, edicao));
 

@@ -131,7 +131,7 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>
     /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é
-    /// da submissão. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente.
+    /// do envio. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente.
     /// </summary>
     [HttpPut("processos-seletivos/{id:guid}/inscricao")]
     [EndpointName("SalvarRascunhoDaInscricao")]
@@ -233,13 +233,13 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>
     /// Envia ou corrige a inscrição: exige obrigatórios, restrições, impedimentos, grupos e termos
-    /// — a validação completa do veredito de submissão. Exige <c>If-Match</c> com o
+    /// — a validação completa do veredito de envio. Exige <c>If-Match</c> com o
     /// <see cref="InscricaoDto.ETag"/> corrente, e <c>Idempotency-Key</c> (ADR-0027): a repetição da
     /// mesma chave devolve o mesmo recibo, sem gerar outro comprovante nem outro número de inscrição. O recibo
     /// diz qual comprovante abrir, em <c>GET /inscricoes/{inscricaoId}/comprovantes/{numeroDoComprovante}</c>.
     /// </summary>
-    [HttpPost("processos-seletivos/{id:guid}/inscricao/submissao")]
-    [EndpointName("SubmeterInscricao")]
+    [HttpPost("processos-seletivos/{id:guid}/inscricao/envio")]
+    [EndpointName("EnviarInscricao")]
     [RequiresIdempotencyKey]
     [VendorMediaType(Resource = "recibo-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ReciboDaInscricaoDto), StatusCodes.Status200OK)]

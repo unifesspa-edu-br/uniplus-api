@@ -17,11 +17,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// do formulário são itens todos da mesma forma, e o item que a pessoa não pode ver não vem, sem indicação nem contagem.
 /// </summary>
 /// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
-/// <param name="Situacao">Rascunho, submetida ou cancelada.</param>
+/// <param name="Situacao">Rascunho, enviada ou cancelada.</param>
 /// <param name="Processo">O processo seletivo da inscrição.</param>
 /// <param name="Ofertas">As ofertas que o candidato escolheu, na ordem da escolha, nomeadas pela versão do formulário da inscrição.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
-/// <param name="SubmetidaEm">O instante do primeiro envio.</param>
+/// <param name="EnviadaEm">O instante do primeiro envio.</param>
 /// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
 /// <param name="MotivoDoCancelamento">O motivo informado no cancelamento.</param>
 /// <param name="Secoes">As respostas do formulário agrupadas por seção, na ordem de coleta.</param>
@@ -43,7 +43,7 @@ public sealed record InscricaoAdministrativaDto(
     string? NumeroInscricao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.comprovantes_inscricao.instante")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    DateTimeOffset? SubmetidaEm,
+    DateTimeOffset? EnviadaEm,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.cancelada_em")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     DateTimeOffset? CanceladaEm,

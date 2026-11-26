@@ -197,7 +197,7 @@ public sealed class InscricaoEquivalenciaTests
         Action enviar = () => Enviar(inscricao, new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>(), null!);
         enviar.Should().Throw<ArgumentNullException>();
         Dictionary<string, DefinicaoDaResposta> definicoes = new(anterior.DefinicoesDasRespostas) { ["CAMPO"] = Admitidas.Definicoes["CAMPO"] };
-        ConferirEstado(inscricao, SituacaoInscricao.Submetida, "123", 2, FormularioDaInscricao.Reidratar(anterior.VersaoFormularioId, anterior.Preenchimento, anterior.Derivados, definicoes));
+        ConferirEstado(inscricao, SituacaoInscricao.Enviada, "123", 2, FormularioDaInscricao.Reidratar(anterior.VersaoFormularioId, anterior.Preenchimento, anterior.Derivados, definicoes));
     }
 
     private static void Enviar(Inscricao inscricao, IReadOnlyDictionary<string, JsonElement> derivados,

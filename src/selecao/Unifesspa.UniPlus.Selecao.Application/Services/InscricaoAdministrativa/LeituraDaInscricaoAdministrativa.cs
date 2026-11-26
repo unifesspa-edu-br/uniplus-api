@@ -93,7 +93,7 @@ public sealed class LeituraDaInscricaoAdministrativa
 
     private async Task<DateTimeOffset?> PrimeiroEnvioAsync(Guid inscricaoId, ProjecaoDaInscricao projecao, CancellationToken cancellationToken)
     {
-        if (!projecao.Permite(nameof(InscricaoAdministrativaDto.SubmetidaEm)))
+        if (!projecao.Permite(nameof(InscricaoAdministrativaDto.EnviadaEm)))
         {
             return null;
         }

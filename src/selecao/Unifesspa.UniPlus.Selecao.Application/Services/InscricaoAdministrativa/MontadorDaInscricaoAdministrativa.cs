@@ -26,7 +26,7 @@ public static class MontadorDaInscricaoAdministrativa
         ItensVisiveis itens = ItensVisiveis.De(conteudo, projecao);
 
         return new InscricaoAdministrativaDto(
-            conteudo.Inscricao.Id, processo, campos.Situacao is { } situacao ? CodigoComRotulo<SituacaoInscricao>.De(situacao) : null, campos.Ofertas, campos.NumeroInscricao, campos.SubmetidaEm, campos.CanceladaEm, campos.MotivoDoCancelamento,
+            conteudo.Inscricao.Id, processo, campos.Situacao is { } situacao ? CodigoComRotulo<SituacaoInscricao>.De(situacao) : null, campos.Ofertas, campos.NumeroInscricao, campos.EnviadaEm, campos.CanceladaEm, campos.MotivoDoCancelamento,
             itens.Secoes, itens.Derivados, itens.Arquivos, podeEmitirComprovante, conteudo.NumeroDoUltimoComprovante);
     }
 
@@ -34,7 +34,7 @@ public static class MontadorDaInscricaoAdministrativa
         SituacaoInscricao? Situacao,
         IReadOnlyList<OfertaEscolhidaDto>? Ofertas,
         string? NumeroInscricao,
-        DateTimeOffset? SubmetidaEm,
+        DateTimeOffset? EnviadaEm,
         DateTimeOffset? CanceladaEm,
         string? MotivoDoCancelamento)
     {

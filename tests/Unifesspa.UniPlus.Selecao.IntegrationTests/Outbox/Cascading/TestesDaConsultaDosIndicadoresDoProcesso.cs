@@ -113,7 +113,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso : IAsyncLifetime
     {
         Guid processoId = await _apoio.SemearPublicadoAsync(nameof(ServidorInscrito_Retorna403));
         await _apoio.ConcederAsync(SubInscrito, processoId, PermissaoSelecao.ProcessosAcompanhar.Codigo);
-        await _inscricoes.SemearInscricaoAsync(processoId, PersonasDeTeste.FernandaDrumond, SubInscrito, SituacaoInscricao.Submetida);
+        await _inscricoes.SemearInscricaoAsync(processoId, PersonasDeTeste.FernandaDrumond, SubInscrito, SituacaoInscricao.Enviada);
 
         using HttpResponseMessage resposta = await _apoio.EnviarAsync(SubInscrito, $"{Rota}/{processoId}/indicadores", MediaType);
 
@@ -145,7 +145,7 @@ public sealed class TestesDaConsultaDosIndicadoresDoProcesso : IAsyncLifetime
         indicadores.Select(i => i.GetProperty("rotulo").GetString()).Should().Equal(
             "Inscrições", "Inscritos", "Rascunhos");
         indicadores.Select(i => i.GetProperty("descricao").GetString()).Should().Equal(
-            "Submetidas e não canceladas", "Pessoas distintas com inscrição submetida e não cancelada", "Não enviados");
+            "Enviadas e não canceladas", "Pessoas distintas com inscrição enviada e não cancelada", "Não enviados");
         indicadores.Should().AllSatisfy(item =>
             Propriedades(item).Should().BeEquivalentTo(["codigo", "valor", "rotulo", "descricao"]));
     }

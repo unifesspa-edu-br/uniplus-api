@@ -59,7 +59,7 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
             CpfIndice = id.ToByteArray(),
             ContaId = $"conta-{id:N}",
             EmissorToken = "https://issuer",
-            Situacao = SituacaoInscricao.Submetida,
+            Situacao = SituacaoInscricao.Enviada,
             VersaoFormularioId = Guid.CreateVersion7(),
             NumeroInscricao = $"UNI-{id.ToString("N")[^8..]}",
             Revisao = 1,

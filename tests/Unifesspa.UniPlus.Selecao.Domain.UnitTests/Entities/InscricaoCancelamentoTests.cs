@@ -96,7 +96,7 @@ public sealed class InscricaoCancelamentoTests
         inscricao.Cancelar(new string('x', CancelamentoDaInscricao.TamanhoMaximoDoMotivoDoCancelamento + 1), "conta-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).Error!.Code
             .Should().Be(InscricaoErrorCodes.MotivoDoCancelamentoLongo);
 
-        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Enviada);
     }
 
     [Fact(DisplayName = "A inscrição cancelada recusa salvar, enviar, cancelar de novo, descartar e adotar versão")]

@@ -540,7 +540,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     cpf_indice = table.Column<byte[]>(type: "bytea", nullable: false, comment: "Índice cego (HMAC-SHA256) do CPF — sustenta a busca pelo dono e o índice único por processo, sem decifrar a tabela."),
                     conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "A conta do token de quem iniciou a inscrição — nunca troca de dono."),
                     emissor_token = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "O emissor (issuer) do token de quem iniciou a inscrição."),
-                    situacao = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false, comment: "Situação da inscrição. Códigos: RASCUNHO, SUBMETIDA, CANCELADA."),
+                    situacao = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false, comment: "Situação da inscrição. Códigos: RASCUNHO, ENVIADA, CANCELADA."),
                     versao_formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela."),
                     oferta_curso_id = table.Column<Guid>(type: "uuid", nullable: true),
                     oferta_curso_segunda_opcao_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -555,7 +555,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_inscricoes", x => x.id);
-                    table.CheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'SUBMETIDA', 'CANCELADA')");
+                    table.CheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'ENVIADA', 'CANCELADA')");
                 },
                 comment: "A inscrição de um candidato num processo seletivo — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
 

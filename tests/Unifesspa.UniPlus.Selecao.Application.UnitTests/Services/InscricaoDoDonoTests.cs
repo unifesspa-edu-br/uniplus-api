@@ -25,7 +25,7 @@ public sealed class InscricaoDoDonoTests
     {
         _usuario.Cpf.Returns(cpf);
 
-        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "submeter a inscrição", CancellationToken.None);
+        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "enviar a inscrição", CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
         await _inscricoes.DidNotReceiveWithAnyArgs().ObterAtivaPorProcessoECpfAsync(default, default!, default);
@@ -36,7 +36,7 @@ public sealed class InscricaoDoDonoTests
     {
         _usuario.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
 
-        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "submeter a inscrição", CancellationToken.None);
+        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "enviar a inscrição", CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
     }
@@ -52,7 +52,7 @@ public sealed class InscricaoDoDonoTests
         _usuario.UserId.Returns(conta);
         _inscricoes.ObterAtivaPorProcessoECpfAsync(_processoId, cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
 
-        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "submeter a inscrição", CancellationToken.None);
+        Result<Inscricao> resultado = await new InscricaoDoDono(_inscricoes, _usuario).ObterAtivaAsync(_processoId, "enviar a inscrição", CancellationToken.None);
 
         resultado.IsSuccess.Should().Be(aceita);
         if (!aceita)

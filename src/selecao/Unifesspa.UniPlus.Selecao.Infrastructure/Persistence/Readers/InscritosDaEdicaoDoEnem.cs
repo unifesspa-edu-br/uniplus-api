@@ -59,7 +59,7 @@ public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
         _context.Inscricoes
             .AsNoTracking()
             .Where(i => i.ProcessoSeletivoId == processoSeletivoId
-                && i.Situacao == SituacaoInscricao.Submetida
+                && i.Situacao == SituacaoInscricao.Enviada
                 && VigenciaDasNotasDoEnem.EdicoesEscolhidas(_context).Any(r => r.InscricaoId == i.Id
                     && r.ValorCodigo == edicaoCodigo));
 }

@@ -49,11 +49,15 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             return Result<string>.Failure(resolvido.Error!);
         }
 
-        bool bate = string.Equals(resolvido.Value!.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
-            && string.Equals(resolvido.Value.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
+        return ConferirCepResolvido(resolvido.Value!, cidadeCodigoIbgeDeclarada, ufDeclarada);
+    }
 
+    private static Result<string> ConferirCepResolvido(CepResolvido resolvido, string cidadeCodigoIbgeDeclarada, string ufDeclarada)
+    {
+        bool bate = string.Equals(resolvido.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
+            && string.Equals(resolvido.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
         return bate
-            ? Result<string>.Success(resolvido.Value.Cidade)
+            ? Result<string>.Success(resolvido.Cidade)
             : Result<string>.Failure(new DomainError(
                 ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
                 "O CEP informado resolve para uma cidade diferente da declarada."));
@@ -74,40 +78,30 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             LogGeoIndisponivel(_logger, "cep", excecao);
             return Result<CepResolvido>.Failure(ErroIndisponivel());
         }
+        using (resposta) return InterpretarCep(resposta);
+    }
 
-        // A resposta do Refit carrega a HttpResponseMessage: descartá-la libera a conexão e o
-        // conteúdo assim que a conferência termina, em vez de esperar o coletor.
-        using (resposta)
+    private Result<CepResolvido> InterpretarCep(ApiResponse<CepResolvidoResponse> resposta)
+    {
+        if (resposta.StatusCode == HttpStatusCode.NotFound)
+            return Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "O CEP informado não tem cobertura no Geo."));
+        if (!resposta.IsSuccessStatusCode)
         {
-            if (resposta.StatusCode == HttpStatusCode.NotFound)
-            {
-                return Result<CepResolvido>.Failure(new DomainError(
-                    ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "O CEP informado não tem cobertura no Geo."));
-            }
-
-            if (!resposta.IsSuccessStatusCode)
-            {
-                RegistrarRespostaSemSucesso(resposta, "cep");
-                return Result<CepResolvido>.Failure(ErroIndisponivel());
-            }
-
-            if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Cidade))
-            {
-                LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
-                return Result<CepResolvido>.Failure(ErroIndisponivel());
-            }
-
-            // Origem ausente ou desconhecida nunca é "exata": o candidato terá de confirmar o CEP.
-            return Result<CepResolvido>.Success(new CepResolvido(corpo.CodigoIbge, corpo.Cidade, corpo.Uf, corpo.Origem ?? string.Empty));
+            RegistrarRespostaSemSucesso(resposta, "cep");
+            return Result<CepResolvido>.Failure(ErroIndisponivel());
         }
+        if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Cidade))
+        {
+            LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
+            return Result<CepResolvido>.Failure(ErroIndisponivel());
+        }
+        return Result<CepResolvido>.Success(new CepResolvido(corpo.CodigoIbge, corpo.Cidade, corpo.Uf, corpo.Origem ?? string.Empty));
     }
 
     public async Task<Result<string>> ConferirMunicipioAsync(
         string cidadeCodigoIbgeDeclarado, string ufDeclarada, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(cidadeCodigoIbgeDeclarado);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ufDeclarada);
-
+        ValidarMunicipio(cidadeCodigoIbgeDeclarado, ufDeclarada);
         ApiResponse<CidadeDetalheResponse> resposta;
         try
         {
@@ -119,34 +113,37 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             LogGeoIndisponivel(_logger, "cidade", excecao);
             return Result<string>.Failure(ErroIndisponivel());
         }
-
-        using (resposta)
-        {
-            if (resposta.StatusCode == HttpStatusCode.NotFound)
-            {
-                return Result<string>.Failure(new DomainError(
-                    ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "O município informado não existe no Geo."));
-            }
-
-            if (!resposta.IsSuccessStatusCode)
-            {
-                RegistrarRespostaSemSucesso(resposta, "cidade");
-                return Result<string>.Failure(ErroIndisponivel());
-            }
-
-            if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Nome))
-            {
-                LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
-                return Result<string>.Failure(ErroIndisponivel());
-            }
-
-            return string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
-                ? Result<string>.Success(corpo.Nome)
-                : Result<string>.Failure(new DomainError(
-                    ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
-                    "O município informado não pertence à UF declarada."));
-        }
+        using (resposta) return InterpretarMunicipio(resposta, ufDeclarada);
     }
+
+    private static void ValidarMunicipio(string cidadeCodigoIbgeDeclarado, string ufDeclarada)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cidadeCodigoIbgeDeclarado);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ufDeclarada);
+    }
+
+    private Result<string> InterpretarMunicipio(ApiResponse<CidadeDetalheResponse> resposta, string ufDeclarada)
+    {
+        if (resposta.StatusCode == HttpStatusCode.NotFound)
+            return Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "O município informado não existe no Geo."));
+        if (!resposta.IsSuccessStatusCode)
+        {
+            RegistrarRespostaSemSucesso(resposta, "cidade");
+            return Result<string>.Failure(ErroIndisponivel());
+        }
+        if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Nome))
+        {
+            LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
+            return Result<string>.Failure(ErroIndisponivel());
+        }
+        return CompararMunicipio(corpo, ufDeclarada);
+    }
+
+    private static Result<string> CompararMunicipio(CidadeDetalheResponse corpo, string ufDeclarada) =>
+        string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
+            ? Result<string>.Success(corpo.Nome)
+            : Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
+                "O município informado não pertence à UF declarada."));
 
     // Sem StatusCode não houve resposta HTTP: o Refit guardou a causa (rede, timeout, autenticação)
     // em Error. O envelope do Refit carrega a requisição — a URI com o CEP ou o município e o header
@@ -167,7 +164,7 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
 
     private static DomainError ErroIndisponivel() => new(
         ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel,
-        "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável.");
+        "O Geo não respondeu — o envio é recusado, mas o rascunho continua salvável.");
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "O Geo não respondeu à conferência de {Recurso}.")]
     private static partial void LogGeoIndisponivel(ILogger logger, string recurso, Exception exception);

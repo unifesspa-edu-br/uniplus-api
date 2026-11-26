@@ -96,8 +96,8 @@ public sealed class EnvioAoInepEndpointTests
     {
         Publicado p = await PublicadoAsync();
         IReadOnlyList<PersonasDeTeste.PessoaFicticia> pessoas = PersonasDeTeste.Candidatas;
-        await InscreverAsync(p, pessoas[0], SituacaoInscricao.Submetida, Edicao);
-        await InscreverAsync(p, pessoas[1], SituacaoInscricao.Submetida, Edicao);
+        await InscreverAsync(p, pessoas[0], SituacaoInscricao.Enviada, Edicao);
+        await InscreverAsync(p, pessoas[1], SituacaoInscricao.Enviada, Edicao);
         await InscreverAsync(p, pessoas[2], SituacaoInscricao.Rascunho, Edicao);
         await InscreverAsync(p, pessoas[3], SituacaoInscricao.Cancelada, Edicao);
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -136,7 +136,7 @@ public sealed class EnvioAoInepEndpointTests
     public async Task Gerar_InscricoesAbertas_Recusa()
     {
         Publicado p = await SemearEPublicarAsync(_fixture, new DateTimeOffset(2099, 12, 20, 15, 0, 0, TimeSpan.Zero));
-        await InscreverAsync(p, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Submetida, Edicao);
+        await InscreverAsync(p, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Enviada, Edicao);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpRequestMessage gerar = Requisicao(HttpMethod.Post, Base(p), corpo: new { leiauteCodigo = "INEP_ENEM_ENVIO", leiauteVersao = "v1" });

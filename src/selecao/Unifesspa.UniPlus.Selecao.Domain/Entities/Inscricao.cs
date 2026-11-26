@@ -121,7 +121,7 @@ public sealed class Inscricao : EntityBase
     /// <summary>Depois do envio, a inscrição só muda por novo envio, que emite novo comprovante; depois do cancelamento, não muda.</summary>
     public DomainError? ConferirAindaEmRascunho() =>
         ConferirNaoCancelada()
-        ?? (Estado.Situacao == SituacaoInscricao.Submetida
+        ?? (Estado.Situacao == SituacaoInscricao.Enviada
             ? new DomainError(
                 InscricaoErrorCodes.RascunhoSoAntesDoEnvio,
                 "Sua inscrição já foi enviada. Para corrigi-la, envie de novo: cada envio gera um novo comprovante.")
@@ -151,7 +151,7 @@ public sealed class Inscricao : EntityBase
             return cancelada;
         }
 
-        if (Estado.Situacao == SituacaoInscricao.Submetida)
+        if (Estado.Situacao == SituacaoInscricao.Enviada)
         {
             return new DomainError(
                 InscricaoErrorCodes.DescarteSoDeRascunho,
@@ -203,8 +203,8 @@ public sealed class Inscricao : EntityBase
     /// </summary>
     public AcoesDaInscricao AcoesPermitidas(bool inscricoesAbertas) => new(
         PodeContinuar: Estado.Situacao == SituacaoInscricao.Rascunho && inscricoesAbertas,
-        PodeCorrigir: Estado.Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
-        PodeCancelar: Estado.Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
+        PodeCorrigir: Estado.Situacao == SituacaoInscricao.Enviada && inscricoesAbertas,
+        PodeCancelar: Estado.Situacao == SituacaoInscricao.Enviada && inscricoesAbertas,
         PodeDescartar: Estado.Situacao == SituacaoInscricao.Rascunho && inscricoesAbertas);
 
     /// <summary>

@@ -16452,7 +16452,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)")
                         .HasColumnName("situacao")
-                        .HasComment("Situação da inscrição. Códigos: RASCUNHO, SUBMETIDA, CANCELADA.");
+                        .HasComment("Situação da inscrição. Códigos: RASCUNHO, ENVIADA, CANCELADA.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -16482,7 +16482,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             t.HasComment("A inscrição de um candidato num processo seletivo — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
 
-                            t.HasCheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'SUBMETIDA', 'CANCELADA')");
+                            t.HasCheckConstraint("ck_inscricoes_situacao", "situacao IN ('RASCUNHO', 'ENVIADA', 'CANCELADA')");
                         });
                 });
 

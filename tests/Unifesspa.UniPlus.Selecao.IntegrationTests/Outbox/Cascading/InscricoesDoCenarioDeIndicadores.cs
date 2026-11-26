@@ -36,9 +36,9 @@ internal sealed class InscricoesDoCenarioDeIndicadores
     {
         // O mesmo sub em emissores distintos e CPFs distintos diferencia a identidade canônica por CPF.
         await SemearInscricaoAsync(processoId, PersonasDeTeste.FernandaDrumond, "candidato.antiga", SituacaoInscricao.Cancelada);
-        await SemearInscricaoAsync(processoId, PersonasDeTeste.FernandaDrumond, "same-sub", SituacaoInscricao.Submetida);
+        await SemearInscricaoAsync(processoId, PersonasDeTeste.FernandaDrumond, "same-sub", SituacaoInscricao.Enviada);
         await SemearInscricaoAsync(
-            processoId, PersonasDeTeste.KevinCarvalho, "same-sub", SituacaoInscricao.Submetida,
+            processoId, PersonasDeTeste.KevinCarvalho, "same-sub", SituacaoInscricao.Enviada,
             "https://outro-emissor.exemplo/realms/outro");
         await SemearInscricaoAsync(processoId, PersonasDeTeste.ErickIsaacRamos, "candidato.rascunho.ativo", SituacaoInscricao.Rascunho);
         await SemearInscricaoAsync(

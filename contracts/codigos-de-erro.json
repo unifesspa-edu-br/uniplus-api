@@ -4534,7 +4534,7 @@
     {
       "codigo": "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel",
       "status": 503,
-      "titulo": "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável"
+      "titulo": "O Geo não respondeu — o envio é recusado, mas o rascunho continua salvável"
     },
     {
       "codigo": "uniplus.selecao.conferencia_endereco_geo.municipio_divergente",
@@ -6194,7 +6194,7 @@
     {
       "codigo": "uniplus.selecao.inscricao.impedimento",
       "status": 422,
-      "titulo": "Uma resposta impede a submissão desta inscrição"
+      "titulo": "Uma resposta impede o envio desta inscrição"
     },
     {
       "codigo": "uniplus.selecao.inscricao.inscricao_cancelada",

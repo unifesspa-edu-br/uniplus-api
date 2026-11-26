@@ -26,7 +26,7 @@ public sealed class EstadoDaInscricaoTests
         EstadoDaInscricao inicial = EstadoDaInscricao.Inicial;
         EstadoDaInscricao enviada = inicial.SubmeterAposConferencia("123");
         inicial.Situacao.Should().Be(SituacaoInscricao.Rascunho);
-        enviada.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        enviada.Situacao.Should().Be(SituacaoInscricao.Enviada);
         enviada.NumeroInscricao.Should().Be("123");
     }
 

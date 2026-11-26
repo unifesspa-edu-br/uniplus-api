@@ -60,7 +60,7 @@ internal static class ImportacaoDeNotasDeTeste
             db,
             servicos.GetRequiredService<IUniPlusEncryptionService>(),
             servicos.GetRequiredService<IUniPlusBlindIndexService>(),
-            new(publicado.ProcessoId, PersonasDeTeste.Candidatas[pessoa], SituacaoInscricao.Submetida, Edicao)
+            new(publicado.ProcessoId, PersonasDeTeste.Candidatas[pessoa], SituacaoInscricao.Enviada, Edicao)
             {
                 OfertaCursoId = publicado.OfertaTecnologicaId,
                 OfertaCursoSegundaOpcaoId = semSegundaOpcao ? null : publicado.OfertaHumanisticaId,

@@ -28,7 +28,7 @@ public sealed class IndicadoresDoProcessoReader : IIndicadoresDoProcessoReader
             .SqlQueryRaw<ContagensDoProcesso>(
                 Consulta,
                 processoSeletivoId,
-                SituacaoInscricao.Submetida.Codigo(),
+                SituacaoInscricao.Enviada.Codigo(),
                 SituacaoInscricao.Rascunho.Codigo())
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

@@ -20,7 +20,7 @@ internal static class ErrosDasIntegracoesExternas
         new(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_nao_encontrado", "O município informado não existe no Geo")),
         new(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_divergente", "O município informado não pertence à UF declarada")),
         // Falha fechada: o Geo não respondeu — temporário, nunca "aceito".
-        new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, new DomainErrorMapping(StatusCodes.Status503ServiceUnavailable, "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel", "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável")),
+        new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, new DomainErrorMapping(StatusCodes.Status503ServiceUnavailable, "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel", "O Geo não respondeu — o envio é recusado, mas o rascunho continua salvável")),
         new(FiltroDeTipoDosLeiautesDoInep.CodigoDeErro, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.leiaute_do_inep.filtro_de_tipo_invalido", "Tipo do filtro de leiautes do INEP inválido")),
         .. ErrosDasNotasDoEnem(),
         new(NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.oferta_de_inscricao_fora_do_edital", "Há inscrição que concorre a um curso que não está no edital divulgado")),

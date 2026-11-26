@@ -37,7 +37,7 @@ public sealed class ComprovanteDaInscricaoEndpointTests
     [Fact(DisplayName = "O número zero, o negativo e o que a inscrição não tem respondem 404 comprovante não encontrado")]
     public async Task NumeroForaDaFaixa_Responde404()
     {
-        Guid inscricao = await SemearAsync(SituacaoInscricao.Submetida, comComprovante: true);
+        Guid inscricao = await SemearAsync(SituacaoInscricao.Enviada, comComprovante: true);
 
         foreach (int numero in new[] { 0, -1, 2 })
         {
@@ -51,7 +51,7 @@ public sealed class ComprovanteDaInscricaoEndpointTests
     [Fact(DisplayName = "A inscrição de outro candidato responde 404, como a inexistente")]
     public async Task InscricaoDeOutroCandidato_Responde404()
     {
-        Guid inscricao = await SemearAsync(SituacaoInscricao.Submetida, comComprovante: true);
+        Guid inscricao = await SemearAsync(SituacaoInscricao.Enviada, comComprovante: true);
 
         using HttpResponseMessage deOutro = await GetAsync(inscricao, 1, PersonasDeTeste.KevinCarvalho, Media);
         using HttpResponseMessage inexistente = await GetAsync(Guid.CreateVersion7(), 1, PersonasDeTeste.FernandaDrumond, Media);
@@ -76,7 +76,7 @@ public sealed class ComprovanteDaInscricaoEndpointTests
     [Fact(DisplayName = "Sem o media type do comprovante no Accept, responde 406")]
     public async Task SemOMediaType_Responde406()
     {
-        Guid inscricao = await SemearAsync(SituacaoInscricao.Submetida, comComprovante: true);
+        Guid inscricao = await SemearAsync(SituacaoInscricao.Enviada, comComprovante: true);
 
         using HttpResponseMessage resposta = await GetAsync(inscricao, 1, PersonasDeTeste.FernandaDrumond, "application/vnd.uniplus.outro-recurso.v1+json");
 

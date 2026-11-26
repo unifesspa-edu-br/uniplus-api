@@ -104,7 +104,7 @@ public sealed class InscricaoPreenchimentoTests
             Apuracao(FormularioDeTeste.AvaliacaoSemOcultos), PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
-        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.Estado.Situacao.Should().Be(SituacaoInscricao.Enviada);
         inscricao.Estado.NumeroInscricao.Should().Be("000123");
         resultado.Value!.NumeroInscricao.Should().Be("000123");
         inscricao.DomainEvents.Should().ContainSingle().Which.Should().BeOfType<InscricaoSubmetidaEvent>();

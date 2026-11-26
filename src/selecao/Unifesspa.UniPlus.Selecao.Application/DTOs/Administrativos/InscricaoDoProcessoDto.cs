@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
-/// <param name="Situacao">Submetida ou cancelada.</param>
+/// <param name="Situacao">Enviada ou cancelada.</param>
 /// <param name="Processo">O processo seletivo, o mesmo em todas as linhas: a coleção não tem envelope para carregá-lo.</param>
 /// <param name="Ofertas">As ofertas que o candidato escolheu, na ordem da escolha, nomeadas pela versão do formulário da inscrição.</param>
 /// <param name="Nome">O nome exibido, como item classificado pela proteção que as versões do processo congelaram para ele.</param>
 /// <param name="Cpf">O CPF no padrão <c>***.999.999-**</c>; o completo só se revela pela permissão própria, no detalhe.</param>
-/// <param name="SubmetidaEm">O instante do primeiro envio.</param>
+/// <param name="EnviadaEm">O instante do primeiro envio.</param>
 public sealed record InscricaoDoProcessoDto(
     Guid Id,
     ProcessoDaInscricaoDto Processo,
@@ -43,7 +43,7 @@ public sealed record InscricaoDoProcessoDto(
     CpfMascaradoDto? Cpf,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.comprovantes_inscricao.instante")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    DateTimeOffset? SubmetidaEm);
+    DateTimeOffset? EnviadaEm);
 
 /// <summary>O CPF mascarado de uma inscrição; a revelação do valor completo é pedida por campo, no detalhe.</summary>
 /// <param name="Valor">O CPF no padrão <c>***.999.999-**</c>.</param>

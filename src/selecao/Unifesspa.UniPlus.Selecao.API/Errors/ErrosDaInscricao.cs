@@ -130,7 +130,7 @@ internal static class ErrosDaInscricao
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CondicoesParaSubmeterAInscricao() =>
     [
         new(InscricaoErrorCodes.ItemObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.item_obrigatorio_ausente", "Um item visível e obrigatório está sem resposta")),
-        new(InscricaoErrorCodes.Impedimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.impedimento", "Uma resposta impede a submissão desta inscrição")),
+        new(InscricaoErrorCodes.Impedimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.impedimento", "Uma resposta impede o envio desta inscrição")),
         new(InscricaoErrorCodes.GrupoContagemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_contagem_invalida", "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido")),
         new(InscricaoErrorCodes.GrupoCandidatoAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_candidato_ausente", "O grupo inclui o candidato, mas nenhuma ocorrência o representa")),
         new(InscricaoErrorCodes.GrupoIdDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_id_duplicado", "Duas ocorrências do grupo repetem o mesmo id")),

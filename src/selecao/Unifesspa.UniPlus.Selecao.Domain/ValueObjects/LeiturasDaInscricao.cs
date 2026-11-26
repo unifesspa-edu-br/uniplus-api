@@ -29,7 +29,7 @@ public sealed record ResumoDaInscricaoDoProcesso(
     Guid? OfertaCursoSegundaOpcaoId,
     string? Nome,
     Cpf? Cpf,
-    DateTimeOffset? SubmetidaEm);
+    DateTimeOffset? EnviadaEm);
 
 /// <summary>
 /// A resposta cifrada de um campo identificador, localizada sem decifrar: a identidade da linha.

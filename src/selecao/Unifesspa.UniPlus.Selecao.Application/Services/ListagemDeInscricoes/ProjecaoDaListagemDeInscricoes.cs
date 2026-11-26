@@ -41,7 +41,7 @@ public sealed class ProjecaoDaListagemDeInscricoes
                 ? CodigoComRotulo<SituacaoInscricao>.De(situacao) : null,
             OfertasVisiveis(inscricao), SaiONome && inscricao.Nome is { } nome ? _modeloDoNome with { Valor = nome } : null,
             SaiOCpf && inscricao.Cpf is { } cpf ? new CpfMascaradoDto(cpf.Mascarado, PodeRevelar: false) : null,
-            Fixo<DateTimeOffset>(nameof(InscricaoDoProcessoDto.SubmetidaEm), inscricao.SubmetidaEm));
+            Fixo<DateTimeOffset>(nameof(InscricaoDoProcessoDto.EnviadaEm), inscricao.EnviadaEm));
     }
 
     private bool Permite(string propriedade) => _decisoes.PermitePropriedade<InscricaoDoProcessoDto>(propriedade);

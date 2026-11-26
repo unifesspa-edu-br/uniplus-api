@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 public enum CodigoIndicadorDoProcesso
 {
-    [CodigoDeContrato("INSCRICOES", "Inscrições", Descricao = "Submetidas e não canceladas")]
+    [CodigoDeContrato("INSCRICOES", "Inscrições", Descricao = "Enviadas e não canceladas")]
     Inscricoes,
 
-    [CodigoDeContrato("INSCRITOS", "Inscritos", Descricao = "Pessoas distintas com inscrição submetida e não cancelada")]
+    [CodigoDeContrato("INSCRITOS", "Inscritos", Descricao = "Pessoas distintas com inscrição enviada e não cancelada")]
     Inscritos,
 
     [CodigoDeContrato("RASCUNHOS", "Rascunhos")]
