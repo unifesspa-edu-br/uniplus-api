@@ -91,7 +91,7 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
             {"condicaoOrigemId":"11111111-1111-1111-1111-111111111111","condicaoCodigo":"CONDICAO","condicaoNome":"Condição"}],"recursos":[],"tiposDeficiencia":[]}}
             """)!.AsObject();
         LeitorEnvelope leitor = new();
-        LeituraDoBonusEAtendimento.LerAtendimento(leitor, documento);
+        LeituraDoAtendimento.LerAtendimento(leitor, documento);
         ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "atendimento", "AtendimentoEspecializado.CondicaoDuplicada", "Cada condição de atendimento só pode ser ofertada uma vez.");
     }
 
@@ -104,7 +104,7 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
             {"tipoDeficienciaOrigemId":"11111111-1111-1111-1111-111111111111","tipoDeficienciaCodigo":"TIPO","tipoDeficienciaNome":"Tipo"}]}}
             """)!.AsObject();
         LeitorEnvelope leitor = new();
-        LeituraDoBonusEAtendimento.LerAtendimento(leitor, documento);
+        LeituraDoAtendimento.LerAtendimento(leitor, documento);
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
         ConferirCausaNoDocumento.Conferir(documento, causas[0], "atendimento", "AtendimentoEspecializado.TipoDeficienciaDuplicado", "Cada tipo de deficiência só pode ser ofertado uma vez.");
@@ -116,7 +116,7 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
     {
         JsonObject documento = DocumentoDaFada();
         LeitorEnvelope leitor = new();
-        LeituraDoBonusEAtendimento.LerBonusRegional(leitor, documento);
+        LeituraDoFada.LerFada(leitor, documento);
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
         ConferirCausaNoDocumento.Conferir(documento, causas[0], "fada.fator", "ConfiguracaoBonusRegional.FatorInvalido", "O fator do bônus deve ser maior que zero.");
@@ -128,7 +128,7 @@ public sealed class CausasDasExigenciasNoEnvelopeTests
         JsonObject documento = DocumentoDaFada();
         documento["fada"]!["fator"] = "1.2000";
         LeitorEnvelope leitor = new();
-        LeituraDoBonusEAtendimento.LerBonusRegional(leitor, documento);
+        LeituraDoFada.LerFada(leitor, documento);
         ConferirCausaNoDocumento.Conferir(documento, leitor.Falha<object>().Errors.Single(), "fada", "ConfiguracaoBonusRegional.SemMunicipios", "A base legal do bônus regional deve abranger pelo menos um município.");
     }
 

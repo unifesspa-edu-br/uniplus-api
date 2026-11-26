@@ -39,26 +39,11 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         CadastrosDoDesempate cadastros = await CadastrosDoDesempate
             .LerAsync(command.Criterios, regraCatalogoReader, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, cadastros, unitOfWork, cancellationToken).ConfigureAwait(false);
-    }
-
-    // Fora do rascunho a recusa vem antes de consultar cadastros.
-    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
-        IProcessoSeletivoRepository repositorio, Guid processoSeletivoId, CancellationToken cancellationToken)
-    {
-        ProcessoSeletivo? processo = await repositorio.ObterParaMutacaoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(processoSeletivoId));
-        }
-
-        return processo.MutacaoBloqueada() is { } bloqueio
-            ? Result<ProcessoSeletivo>.Failure(bloqueio)
-            : Result<ProcessoSeletivo>.Success(processo);
     }
 
     private static async Task<Result> DefinirEGravarAsync(
