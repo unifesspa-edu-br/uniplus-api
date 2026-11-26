@@ -5,9 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -37,9 +37,16 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_de_vagas", QuadroDeVagasDaConfiguracao.RestricoesDoQuadro);
+        builder.ToTable("configuracoes_de_vagas", tabela =>
+        {
+            tabela.HasComment("Distribuição de vagas de uma oferta de curso em um processo seletivo, com as regras e os dados congelados para compor o quadro.");
+            QuadroDeVagasDaConfiguracao.RestricoesDoQuadro(tabela);
+            CopiaDaOfertaDeCursoOwnedConfiguration.ConfigurarRestricao(tabela, "configuracoes_de_vagas");
+        });
         builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.Property(c => c.Id).ValueGeneratedNever().HasComment("Identificador da configuração de distribuição de vagas.");
+        builder.Property(c => c.ProcessoSeletivoId).HasComment("Processo seletivo ao qual a distribuição pertence.");
+        builder.Property(c => c.OfertaCursoOrigemId).HasComment("Identificador da oferta no cadastro de origem.");
 
         QuadroDeVagasDaConfiguracao.ConfigurarColunas(builder);
         ConfigurarRegras(builder);
@@ -57,11 +64,18 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
     // em que o admin configurou. A regra de ajuste é obrigatória na Lei de Cotas e opcional no quadro fixado.
     private static void ConfigurarRegras(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
     {
-        builder.OwnsOne(c => c.RegraDistribuicao, regra => regra.ConfigurarReferenciaRegra("regra_distribuicao"));
+        builder.OwnsOne(c => c.RegraDistribuicao, regra => ComentarRegra(regra.ConfigurarReferenciaRegra("regra_distribuicao"), "distribuição"));
         builder.Navigation(c => c.RegraDistribuicao).IsRequired();
 
-        builder.OwnsOne(c => c.RegraAjuste, regraAjuste => regraAjuste.ConfigurarReferenciaRegra("regra_ajuste"));
+        builder.OwnsOne(c => c.RegraAjuste, regraAjuste => ComentarRegra(regraAjuste.ConfigurarReferenciaRegra("regra_ajuste"), "ajuste"));
         builder.Navigation(c => c.RegraAjuste).IsRequired(false);
+    }
+
+    private static void ComentarRegra(OwnedNavigationBuilder<ConfiguracaoDistribuicaoVagas, ReferenciaRegra> regra, string finalidade)
+    {
+        regra.Property(r => r.Codigo).HasComment($"Código da regra de {finalidade}, copiado do catálogo na definição.");
+        regra.Property(r => r.Versao).HasComment($"Versão da regra de {finalidade}, copiada do catálogo na definição.");
+        regra.Property(r => r.Hash).HasComment($"Hash da regra de {finalidade}, copiado do catálogo na definição.");
     }
 
     private static void ConfigurarSnapshots(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
@@ -77,12 +91,12 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         builder.OwnsOne(c => c.ReferenciaDemografica, demografica =>
         {
             demografica.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            demografica.Property(d => d.OrigemId).HasColumnName("referencia_demografica_origem_id");
-            demografica.Property(d => d.CensoReferencia).HasColumnName("referencia_demografica_censo").HasMaxLength(CensoMaxLength);
-            demografica.Property(d => d.PpiPercentual).HasColumnName("referencia_demografica_ppi_percentual").HasPrecision(5, 2);
-            demografica.Property(d => d.QuilombolaPercentual).HasColumnName("referencia_demografica_quilombola_percentual").HasPrecision(5, 2);
-            demografica.Property(d => d.PcdPercentual).HasColumnName("referencia_demografica_pcd_percentual").HasPrecision(5, 2);
-            demografica.Property(d => d.BaseLegal).HasColumnName("referencia_demografica_base_legal").HasMaxLength(BaseLegalMaxLength);
+            demografica.Property(d => d.OrigemId).HasColumnName("referencia_demografica_origem_id").HasComment("Identificador da referência demográfica no cadastro de origem.");
+            demografica.Property(d => d.CensoReferencia).HasColumnName("referencia_demografica_censo").HasMaxLength(CensoMaxLength).HasComment("Censo da referência demográfica, copiado do cadastro na definição.");
+            demografica.Property(d => d.PpiPercentual).HasColumnName("referencia_demografica_ppi_percentual").HasPrecision(5, 2).HasComment("Percentual de pessoas pretas, pardas e indígenas no Censo, copiado do cadastro.");
+            demografica.Property(d => d.QuilombolaPercentual).HasColumnName("referencia_demografica_quilombola_percentual").HasPrecision(5, 2).HasComment("Percentual de pessoas quilombolas no Censo, copiado do cadastro.");
+            demografica.Property(d => d.PcdPercentual).HasColumnName("referencia_demografica_pcd_percentual").HasPrecision(5, 2).HasComment("Percentual de pessoas com deficiência no Censo, copiado do cadastro.");
+            demografica.Property(d => d.BaseLegal).HasColumnName("referencia_demografica_base_legal").HasMaxLength(BaseLegalMaxLength).HasComment("Base legal da referência demográfica, copiada do cadastro.");
         });
         builder.Navigation(c => c.ReferenciaDemografica).IsRequired(false);
     }
@@ -105,33 +119,10 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         builder.Navigation(c => c.GrupoAreaEnem).IsRequired(false);
     }
 
-    // O que nomeia a oferta para o candidato, congelado por valor (ADR-0061). Colunas nulas só em
-    // distribuição definida antes de a oferta ser nomeada aqui.
     private static void ConfigurarOfertaCurso(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
     {
-        builder.OwnsOne(c => c.OfertaCurso, oferta =>
-        {
-            oferta.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            oferta.Property(o => o.Codigo)
-                .HasColumnName("oferta_curso_codigo")
-                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo)
-                .HasComment("Código da oferta de curso, copiado do cadastro na definição da distribuição e na publicação.");
-            oferta.Property(o => o.CursoNome)
-                .HasColumnName("oferta_curso_nome")
-                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDoCurso)
-                .HasComment("Nome do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
-            oferta.Property(o => o.CursoGrau)
-                .HasColumnName("oferta_curso_grau")
-                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoGrauDoCurso)
-                .HasComment("Grau do curso da oferta, copiado do cadastro na definição da distribuição e na publicação.");
-            oferta.Property(o => o.UnidadeOfertanteNome)
-                .HasColumnName("oferta_unidade_ofertante_nome")
-                .HasMaxLength(CopiaDaOfertaDeCurso.TamanhoMaximoDoNomeDaUnidadeOfertante)
-                .HasComment("Nome da unidade ofertante, copiado do cadastro na definição da distribuição e na publicação.");
-            oferta.Property(o => o.Turnos)
-                .HasColumnName("oferta_turnos")
-                .HasComment("Turnos que a oferta ocupa (tokens), copiados do cadastro na definição da distribuição e na publicação.");
-        });
+        builder.OwnsOne(c => c.OfertaCurso, oferta => CopiaDaOfertaDeCursoOwnedConfiguration.Configure(
+            oferta, "do cadastro na definição da distribuição e na publicação", ClassificacaoDeProtecao.Interno));
         builder.Navigation(c => c.OfertaCurso).IsRequired(false);
     }
 

@@ -52,18 +52,18 @@ internal static class QuadroDeVagasDaConfiguracao
 
     internal static void ConfigurarColunas(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
     {
-        builder.Property(c => c.VagasOfertadasBase).IsRequired();
-        builder.Property(c => c.TotalDeVagasDoEdital).IsRequired();
-        builder.Property(c => c.PercentualDaReservaLegal).HasPrecision(PrecisaoDoPercentual, EscalaDoPercentual);
-        builder.Property(c => c.ReservaLegalNominal);
-        builder.Property(c => c.ReservaLegalEfetiva);
-        builder.Property(c => c.ExcedenteSobreReservaLegal);
-        builder.Property(c => c.VagasCortadasPorEscassez);
+        builder.Property(c => c.VagasOfertadasBase).IsRequired().HasComment("Quantidade de vagas ofertadas usada como base do quadro.");
+        builder.Property(c => c.TotalDeVagasDoEdital).IsRequired().HasComment("Total de vagas resultante para o edital.");
+        builder.Property(c => c.PercentualDaReservaLegal).HasPrecision(PrecisaoDoPercentual, EscalaDoPercentual).HasComment("Fração das vagas base reservada por lei; ausente no quadro fixado.");
+        builder.Property(c => c.ReservaLegalNominal).HasComment("Quantidade de vagas reservadas pelo percentual legal, antes das garantias.");
+        builder.Property(c => c.ReservaLegalEfetiva).HasComment("Quantidade de vagas concedidas à reserva legal após as garantias.");
+        builder.Property(c => c.ExcedenteSobreReservaLegal).HasComment("Vagas da reserva efetiva acima da reserva nominal.");
+        builder.Property(c => c.VagasCortadasPorEscassez).HasComment("Vagas cortadas das reservas por escassez.");
 
-        builder.Property(c => c.AjusteDoQuadro)
+        builder.Property(c => c.AjusteDoQuadro).HasComment("Parâmetros do motor de ajuste do quadro fixado no edital.")
             .HasColumnType("jsonb")
             .HasConversion(ConversorDoAjuste, ComparadorDoAjuste);
-        builder.Property(c => c.VagasRetiradasNoAjuste)
+        builder.Property(c => c.VagasRetiradasNoAjuste).HasComment("Vagas retiradas por modalidade pelo ajuste do quadro fixado.")
             .HasColumnType("jsonb")
             .HasConversion(ConversorDasRetiradas, ComparadorDasRetiradas);
 
