@@ -20,7 +20,7 @@ public sealed class CausasDasOfertasNoEnvelopeTests
         LeituraDasOfertas.LerOfertas(leitor, documento);
         FieldError causa = leitor.Falha<object>().Errors.Single();
         DomainError erro = CopiaDaOfertaDeCurso.Criar(valor, "Curso", "Grau", "Unidade", ["MATUTINO"]).Error!;
-        ConferirCausaNoDocumento.Conferir(documento, causa, "ofertas[0]", erro.Code, erro.Message);
+        ConferirCausaNoDocumento.Conferir(documento, causa, "ofertas[0].ofertaCursoCodigo", erro.Code, erro.Message);
         causa.Field.Should().NotContain(valor);
         causa.Error.Message.Should().NotContain(valor);
     }

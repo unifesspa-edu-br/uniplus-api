@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -11,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record CopiaDaOfertaDeCurso
 {
+    private IReadOnlyList<string> _turnosProtegidos = Array.AsReadOnly(Array.Empty<string>());
+
     /// <summary>Tamanho máximo do código da oferta — o mesmo da coluna do cadastro de ofertas.</summary>
     public const int TamanhoMaximoDoCodigo = 50;
 
@@ -48,31 +49,61 @@ public sealed record CopiaDaOfertaDeCurso
     public string UnidadeOfertanteNome { get; private set; } = string.Empty;
 
     /// <summary>Os turnos que a oferta ocupa (tokens), na ordem canônica do cadastro.</summary>
-    public IReadOnlyList<string> Turnos { get; private set; } = [];
+    public IReadOnlyList<string> Turnos
+    {
+        get => _turnosProtegidos;
+        private set => _turnosProtegidos = Array.AsReadOnly(value.ToArray());
+    }
 
     public static Result<CopiaDaOfertaDeCurso> Criar(
         string? codigo, string? cursoNome, string? cursoGrau, string? unidadeOfertanteNome, IReadOnlyList<string>? turnos)
     {
-        string? codigoInformado = CodigoValido(codigo) ? codigo : null;
         string? nome = Texto(cursoNome, TamanhoMaximoDoNomeDoCurso);
         string? grau = Texto(cursoGrau, TamanhoMaximoDoGrauDoCurso);
         string? unidade = Texto(unidadeOfertanteNome, TamanhoMaximoDoNomeDaUnidadeOfertante);
         List<string?> turnosNormalizados = [.. (turnos ?? []).Select(static turno => Texto(turno, TamanhoMaximoDoTurno))];
-
-        return codigoInformado is null || nome is null || grau is null || unidade is null
-            || turnosNormalizados.Count == 0 || turnosNormalizados.Any(static turno => turno is null)
-            ? Result<CopiaDaOfertaDeCurso>.Failure(new DomainError(CopiaDaOfertaDeCursoErrorCodes.Invalida, MensagemDeInvalidez))
-            : Result<CopiaDaOfertaDeCurso>.Success(
-                new CopiaDaOfertaDeCurso(codigoInformado, nome, grau, unidade, [.. turnosNormalizados.Select(static turno => turno!)]));
+        List<FieldError> recusas = [];
+        ConferirCodigo(codigo, recusas);
+        ConferirDadosDoCurso(nome, grau, unidade, recusas);
+        ConferirTurnos(turnosNormalizados, recusas);
+        return recusas.Count > 0
+            ? Result<CopiaDaOfertaDeCurso>.ValidationFailure(recusas)
+            : Result<CopiaDaOfertaDeCurso>.Success(new CopiaDaOfertaDeCurso(codigo!, nome!, grau!, unidade!, [.. turnosNormalizados.Select(static turno => turno!)]));
     }
 
-    private static bool CodigoValido(string? codigo) =>
-        codigo is not null && codigo.Length <= TamanhoMaximoDoCodigo && FormatoDoCodigo.TemFormatoValido(codigo);
+    private static void ConferirDadosDoCurso(string? nome, string? grau, string? unidade, List<FieldError> recusas)
+    {
+        ConferirTexto(nome, "cursoNome", $"O nome do curso é obrigatório e deve ter até {TamanhoMaximoDoNomeDoCurso} caracteres válidos.", recusas);
+        ConferirTexto(grau, "cursoGrau", $"O grau do curso é obrigatório e deve ter até {TamanhoMaximoDoGrauDoCurso} caracteres válidos.", recusas);
+        ConferirTexto(unidade, "unidadeOfertanteNome", $"O nome da unidade ofertante é obrigatório e deve ter até {TamanhoMaximoDoNomeDaUnidadeOfertante} caracteres válidos.", recusas);
+    }
 
-    private static readonly string MensagemDeInvalidez =
-        "A oferta de curso precisa de código, curso, grau, unidade ofertante e ao menos um turno, sem caractere nulo e "
-        + $"dentro do tamanho permitido (código de letras maiúsculas, dígitos e sublinhado até {TamanhoMaximoDoCodigo}, curso até {TamanhoMaximoDoNomeDoCurso}, grau até {TamanhoMaximoDoGrauDoCurso}, "
-        + $"unidade até {TamanhoMaximoDoNomeDaUnidadeOfertante} e turno até {TamanhoMaximoDoTurno} caracteres).";
+    private static void ConferirCodigo(string? codigo, List<FieldError> recusas)
+    {
+        if (codigo is null || codigo.Length > TamanhoMaximoDoCodigo || !FormatoDoCodigo.TemFormatoValido(codigo))
+        {
+            recusas.Add(new("ofertaCursoCodigo", new DomainError(CopiaDaOfertaDeCursoErrorCodes.CodigoFormatoInvalido,
+                "O código da oferta de curso deve começar com letra maiúscula e conter só letras maiúsculas sem acento, algarismos e sublinhado entre as palavras, "
+                + $"com até {TamanhoMaximoDoCodigo} caracteres.")));
+        }
+    }
+
+    private static void ConferirTexto(string? texto, string campo, string mensagem, List<FieldError> recusas)
+    {
+        if (texto is null)
+        {
+            recusas.Add(new(campo, new DomainError(CopiaDaOfertaDeCursoErrorCodes.Invalida, mensagem)));
+        }
+    }
+
+    private static void ConferirTurnos(List<string?> turnos, List<FieldError> recusas)
+    {
+        if (turnos.Count == 0 || turnos.Any(static turno => turno is null))
+        {
+            recusas.Add(new("turnos", new DomainError(CopiaDaOfertaDeCursoErrorCodes.Invalida,
+                $"Informe ao menos um turno válido, com até {TamanhoMaximoDoTurno} caracteres cada.")));
+        }
+    }
 
     public bool Equals(CopiaDaOfertaDeCurso? outra) =>
         outra is not null

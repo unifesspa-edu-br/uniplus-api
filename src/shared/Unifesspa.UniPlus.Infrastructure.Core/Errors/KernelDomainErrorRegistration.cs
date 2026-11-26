@@ -98,6 +98,7 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
 
     private static KeyValuePair<string, DomainErrorMapping>[] CopiaDaOfertaDeCurso() =>
     [
+        new(CopiaDaOfertaDeCursoErrorCodes.CodigoFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.copia_da_oferta_de_curso.codigo_formato_invalido", "Formato do código da oferta de curso inválido")),
         new(CopiaDaOfertaDeCursoErrorCodes.Invalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.copia_da_oferta_de_curso.invalida", "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos")),
     ];
 }

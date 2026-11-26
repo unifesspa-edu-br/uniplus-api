@@ -106,6 +106,22 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
             ("distribuicaoVagas[0].modalidadeIds[0]", "ModalidadeSelecionada.RemanejamentoCruzadoIncompleto"));
     }
 
+    [Fact(DisplayName = "Todas as violações da cópia da oferta são devolvidas na ordem dos campos")]
+    public async Task OfertaComCodigoENomeInvalidos_DevolveTodasAsRecusasNaOrdem()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        (Guid oferta, Guid modalidade) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicao(Institucional));
+        mocks.OfertaCursoReader.ObterPorIdAsync(oferta, Arg.Any<CancellationToken>())
+            .Returns(NovaOferta(oferta) with { Codigo = "invalido", CursoNome = "" });
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
+            mocks, processo, Pedido(oferta, Institucional, [modalidade], new QuantidadeVagaInput(modalidade, 60)));
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("distribuicaoVagas[0].ofertaCursoId", CopiaDaOfertaDeCursoErrorCodes.CodigoFormatoInvalido),
+            ("distribuicaoVagas[0].ofertaCursoId", CopiaDaOfertaDeCursoErrorCodes.Invalida));
+    }
+
     [Fact(DisplayName = "O nome recusado da oferta não esconde o teto de vagas, que vem da mesma oferta")]
     public async Task NomeDaOfertaRecusado_NaoEscondeOTetoDeVagas()
     {
