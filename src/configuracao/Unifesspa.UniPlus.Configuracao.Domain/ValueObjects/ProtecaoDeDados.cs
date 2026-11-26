@@ -1,9 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// A proteção que o tratamento de um dado exige: classificação na escala única, finalidade e
@@ -15,6 +13,20 @@ public readonly record struct ProtecaoDeDados(
     ClassificacaoDeProtecao Classificacao, string Finalidade, HipoteseLegalTratamento Hipotese)
 {
     public const int FinalidadeMaxLength = 500;
+
+    private static readonly HashSet<HipoteseLegalTratamento> SoDoArtigo7 =
+    [
+        HipoteseLegalTratamento.ExecucaoContrato,
+        HipoteseLegalTratamento.InteresseLegitimo,
+        HipoteseLegalTratamento.ProtecaoDoCredito,
+    ];
+
+    private static readonly HashSet<HipoteseLegalTratamento> SoDoArtigo11 = [HipoteseLegalTratamento.PrevencaoAFraude];
+
+    internal static bool AdmiteHipoteseNaClassificacao(HipoteseLegalTratamento hipotese, ClassificacaoDeProtecao classificacao) =>
+        classificacao == ClassificacaoDeProtecao.Sensivel
+            ? !SoDoArtigo7.Contains(hipotese)
+            : !SoDoArtigo11.Contains(hipotese);
 
     /// <summary>
     /// Confere os três eixos e acumula cada recusa (ADR-0125). A hipótese só é conferida contra a
@@ -81,7 +93,7 @@ public readonly record struct ProtecaoDeDados(
 
     private static DomainError? RecusaDaHipoteseNaClassificacao(
         HipoteseLegalTratamento hipotese, CodigoInformado<ClassificacaoDeProtecao> classificacao, RecusasDaProtecao recusas) =>
-        classificacao.Valor is { } escala && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, escala)
+        classificacao.Valor is { } escala && !AdmiteHipoteseNaClassificacao(hipotese, escala)
             ? new(recusas.HipoteseIncompativel, "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.")
             : null;
 }

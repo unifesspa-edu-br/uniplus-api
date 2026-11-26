@@ -227,7 +227,7 @@ public sealed class AprovacaoDaProtecao
             return Result.ValidationFailure([RecomendacaoIgualAAtual]);
         }
 
-        return HipotesesLegaisTratamento.AdmiteClassificacao(hipoteseLegal, recomendada!.Value)
+        return ProtecaoDeDados.AdmiteHipoteseNaClassificacao(hipoteseLegal, recomendada!.Value)
             ? Result.Success()
             : Result.ValidationFailure([RecomendacaoForaDaHipotese]);
     }
