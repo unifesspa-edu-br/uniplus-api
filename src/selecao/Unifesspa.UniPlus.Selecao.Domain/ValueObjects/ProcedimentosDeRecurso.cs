@@ -24,11 +24,11 @@ public sealed class ProcedimentosDeRecurso
     {
         ArgumentNullException.ThrowIfNull(declarados);
 
-        return new([.. NaOrdemCanonica(declarados)]);
+        return new([.. NaOrdemDaConfiguracao(declarados)]);
     }
 
     /// <summary>A ordem canônica dos procedimentos, a mesma que a coleção guarda; quem liga cada um à posição em que veio no documento a usa.</summary>
-    internal static IOrderedEnumerable<ProcedimentoDeRecursoDeclarado> NaOrdemCanonica(IEnumerable<ProcedimentoDeRecursoDeclarado> declarados) => declarados
+    internal static IOrderedEnumerable<ProcedimentoDeRecursoDeclarado> NaOrdemDaConfiguracao(IEnumerable<ProcedimentoDeRecursoDeclarado> declarados) => declarados
         .OrderBy(static p => p.TipoDeDecisao.Codigo(), StringComparer.Ordinal)
         .ThenBy(static p => p.Alvo is null ? 0 : (int)p.Alvo.Tipo)
         .ThenBy(static p => p.Alvo?.Valor, StringComparer.Ordinal);

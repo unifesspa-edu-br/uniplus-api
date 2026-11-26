@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// configuração inválida viraria exceção em vez de causa nomeada. Cada conferência é independente e devolve a sua causa, com o
 /// bloco do documento em que ela se corrige; uma que depende do dado que outra recusa se guarda dentro do próprio predicado.
 /// </summary>
-internal static class CondicoesDaCanonicalizacao
+internal static class CondicoesParaRegistrarConfiguracao
 {
     private static readonly Conferencia[] Conferencias =
     [

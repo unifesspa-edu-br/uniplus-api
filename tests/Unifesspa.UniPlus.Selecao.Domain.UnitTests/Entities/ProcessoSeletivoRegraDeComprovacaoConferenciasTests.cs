@@ -141,7 +141,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
         processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -158,7 +158,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
             criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.Ocorrencia).Value!;
         processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -173,7 +173,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull();
     }
@@ -209,7 +209,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
             DocumentoQualquer(fase.Id, PapelDoFormularioDeTeste.Inscricao), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
         processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -226,7 +226,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
         processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
+        DomainError? pendencia = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }

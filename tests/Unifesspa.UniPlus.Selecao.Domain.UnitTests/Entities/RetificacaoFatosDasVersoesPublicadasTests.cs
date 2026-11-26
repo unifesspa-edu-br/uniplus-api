@@ -40,7 +40,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         public CadastrosDaConfiguracao Cadastros => CadastrosDeTeste.Com(fatosDasVersoesPublicadas: Publicadas);
 
-        public DomainError? PrimeiraCausa() => CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(Processo, Cadastros);
+        public DomainError? PrimeiraCausa() => CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(Processo, Cadastros);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -85,7 +85,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         Cenario cenario = Publicado();
         cenario.Processo.DefinirItens([Item(Novo, 1)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(cenario.Processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(cenario.Processo).Should().BeNull();
     }
 
     // ══════════════════════════════════════════════════════════════════════════════

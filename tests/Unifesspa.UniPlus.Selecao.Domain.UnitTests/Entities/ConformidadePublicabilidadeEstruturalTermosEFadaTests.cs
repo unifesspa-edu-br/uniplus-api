@@ -47,13 +47,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
         processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, FormaAceite.ADefinir)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
 
         processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
     [Fact(DisplayName = "Termos com código ou ordem repetidos são recusados, cada recusa no índice do termo")]
@@ -78,11 +78,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")]).IsSuccess.Should().BeTrue();
         processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))])
             .IsSuccess.Should().BeTrue();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
         processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "Redefinir opções recusa deixar de fora uma opção citada pela condição de um termo")]
@@ -120,11 +120,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         processo.DefinirFada(aplica: false, configuracao: null).IsSuccess.Should().BeTrue();
         processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
 
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
     private static DocumentoExigido ExigenciaPorMunicipioDeParauapebas(Guid faseId) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
@@ -164,7 +164,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         processo.DefinirFada(aplica: true, configuracao: Fada(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();
         processo.DefinirItensNaFaseDaImportacao([FatoMunicipioDoFada()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.MunicipioDoFadaReferenciadoPorCondicaoViva");
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.MunicipioDoFadaReferenciadoPorCondicaoViva");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_municipio_citado_fora_da_area_do_fada");
     }

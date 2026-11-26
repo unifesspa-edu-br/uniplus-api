@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
-using Domain.ProcessosSeletivos.OrdemCanonica;
+using Domain.ProcessosSeletivos.Ordenacao;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.Leituras;
 internal static class ProjecaoDaFaseDoCronograma
 {
     internal static IReadOnlyList<FaseCronogramaDto> ProjetarCronograma(ProcessoSeletivo processo) =>
-        [.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases).Select(ProjetarFase)];
+        [.. OrdemDaConfiguracao.Fases(processo.CronogramaFases).Select(ProjetarFase)];
 
     internal static FaseCronogramaDto ProjetarFase(FaseCronograma fase) => new(
         fase.Id,
@@ -60,7 +60,7 @@ internal static class ProjecaoDaFaseDoCronograma
         RegraDeHomologacao: fase.RegraDeHomologacao is { } regraDeHomologacao ? ProjetarRegraDeHomologacao(regraDeHomologacao) : null);
 
     private static ProdutoDaFaseDto[] ProjetarProdutosDaFase(FaseCronograma fase) =>
-        [.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos)
+        [.. OrdemDaConfiguracao.ProdutosDaFase(fase.Produtos)
             .Select(static p => new ProdutoDaFaseDto(p.Id, p.AtoCodigo, ProjecaoDoPapelDaPublicacao.De(p.Papel)))];
 
     private static BancaRequeridaDto[] ProjetarBancasRequeridas(FaseCronograma fase) =>
@@ -78,7 +78,7 @@ internal static class ProjecaoDaFaseDoCronograma
         banca.Tipo.EncerraRecursoNaPrimeiraInstancia,
         [.. banca.Tipo.TiposDeDecisaoJulgados.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)],
         ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
-        [.. OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)
+        [.. OrdemDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))],
         banca.ConsequenciaDaAusencia is { } consequencia ? CodigoComRotulo<ConsequenciaDoDescumprimento>.De(consequencia) : null);
 

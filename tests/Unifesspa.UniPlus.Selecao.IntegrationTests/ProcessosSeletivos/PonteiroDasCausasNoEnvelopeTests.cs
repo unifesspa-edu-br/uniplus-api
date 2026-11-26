@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Chaves;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -29,9 +29,9 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
         ProcessoSeletivo processo = Montar(cronogramaFases: fases, etapas: [Etapa("Prova", "INSCRICAO", 1)]);
         JsonArray fasesDoEnvelope = Envelope(processo)["cronogramaFases"]!["fases"]!.AsArray();
 
-        foreach (FaseCronograma fase in OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases))
+        foreach (FaseCronograma fase in OrdemDaConfiguracao.Fases(processo.CronogramaFases))
         {
-            int posicao = OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases).ToList().IndexOf(fase);
+            int posicao = OrdemDaConfiguracao.Fases(processo.CronogramaFases).ToList().IndexOf(fase);
             string ponteiro = PonteiroNoDocumento.Converter($"fases[{posicao}].unidadeResponsavel", OrigemNoDocumento.Identidade)!;
 
             ponteiro.Should().Be($"/cronograma/fases/{posicao}/unidadeResponsavelCodigo");
@@ -48,7 +48,7 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
 
         foreach (EtapaProcesso etapa in etapas)
         {
-            int posicao = OrdemCanonicaDaConfiguracao.Etapas(processo.Etapas).ToList().IndexOf(etapa);
+            int posicao = OrdemDaConfiguracao.Etapas(processo.Etapas).ToList().IndexOf(etapa);
 
             PonteiroNoDocumento.Converter($"etapas[{posicao}].id", OrigemNoDocumento.Identidade).Should().Be($"/etapas/{posicao}/chave");
             etapasDoEnvelope[posicao]!["nome"]!.GetValue<string>().Should().Be(etapa.Nome);

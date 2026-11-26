@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// aponta o mesmo lugar para quem lê o documento. A regra mora aqui, e cada função é a chave da ordem de uma lista: o desempate
 /// pelo conteúdo escrito, que só o serializador conhece, continua nele.
 /// </summary>
-public static class OrdemCanonicaDaConfiguracao
+public static class OrdemDaConfiguracao
 {
     /// <summary>As fases do cronograma, pela ordem declarada e, no empate, pela identidade.</summary>
     public static IOrderedEnumerable<FaseCronograma> Fases(IEnumerable<FaseCronograma> fases)

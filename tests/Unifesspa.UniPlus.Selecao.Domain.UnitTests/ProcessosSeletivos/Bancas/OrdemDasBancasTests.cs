@@ -5,7 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// As bancas saem pelo código do tipo e pela posição dentro dele. O id da banca e a origem do tipo não decidem a ordem, nem como
 /// desempate: o par código e posição é único no lugar.
 /// </summary>
-public sealed class OrdemCanonicaDasBancasTests
+public sealed class OrdemDasBancasTests
 {
     private static readonly Guid IdMenor = new("00000000-0000-4000-8000-000000000001");
     private static readonly Guid IdMaior = new("00000000-0000-4000-8000-000000000002");
@@ -30,7 +30,7 @@ public sealed class OrdemCanonicaDasBancasTests
         List<BancaDaEtapa> bancas = ReconciliacaoDasBancas.Reconciliar<BancaDaEtapa>(
             [], [NovaBancaDaEtapa(TipoDeBanca.Entrevista), NovaBancaDaEtapa(TipoDeBanca.AnaliseDocumental), NovaBancaDaEtapa(TipoDeBanca.Entrevista), NovaBancaDaEtapa(TipoDeBanca.AnaliseDocumental)]);
 
-        OrdemCanonicaDaConfiguracao.BancasDaEtapa(bancas.AsEnumerable().Reverse())
+        OrdemDaConfiguracao.BancasDaEtapa(bancas.AsEnumerable().Reverse())
             .Select(static b => (b.Tipo.Codigo, b.PosicaoNoTipo))
             .Should().Equal((TipoDeBanca.AnaliseDocumental, 1), (TipoDeBanca.AnaliseDocumental, 2), (TipoDeBanca.Entrevista, 1), (TipoDeBanca.Entrevista, 2));
     }
@@ -43,7 +43,7 @@ public sealed class OrdemCanonicaDasBancasTests
 
         ReconciliacaoDasBancas.Reconciliar<BancaDaEtapa>([], [idMaior, idMenor]);
 
-        OrdemCanonicaDaConfiguracao.BancasDaEtapa([idMenor, idMaior]).Should().Equal(idMaior, idMenor);
+        OrdemDaConfiguracao.BancasDaEtapa([idMenor, idMaior]).Should().Equal(idMaior, idMenor);
     }
 
     [Fact(DisplayName = "As bancas da fase saem pelo código do tipo, e não pela origem do tipo no cadastro")]
@@ -55,7 +55,7 @@ public sealed class OrdemCanonicaDasBancasTests
         BancaRequerida analise = NovaBancaDaFase(TipoDeBanca.AnaliseDocumental, origemMaior);
         ReconciliacaoDasBancas.Reconciliar<BancaRequerida>([], [entrevista, analise]);
 
-        OrdemCanonicaDaConfiguracao.BancasDaFase([entrevista, analise]).Should().Equal(analise, entrevista);
+        OrdemDaConfiguracao.BancasDaFase([entrevista, analise]).Should().Equal(analise, entrevista);
     }
 
     [Fact(DisplayName = "O id da banca da fase não decide a ordem: com o id em ordem inversa à da posição, a ordem segue a posição")]
@@ -66,7 +66,7 @@ public sealed class OrdemCanonicaDasBancasTests
 
         ReconciliacaoDasBancas.Reconciliar<BancaRequerida>([], [idMaior, idMenor]);
 
-        OrdemCanonicaDaConfiguracao.BancasDaFase([idMenor, idMaior]).Should().Equal(idMaior, idMenor);
+        OrdemDaConfiguracao.BancasDaFase([idMenor, idMaior]).Should().Equal(idMaior, idMenor);
     }
 
     [Fact(DisplayName = "Trocar as posições de duas bancas inverte a ordem delas sem trocar o id de nenhuma")]
@@ -82,6 +82,6 @@ public sealed class OrdemCanonicaDasBancasTests
             [BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: segunda.Id),
              BancaDaEtapa.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.AnaliseDocumental, Guid.CreateVersion7()), idDaBancaQueSubstitui: primeira.Id)]);
 
-        OrdemCanonicaDaConfiguracao.BancasDaEtapa(gravadas).Select(static b => b.Id).Should().Equal(ids[1], ids[0]);
+        OrdemDaConfiguracao.BancasDaEtapa(gravadas).Select(static b => b.Id).Should().Equal(ids[1], ids[0]);
     }
 }

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
-using Domain.ProcessosSeletivos.OrdemCanonica;
+using Domain.ProcessosSeletivos.Ordenacao;
 using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 internal static class ProjecaoDaEtapaDoProcesso
 {
     internal static IReadOnlyList<EtapaProcessoDto> ProjetarEtapas(ProcessoSeletivo processo) =>
-        [.. OrdemCanonicaDaConfiguracao.Etapas(processo.Etapas).Select(ProjetarEtapa)];
+        [.. OrdemDaConfiguracao.Etapas(processo.Etapas).Select(ProjetarEtapa)];
 
     internal static EtapaProcessoDto ProjetarEtapa(EtapaProcesso etapa) => new(
         etapa.Id,
@@ -55,7 +55,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         ProjetarEscala(etapa));
 
     private static PublicacoesDaEtapaDto ProjetarPublicacoes(EtapaProcesso etapa) => new(
-        [.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos).Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, ProjecaoDoPapelDaPublicacao.De(pr.Papel)))],
+        [.. OrdemDaConfiguracao.ProdutosDaEtapa(etapa.Produtos).Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, ProjecaoDoPapelDaPublicacao.De(pr.Papel)))],
         etapa.EmiteParecerIndividual,
         [.. etapa.Recursos.Select(r => ProjetarRecursoDaEtapa(etapa, r))],
         [.. etapa.TiposDeDecisao.Select(CodigoComRotulo<TipoMotivoDeDecisao>.De)]);

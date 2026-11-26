@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid>());
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao = null) =>
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
     private static IEnumerable<string> VermelhosDoPainel(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao) =>
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(protecao: protecao, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)))

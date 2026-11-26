@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
@@ -62,7 +62,7 @@ public sealed class FormulariosPorCodigoNaConfiguracaoTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("CERTIFICADO", 7), Item("DIPLOMA", 3)], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<FatoColetado> ordenados = [.. OrdemCanonicaDaConfiguracao.Campos([.. processo.Campos.Reverse()], processo.Formularios)];
+        IReadOnlyList<FatoColetado> ordenados = [.. OrdemDaConfiguracao.Campos([.. processo.Campos.Reverse()], processo.Formularios)];
 
         Guid habilitacao = processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
         ordenados.Take(2).Select(static f => f.FatoCodigo).Should().Equal("DIPLOMA", "CERTIFICADO");
@@ -75,7 +75,7 @@ public sealed class FormulariosPorCodigoNaConfiguracaoTests
     {
         FatoColetado[] campos = [Item("RENDA", 2), Item("PARENTESCO", 0), Item("NOME_DO_MEMBRO", 1)];
 
-        OrdemCanonicaDaConfiguracao.CamposDoGrupo(campos).Select(static c => c.FatoCodigo).Should().Equal("PARENTESCO", "NOME_DO_MEMBRO", "RENDA");
+        OrdemDaConfiguracao.CamposDoGrupo(campos).Select(static c => c.FatoCodigo).Should().Equal("PARENTESCO", "NOME_DO_MEMBRO", "RENDA");
     }
 
     [Fact(DisplayName = "O item sem seção, no formulário que as exige, é recusado na publicação")]

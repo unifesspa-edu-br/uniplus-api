@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 /// <summary>
 /// Onde cada parte da configuração declarada está no documento recebido. A declaração entrega cada lista na ordem canônica
-/// (<see cref="OrdemCanonica.OrdemCanonicaDaConfiguracao"/>), e quem lê o documento o recebe na ordem do autor: esta origem
+/// (<see cref="Ordenacao.OrdemDaConfiguracao"/>), e quem lê o documento o recebe na ordem do autor: esta origem
 /// guarda, por lista, a posição de origem de cada posição canônica, e as partes que a leitura recusou. O ponteiro de uma causa
 /// aponta a posição de origem (<see cref="PonteiroNoDocumento"/>), e a tradução é feita num lugar só, na hora de montá-lo.
 /// A lista se nomeia pelo caminho dela no campo da regra, com a posição canônica de cada item do caminho: <c>fases</c>,

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A leitura do processo devolve cada lista na ordem canônica da configuração, a mesma do documento e do registro publicado, para que o
 /// índice que uma recusa aponta seja a posição do item no array lido.
 /// </summary>
-public sealed class LeituraDoProcessoEmOrdemCanonicaTests
+public sealed class LeituraDoProcessoEmOrdemDaConfiguracaoTests
 {
     private static EtapaProcesso Etapa(string nome, int ordem)
     {

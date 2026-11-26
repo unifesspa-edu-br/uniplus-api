@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -33,7 +33,7 @@ internal static class SerializacaoDoCronograma
     }
 
     private static JsonArray SerializarFasesCronograma(ProcessoSeletivo processo) =>
-        new([.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)
+        new([.. OrdemDaConfiguracao.Fases(processo.CronogramaFases)
             .Select(static fase => (JsonNode)SerializarFase(fase))]);
 
     internal static JsonObject SerializarFase(FaseCronograma fase)
@@ -90,7 +90,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarProdutosDaFase(FaseCronograma fase)
     {
-        IOrderedEnumerable<ProdutoDaFase> ordenados = OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos);
+        IOrderedEnumerable<ProdutoDaFase> ordenados = OrdemDaConfiguracao.ProdutosDaFase(fase.Produtos);
 
         return new JsonArray([.. ordenados.Select(static p => (JsonNode)SerializarProduto(p))]);
     }
@@ -109,7 +109,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
     {
-        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = OrdemCanonicaDaConfiguracao
+        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = OrdemDaConfiguracao
             .BancasDaFase(fase.BancasRequeridas.Select(static b => (Banca: b, Item: SerializarBancaRequerida(b))), static par => par.Banca);
 
         return new JsonArray([.. ordenadas.Select(static par => (JsonNode)par.Item)]);
@@ -134,7 +134,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarCandidatosAtendidos(BancaRequerida banca)
     {
-        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemCanonicaDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos);
+        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemDaConfiguracao.CandidatosAtendidos(banca.CandidatosAtendidos);
 
         return new JsonArray([.. ordenadas.Select(static c => (JsonNode)new JsonObject
         {

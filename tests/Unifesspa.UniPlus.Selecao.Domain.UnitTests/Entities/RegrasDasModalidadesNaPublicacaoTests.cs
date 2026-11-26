@@ -37,7 +37,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         ProcessoSeletivo processo = ProcessoComAmplaEReservaPcd();
         processo.DefinirItens([Booleano("PCD", 0), Booleano("CONCORRER_PCD", 1)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
             "sem cota da lei ofertada, ninguém optou pelas cotas, e a regra cita só o que a inscrição pergunta");
     }
 
@@ -51,7 +51,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             Modalidade(ModalidadesFederaisLei12711.AcPcd, NaturezaLegalModalidade.AcaoAfirmativa, Exige(("PCD", true), ("CONCORRER_PCD", true))));
         processo.DefinirItens([.. CamposDaOrigemEscolar(true), Booleano("PCD", 10), Booleano("CONCORRER_PCD", 11)]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
             "quem optou pelas cotas também concorre à AC_PCD, então a oferta não precisa da cota da lei para pessoa com deficiência");
     }
 
@@ -135,7 +135,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         processo.DefinirItens([], papel: PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
         processo.DefinirItens([], papel: papelDoGrupo, grupos: [GrupoComOCampoDeMembro(papelDoGrupo)]).IsSuccess.Should().BeTrue();
 
-        DomainError? recusa = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
+        DomainError? recusa = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado, motivosEscolhidos: MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo)));
 
         AfirmarRecusaDoCampoDeMembro(recusa, esperadoAceito);
 
@@ -166,7 +166,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.SemClausula));
 
         Item(processo, ItemNatureza).Ok.Should().BeFalse();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
     }
 
@@ -203,7 +203,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         ModalidadeSelecionada semRemanejamento = ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("X", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal) with { BaseLegal = "base legal" }, 10).Value!;
         Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), semRemanejamento);
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza);
     }
 

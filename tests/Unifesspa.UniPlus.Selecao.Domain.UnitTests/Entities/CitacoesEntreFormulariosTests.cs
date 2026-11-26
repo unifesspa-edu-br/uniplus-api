@@ -70,11 +70,11 @@ public sealed class CitacoesEntreFormulariosTests
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("TEM_RENDA", 0), ItemQueCitaODerivado(1), Item("TEM_BOLSA", 2)])
             .IsSuccess.Should().BeTrue();
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_BOLSA")]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
+        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
     [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outro formulário")]

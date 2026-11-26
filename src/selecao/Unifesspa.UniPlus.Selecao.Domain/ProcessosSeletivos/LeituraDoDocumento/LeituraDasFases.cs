@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDasFases
 {
     internal static FasesLidas Ler(IReadOnlyList<FaseNoDocumento> fases, CadastrosCitadosNoDocumento cadastros) =>
-        NaOrdemCanonica([.. fases.Select(fase => LerFase(fase, cadastros))]);
+        NaOrdemDaConfiguracao([.. fases.Select(fase => LerFase(fase, cadastros))]);
 
     private static FaseLida LerFase(FaseNoDocumento fase, CadastrosCitadosNoDocumento cadastros)
     {
@@ -55,13 +55,13 @@ internal static class LeituraDasFases
             FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
             "A fase canônica citada pela fase não foi encontrada ou não está mais viva."));
 
-    private static FasesLidas NaOrdemCanonica(IReadOnlyList<FaseLida> lidas)
+    private static FasesLidas NaOrdemDaConfiguracao(IReadOnlyList<FaseLida> lidas)
     {
         (FaseCronograma Fase, int Posicao)[] adotadas = [.. lidas.Where(static lida => lida.Fase is not null).Select(static lida => (lida.Fase!, lida.PosicaoNoDocumento))];
-        OrigemNoDocumento posicoes = OrigemNoDocumento.DaLista(CronogramaDoProcesso.ListaDasFases, adotadas, OrdemCanonicaDaConfiguracao.Fases, []);
+        OrigemNoDocumento posicoes = OrigemNoDocumento.DaLista(CronogramaDoProcesso.ListaDasFases, adotadas, OrdemDaConfiguracao.Fases, []);
         OrigemNoDocumento origem = OrigemNoDocumento.Reunir(
             [posicoes, OrigemNoDocumento.SoComPartesRecusadas(PartesRecusadasDasFases.De(lidas, posicoes)), .. ListasDasFases.Origens(lidas, posicoes)]);
 
-        return new([.. OrdemCanonicaDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))], origem);
+        return new([.. OrdemDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))], origem);
     }
 }

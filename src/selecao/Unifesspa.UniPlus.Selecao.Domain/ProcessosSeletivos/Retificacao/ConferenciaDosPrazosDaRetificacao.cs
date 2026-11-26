@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -39,7 +39,7 @@ public static class ConferenciaDosPrazosDaRetificacao
     }
 
     private static Dictionary<Guid, (FaseCronograma Fase, int Posicao)> FasesNoDocumentoPorOrigem(IEnumerable<FaseCronograma> fasesNovas) =>
-        OrdemCanonicaDaConfiguracao.Fases(fasesNovas)
+        OrdemDaConfiguracao.Fases(fasesNovas)
             .Select(static (fase, posicao) => (Fase: fase, Posicao: posicao))
             .ToDictionary(static par => par.Fase.FaseCanonicaOrigemId);
 
@@ -156,7 +156,7 @@ public static class ConferenciaDosPrazosDaRetificacao
 
     private static IEnumerable<FieldError> RecusasDasEtapasIniciadas(IReadOnlyCollection<EtapaProcesso> etapasNovas, AndamentoDasFases andamento)
     {
-        Dictionary<Guid, (EtapaProcesso Etapa, int Posicao)> novasPorId = OrdemCanonicaDaConfiguracao.Etapas(etapasNovas)
+        Dictionary<Guid, (EtapaProcesso Etapa, int Posicao)> novasPorId = OrdemDaConfiguracao.Etapas(etapasNovas)
             .Select(static (etapa, posicao) => (Etapa: etapa, Posicao: posicao))
             .ToDictionary(static par => par.Etapa.Id);
 

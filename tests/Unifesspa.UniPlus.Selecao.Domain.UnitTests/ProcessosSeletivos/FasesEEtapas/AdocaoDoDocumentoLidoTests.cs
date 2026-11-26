@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -90,7 +90,7 @@ public sealed class AdocaoDoDocumentoLidoTests
         FaseCronograma primeira = new ModeloDeFase("A", 1).Adotada();
         FaseCronograma segunda = new ModeloDeFase("B", 2).Adotada();
 
-        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(terceira, 0), (primeira, 1), (segunda, 2)], OrdemCanonicaDaConfiguracao.Fases, []);
+        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(terceira, 0), (primeira, 1), (segunda, 2)], OrdemDaConfiguracao.Fases, []);
 
         Enumerable.Range(0, 3).Select(posicao => origem.PosicaoDeOrigem("fases", posicao)).Should().Equal(1, 2, 0);
     }
@@ -102,7 +102,7 @@ public sealed class AdocaoDoDocumentoLidoTests
         FaseCronograma primeira = new ModeloDeFase("A", 1).Adotada();
         ParteRecusada recusada = Recusada("fases", 1);
 
-        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(segunda, 0), (primeira, 2)], OrdemCanonicaDaConfiguracao.Fases, [recusada]);
+        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(segunda, 0), (primeira, 2)], OrdemDaConfiguracao.Fases, [recusada]);
 
         Enumerable.Range(0, 2).Select(posicao => origem.PosicaoDeOrigem("fases", posicao)).Should().Equal(2, 0);
         origem.PartesRecusadas.Should().Equal(recusada);
@@ -130,8 +130,8 @@ public sealed class AdocaoDoDocumentoLidoTests
 
         OrigemNoDocumento origem = OrigemNoDocumento.Reunir(
         [
-            OrigemNoDocumento.DaLista("fases", [(fase, 3)], OrdemCanonicaDaConfiguracao.Fases, [daFase]),
-            OrigemNoDocumento.DaLista("etapas", [(etapa, 6)], OrdemCanonicaDaConfiguracao.Etapas, [daEtapa]),
+            OrigemNoDocumento.DaLista("fases", [(fase, 3)], OrdemDaConfiguracao.Fases, [daFase]),
+            OrigemNoDocumento.DaLista("etapas", [(etapa, 6)], OrdemDaConfiguracao.Etapas, [daEtapa]),
         ]);
 
         (origem.PosicaoDeOrigem("fases", 0), origem.PosicaoDeOrigem("etapas", 0)).Should().Be((3, 6));
@@ -143,7 +143,7 @@ public sealed class AdocaoDoDocumentoLidoTests
     {
         FaseCronograma primeira = new ModeloDeFase("A", 1).Adotada();
         FaseCronograma segunda = new ModeloDeFase("B", 2).Adotada();
-        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(segunda, 0), (primeira, 1)], OrdemCanonicaDaConfiguracao.Fases, []);
+        OrigemNoDocumento origem = OrigemNoDocumento.DaLista("fases", [(segunda, 0), (primeira, 1)], OrdemDaConfiguracao.Fases, []);
 
         PonteiroNoDocumento.Converter("fases[0].produtos", origem).Should().Be("/cronograma/fases/1/publicacoesPrevistas");
         PonteiroNoDocumento.Converter("fases[1].produtos", origem).Should().Be("/cronograma/fases/0/publicacoesPrevistas");

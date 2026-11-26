@@ -5,7 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Os recursos da etapa não guardam a ordem em que foram enviados: a declaração, o registro publicado e a leitura os trazem na
 /// ordem canônica, de modo que a posição que uma recusa aponta é a mesma em qualquer lugar.
 /// </summary>
-public sealed class OrdemCanonicaDosRecursosDaEtapaTests
+public sealed class OrdemDosRecursosDaEtapaTests
 {
     private static EtapaProcesso EtapaComDoisPreliminares(out ProdutoDaEtapa gabarito, out ProdutoDaEtapa resultado)
     {
@@ -78,7 +78,7 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
             ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas),
             Guid.Empty).Value!;
 
-        RecursoDaEtapa[] ordenados = [.. OrdemCanonicaDaConfiguracao.RecursosDaEtapa([naCiencia, aoAto], etapa.Produtos)];
+        RecursoDaEtapa[] ordenados = [.. OrdemDaConfiguracao.RecursosDaEtapa([naCiencia, aoAto], etapa.Produtos)];
         RecursoDaEtapa[] esperados = [.. new[] { naCiencia, aoAto }.OrderBy(static r => r.Ancora)];
 
         ordenados.Should().Equal(esperados);
@@ -91,8 +91,8 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
         RecursoDaEtapa primeiro = AoAto(gabarito.Id, 24m);
         RecursoDaEtapa segundo = AoAto(gabarito.Id, 24m);
 
-        Guid[] direta = [.. OrdemCanonicaDaConfiguracao.RecursosDaEtapa([primeiro, segundo], etapa.Produtos).Select(static r => r.Id)];
-        Guid[] invertida = [.. OrdemCanonicaDaConfiguracao.RecursosDaEtapa([segundo, primeiro], etapa.Produtos).Select(static r => r.Id)];
+        Guid[] direta = [.. OrdemDaConfiguracao.RecursosDaEtapa([primeiro, segundo], etapa.Produtos).Select(static r => r.Id)];
+        Guid[] invertida = [.. OrdemDaConfiguracao.RecursosDaEtapa([segundo, primeiro], etapa.Produtos).Select(static r => r.Id)];
 
         direta.Should().Equal(invertida);
         direta.Should().BeInAscendingOrder();
@@ -103,14 +103,14 @@ public sealed class OrdemCanonicaDosRecursosDaEtapaTests
     {
         EtapaProcesso etapa = EtapaComDoisPreliminares(out ProdutoDaEtapa gabarito, out _);
 
-        OrdemCanonicaDaConfiguracao.RecursosDaEtapa([AoAto(Guid.CreateVersion7(), 24m), AoAto(gabarito.Id, 24m)], etapa.Produtos)
+        OrdemDaConfiguracao.RecursosDaEtapa([AoAto(Guid.CreateVersion7(), 24m), AoAto(gabarito.Id, 24m)], etapa.Produtos)
             .Should().HaveCount(2);
     }
 
     [Fact(DisplayName = "Os recursos e os produtos são obrigatórios")]
     public void RecursosDaEtapa_ArgumentoNulo_Lanca()
     {
-        FluentActions.Invoking(() => OrdemCanonicaDaConfiguracao.RecursosDaEtapa(null!, [])).Should().Throw<ArgumentNullException>();
-        FluentActions.Invoking(() => OrdemCanonicaDaConfiguracao.RecursosDaEtapa([], null!)).Should().Throw<ArgumentNullException>();
+        FluentActions.Invoking(() => OrdemDaConfiguracao.RecursosDaEtapa(null!, [])).Should().Throw<ArgumentNullException>();
+        FluentActions.Invoking(() => OrdemDaConfiguracao.RecursosDaEtapa([], null!)).Should().Throw<ArgumentNullException>();
     }
 }

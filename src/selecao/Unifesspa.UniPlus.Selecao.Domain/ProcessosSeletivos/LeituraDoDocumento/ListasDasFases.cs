@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -25,9 +25,9 @@ internal static class ListasDasFases
     private static IEnumerable<OrigemNoDocumento> Listas(string fase, ItensAdotadosDaFase itens) =>
         new[]
         {
-            Lista(fase, FaseDeclarada.ListaDosProdutos, itens.Produtos, OrdemCanonicaDaConfiguracao.ProdutosDaFase),
-            Lista(fase, FaseDeclarada.ListaDasBancasRequeridas, itens.Bancas, static bancas => OrdemCanonicaDaConfiguracao.BancasDaFase(bancas)),
-            Lista(fase, FaseDeclarada.ListaDosProcedimentosDeRecurso, itens.Procedimentos, ProcedimentosDeRecurso.NaOrdemCanonica),
+            Lista(fase, FaseDeclarada.ListaDosProdutos, itens.Produtos, OrdemDaConfiguracao.ProdutosDaFase),
+            Lista(fase, FaseDeclarada.ListaDasBancasRequeridas, itens.Bancas, static bancas => OrdemDaConfiguracao.BancasDaFase(bancas)),
+            Lista(fase, FaseDeclarada.ListaDosProcedimentosDeRecurso, itens.Procedimentos, ProcedimentosDeRecurso.NaOrdemDaConfiguracao),
         }.OfType<OrigemNoDocumento>();
 
     private static OrigemNoDocumento? Lista<T>(
