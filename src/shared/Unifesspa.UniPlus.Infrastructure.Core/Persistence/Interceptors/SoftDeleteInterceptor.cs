@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Kernel.Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -60,68 +61,80 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         return base.SavingChanges(eventData!, result);
     }
 
+    // Opt-in por interface (issue #629): só entidades ISoftDeletable são
+    // convertidas em soft-delete. Entidades que não implementam a interface
+    // (ex.: históricos append-only como UnidadeIdentificadorHistorico) sofrem
+    // hard-delete físico — coerente com sua semântica imutável.
     private void ConvertDeleteToSoftDelete(DbContext context)
     {
         string deletedBy = ResolveDeletedBy();
         DateTimeOffset deletedAt = _timeProvider.GetUtcNow();
 
-        // Opt-in por interface (issue #629): só entidades ISoftDeletable são
-        // convertidas em soft-delete. Entidades que não implementam a interface
-        // (ex.: históricos append-only como UnidadeIdentificadorHistorico) sofrem
-        // hard-delete físico — coerente com sua semântica imutável.
-        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ISoftDeletable> entry
-            in context.ChangeTracker.Entries<ISoftDeletable>())
+        foreach (EntityEntry<ISoftDeletable> entry in context.ChangeTracker.Entries<ISoftDeletable>())
         {
             if (entry.State == EntityState.Deleted)
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.MarkAsDeleted(deletedBy, deletedAt);
 
-                RestoreOwnedReferences(entry);
+                RestoreOwnedEntries(entry);
             }
         }
+    }
+
+    // Recursivo para cobrir owned-de-owned, se algum dia existir.
+    private static void RestoreOwnedEntries(EntityEntry entry)
+    {
+        RestoreOwnedReferences(entry);
+        RestoreOwnedCollections(entry);
     }
 
     // Owned types (OwnsOne, table splitting — ex.: OfertaCurso.UnidadeOfertante)
     // são rastreados como entradas próprias e cascateiam para EntityState.Deleted
     // junto do principal quando ele é removido. Sem este passo, a entrada owned
-    // permaneceria Deleted mesmo após o principal virar Modified acima, e o EF
+    // permaneceria Deleted mesmo após o principal virar Modified, e o EF
     // Core anularia as colunas owned no UPDATE da mesma linha (table splitting) —
     // corrompendo um snapshot obrigatório (NOT NULL) em vez de só marcar o
     // principal como removido. Nada no snapshot mudou: a entrada owned volta para
-    // Unchanged. Recursivo para cobrir owned-de-owned, se algum dia existir.
-    private static void RestoreOwnedReferences(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    // Unchanged.
+    private static void RestoreOwnedReferences(EntityEntry entry)
     {
-        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.ReferenceEntry reference in entry.References)
+        foreach (ReferenceEntry reference in entry.References)
         {
             if (reference.TargetEntry is { State: EntityState.Deleted } target
                 && reference.Metadata.TargetEntityType.IsOwned())
             {
                 target.State = EntityState.Unchanged;
-                RestoreOwnedReferences(target);
+                RestoreOwnedEntries(target);
             }
         }
+    }
 
-        // Owned COLLECTIONS (OwnsMany — ex.: BaseLegalDoFada.Municipios) cascateiam
-        // para EntityState.Deleted do mesmo jeito que owned references, mas cada item vive
-        // na própria tabela filha (FK, não table splitting): sem este passo, o soft-delete do
-        // principal preservaria a linha pai e apagaria fisicamente cada linha filha — perdendo
-        // para sempre o dado que o soft-delete existe para preservar.
-        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.CollectionEntry collection in entry.Collections)
+    // Owned COLLECTIONS (OwnsMany — ex.: BaseLegalDoFada.Municipios) cascateiam
+    // para EntityState.Deleted do mesmo jeito que owned references, mas cada item vive
+    // na própria tabela filha (FK, não table splitting): sem este passo, o soft-delete do
+    // principal preservaria a linha pai e apagaria fisicamente cada linha filha — perdendo
+    // para sempre o dado que o soft-delete existe para preservar.
+    private static void RestoreOwnedCollections(EntityEntry entry)
+    {
+        foreach (CollectionEntry collection in entry.Collections)
         {
-            if (!collection.Metadata.TargetEntityType.IsOwned() || collection.CurrentValue is not System.Collections.IEnumerable itens)
+            if (collection.Metadata.TargetEntityType.IsOwned() && collection.CurrentValue is System.Collections.IEnumerable itens)
             {
-                continue;
+                RestoreOwnedItems(entry.Context, itens);
             }
+        }
+    }
 
-            foreach (object item in itens)
+    private static void RestoreOwnedItems(DbContext context, System.Collections.IEnumerable itens)
+    {
+        foreach (object item in itens)
+        {
+            EntityEntry itemEntry = context.Entry(item);
+            if (itemEntry.State == EntityState.Deleted)
             {
-                Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry itemEntry = entry.Context.Entry(item);
-                if (itemEntry.State == EntityState.Deleted)
-                {
-                    itemEntry.State = EntityState.Unchanged;
-                    RestoreOwnedReferences(itemEntry);
-                }
+                itemEntry.State = EntityState.Unchanged;
+                RestoreOwnedEntries(itemEntry);
             }
         }
     }
