@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -32,7 +34,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoCandidatoView CorRaca(bool ativo = true) => new(
         Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
-        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], CodigoComRotulo<FonteValoresFato>.De(FonteValoresFato.Catalogo), ativo, CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")), CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(FatoCandidatoView fato) =>
         new(StringComparer.Ordinal) { [fato.Codigo] = fato };
@@ -115,7 +117,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoCandidatoView BaixaRendaNoCatalogo() => new(
         Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico),
-        null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")), CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static DocumentoExigido ExigenciaCondicionadaACorOuRaca(Guid faseId) =>
         DocumentoExigidoDeTeste.Novo()

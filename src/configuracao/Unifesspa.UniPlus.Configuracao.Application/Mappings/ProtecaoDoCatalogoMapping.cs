@@ -22,7 +22,7 @@ internal static class ProtecaoDoCatalogoMapping
             aprovacao.Ciclo.Numero,
             aprovacao.SolicitadaEm,
             aprovacao.DecididaEm,
-            Token(aprovacao.ClassificacaoRecomendada),
+            ClassificacaoRecomendada(aprovacao.ClassificacaoRecomendada),
             aprovacao.Justificativa,
             aprovacao.AceitaEm,
             aprovacao.ManifestadaEm,
@@ -38,9 +38,9 @@ internal static class ProtecaoDoCatalogoMapping
             tipo.Id,
             tipo.Codigo.Valor,
             tipo.Nome,
-            ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao),
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(tipo.ClassificacaoProtecao),
             tipo.FinalidadeTratamento,
-            tipo.HipoteseLegal.Codigo(),
+            CodigoComRotulo<HipoteseLegalTratamento>.De(tipo.HipoteseLegal),
             tipo.Aprovacao.ToDto());
     }
 
@@ -52,9 +52,9 @@ internal static class ProtecaoDoCatalogoMapping
             fato.Id,
             fato.Codigo,
             fato.Nome,
-            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(fato.ClassificacaoProtecao),
             fato.FinalidadeTratamento,
-            fato.HipoteseLegal.Codigo(),
+            CodigoComRotulo<HipoteseLegalTratamento>.De(fato.HipoteseLegal),
             fato.Aprovacao.ToDto());
     }
 
@@ -69,7 +69,7 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o item, a proteção, o circuito e o que o tipo pede ao candidato.
         return new DetalheDaProtecaoDoCatalogoDto(
             TipoDocumento, tipo.Id, tipo.Codigo.Valor, tipo.Nome, tipo.Descricao,
-            ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao), tipo.HipoteseLegal.Codigo(), tipo.FinalidadeTratamento,
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(tipo.ClassificacaoProtecao), CodigoComRotulo<HipoteseLegalTratamento>.De(tipo.HipoteseLegal), tipo.FinalidadeTratamento,
             tipo.Aprovacao.ToDto(),
             Fato: null,
             new DetalheDoTipoDeDocumentoDto(tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb),
@@ -88,7 +88,7 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o item, a proteção, o circuito e o que é o fato.
         return new DetalheDaProtecaoDoCatalogoDto(
             Fato, fato.Id, fato.Codigo, fato.Nome, fato.Descricao,
-            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao), fato.HipoteseLegal.Codigo(), fato.FinalidadeTratamento,
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(fato.ClassificacaoProtecao), CodigoComRotulo<HipoteseLegalTratamento>.De(fato.HipoteseLegal), fato.FinalidadeTratamento,
             fato.Aprovacao.ToDto(),
             fato.ToDetalheDoFato(),
             TipoDocumento: null,
@@ -103,8 +103,8 @@ internal static class ProtecaoDoCatalogoMapping
         // Agrupados por assunto: o ato, a proteção que ele retratou e os fundamentos da decisão.
         return new AtoDaProtecaoDto(
             AtosDaProtecao.ParaTokenCanonico(ato.Ato), ato.Instante, ato.AtorNome, ato.Ciclo.Numero,
-            ClassificacoesDeProtecao.ParaTokenCanonico(ato.ClassificacaoProtecao), ato.HipoteseLegal.Codigo(), ato.FinalidadeTratamento,
-            Token(ato.ClassificacaoRecomendada), ato.Justificativa, ato.DianteDeManifestacaoDesfavoravel);
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(ato.ClassificacaoProtecao), CodigoComRotulo<HipoteseLegalTratamento>.De(ato.HipoteseLegal), ato.FinalidadeTratamento,
+            ClassificacaoRecomendada(ato.ClassificacaoRecomendada), ato.Justificativa, ato.DianteDeManifestacaoDesfavoravel);
     }
 
     public static DecisaoDaProtecaoDto ToDecisaoDto(this AtoDaProtecaoDoCatalogo ato)
@@ -125,13 +125,13 @@ internal static class ProtecaoDoCatalogoMapping
             CodigoComRotulo<TipoDoDado>.De(fato.Dominio),
             CodigoComRotulo<QuantidadeDeValores>.De(fato.Cardinalidade),
             fato.SemeadoPeloSistema,
-            fato.ComponenteExibicao?.Codigo(),
+            fato.ComponenteExibicao is { } componente ? CodigoComRotulo<ComponenteDeExibicao>.De(componente) : null,
             [.. fato.ValoresDominioDeclarados
                 .Where(static v => v.Ativo)
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new DetalheDoValorDoFatoDto(v.Codigo, v.Descricao, v.Orientacao))]);
 
-    private static string? Token(ClassificacaoDeProtecao? classificacao) =>
-        classificacao is { } valor ? ClassificacoesDeProtecao.ParaTokenCanonico(valor) : null;
+    private static CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoRecomendada(ClassificacaoDeProtecao? classificacao) =>
+        classificacao is { } valor ? CodigoComRotulo<ClassificacaoDeProtecao>.De(valor) : null;
 }

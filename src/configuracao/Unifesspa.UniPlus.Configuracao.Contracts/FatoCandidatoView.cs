@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -41,25 +42,25 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// Fato inativo não aceita vínculo novo; o processo que já o usa continua com ele (ADR-0136).
 /// </param>
 /// <param name="Formato">
-/// Formato da resposta do fato de texto — token canônico (LIVRE, CPF, EMAIL, TELEFONE, CEP,
+/// Formato da resposta do fato de texto, com código e rótulo (LIVRE, CPF, EMAIL, TELEFONE, CEP,
 /// NOME_PESSOA) —, ou <see langword="null"/> quando o fato não é de texto.
 /// </param>
 /// <param name="Escopo">
-/// De quem é o fato — token canônico (CANDIDATO, MEMBRO_GRUPO). O de membro de grupo só é
+/// De quem é o fato, com código e rótulo (CANDIDATO, MEMBRO_GRUPO). O de membro de grupo só é
 /// respondido dentro do grupo.
 /// </param>
 /// <param name="ClassificacaoProtecao">
-/// Classificação de proteção de dados do fato — token canônico (PUBLICO, INTERNO, PESSOAL,
+/// Classificação de proteção de dados do fato, com código e rótulo (PUBLICO, INTERNO, PESSOAL,
 /// IDENTIFICADOR, SENSIVEL), na escala da ADR-0081 (ADR-0136). A Seleção congela este valor no
 /// fato coletado ao aplicar o modelo ou editar o formulário (ADR-0136).
 /// </param>
 /// <param name="HipoteseLegal">
-/// Hipótese legal de tratamento do fato — token canônico (UPPER_SNAKE). A Seleção a congela no
+/// Hipótese legal de tratamento do fato, com código e rótulo. A Seleção a congela no
 /// fato coletado e no derivado, como a classificação (ADR-0154).
 /// </param>
 /// <param name="FinalidadeTratamento">Para que o dado é tratado; congelada junto da hipótese legal (ADR-0154).</param>
 /// <param name="ComponenteExibicao">
-/// Como a tela exibe o valor quando o modo não se deduz do tipo, do formato nem da classificação — token canônico
+/// Como a tela exibe o valor quando o modo não se deduz do tipo, do formato nem da classificação, com código e rótulo
 /// (MOEDA, SITUACAO) —, ou <see langword="null"/> quando o fato não declara. A Seleção o congela com a descrição.
 /// </param>
 /// <param name="ProtecaoAprovada">
@@ -80,16 +81,20 @@ public sealed record FatoCandidatoView(
     IReadOnlyList<FatoValorDominioViewItem>? ValoresDominioDeclarados,
     CodigoComRotulo<FonteValoresFato>? FonteValores,
     bool Ativo,
-    string ClassificacaoProtecao,
-    string HipoteseLegal,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoProtecao,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     string FinalidadeTratamento,
     bool ProtecaoAprovada,
-    string? Formato = null,
-    string? Escopo = null,
-    string? ComponenteExibicao = null)
+    CodigoComRotulo<FormatoTexto>? Formato = null,
+    CodigoComRotulo<EscopoFato>? Escopo = null,
+    CodigoComRotulo<ComponenteDeExibicao>? ComponenteExibicao = null)
 {
-    public string Escopo { get; init; } = Escopo ?? EscopoFato.Candidato.Codigo();
-    [JsonIgnore] public EscopoFato EscopoValor => CatalogoDe<EscopoFato>.Obter(Escopo);
+    public CodigoComRotulo<EscopoFato> Escopo { get; init; } = Escopo ?? CodigoComRotulo<EscopoFato>.De(EscopoFato.Candidato);
+    [JsonIgnore] public EscopoFato EscopoValor => CatalogoDe<EscopoFato>.Obter(Escopo.Codigo);
+    [JsonIgnore] public FormatoTexto? FormatoValor => Formato is null ? null : CatalogoDe<FormatoTexto>.Obter(Formato.Codigo);
+    [JsonIgnore] public ComponenteDeExibicao? ComponenteExibicaoValor => ComponenteExibicao is null ? null : CatalogoDe<ComponenteDeExibicao>.Obter(ComponenteExibicao.Codigo);
+    [JsonIgnore] public ClassificacaoDeProtecao ClassificacaoProtecaoValor => CatalogoDe<ClassificacaoDeProtecao>.Obter(ClassificacaoProtecao.Codigo);
+    [JsonIgnore] public HipoteseLegalTratamento HipoteseLegalValor => CatalogoDe<HipoteseLegalTratamento>.Obter(HipoteseLegal.Codigo);
     [JsonIgnore] public TipoDoDado DominioValor => CatalogoDe<TipoDoDado>.Obter(Dominio.Codigo);
     [JsonIgnore] public OrigemFato OrigemValor => CatalogoDe<OrigemFato>.Obter(Origem.Codigo);
     [JsonIgnore] public QuantidadeDeValores CardinalidadeValor => CatalogoDe<QuantidadeDeValores>.Obter(Cardinalidade.Codigo);

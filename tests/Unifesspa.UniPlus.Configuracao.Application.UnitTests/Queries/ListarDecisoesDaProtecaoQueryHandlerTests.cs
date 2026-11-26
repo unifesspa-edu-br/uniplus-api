@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -100,7 +101,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
 
         resultado.Value!.Items.Should().ContainSingle().Which.Should().Be(new DecisaoDaProtecaoDto(
             "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "DEVOLUCAO", Agora, "Betina Marina Valentina das Neves", 1,
-            "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, null, "Dado desnecessário.", false));
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Interno), CodigoComRotulo<HipoteseLegalTratamento>.De(HipoteseLegalTratamento.CumprimentoObrigacaoLegal), Finalidade, null, "Dado desnecessário.", false));
         resultado.Value.Proximo.Should().Be(("proximo", ato.Id));
         typeof(DecisaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorContaId", "AtorEmissor", "ContaId", "Emissor"]);
     }

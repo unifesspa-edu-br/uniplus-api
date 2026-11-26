@@ -70,7 +70,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
 
         DetalheDaProtecaoDoCatalogoDto? detalhe = await ObterAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, tipo.Id);
 
-        detalhe!.Atos.Select(a => (a.Ato, a.AtorNome, a.ClassificacaoRecomendada, a.Justificativa, a.Ciclo)).Should().Equal(
+        detalhe!.Atos.Select(a => (a.Ato, a.AtorNome, a.ClassificacaoRecomendada?.Codigo, a.Justificativa, a.Ciclo)).Should().Equal(
             ("SOLICITACAO", "Isabella Priscila Figueiredo", null, null, 1),
             ("AJUSTE_RECOMENDADO", "Lúcia Bruna Maya Almeida", "SENSIVEL", "Traz dado de saúde.", 1));
         typeof(AtoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorContaId", "AtorEmissor", "ContaId", "Emissor"]);

@@ -179,10 +179,13 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
     {
         using JsonDocument fato = await ObterAsync(client, id);
         return new ApresentacaoLida(
-            Em(fato, "descritivo", "componenteExibicao").GetString(),
+            CodigoDoComponente(Em(fato, "descritivo", "componenteExibicao")),
             Em(fato, "descritivo", "descricao").GetString()!,
             Em(fato, "definicao", "protecao", "aprovacao", "situacao").GetString()!);
     }
+
+    private static string? CodigoDoComponente(JsonElement componente) =>
+        componente.ValueKind == JsonValueKind.Null ? null : componente.GetProperty("codigo").GetString();
 
     private sealed record ApresentacaoLida(string? Componente, string Descricao, string Situacao);
 }

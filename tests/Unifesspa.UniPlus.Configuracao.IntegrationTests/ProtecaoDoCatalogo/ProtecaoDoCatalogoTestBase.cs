@@ -39,12 +39,12 @@ public abstract class ProtecaoDoCatalogoTestBase
         return new
         {
             pontoResolucao = definicao.GetProperty("resolucao").GetProperty("pontoResolucao").GetString(),
-            classificacaoProtecao = protecao.GetProperty("classificacao").GetString(),
+            classificacaoProtecao = protecao.GetProperty("classificacao").GetProperty("codigo").GetString(),
             finalidadeTratamento = protecao.GetProperty("finalidade").GetString(),
-            hipoteseLegal = hipoteseLegal ?? protecao.GetProperty("hipoteseLegal").GetString(),
+            hipoteseLegal = hipoteseLegal ?? protecao.GetProperty("hipoteseLegal").GetProperty("codigo").GetString(),
             dominio = dominio ?? definicao.GetProperty("dominio").GetProperty("codigo").GetString(),
             cardinalidade = definicao.GetProperty("cardinalidade").GetProperty("codigo").GetString(),
-            escopo = definicao.GetProperty("escopo").GetString(),
+            escopo = definicao.GetProperty("escopo").GetProperty("codigo").GetString(),
         };
     }
 
@@ -106,15 +106,15 @@ public abstract class ProtecaoDoCatalogoTestBase
         JsonElement item = await ObterDoCatalogoAsync(client, itemId);
         return await EnviarAsync(client, HttpMethod.Post, Base, CorpoDaDecisao(item, cadastro, decisao) with
         {
-            ClassificacaoProtecao = protecaoDesatualizada ? "SENSIVEL" : item.GetProperty("classificacaoProtecao").GetString(),
+            ClassificacaoProtecao = protecaoDesatualizada ? "SENSIVEL" : item.GetProperty("classificacaoProtecao").GetProperty("codigo").GetString(),
             ClassificacaoRecomendada = recomendada,
             Justificativa = justificativa,
         });
     }
 
     private protected static DecisaoPedida CorpoDaDecisao(JsonElement item, string cadastro, string decisao) =>
-        new(cadastro, item.GetProperty("id").GetGuid(), decisao, item.GetProperty("classificacaoProtecao").GetString(),
-            item.GetProperty("hipoteseLegal").GetString(), item.GetProperty("finalidadeTratamento").GetString())
+        new(cadastro, item.GetProperty("id").GetGuid(), decisao, item.GetProperty("classificacaoProtecao").GetProperty("codigo").GetString(),
+            item.GetProperty("hipoteseLegal").GetProperty("codigo").GetString(), item.GetProperty("finalidadeTratamento").GetString())
         {
             Ciclo = item.GetProperty("aprovacao").GetProperty("ciclo").GetInt32(),
             ManifestacoesNoCiclo = item.GetProperty("aprovacao").GetProperty("manifestacoesNoCiclo").GetInt32(),

@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
@@ -77,7 +79,7 @@ internal static class CatalogoDoConjuntoBasico
         IReadOnlyList<string>? valores = null, string classificacao = "PESSOAL") =>
         new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(dominio), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
             valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), (fonte is { } fonteInformada ? CodigoComRotulo<FonteValoresFato>.De(fonteInformada) : null), Ativo: true,
-            ClassificacaoProtecao: classificacao, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: formato, ProtecaoAprovada: true);
+            ClassificacaoProtecao: CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter(classificacao)), HipoteseLegal: CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: formato is null ? null : CodigoComRotulo<FormatoTexto>.De(CatalogoDe<FormatoTexto>.Obter(formato)), ProtecaoAprovada: true);
 
     private static FatoCandidatoView Texto(string codigo, string formato, string classificacao = "PESSOAL") =>
         Declarado(codigo, TipoDoDado.Texto, formato, classificacao: classificacao);

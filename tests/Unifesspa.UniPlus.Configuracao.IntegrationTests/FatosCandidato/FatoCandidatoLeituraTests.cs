@@ -44,8 +44,8 @@ public sealed class FatoCandidatoLeituraTests
         IReadOnlyList<FatoCandidatoView> fatos = await new FatoCandidatoReader(ctx).ListarAsync(CancellationToken.None);
 
         FatoCandidatoView modalidade = fatos.Single(f => f.Codigo == "MODALIDADE");
-        modalidade.ClassificacaoProtecao.Should().Be("INTERNO");
-        modalidade.HipoteseLegal.Should().Be("CUMPRIMENTO_OBRIGACAO_LEGAL");
+        modalidade.ClassificacaoProtecaoValor.Should().Be(ClassificacaoDeProtecao.Interno);
+        modalidade.HipoteseLegalValor.Should().Be(HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
         modalidade.FinalidadeTratamento.Should().Be(FatoCandidatoSeed.Itens.Single(i => i.Codigo == "MODALIDADE").FinalidadeTratamento);
     }
 

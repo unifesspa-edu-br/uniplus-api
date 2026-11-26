@@ -440,12 +440,12 @@ CLASSE_NOVA=SENSIVEL                           # diferente da semente nos dois i
 
 api admin GET "/api/configuracao/tipos-documento/$TD_ID"
 api admin PUT "/api/configuracao/admin/tipos-documento/$TD_ID" "$(corpo -c --arg c "$CLASSE_NOVA" '{id, codigo, nome, categoria, descricao,
-  formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao: $c, finalidadeTratamento, hipoteseLegal}')"
+  formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao: $c, finalidadeTratamento, hipoteseLegal: .hipoteseLegal.codigo}')"
 espera 204 "" "6.5 admin muda a classificação do tipo de documento da semente"
 api admin GET "/api/configuracao/admin/fatos-candidato/$FATO_ID"
 api admin PUT "/api/configuracao/admin/fatos-candidato/$FATO_ID/definicao" "$(corpo -c --arg c "$CLASSE_NOVA" '.fato.definicao | {pontoResolucao: .resolucao.pontoResolucao,
-  classificacaoProtecao: $c, finalidadeTratamento: .protecao.finalidade, hipoteseLegal: .protecao.hipoteseLegal,
-  dominio, cardinalidade, fonteValores: .valores.fonte, formato, escopo}')"
+  classificacaoProtecao: $c, finalidadeTratamento: .protecao.finalidade, hipoteseLegal: .protecao.hipoteseLegal.codigo,
+  dominio: .dominio.codigo, cardinalidade: .cardinalidade.codigo, fonteValores: .valores.fonte.codigo, formato: .formato.codigo, escopo: .escopo.codigo}')"
 espera 204 "" "6.5 admin muda a classificação do fato da semente"
 api admin POST /api/configuracao/admin/protecao-do-catalogo/solicitacoes \
   "$(jq -nc --arg td "$TD_ID" --arg f "$FATO_ID" '{itens: [{cadastro: "TIPO_DOCUMENTO", id: $td}, {cadastro: "DADO_DO_CANDIDATO", id: $f}]}')"
@@ -454,7 +454,7 @@ espera 200 "" "6.5 solicitação à proteção de dados"
 decidir_item() {   # a decisão repete a proteção vigente, o ciclo e as manifestações lidas
   api betina.neves GET "/api/configuracao/admin/protecao-do-catalogo/$1/$2" >/dev/null
   api betina.neves POST /api/configuracao/admin/protecao-do-catalogo "$(corpo -c --arg cad "$3" '{cadastro: $cad, itemId: .id,
-    decisao: "APROVACAO", classificacaoProtecao, hipoteseLegal, finalidadeTratamento, ciclo: .aprovacao.ciclo,
+    decisao: "APROVACAO", classificacaoProtecao: .classificacaoProtecao.codigo, hipoteseLegal: .hipoteseLegal.codigo, finalidadeTratamento, ciclo: .aprovacao.ciclo,
     manifestacoesNoCiclo: .aprovacao.manifestacoesNoCiclo, justificativa: "Classificação revista na validação local."}')"
 }
 decidir_item tipos-documento "$TD_ID" TIPO_DOCUMENTO; espera 204 "" "6.5 Representante aprova o tipo de documento"

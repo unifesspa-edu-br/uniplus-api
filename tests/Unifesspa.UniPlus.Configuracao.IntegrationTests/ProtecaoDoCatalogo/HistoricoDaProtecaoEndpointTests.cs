@@ -67,9 +67,9 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         List<JsonElement> atos = [.. (await resposta.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
         atos.Select(a => (a.GetProperty("ato").GetString(), a.GetProperty("atorNome").GetString()))
             .Should().Equal(("SOLICITACAO", Isabella.Nome), ("AJUSTE_RECOMENDADO", Caroline.Nome), ("ACEITE", Isabella.Nome));
-        atos[0].GetProperty("classificacaoProtecao").GetString().Should().Be("INTERNO");
-        (atos[1].GetProperty("classificacaoRecomendada").GetString(), atos[1].GetProperty("justificativa").GetString()).Should().Be(("SENSIVEL", "Traz dado de saúde."));
-        atos[2].GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL", "o aceite grava a classificação que passou a valer");
+        atos[0].GetProperty("classificacaoProtecao").GetProperty("codigo").GetString().Should().Be("INTERNO");
+        (atos[1].GetProperty("classificacaoRecomendada").GetProperty("codigo").GetString(), atos[1].GetProperty("justificativa").GetString()).Should().Be(("SENSIVEL", "Traz dado de saúde."));
+        atos[2].GetProperty("classificacaoProtecao").GetProperty("codigo").GetString().Should().Be("SENSIVEL", "o aceite grava a classificação que passou a valer");
         atos[2].GetProperty("classificacaoRecomendada").ValueKind.Should().Be(JsonValueKind.Null);
     }
 

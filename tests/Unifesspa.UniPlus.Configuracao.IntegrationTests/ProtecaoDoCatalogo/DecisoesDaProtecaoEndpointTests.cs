@@ -68,7 +68,7 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         JsonElement ajuste = (await ListarDecisoesAsync(client, Betina, $"busca={marca}")).Single(d => d.GetProperty("itemId").GetGuid() == ajustado);
 
         (ajuste.GetProperty("cadastro").GetString(), ajuste.GetProperty("ato").GetString()).Should().Be(("TIPO_DOCUMENTO", "AJUSTE_RECOMENDADO"));
-        (ajuste.GetProperty("classificacaoRecomendada").GetString(), ajuste.GetProperty("atorNome").GetString()).Should().Be(("SENSIVEL", Caroline.Nome));
+        (ajuste.GetProperty("classificacaoRecomendada").GetProperty("codigo").GetString(), ajuste.GetProperty("atorNome").GetString()).Should().Be(("SENSIVEL", Caroline.Nome));
         ajuste.EnumerateObject().Select(p => p.Name).Should().NotContain(["contaId", "atorContaId", "emissor", "atorEmissor"]);
     }
 

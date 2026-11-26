@@ -42,7 +42,7 @@ internal static class CongelamentoDosFatosDerivados
         return (daVersaoVigente ?? new Dictionary<string, FatoDerivadoCongelado>()).ToDictionary(
             static par => par.Key,
             par => vivos.TryGetValue(par.Key, out FatoCandidatoView? vivo)
-                ? par.Value with { Descricao = vivo.Descricao, ComponenteExibicao = vivo.ComponenteExibicao }
+                ? par.Value with { Descricao = vivo.Descricao, ComponenteExibicao = vivo.ComponenteExibicao?.Codigo }
                 : par.Value,
             StringComparer.Ordinal);
     }
@@ -52,6 +52,6 @@ internal static class CongelamentoDosFatosDerivados
     // a proteção aprovada.
     private static FatoDerivadoCongelado Congelar(FatoCandidatoView fato) =>
         new(
-            fato.Codigo, fato.Nome, fato.Descricao, fato.ComponenteExibicao, fato.DominioValor, fato.CardinalidadeValor,
-            fato.ClassificacaoProtecao, fato.HipoteseLegal, fato.FinalidadeTratamento);
+            fato.Codigo, fato.Nome, fato.Descricao, fato.ComponenteExibicao?.Codigo, fato.DominioValor, fato.CardinalidadeValor,
+            fato.ClassificacaoProtecao.Codigo, fato.HipoteseLegal.Codigo, fato.FinalidadeTratamento);
 }

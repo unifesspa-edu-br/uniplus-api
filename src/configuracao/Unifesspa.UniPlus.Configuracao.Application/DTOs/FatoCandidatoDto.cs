@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -20,7 +21,7 @@ public sealed record FatoDeManutencaoDto(
 /// <summary>
 /// Representação de manutenção de um fato do catálogo (ADR-0136): o descritivo, a definição — os eixos, os
 /// valores de domínio, a resolução e a proteção de dados, com o circuito de aprovação —, as regras padrão do
-/// derivado por regra e o estado. Os enums saem como token canônico UPPER_SNAKE.
+/// derivado por regra e o estado. Os eixos são apresentados com código e rótulo.
 /// </summary>
 /// <param name="Id">Identificador do fato.</param>
 /// <param name="Codigo">Código do fato, chave natural; imutável.</param>
@@ -40,11 +41,11 @@ public sealed record FatoCandidatoDto(
     bool SemeadoPeloSistema,
     bool Ativo);
 
-/// <summary>Como o fato se apresenta; tem a forma do corpo de <c>PUT admin/fatos-candidato/{id}</c>.</summary>
+/// <summary>Como o fato se apresenta. No PUT, envie <c>componenteExibicao.codigo</c> como texto em <c>componenteExibicao</c>.</summary>
 /// <param name="Nome">Rótulo legível do fato.</param>
 /// <param name="Descricao">O que o dado significa, para quem analisa a inscrição.</param>
-/// <param name="ComponenteExibicao">Token canônico do componente de exibição, quando o fato declara um.</param>
-public sealed record DescritivoDoFatoDto(string Nome, string Descricao, string? ComponenteExibicao);
+/// <param name="ComponenteExibicao">Componente de exibição, com código e rótulo, quando o fato declara um.</param>
+public sealed record DescritivoDoFatoDto(string Nome, string Descricao, CodigoComRotulo<ComponenteDeExibicao>? ComponenteExibicao);
 
 /// <summary>
 /// O que o fato é. Os campos que o administrador altera têm a forma do corpo de <c>PUT admin/fatos-candidato/{id}/definicao</c>:
@@ -52,20 +53,20 @@ public sealed record DescritivoDoFatoDto(string Nome, string Descricao, string? 
 /// <c>fonteValores</c>; <c>Resolucao.PontoResolucao</c> é <c>pontoResolucao</c>; <c>Protecao.Classificacao</c>,
 /// <c>Protecao.Finalidade</c> e <c>Protecao.HipoteseLegal</c> são <c>classificacaoProtecao</c>,
 /// <c>finalidadeTratamento</c> e <c>hipoteseLegal</c>. A origem e o vínculo não mudam, e os valores declarados e a
-/// aprovação da proteção têm operações próprias.
+/// aprovação da proteção têm operações próprias. No PUT, envie o <c>codigo</c> de cada campo com código e rótulo como texto no campo correspondente.
 /// </summary>
 /// <param name="Dominio">O tipo do dado, com código e rótulo.</param>
 /// <param name="Cardinalidade">Se o fato recebe um valor ou vários, com código e rótulo.</param>
-/// <param name="Escopo">Token canônico: de quem é o fato.</param>
-/// <param name="Formato">Token canônico do formato do fato de texto.</param>
+/// <param name="Escopo">De quem é o fato, com código e rótulo.</param>
+/// <param name="Formato">Formato do fato de texto, com código e rótulo.</param>
 /// <param name="Valores">De onde vêm os valores do categórico e os que o catálogo declara.</param>
 /// <param name="Resolucao">De onde o valor do fato vem e quando fica conhecido.</param>
 /// <param name="Protecao">A proteção de dados do fato.</param>
 public sealed record DefinicaoDoFatoDto(
     CodigoComRotulo<TipoDoDado> Dominio,
     CodigoComRotulo<QuantidadeDeValores> Cardinalidade,
-    string Escopo,
-    string? Formato,
+    CodigoComRotulo<EscopoFato> Escopo,
+    CodigoComRotulo<FormatoTexto>? Formato,
     ValoresDoFatoDto Valores,
     ResolucaoDoFatoDto Resolucao,
     ProtecaoDoFatoDto Protecao);
@@ -82,14 +83,14 @@ public sealed record ValoresDoFatoDto(CodigoComRotulo<FonteValoresFato>? Fonte, 
 public sealed record ResolucaoDoFatoDto(CodigoComRotulo<OrigemFato> Origem, string PontoResolucao, string Binding);
 
 /// <summary>A proteção de dados do fato e o circuito que a aprova.</summary>
-/// <param name="Classificacao">Token canônico da classificação de proteção.</param>
+/// <param name="Classificacao">Classificação de proteção, com código e rótulo.</param>
 /// <param name="Finalidade">Para que o dado é tratado.</param>
-/// <param name="HipoteseLegal">Token canônico da hipótese legal de tratamento.</param>
+/// <param name="HipoteseLegal">Hipótese legal de tratamento, com código e rótulo.</param>
 /// <param name="Aprovacao">O circuito de aprovação da proteção de dados.</param>
 public sealed record ProtecaoDoFatoDto(
-    string Classificacao,
+    CodigoComRotulo<ClassificacaoDeProtecao> Classificacao,
     string Finalidade,
-    string HipoteseLegal,
+    CodigoComRotulo<HipoteseLegalTratamento> HipoteseLegal,
     AprovacaoDaProtecaoDto Aprovacao);
 
 /// <summary>Um valor de domínio de um fato de fonte global.</summary>

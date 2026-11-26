@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -26,12 +27,12 @@ public sealed class CongelamentoDosFatosDerivadosTests
             Codigo = codigo,
             Nome = $"Nome de {codigo}",
             Descricao = $"Descrição de {codigo}.",
-            ComponenteExibicao = "SITUACAO",
+            ComponenteExibicao = CodigoComRotulo<ComponenteDeExibicao>.De(CatalogoDe<ComponenteDeExibicao>.Obter("SITUACAO")),
             Origem = CodigoComRotulo<OrigemFato>.De(OrigemFato.Calculado),
             Dominio = CodigoComRotulo<TipoDoDado>.De(TipoDoDado.Opcao),
             Cardinalidade = CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.VariosValores),
-            ClassificacaoProtecao = classificacao,
-            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+            ClassificacaoProtecao = CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter(classificacao)),
+            HipoteseLegal = CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter("CUMPRIMENTO_OBRIGACAO_LEGAL")),
             FinalidadeTratamento = "Finalidade do catálogo.",
         };
 
@@ -58,7 +59,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
         };
 
         IReadOnlyDictionary<string, FatoDerivadoCongelado> congelados = CongelamentoDosFatosDerivados.Resolver(
-            [Derivado("MODALIDADE", "SENSIVEL") with { Descricao = "Descrição corrigida.", ComponenteExibicao = "MOEDA" }], daVersao);
+            [Derivado("MODALIDADE", "SENSIVEL") with { Descricao = "Descrição corrigida.", ComponenteExibicao = CodigoComRotulo<ComponenteDeExibicao>.De(CatalogoDe<ComponenteDeExibicao>.Obter("MOEDA")) }], daVersao);
 
         congelados["MODALIDADE"].Descricao.Should().Be("Descrição corrigida.");
         congelados["MODALIDADE"].ComponenteExibicao.Should().Be("MOEDA");
@@ -75,7 +76,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
         publicada.Should().BeEmpty();
 
         // A proteção de dados recomendou Sensível, o administrador aceitou, e a retificação passa a usar o fato.
-        FatoCandidatoView aprovado = pendente with { ClassificacaoProtecao = "SENSIVEL", ProtecaoAprovada = true };
+        FatoCandidatoView aprovado = pendente with { ClassificacaoProtecao = CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("SENSIVEL")), ProtecaoAprovada = true };
         IReadOnlyDictionary<string, FatoDerivadoCongelado> retificada = CongelamentoDosFatosDerivados.Resolver([aprovado], publicada);
 
         retificada["RENDA_PER_CAPITA"].ClassificacaoProtecao.Should().Be("SENSIVEL");

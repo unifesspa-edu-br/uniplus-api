@@ -59,9 +59,9 @@ internal static class TiposDocumentoCenario
         root.GetProperty("nome").GetString().Should().Be("Laudo médico");
         root.GetProperty("categoria").GetString().Should().Be("SAUDE");
         root.GetProperty("tamanhoMaximoMb").GetInt32().Should().Be(10);
-        root.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        root.GetProperty("classificacaoProtecao").GetProperty("codigo").GetString().Should().Be("SENSIVEL");
         root.GetProperty("finalidadeTratamento").GetString().Should().Be("Comprovação do atendimento especializado.");
-        root.GetProperty("hipoteseLegal").GetString().Should().Be("TUTELA_DA_SAUDE");
+        root.GetProperty("hipoteseLegal").GetProperty("codigo").GetString().Should().Be("TUTELA_DA_SAUDE");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
