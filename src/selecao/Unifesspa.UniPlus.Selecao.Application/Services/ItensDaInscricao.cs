@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -18,8 +19,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// O identificador mantém a classificação própria e carrega só o valor mascarado: a fonte sem a transformação nunca sai.
-/// O valor sai pelo par do identificador. A resposta ausente ou vazia
-/// não gera item. A classificação que não se resolve vale como sensível.
+/// O valor sai pelo par do identificador. Para identificadores, a resposta ausente ou vazia não gera item; nos demais
+/// fatos, o item sai com o valor respondido na forma do tipo. A classificação que não se resolve vale como sensível.
 /// </remarks>
 internal static class ItensDaInscricao
 {
@@ -132,16 +133,20 @@ internal static class ItensDaInscricao
                     s.Codigo,
                     s.Titulo,
                     Visiveis(s.Itens, decisoes),
-                    [.. s.Grupos
-                        .Select(g => new GrupoDaInscricaoDto(
-                            g.Codigo, g.Rotulo,
-                            [.. g.Ocorrencias
-                                .Select(o => new OcorrenciaDaInscricaoDto(o.Id, Visiveis(o.Itens, decisoes)))
-                                .Where(static o => o.Itens.Count > 0)]))
-                        .Where(static g => g.Ocorrencias.Count > 0)]))
+                    GruposVisiveis(s.Grupos, decisoes)))
                 .Where(static s => s.Itens.Count > 0 || s.Grupos.Count > 0),
         ];
     }
+
+    private static IReadOnlyList<GrupoDaInscricaoDto> GruposVisiveis(IEnumerable<GrupoDaInscricaoDto> grupos, IPermissoesDaProjecao decisoes) =>
+    [
+        .. grupos.Select(g => new GrupoDaInscricaoDto(
+            g.Codigo, g.Rotulo,
+            [.. g.Ocorrencias
+                .Select(o => new OcorrenciaDaInscricaoDto(o.Id, Visiveis(o.Itens, decisoes)))
+                .Where(static o => o.Itens.Count > 0)]))
+            .Where(static g => g.Ocorrencias.Count > 0),
+    ];
 
     /// <summary>Os itens que a decisão deixa aparecer.</summary>
     public static IReadOnlyList<ItemDeRespostaDto> Visiveis(IEnumerable<ItemDeRespostaDto> itens, IPermissoesDaProjecao decisoes)
@@ -152,29 +157,24 @@ internal static class ItensDaInscricao
         return [.. itens.Where(decisoes.ItemSai)];
     }
 
-    /// <remarks>
-    /// O CPF sai sempre mascarado, qualquer que seja a classificação congelada: o completo só sai pela revelação. Assim,
-    /// reclassificar o CPF não abre o valor a quem consulta os dados da classe.
-    /// </remarks>
-    private static ItemDeRespostaDto? Item(FatoDoProcesso fato, JsonElement bruto, bool podeRevelar)
-    {
-        bool identificador = fato.Classificacao == ClassificacaoDeProtecao.Identificador;
-        if (identificador && !Respondido(bruto))
-        {
-            return null;
-        }
-
-        return new ItemDeRespostaDto(fato.Classificacao, fato.BaseLegal)
+    private static ItemDeRespostaDto? Item(FatoDoProcesso fato, JsonElement bruto, bool podeRevelar) =>
+        fato.EhIdentificador && !Respondido(bruto) ? null : new ItemDeRespostaDto(fato.Classificacao, fato.BaseLegal)
         {
             FatoCodigo = fato.Codigo,
             Rotulo = fato.Rotulo,
             Descricao = fato.Descricao,
-            Tipo = fato.Tipo,
-            Componente = fato.Componente,
-            Valor = identificador || (fato.EhCpf && Respondido(bruto)) ? Mascarado(bruto, fato.EhCpf) : Valor(fato, bruto),
-            PodeRevelar = identificador && podeRevelar,
+            Tipo = CodigoComRotulo<FormaDoValorDoItem>.De(fato.Forma),
+            Componente = CodigoComRotulo<ExibicaoDoValorDoItem>.De(fato.Exibicao),
+            Valor = ValorQueSai(fato, bruto),
+            PodeRevelar = fato.EhIdentificador && podeRevelar,
         };
-    }
+
+    /// <remarks>
+    /// O CPF sai sempre mascarado, qualquer que seja a classificação congelada: o completo só sai pela revelação. Assim,
+    /// reclassificar o CPF não abre o valor a quem consulta os dados da classe.
+    /// </remarks>
+    private static JsonElement ValorQueSai(FatoDoProcesso fato, JsonElement bruto) =>
+        fato.EhIdentificador || (fato.EhCpf && Respondido(bruto)) ? Mascarado(bruto, fato.EhCpf) : ValorNaFormaDoTipo(fato, bruto);
 
     private static bool Respondido(JsonElement bruto) => bruto.ValueKind switch
     {
@@ -191,14 +191,14 @@ internal static class ItensDaInscricao
         return JsonSerializer.SerializeToElement(mascara);
     }
 
-    private static JsonElement Valor(FatoDoProcesso fato, JsonElement bruto) => fato.Tipo switch
+    private static JsonElement ValorNaFormaDoTipo(FatoDoProcesso fato, JsonElement bruto) => fato.Forma switch
     {
-        TiposDeItem.Numero => bruto.ValueKind == JsonValueKind.Number ? JsonSerializer.SerializeToElement(bruto.GetRawText()) : bruto,
-        TiposDeItem.Opcao => bruto.ValueKind == JsonValueKind.String ? Opcao(fato, bruto.GetString()!) : bruto,
-        TiposDeItem.Opcoes => bruto.ValueKind == JsonValueKind.Array
+        FormaDoValorDoItem.Numero => bruto.ValueKind == JsonValueKind.Number ? JsonSerializer.SerializeToElement(bruto.GetRawText()) : bruto,
+        FormaDoValorDoItem.Opcao => bruto.ValueKind == JsonValueKind.String ? Opcao(fato, bruto.GetString()!) : bruto,
+        FormaDoValorDoItem.Opcoes => bruto.ValueKind == JsonValueKind.Array
             ? JsonSerializer.SerializeToElement(bruto.EnumerateArray().Where(static v => v.ValueKind == JsonValueKind.String).Select(v => Opcao(fato, v.GetString()!)))
             : bruto,
-        TiposDeItem.Endereco => EnderecoDeclarado.TentarLer(bruto, out EnderecoDeclarado endereco) ? Endereco(endereco) : bruto,
+        FormaDoValorDoItem.Endereco => EnderecoDeclarado.TentarLer(bruto, out EnderecoDeclarado endereco) ? Endereco(endereco) : bruto,
         _ => bruto,
     };
 

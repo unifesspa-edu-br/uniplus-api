@@ -34,13 +34,13 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
         ItemDeRespostaDto item = ItensDe(dto).Single();
         item.Rotulo.Should().Be("Rótulo de NOME");
         item.Descricao.Should().Be("Nome civil do candidato");
-        item.Tipo.Should().Be(TiposDeItem.Texto);
-        item.Componente.Should().Be(ComponentesDeItem.Padrao);
+        item.Tipo.Codigo.Should().Be("TEXTO");
+        item.Componente.Codigo.Should().Be("PADRAO");
         JsonSerializer.Serialize(dto).Should().NotContain("Digite o nome");
     }
 
-    [Fact(DisplayName = "O componente declarado no cadastro e congelado vale sobre o formato e a classificação, em minúsculas")]
-    public async Task Componente_DeclaradoValeSobreOResto()
+    [Fact(DisplayName = "O componente declarado no cadastro e congelado sai pelo código do contrato")]
+    public async Task Componente_Declarado_SaiPeloCodigo()
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
             .Fato("RENDA_FAMILIAR_PER_CAPITA", "PESSOAL", TipoDeCampo.Numero, JsonSerializer.SerializeToElement(1234.56m), new MetadadosDoFatoDeTeste
@@ -51,8 +51,8 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
         ItemDeRespostaDto renda = ItensDe(dto).Single();
-        renda.Componente.Should().Be("moeda");
-        renda.Tipo.Should().Be(TiposDeItem.Numero);
+        renda.Componente.Codigo.Should().Be("MOEDA");
+        renda.Tipo.Codigo.Should().Be("NUMERO");
         renda.Valor!.Value.GetString().Should().Be("1234.56", "o número sai como texto decimal exato");
     }
 
@@ -65,7 +65,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
         InscricaoAdministrativaDto dto = await ConsultarDto(cenario, ComDadosPessoais());
 
         ItemDeRespostaDto item = ItensDe(dto).Single();
-        item.Tipo.Should().Be(TiposDeItem.Opcao);
+        item.Tipo.Codigo.Should().Be("OPCAO");
         item.Valor!.Value.GetProperty("codigo").GetString().Should().Be("PARDA");
     }
 
@@ -111,7 +111,7 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
 
         ItemDeRespostaDto modalidade = dto.Derivados.Should().ContainSingle().Subject;
         modalidade.Rotulo.Should().Be("Modalidade de concorrência");
-        modalidade.Tipo.Should().Be(TiposDeItem.Opcao);
+        modalidade.Tipo.Codigo.Should().Be("OPCAO");
     }
 
     [Fact(DisplayName = "A seção sai com o título que o formulário do processo congelou; a seção que a versão não tem sai sem título")]

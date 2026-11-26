@@ -3,6 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Services;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 
 /// <summary>Os fatos congelados respondem qual grupo abriga um identificador e qual proteção o nome tem.</summary>
@@ -60,6 +63,19 @@ public sealed class FatosDaVersaoTests
         Nomes().ClassificacaoDoNome().Should().Be(ClassificacaoDeProtecao.Sensivel);
     }
 
+    [Theory]
+    [InlineData("situacao")]
+    [InlineData(" SITUACAO")]
+    [InlineData("DESCONHECIDO")]
+    public void De_ComponenteCongeladoDesconhecido_LancaExcecao(string componente)
+    {
+        FatoDerivadoCongelado derivado = new("DADO", "Dado", "Descrição", componente, TipoDoDado.Texto,
+            QuantidadeDeValores.ValorUnico, "PESSOAL", "BASE", "Finalidade");
+        EnvelopeReidratado envelope = ComprovanteDeTeste.Envelope(derivados: new Dictionary<string, FatoDerivadoCongelado> { ["DADO"] = derivado });
+
+        FluentActions.Invoking(() => FatosDaVersao.De(envelope)).Should().Throw<ArgumentException>();
+    }
+
     private static FatosDaVersao Nomes(params (string Codigo, ClassificacaoDeProtecao Classificacao)[] nomes) => new(
         nomes.ToDictionary(static n => n.Codigo, static n => Fato(n.Codigo, n.Classificacao)),
         [],
@@ -70,6 +86,6 @@ public sealed class FatosDaVersaoTests
         new(codigo, codigo, null, 0, new Dictionary<string, FatoDoProcesso> { [membro.Codigo] = membro }, IncluiCandidato: false);
 
     private static FatoDoProcesso Fato(string codigo, ClassificacaoDeProtecao classificacao) => new(
-        codigo, codigo, codigo, TiposDeItem.Texto, ComponentesDeItem.Padrao, classificacao, null, null, 0,
+        codigo, codigo, codigo, FormaDoValorDoItem.Texto, null, classificacao, null, null, 0,
         new Dictionary<string, string>(), EhCpf: false);
 }
