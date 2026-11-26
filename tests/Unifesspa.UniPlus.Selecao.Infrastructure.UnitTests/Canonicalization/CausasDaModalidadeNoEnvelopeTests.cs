@@ -138,7 +138,7 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
         causa.Field.Should().Be("modalidades[0].acaoQuandoIndeferido");
         causa.Error.Should().Be(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
             "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro " +
-            "(RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
+            "(RETIRA_A_MODALIDADE) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
     }
 
     internal static JsonObject Modalidade() => JsonNode.Parse("""

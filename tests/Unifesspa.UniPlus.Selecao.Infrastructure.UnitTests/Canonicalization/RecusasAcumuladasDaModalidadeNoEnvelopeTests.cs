@@ -12,7 +12,7 @@ public sealed class RecusasAcumuladasDaModalidadeNoEnvelopeTests
 {
     private const string Envelope = ErrosCodecEnvelope.EnvelopeMalformado;
     private static readonly DomainError Codigo = new(Envelope, "Envelope malformado em 'modalidades': o código não tem o formato do cadastro (A-Z, 0-9 e underscore) — e códigos são chave de composição e de remanejamento dentro da oferta.");
-    private static readonly DomainError Acao = new(Envelope, "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro (RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar.");
+    private static readonly DomainError Acao = new(Envelope, "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro (RETIRA_A_MODALIDADE) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar.");
     private static readonly DomainError Remanejamento = new(Envelope, "Envelope malformado em 'modalidades': a regra de remanejamento não é a que a natureza da modalidade pede.");
     private static readonly DomainError Regra = new("CondicaoDnf.FormaIncoerenteComOperador", "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco.");
     private static readonly DomainError Origem = new("ModalidadeSelecionada.ComposicaoOrigemIndevida", "A modalidade só declara código de origem quando a composição de vagas é RETIRADA_DE_OUTRA_MODALIDADE.");

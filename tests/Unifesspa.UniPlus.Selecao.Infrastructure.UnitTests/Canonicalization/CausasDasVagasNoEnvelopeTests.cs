@@ -93,7 +93,7 @@ public sealed class CausasDasVagasNoEnvelopeTests
         LeituraDasVagas.LerDistribuicao(leitor, documento);
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
-        ConferirCausaNoDocumento.Conferir(documento, causas[0], "modalidades[0].acaoQuandoIndeferido", "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro (RECLASSIFICA_AC, RECLASSIFICA_CONFORME_EDITAL) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[0], "modalidades[0].acaoQuandoIndeferido", "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'modalidades': a ação ao indeferir não pertence ao domínio fechado do cadastro (RETIRA_A_MODALIDADE) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar.");
         ConferirCausaNoDocumento.Conferir(documento, causas[1], "modalidades[0]", "EnvelopeCodec.EnvelopeMalformado", "Envelope malformado em 'modalidades': a regra de remanejamento não é a que a natureza da modalidade pede.");
     }
 
