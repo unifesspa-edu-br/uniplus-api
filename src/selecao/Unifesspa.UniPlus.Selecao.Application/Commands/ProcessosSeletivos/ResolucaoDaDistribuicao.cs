@@ -12,6 +12,7 @@ using Services;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 
 /// <summary>
 /// A resolução de uma distribuição de vagas pedida (ids e códigos crus do payload) contra os cadastros vivos
@@ -29,7 +30,7 @@ internal sealed class ResolucaoDaDistribuicao(
     IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader)
 {
     private OfertaCursoView? _oferta;
-    private OfertaCursoSnapshot? _nomeDaOferta;
+    private CopiaDaOfertaDeCurso? _nomeDaOferta;
     private RegraCatalogo? _regra;
     private ReferenciaRegra? _regraDeAjuste;
     private ReferenciaReservaDemograficaSnapshot? _demografica;
@@ -92,7 +93,7 @@ internal sealed class ResolucaoDaDistribuicao(
             return RecusasDaResolucaoDeVagas.OfertaNaoEncontrada(pedido.OfertaCursoId);
         }
 
-        Result<OfertaCursoSnapshot> nome = OfertaCursoSnapshot.Criar(
+        Result<CopiaDaOfertaDeCurso> nome = CopiaDaOfertaDeCurso.Criar(
             oferta.Codigo, oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
         _oferta = oferta;
         _nomeDaOferta = nome.Value;

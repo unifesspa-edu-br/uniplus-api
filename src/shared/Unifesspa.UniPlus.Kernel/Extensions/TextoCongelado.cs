@@ -1,10 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-
-using Unifesspa.UniPlus.Kernel.Extensions;
+namespace Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>
 /// Texto que entra numa cópia congelada do processo: aparado e em NFC, a forma com que o
-/// envelope canônico o grava (<see cref="HashCanonicalComputer.NormalizeNfc"/>). Sem a
+/// envelope canônico o grava. Sem a
 /// normalização na fronteira do congelamento, o mesmo texto em forma decomposta vira outro valor
 /// depois de um ciclo de retificação. O texto também tem de caber na coluna que o recebe, sem o
 /// caractere nulo, que o Postgres recusa com erro de banco.
@@ -14,7 +12,7 @@ public static class TextoCongelado
     private const char CaractereNulo = (char)0;
 
     /// <summary>Teto de um texto congelado que volta numa mensagem de recusa (<see cref="CaracteresInvisiveis.ParaEco"/>).</summary>
-    internal const int TamanhoMaximoEcoado = 40;
+    public const int TamanhoMaximoEcoado = 40;
 
     /// <summary>
     /// O texto aparado e em NFC, ou <see langword="null"/> quando ele não pode ser normalizado —
@@ -50,7 +48,7 @@ public static class TextoCongelado
         return texto.Contains(CaractereNulo);
     }
 
-    /// <summary>O texto cabe na coluna de <paramref name="maxLength"/> caracteres e não traz o caractere nulo.</summary>
-    public static bool CabeNaColuna(string texto, int maxLength) =>
-        !ContemCaractereNulo(texto) && texto.Length <= maxLength;
+    /// <summary>O texto cabe na coluna de <paramref name="tamanhoMaximo"/> caracteres e não traz o caractere nulo.</summary>
+    public static bool CabeNaColuna(string texto, int tamanhoMaximo) =>
+        !ContemCaractereNulo(texto) && texto.Length <= tamanhoMaximo;
 }

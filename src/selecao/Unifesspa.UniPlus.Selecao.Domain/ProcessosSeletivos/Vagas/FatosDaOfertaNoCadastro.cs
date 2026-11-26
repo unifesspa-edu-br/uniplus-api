@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -23,5 +24,5 @@ public sealed record FatosDaOfertaNoCadastro
     public (string? Codigo, string? Rotulo)? GrupoAreaEnem { get; init; }
 
     /// <summary>O que nomeia a oferta para o candidato, como o cadastro o entrega.</summary>
-    public OfertaCursoSnapshot? OfertaCurso { get; init; }
+    public CopiaDaOfertaDeCurso? OfertaCurso { get; init; }
 }

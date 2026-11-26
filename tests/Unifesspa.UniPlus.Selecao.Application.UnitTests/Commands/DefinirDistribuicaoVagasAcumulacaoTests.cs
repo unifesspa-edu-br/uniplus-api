@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -112,7 +113,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         (Guid oferta, Guid modalidade) = (Guid.CreateVersion7(), Guid.CreateVersion7());
         Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicao(Institucional));
         mocks.OfertaCursoReader.ObterPorIdAsync(oferta, Arg.Any<CancellationToken>())
-            .Returns(NovaOferta(oferta) with { Codigo = new string('X', OfertaCursoSnapshot.CodigoMaxLength + 1) });
+            .Returns(NovaOferta(oferta) with { Codigo = new string('X', CopiaDaOfertaDeCurso.TamanhoMaximoDoCodigo + 1) });
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(

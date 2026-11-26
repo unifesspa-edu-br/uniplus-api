@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -18,7 +19,7 @@ public sealed class CausasDasOfertasNoEnvelopeTests
         LeitorEnvelope leitor = new();
         LeituraDasOfertas.LerOfertas(leitor, documento);
         FieldError causa = leitor.Falha<object>().Errors.Single();
-        DomainError erro = OfertaCursoSnapshot.Criar(valor, "Curso", "Grau", "Unidade", ["MATUTINO"]).Error!;
+        DomainError erro = CopiaDaOfertaDeCurso.Criar(valor, "Curso", "Grau", "Unidade", ["MATUTINO"]).Error!;
         ConferirCausaNoDocumento.Conferir(documento, causa, "ofertas[0]", erro.Code, erro.Message);
         causa.Field.Should().NotContain(valor);
         causa.Error.Message.Should().NotContain(valor);

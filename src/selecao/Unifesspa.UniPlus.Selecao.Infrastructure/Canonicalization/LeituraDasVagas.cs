@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -35,7 +36,7 @@ internal static class LeituraDasVagas
         JsonArray distribuicao = leitor.Array(payload, "distribuicao", "$");
         JsonArray modalidades = leitor.Array(payload, "modalidades", "$");
         JsonArray vagas = leitor.Array(payload, "vagas", "$");
-        List<(Guid Id, OfertaCursoSnapshot Oferta)> ofertas = LeituraDasOfertas.LerOfertas(leitor, payload);
+        List<(Guid Id, CopiaDaOfertaDeCurso Oferta)> ofertas = LeituraDasOfertas.LerOfertas(leitor, payload);
         List<Guid> ofertasEmVagas = LeituraDoQuadroDeVagas.LerOfertas(leitor, vagas);
 
         return new BlocosDaDistribuicao(
@@ -105,7 +106,7 @@ internal static class LeituraDasVagas
     }
 
     private readonly record struct BlocosDaDistribuicao(
-        List<(Guid Id, OfertaCursoSnapshot Oferta)> Ofertas,
+        List<(Guid Id, CopiaDaOfertaDeCurso Oferta)> Ofertas,
         List<InsumoDaDistribuicao> Insumos,
         ModalidadesPorOferta Modalidades,
         JsonArray Vagas,

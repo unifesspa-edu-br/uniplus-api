@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.OfertasDeCurso;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -67,7 +68,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     /// O que nomeia a oferta para o candidato, copiado por valor do cadastro na definição (ADR-0061); nulo só
     /// em distribuição definida antes de a oferta ser nomeada aqui, e a publicação a recusa.
     /// </summary>
-    public OfertaCursoSnapshot? OfertaCurso { get; private set; }
+    public CopiaDaOfertaDeCurso? OfertaCurso { get; private set; }
 
     /// <summary>A reserva que o percentual da lei dá sobre as vagas ofertadas base; só na Lei de Cotas.</summary>
     public int? ReservaLegalNominal { get; private set; }
