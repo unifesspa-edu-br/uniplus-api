@@ -67,13 +67,16 @@ public static class AdministradorInstitucionalDeTeste
             }
         }
 
-        // O perfil comum só reúne as permissões não reservadas; as reservadas à governança de outro módulo chegam, como em
+        // Perfil não mistura permissão de unidade com institucional (alcance misto): o administrador institucional fica com as
+        // institucionais. O perfil comum só reúne as permissões não reservadas; as reservadas à governança de outro módulo chegam, como em
         // produção, pela concessão do perfil de Representante do controlador, o único que as reúne (ADR-0162).
         private static async Task ConcederAsync(IServiceProvider services)
         {
             DefinicaoDePermissao[] todas = [.. CatalogoDePermissoes<TPermissao>.Todas()];
+            DefinicaoDePermissao[] comuns = [.. todas.Where(static d => !d.ReservadaAGovernanca)];
+            bool alcanceMisto = comuns.Any(static d => d.DeUnidade) && comuns.Any(static d => !d.DeUnidade);
             await ConcessoesDeTeste.ConcederPermissoesAsync(
-                services, ContaIdDoAdministradorAnonimo, [.. todas.Where(static d => !d.ReservadaAGovernanca).Select(static d => d.Codigo)]);
+                services, ContaIdDoAdministradorAnonimo, [.. comuns.Where(d => !alcanceMisto || !d.DeUnidade).Select(static d => d.Codigo)]);
             if (todas.Any(static d => d.ReservadaAGovernanca))
             {
                 await ConcessoesDeTeste.ConcederGovernancaAsync(services, ContaIdDoAdministradorAnonimo, TipoDeGovernanca.RepresentanteDoControlador);

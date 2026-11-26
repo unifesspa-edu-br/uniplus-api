@@ -49,6 +49,22 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         }
     }
 
+    // A permissão de unidade só abre o cadastro com concessão numa unidade; os testes dela estão em ConsultaDosModelosPelaUnidadeEndpointTests.
+    public static TheoryData<PermissaoConfiguracao> PermissoesInstitucionais
+    {
+        get
+        {
+            TheoryData<PermissaoConfiguracao> dados = [];
+            foreach (PermissaoConfiguracao permissao in Enum.GetValues<PermissaoConfiguracao>()
+                .Where(static p => !CatalogoDePermissoes<PermissaoConfiguracao>.Obter(p).DeUnidade))
+            {
+                dados.Add(permissao);
+            }
+
+            return dados;
+        }
+    }
+
     public async Task InitializeAsync()
     {
         foreach (string contaId in new[] { Leandro, Diogo })
@@ -60,7 +76,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Theory(DisplayName = "A concessão da permissão abre o cadastro")]
-    [MemberData(nameof(Permissoes))]
+    [MemberData(nameof(PermissoesInstitucionais))]
     public async Task ComPermissao_Passa(PermissaoConfiguracao permissao)
     {
         Guid perfil = await ConcederAsync(permissao);

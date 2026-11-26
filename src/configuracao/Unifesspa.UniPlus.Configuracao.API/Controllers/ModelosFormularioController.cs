@@ -53,7 +53,10 @@ public sealed class ModelosFormularioController : ControllerBase
     /// </summary>
     [HttpGet("admin/modelos-formulario")]
     [EndpointName("ListarModelosDeFormulario")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ModelosFormularioConsultar,
+        OuEmAlgumaUnidade = PermissaoConfiguracao.ModelosFormularioConsultarNaUnidade,
+        ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ModeloFormularioDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -81,7 +84,10 @@ public sealed class ModelosFormularioController : ControllerBase
     /// <summary>O modelo, ativo ou desativado, com o conteúdo no formato da escrita.</summary>
     [HttpGet("admin/modelos-formulario/{id:guid}")]
     [EndpointName("ObterModeloDeFormulario")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ModelosFormularioConsultar,
+        OuEmAlgumaUnidade = PermissaoConfiguracao.ModelosFormularioConsultarNaUnidade,
+        ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(ModeloFormularioDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -100,7 +106,10 @@ public sealed class ModelosFormularioController : ControllerBase
     /// </summary>
     [HttpGet("admin/modelos-formulario/{id:guid}/apresentacao")]
     [EndpointName("ObterApresentacaoDoModeloDeFormulario")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ModelosFormularioConsultar,
+        OuEmAlgumaUnidade = PermissaoConfiguracao.ModelosFormularioConsultarNaUnidade,
+        ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
     [ProducesResponseType(typeof(FormularioApresentado), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -121,7 +130,10 @@ public sealed class ModelosFormularioController : ControllerBase
     /// </summary>
     [HttpPost("admin/avaliacoes-de-formulario")]
     [EndpointName("AvaliarFormularioSemCadastro")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ModelosFormularioConsultar,
+        OuEmAlgumaUnidade = PermissaoConfiguracao.ModelosFormularioConsultarNaUnidade,
+        ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "avaliacao-de-formulario", Versions = [1])]
     [ProducesResponseType(typeof(AvaliacaoPortavel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -142,7 +154,10 @@ public sealed class ModelosFormularioController : ControllerBase
     /// </summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
     [EndpointName("PreVisualizarModeloDeFormulario")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModelosFormularioConsultar, ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ModelosFormularioConsultar,
+        OuEmAlgumaUnidade = PermissaoConfiguracao.ModelosFormularioConsultarNaUnidade,
+        ResourceTipo = ResourceTiposConfiguracao.ModeloFormulario)]
     [VendorMediaType(Resource = "pre-visualizacao-modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(PreVisualizacaoDoModeloDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
