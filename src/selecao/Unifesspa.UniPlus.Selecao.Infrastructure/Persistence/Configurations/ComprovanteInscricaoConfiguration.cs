@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -72,7 +73,7 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasComment("HMAC do id do comprovante e das respostas sensíveis, que prende o envelope cifrado a este comprovante.");
 
         builder.Property(c => c.Derivados).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
-            .HasConversion(RespostasConverter, RespostasComparer)
+            .HasConversion(DerivadosConverter, RespostasComparer)
             .HasColumnType("jsonb")
             .IsRequired()
             .HasComment("O que o sistema derivou das respostas nesta submissão, como a UF a partir do endereço.");
@@ -117,7 +118,11 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
     private static readonly ValueConverter<IReadOnlyDictionary<string, JsonElement>, string> RespostasConverter =
         new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
-            json => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, OpcoesJson)!);
+            json => Ler<Dictionary<string, JsonElement>>(json, nameof(ComprovanteInscricao.Respostas)));
+
+    private static readonly ValueConverter<IReadOnlyDictionary<string, JsonElement>, string> DerivadosConverter =
+        new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
+            json => Ler<Dictionary<string, JsonElement>>(json, nameof(ComprovanteInscricao.Derivados)));
 
     private static readonly ValueComparer<IReadOnlyDictionary<string, JsonElement>> RespostasComparer =
         new(
@@ -127,7 +132,7 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
     private static readonly ValueConverter<IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>, string> GruposConverter =
         new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
-            json => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(json, OpcoesJson)!);
+            json => Ler<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(json, nameof(ComprovanteInscricao.Grupos)));
 
     private static readonly ValueComparer<IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> GruposComparer =
         new(
@@ -137,7 +142,9 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
     private static readonly ValueConverter<IReadOnlyList<ModalidadeDeConcorrencia>?, string?> ModalidadesConverter =
         new(valor => valor == null ? null : JsonSerializer.Serialize(valor, OpcoesJson),
-            json => json == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(json, OpcoesJson));
+            json => json == null ? null : ObjetoDeValorGravado.DesserializarDocumento(
+                () => JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(json, OpcoesJson),
+                nameof(ComprovanteInscricao.Modalidades)));
 
     private static readonly ValueComparer<IReadOnlyList<ModalidadeDeConcorrencia>?> ModalidadesComparer =
         new(
@@ -147,7 +154,7 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
     private static readonly ValueConverter<IReadOnlyList<AceiteDeTermo>, string> AceitesConverter =
         new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
-            json => JsonSerializer.Deserialize<List<AceiteDeTermo>>(json, OpcoesJson)!);
+            json => Ler<List<AceiteDeTermo>>(json, nameof(ComprovanteInscricao.Aceites)));
 
     private static readonly ValueComparer<IReadOnlyList<AceiteDeTermo>> AceitesComparer =
         new(
@@ -157,11 +164,17 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
     private static readonly ValueConverter<IReadOnlyList<DocumentoDoComprovante>, string> DocumentosConverter =
         new(valor => JsonSerializer.Serialize(valor, OpcoesJson),
-            json => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(json, OpcoesJson)!);
+            json => Ler<List<DocumentoDoComprovante>>(json, nameof(ComprovanteInscricao.Documentos)));
 
     private static readonly ValueComparer<IReadOnlyList<DocumentoDoComprovante>> DocumentosComparer =
         new(
             (a, b) => JsonSerializer.Serialize(a, OpcoesJson) == JsonSerializer.Serialize(b, OpcoesJson),
             v => JsonSerializer.Serialize(v, OpcoesJson).GetHashCode(StringComparison.Ordinal),
             v => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(JsonSerializer.Serialize(v, OpcoesJson), OpcoesJson)!);
+
+    private static T Ler<T>(string json, string nomeDoValor)
+        where T : class =>
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<T>(json, OpcoesJson) ?? throw new JsonException("documento nulo"),
+            nomeDoValor);
 }

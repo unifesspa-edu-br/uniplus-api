@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -39,13 +40,13 @@ internal static class QuadroDeVagasDaConfiguracao
 
     // O EF não chama o conversor para nulo: a coluna nula é a ausência da regra de ajuste do quadro e das retiradas.
     private static readonly ValueConverter<ParametrosRegraAjusteDistribuicao?, string?> ConversorDoAjuste =
-        new(ajuste => Serializar(ajuste!), json => Ler<ParametrosRegraAjusteDistribuicao>(json!));
+        new(ajuste => Serializar(ajuste!), json => Ler<ParametrosRegraAjusteDistribuicao>(json!, nameof(ConfiguracaoDistribuicaoVagas.AjusteDoQuadro)));
 
     private static readonly ValueComparer<ParametrosRegraAjusteDistribuicao?> ComparadorDoAjuste =
         new((a, b) => SerializarOuNulo(a) == SerializarOuNulo(b), a => SerializarOuNulo(a)!.GetHashCode(StringComparison.Ordinal), a => a);
 
     private static readonly ValueConverter<IReadOnlyList<VagasDaModalidade>?, string?> ConversorDasRetiradas =
-        new(retiradas => Serializar(retiradas!), json => Ler<IReadOnlyList<VagasDaModalidade>>(json!));
+        new(retiradas => Serializar(retiradas!), json => Ler<IReadOnlyList<VagasDaModalidade>>(json!, nameof(ConfiguracaoDistribuicaoVagas.VagasRetiradasNoAjuste)));
 
     private static readonly ValueComparer<IReadOnlyList<VagasDaModalidade>?> ComparadorDasRetiradas =
         new((a, b) => SerializarOuNulo(a) == SerializarOuNulo(b), a => SerializarOuNulo(a)!.GetHashCode(StringComparison.Ordinal), a => a);
@@ -94,5 +95,8 @@ internal static class QuadroDeVagasDaConfiguracao
 
     private static string? SerializarOuNulo<T>(T? valor) => valor is null ? null : Serializar(valor);
 
-    private static T Ler<T>(string json) => JsonSerializer.Deserialize<T>(json, OpcoesJson)!;
+    private static T Ler<T>(string json, string nomeDoValor) =>
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<T>(json, OpcoesJson) ?? throw new JsonException("documento nulo"),
+            nomeDoValor);
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
@@ -80,7 +81,9 @@ internal sealed class SensiveisDoComprovante
     }
 
     private static Dictionary<string, JsonElement> Ler(Guid comprovanteId, byte[] plano) =>
-        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano, OpcoesJson)
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano, OpcoesJson),
+            nameof(ComprovanteInscricao.RespostasSensiveis))
         ?? throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovanteId} decifradas não são um objeto JSON.");
 
     /// <summary>O HMAC do id do comprovante e dos valores sensíveis, exatamente como foram cifrados.</summary>

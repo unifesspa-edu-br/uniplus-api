@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.CodigosDeContrato;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -121,10 +122,18 @@ public sealed class RegraDeComprovacaoConfiguration : IEntityTypeConfiguration<R
         new(
             (a, b) => SerializeOcorrenciasEsperadas(a) == SerializeOcorrenciasEsperadas(b),
             v => v == null ? 0 : SerializeOcorrenciasEsperadas(v)!.GetHashCode(StringComparison.Ordinal),
-            v => DeserializeOcorrenciasEsperadas(SerializeOcorrenciasEsperadas(v)));
+            v => CopiarOcorrenciasEsperadas(v));
 
     private static string? SerializeOcorrenciasEsperadas(IReadOnlyList<string>? lista) =>
         lista is null ? null : JsonSerializer.Serialize(lista, OpcoesJson);
+
+    private static List<string>? CopiarOcorrenciasEsperadas(IReadOnlyList<string>? lista) =>
+        lista is null ? null : [.. lista];
+
     private static List<string>? DeserializeOcorrenciasEsperadas(string? json) =>
-        string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<string>>(json, OpcoesJson);
+        string.IsNullOrEmpty(json)
+            ? null
+            : ObjetoDeValorGravado.DesserializarDocumento(
+                () => JsonSerializer.Deserialize<List<string>>(json, OpcoesJson),
+                nameof(DistincaoDasApresentacoes.OcorrenciasEsperadas));
 }

@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -64,13 +65,16 @@ public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<Cond
     private const int OperadorCodigoMaxLength = 20;
 
     private static readonly ValueConverter<JsonElement, string> JsonElementConverter =
-        new(element => element.GetRawText(), json => Parse(json));
+        new(element => element.GetRawText(), json => Ler(json));
 
     private static readonly ValueComparer<JsonElement> JsonElementComparer =
         new(
             (a, b) => a.GetRawText() == b.GetRawText(),
             v => v.GetRawText().GetHashCode(StringComparison.Ordinal),
             v => Parse(v.GetRawText()));
+
+    private static JsonElement Ler(string json) =>
+        ObjetoDeValorGravado.DesserializarDocumento(() => Parse(json), nameof(CondicaoGatilho.Valor));
 
     private static JsonElement Parse(string json)
     {

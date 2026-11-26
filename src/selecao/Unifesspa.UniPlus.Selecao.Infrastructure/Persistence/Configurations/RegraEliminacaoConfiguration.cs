@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -59,7 +60,7 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
     private static readonly ValueConverter<ParametrosRegraEliminacao, string> ParametrosConverter =
         new(
             parametros => JsonSerializer.Serialize(parametros, JsonOptions),
-            json => JsonSerializer.Deserialize<ParametrosRegraEliminacao>(json, JsonOptions)!);
+            json => Deserialize(json));
 
     private static readonly ValueComparer<ParametrosRegraEliminacao> ParametrosComparer =
         new(
@@ -71,5 +72,7 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
 
     private static ParametrosRegraEliminacao Deserialize(string json) =>
-        JsonSerializer.Deserialize<ParametrosRegraEliminacao>(json, JsonOptions)!;
+        ObjetoDeValorGravado.DesserializarDocumento(
+            () => JsonSerializer.Deserialize<ParametrosRegraEliminacao>(json, JsonOptions) ?? throw new JsonException("documento nulo"),
+            nameof(ParametrosRegraEliminacao));
 }

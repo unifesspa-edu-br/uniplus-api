@@ -100,8 +100,9 @@ public sealed class OperadorNoModeloDaSelecaoTests
     {
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
 
-        FluentActions.Invoking(() => conversor.ConvertFromProvider("""{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","operador":3,"valor":18}}"""))
-            .Should().Throw<JsonException>();
+        Action leitura = () => conversor.ConvertFromProvider("""{"$tipo":"condicaoSobreDado","condicao":{"codigoDoDado":"IDADE","operador":3,"valor":18}}""");
+
+        leitura.DeveRecusarComoDocumentoInvalido("ParametrosCriterioDesempate");
     }
 
     [Theory(DisplayName = "A leitura do critério recusa a chave antiga ou a ausência do código do dado")]
@@ -112,7 +113,9 @@ public sealed class OperadorNoModeloDaSelecaoTests
     {
         ValueConverter conversor = ModeloDaSelecao.Propriedade(typeof(CriterioDesempate), nameof(CriterioDesempate.Parametros)).GetValueConverter()!;
 
-        FluentActions.Invoking(() => conversor.ConvertFromProvider(json)).Should().Throw<JsonException>();
+        Action leitura = () => conversor.ConvertFromProvider(json);
+
+        leitura.DeveRecusarComoDocumentoInvalido("ParametrosCriterioDesempate");
     }
 
     [Fact(DisplayName = "A leitura do critério aceita o código do dado")]

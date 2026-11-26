@@ -65,12 +65,15 @@ internal static class CpfDaInscricao
         Dictionary<Guid, string> cpfs = [];
         for (int i = 0; i < linhas.Count; i++)
         {
-            cpfs[linhas[i].InscricaoId] = JsonSerializer.Deserialize<string>(decifradas[i])
-                ?? throw new InvalidOperationException($"A resposta do CPF da inscrição {linhas[i].InscricaoId} decifrada não é um texto.");
+            cpfs[linhas[i].InscricaoId] = TextoDecifrado(linhas[i].InscricaoId, decifradas[i]);
         }
 
         return cpfs;
     }
+
+    private static string TextoDecifrado(Guid inscricaoId, string decifrado) =>
+        ObjetoDeValorGravado.DesserializarDocumento(() => JsonSerializer.Deserialize<string>(decifrado), nameof(Cpf))
+        ?? throw new InvalidOperationException($"A resposta do CPF da inscrição {inscricaoId} decifrada não é um texto.");
 
     /// <summary>O CPF da inscrição; falha alto se a resposta não existe, porque toda inscrição nasce com ela.</summary>
     public static string Exigir(IReadOnlyDictionary<Guid, string> cpfs, Guid inscricaoId) =>

@@ -46,7 +46,7 @@ public sealed class QuadroDeVagasGravadoTests
     private static void RecusarJson(string propriedade, string json)
     {
         Action ler = () => Conversor(propriedade).ConvertFromProvider(json);
-        ler.Should().Throw<JsonException>();
+        ler.DeveRecusarComoDocumentoInvalido(propriedade);
     }
 
     private static ValueConverter Conversor(string propriedade) =>
