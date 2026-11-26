@@ -27,6 +27,21 @@ public sealed class PonteiroNoDocumentoTests
     [InlineData("formularios[1].grupos[2].subitens[0].fatoCodigo", "/formularios/1/grupos/2/subitens/0/codigoDoDado")]
     [InlineData("etapas[2].faseCodigo", "/etapas/2/faseChave")]
     [InlineData("etapas[7].id", "/etapas/7/chave")]
+    [InlineData("etapas[1].tipoEtapaOrigemId", "/etapas/1/tipoEtapaCodigo")]
+    [InlineData("etapas[0].bancas[1].tipoBancaId", "/etapas/0/bancas/1/tipoBancaCodigo")]
+    [InlineData("etapas[0].recursos[2].ancora", "/etapas/0/recursos/2/eventoInicialDoPrazo")]
+    [InlineData("etapas[0].recursos[2].atoAncoraCodigo", "/etapas/0/recursos/2/publicacaoDeReferenciaAtoCodigo")]
+    [InlineData("etapas[0].recursos[0].procedimentos[1].alvo", "/etapas/0/recursos/0/procedimentosDeRecurso/1/alvo")]
+    [InlineData("etapas[3].itensDeAvaliacao[1].rotulo", "/etapas/3/itensDeAvaliacao/1/rotulo")]
+    [InlineData("etapas[3].escalaDeAtendimento[0].fracao", "/etapas/3/escalaDeAtendimento/0/fracao")]
+    [InlineData("classificacao.regraCalculoCodigo", "/classificacao/regraCalculo")]
+    [InlineData("classificacao.regraArredondamentoCodigo", "/classificacao/regraArredondamento")]
+    [InlineData("classificacao.regrasEliminacao[1].etapaRef", "/classificacao/regrasEliminacao/1/parametros/etapaChave")]
+    [InlineData("classificacao.regrasEliminacao[0].areaCodigo", "/classificacao/regrasEliminacao/0/parametros/areaCodigo")]
+    [InlineData("classificacao.criterios", "/classificacao/criteriosDeDesempate")]
+    [InlineData("classificacao.criterios[2].parametros.etapaRef", "/classificacao/criteriosDeDesempate/2/parametros/etapaChave")]
+    [InlineData("classificacao.criterios[2].parametros.areas[1]", "/classificacao/criteriosDeDesempate/2/parametros/areas/1")]
+    [InlineData("classificacao.criterios[2].regra.codigo", "/classificacao/criteriosDeDesempate/2/regra/codigo")]
     public void Converter_CampoComOutroNomeNoDocumento_UsaONomeDoDocumento(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
@@ -37,10 +52,12 @@ public sealed class PonteiroNoDocumentoTests
     public void Converter_CampoComONomeDoDocumento_FicaComoEstaOuGanhaOBloco(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
-    [Theory(DisplayName = "A ordem da fase, que o documento não tem, aponta a fase")]
+    [Theory(DisplayName = "A ordem da fase, da etapa e do critério de desempate, que o documento não tem, aponta a parte")]
     [InlineData("fases[0].ordem", "/cronograma/fases/0")]
     [InlineData("fases[5].ordem", "/cronograma/fases/5")]
-    public void Converter_OrdemDaFase_ApontaAFase(string campo, string esperado) =>
+    [InlineData("etapas[0].ordem", "/etapas/0")]
+    [InlineData("classificacao.criterios[3].ordem", "/classificacao/criteriosDeDesempate/3")]
+    public void Converter_OrdemQueODocumentoNaoTem_ApontaAParte(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
     [Theory(DisplayName = "O conceito da etapa, que o documento não tem, fica no trecho da etapa que o declara")]

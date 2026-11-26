@@ -141,25 +141,28 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Adota a declaração de um documento lido como a etapa está declarada, <b>sem conferi-la</b>: a recusa da declaração é do
-    /// congelamento, que a lê pela <see cref="Declaracao(IReadOnlySet{string}?)"/>. A etapa nasce com identidade nova, e o
-    /// conceito da avaliação, que não é parte da entidade, fica de fora.
+    /// congelamento, que a lê pela <see cref="Declaracao(IReadOnlySet{string}?)"/>. A etapa nasce com identidade nova, e a chave
+    /// que o documento declarou para cada item e nível se conserva (<paramref name="itens"/> já a trazem); o conceito da avaliação,
+    /// que não é parte da entidade, fica de fora.
     /// </summary>
     internal static EtapaProcesso Adotar(
         ChaveLocal chave,
         IdentificacaoDaEtapa identificacao,
-        AvaliacaoDeclaradaDaEtapa avaliacao,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        IReadOnlyList<ItemDeAvaliacao> itens,
         JanelaDeTempo janela,
         PublicacoesDaEtapa publicacoes,
         IReadOnlyList<BancaDaEtapa> bancas)
     {
         ArgumentNullException.ThrowIfNull(identificacao);
         ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(janela);
         ArgumentNullException.ThrowIfNull(publicacoes);
         ArgumentNullException.ThrowIfNull(bancas);
 
         EtapaProcesso etapa = new() { Chave = chave };
-        etapa.AdotarAvaliacao(identificacao, avaliacao);
+        etapa.AdotarAvaliacao(identificacao, avaliacao, itens);
         etapa.AdotarPublicacoes(janela, publicacoes, bancas);
 
         return etapa;
@@ -188,7 +191,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
         EtapaProcesso etapa = new() { Id = id, Chave = chave };
         etapa.DefinirIdentificacaoECarater(identificacao);
-        etapa.DefinirLancamentoDaNota(avaliacao, reidratada: true);
+        etapa.ConservarLancamentoDaNota(avaliacao);
         etapa.SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(etapa._itensDeAvaliacao, itens ?? []));
 
         return etapa;
@@ -227,7 +230,19 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         FaseCodigo = normalizada.FaseCodigo;
     }
 
-    private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao, bool reidratada = false)
+    private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
+    {
+        CopiarLancamentoDaNota(avaliacao);
+        FilhasDoAgregado.Substituir(_escalaDeAtendimento, ReconciliacaoDosNiveisDeAtendimento.Reconciliar(_escalaDeAtendimento, avaliacao.EscalaDeAtendimento));
+    }
+
+    private void ConservarLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
+    {
+        CopiarLancamentoDaNota(avaliacao);
+        FilhasDoAgregado.Substituir(_escalaDeAtendimento, ReconciliacaoDosNiveisDeAtendimento.Conservar(avaliacao.EscalaDeAtendimento));
+    }
+
+    private void CopiarLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
     {
         Peso = avaliacao.Peso;
         NotaMinima = avaliacao.NotaMinima;
@@ -235,17 +250,13 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         PassoDoLancamento = avaliacao.PassoDoLancamento;
         FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
         RegraConsolidacao = avaliacao.RegraConsolidacao;
-        IEnumerable<NivelDeAtendimento> niveis = reidratada
-            ? (avaliacao.EscalaDeAtendimento ?? []).Select(static (nivel, posicao) => nivel! with { Ordem = posicao + 1 })
-            : ReconciliacaoDosNiveisDeAtendimento.Reconciliar(_escalaDeAtendimento, avaliacao.EscalaDeAtendimento);
-        FilhasDoAgregado.Substituir(_escalaDeAtendimento, niveis);
     }
 
-    private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, AvaliacaoDeclaradaDaEtapa avaliacao)
+    private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao, IReadOnlyList<ItemDeAvaliacao> itens)
     {
         DefinirIdentificacaoECarater(identificacao);
-        DefinirLancamentoDaNota(avaliacao.Declaracao);
-        SubstituirItens(ReconciliacaoDosItensDeAvaliacao.Reconciliar([], avaliacao.Itens));
+        ConservarLancamentoDaNota(avaliacao);
+        SubstituirItens(itens);
     }
 
     private void AdotarPublicacoes(JanelaDeTempo janela, PublicacoesDaEtapa publicacoes, IReadOnlyList<BancaDaEtapa> bancas)
@@ -256,11 +267,6 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         SubstituirBancas(bancas);
         SubstituirRecursos(publicacoes.Recursos);
     }
-
-    private IdentificacaoDaEtapa IdentificacaoAtual() => new(Nome, Carater, TipoEtapa, Ordem, FaseCodigo);
-
-    private DeclaracaoDaAvaliacaoDaEtapa AvaliacaoAtual() =>
-        new(Peso, NotaMinima, NotaMaxima, PassoDoLancamento, FormaDeAvaliacao, RegraConsolidacao, EscalaDeAtendimento);
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
@@ -337,22 +343,12 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// A etapa como está agora, lida como se acabasse de ser declarada: a âncora de uma janela recursal pode
-    /// ter ficado sem o que a sustentava, e a hidratação do EF materializa estado violado. O conceito não é
-    /// parte da entidade e fica ausente. As listas da etapa que a leitura do documento deixou sem alguma parte
-    /// (<paramref name="colecoesComParteRecusada"/>) ficam sem julgar nas regras que as quantificam.
+    /// A etapa como está agora, lida como se acabasse de ser declarada (<see cref="EtapaComoDeclarada"/>). As listas da etapa que a
+    /// leitura do documento deixou sem alguma parte (<paramref name="colecoesComParteRecusada"/>) ficam sem julgar nas regras que as
+    /// quantificam.
     /// </summary>
-    public EtapaDeclarada Declaracao(IReadOnlySet<string>? colecoesComParteRecusada = null) => EtapaDeclarada.Declarar(
-        Id,
-        IdentificacaoAtual(),
-        new AvaliacaoDeclaradaDaEtapa(
-            AvaliacaoAtual(),
-            [.. ItensDeAvaliacao.Select(static item => new ItemDeAvaliacaoDeclarado(item.Id, item.Rotulo, item.PontuacaoMaxima))],
-            null),
-        new JanelaDeTempo(Inicio, Fim),
-        new PublicacoesDaEtapa([.. OrdemDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. Recursos], [.. _tiposDeDecisao.Select(static tipo => tipo.Codigo())]),
-        [.. Bancas],
-        colecoesComParteRecusada);
+    public EtapaDeclarada Declaracao(IReadOnlySet<string>? colecoesComParteRecusada = null) =>
+        EtapaComoDeclarada.De(this, colecoesComParteRecusada);
 
     /// <summary>O que da etapa entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaEtapa.De(this);

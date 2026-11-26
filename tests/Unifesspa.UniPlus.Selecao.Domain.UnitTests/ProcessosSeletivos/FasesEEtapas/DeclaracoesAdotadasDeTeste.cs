@@ -21,10 +21,15 @@ internal static class DeclaracoesAdotadasDeTeste
 
     internal static EtapaProcesso Adotada(this ModeloDeEtapa modelo) => EtapaProcesso.Adotar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
         modelo.Identificacao(),
-        new AvaliacaoDeclaradaDaEtapa(modelo.Avaliacao(), modelo.Itens, modelo.Conceito),
+        modelo.Avaliacao(),
+        modelo.ItensComChave(),
         new JanelaDeTempo(modelo.Inicio, modelo.Fim),
         new PublicacoesDaEtapa(modelo.Produtos, modelo.EmiteParecerIndividual, modelo.Recursos, modelo.TiposDeDecisao),
         modelo.Bancas);
+
+    /// <summary>Os itens do modelo como a leitura do documento os entrega: cada um com a chave que o documento declarou.</summary>
+    internal static IReadOnlyList<ItemDeAvaliacao> ItensComChave(this ModeloDeEtapa modelo) =>
+        [.. modelo.Itens.Select(static (item, posicao) => ItemDeAvaliacao.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar($"item_{posicao + 1}").Value!, item))];
 
     internal static FieldError Causa(string ponteiro) => new(ponteiro, new DomainError("Leitura.ParteRecusada", "A parte foi recusada na leitura."));
 

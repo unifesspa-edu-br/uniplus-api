@@ -44,6 +44,18 @@ internal sealed class TipoEtapaReader : ITipoEtapaReader
         return tipo is null ? null : ParaView(tipo);
     }
 
+    public async Task<IReadOnlyList<TipoEtapaView>> ListarAtivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<string> codigosDoLote = [.. codigos.Distinct(StringComparer.Ordinal)];
+        List<TipoEtapa> tipos = await _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos)
+            .Where(tipo => tipo.Ativo && codigosDoLote.Contains(tipo.Codigo)).OrderBy(tipo => tipo.Codigo)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        return [.. tipos.Select(ParaView)];
+    }
+
     private static TipoEtapaView ParaView(TipoEtapa tipo) =>
         new(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Descricao,
             new AvaliacaoDasEtapasView(

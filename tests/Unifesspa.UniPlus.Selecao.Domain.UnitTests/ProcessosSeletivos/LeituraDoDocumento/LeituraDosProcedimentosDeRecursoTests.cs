@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -14,7 +15,7 @@ using Xunit;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.LeituraDoDocumento.DocumentoLidoDeTeste;
 
-public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
+public sealed class LeituraDosProcedimentosDeRecursoTests
 {
     private static readonly ReferenciaDeRegraNoDocumento Ancorada = new(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1");
 
@@ -108,5 +109,59 @@ public sealed class LeituraDosProcedimentosDeRecursoDaFaseTests
 
         lidos.Cronograma.CronogramaFases.Single().RegraRecurso!.Procedimentos.Itens.Should().HaveCount(aceito ? 1 : 0);
         lidos.Origem.PartesRecusadas.Should().HaveCount(aceito ? 0 : 1);
+    }
+
+    private static ValorLido<IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)>> LerDaEtapa(
+        IReadOnlyDictionary<string, Guid> itensPelaChave, params ProcedimentoNoDocumento[] procedimentos) =>
+        LeituraDosProcedimentosDeRecurso.Ler(procedimentos, "recursos[0].procedimentos", 3, CodigosDoProcedimentoDeRecurso.DaEtapa, itensPelaChave, Cadastros());
+
+    [Fact(DisplayName = "O alvo que é item de avaliação da etapa, pela chave declarada, vira o alvo do item")]
+    public void Etapa_AlvoComChaveDeItemExistente_AdotaOItem()
+    {
+        Guid item = Guid.CreateVersion7();
+        ProcedimentoNoDocumento procedimento = new(0, TipoMotivoDeDecisao.NotaDaEtapa, new AlvoNoDocumento("criterio_um", null), new(CodigoDoProcedimento, "v1"));
+
+        ValorLido<IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)>> lidos =
+            LerDaEtapa(new Dictionary<string, Guid> { ["criterio_um"] = item }, procedimento);
+
+        lidos.Recusas.Should().BeEmpty();
+        lidos.Valor.Should().ContainSingle().Which.Item.Alvo.Should().Be(AlvoDoProcedimentoDeRecurso.DoItem(item));
+    }
+
+    [Fact(DisplayName = "O alvo com chave de item que a etapa não declarou é recusado no campo do alvo, com o código da etapa e a posição enviada, sem repetir a chave")]
+    public void Etapa_AlvoComChaveDeItemInexistente_RecusaNoCampoDoAlvo()
+    {
+        ProcedimentoNoDocumento procedimento = new(1, TipoMotivoDeDecisao.NotaDaEtapa, new AlvoNoDocumento("chave-digitada", null), new(CodigoDoProcedimento, "v1"));
+
+        ValorLido<IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)>> lidos =
+            LerDaEtapa(new Dictionary<string, Guid> { ["criterio_um"] = Guid.CreateVersion7() }, procedimento);
+
+        lidos.Valor.Should().BeEmpty();
+        RecusaDaParte recusa = lidos.Recusas.Should().ContainSingle().Subject;
+        recusa.Parte.Should().Be("recursos[0].procedimentos");
+        recusa.Campo.Should().Be("recursos[0].procedimentos[1].alvo");
+        recusa.PosicaoNoDocumento.Should().Be(3);
+        recusa.Erro.Code.Should().Be(CodigosDoProcedimentoDeRecurso.DaEtapa.AlvoInexistente);
+        recusa.Erro.Message.Should().NotContain("chave-digitada");
+    }
+
+    [Fact(DisplayName = "A área do ENEM vale como alvo na etapa, com ou sem item declarado")]
+    public void Etapa_AlvoComAreaDoEnem_AdotaAArea()
+    {
+        ProcedimentoNoDocumento procedimento = new(0, TipoMotivoDeDecisao.NotaDaEtapa, new AlvoNoDocumento(null, "LINGUAGENS"), new(CodigoDoProcedimento, "v1"));
+
+        LerDaEtapa(new Dictionary<string, Guid>(), procedimento).Valor.Should().ContainSingle().Which.Item.Alvo.Should().Be(AlvoDoProcedimentoDeRecurso.DaArea("LINGUAGENS"));
+    }
+
+    [Fact(DisplayName = "A regra fora do catálogo na etapa é recusada com o código da etapa, e o procedimento seguinte continua adotado")]
+    public void Etapa_RegraForaDoCatalogo_OmiteSoOProcedimento()
+    {
+        ProcedimentoNoDocumento recusado = new(0, TipoMotivoDeDecisao.NotaDaEtapa, null, new("REGRA-DIGITADA", "v1"));
+        ProcedimentoNoDocumento adotado = new(1, TipoMotivoDeDecisao.NotaDaEtapa, null, new(CodigoDoProcedimento, "v1"));
+
+        ValorLido<IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)>> lidos = LerDaEtapa(new Dictionary<string, Guid>(), recusado, adotado);
+
+        lidos.Valor.Select(static par => par.PosicaoNoDocumento).Should().Equal(1);
+        lidos.Recusas.Should().ContainSingle().Which.Erro.Code.Should().Be(CodigosDoProcedimentoDeRecurso.DaEtapa.Desconhecido);
     }
 }

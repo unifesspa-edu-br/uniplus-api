@@ -20,9 +20,6 @@ public sealed record NivelDeAtendimento(string Rotulo, decimal Fracao)
     public static NivelDeAtendimento Criar(ChaveLocal chave, string rotulo, decimal fracao) =>
         new(rotulo, fracao) { Chave = chave };
 
-    public static NivelDeAtendimento Adotar(ChaveLocal chave, string rotulo, decimal fracao) =>
-        Criar(chave, rotulo, fracao);
-
     public static NivelDeAtendimento Reidratar(ChaveLocal chave, string rotulo, decimal fracao) =>
         Criar(chave, rotulo, fracao);
 }

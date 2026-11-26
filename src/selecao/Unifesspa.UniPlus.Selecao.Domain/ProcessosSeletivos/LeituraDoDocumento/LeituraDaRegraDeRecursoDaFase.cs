@@ -29,7 +29,9 @@ internal static class LeituraDaRegraDeRecursoDaFase
 
         RegraDoCatalogoCitada? regra = cadastros.Regra(declarada.Regra.Codigo, declarada.Regra.Versao);
         ValorLido<IReadOnlyList<(ProcedimentoDeRecursoDeclarado Item, int PosicaoNoDocumento)>> procedimentos =
-            LeituraDosProcedimentosDeRecursoDaFase.Ler(fase, declarada.Procedimentos, cadastros);
+            LeituraDosProcedimentosDeRecurso.Ler(
+                declarada.Procedimentos, FaseDeclarada.ListaDosProcedimentosDeRecurso, fase.PosicaoNoDocumento, CodigosDoProcedimentoDeRecurso.DaFase,
+                new Dictionary<string, Guid>(), cadastros);
         RecusaDaParte[] recusasDaRegra = [.. RegraInvalida(fase, regra)];
         return recusasDaRegra.Length > 0
             ? RegraRecusada(fase, declarada, recusasDaRegra, procedimentos.Recusas)

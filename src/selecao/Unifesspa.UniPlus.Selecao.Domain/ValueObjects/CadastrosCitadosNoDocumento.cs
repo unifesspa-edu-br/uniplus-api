@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using System.Collections.Frozen;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -15,6 +16,8 @@ public sealed class CadastrosCitadosNoDocumento
     private readonly FrozenDictionary<string, TipoProcessoSnapshot> _tiposDeProcesso = FrozenDictionary<string, TipoProcessoSnapshot>.Empty;
     private readonly FrozenDictionary<string, OrigemCanonicaDaFase> _fasesCanonicas = FrozenDictionary<string, OrigemCanonicaDaFase>.Empty;
     private readonly FrozenDictionary<string, TipoDeBancaCopiado> _tiposDeBanca = FrozenDictionary<string, TipoDeBancaCopiado>.Empty;
+    private readonly FrozenDictionary<string, TipoEtapaSnapshot> _tiposDeEtapa = FrozenDictionary<string, TipoEtapaSnapshot>.Empty;
+    private readonly FrozenDictionary<string, QuadroDePesosCitado> _quadrosDePesos = FrozenDictionary<string, QuadroDePesosCitado>.Empty;
     private readonly FrozenDictionary<string, CategoriaDeDocumentoCitada> _categoriasDeDocumento = FrozenDictionary<string, CategoriaDeDocumentoCitada>.Empty;
     private readonly FrozenDictionary<string, LocalidadeRegente> _localidades = FrozenDictionary<string, LocalidadeRegente>.Empty;
     private readonly FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> _regras = FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>.Empty;
@@ -51,6 +54,20 @@ public sealed class CadastrosCitadosNoDocumento
     {
         get => _tiposDeBanca;
         init => _tiposDeBanca = Congelado(value);
+    }
+
+    /// <summary>Os tipos de etapa ativos, pelo código, já como a cópia que a etapa guarda.</summary>
+    public IReadOnlyDictionary<string, TipoEtapaSnapshot> TiposDeEtapa
+    {
+        get => _tiposDeEtapa;
+        init => _tiposDeEtapa = Congelado(value);
+    }
+
+    /// <summary>Os quadros de pesos por área do ENEM que o cadastro tem, pela resolução como o documento a cita.</summary>
+    public IReadOnlyDictionary<string, QuadroDePesosCitado> QuadrosDePesos
+    {
+        get => _quadrosDePesos;
+        init => _quadrosDePesos = Congelado(value);
     }
 
     /// <summary>As categorias de documento vivas, pelo código.</summary>
@@ -95,6 +112,10 @@ public sealed class CadastrosCitadosNoDocumento
 
     internal TipoDeBancaCopiado? TipoDeBanca(string? codigo) => Achado(_tiposDeBanca, codigo);
 
+    internal TipoEtapaSnapshot? TipoDeEtapa(string? codigo) => Achado(_tiposDeEtapa, codigo);
+
+    internal QuadroDePesosCitado? QuadroDePesos(string? resolucao) => Achado(_quadrosDePesos, resolucao);
+
     internal CategoriaDeDocumentoCitada? Categoria(string? codigo) => Achado(_categoriasDeDocumento, codigo);
 
     internal LocalidadeRegente? Localidade(string? codigoIbge) => Achado(_localidades, codigoIbge);
@@ -123,3 +144,13 @@ public sealed record CategoriaDeDocumentoCitada(Guid OrigemId, string Codigo, st
 
 /// <summary>A regra do catálogo que o documento cita: o tipo dela e a referência que o processo congela.</summary>
 public sealed record RegraDoCatalogoCitada(TipoRegra Tipo, ReferenciaRegra Referencia);
+
+/// <summary>
+/// O quadro de pesos por área do ENEM da resolução que o documento cita: os grupos de área cadastrados e os rótulos dos grupos que
+/// faltam para a resolução estar completa. O quadro incompleto não serve à classificação.
+/// </summary>
+public sealed record QuadroDePesosCitado(IReadOnlyList<GrupoPesoAreaEnemCongelado> Grupos, IReadOnlyList<string> GruposAusentes)
+{
+    /// <summary>Se a resolução tem peso cadastrado para todos os grupos de área.</summary>
+    public bool Completo => GruposAusentes.Count == 0;
+}

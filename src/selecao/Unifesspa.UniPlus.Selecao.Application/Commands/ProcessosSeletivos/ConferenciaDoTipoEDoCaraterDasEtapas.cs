@@ -77,7 +77,5 @@ internal sealed class ConferenciaDoTipoEDoCaraterDasEtapas(ITipoEtapaReader tipo
         EscritaDasEtapasDoProcesso.ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
 
     private static FieldError RecusaDoTipoInativo(EtapaProcessoInput etapa, int indice) =>
-        new($"etapas[{indice}].tipoEtapaOrigemId", new DomainError(
-            "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
-            $"Tipo de etapa {etapa.TipoEtapaOrigemId} não encontrado ou não está ativo."));
+        new($"etapas[{indice}].tipoEtapaOrigemId", RecusaDoTipoDeEtapa.NaoEncontradoOuInativo(etapa.TipoEtapaOrigemId.ToString()));
 }

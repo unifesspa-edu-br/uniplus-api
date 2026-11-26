@@ -37,6 +37,22 @@ public static class PonteiroNoDocumento
         ["etapas[].faseCodigo"] = "etapas[].faseChave",
         ["etapas[].id"] = "etapas[].chave",
         ["etapas[].regraConsolidacao"] = "etapas[].regraDeApuracaoDaAvaliacao",
+
+        // A ordem da etapa, que o documento não tem: a posição da etapa na lista é a ordem dela, e a causa fica no trecho da etapa.
+        ["etapas[].ordem"] = "etapas[]",
+        ["etapas[].tipoEtapaOrigemId"] = "etapas[].tipoEtapaCodigo",
+        ["etapas[].bancas[].tipoBancaId"] = "etapas[].bancas[].tipoBancaCodigo",
+        ["etapas[].recursos[].ancora"] = "etapas[].recursos[].eventoInicialDoPrazo",
+        ["etapas[].recursos[].atoAncoraCodigo"] = "etapas[].recursos[].publicacaoDeReferenciaAtoCodigo",
+
+        // A classificação, com o nome que as regras do bloco dão ao campo: a regra do catálogo, a etapa citada pela chave e a lista
+        // dos critérios de desempate, cuja ordem o documento não tem.
+        ["classificacao.regraCalculoCodigo"] = "classificacao.regraCalculo",
+        ["classificacao.regraArredondamentoCodigo"] = "classificacao.regraArredondamento",
+        ["classificacao.regrasEliminacao[].etapaRef"] = "classificacao.regrasEliminacao[].parametros.etapaChave",
+        ["classificacao.regrasEliminacao[].areaCodigo"] = "classificacao.regrasEliminacao[].parametros.areaCodigo",
+        ["classificacao.criterios[].ordem"] = "classificacao.criteriosDeDesempate[]",
+        ["classificacao.criterios[].parametros.etapaRef"] = "classificacao.criteriosDeDesempate[].parametros.etapaChave",
         ["formularios[].itens[].fatoCodigo"] = "formularios[].itens[].codigoDoDado",
         ["formularios[].grupos[].subitens[].fatoCodigo"] = "formularios[].grupos[].subitens[].codigoDoDado",
     };
@@ -48,6 +64,10 @@ public static class PonteiroNoDocumento
     private const string ProdutosDaEtapaNoDocumento = "etapas[].publicacoesPrevistas";
     private const string ProcedimentosDaFase = "fases[]." + FaseDeclarada.ListaDosProcedimentosDeRecurso;
     private const string ProcedimentosDaFaseNoDocumento = "fases[].regraRecurso.procedimentosDeRecurso";
+    private const string ProcedimentosDaEtapa = "etapas[].recursos[].procedimentos";
+    private const string ProcedimentosDaEtapaNoDocumento = "etapas[].recursos[].procedimentosDeRecurso";
+    private const string CriteriosDeDesempate = "classificacao.criterios";
+    private const string CriteriosDeDesempateNoDocumento = "classificacao.criteriosDeDesempate";
 
     /// <summary>O ponteiro do campo, que fica nulo quando a causa não aponta o documento.</summary>
     public static string? Converter(string? campo, OrigemNoDocumento origem)
@@ -77,6 +97,8 @@ public static class PonteiroNoDocumento
 
     private static string NomeDaListaRenomeada(string semIndices) =>
         TraduzirPrefixo(semIndices, ProcedimentosDaFase, ProcedimentosDaFaseNoDocumento)
+        ?? TraduzirPrefixo(semIndices, ProcedimentosDaEtapa, ProcedimentosDaEtapaNoDocumento)
+        ?? TraduzirPrefixo(semIndices, CriteriosDeDesempate, CriteriosDeDesempateNoDocumento)
         ?? TraduzirPrefixo(semIndices, ProdutosDaFase, ProdutosDaFaseNoDocumento)
         ?? TraduzirPrefixo(semIndices, ProdutosDaEtapa, ProdutosDaEtapaNoDocumento)
         ?? semIndices;
