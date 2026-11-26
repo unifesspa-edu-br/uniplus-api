@@ -67,6 +67,18 @@ public sealed class DiagnosticoDoRascunhoTests
             ("/cadastroDeReserva/2/numeroDaChamada", CadastroDeReservaErrorCodes.NumeroDaChamadaInvalido));
     }
 
+    [Fact(DisplayName = "A chamada sem número aponta só o número da chamada, e as outras chamadas conformes não têm causa")]
+    public async Task ChamadaSemNumero_ApontaONumeroDaChamada()
+    {
+        IReadOnlyList<FieldError> causas = await DiagnosticarAsync("""
+            { "cadastroDeReserva": [
+              { "numeroDaChamada": 1, "pessoasDaReservaPorVaga": 0 },
+              { "pessoasDaReservaPorVaga": 0 } ] }
+            """);
+
+        Pares(causas).Should().Equal(("/cadastroDeReserva/1/numeroDaChamada", CadastroDeReservaErrorCodes.NumeroDaChamadaInvalido));
+    }
+
     [Fact(DisplayName = "A manifestação de interesse desconhecida aponta o campo da manifestação, sem repetir o valor")]
     public async Task ManifestacaoDesconhecida_ApontaOCampo()
     {
