@@ -132,6 +132,26 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem, versao, exibicao, obrigatoriedade, finalidade));
     }
 
+    /// <summary>O termo do formulário dado: a mesma conferência da criação, e o formulário que o exige fica ligado a ele.</summary>
+    public static Result<TermoExigidoFormulario> Criar(
+        string codigo,
+        int ordem,
+        VersaoTermoEscolhida versao,
+        PredicadoDnf? exibicao,
+        Obrigatoriedade obrigatoriedade,
+        FormularioProcesso formulario)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        Result<TermoExigidoFormulario> criado = Criar(codigo, ordem, versao, exibicao, obrigatoriedade, formulario.Finalidade);
+        if (criado.IsSuccess)
+        {
+            criado.Value!.VincularFormulario(formulario);
+        }
+
+        return criado;
+    }
+
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>
     public bool SemFormaDeAceite => FormaAceite == FormaAceite.ADefinir;
 

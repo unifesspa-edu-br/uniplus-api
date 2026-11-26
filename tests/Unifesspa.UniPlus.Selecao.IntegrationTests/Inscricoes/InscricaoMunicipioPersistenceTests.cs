@@ -236,7 +236,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
             new HashSet<string>(StringComparer.Ordinal) { "CPF", "NATURALIDADE_MUNICIPIO" },
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal) { ["LOCAIS"] = new HashSet<string>(StringComparer.Ordinal) { "NATURALIDADE_MUNICIPIO" } },
             new HashSet<Guid> { oferta },
-            new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
+            new Dictionary<TermoNoFormulario, TermoAdmitido>());
     }
 
     private static Dictionary<string, DefinicaoDaResposta> DerivadosComMunicipio()

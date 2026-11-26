@@ -118,7 +118,7 @@ internal sealed record DocumentoExigidoDeTeste
 
     private CopiaDoTipoDeDocumento TipoDoDocumento() => new(TipoDeOrigemId, TipoCodigo, TipoNome, TipoCategoria, Protecao);
 
-    private MomentoDaExigencia MomentoDaColeta() => new(FaseId, EtapaId, Finalidade);
+    private MomentoDaExigencia MomentoDaColeta() => new(FaseId, EtapaId, FormularioDeTeste.CodigoDoPapel(Finalidade));
 
     private AplicabilidadeDaExigencia AplicabilidadeDeclarada() => new(TipoDeAplicabilidade, Condicoes);
 

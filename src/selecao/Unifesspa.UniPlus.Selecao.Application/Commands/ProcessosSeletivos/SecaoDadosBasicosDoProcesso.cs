@@ -35,7 +35,7 @@ internal static class SecaoDadosBasicosDoProcesso
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(command);
-        if (command.Finalidade != FinalidadeFormulario.Inscricao)
+        if (EstruturaFormulario.FinalidadeDoCodigo(command.FormularioCodigo) != FinalidadeFormulario.Inscricao)
         {
             return new ColetaMesclada(command.Itens, command.Grupos ?? [], [], false);
         }

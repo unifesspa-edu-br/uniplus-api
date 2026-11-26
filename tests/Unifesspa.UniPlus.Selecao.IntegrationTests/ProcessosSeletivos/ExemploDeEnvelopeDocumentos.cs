@@ -68,7 +68,7 @@ internal static class ExemploDeEnvelopeDocumentos
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_" + tipoDocumentoCodigo.ToLowerInvariant()).Value!,
             id,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(exigidoNaFaseId, null, FinalidadeFormulario.Inscricao),
+                new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(obrigatorio, null, []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),

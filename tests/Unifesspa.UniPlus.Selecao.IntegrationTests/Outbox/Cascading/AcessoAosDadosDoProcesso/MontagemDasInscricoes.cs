@@ -175,7 +175,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>(),
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal),
+        new Dictionary<TermoNoFormulario, TermoAdmitido>(),
         PersonasDeTeste.NomeFernandaDrumond,
         PersonasDeTeste.NomeSocialFernandaDrumond);
 

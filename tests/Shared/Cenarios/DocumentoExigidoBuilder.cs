@@ -26,7 +26,7 @@ internal sealed class DocumentoExigidoBuilder
     public FakeTimeProvider Relogio { get; } = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
     public DocumentoExigidoBuilder ComTipo(CopiaDoTipoDeDocumento tipo) { _tipo = tipo; return this; }
-    public DocumentoExigidoBuilder NaFase(Guid faseId, FinalidadeFormulario? finalidade = null) { _momento = new(faseId, null, finalidade); return this; }
+    public DocumentoExigidoBuilder NaFase(Guid faseId, FinalidadeFormulario? finalidade = null) { _momento = new(faseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)); return this; }
     public DocumentoExigidoBuilder ComAplicabilidade(AplicabilidadeDaExigencia aplicabilidade) { _aplicabilidade = aplicabilidade; return this; }
     public DocumentoExigidoBuilder ComIndeferimento(IndeferimentoDoDocumento indeferimento) { _indeferimento = indeferimento; return this; }
     public DocumentoExigidoBuilder ComPrazoDeEmissao(PrazoDeEmissao prazo) { _prazoDeEmissao = prazo; return this; }

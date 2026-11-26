@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
@@ -111,8 +112,10 @@ public static class DefinirFatosColetadosCommandHandler
         }
 
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
-        Result gravado = processo.DefinirFatosColetados(
-            command.Finalidade, resolvida.Fatos, command.Grupos is null && !coleta.GruposOmitidosRegravados ? null : resolvida.Grupos);
+        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        Result gravado = codigo.IsFailure
+            ? Result.Failure(codigo.Error!)
+            : processo.DefinirFatosColetados(codigo.Value!, resolvida.Fatos, command.Grupos is null && !coleta.GruposOmitidosRegravados ? null : resolvida.Grupos);
         return gravado.IsFailure ? Result.ValidationFailure(gravado.Errors) : Result.Success();
     }
 

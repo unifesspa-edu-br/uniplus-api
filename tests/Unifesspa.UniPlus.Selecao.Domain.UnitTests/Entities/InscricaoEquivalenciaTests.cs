@@ -22,7 +22,7 @@ public sealed class InscricaoEquivalenciaTests
         new HashSet<string>(StringComparer.Ordinal) { "CAMPO" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>(),
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
+        new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     [Fact]
     public void Salvar_RespostasValidas_GravaValorEAvancaRevisao()
@@ -119,7 +119,7 @@ public sealed class InscricaoEquivalenciaTests
     {
         OfertasDeCurso = etapa == "opcoes" ? null! : new HashSet<Guid>(),
         SubitensPorGrupo = etapa == "grupos" ? null! : new Dictionary<string, IReadOnlySet<string>>(),
-        Termos = etapa == "aceites" ? null! : new Dictionary<string, TermoAdmitido>(),
+        Termos = etapa == "aceites" ? null! : new Dictionary<TermoNoFormulario, TermoAdmitido>(),
     };
 
     private static FormularioDaInscricao FormularioEsperado(FormularioDaInscricao anterior, Guid versao, string etapa)
@@ -133,7 +133,7 @@ public sealed class InscricaoEquivalenciaTests
     private static Inscricao InscricaoPreenchida() => Inscricao.Reidratar(Guid.NewGuid(), Guid.NewGuid(),
             TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
             EstadoDaInscricao.Reidratar(SituacaoInscricao.Rascunho, "123", CancelamentoDaInscricao.Reidratar(null, null, null)),
-            FormularioDaInscricao.Reidratar(Guid.NewGuid(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(Guid.NewGuid(), Guid.NewGuid()), new Dictionary<string, JsonElement> { ["ANTIGO"] = JsonSerializer.SerializeToElement("valor") }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> { ["G"] = [new("1", new Dictionary<string, JsonElement>())] }, [new("T", Guid.NewGuid(), "hash")]),
+            FormularioDaInscricao.Reidratar(Guid.NewGuid(), PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(Guid.NewGuid(), Guid.NewGuid()), new Dictionary<string, JsonElement> { ["ANTIGO"] = JsonSerializer.SerializeToElement("valor") }, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> { ["G"] = [new("1", new Dictionary<string, JsonElement>())] }, [new(FormularioDeTeste.CodigoDaInscricao, "T", Guid.NewGuid(), "hash")]),
                 new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>()), 7, new Unifesspa.UniPlus.Selecao.Domain.ValueObjects.DatasDeGravacaoDaInscricao(default, null));
 
     [Fact]

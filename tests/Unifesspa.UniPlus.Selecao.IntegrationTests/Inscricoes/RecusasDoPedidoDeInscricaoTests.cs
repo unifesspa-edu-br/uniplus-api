@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes.CenarioDeInscricaoPublicada;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes.ProcessoComMatrizDaLeiDeTeste;
@@ -146,7 +147,7 @@ public sealed class RecusasDoPedidoDeInscricaoTests
         InscricaoRequest nulo = pedido with { Aceites = [null!] };
         InscricaoRequest incompleto = pedido with
         {
-            Aceites = [new AceiteDeTermoInput(null!, Guid.NewGuid(), "hash"), new AceiteDeTermoInput("LGPD", Guid.NewGuid(), null!)],
+            Aceites = [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, null!, Guid.NewGuid(), "hash"), new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "LGPD", Guid.NewGuid(), null!)],
         };
         return (nulo, incompleto);
     }
@@ -155,7 +156,7 @@ public sealed class RecusasDoPedidoDeInscricaoTests
     {
         AceiteDeTermoInput valido = pedido.Aceites![0];
         InscricaoRequest repetido = pedido with { Aceites = [valido, valido with { HashVersao = "hash-forjado" }] };
-        InscricaoRequest foraDoFormulario = pedido with { Aceites = [valido, new AceiteDeTermoInput("TERMO_INEXISTENTE", Guid.NewGuid(), "hash")] };
+        InscricaoRequest foraDoFormulario = pedido with { Aceites = [valido, new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_INEXISTENTE", Guid.NewGuid(), "hash")] };
         InscricaoRequest outraVersao = pedido with { Aceites = [valido with { VersaoId = Guid.NewGuid() }] };
         return (repetido, foraDoFormulario, outraVersao);
     }

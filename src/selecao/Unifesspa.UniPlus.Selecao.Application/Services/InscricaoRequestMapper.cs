@@ -7,6 +7,7 @@ using Domain.Errors;
 
 using DTOs;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -17,6 +18,9 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public static class InscricaoRequestMapper
 {
+    // Provisório até o aceite citar o formulário que exige o termo: todo aceite é do formulário de inscrição.
+    private static readonly string CodigoDoFormularioDaInscricao = FinalidadeFormulario.Inscricao.Codigo();
+
     public static Dictionary<string, JsonElement> ParaRespostas(IReadOnlyDictionary<string, JsonElement>? respostas) =>
         respostas is { } r ? new(r, StringComparer.Ordinal) : new(StringComparer.Ordinal);
 
@@ -115,7 +119,7 @@ public static class InscricaoRequestMapper
 
             if (aceite.Codigo is not null && aceite.HashVersao is not null)
             {
-                lidos.Add(new AceiteDeTermo(aceite.Codigo, aceite.VersaoId, aceite.HashVersao));
+                lidos.Add(new AceiteDeTermo(CodigoDoFormularioDaInscricao, aceite.Codigo, aceite.VersaoId, aceite.HashVersao));
             }
         }
 

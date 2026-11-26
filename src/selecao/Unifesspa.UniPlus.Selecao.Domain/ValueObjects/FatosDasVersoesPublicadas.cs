@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// O que os formulários do processo coletaram nas versões publicadas do edital, lido na abertura
@@ -220,6 +221,15 @@ public sealed class FatosDasVersoesPublicadas
     /// </summary>
     public bool Garante(FinalidadeFormulario finalidade, string fato) =>
         !_garantidos.TryGetValue(finalidade, out SortedSet<string>? garantidos) || garantidos.Contains(fato);
+
+    /// <summary>Se o fato produzido pelo formulário do código foi coletado por ele em todas as versões em que existia; o código sem formulário em nenhuma versão garante o que produz.</summary>
+    public bool Garante(CodigoDoFormulario formulario, string fato)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        // Provisório até a retirada da finalidade: as versões ainda guardam o que cada finalidade garante.
+        return EstruturaFormulario.FinalidadeDoCodigo(formulario.Valor) is not { } finalidade || Garante(finalidade, fato);
+    }
 
     /// <summary>
     /// O primeiro fato que a inscrição coletava na versão base e que os itens e os grupos dados

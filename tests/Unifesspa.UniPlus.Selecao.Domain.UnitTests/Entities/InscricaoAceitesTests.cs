@@ -24,7 +24,7 @@ public sealed class InscricaoAceitesTests
     public void Salvar_AceiteConferido_GravaEAceitaListaIncompleta()
     {
         Inscricao inscricao = NovaInscricao();
-        AceiteDeTermo lgpd = new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
+        AceiteDeTermo lgpd = new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
 
         Result resultado = inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), Respostas(), SemGrupos(), [lgpd]), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
@@ -38,8 +38,8 @@ public sealed class InscricaoAceitesTests
         Inscricao inscricao = NovaInscricao();
         List<AceiteDeTermo> aceites =
         [
-            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
-            new(TermoLgpd, Guid.CreateVersion7(), "hash-forjado"),
+            new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, Guid.CreateVersion7(), "hash-forjado"),
         ];
 
         Result resultado = inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), Respostas(), SemGrupos(), aceites), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
@@ -56,8 +56,8 @@ public sealed class InscricaoAceitesTests
         Inscricao inscricao = NovaInscricao();
         List<AceiteDeTermo> aceites =
         [
-            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
-            new("TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer"),
+            new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new(FormularioDeTeste.CodigoDaInscricao, "TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer"),
         ];
 
         Result resultado = inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), Respostas(), SemGrupos(), aceites), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
@@ -75,6 +75,7 @@ public sealed class InscricaoAceitesTests
     {
         Inscricao inscricao = NovaInscricao();
         AceiteDeTermo aceite = new(
+            FormularioDeTeste.CodigoDaInscricao,
             TermoLgpd,
             versaoDiferente ? Guid.CreateVersion7() : VersaoDoTermoLgpd,
             hashDiferente ? "hash-forjado" : HashDoTermoLgpd);
@@ -113,8 +114,8 @@ public sealed class InscricaoAceitesTests
         Inscricao inscricao = NovaInscricao();
         List<AceiteDeTermo> aceites =
         [
-            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
-            new(TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+            new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new(FormularioDeTeste.CodigoDaInscricao, TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade),
         ];
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter("000123",
@@ -128,12 +129,12 @@ public sealed class InscricaoAceitesTests
 
     private static List<AceiteDeTermo> AceitesInvalidos(string codigoEsperado)
     {
-        AceiteDeTermo valido = new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
+        AceiteDeTermo valido = new(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
         return codigoEsperado switch
         {
             InscricaoErrorCodes.AceiteRepetido => [valido, valido with { HashVersao = "hash-forjado" }],
-            InscricaoErrorCodes.AceiteForaDoFormulario => [valido, new("TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer")],
-            _ => [valido, new(TermoVeracidade, VersaoDoTermoVeracidade, "hash-forjado")],
+            InscricaoErrorCodes.AceiteForaDoFormulario => [valido, new(FormularioDeTeste.CodigoDaInscricao, "TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer")],
+            _ => [valido, new(FormularioDeTeste.CodigoDaInscricao, TermoVeracidade, VersaoDoTermoVeracidade, "hash-forjado")],
         };
 
     }

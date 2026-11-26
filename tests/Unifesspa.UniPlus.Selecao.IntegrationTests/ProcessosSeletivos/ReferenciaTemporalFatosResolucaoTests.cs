@@ -117,7 +117,7 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_declaracao_maioridade").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+                new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
                 new IndeferimentoDoDocumento(true, null, [baseLegal]),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

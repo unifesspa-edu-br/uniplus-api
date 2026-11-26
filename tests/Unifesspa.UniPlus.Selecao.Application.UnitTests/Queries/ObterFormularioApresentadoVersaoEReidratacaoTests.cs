@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -73,7 +74,7 @@ public sealed class ObterFormularioApresentadoVersaoEReidratacaoTests
 
         ICertameDivulgadoRepository divulgacao = RepositorioComDivulgacao(processoId);
         Result<FormularioApresentadoDoProcessoDto> resultado = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.Inscricao),
+            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.Inscricao.Codigo()),
             MockComVersaoVigente(processoId, EnvelopeComReidratacaoRecusada),
             divulgacao,
             registro,

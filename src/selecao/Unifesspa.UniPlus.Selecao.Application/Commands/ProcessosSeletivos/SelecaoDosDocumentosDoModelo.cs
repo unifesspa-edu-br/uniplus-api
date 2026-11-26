@@ -257,7 +257,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
         DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo, PrazoEValidadeCopiados prazoEValidade) =>
         new(
             new TipoDocumentoDaExigenciaInput(tipo.Id),
-            new MomentoDaExigenciaInput(fase.Id, Finalidade: finalidade.Codigo()),
+            new MomentoDaExigenciaInput(fase.Id, FormularioCodigo: finalidade.Codigo()),
             new AplicabilidadeDaExigenciaInput(
                 documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", CondicoesDoGatilho(documento.Quando)),
             IndeferimentoDoModelo(documento.Indeferimento),

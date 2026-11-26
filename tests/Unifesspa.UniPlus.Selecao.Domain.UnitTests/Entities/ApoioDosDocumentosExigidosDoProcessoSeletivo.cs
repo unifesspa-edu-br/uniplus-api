@@ -39,7 +39,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         FinalidadeFormulario? finalidade = null, bool abrePrazoParaReenvio = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaDoDescumprimento is null, consequenciaDoDescumprimento, [], abrePrazoParaReenvio))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -50,7 +50,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         Guid exigidoNaFaseId, PrazoDeEmissao? prazo, ValidadeDoDocumento? validade, FinalidadeFormulario? finalidade = null) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, prazo, validade))
@@ -98,7 +98,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, FinalidadeFormulario? finalidade = null) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, basesLegais ?? []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))

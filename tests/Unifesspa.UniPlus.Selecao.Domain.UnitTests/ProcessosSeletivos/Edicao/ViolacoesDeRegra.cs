@@ -138,7 +138,7 @@ internal sealed record ViolacaoDeRegra(
 
     private static DocumentoExigido Exigencia(Guid faseId, params CondicaoGatilho[] condicoes) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(condicoes.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, condicoes))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))

@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -15,6 +17,9 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 /// </summary>
 internal sealed class TraducaoDaInscricao
 {
+    // Provisório até o aceite gravar o formulário que exige o termo: todo aceite lido é do formulário de inscrição.
+    private static readonly string CodigoDoFormularioDaInscricao = FinalidadeFormulario.Inscricao.Codigo();
+
     private readonly ValorGravadoDaResposta _valores;
 
     public TraducaoDaInscricao(ValorGravadoDaResposta valores)
@@ -124,7 +129,7 @@ internal sealed class TraducaoDaInscricao
 
     private static List<AceiteDeTermo> AceitesLidos(LinhasDaInscricao linhas) =>
     [
-        .. linhas.Aceites.OrderBy(static a => a.Ordem).Select(static a => new AceiteDeTermo(a.TermoCodigo, a.VersaoId, a.HashVersao)),
+        .. linhas.Aceites.OrderBy(static a => a.Ordem).Select(static a => new AceiteDeTermo(CodigoDoFormularioDaInscricao, a.TermoCodigo, a.VersaoId, a.HashVersao)),
     ];
 
     private static IEnumerable<AceiteDaInscricaoRecord> AceitesGravaveis(Inscricao entity) =>

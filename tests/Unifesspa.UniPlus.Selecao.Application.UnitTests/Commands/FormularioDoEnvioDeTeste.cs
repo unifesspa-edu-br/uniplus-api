@@ -144,7 +144,7 @@ internal static class FormularioDoEnvioDeTeste
     {
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement(apelido);
-        return new(OfertaDo(configuracao), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+        return new(OfertaDo(configuracao), respostas, null, [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
     }
 
     internal static Guid OfertaDo(ConfiguracaoPublicada configuracao) => configuracao.Vagas.DistribuicaoVagas[0].OfertaCursoOrigemId;

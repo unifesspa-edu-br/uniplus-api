@@ -59,7 +59,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
 
         Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("MATRICULA"));
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.formularioCodigo", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
         await cenario.Mocks.TipoDocumentoReader.Received().ObterPorIdAsync(cenario.TipoDocumentoId, Arg.Any<CancellationToken>());
     }
 
@@ -125,7 +125,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
-        ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), Finalidade = "ISENCAO_TAXA" } };
+        ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), FormularioCodigo = "ISENCAO_TAXA" } };
         RegraDeComprovacaoInformada grupo = GrupoCom(primeira, outra);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo, grupo]));
@@ -143,7 +143,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
-        ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), Finalidade = "ISENCAO_TAXA" } };
+        ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), FormularioCodigo = "ISENCAO_TAXA" } };
         RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO", null, null, null, null, null);
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, GrupoCom(primeira, outra)]));

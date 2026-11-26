@@ -33,7 +33,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))

@@ -87,7 +87,7 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
             })], StringComparer.Ordinal));
 
     public PreenchimentoDoCandidato ComAceitesAdmitidos(RespostasAdmitidas admitidas) =>
-        ComAceites([.. Aceites.Where(a => admitidas.Termos.TryGetValue(a.Codigo, out TermoAdmitido? termo)
+        ComAceites([.. Aceites.Where(a => admitidas.Termos.TryGetValue(new TermoNoFormulario(a.FormularioCodigo, a.Codigo), out TermoAdmitido? termo)
             && a.ValeParaAVersao(termo))]);
 
     public bool Equals(PreenchimentoDoCandidato? outro) => outro is not null && Opcoes == outro.Opcoes
@@ -256,10 +256,10 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
         endereco.Complemento is { Length: > EnderecoDeclarado.ComplementoMaxLength } ? [new FieldError(codigo, new DomainError(InscricaoErrorCodes.EnderecoComplementoLongo,
             $"O complemento aceita até {EnderecoDeclarado.ComplementoMaxLength} caracteres. Resuma a descrição do seu endereço."))] : [];
 
-    public IEnumerable<FieldError> RecusasDosAceites(IReadOnlyDictionary<string, TermoAdmitido> termos) =>
+    public IEnumerable<FieldError> RecusasDosAceites(IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos) =>
         ConferirAceites(termos ?? throw new ArgumentNullException(nameof(termos)));
 
-    private IEnumerable<FieldError> ConferirAceites(IReadOnlyDictionary<string, TermoAdmitido> termos)
+    private IEnumerable<FieldError> ConferirAceites(IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos)
     {
         HashSet<string> vistos = new(StringComparer.Ordinal);
         for (int indice = 0; indice < Aceites.Count; indice++)
@@ -269,12 +269,12 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
         }
     }
 
-    private static FieldError? RecusaDoAceite(AceiteDeTermo aceite, int indice, HashSet<string> vistos, IReadOnlyDictionary<string, TermoAdmitido> termos)
+    private static FieldError? RecusaDoAceite(AceiteDeTermo aceite, int indice, HashSet<string> vistos, IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> termos)
     {
         string campo = $"aceites[{indice}]";
         if (!vistos.Add(aceite.Codigo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteRepetido,
             $"O termo '{aceite.Codigo}' foi aceito mais de uma vez. Envie um único aceite para cada termo."));
-        if (!termos.TryGetValue(aceite.Codigo, out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
+        if (!termos.TryGetValue(new TermoNoFormulario(aceite.FormularioCodigo, aceite.Codigo), out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
             $"O termo '{aceite.Codigo}' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
         return aceite.ValeParaAVersao(termo) ? null : new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteDeOutraVersao,
             $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));

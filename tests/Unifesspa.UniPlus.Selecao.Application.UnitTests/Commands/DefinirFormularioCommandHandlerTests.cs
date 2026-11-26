@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -38,7 +39,7 @@ public sealed class DefinirFormularioCommandHandlerTests
     [Fact(DisplayName = "Processo inexistente mantém o erro sem campo")]
     public async Task Handle_ProcessoInexistente_RetornaErroSemCampo()
     {
-        DefinirFormularioCommand command = new(Guid.NewGuid(), FinalidadeFormulario.Habilitacao, null, null, []);
+        DefinirFormularioCommand command = new(Guid.NewGuid(), FinalidadeFormulario.Habilitacao.Codigo(), null, null, true, []);
 
         Result result = await DefinirFormularioCommandHandler.Handle(
             command, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IFatoCandidatoReader>(),
@@ -178,7 +179,7 @@ public sealed class DefinirFormularioCommandHandlerTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         return DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, null, null, paginas, consequencia),
+            new DefinirFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), null, null, true, paginas, consequencia),
             repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
     }
 
@@ -199,6 +200,7 @@ public sealed class DefinirFormularioCommandHandlerTests
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogo);
         return DefinirFormularioCommandHandler.Handle(
-            new DefinirFormularioCommand(processo.Id, finalidade, faseId, titulo, paginas), repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+            new DefinirFormularioCommand(
+                processo.Id, finalidade.Codigo(), faseId, titulo, CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade).Obrigatorio, paginas), repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
     }
 }

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A anotação de nulidade não alcança os elementos de uma coleção genérica: o corpo com a lista de um
@@ -69,7 +70,7 @@ public sealed class InscricaoRequestMapperTests
     {
         Result<List<AceiteDeTermo>> resultado = InscricaoRequestMapper.ParaAceites(
         [
-            new AceiteDeTermoInput("LGPD", Guid.NewGuid(), "hash"),
+            new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "LGPD", Guid.NewGuid(), "hash"),
             null!,
         ]);
 
@@ -82,8 +83,8 @@ public sealed class InscricaoRequestMapperTests
     {
         Result<List<AceiteDeTermo>> resultado = InscricaoRequestMapper.ParaAceites(
         [
-            new AceiteDeTermoInput(null!, Guid.NewGuid(), "hash"),
-            new AceiteDeTermoInput("LGPD", Guid.NewGuid(), null!),
+            new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, null!, Guid.NewGuid(), "hash"),
+            new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "LGPD", Guid.NewGuid(), null!),
         ]);
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].codigo", "aceites[1].hashVersao");
@@ -95,10 +96,10 @@ public sealed class InscricaoRequestMapperTests
     {
         Guid versao = Guid.NewGuid();
 
-        Result<List<AceiteDeTermo>> lido = InscricaoRequestMapper.ParaAceites([new AceiteDeTermoInput("LGPD", versao, "hash")]);
+        Result<List<AceiteDeTermo>> lido = InscricaoRequestMapper.ParaAceites([new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "LGPD", versao, "hash")]);
         Result<List<AceiteDeTermo>> ausente = InscricaoRequestMapper.ParaAceites(null);
 
-        lido.Value.Should().ContainSingle().Which.Should().Be(new AceiteDeTermo("LGPD", versao, "hash"));
+        lido.Value.Should().ContainSingle().Which.Should().Be(new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "LGPD", versao, "hash"));
         ausente.Value.Should().BeEmpty();
     }
 }

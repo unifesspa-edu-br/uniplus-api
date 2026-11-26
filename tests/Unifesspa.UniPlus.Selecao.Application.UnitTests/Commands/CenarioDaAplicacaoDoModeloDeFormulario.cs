@@ -195,7 +195,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId) =>
         AplicarModeloFormularioCommandHandler.Handle(
-            new AplicarModeloFormularioCommand(Processo.Id, modeloId),
+            new AplicarModeloFormularioCommand(Processo.Id, modeloId, FinalidadeFormulario.Inscricao.Codigo()),
             _repository, _modelos, Fatos, Termos, _tiposDocumento, _modelosDeDocumento, UnitOfWork, CancellationToken.None);
 
     private static FatoCandidatoView DerivadoBooleano(string codigo, string rotulo) =>

@@ -108,6 +108,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         // O formulário a que o documento pertence — nulo fora de fase de formulário. A coerência com a fase é do domínio.
         builder.Property(d => d.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
             .HasComment("Formulário a que o documento pertence; vazio quando a fase não responde formulário.");
+        // Provisório até o formulário ser gravado pelo código: por ora a finalidade é a que se grava.
+        builder.Ignore(d => d.FormularioCodigo);
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)

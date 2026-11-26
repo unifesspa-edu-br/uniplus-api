@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
@@ -124,7 +125,7 @@ public static class DefinirTermosDoFormularioCommandHandler
             return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definido = processo.DefinirTermosDoFormulario(command.Finalidade, resolvidos.Termos);
+        Result definido = Definir(command, processo, resolvidos.Termos);
         if (definido.IsFailure)
         {
             return Result.ValidationFailure(definido.Errors);
@@ -132,6 +133,12 @@ public static class DefinirTermosDoFormularioCommandHandler
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
+    }
+
+    private static Result Definir(DefinirTermosDoFormularioCommand command, ProcessoSeletivo processo, IReadOnlyList<TermoExigidoFormulario> termos)
+    {
+        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
+        return codigo.IsFailure ? Result.Failure(codigo.Error!) : processo.DefinirTermosDoFormulario(codigo.Value!, termos);
     }
 
     private static Result ConferirVinculoNovo(ProcessoSeletivo processo, TermosResolvidosNoCatalogo resolvidos) =>

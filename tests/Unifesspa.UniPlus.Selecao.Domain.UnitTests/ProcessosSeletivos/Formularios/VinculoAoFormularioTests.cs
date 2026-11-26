@@ -187,7 +187,7 @@ public sealed class VinculoAoFormularioTests
         GrupoColetadoDeTeste.Agrupando(codigo, ordem).ComCampos(campos).DaFinalidade(finalidade).Construir();
 
     private static CopiaDeModeloDeFormulario CopiaDoModelo(FinalidadeFormulario finalidade) => new(
-        finalidade,
+        FormularioDeTeste.CodigoDoPapel(finalidade),
         "Formulário",
         FormularioDeTeste.Paginas(finalidade),
         [Item("COR_RACA", 0)],

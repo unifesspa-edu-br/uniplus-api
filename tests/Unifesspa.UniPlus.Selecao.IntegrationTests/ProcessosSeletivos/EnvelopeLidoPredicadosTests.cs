@@ -74,7 +74,7 @@ public sealed class EnvelopeLidoPredicadosTests
     private static DocumentoExigido DeclaracaoDeMaioridade(FaseCronograma fase) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_declaracao_maioridade").Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase.Id, null, Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao),
+            new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.CodigoDoPapel(Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!]),
             new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

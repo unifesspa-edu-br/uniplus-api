@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -90,7 +91,7 @@ internal static class LeituraDasExigencias
             return Recusar(leitor, recusa);
         }
 
-        return Reidratar(campos, classificacaoProtecao, finalidade, complementos);
+        return Reidratar(campos, classificacaoProtecao, CodigoDoFormulario.Criar(campos.FinalidadeToken).Value, complementos);
     }
 
     private static string? RecusaDaFinalidadeOuDoTamanho(CamposDaExigenciaNoEnvelope campos, FinalidadeFormulario? finalidade, string path)
@@ -123,12 +124,12 @@ internal static class LeituraDasExigencias
     private static DocumentoExigido Reidratar(
         CamposDaExigenciaNoEnvelope d,
         ClassificacaoDeProtecao classificacaoProtecao,
-        FinalidadeFormulario? finalidade,
+        CodigoDoFormulario? formulario,
         ComplementosDaExigencia c) => DocumentoExigido.Reidratar(
             d.Chave!.Value, d.ExigenciaId,
             new DocumentoExigidoDeclarado(
             new CopiaDoTipoDeDocumento(d.TipoDocumentoOrigemId, d.TipoDocumentoCodigo, d.TipoDocumentoNome, d.TipoDocumentoCategoria, new ProtecaoDoDocumento(classificacaoProtecao, d.FinalidadeTratamento, d.HipoteseLegal)),
-            new MomentoDaExigencia(d.ExigidoNaFaseId, d.ExigidoNaEtapaId, finalidade),
+            new MomentoDaExigencia(d.ExigidoNaFaseId, d.ExigidoNaEtapaId, formulario),
             new AplicabilidadeDaExigencia(d.Aplicabilidade, c.Condicoes),
             new IndeferimentoDoDocumento(d.Obrigatorio, d.ConsequenciaDoDescumprimento, c.BasesLegais, d.AbrePrazoParaReenvio),
             new RequisitosDoDocumento(c.FormatosPermitidos, d.TamanhoMaximoBytes, c.Modelo, c.PrazoDeEmissao, c.Validade),

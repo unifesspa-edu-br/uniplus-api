@@ -148,7 +148,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             new HashSet<Guid>(),
-            new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
+            new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
         DocumentoExigidoDeTeste.Novo()

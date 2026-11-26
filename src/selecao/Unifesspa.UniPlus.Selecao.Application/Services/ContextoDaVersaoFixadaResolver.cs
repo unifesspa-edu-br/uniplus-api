@@ -10,6 +10,7 @@ using DTOs;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -205,12 +206,13 @@ public sealed class ContextoDaVersaoFixadaResolver(
             NumeroDeOpcoesDeCurso: configuracaoPublicada.Vagas.NumeroDeOpcoesDeCurso ?? 1);
     }
 
-    private static Dictionary<string, TermoAdmitido> TermosDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
+    private static Dictionary<TermoNoFormulario, TermoAdmitido> TermosDaInscricao(ConfiguracaoPublicada configuracaoPublicada)
     {
-        Dictionary<string, TermoAdmitido> termos = new(StringComparer.Ordinal);
+        string formulario = FinalidadeFormulario.Inscricao.Codigo();
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = [];
         foreach (TermoExigidoFormulario termo in configuracaoPublicada.Coleta.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
         {
-            termos.TryAdd(termo.Codigo, termo.ParaAceite());
+            termos.TryAdd(new TermoNoFormulario(formulario, termo.Codigo), termo.ParaAceite());
         }
 
         return termos;

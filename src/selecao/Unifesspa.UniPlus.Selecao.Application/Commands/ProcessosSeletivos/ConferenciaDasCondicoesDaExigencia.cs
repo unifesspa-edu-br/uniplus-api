@@ -130,7 +130,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoCodigo(documento.Finalidade());
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoCodigo(documento.FormularioCodigo());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
                 configuracao, c.Fato, documento.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))

@@ -18,7 +18,7 @@ public sealed class DocumentosDoComprovanteTests
         string nome, string? consequencia = null, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Fase, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))

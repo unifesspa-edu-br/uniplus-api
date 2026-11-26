@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class OpcoesDeCursoDaInscricaoTests
 {
@@ -12,7 +13,7 @@ public sealed class OpcoesDeCursoDaInscricaoTests
     private static readonly Guid Segunda = Guid.Parse("00000000-0000-0000-0000-000000000002");
     private static RespostasAdmitidas Admitidas => new(new Dictionary<string, DefinicaoDaResposta>(),
         new HashSet<string>(), new Dictionary<string, IReadOnlySet<string>>(), new HashSet<Guid> { Primeira, Segunda },
-        new Dictionary<string, TermoAdmitido>(), NumeroDeOpcoesDeCurso: 2);
+        new Dictionary<TermoNoFormulario, TermoAdmitido>(), NumeroDeOpcoesDeCurso: 2);
 
     [Fact]
     public void Escolher_MesmasOpcoes_PossuiIgualdadePorValor()

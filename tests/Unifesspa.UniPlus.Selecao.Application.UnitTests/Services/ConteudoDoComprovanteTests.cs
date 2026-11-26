@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static ComprovanteDeTeste;
 
@@ -150,7 +151,7 @@ public sealed class ConteudoDoComprovanteTests
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
             inscricao.Id, "00000001", Instante, null, Respostas(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(),
-            [new AceiteDeTermo("TERMO_VERACIDADE", versaoDoTermo, new string('b', 64))], []);
+            [new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", versaoDoTermo, new string('b', 64))], []);
 
         ComprovanteDaInscricaoDto dto = Montar(inscricao, comprovante, Envelope());
 

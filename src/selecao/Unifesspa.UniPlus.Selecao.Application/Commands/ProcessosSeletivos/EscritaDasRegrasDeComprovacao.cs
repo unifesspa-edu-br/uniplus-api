@@ -90,12 +90,12 @@ internal static class EscritaDasRegrasDeComprovacao
 
     private static List<FieldError> FormaDoDocumento(ItemDocumentoExigidoInput documento) =>
     [
-        .. EscritaDaExigencia.RecusaDaFinalidadeDesconhecida(documento.Finalidade())
+        .. EscritaDaExigencia.RecusaDaFinalidadeDesconhecida(documento.FormularioCodigo())
             .Concat(DocumentoExigido.ValidarFormaBasica(
                 EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade()),
                 documento.ConsequenciaDoDescumprimento(),
                 documento.Condicoes().Count,
-                EscritaDaExigencia.FinalidadeDoCodigo(documento.Finalidade()),
+                EscritaDaExigencia.FinalidadeDoCodigo(documento.FormularioCodigo()),
                 documento.FatosComprovados))
             .Concat(RequisitosDoDocumento.ValidarTamanho(documento.TamanhoMaximoBytes()))
             .Select(EscritaDaExigencia.NoCaminhoDoPedido),

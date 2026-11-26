@@ -162,7 +162,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
         DocumentoExigido.Criar(
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_laudo_medico").Value!,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(Guid.CreateVersion7(), null, Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao),
+                new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

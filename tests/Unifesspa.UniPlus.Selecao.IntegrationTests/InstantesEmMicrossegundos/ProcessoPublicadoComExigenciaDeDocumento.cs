@@ -75,7 +75,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
     private static DocumentoExigido ExigenciaDoPdf(Guid faseId) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_autodeclaracao_etnico_racial").Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+            new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(true, null, [BaseLegalDaResolucao()]),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
