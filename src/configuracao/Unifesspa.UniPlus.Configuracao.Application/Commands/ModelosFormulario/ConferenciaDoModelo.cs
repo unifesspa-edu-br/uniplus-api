@@ -273,7 +273,7 @@ internal static class ConferenciaDoModelo
         string fatoCodigo = fatoCodigoInformado;
         if (!catalogo.Fatos.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
         {
-            return new(ItemFormularioErrorCodes.FatoDesconhecido, "O fato informado não pertence ao catálogo de fatos do candidato.");
+            return ConferenciaNoCatalogo.FatoDesconhecido();
         }
 
         return fato.Dominio == TipoDoDado.Opcao

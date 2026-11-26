@@ -94,14 +94,14 @@ public sealed class VocabularioDoCatalogoTests
     public void ParaRegras_TraduzOFatoParaOsTokensDoCatalogo()
     {
         FatoCandidato global = Fato("CATALOGO", TipoDoDado.Opcao, FonteValoresFato.Catalogo, nome: "Zona de residência");
-        global.AdicionarValorDominio("URBANA", "URBANA", 1, ativo: true).IsSuccess.Should().BeTrue();
-        global.AdicionarValorDominio("RURAL", "RURAL", 2, ativo: false).IsSuccess.Should().BeTrue();
+        global.AdicionarValorDominio("URBANA", "Zona urbana", 1, ativo: true).IsSuccess.Should().BeTrue();
+        global.AdicionarValorDominio("RURAL", "Zona rural", 2, ativo: false).IsSuccess.Should().BeTrue();
 
         FatoDoCatalogo fato = VocabularioDoCatalogo.ParaRegras([global, Fato("SIM_OU_NAO")])["CATALOGO"];
 
         fato.Should().BeEquivalentTo(new FatoDoCatalogo(
             "CATALOGO", "Zona de residência", TipoDoDado.Opcao, QuantidadeDeValores.ValorUnico, OrigemFato.Declarado, "CAMPO_FORMULARIO:CATALOGO", FonteValoresFato.Catalogo, EscopoFato.Candidato, true,
-            [new ValorDoCatalogo("URBANA", true), new ValorDoCatalogo("RURAL", false)], false));
+            [new ValorDoCatalogo("URBANA", "Zona urbana", true), new ValorDoCatalogo("RURAL", "Zona rural", false)], false));
     }
 
     [Fact(DisplayName = "O fato sem fonte de valores nem valores vai ao catálogo das regras sem fonte e sem valores")]
@@ -193,8 +193,8 @@ public sealed class VocabularioDoCatalogoTests
 
         Dictionary<string, FatoDoCatalogo> fatos = VocabularioDoCatalogo.ParaRegras([membro, agregado]);
 
-        fatos["CATEGORIAS_RENDA_FAMILIA"].Valores.Should().Equal(new ValorDoCatalogo("RURAL", true), new ValorDoCatalogo("URBANA", false));
-        fatos["CATEGORIA_RENDA"].Valores.Should().Equal(new ValorDoCatalogo("RURAL", true), new ValorDoCatalogo("URBANA", false));
+        fatos["CATEGORIAS_RENDA_FAMILIA"].Valores.Should().Equal(new ValorDoCatalogo("RURAL", "Rural", true), new ValorDoCatalogo("URBANA", "Urbana", false));
+        fatos["CATEGORIA_RENDA"].Valores.Should().Equal(new ValorDoCatalogo("RURAL", "Rural", true), new ValorDoCatalogo("URBANA", "Urbana", false));
     }
 
     [Fact(DisplayName = "A apresentação do fato traz o nome do catálogo e o tipo de campo que o domínio e a fonte dos valores admitem")]

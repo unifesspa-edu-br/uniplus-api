@@ -73,15 +73,15 @@ public sealed class AgregadoDoAdministradorTests
     }
 
     [Fact]
-    public void CriarAgregado_FatoDeMembroDesativado_NaoRepeteCodigo()
+    public void CriarAgregado_FatoDeMembroDesativado_NomeiaOFatoSemRepetirOCodigo()
     {
-        FatoCandidato fato = DeMembro("FATO_DE_TESTE");
+        FatoCandidato fato = DeMembro("FATO_DE_TESTE", nome: "Renda de cada membro");
         fato.Desativar().IsSuccess.Should().BeTrue();
         FieldError erro = Criar("AGREGADO", "FATO_DE_TESTE", fato).Errors.Single();
 
         erro.Field.Should().Be("fatoDeMembro");
         erro.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
-        erro.Error.Message.Should().NotContain("FATO_DE_TESTE");
+        erro.Error.Message.Should().Be("O dado do candidato 'Renda de cada membro', de membro de grupo, está desativado no catálogo e não aceita vínculo novo.");
     }
 
     [Theory]
@@ -282,8 +282,9 @@ public sealed class AgregadoDoAdministradorTests
         TipoDoDado dominio = TipoDoDado.SimOuNao,
         string ponto = "HABILITACAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
-        FonteValoresFato fonte = FonteValoresFato.OpcoesDoProcesso) =>
+        FonteValoresFato fonte = FonteValoresFato.OpcoesDoProcesso,
+        string? nome = null) =>
         CriacaoDoFato.CriarDoAdministrador(
-            new DescritivoDoFato(codigo, codigo, "Descrição do fato."),
+            new DescritivoDoFato(codigo, nome ?? codigo, "Descrição do fato."),
             new DefinicaoDoFato(dominio, QuantidadeDeValores.ValorUnico, dominio == TipoDoDado.Opcao ? fonte : null, null, ponto, EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese)).Value!;
 }

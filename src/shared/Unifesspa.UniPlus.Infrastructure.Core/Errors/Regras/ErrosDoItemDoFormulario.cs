@@ -29,8 +29,8 @@ internal static class ErrosDoItemDoFormulario
         new(ItemFormularioErrorCodes.RestricaoIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.restricao_incoerente", "A restrição de valor não se aplica ao tipo do campo")),
         new(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.opcional_que_alimenta_regra", "Campo que alimenta derivação, agregado ou negação precisa ser obrigatório sempre que exibido")),
         new(ItemFormularioErrorCodes.TipoDeCampoIncoerenteComDominio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.tipo_de_campo_incoerente_com_dominio", "O tipo de campo não é coerente com o domínio do dado")),
-        new(ItemFormularioErrorCodes.FatoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_desconhecido", "O fato do item não pertence ao catálogo de fatos do candidato")),
-        new(ItemFormularioErrorCodes.FatoNaoColetavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_nao_coletavel", "O fato do item não é coletável num campo")),
+        new(ItemFormularioErrorCodes.FatoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_desconhecido", "O dado do candidato do item não existe no catálogo")),
+        new(ItemFormularioErrorCodes.FatoNaoColetavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.fato_nao_coletavel", "O dado do candidato do item não é coletável num campo")),
         new(ItemFormularioErrorCodes.ItensEmExcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.itens_em_excesso", "O formulário excede o teto de itens")),
         new(ItemFormularioErrorCodes.OpcoesDeOutroDominio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.item_formulario.opcoes_de_outro_dominio", "As opções vêm de um campo com outra fonte ou outro domínio de valores")),
     ];
