@@ -28,6 +28,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     public const string Hipotese = "CUMPRIMENTO_OBRIGACAO_LEGAL";
 
     private readonly List<FatoColetado> _fatos = [];
+    private readonly List<OpcaoDeclaradaFato> _opcoes = [];
     private readonly List<GrupoColetado> _grupos = [];
     private readonly List<DocumentoExigido> _exigencias = [];
     private readonly Dictionary<string, FatoDerivadoCongelado> _derivados = new(StringComparer.Ordinal);
@@ -60,6 +61,13 @@ internal sealed class InscricaoAdministrativaDeTeste
     public Guid OfertaCursoId { get; } = Guid.CreateVersion7();
 
     public SituacaoInscricao Situacao { get; }
+
+    public InscricaoAdministrativaDeTeste OpcaoCongelada(string fato, string codigo, string rotulo)
+    {
+        Result<OpcaoDeclaradaFato> opcao = OpcaoDeclaradaFato.Criar(fato, codigo, rotulo, _opcoes.Count);
+        _opcoes.Add(opcao.IsSuccess ? opcao.Value! : throw new InvalidOperationException("Opção inválida."));
+        return this;
+    }
 
     public InscricaoAdministrativaDeTeste Fato(
         string codigo, string classificacao, TipoDeCampo tipo, JsonElement? resposta,
@@ -185,7 +193,7 @@ internal sealed class InscricaoAdministrativaDeTeste
                 processo.BonusRegional, null, processo.AtendimentoEspecializado!),
             new ExigenciasDeclaradas(_exigencias, []),
             new ColetaDeclarada(ConfiguracaoPublicadaDeTeste.CamposDaColeta(_fatos, _grupos), _grupos, [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Paginas()).Value!], [],
-                [], [], null),
+                _opcoes, [], null),
             new DivulgacaoETaxaDeclaradas(null, null), null);
 
         return new EnvelopeReidratado(

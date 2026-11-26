@@ -18235,7 +18235,7 @@
           "SITUACAO"
         ],
         "type": "string",
-        "description": "Como a tela mostra o valor de um dado do candidato quando o modo de exibi\u00E7\u00E3o n\u00E3o se deduz do tipo, do formato nem da prote\u00E7\u00E3o.\n\n- \u0060MOEDA\u0060: Valor em reais \u2014 O valor aparece em reais, como R$ 1.234,56.\n- \u0060SITUACAO\u0060: Situa\u00E7\u00E3o \u2014 O valor aparece como a situa\u00E7\u00E3o de um processo ou de um pedido, numa etiqueta."
+        "description": "Como a tela mostra o valor de um dado do candidato quando o modo de exibi\u00E7\u00E3o n\u00E3o se deduz do tipo, do formato nem da prote\u00E7\u00E3o.\n\n- \u0060MOEDA\u0060: Valor em reais \u2014 O valor aparece em reais, como R$ 1.234,56.\n- \u0060SITUACAO\u0060: Situa\u00E7\u00E3o \u2014 A tela mostra o r\u00F3tulo numa etiqueta, sem mudar a forma do valor."
       },
       "ComposicaoVagas": {
         "required": [

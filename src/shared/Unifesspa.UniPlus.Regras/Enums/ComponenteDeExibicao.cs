@@ -15,7 +15,7 @@ public enum ComponenteDeExibicao
     [CodigoDeContrato("MOEDA", "Valor em reais", Descricao = "O valor aparece em reais, como R$ 1.234,56.")]
     Moeda = 1,
 
-    /// <summary>Situação de um processo ou pedido, como uma etiqueta.</summary>
-    [CodigoDeContrato("SITUACAO", "Situação", Descricao = "O valor aparece como a situação de um processo ou de um pedido, numa etiqueta.")]
+    /// <summary>A tela mostra o rótulo numa etiqueta, sem mudar a forma do valor.</summary>
+    [CodigoDeContrato("SITUACAO", "Situação", Descricao = "A tela mostra o rótulo numa etiqueta, sem mudar a forma do valor.")]
     Situacao = 2,
 }

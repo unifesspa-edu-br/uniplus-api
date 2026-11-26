@@ -253,6 +253,31 @@ public sealed class OpenApiEndpointTests
         aceitaNulo.Should().Be(nulo, $"{schema}.urlDownload {(nulo ? "pode" : "não pode")} ser nulo");
     }
 
+    [Fact(DisplayName = "O valor dos itens tem a mesma descrição e não enumera opções")]
+    public async Task ValorDosItens_NoContrato_TemDescricaoUnica()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+        JsonElement schemas = spec.RootElement.GetProperty("components").GetProperty("schemas");
+        JsonElement administrativo = ValorDoItem(schemas, "ItemDeRespostaDto");
+        JsonElement comprovante = ValorDoItem(schemas, "ItemDoComprovanteDto");
+        administrativo.GetProperty("description").GetString().Should().Be(comprovante.GetProperty("description").GetString())
+            .And.Contain("O rótulo pode vir das opções declaradas pelo processo e congeladas na publicação ou dos valores de domínio congelados; para UF, vem da lista oficial");
+        schemas.GetProperty("ExibicaoDoValorDoItemCodigo").GetProperty("description").GetString()
+            !.Split('\n').Single(static linha => linha.Contains("`SITUACAO`:", StringComparison.Ordinal))
+            .Should().Contain("A tela mostra o rótulo numa etiqueta, sem mudar a forma do valor");
+    }
+
+    private static JsonElement ValorDoItem(JsonElement schemas, string nome)
+    {
+        JsonElement valor = schemas.GetProperty(nome).GetProperty("properties").GetProperty("valor");
+        valor.TryGetProperty("enum", out _).Should().BeFalse();
+        JsonElement alternativa = valor.GetProperty("oneOf").EnumerateArray()
+            .Single(static alternativa => alternativa.TryGetProperty("$ref", out _));
+        alternativa.TryGetProperty("enum", out _).Should().BeFalse();
+        alternativa.GetProperty("$ref").GetString().Should().Be("#/components/schemas/JsonElement");
+        return alternativa;
+    }
+
     private async Task<JsonDocument> LerSpecAsync()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
