@@ -182,4 +182,16 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
 
     private static IEnumerable<(string? Chave, string? Nome)> ChaveENome(Result<DocumentoLido> lido) =>
         lido.Value!.Documento["etapas"]!.AsArray().Select(static etapa => (etapa!["chave"]?.GetValue<string>(), etapa["nome"]?.GetValue<string>()));
+
+    [Theory(DisplayName = "A prova presencial fora da forma do esquema é recusada pela leitura, e não vira aviso")]
+    [InlineData("""{ "temProvaPresencial": true, "municipios": [ { "codigoIbge": "15", "uf": "PA" } ] }""")]
+    [InlineData("""{ "temProvaPresencial": false, "municipios": [ { "codigoIbge": "1504208", "uf": "PA" } ] }""")]
+    public void ProvaPresencialForaDaForma_ERecusadaPelaLeitura(string provaPresencial)
+    {
+        Result<DocumentoLido> resultado = Ler($""" "provaPresencial": {provaPresencial} """);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors[0].Error.Code.Should().Be(DocumentoDaConfiguracaoErrorCodes.ValorInvalido);
+        resultado.Errors[0].Field.Should().StartWith("/provaPresencial");
+    }
 }

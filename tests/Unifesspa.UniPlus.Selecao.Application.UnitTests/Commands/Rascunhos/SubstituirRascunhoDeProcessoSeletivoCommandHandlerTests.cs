@@ -7,11 +7,13 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class SubstituirRascunhoDeProcessoSeletivoCommandHandlerTests
@@ -207,6 +209,63 @@ public sealed class SubstituirRascunhoDeProcessoSeletivoCommandHandlerTests
             _ = _cenario.Unidades.ObterPorCodigoAsync(CenarioDoRascunho.CodigoDaUnidade, Arg.Any<CancellationToken>());
             _ = _cenario.Rascunhos.ObterParaMutacaoAsync(rascunho.Id, Arg.Any<CancellationToken>());
         });
+    }
+
+    [Fact(DisplayName = "O município que o Geo não conhece é apontado no diagnóstico e a substituição é gravada do mesmo modo")]
+    public async Task MunicipioDesconhecidoDoGeo_SubstituiComAviso()
+    {
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps);
+
+        Result<RascunhoSalvoDto> resultado = await Substituir(
+            rascunho.Id, CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1599999")), CenarioDoRascunho.Precondicao(rascunho));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Diagnosticos.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("/provaPresencial/municipios/0/codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo));
+        rascunho.Revisao.Should().Be(2);
+    }
+
+    [Fact(DisplayName = "Com o Geo fora do ar a substituição é gravada e o diagnóstico traz um só aviso de Geo indisponível")]
+    public async Task GeoForaDoAr_SubstituiComUmSoAviso()
+    {
+        _cenario.GeoForaDoAr();
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps);
+
+        Result<RascunhoSalvoDto> resultado = await Substituir(
+            rascunho.Id, CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208", "1501402")), CenarioDoRascunho.Precondicao(rascunho));
+
+        resultado.Value!.Diagnosticos.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("/provaPresencial/municipios", ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel));
+        await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O Geo é consultado antes de bloquear a linha, para a espera por ele não ficar presa à trava")]
+    public async Task Geo_ConsultadoAntesDoBloqueio()
+    {
+        _cenario.GeoConhece("1504208", "Marabá");
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Ceps);
+
+        await Substituir(
+            rascunho.Id, CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208")), CenarioDoRascunho.Precondicao(rascunho));
+
+        Received.InOrder(() =>
+        {
+            _ = _cenario.Geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>());
+            _ = _cenario.Rascunhos.ObterParaMutacaoAsync(rascunho.Id, Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact(DisplayName = "A precondição ausente e a forma inválida são recusadas antes de qualquer consulta ao Geo")]
+    public async Task RecusasAntesDoGeo_NaoConsultamOGeo()
+    {
+        string documento = CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208"));
+        await Substituir(Guid.CreateVersion7(), documento, PrecondicaoIfMatch.Ausente);
+        _cenario.Esquema.Avaliar(Arg.Any<JsonObject>()).Returns(
+            [new FieldError("/provaPresencial/municipios", new DomainError(DocumentoDaConfiguracaoErrorCodes.TipoInvalido, "Tipo."))]);
+
+        await Substituir(Guid.CreateVersion7(), documento, PrecondicaoIfMatch.Curinga);
+
+        await _cenario.Geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 
     [Fact(DisplayName = "A exceção de concorrência não é capturada: sem Idempotency-Key, o tratamento é o central")]

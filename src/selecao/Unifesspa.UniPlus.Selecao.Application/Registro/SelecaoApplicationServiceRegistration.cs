@@ -214,6 +214,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
         services.AddScoped<BloqueioCompartilhadoDoProcessoSeletivo>();
         services.AddScoped<ResolucaoDosModelosCitados>();
+        services.AddScoped<ConferenciaDaProvaPresencialDoDocumento>();
         services.AddScoped<DiagnosticoDoRascunho>();
         AddExportacaoDoRascunho(services);
     }

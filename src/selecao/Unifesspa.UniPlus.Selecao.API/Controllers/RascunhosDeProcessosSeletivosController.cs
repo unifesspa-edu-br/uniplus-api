@@ -74,9 +74,12 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// O <c>id</c>, a <c>versao</c> e o <c>publicadoEm</c> da raiz e todo campo marcado <c>readOnly</c> no esquema são
     /// ignorados. Toda parte que o esquema exige com <c>chave</c> a traz: a chave é escolhida por quem cria a parte, e o
     /// sistema não a atribui. A parte sem <c>chave</c> recusa o salvamento (422), no ponteiro da chave que falta. O
-    /// diagnóstico aponta modelos citados que não foram enviados ao rascunho ou ainda não foram confirmados, e as recusas do
-    /// cadastro de reserva (no ponteiro do item e do campo recusado) e da manifestação de interesse, que não impedem o salvamento:
-    /// a recusa (422) vem na publicação.
+    /// diagnóstico aponta modelos citados que não foram enviados ao rascunho ou ainda não foram confirmados, as recusas do
+    /// cadastro de reserva (no ponteiro do item e do campo recusado) e da manifestação de interesse, e as da prova presencial: a
+    /// declaração que falta, o processo sem município, cada município com a UF diferente da do código, repetido ou que o Geo não
+    /// conhece, e a lista acima do limite. Nada disso impede o salvamento: a recusa (422) vem na publicação. O código do IBGE fora do
+    /// formato (sete dígitos com o prefixo de uma UF) é forma do documento: recusa o salvamento (422), sem consultar o Geo. Com o Geo fora do ar, o rascunho é salvo e o
+    /// diagnóstico traz um só aviso de Geo indisponível no campo dos municípios, sem aviso por município.
     /// <para>
     /// A resposta não devolve o documento salvo. Os campos somente de leitura da revisão salva obtêm-se relendo a revisão por
     /// <c>GET /rascunhos-de-processos-seletivos/{id}</c> (o <c>Location</c> da resposta). Se o <c>ETag</c> do GET for o
@@ -155,7 +158,8 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// esquema exige com <c>chave</c> a traz; a parte sem <c>chave</c> recusa o salvamento (422), no ponteiro da chave que
     /// falta. Para conservar as referências entre partes do documento (decisões, dados, publicações previstas), o cliente devolve a
     /// <c>chave</c> de cada parte como a exportação a trouxe; a chave é escolhida por quem cria a parte e não muda ao
-    /// renomear nem ao reordenar, e a referência a uma chave que não existe mais vira diagnóstico. A forma inválida recusa o
+    /// renomear nem ao reordenar, e a referência a uma chave que não existe mais vira diagnóstico, assim como o município de prova
+    /// que o Geo não conhece, e as demais recusas da prova presencial listadas no POST. A forma inválida recusa o
     /// documento inteiro sem substituir o anterior. A unidade administradora pode
     /// mudar: a pessoa precisa configurar processos na unidade nova, além da atual. Sem <c>Idempotency-Key</c>: a
     /// substituição integral com precondição já é idempotente. A espera pela trava da linha, quando outra operação a segura,

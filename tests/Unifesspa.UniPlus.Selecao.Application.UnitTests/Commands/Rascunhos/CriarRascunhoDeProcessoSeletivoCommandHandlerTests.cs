@@ -6,11 +6,13 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
 {
@@ -140,6 +142,68 @@ public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
 
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.ConflitoDeConcorrencia);
         _cenario.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "O município que o Geo não conhece cria o rascunho do mesmo modo e volta como aviso no diagnóstico")]
+    public async Task MunicipioDesconhecidoDoGeo_CriaComAviso()
+    {
+        Result<RascunhoSalvoDto> resultado = await Criar(CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1599999")));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Diagnosticos.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("/provaPresencial/municipios/0/codigoIbge", ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo));
+        await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Com o Geo fora do ar o rascunho é criado e o diagnóstico traz um só aviso de Geo indisponível")]
+    public async Task GeoForaDoAr_CriaComUmSoAviso()
+    {
+        _cenario.GeoForaDoAr();
+
+        Result<RascunhoSalvoDto> resultado = await Criar(CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208", "1501402")));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Diagnosticos.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("/provaPresencial/municipios", ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel));
+        await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O Geo é consultado uma vez por município, depois da permissão e antes de gravar o rascunho")]
+    public async Task Geo_ConsultadoDepoisDaPermissaoEAntesDeGravar()
+    {
+        _cenario.GeoConhece("1504208", "Marabá");
+
+        await Criar(CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208")));
+
+        Received.InOrder(() =>
+        {
+            _ = _cenario.Verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+            _ = _cenario.Geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>());
+            _ = _cenario.Rascunhos.AdicionarAsync(Arg.Any<RascunhoDeProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        });
+        await _cenario.Geo.Received(1).ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A pessoa sem permissão na unidade é recusada antes de qualquer consulta ao Geo")]
+    public async Task SemPermissao_NaoConsultaOGeo()
+    {
+        _cenario.NaoPodeConfigurarEm(CenarioDoRascunho.Ceps);
+
+        Result<RascunhoSalvoDto> resultado = await Criar(CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208")));
+
+        resultado.Error!.Code.Should().Be(RascunhoDeProcessoSeletivoErrorCodes.UnidadeForaDaPermissao);
+        await _cenario.Geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
+    }
+
+    [Fact(DisplayName = "A forma inválida é recusada antes de qualquer consulta ao Geo")]
+    public async Task FormaInvalida_NaoConsultaOGeo()
+    {
+        _cenario.Esquema.Avaliar(Arg.Any<System.Text.Json.Nodes.JsonObject>()).Returns(
+            [new FieldError("/provaPresencial/municipios", new DomainError(DocumentoDaConfiguracaoErrorCodes.TipoInvalido, "Tipo."))]);
+
+        await Criar(CenarioDoRascunho.DocumentoValido(provaPresencial: CenarioDoRascunho.ProvaPresencialNoPara("1504208")));
+
+        await _cenario.Geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 
     [Fact(DisplayName = "Os argumentos nulos são recusados")]

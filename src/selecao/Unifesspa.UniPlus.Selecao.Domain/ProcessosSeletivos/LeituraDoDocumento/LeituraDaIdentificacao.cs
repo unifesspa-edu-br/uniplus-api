@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// A leitura da identificação do documento: resolve nos cadastros citados o tipo de processo, a unidade administradora, a
 /// localidade e a convenção de contagem, e copia a origem dos candidatos e o identificador legível. Código ausente deixa o campo
 /// sem valor, e a regra de completude ou a pendência dele o recusa ao publicar; código que o cadastro não tem vira parte recusada,
-/// que aponta o campo que o cita sem repetir o texto escrito. Não confere regra.
+/// que aponta o campo que o cita sem repetir o texto escrito. A localidade que o Geo não pôde conferir também vira parte recusada,
+/// mas com a causa de a conferência não ter sido feita, e não a de município inexistente. Não confere regra.
 /// </summary>
 internal static class LeituraDaIdentificacao
 {
@@ -19,7 +20,9 @@ internal static class LeituraDaIdentificacao
         List<ParteRecusada> recusadas = [];
         TipoProcessoSnapshot? tipo = Citado(identificacao.TipoProcessoCodigo, cadastros.TipoDeProcesso, IdentidadeDoProcessoDeclarada.CampoDoTipoDeProcesso, TipoDeProcessoNaoEncontrado, recusadas);
         UnidadeCitada? unidade = Citado(identificacao.UnidadeAdministradoraCodigo, cadastros.Unidade, IdentidadeDoProcessoDeclarada.CampoDaUnidadeAdministradora, UnidadeNaoEncontrada, recusadas);
-        LocalidadeRegente? localidade = Citado(identificacao.LocalidadeCodigoIbge, cadastros.Localidade, IdentidadeDoProcessoDeclarada.CampoDaLocalidade, MunicipioNaoEncontrado, recusadas);
+        LocalidadeRegente? localidade = Citado(
+            identificacao.LocalidadeCodigoIbge, cadastros.Localidade, IdentidadeDoProcessoDeclarada.CampoDaLocalidade,
+            cadastros.LocalidadeNaoConferida ?? MunicipioNaoEncontrado, recusadas);
         ReferenciaRegra? algoritmo = Algoritmo(identificacao.AlgoritmoContagemPrazo, cadastros, recusadas);
         IdentificadorLegivel? identificador = Identificador(identificacao.IdentificadorLegivel, recusadas);
 

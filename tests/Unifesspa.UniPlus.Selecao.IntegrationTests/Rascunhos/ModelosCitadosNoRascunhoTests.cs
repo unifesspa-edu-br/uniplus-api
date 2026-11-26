@@ -108,12 +108,14 @@ public sealed class ModelosCitadosNoRascunhoTests(CascadingFixture fixture)
     private static string DocumentoSemModelo() => """
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
           "identificacao": { "nome": "Processo de exemplo", "unidadeAdministradoraCodigo": "CEPS" },
+          "provaPresencial": { "temProvaPresencial": false, "municipios": [] },
           "documentosExigidos": { "exigencias": [ { "chave": "declaracao" } ] } }
         """;
 
     private static string DocumentoComModelo(Guid modelo) => $$"""
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
           "identificacao": { "nome": "Processo de exemplo", "unidadeAdministradoraCodigo": "CEPS" },
+          "provaPresencial": { "temProvaPresencial": false, "municipios": [] },
           "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "modeloId": "{{modelo}}" } ] } }
         """;
 }

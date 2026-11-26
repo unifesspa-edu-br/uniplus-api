@@ -14920,19 +14920,22 @@
     {
       "codigo": "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel",
       "requisitos": [
-        "UNI-REQ-0214"
+        "UNI-REQ-0214",
+        "UNI-REQ-0407"
       ],
       "oQueAconteceu": [
-        "No envio da inscrição, o sistema confere no Geo, o cadastro de localidades\ndo Uni+, o endereço pelo CEP e os municípios informados. O Geo não\nrespondeu, e o sistema não aceita um município ou um endereço sem essa\nconferência. Por isso o envio foi recusado por inteiro.",
-        "Este aviso é temporário e não aponta erro nos dados do candidato. Ele só\né dado quando não há nenhuma outra recusa que o candidato possa corrigir:\nse houvesse, o envio seria recusado com 422 e a lista dessas recusas.",
-        "Nada desta tentativa foi gravado. O que vale depende do caso:",
-        "- **Primeiro envio:** a inscrição não foi enviada, e o que fica é a última\n  versão salva do rascunho. Se você alterou respostas depois do último\n  salvamento e as mandou junto com o pedido de envio, essas alterações não\n  foram gravadas.\n- **Correção de inscrição já enviada:** a correção não foi gravada, e a\n  inscrição e o comprovante do envio anterior continuam valendo."
+        "O sistema confere no Geo, o cadastro de localidades do Uni+, os\nmunicípios e os endereços informados, e não aceita um município ou um\nendereço sem essa conferência. O Geo não respondeu. Este aviso é\ntemporário e não aponta erro nos dados informados.",
+        "O que vale depende de onde a conferência foi pedida:",
+        "- **Envio da inscrição:** o envio foi recusado por inteiro e nada desta\n  tentativa foi gravado. No primeiro envio, a inscrição não foi enviada, e o\n  que fica é a última versão salva do rascunho; se você alterou respostas\n  depois do último salvamento e as mandou junto com o pedido de envio,\n  essas alterações não foram gravadas. Na correção de inscrição já\n  enviada, a correção não foi gravada, e a inscrição e o comprovante do\n  envio anterior continuam valendo. Este aviso só é dado quando não há\n  nenhuma outra recusa que o candidato possa corrigir: se houvesse, o\n  envio seria recusado com 422 e a lista dessas recusas.\n- **Publicação e retificação do processo seletivo:** a conferência dos\n  municípios de prova não foi feita, e nada foi gravado.\n- **Salvamento e importação do rascunho da configuração do processo:** o\n  rascunho é salvo. O aviso vem uma só vez, no campo dos municípios de\n  prova (`/provaPresencial/municipios`), no lugar de um aviso por\n  município, e nenhum município fica aprovado por falta de conferência.\n  No painel de conformidade, o item da prova presencial fica pendente."
       ],
       "comoResolver": [
-        "Aguarde alguns minutos. Se for o primeiro envio, abra o rascunho e confira\nas respostas que você alterou desde o último salvamento, refazendo as que\nfaltarem. Se for a correção de uma inscrição já enviada, refaça a correção\na partir da inscrição como ela está. Em seguida, envie outra vez. Se o\nprazo de inscrição estiver perto do fim, tente de novo o quanto antes. Se o\naviso persistir por muito tempo, procure o canal de suporte do processo\nseletivo."
+        "Aguarde alguns minutos e tente de novo. Se for o primeiro envio de\ninscrição, abra o rascunho e confira as respostas que você alterou desde o\núltimo salvamento, refazendo as que faltarem. Se for a correção de uma\ninscrição já enviada, refaça a correção a partir da inscrição como ela\nestá. Em seguida, envie outra vez. Se o prazo de inscrição estiver perto\ndo fim, tente de novo o quanto antes.",
+        "Na configuração do processo seletivo, salve o rascunho outra vez ou\ntente publicar de novo quando o Geo voltar: a conferência dos municípios\nde prova se repete a cada salvamento e na publicação. Se o aviso\npersistir por muito tempo, procure o canal de suporte do processo\nseletivo."
       ],
       "ondeAparece": [
-        "Envio da inscrição do candidato"
+        "Envio da inscrição do candidato",
+        "Publicação e retificação do processo seletivo",
+        "Salvamento e importação do rascunho da configuração do processo"
       ]
     },
     {

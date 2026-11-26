@@ -20,9 +20,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Os cadastros citados são lidos num instante único, de uma só leitura do relógio, e cada código vai uma vez ao cadastro. O Geo que
-/// não responde, ou que devolve município inconsistente, é falha de infraestrutura, e só a resposta de município inexistente e o
-/// código sem forma de município deixam o código fora do dicionário.
+/// Os cadastros citados são lidos num instante único, de uma só leitura do relógio, e cada código vai uma vez ao cadastro. A
+/// localidade que o Geo não confirma fica fora do dicionário, e a leitura não falha por isso: o rascunho é salvo mesmo sem o Geo.
+/// Só a resposta de município inexistente e o código sem forma de município ficam sem causa; o Geo fora do ar ou com resposta
+/// inconsistente (outra UF, nome recusado, erro desconhecido) deixa a causa da falta de conferência.
 /// </summary>
 public sealed class LeituraDosCadastrosCitadosTests
 {
@@ -170,17 +171,31 @@ public sealed class LeituraDosCadastrosCitadosTests
 
         lidos.IsSuccess.Should().BeTrue();
         lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O município que o Geo diz ser de outra UF que a do prefixo do código é falha 503 da leitura, não município inexistente")]
-    public async Task Municipio_DeOutraUf_EFalhaDoGeo()
+    [Fact(DisplayName = "O município que o Geo diz ser de outra UF que a do prefixo do código é resposta inconsistente do Geo, e não município inexistente")]
+    public async Task Municipio_DeOutraUf_ContaComoGeoQueNaoRespondeu()
     {
         GeoResponde("1504208", Result<string>.Failure(Erro(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente)));
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208" });
 
-        lidos.IsFailure.Should().BeTrue();
-        lidos.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    [Fact(DisplayName = "O nome que o Geo devolve e o domínio recusa conta como Geo que não respondeu, e não como município inexistente")]
+    public async Task Municipio_ComNomeQueODominioRecusa_ContaComoGeoQueNaoRespondeu()
+    {
+        GeoResponde("1504208", Result<string>.Success(" "));
+
+        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208" });
+
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 
     [Theory(DisplayName = "O código IBGE sem a forma de município fica fora do dicionário sem consultar o Geo")]
@@ -193,39 +208,33 @@ public sealed class LeituraDosCadastrosCitadosTests
 
         lidos.IsSuccess.Should().BeTrue();
         lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida.Should().BeNull();
         await _geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 
-    [Fact(DisplayName = "O Geo fora do ar é falha de infraestrutura da leitura, nunca município inexistente")]
-    public async Task Geo_Indisponivel_EFalhaDaLeitura()
+    [Fact(DisplayName = "O Geo fora do ar deixa a localidade fora do dicionário e não impede a leitura nem as outras partes")]
+    public async Task Geo_Indisponivel_NaoImpedeALeitura()
     {
         GeoResponde("1504208", Result<string>.Failure(Erro(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel)));
+        _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(Unidade("CEPS"));
 
-        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208" });
+        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208", Unidades = ["CEPS"] });
 
-        lidos.IsFailure.Should().BeTrue();
-        lidos.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        lidos.Value.Unidades.Should().ContainKey("CEPS");
     }
 
-    [Fact(DisplayName = "Qualquer outro erro do Geo é falha da leitura, porque a conferência é de falha fechada")]
-    public async Task Geo_ComErroDesconhecido_EFalhaDaLeitura()
+    [Fact(DisplayName = "Qualquer outro erro do Geo deixa a localidade fora do dicionário e guarda a causa: o que ele não confirmou nunca fica aprovado")]
+    public async Task Geo_ComErroDesconhecido_DeixaALocalidadeForaComACausa()
     {
         GeoResponde("1504208", Result<string>.Failure(Erro("ConferenciaEnderecoGeo.ErroDeTeste")));
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208" });
 
-        lidos.IsFailure.Should().BeTrue();
-        lidos.Error!.Code.Should().Be("ConferenciaEnderecoGeo.ErroDeTeste");
-    }
-
-    [Fact(DisplayName = "O nome que o Geo devolve e o domínio recusa é falha 503 da leitura, não município fora do dicionário")]
-    public async Task Municipio_ComNomeQueODominioRecusa_EFalhaDoGeo()
-    {
-        GeoResponde("1504208", Result<string>.Success(" "));
-
-        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208" });
-
-        lidos.IsFailure.Should().BeTrue();
-        lidos.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.Localidades.Should().BeEmpty();
+        lidos.Value.LocalidadeNaoConferida!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 }
