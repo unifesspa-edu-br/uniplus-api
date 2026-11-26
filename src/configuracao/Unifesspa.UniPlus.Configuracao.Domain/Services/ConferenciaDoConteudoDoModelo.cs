@@ -79,7 +79,7 @@ public static class ConferenciaDoConteudoDoModelo
             :
             [
                 .. conteudo.Itens.SelectMany((item, i) => ConferirCampo(item, $"itens[{i}]")),
-                .. Impedimento.ConferirFinalidade(finalidade, conteudo.Itens.Select(static i => i.Regras.Impedimento)),
+                .. Impedimento.ConferirDeclaracao(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), conteudo.Itens.Select(static i => i.Regras.Impedimento)),
                 .. conteudo.Grupos.SelectMany((grupo, i) => ConferirGrupo(grupo, $"grupos[{i}]")),
             ];
     }
@@ -178,7 +178,7 @@ public static class ConferenciaDoConteudoDoModelo
     private static List<FieldError> ConferirEstruturaPorFinalidade(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
     {
         PaginaEstrutura[] paginas = [.. conteudo.Paginas.Select(static e => new PaginaEstrutura(e.Codigo, e.Ordem, e.Tipo, e.Bloco))];
-        List<FieldError> erros = [.. EstruturaFormulario.ValidarPaginas(finalidade, paginas)];
+        List<FieldError> erros = [.. EstruturaFormulario.ValidarPaginas(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), paginas)];
         if (erros.Count == 0)
         {
             erros.AddRange(EstruturaFormulario.ValidarItens(

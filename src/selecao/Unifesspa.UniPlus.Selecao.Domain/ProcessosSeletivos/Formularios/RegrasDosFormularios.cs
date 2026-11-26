@@ -104,7 +104,7 @@ public static class RegrasDosFormularios
         ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<PaginaDoFormulario> paginas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
         IReadOnlyList<PaginaEstrutura> estrutura = [.. paginas.Select(static e => e.Estrutura)];
-        List<FieldError> recusas = [.. EstruturaFormulario.ValidarPaginas(finalidade, estrutura)];
+        List<FieldError> recusas = [.. EstruturaFormulario.ValidarPaginas(CorrespondenciaDaFinalidade.DeclaracaoDa(finalidade), estrutura)];
         if (recusas.Count == 0)
         {
             recusas.AddRange(RecusasDosItens(configuracao, finalidade, estrutura, itensDaCriacao));

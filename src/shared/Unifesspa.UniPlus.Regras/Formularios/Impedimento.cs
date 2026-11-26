@@ -20,14 +20,15 @@ public sealed record Impedimento(PredicadoDnf Quando, string Mensagem)
         or TipoDeCampo.EscolhaMultipla or TipoDeCampo.Municipio;
 
     /// <summary>
-    /// A recusa de cada item com impedimento, na posição dele, quando o formulário não é o de
-    /// inscrição: só ele tem impedimento, porque o impedimento impede a inscrição do candidato.
+    /// A recusa de cada item com impedimento, na posição dele, quando o formulário não serve à fase
+    /// de inscrição ou não declara nada: só o que serve a ela tem impedimento, porque o impedimento
+    /// impede a inscrição do candidato.
     /// </summary>
-    public static List<FieldError> ConferirFinalidade(FinalidadeFormulario? finalidade, IEnumerable<Impedimento?> impedimentosDosItens)
+    public static List<FieldError> ConferirDeclaracao(DeclaracaoDoFormulario? declaracao, IEnumerable<Impedimento?> impedimentosDosItens)
     {
         ArgumentNullException.ThrowIfNull(impedimentosDosItens);
 
-        return finalidade == FinalidadeFormulario.Inscricao
+        return declaracao is { ServeAFaseDeInscricao: true }
             ? []
             : [.. impedimentosDosItens
                 .Select(static (impedimento, indice) => (Impedimento: impedimento, Indice: indice))

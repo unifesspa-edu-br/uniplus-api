@@ -246,6 +246,27 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         Item(avaliacao, "NOME_PAI").Obrigatorio.Should().Be(Ternario.Falso);
     }
 
+    [Theory(DisplayName = "O formulário que serve à fase de inscrição, obrigatório ou não, substitui a ajuda do nome social pela orientação da conta")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AjudaDoCampo_NomeSocial_ServeAInscricao_OrientaPelaConta(bool obrigatorio) =>
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(
+            new DeclaracaoDoFormulario(ServeAFaseDeInscricao: true, obrigatorio), ConjuntoBasicoDaInscricao.NomeSocial, "Ajuda gravada.")
+            .Should().Contain("Meu perfil");
+
+    [Theory(DisplayName = "O formulário que não serve à fase de inscrição mantém a ajuda gravada do nome social")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AjudaDoCampo_NomeSocial_NaoServeAInscricao_ValeAGravada(bool obrigatorio) =>
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(
+            new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, obrigatorio), ConjuntoBasicoDaInscricao.NomeSocial, "Ajuda gravada.")
+            .Should().Be("Ajuda gravada.");
+
+    [Fact(DisplayName = "A ajuda dos demais campos é a gravada, em qualquer declaração")]
+    public void AjudaDoCampo_OutroCampo_ValeAGravada() =>
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(DeclaracaoDoFormulario.DaInscricao, ConjuntoBasicoDaInscricao.Nome, "Ajuda gravada.")
+            .Should().Be("Ajuda gravada.");
+
     [Theory(DisplayName = "O nome do órgão emissor só é pedido, e obrigatório, a quem escolhe Outro na lista")]
     [InlineData("NATO", "OUTRO", Ternario.Verdadeiro)]
     [InlineData("NATO", "SSP", Ternario.Falso)]

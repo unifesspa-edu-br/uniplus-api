@@ -122,7 +122,7 @@ public static class ProjecaoDoFormularioApresentado
         new ApresentacaoDoCampoDto(
             fato.Rotulo,
             fato.TipoDeCampo.Codigo(),
-            ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade!.Value, fato.FatoCodigo, fato.Ajuda),
+            ConjuntoBasicoDaInscricao.AjudaDoCampo(CorrespondenciaDaFinalidade.DeclaracaoDa(fato.Finalidade!.Value), fato.FatoCodigo, fato.Ajuda),
             fato.PedirConfirmacao),
         ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
         valores.GetValueOrDefault(fato.FatoCodigo) is { } doCampo
