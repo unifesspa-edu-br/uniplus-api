@@ -24,8 +24,8 @@ public static class DefinirDocumentosExigidosCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<ProcessoSeletivo> obtido = await DefinirBonusRegionalCommandHandler
-            .ObterParaEdicaoAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         CadastrosDosDocumentosExigidos cadastros = new(tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository);
         return obtido.IsFailure

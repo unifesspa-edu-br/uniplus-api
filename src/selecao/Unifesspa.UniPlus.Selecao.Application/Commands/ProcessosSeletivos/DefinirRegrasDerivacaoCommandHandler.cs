@@ -42,28 +42,10 @@ public static class DefinirRegrasDerivacaoCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
-    }
-
-    // O bloqueio de mutação fora do rascunho vem ANTES da resolução do vocabulário cross-módulo. O mesmo guard
-    // continua dentro de DefinirRegrasDerivacao.
-    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
-        IProcessoSeletivoRepository repositorio, DefinirRegrasDerivacaoCommand command, CancellationToken cancellationToken)
-    {
-        ProcessoSeletivo? processo = await repositorio
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
-        }
-
-        return processo.MutacaoBloqueada() is { } bloqueio
-            ? Result<ProcessoSeletivo>.Failure(bloqueio)
-            : Result<ProcessoSeletivo>.Success(processo);
     }
 
     private static async Task<Result> DefinirEGravarAsync(

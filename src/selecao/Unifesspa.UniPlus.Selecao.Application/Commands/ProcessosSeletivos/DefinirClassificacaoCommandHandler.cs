@@ -24,8 +24,8 @@ public static class DefinirClassificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(pesoAreaEnemReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        Result<ProcessoSeletivo> obtido = await DefinirBonusRegionalCommandHandler
-            .ObterParaEdicaoAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, new CadastrosDaClassificacao(regraCatalogoReader, pesoAreaEnemReader),

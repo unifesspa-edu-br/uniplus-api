@@ -21,7 +21,7 @@ internal static class LeituraDaCascata
 {
     /// <summary>
     /// A cascata de remanejamento tem <b>duas formas fechadas</b> — mesmo
-    /// raciocínio de <see cref="LeituraDoBonusEAtendimento.LerBonusRegional"/>: <c>{"presente": false}</c> e a completa.
+    /// raciocínio de <see cref="LeituraDoFada.LerFada"/>: <c>{"presente": false}</c> e a completa.
     /// A forma (cascata de remanejamento de cotas, UNI-REQ-0056) é reconferida pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
     /// ao reconstruir — o decoder não a duplica, só extrai os valores tipados.
     /// </summary>

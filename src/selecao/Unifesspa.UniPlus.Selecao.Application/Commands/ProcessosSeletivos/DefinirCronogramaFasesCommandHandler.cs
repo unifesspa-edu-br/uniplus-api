@@ -26,27 +26,10 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-    }
-
-    // Fora do rascunho a recusa vem antes de resolver regras externas.
-    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
-        IProcessoSeletivoRepository repositorio, DefinirCronogramaFasesCommand command, CancellationToken cancellationToken)
-    {
-        ProcessoSeletivo? processo = await repositorio
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
-        }
-
-        return processo.MutacaoBloqueada() is { } bloqueio
-            ? Result<ProcessoSeletivo>.Failure(bloqueio)
-            : Result<ProcessoSeletivo>.Success(processo);
     }
 
     private static async Task<Result> DefinirEGravarAsync(

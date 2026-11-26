@@ -27,8 +27,8 @@ public static class DefinirProvaPresencialCommandHandler
         DefinirProvaPresencialCommand command, IProcessoSeletivoRepository repositorio,
         IUnitOfWork unitOfWork, ProvaPresencialOptions options, CancellationToken cancellationToken)
     {
-        Result<ProcessoSeletivo> obtido = await DefinirBonusRegionalCommandHandler
-            .ObterParaEdicaoAsync(repositorio, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao
+            .ObterAsync(repositorio, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (obtido.IsFailure)
         {
             return Result.Failure(obtido.Error!);
