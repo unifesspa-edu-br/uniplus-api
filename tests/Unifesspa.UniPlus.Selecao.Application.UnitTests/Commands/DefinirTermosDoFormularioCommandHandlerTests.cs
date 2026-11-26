@@ -71,7 +71,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
     private static Task<Result> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), termos),
+            new DefinirTermosDoFormularioCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), termos),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueColetaCorRaca() => ProcessoQueColeta(ItemCorRaca());
@@ -82,7 +82,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             "PS Termos", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirItens(itens, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(itens, PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
 

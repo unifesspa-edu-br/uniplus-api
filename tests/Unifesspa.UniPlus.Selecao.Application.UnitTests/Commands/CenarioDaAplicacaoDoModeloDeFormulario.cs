@@ -102,13 +102,13 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     ];
 
     public static ModeloFormularioView Modelo(
-        FinalidadeFormulario finalidade,
+        PapelDoFormularioDeTeste papel,
         IReadOnlyList<FatoColetadoInput> itens,
         IReadOnlyList<TermoExigidoInput>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
         IReadOnlyList<GrupoColetadoInput>? grupos = null,
         ConjuntoDeDocumentosDoModeloInput? documentos = null) =>
-        new(Guid.NewGuid(), "MODELO", "Modelo", null, finalidade.Codigo(), null, true,
+        new(Guid.NewGuid(), "MODELO", "Modelo", null, papel.Codigo(), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
                 [
@@ -122,7 +122,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     public static ModeloFormularioView ModeloComConjunto(ConjuntoDeDocumentosDoModeloInput conjunto) =>
         Modelo(
-            FinalidadeFormulario.Inscricao,
+            PapelDoFormularioDeTeste.Inscricao,
             [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "ESCOLHA_MULTIPLA")],
             documentos: conjunto);
 
@@ -200,11 +200,11 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
             [DistribuicaoDeVagasCom(modalidades)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
-    /// <summary>Aplica o modelo ao formulário que cumpre o papel da finalidade dele, criado antes quando o processo não o tem.</summary>
+    /// <summary>Aplica o modelo ao formulário que o modelo indica, criado antes quando o processo não o tem.</summary>
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(ModeloFormularioView modelo)
     {
         _modelos.ObterAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
-        FinalidadeFormulario papel = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
+        PapelDoFormularioDeTeste papel = CatalogoDe<PapelDoFormularioDeTeste>.Obter(modelo.Finalidade);
         FormularioDeTeste.GarantirFormulario(Processo, papel);
         return AplicarAsync(modelo.Id, papel.Codigo());
     }
@@ -212,8 +212,8 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     /// <summary>Aplica o modelo ao formulário de inscrição, criado antes quando o processo não o tem.</summary>
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId)
     {
-        FormularioDeTeste.GarantirFormulario(Processo, FinalidadeFormulario.Inscricao);
-        return AplicarAsync(modeloId, FinalidadeFormulario.Inscricao.Codigo());
+        FormularioDeTeste.GarantirFormulario(Processo, PapelDoFormularioDeTeste.Inscricao);
+        return AplicarAsync(modeloId, PapelDoFormularioDeTeste.Inscricao.Codigo());
     }
 
     /// <summary>Aplica o modelo ao formulário do código, que pode não existir no processo.</summary>

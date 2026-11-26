@@ -170,7 +170,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     /// <summary>O modelo só se aplica a formulário que o processo já tem.</summary>
     private static void DeclararOFormularioDaHabilitacao(ProcessoSeletivo processo) =>
         processo.DefinirFormulario(
-            new FormularioDeclarado(CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, null, Obrigatorio: true), null, PaginasDoModelo())
+            new FormularioDeclarado(CodigoDoFormulario.Criar("HABILITACAO").Value!, null, Obrigatorio: true), null, PaginasDoModelo())
             .IsSuccess.Should().BeTrue();
 
     private static PaginaDoFormulario[] PaginasDoModelo() =>
@@ -180,5 +180,5 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     ];
 
     private static CopiaDeModeloDeFormulario CopiaDoModelo(string nome) => new(
-        CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, "Formulário", PaginasDoModelo(), [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));
+        CodigoDoFormulario.Criar("HABILITACAO").Value!, "Formulário", PaginasDoModelo(), [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));
 }

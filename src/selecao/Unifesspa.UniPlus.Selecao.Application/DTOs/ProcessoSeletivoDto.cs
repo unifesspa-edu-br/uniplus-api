@@ -49,7 +49,7 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<RegraDeComprovacaoDto> RegrasDeComprovacao,
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
     IReadOnlyList<ConfiguracaoDerivacaoDto> RegrasDerivacao,
-    // Formulários por finalidade (UNI-REQ-0144): read-back administrativo do que foi salvo antes
+    // Formulários do processo (UNI-REQ-0144): read-back administrativo do que foi salvo antes
     // da publicação — o GET público projeta só da versão vigente, e não serve para reler a tela de
     // edição. Cada formulário traz os itens e os termos dele.
     IReadOnlyList<FormularioDto> Formularios,

@@ -241,27 +241,6 @@ public static class AvaliacaoDaInscricao
     private static bool DeAlgumFormulario(string codigo, IReadOnlyList<CodigoDoFormulario> formularios) =>
         formularios.Any(formulario => DefinicaoDoProcesso.EhDoFormulario(codigo, formulario));
 
-    // Provisório até a retirada da finalidade: as operações por finalidade ainda servem a quem não tem a configuração à mão.
-    public static AvaliacaoFormulario DaInscricao(AvaliacaoFormulario formulario)
-    {
-        ArgumentNullException.ThrowIfNull(formulario);
-        return formulario with
-        {
-            Paginas = [.. formulario.Paginas.Where(static e => DaInscricao(e.Codigo))],
-            Itens = [.. formulario.Itens.Where(static i => DaInscricao(i.PaginaCodigo))],
-            Grupos = [.. formulario.Grupos.Where(static g => DaInscricao(g.PaginaCodigo))],
-            Termos = [.. formulario.Termos.Where(static t => DaInscricao(t.Codigo))],
-        };
-    }
-
-    public static IReadOnlySet<string> CodigosDasPaginasDaInscricao(DefinicaoFormulario definicao)
-    {
-        ArgumentNullException.ThrowIfNull(definicao);
-        return definicao.Paginas.Where(static e => DaInscricao(e.Codigo)).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
-    }
-
-    private static bool DaInscricao(string codigo) => DefinicaoDoProcesso.EhDaFinalidade(codigo, FinalidadeFormulario.Inscricao);
-
     private static ModalidadesDeConcorrencia Modalidades(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
     {
         if (!DerivaAModalidade(configuracao.Definicao))

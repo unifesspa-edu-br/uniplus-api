@@ -74,7 +74,7 @@ public sealed class FaixaDeDataDoEsquemaTests
         {
             ["formato"] = "uniplus.selecao.configuracao",
             ["versaoFormato"] = 1,
-            ["formularios"] = new JsonArray(new JsonObject { ["finalidade"] = "INSCRICAO", ["itens"] = itens }),
+            ["formularios"] = new JsonArray(new JsonObject { ["codigo"] = "INSCRICAO", ["itens"] = itens }),
         };
     }
 
@@ -91,7 +91,7 @@ public sealed class FaixaDeDataDoEsquemaTests
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), "v1", new string('b', 64)),
         }).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos())
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, null, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos())
             .IsSuccess.Should().BeTrue();
         return processo;
     }

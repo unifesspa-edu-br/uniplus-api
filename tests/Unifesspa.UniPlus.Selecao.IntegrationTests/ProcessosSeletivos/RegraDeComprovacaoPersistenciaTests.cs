@@ -31,7 +31,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
     private static DocumentoExigido Documento(Guid faseId, string chave) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(chave).Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(faseId, null, null),
+            new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(true, null, []),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
@@ -39,7 +39,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
@@ -65,7 +65,7 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        Result definirResult = processo.DefinirDocumentosExigidos([RegraSemGrupoComQuantidadeMinimaETodosOsItens(fase.Id)]);
+        Result definirResult = processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraSemGrupoComQuantidadeMinimaETodosOsItens(fase.Id)]);
         definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
         return processo;
@@ -171,7 +171,7 @@ ConsultaDasRestricoesDeOrdem,
         {
             RegraDeComprovacao grupoDeTodosOsItens = GrupoComDoisDocumentos(faseId, tentativa);
 
-            Result definirResult = processo.DefinirDocumentosExigidos([grupoDeTodosOsItens]);
+            Result definirResult = processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupoDeTodosOsItens]);
             definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
             Func<Task> salvar = async () => await context.SaveChangesAsync(CancellationToken.None);

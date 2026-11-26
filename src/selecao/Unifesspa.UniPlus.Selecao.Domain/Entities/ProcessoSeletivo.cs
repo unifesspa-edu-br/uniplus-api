@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -331,12 +330,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             });
     }
 
-    /// <summary>Define o formulário de uma finalidade; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
-    public Result DefinirFormulario(
-        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas,
-        IReadOnlyList<FatoColetado>? itensDaCriacao = null, ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null) =>
-        DefinirFormulario(FormularioDeclarado.DaFinalidade(finalidade, faseId), titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio);
-
     /// <summary>Define o formulário do código declarado; o que nasce com <paramref name="itensDaCriacao"/> nasce com eles, numa operação só.</summary>
     public Result DefinirFormulario(
         FormularioDeclarado declarado, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas,
@@ -349,9 +342,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDosFormularios.PlanejarDefinicao(Declaracao(), declarado, titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio),
             Aplicar);
     }
-
-    public Result RemoverFormulario(FinalidadeFormulario finalidade) =>
-        RemoverFormulario(CodigoDaFinalidade(finalidade));
 
     /// <summary>Remove o formulário do código, com os itens e os termos dele.</summary>
     public Result RemoverFormulario(CodigoDoFormulario codigo)
@@ -368,10 +358,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Editar(() => AplicacaoDeModeloDeFormulario.Planejar(Declaracao(), copia), Aplicar);
     }
 
-    public Result DefinirTermosDoFormulario(
-        FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos) =>
-        DefinirTermosDoFormulario(CodigoDaFinalidade(finalidade), termos);
-
     /// <summary>Substitui os termos exigidos pelo formulário do código.</summary>
     public Result DefinirTermosDoFormulario(CodigoDoFormulario codigo, IReadOnlyList<TermoExigidoFormulario> termos)
     {
@@ -381,17 +367,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Editar(() => RegrasDosFormularios.PlanejarTermos(Declaracao(), codigo, termos), AplicarMudanca);
     }
 
-    /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
-    public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
-        _formularios.FirstOrDefault(f => f.Finalidade == finalidade);
-
     /// <summary>O formulário do código, quando o processo o tem.</summary>
     public FormularioProcesso? FormularioDe(CodigoDoFormulario codigo) =>
         _formularios.FirstOrDefault(f => f.Codigo == codigo);
-
-    // Provisório até a retirada da finalidade: a operação que ainda recebe a finalidade fala do formulário pelo código dela.
-    private static CodigoDoFormulario CodigoDaFinalidade(FinalidadeFormulario finalidade) =>
-        CodigoDoFormulario.Criar(finalidade.Codigo()).Value!;
 
     /// <summary>Substitui o cronograma. O grafo de precedências é parâmetro: o domínio não consulta a Configuração.</summary>
     public Result DefinirCronogramaFases(
@@ -415,16 +393,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDasExigencias.Planejar(Declaracao(), regrasSemGrupo),
             AplicarMudanca);
     }
-
-    /// <summary>
-    /// Substitui os itens do formulário de uma finalidade, com as mesmas regras de
-    /// <see cref="DefinirFatosColetados(CodigoDoFormulario, IReadOnlyList{FatoColetado}, IReadOnlyList{GrupoColetado}?)"/>.
-    /// </summary>
-    public Result DefinirFatosColetados(
-        FinalidadeFormulario finalidade,
-        IReadOnlyList<FatoColetado> fatosColetados,
-        IReadOnlyList<GrupoColetado>? grupos = null) =>
-        DefinirFatosColetados(CodigoDaFinalidade(finalidade), fatosColetados, grupos);
 
     /// <summary>
     /// Substitui os itens do formulário do código — quais fatos ele coleta, em que ordem e sob qual

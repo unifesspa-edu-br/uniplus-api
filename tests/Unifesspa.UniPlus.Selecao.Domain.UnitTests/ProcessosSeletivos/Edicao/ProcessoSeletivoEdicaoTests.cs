@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O protocolo das 21 operações de escrita da configuração (ADR-0175, ADR-0125 §5): a verificação
@@ -138,7 +139,7 @@ public sealed class ProcessoSeletivoEdicaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        processo.DefinirFatosColetados(Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao, [], grupos: null)
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Inscricao, [], grupos: null)
             .IsSuccess.Should().BeTrue();
     }
 }

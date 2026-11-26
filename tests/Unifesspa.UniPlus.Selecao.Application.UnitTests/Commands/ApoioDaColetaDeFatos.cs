@@ -51,12 +51,12 @@ internal static class ApoioDaColetaDeFatos
     internal static Task<Result> DefinirNaHabilitacaoAsync(ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens) =>
         HandleAsync(
             NovosMocks(processo, processo.Id),
-            new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), itens));
+            new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), itens));
 
     /// <summary>Define os itens, e os grupos quando há, no formulário de inscrição do processo.</summary>
     internal static Task<Result> DefinirNaInscricaoAsync(
         Mocks mocks, ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput>? grupos = null) =>
-        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao.Codigo(), itens, grupos));
+        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Inscricao.Codigo(), itens, grupos));
 
     internal static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
         [.. DeclaradosDoCandidato(), .. OpcoesDeCurso(), .. DerivadosDoCandidato(), .. DaHabilitacao()];
@@ -111,7 +111,7 @@ internal static class ApoioDaColetaDeFatos
     internal static ProcessoSeletivo ProcessoEmRascunho()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fatos", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
         return processo;
     }
 
@@ -123,7 +123,7 @@ internal static class ApoioDaColetaDeFatos
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         processo.DefinirCronogramaFases([FaseQueColetaInscricao()], []).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         return processo;
     }
 
@@ -145,7 +145,7 @@ internal static class ApoioDaColetaDeFatos
             .Construir();
 
     internal static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
-        processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
         [EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").NaSecao(FormularioDeTeste.Secao).Construir()],
         [grupo]);
 }

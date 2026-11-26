@@ -33,7 +33,7 @@ internal static class ApoioDosDocumentosExigidos
 
     /// <summary>A exigência geral e obrigatória na fase, citando o formulário de teste: o código do formulário é obrigatório em toda exigência.</summary>
     internal static ItemDocumentoExigidoDeTeste GeralNoFormularioDaExigencia(Guid faseId, Guid tipoDocumentoId) =>
-        ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).NaFinalidade(CodigoDoFormularioDaExigencia);
+        ItemDocumentoExigidoDeTeste.Geral(faseId, tipoDocumentoId).NoFormulario(CodigoDoFormularioDaExigencia);
 
     /// <summary>FormatosPermitidos é obrigatório — QUALQUER é o valor neutro dos testes que não são sobre formato.</summary>
     internal static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
@@ -62,7 +62,7 @@ internal static class ApoioDosDocumentosExigidos
     internal static void DeclararOFormularioDaExigencia(ProcessoSeletivo processo, Guid faseId)
     {
         FormularioDeclarado formulario = new(CodigoDoFormulario.Criar(CodigoDoFormularioDaExigencia).Value!, faseId, Obrigatorio: false);
-        processo.DefinirFormulario(formulario, null, FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao)).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(formulario, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao)).IsSuccess.Should().BeTrue();
     }
 
     internal static Task<Result> HandleAsync(Mocks mocks, DefinirDocumentosExigidosCommand command) =>

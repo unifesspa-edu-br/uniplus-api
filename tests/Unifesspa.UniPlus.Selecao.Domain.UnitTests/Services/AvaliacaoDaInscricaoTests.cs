@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class AvaliacaoDaInscricaoTests
 {
     private const string Secao = "RESERVA";
-    private static readonly string Pagina = DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, Secao);
+    private static readonly string Pagina = DefinicaoDoProcesso.CodigoDaPagina(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), Secao);
 
     private static readonly string[] Perguntas =
     [
@@ -221,7 +221,7 @@ public sealed class AvaliacaoDaInscricaoTests
             ? DefinicaoComGrupoDeMunicipios(perguntas, derivacoes)
             : DefinicaoDasPerguntas(perguntas, rendaSoParaBaixaRenda, derivacoes);
         FaseCronograma fase = LigacaoAoFormulario.FaseQueColetaAInscricao();
-        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNaFase(FinalidadeFormulario.Inscricao, fase);
+        FormularioProcesso inscricao = LigacaoAoFormulario.FormularioNaFase(PapelDoFormularioDeTeste.Inscricao, fase);
         GrupoColetado[] grupos = municipioNoGrupo ? [GrupoDeMunicipiosColetado().Em(inscricao)] : [];
 
         return new ConfiguracaoAvaliavel(
@@ -242,7 +242,6 @@ public sealed class AvaliacaoDaInscricaoTests
             .ComClassificacao("SENSIVEL")
             .ComOrigem(f == MunicipioDoFada ? OrigemValoresColeta.MunicipiosDoFada : OrigemValoresColeta.Catalogo)
             .NaSecao(Secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir()
             .Em(formulario))];
 
@@ -289,7 +288,6 @@ public sealed class AvaliacaoDaInscricaoTests
             .ComClassificacao("SENSIVEL")
             .ComOrigem(OrigemValoresColeta.MunicipiosDoFada)
             .Construir())
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     /// <summary>

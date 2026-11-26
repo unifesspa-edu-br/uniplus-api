@@ -74,13 +74,13 @@ internal sealed record ViolacaoDeRegra(
         [nameof(ProcessoSeletivo.DefinirFormulario)] = new(
             p =>
             {
-                FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == FinalidadeFormulario.Inscricao);
-                return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Paginas]);
+                FormularioProcesso formulario = p.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!;
+                return p.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Paginas]);
             },
             "FormularioProcesso.FaseForaDoCronograma",
-            static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Paginas])]),
+            static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Codigo, f.FaseId, f.Titulo, .. f.Paginas])]),
         [nameof(ProcessoSeletivo.DefinirTermosDoFormulario)] = new(
-            p => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, []),
+            p => p.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, []),
             FormularioProcessoErrorCodes.NaoEncontrado,
             static p => [.. p.TermosExigidos]),
         [nameof(ProcessoSeletivo.DefinirCronogramaFases)] = new(
@@ -92,7 +92,7 @@ internal sealed record ViolacaoDeRegra(
             "DocumentoExigido.FaseNaoPertenceAoProcesso",
             static p => [.. p.RegrasDeComprovacao]),
         [nameof(ProcessoSeletivo.DefinirFatosColetados)] = new(
-            p => p.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, []),
+            p => p.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, []),
             FormularioProcessoErrorCodes.NaoEncontrado,
             static p => [.. p.Campos]),
         [nameof(ProcessoSeletivo.DefinirRegrasDerivacao)] = new(
@@ -138,7 +138,7 @@ internal sealed record ViolacaoDeRegra(
 
     private static DocumentoExigido Exigencia(Guid faseId, params CondicaoGatilho[] condicoes) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(condicoes.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, condicoes))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))

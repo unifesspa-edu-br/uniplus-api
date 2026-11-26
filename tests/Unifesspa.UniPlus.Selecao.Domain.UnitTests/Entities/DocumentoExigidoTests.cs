@@ -27,7 +27,7 @@ public sealed class DocumentoExigidoTests
         int? tamanhoMaximoBytes = null) =>
         DocumentoExigido.Criar(ChaveLocal.Criar("exigencia_teste").Value, new DocumentoExigidoDeclarado(
             new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.CreateVersion7(), null, null),
+            new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao),
             new AplicabilidadeDaExigencia(aplicabilidade, condicoes ?? []),
             new IndeferimentoDoDocumento(obrigatorio, consequenciaDoDescumprimento, basesLegais ?? []),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes, null, null, null),
@@ -45,7 +45,7 @@ public sealed class DocumentoExigidoTests
         Guid id = Guid.CreateVersion7();
         DocumentoExigido documento = DocumentoExigido.Reidratar(ChaveLocal.Criar("exigencia_teste").Value, id, new DocumentoExigidoDeclarado(
             new CopiaDoTipoDeDocumento(Guid.Empty, "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(Guid.Empty, null, null),
+            new MomentoDaExigencia(Guid.Empty, null, FormularioDeTeste.FormularioDaInscricao),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(false, consequencia, []),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
@@ -202,7 +202,7 @@ public sealed class DocumentoExigidoTests
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0, fatosComprovados: null);
 
         erros.Should().BeEmpty();
     }
@@ -211,7 +211,7 @@ public sealed class DocumentoExigidoTests
     public void ValidarFormaBasica_GeralComQuantidadeCondicoes_ReportaGeralComCondicao()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 1);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 1, fatosComprovados: null);
 
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.GeralComCondicao"]);
     }

@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class FatosDasVersoesPublicadasTests
 {
-    private static readonly FormularioProcesso Inscricao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Inscricao);
-    private static readonly FormularioProcesso Habilitacao = LigacaoAoFormulario.FormularioNoPapel(FinalidadeFormulario.Habilitacao);
-    private static readonly CodigoDoFormulario CodigoDaInscricao = FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao);
-    private static readonly CodigoDoFormulario CodigoDaHabilitacao = FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao);
+    private static readonly FormularioProcesso Inscricao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao);
+    private static readonly FormularioProcesso Habilitacao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao);
+    private static readonly CodigoDoFormulario CodigoDaInscricao = FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao);
+    private static readonly CodigoDoFormulario CodigoDaHabilitacao = FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao);
 
     private static FatoColetado Item(string codigo) => Item(codigo, Inscricao);
 

@@ -17,7 +17,7 @@ public sealed class ProjecaoDaConsequenciaDaFaltaDeEnvioTests
     public void ProjetarFormularios_ComConsequencia_EmiteCodigoERotulo()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.RetiraAModalidade)
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.RetiraAModalidade)
             .IsSuccess.Should().BeTrue();
 
         FormularioDto formulario = ProjecaoDaColeta.ProjetarFormularios(processo).Single(static f => f.Codigo == "HABILITACAO");
@@ -30,7 +30,7 @@ public sealed class ProjecaoDaConsequenciaDaFaltaDeEnvioTests
     public void ProjetarFormularios_SemConsequencia_EmiteNulo()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
 
         ProjecaoDaColeta.ProjetarFormularios(processo).Single(static f => f.Codigo == "HABILITACAO")
             .ConsequenciaDaFaltaDeEnvio.Should().BeNull();

@@ -48,10 +48,6 @@ public sealed class ColetaDeclarada
     /// <summary>Os itens dos formulários: os campos fora de grupo repetível.</summary>
     public IEnumerable<FatoColetado> Itens => Campos.Where(static f => f.GrupoColetadoId is null);
 
-    /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
-    public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
-        Formularios.FirstOrDefault(f => f.Finalidade == finalidade);
-
     /// <summary>O formulário do código, quando o processo o tem.</summary>
     public FormularioProcesso? FormularioDe(CodigoDoFormulario codigo)
     {

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.ProcessosSeletivos.Exigencias;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.Services;
 using Domain.ValueObjects;
 
@@ -130,10 +131,10 @@ internal static class ConferenciaDasCondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         ConfiguracaoDeclarada configuracao = processo.Declaracao();
-        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoCodigo(documento.FormularioCodigo());
+        CodigoDoFormulario? formulario = EscritaDaExigencia.FormularioDoCodigo(documento.FormularioCodigo());
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
-                configuracao, c.Fato, documento.FaseId(), finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
+                configuracao, c.Fato, documento.FaseId(), formulario, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))
             .FirstOrDefault(static r => r is not null);
         return recusa is null ? Result.Success() : Result.Failure(recusa);
     }

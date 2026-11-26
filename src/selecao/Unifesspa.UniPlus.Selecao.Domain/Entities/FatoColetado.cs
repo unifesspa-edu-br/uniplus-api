@@ -136,9 +136,6 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// <summary>O formulário que produz o fato; atribuído pelo processo ao definir os itens.</summary>
     public Guid? FormularioId { get; private set; }
 
-    /// <summary>A finalidade do formulário que produz o fato; atribuída pelo processo ao definir os itens.</summary>
-    public FinalidadeFormulario? Finalidade { get; private set; }
-
     /// <summary>A seção do formulário em que o item aparece.</summary>
     public string? PaginaCodigo { get; private set; }
 
@@ -151,14 +148,12 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
-        FinalidadeFormulario? finalidade)
+        FormularioProcesso? formulario)
     {
         FatoCodigo = fatoCodigo ?? string.Empty;
         Ordem = ordem;
         PaginaCodigo = paginaCodigo;
-
-        // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
-        Finalidade = finalidade;
+        FormularioId = formulario?.Id;
         AdotarApresentacao(apresentacao.NaFormaGravada());
         AdotarRegras(regras.ComRestricoesNaOrdemDoTipo());
         CopiarDoCatalogo(copia);
@@ -169,6 +164,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// item, a cópia do catálogo e a autorreferência de pré-condição não dependem umas das outras. A
     /// mensagem de autorreferência não ecoa o código do fato (ADR-0023).
     /// </summary>
+    /// <param name="formulario">O formulário que produz o fato, quando já existe; o processo liga o item ao formulário que define.</param>
     /// <exception cref="ArgumentException">A cópia do catálogo vem sem hipótese legal, finalidade do tratamento ou descrição.</exception>
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
@@ -177,38 +173,19 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
         CopiaDoItemNoCatalogo copia,
-        FinalidadeFormulario? finalidade = null)
+        FormularioProcesso? formulario = null)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);
         ExigirCopiaCompleta(copia);
 
         List<FieldError> erros = ConferirFormaECopia(fatoCodigo, ordem, apresentacao, regras, copia);
-        return erros.Count > 0
-            ? Result<FatoColetado>.ValidationFailure(erros)
-            : Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, finalidade));
-    }
-
-    /// <summary>O item do formulário dado: a mesma conferência da criação, e o formulário que o produz fica ligado a ele.</summary>
-    /// <exception cref="ArgumentException">A cópia do catálogo vem sem hipótese legal, finalidade do tratamento ou descrição.</exception>
-    public static Result<FatoColetado> Criar(
-        string fatoCodigo,
-        int ordem,
-        string? paginaCodigo,
-        ApresentacaoDoCampo apresentacao,
-        RegrasDoCampo regras,
-        CopiaDoItemNoCatalogo copia,
-        FormularioProcesso formulario)
-    {
-        ArgumentNullException.ThrowIfNull(formulario);
-
-        Result<FatoColetado> criado = Criar(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, formulario.Finalidade);
-        if (criado.IsSuccess)
+        if (erros.Count > 0)
         {
-            criado.Value!.VincularFormulario(formulario);
+            return Result<FatoColetado>.ValidationFailure(erros);
         }
 
-        return criado;
+        return Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, formulario));
     }
 
     /// <summary>
@@ -332,11 +309,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
 
     internal void VincularGrupo(Guid grupoColetadoId) => GrupoColetadoId = grupoColetadoId;
 
-    internal void VincularFormulario(FormularioProcesso formulario)
-    {
-        FormularioId = formulario.Id;
-        Finalidade = formulario.Finalidade;
-    }
+    internal void VincularFormulario(FormularioProcesso formulario) => FormularioId = formulario.Id;
 
     /// <summary>
     /// A pré-condição de exibição na forma avaliável, ou <see langword="null"/> quando o fato é

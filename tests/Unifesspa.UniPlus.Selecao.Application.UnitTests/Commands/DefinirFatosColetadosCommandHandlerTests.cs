@@ -39,7 +39,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         FatoColetado baixaRenda = BaixaRendaNaSecao(ordemDaBaixaRenda);
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], [ComposicaoFamiliar(ordemDoGrupo)])
+                PapelDoFormularioDeTeste.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], [ComposicaoFamiliar(ordemDoGrupo)])
             .IsSuccess.Should().BeTrue();
         processo.FatosColetados.Where(static f => f.FatoCodigo is "SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")
             .Should().BeEmpty("pré-condição: o formulário foi gravado antes dos três dados");
@@ -59,7 +59,6 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
                 .DoTipo(TipoDeCampo.EscolhaUnica)
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     private static Task<Result> RegravarSoOsItensAsync(ProcessoSeletivo processo, FatoColetado baixaRenda) =>
@@ -77,7 +76,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        List<FatoColetado> daInscricao = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
+        List<FatoColetado> daInscricao = [.. processo.FatosColetados.Where(f => f.FormularioId == processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id)];
         daInscricao.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         CodigosDaConferencia(processo).Should().NotContain(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "a regravação repõe o conjunto básico");
         daInscricao.Select(static f => f.Ordem).Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
@@ -95,7 +94,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Result resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
+        processo.FatosColetados.Where(f => f.FormularioId == processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id).Select(static f => f.Ordem)
             .Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
         processo.GruposColetados.Single().Ordem.Should().Be(fimDaSecao + 3);
         processo.FatosColetados.Single(static f => f.FatoCodigo == "BAIXA_RENDA").Ordem.Should().Be(baixaRenda.Ordem + 3);
@@ -106,7 +105,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
-        DefinirFatosColetadosCommand command = new(processoId, FinalidadeFormulario.Habilitacao.Codigo(), []);
+        DefinirFatosColetadosCommand command = new(processoId, PapelDoFormularioDeTeste.Habilitacao.Codigo(), []);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -127,7 +126,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), ItensDaColetaValida()));
+            processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), ItensDaColetaValida()));
 
         resultado.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Select(f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "BAIXA_RENDA"]);
@@ -155,12 +154,12 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Ativo = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
+            processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
         processo.DefinirItens(
-            [FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").Construir()], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").Construir()], PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }
 
@@ -168,7 +167,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         .NaFase(faseId)
         .ComTipoDeOrigem(CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"))
         .ComTipo("LAUDO_MEDICO", "Laudo médico", "SAUDE")
-        .NaFinalidade(FinalidadeFormulario.Inscricao)
+        .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
         .ComFatosComprovados(["BAIXA_RENDA"])
         .Criar().Value!;
 
@@ -176,7 +175,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     public async Task Handle_FatoPendenteSoComprovadoPorExigencia_ColetaNovaERecusada()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS comprovado", out Guid faseId);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
         DocumentoExigido exigencia = ExigenciaQueComprovaBaixaRenda(faseId);
         Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
@@ -184,7 +183,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { ProtecaoAprovada = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
+            processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
     }
@@ -194,7 +193,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("ESCOLHA_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("MODALIDADE").ComRotulo("Modalidade").DoTipo("ESCOLHA_MULTIPLA").ComObrigatoriedade("NUNCA").Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -211,7 +210,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Escopo = CodigoComRotulo<EscopoFato>.De(CatalogoDe<EscopoFato>.Obter("MEMBRO_GRUPO")) } : f)]));
         DefinirFatosColetadosCommand command = new(
-            processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
+            processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
 
@@ -247,7 +246,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
         [
             EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA", 1).ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]).Construir(),
@@ -266,7 +265,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         // BAIXA_RENDA na ordem 0 cita COR_RACA (ordem 1, posterior).
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
+        DefinirFatosColetadosCommand command = new(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(),
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao("COR_RACA", "IGUAL", "PRETA")]]).Construir(),
             EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir(),

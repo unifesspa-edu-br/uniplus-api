@@ -22,9 +22,9 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
         FaseCronograma inscricao = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: true);
         FaseCronograma isencao = FaseQueResponde(2, "SOLICITACAO_ISENCAO", inscricao: true, isencao: true);
         ProcessoSeletivo processo = ProcessoComFases(inscricao, isencao);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         processo.DefinirFormulario(
-                FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.IsencaoTaxa, isencao.Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
+                FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa))
             .IsSuccess.Should().BeTrue();
 
         return (processo, inscricao, isencao);
@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
         FaseCronograma fase = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: false);
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, finalidade: FinalidadeFormulario.Inscricao));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, papel: PapelDoFormularioDeTeste.Inscricao));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente);
     }
@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, _) = ProcessoComOsDoisFormularios();
 
-        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(inscricao.Id, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(inscricao.Id, papel: PapelDoFormularioDeTeste.IsencaoTaxa));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
     }
@@ -56,7 +56,7 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
     {
         (ProcessoSeletivo processo, _, FaseCronograma isencao) = ProcessoComOsDoisFormularios();
 
-        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(isencao.Id, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(isencao.Id, papel: PapelDoFormularioDeTeste.IsencaoTaxa));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -68,9 +68,9 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
 
         Result resultado = DefinirRegrasDeDocumento(
             processo,
-            Exigencia(inscricao.Id, finalidade: FinalidadeFormulario.IsencaoTaxa),
-            Exigencia(isencao.Id, finalidade: FinalidadeFormulario.IsencaoTaxa),
-            Exigencia(isencao.Id, finalidade: FinalidadeFormulario.Inscricao));
+            Exigencia(inscricao.Id, papel: PapelDoFormularioDeTeste.IsencaoTaxa),
+            Exigencia(isencao.Id, papel: PapelDoFormularioDeTeste.IsencaoTaxa),
+            Exigencia(isencao.Id, papel: PapelDoFormularioDeTeste.Inscricao));
 
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("exigencias[0].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase),
@@ -81,11 +81,11 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
     public void PendenciaDoFormularioDasExigencias_FormularioMudouDeFase_Recusa()
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma isencao) = ProcessoComOsDoisFormularios();
-        ExigirDocumentos(processo, Exigencia(isencao.Id, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        ExigirDocumentos(processo, Exigencia(isencao.Id, papel: PapelDoFormularioDeTeste.IsencaoTaxa));
         PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao()).Should().BeNull();
 
         processo.DefinirFormulario(
-                FormularioDeTeste.DeclaradoNoPapel(FinalidadeFormulario.IsencaoTaxa, inscricao.Id), null, FormularioDeTeste.Paginas(FinalidadeFormulario.IsencaoTaxa))
+                FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.IsencaoTaxa, inscricao.Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa))
             .IsSuccess.Should().BeTrue();
 
         PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao())!.Code

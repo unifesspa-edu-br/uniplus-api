@@ -33,25 +33,27 @@ internal static class ConferenciaDosFatosDosGatilhos
         Dictionary<string, string> membroPorAgregado = VocabularioDeFatos.MembroPorAgregado(catalogo.Values);
         HashSet<string> noProcesso = VocabularioDeFatos.QueOProcessoResolve(processo, catalogo.Values);
 
-        foreach (DocumentoExigido documento in processo.DocumentosExigidos)
-        {
-            IReadOnlySet<string> camposDaRepeticao = RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), documento.Id);
-            foreach (string fato in documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal))
-            {
-                if (!noProcesso.Contains(fato) && !camposDaRepeticao.Contains(fato))
-                {
-                    return new DomainError(
-                        FatoForaDoProcesso,
-                        $"O fato '{fato}', citado pelo gatilho de um documento exigido, não é mais coletado nem derivado pelo processo.");
-                }
+        return processo.DocumentosExigidos
+            .Select(documento => ConferirDocumento(processo, documento, noProcesso, pontoResolucaoPorFato, membroPorAgregado, publicadas))
+            .FirstOrDefault(static recusa => recusa is not null)
+            ?? PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(processo.Declaracao(), membroPorAgregado);
+    }
 
-                if (FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado, publicadas) is { } recusa)
-                {
-                    return recusa;
-                }
-            }
-        }
-
-        return PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(processo.Declaracao(), membroPorAgregado);
+    private static DomainError? ConferirDocumento(
+        ProcessoSeletivo processo,
+        DocumentoExigido documento,
+        HashSet<string> noProcesso,
+        Dictionary<string, string> pontoResolucaoPorFato,
+        Dictionary<string, string> membroPorAgregado,
+        FatosDasVersoesPublicadas? publicadas)
+    {
+        IReadOnlySet<string> camposDaRepeticao = RegrasDasExigencias.CamposDaRepeticao(processo.Declaracao(), documento.Id);
+        return documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal)
+            .Select(fato => noProcesso.Contains(fato) || camposDaRepeticao.Contains(fato)
+                ? FaseEfetivaDoFato.RecusaDeFaseDoGatilho(processo.Declaracao(), fato, documento.ExigidoNaFaseId, documento.FormularioCodigo, pontoResolucaoPorFato, membroPorAgregado, publicadas)
+                : new DomainError(
+                    FatoForaDoProcesso,
+                    $"O fato '{fato}', citado pelo gatilho de um documento exigido, não é mais coletado nem derivado pelo processo."))
+            .FirstOrDefault(static recusa => recusa is not null);
     }
 }

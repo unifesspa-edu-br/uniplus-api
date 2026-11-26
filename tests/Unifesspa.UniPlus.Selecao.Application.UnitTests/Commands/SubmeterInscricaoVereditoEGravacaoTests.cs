@@ -120,7 +120,7 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
         Emitido(cenario.Inscricao).Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
     }
 
-    [Fact(DisplayName = "O item e o termo obrigatórios de outra finalidade, como a isenção, não recusam o envio da inscrição")]
+    [Fact(DisplayName = "O item e o termo obrigatórios de outro formulário, como a isenção, não recusam o envio da inscrição")]
     public async Task Handle_ObrigatoriosDaIsencao_NaoRecusamOEnvio()
     {
         (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
@@ -190,18 +190,17 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
 
     private static void DefinirObrigatoriosDaIsencao(ProcessoSeletivo processo)
     {
-        FormularioDeTeste.DefinirItens(processo, [RendaDeclarada()], finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.DefinirItens(processo, [RendaDeclarada()], papel: PapelDoFormularioDeTeste.IsencaoTaxa).IsSuccess.Should().BeTrue();
         VersaoTermoEscolhida termo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1,
             "Termo da isenção", "Declaro a renda informada.", "Lei 12.799/2013", FormaAceite.RegistroSemEnderecoIp, new string('d', 64));
         FormularioDeTeste.DefinirTermos(processo,
-            [TermoExigidoFormulario.Criar("TERMO_ISENCAO", 0, termo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.IsencaoTaxa).Value!],
-            finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+            [TermoExigidoFormulario.Criar("TERMO_ISENCAO", 0, termo, exibicao: null, Obrigatoriedade.Sempre).Value!],
+            papel: PapelDoFormularioDeTeste.IsencaoTaxa).IsSuccess.Should().BeTrue();
     }
 
     private static FatoColetado RendaDeclarada() => FatoColetadoDeTeste.Coletando("RENDA_DECLARADA", 0)
         .ComRotulo("Renda declarada")
         .DeTexto("LIVRE")
         .ComObrigatoriedade(Obrigatoriedade.Sempre)
-        .DaFinalidade(FinalidadeFormulario.IsencaoTaxa)
         .Construir();
 }

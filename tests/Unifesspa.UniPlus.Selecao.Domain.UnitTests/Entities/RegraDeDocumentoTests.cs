@@ -14,10 +14,10 @@ public sealed class RegraDeDocumentoTests
 {
     private static DocumentoExigido Documento(
         Guid? faseId = null, string? consequencia = null, bool obrigatorio = true, Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
-        FinalidadeFormulario? finalidade = null) =>
+        PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))

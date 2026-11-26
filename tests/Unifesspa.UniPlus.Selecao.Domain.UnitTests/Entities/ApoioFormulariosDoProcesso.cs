@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>Os itens, os termos e os processos que os testes dos formulários por finalidade montam.</summary>
-internal static class ApoioFormulariosPorFinalidade
+/// <summary>Os itens, os termos e os processos que os testes dos formulários do processo montam.</summary>
+internal static class ApoioFormulariosDoProcesso
 {
     internal static FatoColetado Item(string codigo, int ordem, string? pagina = FormularioDeTeste.Secao) =>
         FatoColetadoDeTeste.Coletando(codigo, ordem).ComObrigatoriedade(Obrigatoriedade.Sempre).NaSecao(pagina).Construir();
@@ -26,7 +26,7 @@ internal static class ApoioFormulariosPorFinalidade
     internal static ProcessoSeletivo ComHabilitacao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Paginas())
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, null, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();
         return processo;
     }

@@ -31,9 +31,9 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
+    private static DocumentoExigido DocumentoQualquer(Guid faseId, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao) => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
@@ -54,7 +54,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "RETIRA_O_ACRESCIMO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CoerenciaDaConsequenciaDoDescumprimento.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao.FatosDeModalidade, CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas)).FirstOrDefault()?.Error;
 
@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Pendente)], [regraDeDocumento]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
@@ -90,7 +90,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
@@ -106,7 +106,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, true), 0, [], [regraDeDocumento]).Value!;
 
-        Result resultado = processo.DefinirDocumentosExigidos([grupo]);
+        Result resultado = processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.PendenciaReenvioExigeComplementacao");
@@ -122,7 +122,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, true), 0, [], [regraDeDocumento]).Value!;
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
         Result resultado = processo.DefinirCronogramaFases([faseSemComplementacao], []);
@@ -139,7 +139,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
-        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -156,7 +156,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(
             DocumentoQualquer(fase.Id), 0, quantidadeMinima: 1,
             criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.Ocorrencia).Value!;
-        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -171,7 +171,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
-        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -193,7 +193,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(FatoColetadoDeTeste.Coletando("MAIOR_IDADE", 0).ComRotulo("Maior de idade").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
             .Construir();
-        Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Paginas());
+        Result formulario = processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, fase.Id, null, FormularioDeTeste.Paginas());
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
     }
@@ -206,8 +206,8 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirComposicaoFamiliarNaInscricao(processo, fase);
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(
-            DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
-        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+            DocumentoQualquer(fase.Id, PapelDoFormularioDeTeste.Inscricao), 0, grupoDoFormularioParaRepeticao: "COMPOSICAO_FAMILIAR").Value!;
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -224,7 +224,7 @@ public sealed class ProcessoSeletivoRegraDeComprovacaoConferenciasTests
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoQualquer(fase.Id), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(
             new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegal(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 

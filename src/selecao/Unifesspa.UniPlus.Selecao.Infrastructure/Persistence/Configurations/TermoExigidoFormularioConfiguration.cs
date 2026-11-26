@@ -41,7 +41,6 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
             .HasComment("Identificador do formulário em que o termo é exigido.");
         builder.Property(t => t.Codigo).HasMaxLength(FormaDoTermo.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
-        builder.Ignore(t => t.Finalidade);
         builder.Property(t => t.TermoId).IsRequired();
         builder.Property(t => t.VersaoId).IsRequired();
         builder.Property(t => t.TermoCodigo).HasMaxLength(TermoExigidoFormulario.TermoCodigoMaxLength).IsRequired();

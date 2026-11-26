@@ -55,7 +55,7 @@ public sealed partial class PublicarProcessoSeletivoCommandHandlerTests
             .ComTipo("DECLARACAO", "Declaração", "PESSOAL")
             .Condicional([CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!])
             .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!])
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Criar().Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(

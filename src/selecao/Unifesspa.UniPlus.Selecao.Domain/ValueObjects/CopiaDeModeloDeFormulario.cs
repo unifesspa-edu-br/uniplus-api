@@ -17,10 +17,4 @@ public sealed record CopiaDeModeloDeFormulario(
     IReadOnlyList<GrupoColetado> Grupos,
     IReadOnlyList<TermoExigidoFormulario> Termos,
     IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesNovas,
-    ModeloDeOrigem Origem)
-{
-    // Provisório até a retirada da finalidade: o código dos formulários conhecidos dá a finalidade que o planejamento ainda usa.
-    internal FinalidadeFormulario Finalidade =>
-        EstruturaFormulario.FinalidadeDoCodigo(Formulario.Valor)
-        ?? throw new InvalidOperationException("O código da cópia não corresponde a nenhuma finalidade conhecida.");
-}
+    ModeloDeOrigem Origem);

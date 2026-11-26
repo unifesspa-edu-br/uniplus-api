@@ -63,7 +63,7 @@ public sealed class FaseSemJulgarNosFormulariosTests
     public void Causas_FaseRecusadaComPedidoDeIsencaoDeclarando_RecusaOFacultativo()
     {
         (ProcessoSeletivo processo, Guid habilitacao) = HabilitacaoNaPropriaFase(ConsequenciaDoDescumprimento.RetiraOAcrescimo);
-        processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.IsencaoTaxa, null, null, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
             .IsSuccess.Should().BeTrue();
         ConfiguracaoDeclarada configuracao = SemAFase(processo, habilitacao);
 
@@ -107,16 +107,16 @@ public sealed class FaseSemJulgarNosFormulariosTests
 
     private static void DeclararNaInscricao(ProcessoSeletivo processo)
     {
-        FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, inscricao.FaseId, inscricao.Titulo, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
+        FormularioProcesso inscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!;
+        processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, inscricao.FaseId, inscricao.Titulo, FormularioDeTeste.Paginas(), null, ConsequenciaDoDescumprimento.EliminaDoProcesso)
             .IsSuccess.Should().BeTrue();
     }
 
     private static (ProcessoSeletivo Processo, Guid Fase) HabilitacaoNaPropriaFase(ConsequenciaDoDescumprimento? consequencia)
     {
-        ProcessoSeletivo processo = ProcessoCom(FinalidadeFormulario.Habilitacao, null);
+        ProcessoSeletivo processo = ProcessoCom(PapelDoFormularioDeTeste.Habilitacao, null);
         Guid fase = AcrescentarFaseDaHabilitacao(processo);
-        Result definido = processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, fase, null, FormularioDeTeste.Paginas(), null, consequencia);
+        Result definido = processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, fase, null, FormularioDeTeste.Paginas(), null, consequencia);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         return (processo, fase);
     }

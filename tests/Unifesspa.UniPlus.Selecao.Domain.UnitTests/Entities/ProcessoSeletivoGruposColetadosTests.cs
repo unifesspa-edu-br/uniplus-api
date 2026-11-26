@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("RENDA");
         GrupoColetado grupo = processo.GruposColetados.Should().ContainSingle().Subject;
         grupo.ProcessoSeletivoId.Should().Be(processo.Id);
-        grupo.Subitens.Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        grupo.Subitens.Should().ContainSingle().Which.FormularioId.Should().Be(processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id);
     }
 
     [Theory]
@@ -74,13 +74,13 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     }
 
     [Fact]
-    public void DefinirFatosColetados_CampoDeGrupoJaProduzidoEmOutraFinalidade_Recusa()
+    public void DefinirFatosColetados_CampoDeGrupoJaProduzidoEmOutroFormulario_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirItens(
-            [], finalidade: FinalidadeFormulario.Habilitacao, grupos: [Grupo("FAMILIA", 0, Campo("PARENTESCO", 0))]);
+            [], papel: PapelDoFormularioDeTeste.Habilitacao, grupos: [Grupo("FAMILIA", 0, Campo("PARENTESCO", 0))]);
 
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
     }
@@ -94,12 +94,12 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         // Habilitação e isenção não conhecem os fatos uma da outra: a recusa é a do processo, não a do grafo.
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [Item("RENDA", 0)], finalidade: FinalidadeFormulario.Habilitacao, grupos: [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0))])
+            [Item("RENDA", 0)], papel: PapelDoFormularioDeTeste.Habilitacao, grupos: [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0))])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirItens(
             item is null ? [] : [Item(item, 0)],
-            finalidade: FinalidadeFormulario.IsencaoTaxa,
+            papel: PapelDoFormularioDeTeste.IsencaoTaxa,
             grupos: [Grupo(codigoDoGrupo, 1, Campo("OUTRO_CAMPO", 0))]);
 
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
@@ -139,7 +139,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ];
 
-        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados);
+        Result resultado = processo.DefinirFormulario(PapelDoFormularioDeTeste.Inscricao, null, null, semADeDados);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
@@ -150,7 +150,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItensComFaseDeInscricao([Item("CONCORRER_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [], finalidade: FinalidadeFormulario.Habilitacao,
+            [], papel: PapelDoFormularioDeTeste.Habilitacao,
             grupos: [Grupo("COMPOSICAO", 0, Campo("RENDA_DO_MEMBRO", 0, citado: "CONCORRER_RENDA"))]).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirItens([]);
@@ -159,12 +159,12 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     }
 
     [Fact]
-    public void RemoverFormulario_RemoveOsGruposDaFinalidade()
+    public void RemoverFormulario_RemoveOsGruposDoFormulario()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Should().BeEmpty();
     }
@@ -175,7 +175,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
         CopiaDeModeloDeFormulario copia = new(
-            FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)], [], [], [], OrigemDoModelo);
+            FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)], [], [], [], OrigemDoModelo);
 
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
 
@@ -186,9 +186,9 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     public void AplicarModeloDeFormulario_CopiaComGrupo_GravaOGrupoComOsCampos()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         CopiaDeModeloDeFormulario copia = new(
-            FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)],
+            FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 0)],
             [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0), Campo("MAIOR_IDADE", 1))], [], [], OrigemDoModelo);
 
         processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
@@ -201,9 +201,9 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     public void AplicarModeloDeFormulario_ItemCitaCampoDoGrupoDaCopia_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         CopiaDeModeloDeFormulario copia = new(
-            FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 2, citado: "PARENTESCO")],
+            FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item("RENDA", 2, citado: "PARENTESCO")],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], OrigemDoModelo);
 
         processo.AplicarModeloDeFormulario(copia)
@@ -215,9 +215,9 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([Item("PARENTESCO", 0)]).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Habilitacao);
         CopiaDeModeloDeFormulario copia = new(
-            FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao), "Formulário", FormularioDeTeste.Paginas(), [],
+            FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao), "Formulário", FormularioDeTeste.Paginas(), [],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], OrigemDoModelo);
 
         processo.AplicarModeloDeFormulario(copia)
@@ -230,11 +230,11 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     public void AplicarModeloDeFormulario_ItemComCodigoDeGrupoDeOutroFormulario_Recusa(string codigo)
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))])
+        processo.DefinirItens([], papel: PapelDoFormularioDeTeste.Habilitacao, grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))])
             .IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         CopiaDeModeloDeFormulario copia = new(
-            FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item(codigo, 0)], [], [], [], OrigemDoModelo);
+            FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), "Formulário", FormularioDeTeste.Paginas(), [Item(codigo, 0)], [], [], [], OrigemDoModelo);
 
         Result resultado = processo.AplicarModeloDeFormulario(copia);
 

@@ -150,13 +150,11 @@ public sealed class SubmeterInscricaoRespostasCondicionaisTests
         .ComOcorrencias(0, null)
         .ExibidoQuando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)
         .ComCampos(FatoColetadoDeTeste.Coletando("NOME_DEPENDENTE", 0).ComRotulo("Nome").DeTexto("LIVRE").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static GrupoColetado GrupoDeComposicao() => GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", 1)
         .ComOcorrencias(0, null)
         .ComCampos(Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA"))
-        .DaFinalidade(FinalidadeFormulario.Inscricao)
         .Construir();
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> RespostasDaComposicao() => new(StringComparer.Ordinal)

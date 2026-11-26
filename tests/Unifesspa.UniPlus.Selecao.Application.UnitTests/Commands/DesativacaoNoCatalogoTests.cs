@@ -91,13 +91,13 @@ public sealed class DesativacaoNoCatalogoTests
     public void Congelamento_ValoresAtivosMaisOsCitados()
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS Desativação", OrigemCandidatos.InscricaoPropria);
-        processo.DefinirItens([CorRacaColetada()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([CorRacaColetada()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca());
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PARDA");
 
-        processo.DefinirItens([CorRacaColetada(), BaixaRendaExibidaQuandoPreta()], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([CorRacaColetada(), BaixaRendaExibidaQuandoPreta()], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = BaixaRendaNoCatalogo();
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
@@ -125,7 +125,7 @@ public sealed class DesativacaoNoCatalogoTests
             .ComTipo("AUTODECLARACAO", "Autodeclaração", "PESSOAL")
             .Condicional([CondicaoGatilho.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("BRANCA")).Value!])
             .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!])
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Criar().Value!;
 
     [Fact(DisplayName = "O metadado do fato citado em gatilho congela o mesmo vocabulário: sem o valor desativado que nada cita")]

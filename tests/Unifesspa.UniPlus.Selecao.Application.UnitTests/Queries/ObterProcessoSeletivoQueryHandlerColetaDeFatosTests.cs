@@ -85,7 +85,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         FatoColetado baixaRenda = FatoColetadoDeTeste.Coletando("BAIXA_RENDA", 0).ComRotulo("Baixa renda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir();
         FatoColetado corRaca = FatoColetadoDeTeste.Coletando("COR_RACA", 1).ComRotulo("Cor ou raça").DoTipo(TipoDeCampo.EscolhaUnica)
             .ExibidoQuando(ExibicaoDeTeste.Quando("BAIXA_RENDA", Operador.Igual, true)).Construir();
-        processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([corRaca, baixaRenda], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
         return processo;
     }
 

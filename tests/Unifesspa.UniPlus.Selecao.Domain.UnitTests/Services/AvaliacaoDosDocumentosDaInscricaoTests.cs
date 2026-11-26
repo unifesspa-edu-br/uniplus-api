@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -199,7 +200,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static DocumentoExigido Geral() =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(FaseDaInscricao.Id, null, null))
+            .ComMomento(new MomentoDaExigencia(FaseDaInscricao.Id, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
@@ -338,7 +339,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static DefinicaoFormulario DefinicaoDoFormularioDaInscricao(PredicadoDnf? exibicaoDaFamilia) =>
         new(
             [new DefinicaoPagina(
-                DefinicaoDoProcesso.CodigoDaPagina(FinalidadeFormulario.Inscricao, Secao),
+                DefinicaoDoProcesso.CodigoDaPagina(FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), Secao),
                 null,
                 [new DefinicaoItem(BaixaRenda, null, Obrigatoriedade.Sempre, []), new DefinicaoItem(PediuFator, null, Obrigatoriedade.Sempre, [])],
                 [DefinicaoDoGrupoDaFamilia(exibicaoDaFamilia)])],
@@ -351,7 +352,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     /// <param name="exibicaoDaFamilia">Quando o grupo da família aparece; sempre, quando nula.</param>
     private static ConfiguracaoAvaliavel ComRegrasSemGrupo(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, PredicadoDnf? exibicaoDaFamilia = null)
     {
-        FormularioProcesso inscricao = Formulario(FinalidadeFormulario.Inscricao, FaseDaInscricao);
+        FormularioProcesso inscricao = Formulario(PapelDoFormularioDeTeste.Inscricao, FaseDaInscricao);
 
         return new(
             DefinicaoDoFormularioDaInscricao(exibicaoDaFamilia),
@@ -361,7 +362,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             [GrupoDaFamilia().Em(inscricao)],
             [],
             [FaseDaInscricao, FaseDaHabilitacao],
-            [inscricao, Formulario(FinalidadeFormulario.Habilitacao, FaseDaHabilitacao)]);
+            [inscricao, Formulario(PapelDoFormularioDeTeste.Habilitacao, FaseDaHabilitacao)]);
     }
 
     private static GrupoColetado GrupoDaFamilia() =>
@@ -371,7 +372,6 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             .ComOcorrencias(0, null)
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .ComCampos(Campo(RendaDoMembro, etapa: null))
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     /// <param name="etapa">A seção do campo; o subitem de grupo segue a do grupo, e não tem a sua.</param>
@@ -380,22 +380,21 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             .ComRotulo($"Rótulo de {fato}")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .NaSecao(etapa)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(fase.Id, null, null))
+            .ComMomento(new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)]))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
 
-    private static FormularioProcesso Formulario(FinalidadeFormulario finalidade, FaseCronograma fase) =>
+    private static FormularioProcesso Formulario(PapelDoFormularioDeTeste papel, FaseCronograma fase) =>
         FormularioProcesso.Criar(
-            finalidade, fase.Id, null,
+            FormularioDeTeste.DeclaradoNoPapel(papel, fase.Id), CronogramaDoProcesso.Do([fase]), null,
             [PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 0, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!]).Value!;
 
     private static FaseCronograma Fase(int ordem, string codigo) =>

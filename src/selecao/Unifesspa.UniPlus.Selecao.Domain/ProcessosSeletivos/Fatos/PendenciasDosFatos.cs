@@ -38,7 +38,7 @@ public static class PendenciasDosFatos
 
     private static DomainError? PendenciaDasRegrasNaInscricao(ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, string> membroPorAgregado)
     {
-        HashSet<string> daInscricao = CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
+        HashSet<string> daInscricao = configuracao.FatosDaInscricao();
         HashSet<string> camposDosGrupos = CamposDosGruposDaInscricao(configuracao);
         foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(configuracao.Vagas.DistribuicaoVagas.SelectMany(static d => d.Modalidades)))
         {
@@ -152,7 +152,7 @@ public static class PendenciasDosFatos
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
         return CondicaoQueCitaFatoNaoColetado(configuracao.Coleta.RegrasDerivacao, universo)
-            ?? CitacoesDosFormularios.CitacaoInvalidaNosFormularios(configuracao.Coleta.Formularios, [.. configuracao.Coleta.Itens], configuracao.Coleta.TermosExigidos, derivacoes, configuracao.Coleta.GruposColetados);
+            ?? CitacoesDosFormularios.CitacaoInvalidaNosFormularios(configuracao.Cronograma.CronogramaFases, configuracao.Coleta.Formularios, [.. configuracao.Coleta.Itens], configuracao.Coleta.TermosExigidos, derivacoes, configuracao.Coleta.GruposColetados);
     }
 
     private static DomainError? CondicaoQueCitaFatoNaoColetado(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao, HashSet<string> universo) =>

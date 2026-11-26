@@ -10,12 +10,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
-/// A aplicação do modelo é feita sobre o formulário do código informado, que o processo já precisa ter; a
-/// finalidade do modelo não escolhe o formulário.
+/// A aplicação do modelo é feita sobre o formulário do código informado, que o processo já precisa ter; o
+/// modelo não escolhe o formulário.
 /// </summary>
 public sealed class AplicarModeloFormularioCodigoDoFormularioTests
 {
@@ -49,11 +50,11 @@ public sealed class AplicarModeloFormularioCodigoDoFormularioTests
     [Fact(DisplayName = "O relatório da aplicação devolve o código do formulário que recebeu a cópia")]
     public async Task Handle_Aplicado_DevolveOCodigoDoFormulario()
     {
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("CERTIFICADO", 0)]);
+        ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO", 0)]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.FormularioCodigo.Should().Be(FinalidadeFormulario.Habilitacao.Codigo());
+        resultado.Value!.FormularioCodigo.Should().Be(PapelDoFormularioDeTeste.Habilitacao.Codigo());
     }
 }

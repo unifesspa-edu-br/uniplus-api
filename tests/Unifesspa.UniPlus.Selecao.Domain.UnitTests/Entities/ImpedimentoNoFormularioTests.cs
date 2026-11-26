@@ -30,7 +30,7 @@ public sealed class ImpedimentoNoFormularioTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         ApoioDosFormulariosComConsequencia.AcrescentarFaseDaHabilitacao(processo);
 
-        Result resultado = processo.DefinirItens([Campo(Obrigatoriedade.Sempre)], finalidade: FinalidadeFormulario.Habilitacao);
+        Result resultado = processo.DefinirItens([Campo(Obrigatoriedade.Sempre)], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -46,7 +46,7 @@ public sealed class ImpedimentoNoFormularioTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao,
+                PapelDoFormularioDeTeste.Inscricao,
                 [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)])
             .IsSuccess.Should().BeTrue();
 

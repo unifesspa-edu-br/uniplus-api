@@ -30,7 +30,7 @@ internal sealed class PublicacaoDeDocumentoBuilder
     internal PublicacaoDeDocumentoBuilder ComDocumento(string caso)
     {
         Guid faseId = _processo.CronogramaFases.Single().Id;
-        DocumentoExigidoBuilder documento = new DocumentoExigidoBuilder().NaFase(faseId, FinalidadeFormulario.Inscricao);
+        DocumentoExigidoBuilder documento = new DocumentoExigidoBuilder().NaFase(faseId, PapelDoFormularioDeTeste.Inscricao);
         if (caso != "escolhas")
         {
             DataDeReferenciaDoDocumento referencia = caso == "fase" ? new DataDeReferenciaBuilder().NoInicioDaFase(faseId).Construir() : new DataDeReferenciaBuilder().Construir();
@@ -46,7 +46,7 @@ internal sealed class PublicacaoDeDocumentoBuilder
     {
         _documentos.Add(new DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "OUTRO", "Outro documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .NaFase(_processo.CronogramaFases.Single().Id, FinalidadeFormulario.Inscricao)
+            .NaFase(_processo.CronogramaFases.Single().Id, PapelDoFormularioDeTeste.Inscricao)
             .ComPrazoDeEmissao(new PrazoDeEmissaoBuilder().SemPrazo().Construir())
             .ComValidade(new ValidadeDoDocumentoBuilder().NaoExige().Construir())
             .Construir());

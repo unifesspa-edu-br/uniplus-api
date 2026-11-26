@@ -18,17 +18,6 @@ public static class PendenciasDasExigencias
         RegrasDasExigencias.FormularioDasExigencias(configuracao, configuracao.Exigencias.DocumentosExigidos) is [{ } primeira, ..] ? primeira.Error : null;
 
     /// <summary>
-    /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o
-    /// cronograma pode ter tirado da fase, depois, o formulário que a exigência declara.
-    /// </summary>
-    internal static DomainError? PendenciaDaFinalidadeDasExigencias(ConfiguracaoDeclarada configuracao) =>
-        configuracao.Exigencias.DocumentosExigidos
-            .Select(exigencia => configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId) is { } fase
-                ? Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(exigencia.Finalidade, fase)
-                : null)
-            .FirstOrDefault(static recusa => recusa is not null);
-
-    /// <summary>
     /// Pendências dos documentos exigidos, conferidas pela publicação e pela sucessão de versão
     /// (retificação), sempre <b>depois</b> da pendência do cronograma.
     /// </summary>

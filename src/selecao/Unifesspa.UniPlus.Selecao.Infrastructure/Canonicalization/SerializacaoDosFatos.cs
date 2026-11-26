@@ -97,11 +97,20 @@ internal static class SerializacaoDosFatos
 
     internal static JsonArray SerializarFatosColetados(
         IEnumerable<FatoColetado> fatos,
+        IReadOnlyCollection<FormularioProcesso> formularios,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados) =>
+        SerializarEmOrdem(
+            OrdemCanonicaDaConfiguracao.Campos(fatos, formularios),
+            SerializacaoDosFormularios.CodigosPorIdentificador(formularios),
+            valoresSelecionaveisCongelados);
+
+    private static JsonArray SerializarEmOrdem(
+        IEnumerable<FatoColetado> fatosEmOrdem,
         IReadOnlyDictionary<Guid, string> codigosDosFormularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
         JsonArray array = [];
-        foreach (FatoColetado fato in OrdemCanonicaDaConfiguracao.Campos(fatos))
+        foreach (FatoColetado fato in fatosEmOrdem)
         {
             array.Add(SerializarFatoColetado(fato, codigosDosFormularios, ValoresSelecionaveisDoFato(fato, valoresSelecionaveisCongelados)));
         }
@@ -210,10 +219,14 @@ internal static class SerializacaoDosFatos
 
     internal static JsonArray SerializarGruposColetados(
         IEnumerable<GrupoColetado> grupos,
-        IReadOnlyDictionary<Guid, string> codigosDosFormularios,
+        IReadOnlyCollection<FormularioProcesso> formularios,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
-        IReadOnlyList<DefinicaoAgregado>? agregados) =>
-        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => SerializarGrupo(g, codigosDosFormularios, valoresSelecionaveisCongelados, agregados))];
+        IReadOnlyList<DefinicaoAgregado>? agregados)
+    {
+        IReadOnlyDictionary<Guid, string> codigosDosFormularios = SerializacaoDosFormularios.CodigosPorIdentificador(formularios);
+        return [.. OrdemCanonicaDaConfiguracao.Grupos(grupos, formularios)
+            .Select(g => SerializarGrupo(g, codigosDosFormularios, valoresSelecionaveisCongelados, agregados))];
+    }
 
     private static JsonObject SerializarGrupo(
         GrupoColetado g,
@@ -247,7 +260,7 @@ internal static class SerializacaoDosFatos
     {
         objeto["exibicao"] = g.Exibicao is { } exibicao ? SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(exibicao)) : null;
         objeto["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(g.Obrigatoriedade);
-        objeto["subitens"] = SerializarFatosColetados(g.Subitens, codigosDosFormularios, valoresSelecionaveisCongelados);
+        objeto["subitens"] = SerializarEmOrdem(OrdemCanonicaDaConfiguracao.CamposDoGrupo(g.Subitens), codigosDosFormularios, valoresSelecionaveisCongelados);
         objeto["agregados"] = SerializarAgregadosDoGrupo(g, agregados);
     }
 

@@ -17,37 +17,37 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosPorFinalidade;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFormulariosDoProcesso;
 
 /// <summary>
 /// O item e o termo de um formulário citam fatos coletados por outro: a citação precisa de um produtor no
-/// processo, e a inscrição não perde o fato que outra finalidade cita.
+/// processo, e a inscrição não perde o fato que outro formulário cita.
 /// </summary>
 public sealed class CitacoesEntreFormulariosTests
 {
-    [Fact(DisplayName = "Item de outra finalidade cita fato da inscrição; fato que nenhum dos dois coleta é recusado")]
-    public void OutraFinalidade_CitaFatoDaInscricao()
+    [Fact(DisplayName = "Item de outro formulário cita fato da inscrição; fato que nenhum dos dois coleta é recusado")]
+    public void OutroFormulario_CitaFatoDaInscricao()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_BOLSA")])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_BOLSA")])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
-    [Fact(DisplayName = "A inscrição não perde fato que um item de outra finalidade cita")]
-    public void Inscricao_NaoPerdeFatoCitadoPorOutraFinalidade()
+    [Fact(DisplayName = "A inscrição não perde fato que um item de outro formulário cita")]
+    public void Inscricao_NaoPerdeFatoCitadoPorOutroFormulario()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao)
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -77,16 +77,16 @@ public sealed class CitacoesEntreFormulariosTests
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
-    [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outra finalidade")]
+    [Fact(DisplayName = "Termo cita os campos do próprio formulário e os da inscrição, nunca os de outro formulário")]
     public void Termo_CitaSoOQueOFormularioConhece()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [Item("COMPROVANTE_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA"), TermoQueCita("COMPROVANTE_RENDA", 1)])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [TermoQueCita("TEM_RENDA"), TermoQueCita("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoQueCita("COMPROVANTE_RENDA")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Inscricao, [TermoQueCita("COMPROVANTE_RENDA")])
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "termos[0]",
@@ -94,12 +94,12 @@ public sealed class CitacoesEntreFormulariosTests
             });
     }
 
-    [Fact(DisplayName = "A inscrição não perde fato que um termo de outra finalidade cita")]
-    public void Inscricao_NaoPerdeFatoCitadoPorTermoDeOutraFinalidade()
+    [Fact(DisplayName = "A inscrição não perde fato que um termo de outro formulário cita")]
+    public void Inscricao_NaoPerdeFatoCitadoPorTermoDeOutroFormulario()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([Item("COR_RACA", 0)])
@@ -113,7 +113,7 @@ public sealed class CitacoesEntreFormulariosTests
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
+                PapelDoFormularioDeTeste.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 
@@ -121,12 +121,12 @@ public sealed class CitacoesEntreFormulariosTests
             .IsSuccess.Should().BeTrue("a troca da inscrição não tira nada que a habilitação conhecia");
     }
 
-    [Fact(DisplayName = "Redefinir a inscrição mantendo o fato citado por outra finalidade é aceito")]
-    public void Inscricao_MantemFatoCitadoPorOutraFinalidade_Aceita()
+    [Fact(DisplayName = "Redefinir a inscrição mantendo o fato citado por outro formulário é aceito")]
+    public void Inscricao_MantemFatoCitadoPorOutroFormulario_Aceita()
     {
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirItens([Item("TEM_RENDA", 0), Item("COR_RACA", 1)])
@@ -140,9 +140,9 @@ public sealed class CitacoesEntreFormulariosTests
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
+                PapelDoFormularioDeTeste.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
+        processo.DefinirTermosDoFormulario(PapelDoFormularioDeTeste.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 
@@ -156,7 +156,7 @@ public sealed class CitacoesEntreFormulariosTests
         ProcessoSeletivo processo = ComHabilitacao();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCitaOsDois(), Item("COMPROVANTE_RENDA", 1)])
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [ItemQueCitaOsDois(), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 

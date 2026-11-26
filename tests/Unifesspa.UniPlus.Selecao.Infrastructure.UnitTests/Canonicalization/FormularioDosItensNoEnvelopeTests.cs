@@ -27,9 +27,27 @@ public sealed class FormularioDosItensNoEnvelopeTests
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         FatoColetado campo = ItensDoFormularioDeTeste.Campo("FATO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao)!);
 
-        JsonArray serializado = SerializacaoDosFatos.SerializarFatosColetados([campo], formularios.CodigosPorIdentificador(), null);
+        JsonArray serializado = SerializacaoDosFatos.SerializarFatosColetados([campo], formularios.Formularios, null);
 
         serializado.Should().ContainSingle().Which!["formularioCodigo"]!.GetValue<string>().Should().Be("HABILITACAO");
+    }
+
+    [Fact(DisplayName = "Os campos saem pela ordem do código do formulário e, dentro dele, pela ordem do campo")]
+    public void SerializarFatosColetados_CamposDeDoisFormularios_SaemPelaOrdemDoCodigo()
+    {
+        FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
+        FormularioProcesso habilitacao = formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao)!;
+        FormularioProcesso inscricao = formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!;
+        FatoColetado[] campos =
+        [
+            ItensDoFormularioDeTeste.Campo("FATO_C", 1, inscricao),
+            ItensDoFormularioDeTeste.Campo("FATO_B", 0, inscricao),
+            ItensDoFormularioDeTeste.Campo("FATO_A", 0, habilitacao),
+        ];
+
+        JsonArray serializado = SerializacaoDosFatos.SerializarFatosColetados(campos, formularios.Formularios, null);
+
+        serializado.Select(static campo => campo!["codigoDoDado"]!.GetValue<string>()).Should().Equal("FATO_A", "FATO_B", "FATO_C");
     }
 
     [Fact(DisplayName = "O grupo serializado e os campos dele citam o código do formulário do grupo")]
@@ -38,7 +56,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         GrupoColetado grupo = ItensDoFormularioDeTeste.Grupo("GRUPO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!);
 
-        JsonArray serializado = SerializacaoDosFatos.SerializarGruposColetados([grupo], formularios.CodigosPorIdentificador(), null, []);
+        JsonArray serializado = SerializacaoDosFatos.SerializarGruposColetados([grupo], formularios.Formularios, null, []);
 
         JsonNode item = serializado.Should().ContainSingle().Subject!;
         item["formularioCodigo"]!.GetValue<string>().Should().Be("INSCRICAO");
@@ -49,9 +67,9 @@ public sealed class FormularioDosItensNoEnvelopeTests
     public void SerializarFatosColetados_CampoSemFormulario_Falha()
     {
         FatoColetado semFormulario = FatoColetadoDeTeste.Coletando("FATO", 0).Construir();
-        IReadOnlyDictionary<Guid, string> codigos = FormulariosDoDocumentoDeTeste.ComFormularios().CodigosPorIdentificador();
+        IReadOnlyList<FormularioProcesso> formularios = FormulariosDoDocumentoDeTeste.ComFormularios().Formularios;
 
-        Action serializar = () => SerializacaoDosFatos.SerializarFatosColetados([semFormulario], codigos, null);
+        Action serializar = () => SerializacaoDosFatos.SerializarFatosColetados([semFormulario], formularios, null);
 
         serializar.Should().Throw<InvalidOperationException>();
     }
@@ -62,7 +80,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         FormularioProcesso habilitacao = formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao)!;
         JsonObject documento = Documento("dadosDosFormularios", SerializacaoDosFatos.SerializarFatosColetados(
-            [ItensDoFormularioDeTeste.Campo("FATO", 0, habilitacao)], formularios.CodigosPorIdentificador(), null));
+            [ItensDoFormularioDeTeste.Campo("FATO", 0, habilitacao)], formularios.Formularios, null));
         LeitorEnvelope leitor = new();
 
         (IReadOnlyList<FatoColetado> lidos, _) = LeituraDosFatos.LerFatosColetados(leitor, documento, formularios);
@@ -77,7 +95,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         FormularioProcesso inscricao = formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!;
         JsonObject documento = Documento("gruposDosFormularios", SerializacaoDosFatos.SerializarGruposColetados(
-            [ItensDoFormularioDeTeste.Grupo("GRUPO", 0, inscricao)], formularios.CodigosPorIdentificador(), null, []));
+            [ItensDoFormularioDeTeste.Grupo("GRUPO", 0, inscricao)], formularios.Formularios, null, []));
         LeitorEnvelope leitor = new();
 
         IReadOnlyList<GrupoColetado> lidos = LeituraDosGrupos.LerGruposColetados(
@@ -94,7 +112,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
     {
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         JsonObject documento = Documento("gruposDosFormularios", SerializacaoDosFatos.SerializarGruposColetados(
-            [ItensDoFormularioDeTeste.Grupo("GRUPO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!)], formularios.CodigosPorIdentificador(), null, []));
+            [ItensDoFormularioDeTeste.Grupo("GRUPO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!)], formularios.Formularios, null, []));
         documento["gruposDosFormularios"]![0]!["formularioCodigo"] = "OUTRO_FORMULARIO";
         LeitorEnvelope leitor = new();
 
@@ -108,7 +126,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
     {
         FormulariosDoDocumento formularios = FormulariosDoDocumentoDeTeste.ComFormularios();
         JsonObject documento = Documento("dadosDosFormularios", SerializacaoDosFatos.SerializarFatosColetados(
-            [ItensDoFormularioDeTeste.Campo("FATO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!)], formularios.CodigosPorIdentificador(), null));
+            [ItensDoFormularioDeTeste.Campo("FATO", 0, formularios.De(FormulariosDoDocumentoDeTeste.CodigoDaInscricao)!)], formularios.Formularios, null));
         documento["dadosDosFormularios"]![0]!.AsObject().Remove("formularioCodigo");
         LeitorEnvelope leitor = new();
 

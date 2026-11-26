@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConsequenciasDoDescumprimento;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
@@ -45,7 +46,7 @@ public sealed class OrdemDasCausasDosGruposTests
     public void AcrescimoDosGrupos_GruposDeclaradosForaDeOrdem_SegueAOrdemDosGrupos()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirDocumentosExigidos([Grupo(processo, 1, "ELIMINA_DO_PROCESSO"), Grupo(processo, 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([Grupo(processo, 1, "ELIMINA_DO_PROCESSO"), Grupo(processo, 0)]).IsSuccess.Should().BeTrue();
 
         CaminhosDasCausas(processo.Declaracao()).Should().Equal("documentosExigidos.regrasDeComprovacao[0].consequenciaDoDescumprimento");
     }
@@ -57,7 +58,7 @@ public sealed class OrdemDasCausasDosGruposTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         RegraDeComprovacao[] grupos = [.. Enumerable.Range(0, 2).Select(ordem => Grupo(processo, ordem))];
-        processo.DefinirDocumentosExigidos(grupos).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(grupos).IsSuccess.Should().BeTrue();
         return processo;
     }
 

@@ -6,56 +6,53 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>A criação do grupo repetível do formulário (UNI-REQ-0146): a forma, o candidato como membro e a finalidade.</summary>
+/// <summary>A criação do grupo repetível do formulário (UNI-REQ-0146): a forma, o candidato como membro e o formulário.</summary>
 public sealed class GrupoColetadoTests
 {
     private static readonly OcorrenciasDoGrupo ZeroACinco = new(0, 5, IncluiCandidato: false);
 
     private static readonly ExibicaoEObrigatoriedade SempreNunca = new(null, Obrigatoriedade.Nunca);
 
-    [Fact(DisplayName = "O grupo adota a finalidade dos campos, que são todos da mesma")]
-    public void Criar_CamposDaMesmaFinalidade_GrupoAdotaAFinalidade()
+    [Fact(DisplayName = "O grupo adota o formulário dos campos, que são todos do mesmo")]
+    public void Criar_CamposDoMesmoFormulario_GrupoAdotaOFormulario()
     {
-        FatoColetado[] campos =
-        [
-            FatoColetadoDeTeste.Coletando("PARENTESCO", 0).DaFinalidade(FinalidadeFormulario.Habilitacao).Construir(),
-            FatoColetadoDeTeste.Coletando("RENDA", 1).DaFinalidade(FinalidadeFormulario.Habilitacao).Construir(),
-        ];
+        FormularioProcesso habilitacao = LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao);
 
-        GrupoColetado grupo = GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", ZeroACinco, SempreNunca, campos).Value!;
+        GrupoColetado grupo = GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", ZeroACinco, SempreNunca, CamposDe(habilitacao, habilitacao)).Value!;
 
-        grupo.Finalidade.Should().Be(FinalidadeFormulario.Habilitacao);
-        grupo.Subitens.Should().OnlyContain(static c => c.Finalidade == FinalidadeFormulario.Habilitacao);
+        grupo.FormularioId.Should().Be(habilitacao.Id);
+        grupo.Subitens.Should().OnlyContain(c => c.FormularioId == habilitacao.Id);
     }
 
-    [Fact(DisplayName = "Campos de finalidades diferentes são erro de programação: o grupo tem a finalidade dos seus campos")]
-    public void Criar_CamposDeFinalidadesDiferentes_Lanca()
+    [Fact(DisplayName = "Campos de formulários diferentes são erro de programação: o grupo tem o formulário dos seus campos")]
+    public void Criar_CamposDeFormulariosDiferentes_Lanca()
     {
-        FatoColetado[] campos =
-        [
-            FatoColetadoDeTeste.Coletando("PARENTESCO", 0).DaFinalidade(FinalidadeFormulario.Inscricao).Construir(),
-            FatoColetadoDeTeste.Coletando("RENDA", 1).DaFinalidade(FinalidadeFormulario.Habilitacao).Construir(),
-        ];
+        FatoColetado[] campos = CamposDe(
+            LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao), LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao));
 
         FluentActions.Invoking(() => GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", ZeroACinco, SempreNunca, campos))
             .Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "A forma recusada devolve a falha antes de olhar a finalidade dos campos")]
-    public void Criar_FormaRecusadaComFinalidadesDiferentes_DevolveAFalha()
+    [Fact(DisplayName = "A forma recusada devolve a falha antes de olhar o formulário dos campos")]
+    public void Criar_FormaRecusadaComFormulariosDiferentes_DevolveAFalha()
     {
-        FatoColetado[] campos =
-        [
-            FatoColetadoDeTeste.Coletando("PARENTESCO", 0).DaFinalidade(FinalidadeFormulario.Inscricao).Construir(),
-            FatoColetadoDeTeste.Coletando("RENDA", 1).DaFinalidade(FinalidadeFormulario.Habilitacao).Construir(),
-        ];
+        FatoColetado[] campos = CamposDe(
+            LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao), LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao));
 
         Result<GrupoColetado> resultado = GrupoColetado.Criar(" ", 0, FormularioDeTeste.Secao, "Composição familiar", ZeroACinco, SempreNunca, campos);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(GrupoFormularioErrorCodes.CodigoInvalido);
     }
+
+    private static FatoColetado[] CamposDe(FormularioProcesso parentesco, FormularioProcesso renda) =>
+    [
+        FatoColetadoDeTeste.Coletando("PARENTESCO", 0).NoFormulario(parentesco).Construir(),
+        FatoColetadoDeTeste.Coletando("RENDA", 1).NoFormulario(renda).Construir(),
+    ];
 
     [Fact(DisplayName = "As violações da forma e a falta do parentesco do candidato saem juntas, na ordem da forma e depois do candidato")]
     public void Criar_FormaRecusadaEGrupoQueIncluiOCandidatoSemParentesco_AcumulaAsDuas()

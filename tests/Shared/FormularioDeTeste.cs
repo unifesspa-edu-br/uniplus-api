@@ -12,8 +12,24 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O formulário mínimo de uma finalidade para os testes que não tratam da estrutura dele: uma seção
-/// de dados e a revisão e aceite, na fase do cronograma que a finalidade pede, quando o processo a
+/// O papel que o formulário cumpre no teste: o nome que o teste dá ao formulário, e não uma classificação do domínio. O
+/// processo guarda só o código e a obrigatoriedade, que o papel fornece.
+/// </summary>
+public enum PapelDoFormularioDeTeste
+{
+    [CodigoDeContrato("INSCRICAO", "Inscrição")]
+    Inscricao = 1,
+
+    [CodigoDeContrato("ISENCAO_TAXA", "Isenção da taxa")]
+    IsencaoTaxa = 2,
+
+    [CodigoDeContrato("HABILITACAO", "Habilitação")]
+    Habilitacao = 3,
+}
+
+/// <summary>
+/// O formulário mínimo de um papel para os testes que não tratam da estrutura dele: uma seção
+/// de dados e a revisão e aceite, na fase do cronograma que o papel pede, quando o processo a
 /// tem. Os itens sem seção vão para a seção de dados. O de inscrição tem antes a seção reservada
 /// com o conjunto básico do candidato, como a escrita o monta: os itens do teste sobem acima dela
 /// quando colidem, e o básico que o teste declara vai para a seção, na ordem dele, sem se repetir.
@@ -29,14 +45,61 @@ internal static class FormularioDeTeste
     public static TermoNoFormulario TermoDaInscricao(string codigo) => new(CodigoDaInscricao, codigo);
 
     /// <summary>O código do formulário que cumpre o papel dado: o papel é o nome do teste, o código é o que o processo guarda.</summary>
-    public static CodigoDoFormulario CodigoDoPapel(FinalidadeFormulario papel) => CodigoDoFormulario.Criar(papel.Codigo()).Value!;
+    public static CodigoDoFormulario CodigoDoPapel(PapelDoFormularioDeTeste papel) => CodigoDoFormulario.Criar(papel.Codigo()).Value!;
 
-    /// <summary>O código do formulário que cumpre o papel dado; sem papel, sem formulário.</summary>
-    public static CodigoDoFormulario? CodigoDoPapel(FinalidadeFormulario? papel) => papel is { } cumprido ? CodigoDoPapel(cumprido) : null;
+    /// <summary>O código do formulário de inscrição, para a exigência que o teste não liga a formulário nenhum em especial.</summary>
+    public static CodigoDoFormulario FormularioDaInscricao { get; } = CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao);
 
     /// <summary>O formulário que cumpre o papel dado, na fase dada: o pedido de isenção é facultativo, os outros são obrigatórios.</summary>
-    public static FormularioDeclarado DeclaradoNoPapel(FinalidadeFormulario papel, Guid? faseId) =>
-        new(CodigoDoPapel(papel), faseId, CorrespondenciaDaFinalidade.DeclaracaoDa(papel).Obrigatorio);
+    public static FormularioDeclarado DeclaradoNoPapel(PapelDoFormularioDeTeste papel, Guid? faseId) =>
+        new(CodigoDoPapel(papel), faseId, papel != PapelDoFormularioDeTeste.IsencaoTaxa);
+
+    /// <summary>O formulário do processo que cumpre o papel dado, quando o processo o tem.</summary>
+    public static FormularioProcesso? FormularioDe(this ProcessoSeletivo processo, PapelDoFormularioDeTeste papel)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return processo.FormularioDe(CodigoDoPapel(papel));
+    }
+
+    /// <summary>Define o formulário que cumpre o papel dado, na fase dada.</summary>
+    public static Result DefinirFormulario(
+        this ProcessoSeletivo processo,
+        PapelDoFormularioDeTeste papel,
+        Guid? faseId,
+        string? titulo,
+        IReadOnlyList<PaginaDoFormulario> paginas,
+        IReadOnlyList<FatoColetado>? itensDaCriacao = null,
+        ConsequenciaDoDescumprimento? consequenciaDaFaltaDeEnvio = null)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return processo.DefinirFormulario(DeclaradoNoPapel(papel, faseId), titulo, paginas, itensDaCriacao, consequenciaDaFaltaDeEnvio);
+    }
+
+    /// <summary>Remove o formulário que cumpre o papel dado.</summary>
+    public static Result RemoverFormulario(this ProcessoSeletivo processo, PapelDoFormularioDeTeste papel)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return processo.RemoverFormulario(CodigoDoPapel(papel));
+    }
+
+    /// <summary>Substitui os termos do formulário que cumpre o papel dado.</summary>
+    public static Result DefinirTermosDoFormulario(
+        this ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, IReadOnlyList<TermoExigidoFormulario> termos)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return processo.DefinirTermosDoFormulario(CodigoDoPapel(papel), termos);
+    }
+
+    /// <summary>Substitui os itens do formulário que cumpre o papel dado.</summary>
+    public static Result DefinirFatosColetados(
+        this ProcessoSeletivo processo,
+        PapelDoFormularioDeTeste papel,
+        IReadOnlyList<FatoColetado> fatosColetados,
+        IReadOnlyList<GrupoColetado>? grupos = null)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return processo.DefinirFatosColetados(CodigoDoPapel(papel), fatosColetados, grupos);
+    }
 
     /// <summary>A ordem a partir da qual o teste declara os itens do formulário de inscrição.</summary>
     public static int PrimeiraOrdemDeInscricao => ConjuntoBasicoDaInscricao.Itens.Count;
@@ -53,9 +116,9 @@ internal static class FormularioDeTeste
     public static ResultadoDaAvaliacaoDaInscricao AvaliacaoDoEnvio(AvaliacaoFormulario formulario) =>
         new(formulario, ModalidadesDeConcorrencia.SemDerivacao, new DocumentosDaInscricao([], new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []));
 
-    public static IReadOnlyList<PaginaDoFormulario> Paginas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+    public static IReadOnlyList<PaginaDoFormulario> Paginas(PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao)
     {
-        int deslocamento = finalidade == FinalidadeFormulario.Inscricao ? 1 : 0;
+        int deslocamento = papel == PapelDoFormularioDeTeste.Inscricao ? 1 : 0;
         PaginaDoFormulario[] doTeste =
         [
             PaginaDoFormulario.Criar(new PaginaEstrutura(Secao, deslocamento, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
@@ -99,17 +162,17 @@ internal static class FormularioDeTeste
     public static IEnumerable<FatoColetado> ForaDoConjuntoBasico(this IEnumerable<FatoColetado> itens) =>
         itens.Where(static f => !ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo));
 
-    /// <summary>Define os itens da finalidade, criando antes o formulário mínimo quando o processo não o tem.</summary>
+    /// <summary>Define os itens da papel, criando antes o formulário mínimo quando o processo não o tem.</summary>
     public static Result DefinirItens(
         this ProcessoSeletivo processo,
         IReadOnlyList<FatoColetado> fatos,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao,
+        PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao,
         IReadOnlyList<GrupoColetado>? grupos = null)
     {
-        GarantirFormulario(processo, finalidade);
-        if (finalidade != FinalidadeFormulario.Inscricao)
+        GarantirFormulario(processo, papel);
+        if (papel != PapelDoFormularioDeTeste.Inscricao)
         {
-            return processo.DefinirFatosColetados(CodigoDoPapel(finalidade), [.. fatos.Select(f => NaSecao(f, 0))], grupos);
+            return processo.DefinirFatosColetados(CodigoDoPapel(papel), [.. fatos.Select(f => NaSecao(f, 0))], grupos);
         }
 
         int deslocamento = fatos.Any(static f => !EhBasico(f) && f.Ordem < PrimeiraOrdemDeInscricao)
@@ -117,7 +180,7 @@ internal static class FormularioDeTeste
             ? PrimeiraOrdemDeInscricao
             : 0;
         return processo.DefinirFatosColetados(
-            CodigoDoPapel(finalidade),
+            CodigoDoPapel(papel),
             [.. fatos.Select(f => EhBasico(f) ? NaSecaoReservada(f) : NaSecao(f, deslocamento)), .. DadosBasicos(fatos.Select(static f => f.FatoCodigo))],
             grupos is null ? null : [.. grupos.Select(g => Deslocar(g, deslocamento))]);
     }
@@ -128,7 +191,7 @@ internal static class FormularioDeTeste
     /// </summary>
     public static Result DefinirItensComFaseDeInscricao(this ProcessoSeletivo processo, IReadOnlyList<FatoColetado> fatos)
     {
-        if (FaseDe(processo, FinalidadeFormulario.Inscricao) is null)
+        if (FaseDe(processo, PapelDoFormularioDeTeste.Inscricao) is null)
         {
             FaseCronograma inscricao = FaseDeInscricao(processo.CronogramaFases.Select(static f => f.Ordem).DefaultIfEmpty(0).Max() + 1);
             Result cronograma = processo.DefinirCronogramaFases([inscricao, .. processo.CronogramaFases], []);
@@ -141,25 +204,25 @@ internal static class FormularioDeTeste
         return processo.DefinirItens(fatos);
     }
 
-    /// <summary>Define o título do formulário da finalidade, mantendo a fase e as páginas mínimas.</summary>
+    /// <summary>Define o título do formulário da papel, mantendo a fase e as páginas mínimas.</summary>
     public static Result DefinirTitulo(
         this ProcessoSeletivo processo,
         string? titulo,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+        PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao)
     {
-        GarantirFormulario(processo, finalidade);
+        GarantirFormulario(processo, papel);
         return processo.DefinirFormulario(
-            DeclaradoNoPapel(finalidade, processo.FormularioDe(finalidade)!.FaseId), titulo, Paginas(finalidade));
+            DeclaradoNoPapel(papel, processo.FormularioDe(papel)!.FaseId), titulo, Paginas(papel));
     }
 
-    /// <summary>Define os termos da finalidade, criando antes o formulário mínimo quando o processo não o tem.</summary>
+    /// <summary>Define os termos da papel, criando antes o formulário mínimo quando o processo não o tem.</summary>
     public static Result DefinirTermos(
         this ProcessoSeletivo processo,
         IReadOnlyList<TermoExigidoFormulario> termos,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+        PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao)
     {
-        GarantirFormulario(processo, finalidade);
-        return processo.DefinirTermosDoFormulario(CodigoDoPapel(finalidade), termos);
+        GarantirFormulario(processo, papel);
+        return processo.DefinirTermosDoFormulario(CodigoDoPapel(papel), termos);
     }
 
     /// <summary>
@@ -168,16 +231,16 @@ internal static class FormularioDeTeste
     /// </summary>
     public static Result TrocarCronograma(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
-        bool tinhaFormulario = processo.FormularioDe(FinalidadeFormulario.Inscricao) is not null;
+        bool tinhaFormulario = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao) is not null;
         if (tinhaFormulario)
         {
-            processo.RemoverFormulario(CodigoDoPapel(FinalidadeFormulario.Inscricao));
+            processo.RemoverFormulario(CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao));
         }
 
         Result trocado = DefinirCronogramaRepondoEtapas(processo, fases);
         if (tinhaFormulario)
         {
-            GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+            GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         }
 
         return trocado;
@@ -234,22 +297,51 @@ internal static class FormularioDeTeste
     {
         if (processo.OrigemCandidatos == Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.InscricaoPropria)
         {
-            GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
+            GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
         }
     }
 
-    /// <summary>Cria o formulário mínimo da finalidade quando o processo não o tem.</summary>
-    public static void GarantirFormulario(ProcessoSeletivo processo, FinalidadeFormulario finalidade)
+    /// <summary>
+    /// Cria, na fase de cada exigência, o formulário mínimo que ela declara e o processo ainda não tem: toda exigência
+    /// pertence a um formulário. A recusa de criar o formulário (fase fora do cronograma, por exemplo) fica para o
+    /// teste, que a observa na gravação das exigências.
+    /// </summary>
+    public static void GarantirOsFormulariosDasExigencias(ProcessoSeletivo processo, IEnumerable<DocumentoExigido> exigencias)
     {
-        if (processo.FormularioDe(finalidade) is not null)
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(exigencias);
+
+        foreach (DocumentoExigido exigencia in exigencias.Where(e => processo.FormularioDe(e.FormularioCodigo) is null))
+        {
+            PapelDoFormularioDeTeste papel = CatalogoDe<PapelDoFormularioDeTeste>.Obter(exigencia.FormularioCodigo.Valor);
+            processo.DefinirFormulario(
+                papel, exigencia.ExigidoNaFaseId, null, Paginas(papel), papel == PapelDoFormularioDeTeste.Inscricao ? DadosBasicos() : null);
+        }
+    }
+
+    /// <summary>Grava as regras de comprovação depois de criar os formulários que as exigências declaram e o processo ainda não tem.</summary>
+    public static Result DefinirDocumentosExigidosNosFormulariosMinimos(this ProcessoSeletivo processo, IReadOnlyList<RegraDeComprovacao> regras)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(regras);
+
+        GarantirOsFormulariosDasExigencias(
+            processo, regras.SelectMany(static r => r.EnumerarRegraEItens()).Select(static r => r.DocumentoExigido).OfType<DocumentoExigido>());
+        return processo.DefinirDocumentosExigidos(regras);
+    }
+
+    /// <summary>Cria o formulário mínimo da papel quando o processo não o tem.</summary>
+    public static void GarantirFormulario(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel)
+    {
+        if (processo.FormularioDe(papel) is not null)
         {
             return;
         }
 
-        Guid? fase = FaseDe(processo, finalidade);
+        Guid? fase = FaseDe(processo, papel);
         Result criado = processo.DefinirFormulario(
-            DeclaradoNoPapel(finalidade, fase), null, Paginas(finalidade),
-            finalidade == FinalidadeFormulario.Inscricao ? DadosBasicos() : null);
+            DeclaradoNoPapel(papel, fase), null, Paginas(papel),
+            papel == PapelDoFormularioDeTeste.Inscricao ? DadosBasicos() : null);
         if (criado.IsFailure)
         {
             throw new InvalidOperationException($"O formulário de teste não pôde ser criado: {criado.Error!.Message}");
@@ -265,12 +357,12 @@ internal static class FormularioDeTeste
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    private static Guid? FaseDe(ProcessoSeletivo processo, FinalidadeFormulario finalidade) =>
-        processo.CronogramaFases.FirstOrDefault(f => finalidade switch
+    private static Guid? FaseDe(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel) =>
+        processo.CronogramaFases.FirstOrDefault(f => papel switch
         {
-            FinalidadeFormulario.Inscricao => f.ColetaInscricao,
-            FinalidadeFormulario.IsencaoTaxa => f.ColetaSolicitacaoIsencao,
-            FinalidadeFormulario.Habilitacao => f.Codigo == FormularioProcesso.CodigoFaseHabilitacao,
+            PapelDoFormularioDeTeste.Inscricao => f.ColetaInscricao,
+            PapelDoFormularioDeTeste.IsencaoTaxa => f.ColetaSolicitacaoIsencao,
+            PapelDoFormularioDeTeste.Habilitacao => f.Codigo == FormularioProcesso.CodigoFaseHabilitacao,
             _ => false,
         })?.Id;
 

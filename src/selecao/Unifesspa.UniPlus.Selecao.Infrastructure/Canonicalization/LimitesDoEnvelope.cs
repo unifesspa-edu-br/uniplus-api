@@ -220,7 +220,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.CidadeUf</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
     public const int UnidadeAdministradoraCidadeUf = ReferenciaCidadeGeo.UfLength;
 
-    // UNI-REQ-0144 — formulários por finalidade.
+    // UNI-REQ-0144 — formulários do processo.
     /// <summary><c>PaginaDoFormulario.Codigo</c>, também o <c>paginaCodigo</c> de cada item.</summary>
     public const int CodigoPaginaFormulario = FormaDaPagina.CodigoMaxLength;
 

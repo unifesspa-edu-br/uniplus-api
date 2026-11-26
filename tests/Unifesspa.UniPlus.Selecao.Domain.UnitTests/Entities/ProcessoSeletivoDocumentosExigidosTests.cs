@@ -21,16 +21,16 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ProcessoSeletivoDocumentosExigidosTests
 {
     [Theory(DisplayName = "Na fase que tem a inscrição e o pedido de isenção, o documento pertence a qualquer dos dois formulários")]
-    [InlineData(FinalidadeFormulario.Inscricao)]
-    [InlineData(FinalidadeFormulario.IsencaoTaxa)]
-    public void DefinirDocumentosExigidos_FaseCompartilhada_AceitaOsDoisFormularios(FinalidadeFormulario finalidade)
+    [InlineData(PapelDoFormularioDeTeste.Inscricao)]
+    [InlineData(PapelDoFormularioDeTeste.IsencaoTaxa)]
+    public void DefinirDocumentosExigidos_FaseCompartilhada_AceitaOsDoisFormularios(PapelDoFormularioDeTeste papel)
     {
         FaseCronograma fase = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: true);
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.IsencaoTaxa);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.IsencaoTaxa);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, finalidade: finalidade));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, papel: papel));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -53,7 +53,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        Result resultado = DefinirRegrasDeDocumento(processo, exigencia);
+        Result resultado = DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, exigencia);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == exigencia.Id);

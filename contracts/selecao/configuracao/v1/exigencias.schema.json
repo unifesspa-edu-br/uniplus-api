@@ -121,12 +121,6 @@
           "description": "Código do formulário do processo em que o candidato apresenta o documento. Toda exigência o informa: o formulário precisa existir no processo e ser o da fase da exigência.",
           "$ref": "item-do-formulario.schema.json#/$defs/codigoLocal"
         },
-        "finalidadeRotulo": {
-          "title": "Rótulo da finalidade",
-          "description": "Rótulo da finalidade do formulário a que a exigência pertence. Campo só de leitura: ignorado na importação; a referência é o código.",
-          "type": "string",
-          "readOnly": true
-        },
         "aplicabilidade": {
           "title": "Aplicabilidade",
           "description": "GERAL vale para todos os candidatos; CONDICIONAL vale só quando a condição de gatilho é verdadeira.",

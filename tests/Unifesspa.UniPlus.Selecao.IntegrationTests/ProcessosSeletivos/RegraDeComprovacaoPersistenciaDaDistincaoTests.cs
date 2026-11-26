@@ -50,19 +50,19 @@ public sealed class RegraDeComprovacaoPersistenciaDaDistincaoTests(ProcessoSelet
         DateOnly? referencia = criterio is CriterioDeDistincaoDasApresentacoes.CompetenciaMensal or CriterioDeDistincaoDasApresentacoes.ExercicioAnual ? new(2026, 2, 1) : null;
         string[]? ocorrencias = criterio == CriterioDeDistincaoDasApresentacoes.Ocorrencia ? ["a", "b"] : null;
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(Documento(fase.Id), 0, 2, criterio, referencia, ocorrencias).Value!;
-        processo.DefinirDocumentosExigidos([regraDeDocumento]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([regraDeDocumento]).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     private static FaseCronograma Fase() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, false, false, false, false)),
+        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, false, false, true, false)),
         new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null), []).Value!;
 
     private static DocumentoExigido Documento(Guid fase) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_identidade").Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(fase, null, null),
+            new MomentoDaExigencia(fase, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(true, null, []),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),

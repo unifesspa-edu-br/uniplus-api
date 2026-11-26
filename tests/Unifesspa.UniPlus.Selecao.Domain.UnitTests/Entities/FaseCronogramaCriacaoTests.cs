@@ -16,8 +16,8 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.FaseDeTesteDaAtualizacao;
 
 /// <summary>
-/// Caracterização de <see cref="FaseCronograma"/> na ordem das recusas acumuladas por <see cref="FaseCronograma.Criar"/>, nas
-/// finalidades que a fase atende e no tratamento do código com espaços nas pontas.
+/// Caracterização de <see cref="FaseCronograma"/> na ordem das recusas acumuladas por <see cref="FaseCronograma.Criar"/> e no
+/// tratamento do código com espaços nas pontas.
 /// </summary>
 public sealed class FaseCronogramaCriacaoTests
 {
@@ -120,47 +120,6 @@ public sealed class FaseCronogramaCriacaoTests
     public void Criar_BancaDeRecursosComCandidatosAtendidos_RecusaOsCandidatosAtendidos() =>
         Recusas(Criar(new() { Bancas = [Banca(TipoDeBanca.AnaliseDeRecursos, "RENDA")] })).Should().Equal(
             ("bancasRequeridas[0].categoriasDocumentoIds", "Banca.CandidatosAtendidosEmBancaDeRecursos"));
-
-    // ── FinalidadesQueAtende ──
-
-    [Fact(DisplayName = "As finalidades que a fase atende saem na ordem inscrição, isenção e habilitação")]
-    public void FinalidadesQueAtende_FaseDeTodas_SaiNaOrdemInscricaoIsencaoHabilitacao()
-    {
-        FaseCronograma fase = Fase(new()
-        {
-            Codigo = FormularioProcesso.CodigoFaseHabilitacao,
-            ColetaInscricao = true,
-            ColetaSolicitacaoIsencao = true,
-        });
-
-        fase.FinalidadesQueAtende().Should().Equal(
-            FinalidadeFormulario.Inscricao, FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao);
-    }
-
-    [Fact(DisplayName = "A fase que não coleta nada nem é a de habilitação não atende finalidade alguma")]
-    public void FinalidadesQueAtende_FaseSemColetaNemHabilitacao_NaoAtendeNenhuma()
-    {
-        FaseCronograma fase = Fase(new());
-
-        fase.FinalidadesQueAtende().Should().BeEmpty();
-        fase.Atende(FinalidadeFormulario.Inscricao).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "O código da habilitação do catálogo identifica a finalidade")]
-    public void FinalidadesQueAtende_CodigoDaHabilitacao_AtendeAHabilitacao()
-    {
-        FaseCronograma fase = Fase(new() { Codigo = FormularioProcesso.CodigoFaseHabilitacao });
-
-        fase.Atende(FinalidadeFormulario.Habilitacao).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "O código da habilitação em minúsculas não é a habilitação")]
-    public void FinalidadesQueAtende_CodigoDaHabilitacaoEmMinusculas_NaoAtendeAHabilitacao()
-    {
-        FaseCronograma fase = Fase(new() { Codigo = FormularioProcesso.CodigoFaseHabilitacao.ToLowerInvariant() });
-
-        fase.Atende(FinalidadeFormulario.Habilitacao).Should().BeFalse();
-    }
 
     // ── Criar e Reidratar com o código com espaços nas pontas ──
 

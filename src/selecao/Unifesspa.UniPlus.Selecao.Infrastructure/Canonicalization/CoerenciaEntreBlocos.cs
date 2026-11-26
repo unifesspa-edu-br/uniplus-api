@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -65,27 +66,39 @@ internal static class CoerenciaEntreBlocos
     // leitura e morre na chave estrangeira.
     private static DomainError? VinculoOuRepeticaoInvalidos(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> todasAsRegras) =>
         ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(blocos.Documentos.DocumentosExigidos, blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas)
+        ?? ExigenciaEmFormularioInvalido(blocos.Documentos.DocumentosExigidos, blocos.Documentos.Formularios)
         ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todasAsRegras, blocos.Coleta.GruposColetados);
+
+    // A exigência cita um formulário que o envelope repõe e que é o da fase dela, pela mesma conferência da
+    // escrita e da publicação. O código lido só tem o formato conferido; sem esta checagem, um envelope de
+    // hash correto reidrataria exigência em formulário inexistente ou de outra fase.
+    internal static DomainError? ExigenciaEmFormularioInvalido(IReadOnlyList<DocumentoExigido> exigencias, IReadOnlyList<FormularioProcesso> formularios) =>
+        ConferenciaDasExigenciasDoFormulario.Conferir(
+            formularios.Select(static formulario => formulario.Declarado), [.. exigencias.Select(ExigenciaDeDocumentoDoFormulario.De)]).Count > 0
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'documentosExigidos.exigencias': uma exigência cita formulário que não está no envelope ou que é de outra fase.")
+            : null;
 
     // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece, pela mesma
     // conferência da escrita e da publicação, que inclui os fatos que a oferta deriva.
-    private static DomainError? CitacoesOuEnemInvalidos(BlocosDoEnvelope blocos)
-    {
-        if (Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.CitacaoInvalidaNosFormularios(
-                blocos.Documentos.Formularios,
-                blocos.Coleta.FatosColetados,
-                blocos.Documentos.TermosExigidos,
-                DerivacoesDaOferta.Efetivas(blocos.Coleta.RegrasDerivacao, blocos.Configuracao.Distribuicao),
-                blocos.Coleta.GruposColetados) is { } citacaoInvalida)
-        {
-            return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': uma citação não corresponde aos dados conhecidos pelo formulário.");
-        }
+    private static DomainError? CitacoesOuEnemInvalidos(BlocosDoEnvelope blocos) =>
+        CitacaoInvalida(blocos) ?? EdicaoDoEnemInvalida(blocos);
 
-        return Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
-                [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Configuracao.Classificacao) is { } edicaoSemEnem
+    private static DomainError? CitacaoInvalida(BlocosDoEnvelope blocos) =>
+        Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.CitacaoInvalidaNosFormularios(
+            blocos.Configuracao.CronogramaFases,
+            blocos.Documentos.Formularios,
+            blocos.Coleta.FatosColetados,
+            blocos.Documentos.TermosExigidos,
+            DerivacoesDaOferta.Efetivas(blocos.Coleta.RegrasDerivacao, blocos.Configuracao.Distribuicao),
+            blocos.Coleta.GruposColetados) is not null
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': uma citação não corresponde aos dados conhecidos pelo formulário.")
+            : null;
+
+    private static DomainError? EdicaoDoEnemInvalida(BlocosDoEnvelope blocos) =>
+        Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
+            [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Configuracao.Classificacao) is not null
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'dadosDosFormularios': a edição do ENEM exige classificação pelo ENEM.")
             : null;
-    }
 
     private static EnvelopeReidratado Montar(
         BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<FatoColetado> campos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)

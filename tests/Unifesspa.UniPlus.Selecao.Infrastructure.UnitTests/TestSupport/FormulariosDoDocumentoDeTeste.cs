@@ -42,10 +42,6 @@ internal static class FormulariosDoDocumentoDeTeste
         PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão e aceite", null, null).Value!,
     ];
 
-    /// <summary>O código de cada formulário do documento por identificador, como a serialização liga os itens a eles.</summary>
-    internal static IReadOnlyDictionary<Guid, string> CodigosPorIdentificador(this FormulariosDoDocumento documento) =>
-        documento.Formularios.ToDictionary(formulario => formulario.Id, formulario => formulario.Codigo.Valor);
-
     private static FormularioProcesso Formulario(string codigo, Guid? faseId, CronogramaDoProcesso cronograma) =>
         FormularioProcesso.Criar(
             new FormularioDeclarado(CodigoDoFormulario.Criar(codigo).Value!, faseId, Obrigatorio: true),

@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -148,12 +147,12 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     {
         DocumentoExigido documento = new DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .NaFase(fase.Id, FinalidadeFormulario.Inscricao)
+            .NaFase(fase.Id)
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
             .Construir();
 
-        processo.DefinirDocumentosExigidos(
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [RegraDeComprovacao.CriarRegraDeDocumento(documento, 0).Value!]).IsSuccess.Should().BeTrue();
     }
 

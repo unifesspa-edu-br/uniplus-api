@@ -33,7 +33,7 @@ internal sealed record FatoColetadoDeTeste
 
     private string? Secao { get; init; }
 
-    private FinalidadeFormulario? Finalidade { get; init; } = FinalidadeFormulario.Inscricao;
+    private FormularioProcesso? Formulario { get; init; }
 
     private string? Ajuda { get; init; }
 
@@ -55,7 +55,6 @@ internal sealed record FatoColetadoDeTeste
             Restricoes = fato.Restricoes,
             Impedimento = fato.Impedimento,
             Secao = fato.PaginaCodigo,
-            Finalidade = fato.Finalidade,
             Ajuda = fato.Ajuda,
             Confirmacao = fato.PedirConfirmacao,
             Copia = ProtecaoDoFatoDeTeste.Copia(fato.ClassificacaoProtecao, fato.OrigemValores, fato.Formato, fato.ComponenteExibicao),
@@ -83,7 +82,8 @@ internal sealed record FatoColetadoDeTeste
 
     public FatoColetadoDeTeste NaOrdem(int ordem) => this with { Ordem = ordem };
 
-    public FatoColetadoDeTeste DaFinalidade(FinalidadeFormulario finalidade) => this with { Finalidade = finalidade };
+    /// <summary>O formulário que produz o fato; sem ele, o processo liga o item ao formulário que define.</summary>
+    public FatoColetadoDeTeste NoFormulario(FormularioProcesso? formulario) => this with { Formulario = formulario };
 
     public FatoColetadoDeTeste ComAjuda(string? ajuda) => this with { Ajuda = ajuda };
 
@@ -107,7 +107,7 @@ internal sealed record FatoColetadoDeTeste
             new ApresentacaoDoCampo(Rotulo ?? FatoCodigo, Tipo, Ajuda, Confirmacao),
             new RegrasDoCampo(Exibicao, Obrigatoriedade, Restricoes ?? [], Impedimento),
             Copia,
-            Finalidade);
+            Formulario);
 
     /// <summary>O item criado, para o teste que parte de um item válido.</summary>
     public FatoColetado Construir() => Criar().Value!;

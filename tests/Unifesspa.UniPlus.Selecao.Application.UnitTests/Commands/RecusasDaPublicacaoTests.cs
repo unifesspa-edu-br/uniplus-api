@@ -102,7 +102,7 @@ public sealed class RecusasDaPublicacaoTests
         .ComTipo("DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL")
         .Condicional([CondicaoDeMaioridade()])
         .ComBasesLegais([BaseLegalDaLeiDeCotas()])
-        .NaFinalidade(FinalidadeFormulario.Inscricao)
+        .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
         .Criar().Value!;
 
     private static CondicaoGatilho CondicaoDeMaioridade() => CondicaoGatilho.Criar(

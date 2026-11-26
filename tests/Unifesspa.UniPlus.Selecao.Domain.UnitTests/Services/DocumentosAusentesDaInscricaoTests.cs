@@ -44,17 +44,17 @@ public sealed class DocumentosAusentesDaInscricaoTests
 
     [Fact(DisplayName = "O documento ligado a um formulário que não é da inscrição não falta no envio dela")]
     public void DeOutroFormulario_NaoFalta() =>
-        Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Comprovante da habilitação", finalidade: FinalidadeFormulario.Habilitacao), 0).Value!]).Should().BeEmpty();
+        Ausentes([RegraDeComprovacao.CriarRegraDeDocumento(Documento("Comprovante da habilitação", papel: PapelDoFormularioDeTeste.Habilitacao), 0).Value!]).Should().BeEmpty();
 
     [Fact(DisplayName = "Com dois formulários de inscrição, falta o documento de cada um deles")]
     public void DeDoisFormulariosDaInscricao_FaltaODeCadaUm()
     {
         DocumentoExigido identidade = Documento("RG");
-        DocumentoExigido laudo = Documento("Laudo", finalidade: FinalidadeFormulario.Habilitacao);
+        DocumentoExigido laudo = Documento("Laudo", papel: PapelDoFormularioDeTeste.Habilitacao);
 
         IReadOnlyList<DocumentoAusente> ausentes = Ausentes(
             [RegraDeComprovacao.CriarRegraDeDocumento(identidade, 0).Value!, RegraDeComprovacao.CriarRegraDeDocumento(laudo, 1).Value!],
-            formularios: [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao), FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Habilitacao)]);
+            formularios: [FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao), FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Habilitacao)]);
 
         ausentes.SelectMany(static a => a.Alternativas).Should().BeEquivalentTo([identidade, laudo]);
     }
@@ -130,10 +130,10 @@ public sealed class DocumentosAusentesDaInscricaoTests
         falta.Alternativas.Should().BeEquivalentTo([rg, cnh]);
     }
 
-    private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao, bool gatilhoFalso = false) =>
+    private static DocumentoExigido Documento(string nome, bool obrigatorio = true, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao, bool gatilhoFalso = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
@@ -165,6 +165,6 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Kernel.Results.Result<ResultadoDaComprovacao> resultado = AvaliadorDaComprovacao.Resolver(
             regrasDaVersao, new Dictionary<string, FatoResolvido> { ["NUNCA"] = FatoResolvido.Resolvido(System.Text.Json.JsonSerializer.SerializeToElement(false)) }, apresentacoes ?? [], instancias);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        return DocumentosAusentesDaInscricao.Apurar(regrasDaVersao, resultado.Value!, formularios ?? [FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)]);
+        return DocumentosAusentesDaInscricao.Apurar(regrasDaVersao, resultado.Value!, formularios ?? [FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)]);
     }
 }

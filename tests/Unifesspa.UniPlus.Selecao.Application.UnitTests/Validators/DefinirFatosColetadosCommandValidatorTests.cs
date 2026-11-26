@@ -22,7 +22,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         new(fato, "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirFatosColetadosCommand Comando(params FatoColetadoInput[] itens) =>
-        new(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), itens);
+        new(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), itens);
 
     private static EntradaDoFatoColetadoDeTeste Item(string fatoCodigo, string rotulo, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo(rotulo).DoTipo(tipo);
@@ -30,7 +30,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
     public void Aceita_ListaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), []));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -46,7 +46,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a lista de fatos é nula (payload malformado)")]
     public void Rejeita_FatosNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), null!));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), null!));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens");
@@ -117,7 +117,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     {
         FatoColetadoInput[] itens = [.. Enumerable.Repeat<FatoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), itens));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), itens));
 
         result.IsValid.Should().BeTrue();
     }
@@ -133,7 +133,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_GrupoMalformado(string caso)
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), [], [GrupoAdulterado(caso)!]));
+            Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), [], [GrupoAdulterado(caso)!]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().OnlyContain(e => e.PropertyName.StartsWith("Grupos[0]", StringComparison.Ordinal));
@@ -162,7 +162,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         GrupoColetadoInput[] grupos = [.. Enumerable.Repeat<GrupoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), [], grupos));
+            Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), [], grupos));
 
         result.IsValid.Should().BeTrue();
     }

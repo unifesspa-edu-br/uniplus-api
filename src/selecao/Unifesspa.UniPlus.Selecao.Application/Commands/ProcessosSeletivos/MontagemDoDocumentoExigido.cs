@@ -74,9 +74,10 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
     {
         TipoDocumentoView tipo = partes.Tipo;
         EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
+        // A forma da exigência já recusou o código do formulário ausente ou fora do formato.
         DocumentoExigidoDeclarado declarado = new(
             new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
-            new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FormularioDoCodigo(documentoInformado.FormularioCodigo())),
+            new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FormularioDoCodigo(documentoInformado.FormularioCodigo())!),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
             new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.ConsequenciaDoDescumprimento(), basesLegais, documentoInformado.Indeferimento?.AbrePrazoParaReenvio ?? false),
             new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),

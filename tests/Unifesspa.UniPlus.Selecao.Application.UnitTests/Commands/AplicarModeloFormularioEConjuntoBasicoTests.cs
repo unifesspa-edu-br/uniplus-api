@@ -17,10 +17,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDaAplicacaoDoModeloDeFormulario;
 
 /// <summary>
-/// A cópia do modelo conforme a finalidade do formulário: o par inscrição e habilitação decide onde o fato
+/// A cópia do modelo conforme o formulário: o par inscrição e habilitação decide onde o fato
 /// fica, e o modelo de inscrição é copiado com a seção dos dados básicos em primeiro.
 /// </summary>
-public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
+public sealed class AplicarModeloFormularioEConjuntoBasicoTests
 {
     private readonly CenarioDaAplicacaoDoModeloDeFormulario _cenario = new();
 
@@ -37,41 +37,36 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     public async Task Handle_HabilitacaoComFatoDaInscricao_MantemNaInscricao()
     {
         _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("QUILOMBOLA", "Quilombola")]).IsSuccess.Should().BeTrue();
-        ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
+        ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosMantidosNaInscricao.Should().Equal("QUILOMBOLA");
-        _cenario.Processo.FatosColetados.Should().Contain(static f => f.FatoCodigo == "QUILOMBOLA" && f.Finalidade == FinalidadeFormulario.Inscricao)
-            .And.Contain(static f => f.FatoCodigo == "CERTIFICADO" && f.Finalidade == FinalidadeFormulario.Habilitacao);
+        Guid inscricao = _cenario.Processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id;
+        Guid habilitacao = _cenario.Processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)!.Id;
+        _cenario.Processo.FatosColetados.Should().Contain(f => f.FatoCodigo == "QUILOMBOLA" && f.FormularioId == inscricao)
+            .And.Contain(f => f.FatoCodigo == "CERTIFICADO" && f.FormularioId == habilitacao);
     }
 
-    [Fact(DisplayName = "Na inscrição, o fato de outra finalidade é trazido e relatado")]
-    public async Task Handle_InscricaoComFatoDeOutraFinalidade_TrazERelata()
+    [Fact(DisplayName = "Na inscrição, o fato de outro formulário é trazido e relatado")]
+    public async Task Handle_InscricaoComFatoDeOutroFormulario_TrazERelata()
     {
-        _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("CERTIFICADO", "Certificado")], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        _cenario.Processo.DefinirItens([FatoBooleanoJaColetado("CERTIFICADO", "Certificado")], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("CERTIFICADO", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosTrazidosParaAInscricao.Should().Equal("CERTIFICADO");
-        _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FormularioId.Should().Be(_cenario.Processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id);
     }
 
     [Fact(DisplayName = "Na inscrição, o fato que outro formulário da inscrição coleta fica nele e não é trazido")]
     public async Task Handle_FatoEmOutroFormularioDaInscricao_MantemENaoTraz()
     {
-        FormularioDeTeste.GarantirFormulario(_cenario.Processo, FinalidadeFormulario.Inscricao);
-        FormularioProcesso inscricao = _cenario.Processo.Declaracao().Coleta.FormularioDe(CodigoDoFormulario.Criar(FormularioDeTeste.CodigoDaInscricao).Value!)!;
-        CodigoDoFormulario complementar = CodigoDoFormulario.Criar("DADOS_COMPLEMENTARES").Value!;
-        _cenario.Processo.DefinirFormulario(
-            new FormularioDeclarado(complementar, inscricao.FaseId, Obrigatorio: true), null, [.. PaginasDeDados()]).IsSuccess.Should().BeTrue();
-        _cenario.Processo.DefinirFatosColetados(
-            complementar, [FatoColetadoDeTeste.Como(FatoBooleanoJaColetado("QUILOMBOLA", "Quilombola")).NaSecao(FormularioDeTeste.Secao).Construir()])
-            .IsSuccess.Should().BeTrue();
+        CodigoDoFormulario complementar = DeclararFormularioComplementarQueColeta("QUILOMBOLA", "Quilombola");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.FatosTrazidosParaAInscricao.Should().BeEmpty();
@@ -80,16 +75,29 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
             .Which.FormularioId.Should().Be(_cenario.Processo.Declaracao().Coleta.FormularioDe(complementar)!.Id);
     }
 
+    private CodigoDoFormulario DeclararFormularioComplementarQueColeta(string fato, string rotulo)
+    {
+        FormularioDeTeste.GarantirFormulario(_cenario.Processo, PapelDoFormularioDeTeste.Inscricao);
+        FormularioProcesso inscricao = _cenario.Processo.Declaracao().Coleta.FormularioDe(CodigoDoFormulario.Criar(FormularioDeTeste.CodigoDaInscricao).Value!)!;
+        CodigoDoFormulario complementar = CodigoDoFormulario.Criar("DADOS_COMPLEMENTARES").Value!;
+        _cenario.Processo.DefinirFormulario(
+            new FormularioDeclarado(complementar, inscricao.FaseId, Obrigatorio: true), null, [.. PaginasDeDados()]).IsSuccess.Should().BeTrue();
+        _cenario.Processo.DefinirFatosColetados(
+            complementar, [FatoColetadoDeTeste.Como(FatoBooleanoJaColetado(fato, rotulo)).NaSecao(FormularioDeTeste.Secao).Construir()])
+            .IsSuccess.Should().BeTrue();
+        return complementar;
+    }
+
     private static IEnumerable<PaginaDoFormulario> PaginasDeDados() =>
-        FormularioDeTeste.Paginas(FinalidadeFormulario.Habilitacao);
+        FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao);
 
     [Fact(DisplayName = "O modelo de inscrição sem a seção dos dados básicos é copiado com ela em primeiro")]
     public async Task Handle_ModeloDeInscricaoSemASecao_CopiaComASecao()
     {
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0)]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        _cenario.Processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Paginas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        _cenario.Processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Paginas.MinBy(static e => e.Ordem)!.Codigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
         _cenario.Processo.FatosColetados.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
         _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Ordem.Should().Be(FormularioDeTeste.PrimeiraOrdemDeInscricao);
     }
@@ -99,7 +107,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     {
         FatoColetadoInput porCor = ItemQueCita(Item("QUILOMBOLA", FormularioDeTeste.PrimeiraOrdemDeInscricao), "COR_RACA", "IGUAL", "PRETA");
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, porCor]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, porCor]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.FatosCitados.Should().Equal("COR_RACA");
@@ -111,7 +119,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
         const string Mensagem = "Quem é quilombola e se declarou preto concorre pelo processo próprio.";
         FatoColetadoInput impedido = ItemQuilombolaImpedidoParaPretos(Mensagem);
 
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, impedido]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens, impedido]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FatoColetado copiado = _cenario.Processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Subject;
@@ -122,7 +130,7 @@ public sealed class AplicarModeloFormularioFinalidadeEConjuntoBasicoTests
     [Fact(DisplayName = "O modelo de inscrição que altera um dado básico é recusado na posição do item no modelo")]
     public async Task Handle_ModeloDeInscricaoComDadoBasicoAlterado_Recusa()
     {
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")]));
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(PapelDoFormularioDeTeste.Inscricao, [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")]));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {

@@ -55,8 +55,8 @@ internal static class SerializacaoDosFormularios
     /// Os códigos dos formulários do processo, pelo identificador: é por ele que cada campo, grupo e termo se liga ao
     /// formulário, e o documento o cita pelo código.
     /// </summary>
-    internal static IReadOnlyDictionary<Guid, string> CodigosPorIdentificador(ProcessoSeletivo processo) =>
-        processo.Formularios.ToDictionary(static formulario => formulario.Id, static formulario => formulario.Codigo.Valor);
+    internal static IReadOnlyDictionary<Guid, string> CodigosPorIdentificador(IEnumerable<FormularioProcesso> formularios) =>
+        formularios.ToDictionary(static formulario => formulario.Id, static formulario => formulario.Codigo.Valor);
 
     /// <exception cref="InvalidOperationException">O item não pertence a nenhum dos formulários do processo.</exception>
     internal static string CodigoDoFormularioDoItem(Guid? formularioId, IReadOnlyDictionary<Guid, string> codigos) =>

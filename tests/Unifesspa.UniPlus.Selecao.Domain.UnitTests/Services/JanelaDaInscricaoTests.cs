@@ -53,7 +53,7 @@ public sealed class JanelaDaInscricaoTests
 
     private static ConfiguracaoPublicada Configuracao(ProcessoSeletivo processo) => Configuracao(processo.Localidade, [.. processo.CronogramaFases], [.. processo.Formularios]);
 
-    private static ConfiguracaoPublicada Configuracao(FaseCronograma fase, FinalidadeFormulario papel) =>
+    private static ConfiguracaoPublicada Configuracao(FaseCronograma fase, PapelDoFormularioDeTeste papel) =>
         Configuracao(ConfiguracaoPublicadaDeTeste.Localidade, [fase], [LigacaoAoFormulario.FormularioNaFase(papel, fase)]);
 
     private static ConfiguracaoPublicada Configuracao(LocalidadeRegente localidade, FaseCronograma[] fases, FormularioProcesso[] formularios) => new ConfiguracaoPublicada(
@@ -131,7 +131,7 @@ public sealed class JanelaDaInscricaoTests
     [Fact(DisplayName = "O formulário obrigatório numa fase que coleta inscrição faz do processo um que recebe inscrição, qualquer que seja o papel dele")]
     public void Da_FormularioObrigatorioEmFaseQueColetaInscricao_AbreAJanela()
     {
-        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), FinalidadeFormulario.Habilitacao);
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), PapelDoFormularioDeTeste.Habilitacao);
 
         JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).IsSuccess.Should().BeTrue();
     }
@@ -139,7 +139,7 @@ public sealed class JanelaDaInscricaoTests
     [Fact(DisplayName = "O formulário obrigatório numa fase que não coleta inscrição não faz do processo um que recebe inscrição")]
     public void Da_FormularioObrigatorioEmFaseQueNaoColetaInscricao_Recusa()
     {
-        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "HABILITACAO"), FinalidadeFormulario.Inscricao);
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "HABILITACAO"), PapelDoFormularioDeTeste.Inscricao);
 
         JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).Error!.Code.Should().Be(InscricaoErrorCodes.ProcessoSemInscricao);
     }
@@ -147,7 +147,7 @@ public sealed class JanelaDaInscricaoTests
     [Fact(DisplayName = "O formulário facultativo, ainda que numa fase que coleta inscrição, não faz do processo um que recebe inscrição")]
     public void Da_FormularioFacultativo_Recusa()
     {
-        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), FinalidadeFormulario.IsencaoTaxa);
+        ConfiguracaoPublicada configuracao = Configuracao(FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true), PapelDoFormularioDeTeste.IsencaoTaxa);
 
         JanelaDaInscricao.Da(configuracao, Dados(Abertura, Encerramento)).Error!.Code.Should().Be(InscricaoErrorCodes.ProcessoSemInscricao);
     }

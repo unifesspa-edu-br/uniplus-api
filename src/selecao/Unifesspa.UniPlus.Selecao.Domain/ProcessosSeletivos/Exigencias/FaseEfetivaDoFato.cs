@@ -57,23 +57,6 @@ public static class FaseEfetivaDoFato
             ?? RecusaDaCitacaoNaoGarantida(configuracao, fato, ponto, membroPorAgregado, publicadas);
     }
 
-    public static DomainError? RecusaDeFaseDoGatilho(
-        ConfiguracaoDeclarada configuracao,
-        string fato,
-        Guid exigidoNaFaseId,
-        FinalidadeFormulario? finalidadeDaExigencia,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        FatosDasVersoesPublicadas? publicadas = null)
-    {
-        ArgumentNullException.ThrowIfNull(configuracao);
-
-        FormularioProcesso? formulario = configuracao.Coleta.Formularios.FirstOrDefault(f => f.Finalidade == finalidadeDaExigencia);
-        return finalidadeDaExigencia is not null && formulario is null
-            ? null
-            : RecusaDeFaseDoGatilho(configuracao, fato, exigidoNaFaseId, formulario?.Codigo, pontoResolucaoPorFato, membroPorAgregado, publicadas);
-    }
-
     /// <summary>
     /// A fase da exigência e o formulário que a entrega, quando o processo tem o formulário nessa fase; sem formulário
     /// declarado, só a fase. Nulo quando a fase não pertence ao cronograma ou o formulário não está nela.
@@ -157,14 +140,8 @@ public static class FaseEfetivaDoFato
                 configuracao,
                 publicadas,
                 [($"a condição de aplicação de um documento exigido na fase '{ponto.Fase.Codigo}'", fato)],
-                ponto.Formulario is { } formulario ? configuracao.Coleta.FormularioDe(formulario.Codigo)?.Finalidade : null,
+                ponto.Formulario?.Codigo,
                 membroPorAgregado);
-
-    /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>
-    internal static bool DependeDeFatoSoDaIsencao(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
-        configuracao.Coleta.Campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
-        || (emAvaliacao.Add(fato)
-            && DependenciasDoFato(configuracao, fato, membroPorAgregado).Any(d => DependeDeFatoSoDaIsencao(configuracao, d, membroPorAgregado, emAvaliacao)));
 
     /// <summary>
     /// Os fatos de que o valor do fato depende no processo: os citados pela regra de derivação dele,

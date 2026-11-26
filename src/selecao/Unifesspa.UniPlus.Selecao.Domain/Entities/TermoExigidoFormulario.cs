@@ -27,9 +27,6 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     /// <summary>O formulário que exige o termo; atribuído pelo processo.</summary>
     public Guid? FormularioId { get; private set; }
 
-    /// <summary>A finalidade do formulário que exige o termo; atribuída pelo processo.</summary>
-    public FinalidadeFormulario? Finalidade { get; private set; }
-
     /// <summary>Identificador próprio da exigência no formulário, estável mesmo entre termos de nome igual.</summary>
     public string Codigo { get; private set; } = string.Empty;
 
@@ -70,15 +67,14 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
-        FinalidadeFormulario? finalidade)
+        FormularioProcesso? formulario)
     {
         Codigo = codigo ?? string.Empty;
         Ordem = ordem;
+        FormularioId = formulario?.Id;
         CongelarVersao(versao);
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
-        // O processo atribui a finalidade ao definir os termos; quem reconstrói o registro publicado a informa.
-        Finalidade = finalidade;
     }
 
     private void CongelarVersao(VersaoTermoEscolhida versao)
@@ -112,13 +108,14 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     /// Acumula as violações de forma (ADR-0125). A versão chega já resolvida no catálogo; a
     /// unicidade de código e de ordem é do formulário.
     /// </summary>
+    /// <param name="formulario">O formulário que exige o termo, quando já existe; o processo liga o termo ao formulário que define.</param>
     public static Result<TermoExigidoFormulario> Criar(
         string codigo,
         int ordem,
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
-        FinalidadeFormulario? finalidade = null)
+        FormularioProcesso? formulario = null)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
@@ -129,27 +126,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
             return Result<TermoExigidoFormulario>.ValidationFailure(erros);
         }
 
-        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem, versao, exibicao, obrigatoriedade, finalidade));
-    }
-
-    /// <summary>O termo do formulário dado: a mesma conferência da criação, e o formulário que o exige fica ligado a ele.</summary>
-    public static Result<TermoExigidoFormulario> Criar(
-        string codigo,
-        int ordem,
-        VersaoTermoEscolhida versao,
-        PredicadoDnf? exibicao,
-        Obrigatoriedade obrigatoriedade,
-        FormularioProcesso formulario)
-    {
-        ArgumentNullException.ThrowIfNull(formulario);
-
-        Result<TermoExigidoFormulario> criado = Criar(codigo, ordem, versao, exibicao, obrigatoriedade, formulario.Finalidade);
-        if (criado.IsSuccess)
-        {
-            criado.Value!.VincularFormulario(formulario);
-        }
-
-        return criado;
+        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem, versao, exibicao, obrigatoriedade, formulario));
     }
 
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>
@@ -157,11 +134,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 
-    internal void VincularFormulario(FormularioProcesso formulario)
-    {
-        FormularioId = formulario.Id;
-        Finalidade = formulario.Finalidade;
-    }
+    internal void VincularFormulario(FormularioProcesso formulario) => FormularioId = formulario.Id;
 }
 
 /// <summary>A versão do catálogo escolhida para o termo, com o conteúdo que o processo congela.</summary>

@@ -53,7 +53,6 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
             .HasComment("Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara.");
         builder.Ignore(f => f.Estrutura);
         builder.Ignore(f => f.Declarado);
-        builder.Ignore(f => f.Finalidade);
 
         builder.HasAlternateKey(f => new { f.ProcessoSeletivoId, f.Codigo })
             .HasName("ux_formularios_processo_processo_codigo");

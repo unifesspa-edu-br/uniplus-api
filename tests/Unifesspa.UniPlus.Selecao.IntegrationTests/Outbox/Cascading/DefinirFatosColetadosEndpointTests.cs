@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// O endpoint <c>PUT /admin/processos-seletivos/{id}/formularios/{finalidade}/itens</c>, fim a fim
+/// O endpoint <c>PUT /admin/processos-seletivos/{id}/formularios/{codigo}/itens</c>, fim a fim
 /// pelo HTTP. Prova o que só o ciclo real prova: a coletabilidade e o vocabulário resolvidos
 /// contra o seed cross-módulo de Configuração, o guard de rascunho num processo publicado, a
 /// idempotência do replay e a autorização herdada do controller.

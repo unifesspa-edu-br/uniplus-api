@@ -166,12 +166,11 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     /// </summary>
     private static void AdicionarItensAcimaDoTetoDireto(ProcessoSeletivo processo)
     {
-        FormularioProcesso formulario = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
+        FormularioProcesso formulario = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!;
         FatoColetado[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetadoDeTeste.Coletando($"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i)
             .ComRotulo("Campo")
             .ComObrigatoriedade(Obrigatoriedade.Sempre)
             .NaSecao(FormularioDeTeste.Secao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir())];
         foreach (FatoColetado item in itens)
         {

@@ -20,7 +20,7 @@ internal sealed record OperacaoDeEdicao(
     Func<ProcessoSeletivo, Result> Reaplicar,
     Func<ProcessoSeletivo, Result>? ComArgumentoInvalido = null)
 {
-    private const FinalidadeFormulario Inscricao = FinalidadeFormulario.Inscricao;
+    private const PapelDoFormularioDeTeste Inscricao = PapelDoFormularioDeTeste.Inscricao;
 
     internal static readonly IReadOnlyList<OperacaoDeEdicao> Todas =
     [
@@ -55,7 +55,7 @@ internal sealed record OperacaoDeEdicao(
         new(nameof(ProcessoSeletivo.DefinirFormulario),
             p =>
             {
-                FormularioProcesso formulario = p.Formularios.Single(f => f.Finalidade == Inscricao);
+                FormularioProcesso formulario = p.FormularioDe(Inscricao)!;
                 return p.DefinirFormulario(Inscricao, formulario.FaseId, formulario.Titulo, [.. formulario.Paginas]);
             },
             p => p.DefinirFormulario(Inscricao, null, null, null!)),
@@ -69,7 +69,7 @@ internal sealed record OperacaoDeEdicao(
             p => p.DefinirDocumentosExigidos([.. p.RegrasDeComprovacaoSemGrupo]),
             p => p.DefinirDocumentosExigidos(null!)),
         new(nameof(ProcessoSeletivo.DefinirFatosColetados),
-            p => p.DefinirFatosColetados(Inscricao, [.. p.FatosColetados.Where(static f => f.Finalidade == Inscricao)]),
+            p => p.DefinirFatosColetados(Inscricao, [.. p.FatosColetados.Where(f => f.FormularioId == p.FormularioDe(Inscricao)!.Id)]),
             p => p.DefinirFatosColetados(Inscricao, null!)),
         new(nameof(ProcessoSeletivo.DefinirRegrasDerivacao),
             p => p.DefinirRegrasDerivacao([.. p.RegrasDerivacao]),

@@ -82,7 +82,6 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
             .ComRotulo("Locais")
             .ComOcorrencias(0, null)
             .ComCampos(GrupoMunicipal().Subitens.First(), observacao)
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
     }
 
@@ -92,7 +91,7 @@ public sealed class SubmeterInscricaoConsultaDepoisDoEnvioTests
             .ComTipo(codigo, codigo, "CAT")
             .Condicional([CondicaoGatilho.Criar(0, fato, Operador.Igual, valor).Value!])
             .Facultativa()
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Criar().Value!;
 
     private static (IReadOnlyList<DocumentoExigido>, IReadOnlyList<RegraDeComprovacao>) ExigenciaRegional(ProcessoSeletivo processo)

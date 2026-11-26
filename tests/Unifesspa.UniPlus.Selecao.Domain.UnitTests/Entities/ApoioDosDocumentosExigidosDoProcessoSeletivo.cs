@@ -44,10 +44,10 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 
     internal static DocumentoExigido Exigencia(
         Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaDoDescumprimento = null,
-        FinalidadeFormulario? finalidade = null, bool abrePrazoParaReenvio = false) =>
+        PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao, bool abrePrazoParaReenvio = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(consequenciaDoDescumprimento is null, consequenciaDoDescumprimento, [], abrePrazoParaReenvio))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -55,10 +55,10 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             .Criar().Value!;
 
     internal static DocumentoExigido ExigenciaComPrazoEValidade(
-        Guid exigidoNaFaseId, PrazoDeEmissao? prazo, ValidadeDoDocumento? validade, FinalidadeFormulario? finalidade = null) =>
+        Guid exigidoNaFaseId, PrazoDeEmissao? prazo, ValidadeDoDocumento? validade, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, prazo, validade))
@@ -87,8 +87,15 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         processo.DefinirDocumentosExigidos(
             [.. exigencias.Select((exigencia, ordem) => RegraDeComprovacao.CriarRegraDeDocumento(exigencia, ordem).Value!)]);
 
+    /// <summary>Grava as exigências depois de dar a cada uma o formulário da sua fase, para o teste exercitar só a regra que não é a do formulário.</summary>
+    internal static Result DefinirRegrasDeDocumentoNosFormulariosDaFase(ProcessoSeletivo processo, params DocumentoExigido[] exigencias)
+    {
+        FormularioDeTeste.GarantirOsFormulariosDasExigencias(processo, exigencias);
+        return DefinirRegrasDeDocumento(processo, exigencias);
+    }
+
     internal static void ExigirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
-        DefinirRegrasDeDocumento(processo, exigencias).IsSuccess.Should().BeTrue();
+        DefinirRegrasDeDocumentoNosFormulariosDaFase(processo, exigencias).IsSuccess.Should().BeTrue();
 
     internal static CondicaoGatilho GatilhoFaixaEtaria() =>
         CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
@@ -103,10 +110,10 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 
     /// <summary>O documento geral de teste, exigido na fase, com a obrigatoriedade, a consequência e as bases legais que o cenário pede.</summary>
     internal static DocumentoExigido DocumentoGeral(
-        Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, FinalidadeFormulario? finalidade = null) =>
+        Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, PapelDoFormularioDeTeste papel = PapelDoFormularioDeTeste.Inscricao) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, basesLegais ?? []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -117,7 +124,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static DocumentoExigido DocumentoCondicional(Guid faseId, string codigo, string nome, string categoria, params CondicaoGatilho[] gatilhos) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(faseId, null, null))
+            .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, gatilhos))
             .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
@@ -130,6 +137,6 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
         RegraDeComprovacao regraDeDocumento = RegraDeComprovacao.CriarRegraDeDocumento(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, consequencia), 0, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [regraDeDocumento]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos([grupo]).IsSuccess.Should().BeTrue();
     }
 }

@@ -43,7 +43,7 @@ internal static class FatoCitadoDeTeste
             .ComTipo("DECLARACAO", "Declaração", "PESSOAL")
             .Condicional(CondicoesDoGatilho(citaFatoAusenteDoCatalogo))
             .ComBasesLegais([DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!])
-            .NaFinalidade(FinalidadeFormulario.Inscricao)
+            .NoFormulario(PapelDoFormularioDeTeste.Inscricao)
             .Criar().Value!;
 
     /// <summary>O processo conforme que coleta o fato e exige um documento sob o gatilho dele.</summary>

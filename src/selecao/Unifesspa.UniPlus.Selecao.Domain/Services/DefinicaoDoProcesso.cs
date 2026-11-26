@@ -78,15 +78,6 @@ public static class DefinicaoDoProcesso
         return codigo == formulario.Valor || codigo.StartsWith(formulario.Valor + ":", StringComparison.Ordinal);
     }
 
-    // Provisório até a retirada da finalidade: as operações por finalidade delegam às do código do formulário.
-    public static string CodigoDaPagina(FinalidadeFormulario finalidade, string? secao) => CodigoDaPagina(CodigoDe(finalidade), secao);
-
-    public static string CodigoDoTermo(FinalidadeFormulario finalidade, string codigo) => CodigoDoTermo(CodigoDe(finalidade), codigo);
-
-    public static bool EhDaFinalidade(string codigo, FinalidadeFormulario finalidade) => EhDoFormulario(codigo, CodigoDe(finalidade));
-
-    private static CodigoDoFormulario CodigoDe(FinalidadeFormulario finalidade) => CodigoDoFormulario.Criar(finalidade.Codigo()).Value!;
-
     private static IEnumerable<DefinicaoPagina> PaginasDoFormulario(
         FormularioProcesso formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)
     {

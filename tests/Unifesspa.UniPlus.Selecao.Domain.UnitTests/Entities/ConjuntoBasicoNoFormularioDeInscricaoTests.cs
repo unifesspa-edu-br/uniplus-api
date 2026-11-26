@@ -33,7 +33,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]))
+                PapelDoFormularioDeTeste.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]))
             .IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
@@ -56,7 +56,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
             .NaSecao(FormularioDeTeste.Secao)
             .Construir();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados])
+                PapelDoFormularioDeTeste.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
@@ -68,12 +68,12 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     public void DefinirFormulario_CriacaoComOsDadosBasicos_SecaoCitaDadoBasico(bool comOsDadosBasicos)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
         IReadOnlyList<PaginaDoFormulario> paginas = PaginasComSecaoDeRevalidacao();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, paginas, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
+            PapelDoFormularioDeTeste.Inscricao, fase, null, paginas, comOsDadosBasicos ? FormularioDeTeste.DadosBasicos() : null);
 
         ConferirDadosBasicos(processo, resultado, comOsDadosBasicos);
     }
@@ -82,14 +82,14 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     public void DefinirFormulario_DadoBasicoEmOutroFormulario_RecusaOrientando()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        Guid? fase = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId;
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Inscricao).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetadoDeTeste.Coletando("EMAIL", 0).ComRotulo("E-mail").DeTexto("EMAIL").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir()],
-            finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirFormulario(
-            FinalidadeFormulario.Inscricao, fase, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos());
+            PapelDoFormularioDeTeste.Inscricao, fase, null, FormularioDeTeste.Paginas(), FormularioDeTeste.DadosBasicos());
 
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
         resultado.Error.Message.Should().Contain("dados básicos").And.Contain("HABILITACAO");
@@ -119,7 +119,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         else
         {
             resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
-            processo.FormularioDe(FinalidadeFormulario.Inscricao).Should().BeNull("a recusa não cria o formulário pela metade");
+            processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao).Should().BeNull("a recusa não cria o formulário pela metade");
         }
     }
 

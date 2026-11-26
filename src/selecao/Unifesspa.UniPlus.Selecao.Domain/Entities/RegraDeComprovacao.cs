@@ -207,19 +207,9 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
 
     public Guid? FaseComum() => Forma == FormaDeComprovacao.Documento ? DocumentoExigido?.ExigidoNaFaseId : ComposicaoDoGrupo.FaseComumDosItens(_itens);
 
-    public bool TentarFinalidadeComum(out FinalidadeFormulario? finalidade)
-    {
-        if (Forma == FormaDeComprovacao.Documento)
-        {
-            finalidade = DocumentoExigido?.Finalidade;
-            return true;
-        }
-        return ComposicaoDoGrupo.FinalidadeComumDosItens(_itens, out finalidade);
-    }
-
     /// <summary>
     /// O formulário que entrega a regra: o do documento, ou o que todos os itens do grupo têm em comum. Falso quando os
-    /// itens do grupo são de formulários diferentes; o formulário é nulo quando a regra não o declara.
+    /// itens do grupo são de formulários diferentes; o formulário é nulo só no grupo sem itens.
     /// </summary>
     public bool TentarFormularioComum(out CodigoDoFormulario? formulario)
     {

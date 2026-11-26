@@ -82,7 +82,6 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
                 .ComRotulo("Membro pede o acréscimo")
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>
@@ -236,11 +235,11 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ItemVermelho(processo).Should().BeFalse();
     }
 
-    private static void DefinirFormularioComFatos(ProcessoSeletivo processo, FinalidadeFormulario finalidade, Guid faseId, FatoColetado[] fatos)
+    private static void DefinirFormularioComFatos(ProcessoSeletivo processo, PapelDoFormularioDeTeste papel, Guid faseId, FatoColetado[] fatos)
     {
-        processo.DefinirFormulario(finalidade, faseId, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(papel, faseId, null, FormularioDeTeste.Paginas()).IsSuccess.Should().BeTrue();
         Result itens = processo.DefinirFatosColetados(
-            finalidade, fatos, finalidade == FinalidadeFormulario.Inscricao ? [GrupoDaInscricao()] : null);
+            papel, fatos, papel == PapelDoFormularioDeTeste.Inscricao ? [GrupoDaInscricao()] : null);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
     }
 
@@ -248,14 +247,14 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     private static void DefinirFormulariosDoAcrescimo(
         ProcessoSeletivo processo, FaseCronograma inscricao, FaseCronograma isencao, FaseCronograma habilitacao)
     {
-        foreach ((FinalidadeFormulario finalidade, FaseCronograma fase, FatoColetado[] fatos) in new[]
+        foreach ((PapelDoFormularioDeTeste papel, FaseCronograma fase, FatoColetado[] fatos) in new[]
         {
-            (FinalidadeFormulario.Inscricao, inscricao, new[] { Item("PEDE_O_ACRESCIMO"), Numero("RENDA_FAMILIAR", 1) }),
-            (FinalidadeFormulario.IsencaoTaxa, isencao, [Item("BOLSISTA")]),
-            (FinalidadeFormulario.Habilitacao, habilitacao, [Item("COMPROVANTE_RENDA")]),
+            (PapelDoFormularioDeTeste.Inscricao, inscricao, new[] { Item("PEDE_O_ACRESCIMO"), Numero("RENDA_FAMILIAR", 1) }),
+            (PapelDoFormularioDeTeste.IsencaoTaxa, isencao, [Item("BOLSISTA")]),
+            (PapelDoFormularioDeTeste.Habilitacao, habilitacao, [Item("COMPROVANTE_RENDA")]),
         })
         {
-            DefinirFormularioComFatos(processo, finalidade, fase.Id, fatos);
+            DefinirFormularioComFatos(processo, papel, fase.Id, fatos);
         }
 
     }

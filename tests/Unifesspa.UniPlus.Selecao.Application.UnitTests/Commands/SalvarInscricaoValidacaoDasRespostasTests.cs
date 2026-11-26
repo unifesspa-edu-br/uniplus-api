@@ -162,7 +162,6 @@ public sealed class SalvarInscricaoValidacaoDasRespostasTests
                 .ComClassificacao("IDENTIFICADOR")
                 .ComRestricoes(new TamanhoTexto(1, 5))
                 .Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
 
     private static InscricaoRequest ComRespostaDoMembro() => Resposta("APELIDO", "Nanda") with

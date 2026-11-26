@@ -124,7 +124,7 @@ public sealed class VocabularioDeFatosTests
                 .ComObrigatoriedade(Obrigatoriedade.Sempre)
                 .Construir())
             .Construir();
-        processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], grupos: [grupo], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])
             .Should().BeEquivalentTo(["CATEGORIAS_RENDA_FAMILIA"], "o fato de membro do outro agregado não é campo de grupo do processo");

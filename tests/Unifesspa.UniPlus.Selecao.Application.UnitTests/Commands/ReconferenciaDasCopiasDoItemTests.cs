@@ -198,21 +198,20 @@ public sealed class ReconferenciaDasCopiasDoItemTests
 
     private static void DefinirGrupoExibidoQuandoCorRacaEPreta(ProcessoSeletivo processo)
     {
-        FatoColetado[] itens = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
+        FatoColetado[] itens = [.. processo.FatosColetados.Where(f => f.FormularioId == processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.Id)];
         GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando("COMPOSICAO_FAMILIAR", itens.Max(static f => f.Ordem) + 1)
             .NaSecao(itens.First().PaginaCodigo)
             .ComOcorrencias(0, 10)
             .ExibidoQuando(QuandoCorRacaEPreta())
             .ComCampos(FatoColetadoDeTeste.Coletando("MENOR_SOB_GUARDA", 0).ComRotulo("Menor sob guarda").Construir())
-            .DaFinalidade(FinalidadeFormulario.Inscricao)
             .Construir();
-        Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, [grupo]);
+        Result definido = processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Inscricao, itens, [grupo]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 
     private static void DefinirItemNaHabilitacao(ProcessoSeletivo processo, FatoColetado item)
     {
-        Result definido = processo.DefinirItens([item], finalidade: FinalidadeFormulario.Habilitacao);
+        Result definido = processo.DefinirItens([item], papel: PapelDoFormularioDeTeste.Habilitacao);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
     }
 
@@ -230,8 +229,8 @@ public sealed class ReconferenciaDasCopiasDoItemTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Select(static e => e.Field).Should().Contain([
-            "formularios[1].itens[0].tipoDeCampo",
-        ]).And.Contain(static campo => campo.StartsWith("formularios[0].itens[", StringComparison.Ordinal));
+            "formularios[0].itens[0].tipoDeCampo",
+        ]).And.Contain(static campo => campo.StartsWith("formularios[1].itens[", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A recusa da semântica não muda o agregado: a cópia do item conforme só é refeita sem nenhuma recusa")]

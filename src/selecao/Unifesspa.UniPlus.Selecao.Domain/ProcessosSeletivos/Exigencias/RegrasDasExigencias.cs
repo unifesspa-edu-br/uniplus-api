@@ -53,8 +53,7 @@ public static class RegrasDasExigencias
     internal static IReadOnlyList<FieldError> FormularioDasExigencias(ConfiguracaoDeclarada configuracao, IEnumerable<DocumentoExigido> documentos) =>
         ConferenciaDasExigenciasDoFormulario.Conferir(
             configuracao.Coleta.FormulariosDeclarados,
-            [.. documentos.Where(static documento => documento.FormularioCodigo is not null)
-                .Select(static documento => new ExigenciaDeDocumentoDoFormulario(documento.FormularioCodigo!, documento.ExigidoNaFaseId))]);
+            [.. documentos.Select(ExigenciaDeDocumentoDoFormulario.De)]);
 
     private static MudancaDaConfiguracao MudancaDaTroca(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<DocumentoExigido> documentos) => new()

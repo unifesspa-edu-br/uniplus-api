@@ -35,17 +35,7 @@ public sealed class RotulosDoContextoNaExportacaoTests
         "dependenciasEntreItens.ligacoes.tipoRotulo",
     ];
 
-    /// <summary>
-    /// Rótulos da finalidade que o congelado repete em cada item, grupo e subitem do formulário. Na exportação esses itens ficam
-    /// dentro do formulário da mesma finalidade, que traz o rótulo uma vez só.
-    /// </summary>
-    private static readonly string[] RepetidosNoFormulario =
-    [
-        "dadosDosFormularios.finalidadeRotulo", "gruposDosFormularios.finalidadeRotulo",
-        "gruposDosFormularios.subitens.finalidadeRotulo",
-    ];
-
-    private static IEnumerable<string> Dispensados => ForaDaVersao1.Concat(RepetidosNoFormulario);
+    private static IEnumerable<string> Dispensados => ForaDaVersao1;
 
     [Theory]
     [InlineData("envelope.json")]
@@ -61,7 +51,7 @@ public sealed class RotulosDoContextoNaExportacaoTests
             .Where(grupo => grupo.Count() > exportados.GetValueOrDefault(grupo.Key))
             .Select(grupo => $"{grupo.Key} (congelado {grupo.Count()}x, exportado {exportados.GetValueOrDefault(grupo.Key)}x)")];
 
-        faltantes.Should().BeEmpty("cada rótulo do contexto sai na exportação, na mesma quantidade e com o mesmo texto, ou consta em ForaDaVersao1 ou em RepetidosNoFormulario; faltam: {0}", string.Join(", ", faltantes));
+        faltantes.Should().BeEmpty("cada rótulo do contexto sai na exportação, na mesma quantidade e com o mesmo texto, ou consta em ForaDaVersao1; faltam: {0}", string.Join(", ", faltantes));
     }
 
     [Fact]

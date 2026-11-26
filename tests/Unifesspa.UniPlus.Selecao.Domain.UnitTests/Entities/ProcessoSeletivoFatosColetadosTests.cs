@@ -43,7 +43,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     public void RecopiarItensDoCatalogo_RecopiaSoOQueNaoFoiColetado()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE")], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE")], papel: PapelDoFormularioDeTeste.Habilitacao)
             .IsSuccess.Should().BeTrue();
 
         Result recopia = processo.RecopiarItensDoCatalogo(
@@ -74,7 +74,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     public void ConferirCopiasDoCatalogo_FormatoIncoerente_AcumulaERecusaSemAlterar()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE"), Texto("NIS", 2, "LIVRE")], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE"), Texto("NIS", 2, "LIVRE")], papel: PapelDoFormularioDeTeste.Habilitacao)
             .IsSuccess.Should().BeTrue();
         Dictionary<string, CopiaDoItemNoCatalogo> catalogo = new() { ["CPF"] = CopiaIdentificadora(null), ["RG"] = CopiaIdentificadora("LIVRE"), ["NIS"] = CopiaIdentificadora(null) };
         HashSet<string> nenhum = new(StringComparer.Ordinal);
@@ -95,7 +95,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1), Fato("CONCORRER_PCD", 2, "PCD")], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1), Fato("CONCORRER_PCD", 2, "PCD")], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Should().HaveCount(3);
@@ -109,7 +109,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         // Grafo perfeitamente acíclico: CONCORRER_PCD depende de PCD e nada depende de CONCORRER_PCD.
         // Mas PCD vem DEPOIS na ordem de coleta, então a pergunta seria feita antes da resposta existir.
         Result resultado = processo.DefinirItens(
-            [Fato("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue("aciclicidade sozinha não garante que a dependência venha antes");
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
@@ -123,7 +123,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
     public void ObrigatoriedadeCitaFatoPosterior_Recusada()
     {
-        Result resultado = NovoProcesso().DefinirItens([ObrigatorioQuando("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], finalidade: FinalidadeFormulario.Habilitacao);
+        Result resultado = NovoProcesso().DefinirItens([ObrigatorioQuando("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
@@ -133,7 +133,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [Fato("COR_RACA", 0), ObrigatorioQuando("CONCORRER_PPI", 1, "COR_RACA", JsonSerializer.SerializeToElement("PRETA"))], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [Fato("COR_RACA", 0), ObrigatorioQuando("CONCORRER_PPI", 1, "COR_RACA", JsonSerializer.SerializeToElement("PRETA"))], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         ReferenciasVivas.Vinculos(processo.Declaracao()).Valores.Should().Contain(("COR_RACA", "PRETA"));
     }
@@ -144,7 +144,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [Fato("A", 0, "C"), Fato("B", 1, "A"), Fato("C", 2, "B")], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("A", 0, "C"), Fato("B", 1, "A"), Fato("C", 2, "B")], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.GrafoComCiclo);
@@ -163,7 +163,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         // ENTRADA cita A; A e B formam o ciclo (A cita B, B cita A). O caminho reportado deve ser
         // "A → B → A", nunca "ENTRADA → A → B → A": ENTRADA leva ao ciclo mas não faz parte dele.
         Result resultado = processo.DefinirItens(
-            [Fato("ENTRADA", 0, "A"), Fato("A", 1, "B"), Fato("B", 2, "A")], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("ENTRADA", 0, "A"), Fato("A", 1, "B"), Fato("B", 2, "A")], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.GrafoComCiclo);
@@ -185,7 +185,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [Fato("CONCORRER_PCD", 0, "PCD")], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("CONCORRER_PCD", 0, "PCD")], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue("o gate ficaria preso a um fato que este processo nunca vai resolver");
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
@@ -209,7 +209,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [Fato("PCD", 0), Fato("PCD", 1)], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("PCD", 0), Fato("PCD", 1)], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(GrafoFormularioErrorCodes.FatoDuplicado);
@@ -221,7 +221,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 0)], finalidade: FinalidadeFormulario.Habilitacao);
+            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 0)], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsFailure.Should().BeTrue(
             "com empate de ordem, 'anterior' deixa de ser decidível entre os dois fatos");
@@ -232,10 +232,10 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     public void Definir_SubstituiPorInteiro()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1)], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1)], papel: PapelDoFormularioDeTeste.Habilitacao)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Fato("SEXO", 0)], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Fato("SEXO", 0)], papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
 
         processo.FatosColetados.Should().HaveCount(1);
         processo.FatosColetados.Single().FatoCodigo.Should().Be("SEXO");
@@ -246,7 +246,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao);
+        Result resultado = processo.DefinirItens([], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Should().BeEmpty();
@@ -257,7 +257,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirItens([Fato("PCD", 0), Fato("CONCORRER_PCD", 1, "PCD")], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([Fato("PCD", 0), Fato("CONCORRER_PCD", 1, "PCD")], papel: PapelDoFormularioDeTeste.Habilitacao)
             .IsSuccess.Should().BeTrue();
 
         processo.FatosColetados.Should().OnlyContain(f => f.ProcessoSeletivoId == processo.Id);
@@ -271,7 +271,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirItens(
-            [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => Fato($"FATO_{i}", i))], finalidade: FinalidadeFormulario.Habilitacao);
+            [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => Fato($"FATO_{i}", i))], papel: PapelDoFormularioDeTeste.Habilitacao);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
     }

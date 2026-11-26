@@ -58,7 +58,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
 
-        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NaFinalidade("matricula"));
+        Result resultado = await cenario.DefinirAsync(cenario.ItemGeral().NoFormulario("matricula"));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("regrasDeComprovacao[0].documento.momento.formularioCodigo", CodigoDoFormularioErrorCodes.FormatoInvalido)]);
         await cenario.Mocks.TipoDocumentoReader.Received().ObterPorIdAsync(cenario.TipoDocumentoId, Arg.Any<CancellationToken>());
@@ -125,7 +125,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     public async Task Handle_GruposComFasesEFinalidadesDiferentes_AcumulaComPosicao()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
+        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NoFormulario("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), FormularioCodigo = "ISENCAO_TAXA" } };
         RegraDeComprovacaoInformada grupo = GrupoCom(primeira, outra);
 
@@ -143,7 +143,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     public async Task Handle_DeclaracaoRecusadaEOutroGrupoIncoerente_AcumulaCausasIndependentes()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
+        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NoFormulario("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7(), FormularioCodigo = "ISENCAO_TAXA" } };
         RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO", null, null, null, null, null);
 
@@ -310,7 +310,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     public async Task Handle_ReferenciaEComposicaoInvalidas_ReferenciaVemPrimeiro()
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase();
-        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NaFinalidade("INSCRICAO").Construir();
+        ItemDocumentoExigidoInput primeira = cenario.ItemGeral().NoFormulario("INSCRICAO").Construir();
         ItemDocumentoExigidoInput outra = primeira with { Momento = primeira.Momento! with { FaseId = Guid.CreateVersion7() } };
         ItemDocumentoExigidoInput semFormato = cenario.ItemGeral().SemRequisitos().Construir();
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [GrupoCom(primeira, outra), new("DOCUMENTO", semFormato)]));
@@ -323,7 +323,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     {
         CenarioDaExigencia cenario = ProcessoComUmaFase([FatoTipoDeficiencia()]);
         ColetarFato(cenario.Processo, "TIPO_DEFICIENCIA");
-        Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")).NaFinalidade("invalida"));
+        Result resultado = await cenario.DefinirAsync(cenario.ItemCondicional(new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"")).NoFormulario("invalida"));
         resultado.Errors.Select(e => e.Error.Code).Should().Equal(CodigoDoFormularioErrorCodes.FormatoInvalido);
     }
 

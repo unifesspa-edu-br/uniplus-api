@@ -92,7 +92,7 @@ internal static class CenarioDeConformidadeLegal
             .IsSuccess.Should().BeTrue();
 
     internal static void DefinirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] documentos) =>
-        processo.DefinirDocumentosExigidos(
+        processo.DefinirDocumentosExigidosNosFormulariosMinimos(
             [.. documentos.Select(d => RegraDeComprovacao.CriarRegraDeDocumento(d, 0).Value!)]).IsSuccess.Should().BeTrue();
 
     /// <summary>Define a fase de envio de documentos e uma oferta com a modalidade; devolve o id da fase.</summary>
@@ -114,7 +114,7 @@ internal static class CenarioDeConformidadeLegal
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, Guid? tipoDocumentoOrigemId = null, bool obrigatorio = true) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, null))
+            .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, []))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
