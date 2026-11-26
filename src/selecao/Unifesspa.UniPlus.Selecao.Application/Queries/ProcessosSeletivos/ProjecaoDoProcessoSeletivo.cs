@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ProcessosSeletivos.CadastroDeReserva;
+using Domain.ProcessosSeletivos.Manifestacao;
 using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ValueObjects;
 
@@ -25,7 +26,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjecaoDasVagas.ProjetarBonusRegional(processo.BonusRegional), processo.AplicaBonusRegional,
         processo.NumeroDeOpcoesDeCurso is { } opcoesDeCurso ? new OpcoesDeCursoDto(opcoesDeCurso) : null,
         ProjetarProvaPresencial(processo.ProvaPresencial), ProjetarCadastroDeReserva(processo.CadastroDeReserva),
-        ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
+        ProjetarManifestacaoDeInteresse(processo.ManifestacaoDeInteresse), ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
         ProjecaoDaClassificacao.ProjetarCriteriosDeDesempate(processo), ProjecaoDaClassificacao.Projetar(processo),
         ProjecaoDaFaseDoCronograma.ProjetarCronograma(processo),
         ProjecaoDaColeta.ProjetarDocumentosExigidos(processo), ProjecaoDaColeta.ProjetarRegrasDeComprovacaoSemGrupo(processo),
@@ -50,6 +51,9 @@ internal static class ProjecaoDoProcessoSeletivo
         declaracao is null ? null : new ProvaPresencialDto(
             declaracao.TemProvaPresencial,
             [.. declaracao.Municipios.Select(static m => new MunicipioDeProvaDto(m.CodigoIbge, m.Uf, m.Nome))]);
+
+    private static CodigoComRotulo<ManifestacaoDeInteresse>? ProjetarManifestacaoDeInteresse(ManifestacaoDeInteresse? manifestacao) =>
+        manifestacao is { } declarada ? CodigoComRotulo<ManifestacaoDeInteresse>.De(declarada) : null;
 
     private static IReadOnlyList<CadastroDeReservaDaChamadaDto> ProjetarCadastroDeReserva(CadastroDeReservaPorChamada cadastro) =>
         [.. cadastro.Chamadas.Select(static c => new CadastroDeReservaDaChamadaDto(

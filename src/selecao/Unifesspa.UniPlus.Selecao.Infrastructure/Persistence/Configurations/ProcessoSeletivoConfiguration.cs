@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
@@ -51,6 +52,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 "ck_processos_seletivos_numero_de_opcoes_de_curso",
                 "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
             t.HasCheckConstraint(
+                "ck_processos_seletivos_manifestacao_de_interesse",
+                $"manifestacao_de_interesse IS NULL OR manifestacao_de_interesse IN ({SqlDosCodigosDeContrato.Lista<ManifestacaoDeInteresse>()})");
+            t.HasCheckConstraint(
                 "ck_processos_seletivos_situacao",
                 $"situacao IN ({SqlDosCodigosDeContrato.Lista<SituacaoDoProcessoSeletivo>()})");
             t.HasCheckConstraint(
@@ -83,6 +87,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // a publicação. O intervalo é invariante do domínio e fica espelhado no banco.
         builder.Property(p => p.NumeroDeOpcoesDeCurso)
             .HasComment("Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado.");
+        // Como o edital prevê a manifestação de interesse: nulo = não prevista, que não bloqueia a publicação. Parte pública do edital.
+        builder.Property(p => p.ManifestacaoDeInteresse)
+            .HasColumnName("manifestacao_de_interesse")
+            .HasMaxLength(TamanhoDoCodigoDeContrato.Maximo)
+            .ClassificaComo(ClassificacaoDeProtecao.Publico)
+            .HasComment("Manifestação de interesse declarada pelo edital. Nulo = não prevista.");
         builder.HasIndex(p => p.IdentificadorLegivel)
             .IsUnique()
             .HasFilter("identificador_legivel IS NOT NULL")

@@ -151,6 +151,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ConfiguracaoPublicada? publicada = entrada.ConfiguracaoPublicada;
         payload["provaPresencial"] = SerializacaoDaProvaPresencial.Serializar(publicada is null ? processo.ProvaPresencial : publicada.ProvaPresencial);
         payload["cadastroDeReserva"] = SerializacaoDoCadastroDeReserva.Serializar(publicada?.CadastroDeReserva ?? processo.CadastroDeReserva);
+        payload["manifestacaoDeInteresse"] = SerializacaoDaManifestacaoDeInteresse.Serializar(publicada is null ? processo.ManifestacaoDeInteresse : publicada.ManifestacaoDeInteresse);
     }
 
     private static void ProjetarFatos(JsonObject payload, EntradaCanonicalizacao entrada)

@@ -75,8 +75,8 @@ public static class LerProcessoSeletivoQueryHandler
         processo.Id, processo.Nome, IdentificadorLegivel: null, processo.TipoProcesso, processo.Situacao,
         processo.OrigemCandidatos, processo.UnidadeAdministradora, localidade, Etapas: [], AtendimentoEspecializado: null,
         DistribuicaoVagas: [], BonusRegional: null, AplicaBonusRegional: null, OpcoesDeCurso: null, ProvaPresencial: null,
-        CadastroDeReserva: [], Cascata: null, CriteriosDesempate: [], Classificacao: null, CronogramaFases: [], DocumentosExigidos: [],
-        RegrasDeComprovacao: [], ReferenciaTemporalFatos: null, RegrasDerivacao: [], Formularios: [], OpcoesDeclaradas: [],
+        CadastroDeReserva: [], ManifestacaoDeInteresse: null, Cascata: null, CriteriosDesempate: [], Classificacao: null, CronogramaFases: [],
+        DocumentosExigidos: [], RegrasDeComprovacao: [], ReferenciaTemporalFatos: null, RegrasDerivacao: [], Formularios: [], OpcoesDeclaradas: [],
         ConfiguracaoDivulgacao: null, ConfiguracaoTaxaInscricao: null, AlgoritmoContagemPrazo: null, processo.CriadoEm);
 
     // A localidade que a versão divulgada congelou. Envelope ausente ou ilegível, ou sem o bloco (versões antigas), devolve

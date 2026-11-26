@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -23,6 +24,8 @@ internal sealed record BlocosDaConfiguracao
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; init; }
 
     public CadastroDeReservaPorChamada CadastroDeReserva { get; init; } = CadastroDeReservaPorChamada.SemReserva;
+
+    public ManifestacaoDeInteresse? ManifestacaoDeInteresse { get; init; }
 
     public required IReadOnlyList<EtapaProcesso> Etapas { get; init; }
 

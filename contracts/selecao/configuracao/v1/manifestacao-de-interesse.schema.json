@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/manifestacao-de-interesse.schema.json",
+  "title": "Manifestação de interesse",
+  "description": "Como o edital prevê a manifestação de interesse das pessoas que continuam concorrendo depois da 1ª chamada. A declaração é um só valor: UMA_VEZ, a manifestação vale para as chamadas seguintes, e CONFIRMA_A_CADA_CHAMADA, a pessoa também confirma o interesse a cada chamada. Qualquer dos dois valores prevê a manifestação e a exige. Sem valor, a manifestação não é prevista: não existe valor para \"não prevista\" e declarar não é obrigatório para publicar. O prazo da manifestação não é declarado aqui: é da publicação de cada chamada. O esquema descreve só a forma; a conferência do código é do domínio.",
+  "type": "string",
+  "enum": [
+    "UMA_VEZ",
+    "CONFIRMA_A_CADA_CHAMADA"
+  ]
+}

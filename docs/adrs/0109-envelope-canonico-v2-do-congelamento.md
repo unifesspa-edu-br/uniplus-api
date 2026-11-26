@@ -381,3 +381,11 @@ O documento congelado guarda o bloco `cadastroDeReserva`, com o cadastro de rese
 O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio processo ao congelar e, na recodificação, da configuração publicada. A leitura exige as três chaves de cada item e aplica de novo a declaração do domínio: a quantidade ausente ou negativa, o número menor que 1, a chamada repetida, a opção ausente com pessoas da reserva, a opção com quantidade zero e a opção desconhecida recusam o documento, com o caminho do item. É um bloco interno, registrado em `ClassificacaoDosBlocosDoCertame`: a página pública do certame não o mostra. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o cadastro de reserva muda o resumo da versão.
+
+## Emenda 10 (2026-11-26) — a manifestação de interesse no documento congelado
+
+O documento congelado guarda o bloco `manifestacaoDeInteresse`, com como o edital prevê a manifestação de interesse depois da 1ª chamada (UNI-REQ-0503). O bloco está sempre presente e é um valor só: o código `UMA_VEZ` ou `CONFIRMA_A_CADA_CHAMADA`, ou nulo quando a manifestação não é prevista. Não existe código para "não prevista", e qualquer dos dois códigos prevê a manifestação e a exige. O bloco não traz rótulo: o rótulo vem do catálogo do código na leitura do processo, e o `contexto` de rótulos é por objeto, não por valor solto na raiz.
+
+O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio processo ao congelar e, na recodificação, da configuração publicada. A leitura aceita texto ou nulo e aplica de novo a declaração do domínio: o código que o catálogo não conhece recusa o documento, no caminho `manifestacaoDeInteresse`, sem repetir o valor. É um bloco interno, registrado em `ClassificacaoDosBlocosDoCertame`: a página pública do certame não o mostra. A declaração não é obrigatória para publicar. O prazo da manifestação não é declarado: é da publicação de cada chamada. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda a manifestação muda o resumo da versão.

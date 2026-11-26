@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
@@ -168,6 +169,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>O cadastro de reserva por chamada (UNI-REQ-0354, UNI-REQ-0355); sem declaração, o processo não tem reserva em nenhuma chamada.</summary>
     public CadastroDeReservaPorChamada CadastroDeReserva => CadastroDeReservaPorChamada.DeItensConferidos(_cadastroDeReserva);
 
+    /// <summary>Como o edital prevê a manifestação de interesse depois da 1ª chamada (UNI-REQ-0503); nulo é a manifestação não prevista, que não impede a publicação.</summary>
+    public ManifestacaoDeInteresse? ManifestacaoDeInteresse { get; private set; }
+
     /// <summary>Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="BonusRegional"/>.</summary>
     public bool? AplicaBonusRegional { get; private set; }
 
@@ -285,6 +289,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Substitui o cadastro de reserva por chamada inteiro; a lista vazia deixa o processo sem reserva em nenhuma chamada.</summary>
     public Result DefinirCadastroDeReserva(IReadOnlyList<CadastroDeReservaInformado?> chamadas) =>
         Editar(() => CadastroDeReservaPorChamada.Declarar(chamadas), SubstituirCadastroDeReserva);
+
+    /// <summary>Declara como o edital prevê a manifestação de interesse pelo código de contrato; sem código, a manifestação não é prevista.</summary>
+    public Result DefinirManifestacaoDeInteresse(string? codigo) =>
+        Editar(() => DeclaracaoDaManifestacaoDeInteresse.Declarar(codigo), declarada => ManifestacaoDeInteresse = declarada);
 
     /// <summary>Define ou remove a divulgação pública (UNI-REQ-0050); nula volta ao padrão minimizado, que é publicável.</summary>
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>

@@ -8867,6 +8867,148 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/manifestacao-interesse": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "operationId": "DefinirManifestacaoDeInteresse",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirManifestacaoDeInteresseRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirManifestacaoDeInteresseRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirManifestacaoDeInteresseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/opcoes-de-curso": {
       "put": {
         "tags": [
@@ -16648,6 +16790,24 @@
           }
         }
       },
+      "DefinirManifestacaoDeInteresseRequest": {
+        "required": [
+          "manifestacaoDeInteresse"
+        ],
+        "type": "object",
+        "properties": {
+          "manifestacaoDeInteresse": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ManifestacaoDeInteresseCodigo"
+              }
+            ]
+          }
+        }
+      },
       "DefinirOpcoesDeclaradasRequest": {
         "required": [
           "opcoes"
@@ -17197,6 +17357,11 @@
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoCadastroDeReserva"
             }
+          },
+          "manifestacaoDeInteresse": {
+            "title": "Manifesta\u00E7\u00E3o de interesse",
+            "description": "Como o edital prev\u00EA a manifesta\u00E7\u00E3o de interesse depois da 1\u00AA chamada: UMA_VEZ ou CONFIRMA_A_CADA_CHAMADA. Ausente: a manifesta\u00E7\u00E3o n\u00E3o \u00E9 prevista, e a aus\u00EAncia n\u00E3o impede a publica\u00E7\u00E3o.",
+            "$ref": "#/components/schemas/DocumentoDaConfiguracaoManifestacaoDeInteresse"
           },
           "motivosDeDecisao": {
             "title": "Motivos de decis\u00E3o",
@@ -20627,6 +20792,15 @@
             "maxLength": 300
           }
         }
+      },
+      "DocumentoDaConfiguracaoManifestacaoDeInteresse": {
+        "title": "Manifesta\u00E7\u00E3o de interesse",
+        "description": "Como o edital prev\u00EA a manifesta\u00E7\u00E3o de interesse das pessoas que continuam concorrendo depois da 1\u00AA chamada. A declara\u00E7\u00E3o \u00E9 um s\u00F3 valor: UMA_VEZ, a manifesta\u00E7\u00E3o vale para as chamadas seguintes, e CONFIRMA_A_CADA_CHAMADA, a pessoa tamb\u00E9m confirma o interesse a cada chamada. Qualquer dos dois valores prev\u00EA a manifesta\u00E7\u00E3o e a exige. Sem valor, a manifesta\u00E7\u00E3o n\u00E3o \u00E9 prevista: n\u00E3o existe valor para \"n\u00E3o prevista\" e declarar n\u00E3o \u00E9 obrigat\u00F3rio para publicar. O prazo da manifesta\u00E7\u00E3o n\u00E3o \u00E9 declarado aqui: \u00E9 da publica\u00E7\u00E3o de cada chamada. O esquema descreve s\u00F3 a forma; a confer\u00EAncia do c\u00F3digo \u00E9 do dom\u00EDnio.",
+        "type": "string",
+        "enum": [
+          "UMA_VEZ",
+          "CONFIRMA_A_CADA_CHAMADA"
+        ]
       },
       "DocumentoDaConfiguracaoMotivo": {
         "title": "Motivo de decis\u00E3o do processo",
@@ -25189,6 +25363,29 @@
           }
         }
       },
+      "ManifestacaoDeInteresse": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ManifestacaoDeInteresseCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ManifestacaoDeInteresseCodigo": {
+        "enum": [
+          "UMA_VEZ",
+          "CONFIRMA_A_CADA_CHAMADA"
+        ],
+        "type": "string",
+        "description": "- \u0060UMA_VEZ\u0060: Manifesta interesse uma s\u00F3 vez \u2014 A pessoa manifesta interesse uma vez depois da 1\u00AA chamada, e a manifesta\u00E7\u00E3o vale para as chamadas seguintes; quem volta a aguardar n\u00E3o manifesta de novo.\n- \u0060CONFIRMA_A_CADA_CHAMADA\u0060: Confirma o interesse a cada chamada \u2014 A pessoa manifesta interesse depois da 1\u00AA chamada e confirma o interesse a cada chamada seguinte."
+      },
       "MinhaInscricaoDto": {
         "required": [
           "inscricaoId",
@@ -27870,6 +28067,7 @@
           "opcoesDeCurso",
           "provaPresencial",
           "cadastroDeReserva",
+          "manifestacaoDeInteresse",
           "cascata",
           "criteriosDesempate",
           "classificacao",
@@ -27978,6 +28176,16 @@
             "items": {
               "$ref": "#/components/schemas/CadastroDeReservaDaChamadaDto"
             }
+          },
+          "manifestacaoDeInteresse": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ManifestacaoDeInteresse"
+              }
+            ]
           },
           "cascata": {
             "oneOf": [

@@ -171,6 +171,11 @@
         "$ref": "cadastro-de-reserva.schema.json"
       }
     },
+    "manifestacaoDeInteresse": {
+      "title": "Manifestação de interesse",
+      "description": "Como o edital prevê a manifestação de interesse depois da 1ª chamada: UMA_VEZ ou CONFIRMA_A_CADA_CHAMADA. Ausente: a manifestação não é prevista, e a ausência não impede a publicação.",
+      "$ref": "manifestacao-de-interesse.schema.json"
+    },
     "motivosDeDecisao": {
       "title": "Motivos de decisão",
       "description": "Motivos do catálogo que o processo escolheu para as decisões das fases e das etapas. Cada motivo se identifica pelo lugar, a fase ou a etapa pela chave, e pelo tipo e pelo código.",
