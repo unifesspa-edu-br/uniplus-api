@@ -16506,13 +16506,15 @@
       "codigo": "uniplus.selecao.configuracao_do_fada.fato_elegibilidade_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso citou, em\n`fatoElegibilidadeCodigo`, um código de fato em branco ou com mais de 60 caracteres (limite\nde hoje; os espaços nas pontas não contam). O fato de elegibilidade é o fato do processo que\ndecide quem recebe o acréscimo; a citação é opcional neste ponto, mas, quando feita, o código\nprecisa ter de 1 a 60 caracteres.",
-        "Esta recusa confere só a forma do código. Se o fato é do processo e se é do tipo verdadeiro ou\nfalso são conferências separadas, com outros códigos de erro.",
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (FADA) citou, em\n`fatoElegibilidadeCodigo`, um código de dado de elegibilidade fora do formato aceito. O dado de\nelegibilidade é o dado do candidato que decide quem recebe o acréscimo; a citação é opcional\nneste ponto, mas, quando feita, o código é conferido exatamente como foi enviado e precisa seguir estas regras:",
+        "- começar com letra maiúscula de A a Z;\n- ter, depois da primeira letra, só letras maiúsculas sem acento e dígitos;\n- usar o sublinhado só para separar partes, nunca no fim do código nem duas vezes seguidas;\n- ter no máximo 50 caracteres.",
+        "Os espaços no começo ou no fim do código não são retirados e fazem a declaração ser recusada.\nTexto vazio ou só com espaços também é recusado, porque não tem o formato. Por exemplo,\n`DECLARACAO_RESIDENTE_MARABA` é aceito; `declaracao_residente` (minúsculas), `1_DECLARACAO`\n(começa com dígito) e `DECLARACAO__RESIDENTE` (sublinhado duplicado) são recusados.",
+        "Esta recusa confere só a forma do código. Se o dado do candidato é do processo e se é do tipo\nverdadeiro ou falso são conferências separadas, com outros códigos de erro.",
         "A recusa vem no campo `fatoElegibilidadeCodigo` e acumula, na mesma resposta, com as demais\nviolações dos valores do fator, em\n[`fator_invalido`](/erros/uniplus.selecao.configuracao_do_fada.fator_invalido) e\n[`teto_invalido`](/erros/uniplus.selecao.configuracao_do_fada.teto_invalido).\nEla vem depois da conferência da regra e da base legal; se alguma delas falhar, os valores\nnem chegam a ser conferidos.",
         "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
       ],
       "comoResolver": [
-        "Na declaração, informe o código exato do fato do processo que decide quem recebe o acréscimo,\ncom 1 a 60 caracteres, ou omita o campo.",
+        "Na declaração, informe o código exato do dado do candidato do processo que decide quem recebe o\nacréscimo, sem espaços no começo nem no fim: letra maiúscula inicial, depois só letras\nmaiúsculas e dígitos, com sublinhado apenas separando partes, e até 50 caracteres (por exemplo,\n`DECLARACAO_RESIDENTE_MARABA`). Ou omita o campo.",
         "Se o erro apareceu na retificação em ato único, o pedido enviado agora não é a causa: o sistema recusou a\nconfiguração congelada da versão publicada, e regravar a configuração do processo não a\ncorrige. A causa é investigada pela equipe técnica do Uni+."
       ],
       "ondeAparece": [
