@@ -11,6 +11,7 @@ using DTOs;
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Handler do <see cref="ObterFormularioApresentadoQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, UNI-REQ-0072): projeta o
@@ -72,11 +73,17 @@ public static class ObterFormularioApresentadoQueryHandler
         EnderecosDosDocumentosDoAto enderecos,
         CancellationToken cancellationToken)
     {
+        // Provisório até a retirada da finalidade: o código desconhecido é o mesmo não encontrado do formulário ausente.
+        if (EstruturaFormulario.FinalidadeDoCodigo(query.FormularioCodigo) is not { } finalidade)
+        {
+            return NaoEncontrado(query.ProcessoSeletivoId);
+        }
+
         DocumentosDoAtoNoAcervo acervo = await enderecos
             .DoAtoAsync(query.ProcessoSeletivoId, divulgada.AtoDaDivulgacao, cancellationToken)
             .ConfigureAwait(false);
         return ComoLeituraPublica(
-            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, query.Finalidade, registroCodecs, acervo), query.ProcessoSeletivoId);
+            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, finalidade, registroCodecs, acervo), query.ProcessoSeletivoId);
     }
 
     // A ausência de formulário da finalidade colapsa no mesmo não encontrado dos demais casos sem

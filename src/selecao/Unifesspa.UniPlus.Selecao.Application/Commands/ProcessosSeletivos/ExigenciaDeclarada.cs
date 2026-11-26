@@ -14,7 +14,7 @@ internal static class ExigenciaDeclarada
 
     public static Guid? EtapaId(this ItemDocumentoExigidoInput item) => item.Momento?.EtapaId;
 
-    public static string? Finalidade(this ItemDocumentoExigidoInput item) => item.Momento?.Finalidade;
+    public static string? FormularioCodigo(this ItemDocumentoExigidoInput item) => item.Momento?.FormularioCodigo;
 
     public static string? Aplicabilidade(this ItemDocumentoExigidoInput item) => item.Aplicabilidade?.Tipo;
 

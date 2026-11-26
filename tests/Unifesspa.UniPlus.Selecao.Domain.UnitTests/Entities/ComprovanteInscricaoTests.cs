@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ComprovanteInscricaoTests
 {
@@ -36,7 +37,7 @@ public sealed class ComprovanteInscricaoTests
         {
             ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaDeGrupoInscricao("membro-1", Valores(("PARENTESCO", "MAE")))],
         },
-        [new AceiteDeTermo("VERACIDADE", Guid.Parse("01a12693-0000-7000-8000-000000000001"), new string('a', 64))],
+        [new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, "VERACIDADE", Guid.Parse("01a12693-0000-7000-8000-000000000001"), new string('a', 64))],
         [new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0), new ModalidadeDeConcorrencia("LI_EP", "Escola pública", 1)],
         [Laudo()]);
 
@@ -107,7 +108,7 @@ public sealed class ComprovanteInscricaoTests
         Conteudo c = Base() with { Oferta = Guid.Parse("01a12693-0000-7000-8000-0000000000aa") };
 
         ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Documentos, c.Modalidades, new Dictionary<string, JsonElement>())
-            .HashIntegridade.Should().Be(Hash(c)).And.Be("0fe3cfaec2063ad634bae3bdba671d24f90810aa22f7d4ae33e22d0a07a77458", "o hash do conteúdo canônico, com a lista de documentos, é estável");
+            .HashIntegridade.Should().Be(Hash(c)).And.Be("e135df3874dfe2ec4be619127c74b9e0eee58a6d02546b5506ce780c94978775", "o hash do conteúdo canônico, com a lista de documentos, é estável");
     }
 
     [Fact(DisplayName = "O comprovante sem documentos tem o hash golden")]
@@ -115,7 +116,7 @@ public sealed class ComprovanteInscricaoTests
     {
         Conteudo c = Base() with { Oferta = Guid.Parse("01a12693-0000-7000-8000-0000000000aa"), Documentos = [] };
 
-        Hash(c).Should().Be("714b5fb32226d2d96a48fd1d44e5dc51903bb819ba74cb63911846b7db5ea2ed");
+        Hash(c).Should().Be("2b19b8d7077c785e844fea829cd60e8d7de0c0d5bb3af1d67a2f3ddd15a276ad");
     }
 
     [Fact(DisplayName = "O comprovante emitido com microssegundos no instante tem a integridade conferida")]

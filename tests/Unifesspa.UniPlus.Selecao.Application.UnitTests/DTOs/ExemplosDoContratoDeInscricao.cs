@@ -40,7 +40,7 @@ internal static class ExemplosDoContratoDeInscricao
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567") },
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal),
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
-                [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")]),
+                [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")]),
         EscolhasDeCurso = new EscolhasDeCursoDaInscricaoDto(
                 Guid.Parse("0199e000-0000-7000-8000-000000000001"),
                 Guid.Parse("0199e000-0000-7000-8000-000000000003"), 2,

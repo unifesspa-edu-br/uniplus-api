@@ -43,7 +43,7 @@ public sealed class DocumentoExigidoPorGruposTests
         Guid faseId = Guid.CreateVersion7();
         Guid etapaId = Guid.CreateVersion7();
 
-        DocumentoExigido exigencia = Reidratada(Declarada() with { Momento = new(faseId, etapaId, FinalidadeFormulario.Inscricao) });
+        DocumentoExigido exigencia = Reidratada(Declarada() with { Momento = new(faseId, etapaId, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)) });
 
         exigencia.Id.Should().Be(IdCongelado);
         exigencia.ExigidoNaFaseId.Should().Be(faseId);

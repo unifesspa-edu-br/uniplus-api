@@ -47,17 +47,15 @@ public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
 /// Etapa dessa fase em que o documento é coletado; ausente, o documento é da fase inteira. A raiz confere
 /// que a etapa é do processo e acontece naquela fase.
 /// </param>
-/// <param name="Finalidade">
-/// Código do formulário lido no GET, a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou <c>HABILITACAO</c>):
-/// obrigatória quando a fase responde algum formulário, e um dos que ela responde; ausente quando a fase não
-/// responde nenhum. É ela que diz em qual formulário o candidato apresenta o documento, porque inscrição e
-/// isenção podem dividir a fase.
+/// <param name="FormularioCodigo">
+/// Código do formulário do processo a que o documento pertence: obrigatório quando a fase responde algum
+/// formulário, e um dos que ela responde; ausente quando a fase não responde nenhum. É ele que diz em qual
+/// formulário o candidato apresenta o documento, porque dois formulários podem dividir a fase.
 /// </param>
-public sealed record MomentoDaExigenciaInput(
-    Guid FaseId, Guid? EtapaId = null, [property: AceitaCodigosDe<FinalidadeFormulario>] string? Finalidade = null)
+public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, string? FormularioCodigo = null)
 {
-    /// <summary>O caminho da finalidade no pedido.</summary>
-    public const string CaminhoDaFinalidade = "momento.finalidade";
+    /// <summary>O caminho do código do formulário no pedido.</summary>
+    public const string CaminhoDoFormulario = "momento.formularioCodigo";
 }
 
 /// <summary>

@@ -116,7 +116,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
     private static DocumentoExigido ExigenciaQueOfereceOModelo(ProcessoSeletivo processo, ModeloDeDocumento modelo) => DocumentoExigido.Criar(
         Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("exigencia_autodeclaracao_etnico_racial").Value!,
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-            new MomentoDaExigencia(processo.CronogramaFases.Single().Id, null, FinalidadeFormulario.Inscricao),
+            new MomentoDaExigencia(processo.CronogramaFases.Single().Id, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
             new IndeferimentoDoDocumento(true, null, [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!]),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: ModeloDaExigencia.Do(modelo).Value!),

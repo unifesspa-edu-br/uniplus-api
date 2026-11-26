@@ -9,13 +9,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ConferenciaDosNomesDoTitularTests
 {
     private static RespostasAdmitidas Admitidas => new(
         new Dictionary<string, DefinicaoDaResposta> { [ConjuntoBasicoDaInscricao.NomeSocial] = new(TipoDoValorDeResposta.Texto, false, false) },
         new HashSet<string>(), new Dictionary<string, IReadOnlySet<string>>(), new HashSet<Guid>(),
-        new Dictionary<string, TermoAdmitido>());
+        new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     private static Dictionary<string, JsonElement> Respostas(string? nome) => new()
     {

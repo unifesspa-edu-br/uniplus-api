@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.ProcessosSeletivos.Edicao;
+using Domain.ProcessosSeletivos.Formularios;
 using Domain.ProcessosSeletivos.Referencias;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -115,7 +116,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         IReadOnlyList<FatoCandidatoView> catalogo) =>
         new(
             new CopiaDeModeloDeFormulario(
-                _finalidade, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
+                CodigoDoFormulario.Criar(_finalidade.Codigo()).Value!, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
                 copia.Termos, copia.Derivacoes, new ModeloDeOrigem(modelo.Id, modelo.Codigo, modelo.Nome)),
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),
             _relatorio,

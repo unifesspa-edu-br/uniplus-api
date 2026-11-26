@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -21,7 +22,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         new(fato, "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirFatosColetadosCommand Comando(params FatoColetadoInput[] itens) =>
-        new(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens);
+        new(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), itens);
 
     private static EntradaDoFatoColetadoDeTeste Item(string fatoCodigo, string rotulo, string tipo = "SIM_OU_NAO") =>
         EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo(rotulo).DoTipo(tipo);
@@ -29,7 +30,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
     public void Aceita_ListaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, []));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -45,7 +46,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a lista de fatos é nula (payload malformado)")]
     public void Rejeita_FatosNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null!));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), null!));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Itens");
@@ -116,7 +117,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     {
         FatoColetadoInput[] itens = [.. Enumerable.Repeat<FatoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, itens));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), itens));
 
         result.IsValid.Should().BeTrue();
     }
@@ -132,7 +133,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_GrupoMalformado(string caso)
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], [GrupoAdulterado(caso)!]));
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), [], [GrupoAdulterado(caso)!]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().OnlyContain(e => e.PropertyName.StartsWith("Grupos[0]", StringComparison.Ordinal));
@@ -161,7 +162,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         GrupoColetadoInput[] grupos = [.. Enumerable.Repeat<GrupoColetadoInput>(null!, FormaDoItem.MaximoDeItens + 1)];
 
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, [], grupos));
+            Guid.CreateVersion7(), FinalidadeFormulario.Inscricao.Codigo(), [], grupos));
 
         result.IsValid.Should().BeTrue();
     }

@@ -47,7 +47,7 @@ public sealed class ListagemDasInscricoesEnviadasTests
             new HashSet<string>(StringComparer.Ordinal) { "NOME", "NOME_SOCIAL", "DESEJA_NOME_SOCIAL" },
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             new HashSet<Guid> { OfertaDoProcesso },
-            new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal),
+            new Dictionary<TermoNoFormulario, TermoAdmitido>(),
             NomeCivilDoLogin: PersonasDeTeste.NomeFernandaDrumond,
             NomeSocialDoLogin: "Ariel Drumond");
 

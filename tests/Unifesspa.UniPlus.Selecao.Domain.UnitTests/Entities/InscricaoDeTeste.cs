@@ -59,10 +59,10 @@ internal static class InscricaoDeTeste
             ["FONTES_DE_RENDA"] = new HashSet<string>(StringComparer.Ordinal) { "RENDA_MENSAL" },
         },
         new HashSet<Guid> { OfertaDoProcesso },
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)
+        new Dictionary<TermoNoFormulario, TermoAdmitido>()
         {
-            [TermoLgpd] = new(VersaoDoTermoLgpd, HashDoTermoLgpd),
-            [TermoVeracidade] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+            [FormularioDeTeste.TermoDaInscricao(TermoLgpd)] = new(VersaoDoTermoLgpd, HashDoTermoLgpd),
+            [FormularioDeTeste.TermoDaInscricao(TermoVeracidade)] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
         });
 
     internal static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)

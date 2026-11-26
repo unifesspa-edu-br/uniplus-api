@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class FormularioDaInscricaoTests
 {
@@ -34,7 +35,7 @@ public sealed class FormularioDaInscricaoTests
         PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null),
             new Dictionary<string, JsonElement> { ["A"] = JsonSerializer.SerializeToElement(alteracao == "preenchimento" ? 2 : 1) },
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> { ["G"] = [new("1", new Dictionary<string, JsonElement> { ["B"] = JsonSerializer.SerializeToElement(1) })] },
-            [new("T", Guid.Empty, "hash")]),
+            [new(FormularioDeTeste.CodigoDaInscricao, "T", Guid.Empty, "hash")]),
         new Dictionary<string, JsonElement> { ["D"] = JsonSerializer.SerializeToElement(alteracao == "derivado" ? 2 : 1) },
         new Dictionary<string, DefinicaoDaResposta> { ["A"] = new(TipoDoValorDeResposta.Texto, alteracao == "definicao", false) });
 

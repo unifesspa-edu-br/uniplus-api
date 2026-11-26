@@ -91,7 +91,7 @@ public sealed class FormulariosController : ControllerBase
         }
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
-            .Send(new ObterFormularioApresentadoQuery(id, alvo), cancellationToken)
+            .Send(new ObterFormularioApresentadoQuery(id, alvo.Codigo()), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
@@ -119,7 +119,7 @@ public sealed class FormulariosController : ControllerBase
         }
 
         Result<FormularioApresentadoDoProcessoDto> resultado = await _queryBus
-            .Send(new ObterFormularioApresentadoDoRascunhoQuery(id, alvo), cancellationToken)
+            .Send(new ObterFormularioApresentadoDoRascunhoQuery(id, alvo.Codigo()), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
@@ -147,7 +147,8 @@ public sealed class FormulariosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return EnviarMutacao(finalidade,
-            alvo => new DefinirFormularioCommand(id, alvo, request.FaseId, request.Titulo, request.Paginas, request.ConsequenciaDaFaltaDeEnvio),
+            alvo => new DefinirFormularioCommand(
+                id, alvo.Codigo(), request.FaseId, request.Titulo, CorrespondenciaDaFinalidade.DeclaracaoDa(alvo).Obrigatorio, request.Paginas, request.ConsequenciaDaFaltaDeEnvio),
             cancellationToken);
     }
 
@@ -163,7 +164,7 @@ public sealed class FormulariosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public Task<IActionResult> RemoverFormulario(Guid id, [AceitaCodigosDe<FinalidadeFormulario>] string finalidade, CancellationToken cancellationToken) =>
         EnviarMutacao(finalidade,
-            alvo => new RemoverFormularioCommand(id, alvo),
+            alvo => new RemoverFormularioCommand(id, alvo.Codigo()),
             cancellationToken);
 
     /// <summary>
@@ -189,7 +190,7 @@ public sealed class FormulariosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return EnviarMutacao(finalidade,
-            alvo => new DefinirFatosColetadosCommand(id, alvo, request.Itens, request.Grupos),
+            alvo => new DefinirFatosColetadosCommand(id, alvo.Codigo(), request.Itens, request.Grupos),
             cancellationToken);
     }
 
@@ -216,7 +217,7 @@ public sealed class FormulariosController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return EnviarMutacao(finalidade,
-            alvo => new DefinirTermosDoFormularioCommand(id, alvo, request.Termos),
+            alvo => new DefinirTermosDoFormularioCommand(id, alvo.Codigo(), request.Termos),
             cancellationToken);
     }
 
@@ -246,7 +247,7 @@ public sealed class FormulariosController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result<AplicacaoDeModeloDto> resultado = await _commandBus
-            .Send(new AplicarModeloFormularioCommand(id, request.ModeloId), cancellationToken).ConfigureAwait(false);
+            .Send(new AplicarModeloFormularioCommand(id, request.ModeloId, request.FormularioCodigo), cancellationToken).ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 

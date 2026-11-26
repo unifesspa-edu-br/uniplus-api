@@ -18,11 +18,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
-/// O formulário de uma finalidade como a configuração viva o define agora — o rascunho —, no mesmo formato que o certame divulgado serve (ADR-0139). É o que a
+/// O formulário do código informado como a configuração viva o define agora — o rascunho —, no mesmo formato que o certame divulgado serve (ADR-0139). É o que a
 /// simulação do administrador interpreta antes de publicar; nada é gravado.
 /// </summary>
 public sealed record ObterFormularioApresentadoDoRascunhoQuery(
-    Guid ProcessoSeletivoId, FinalidadeFormulario Finalidade) : IQuery<Result<FormularioApresentadoDoProcessoDto>>;
+    Guid ProcessoSeletivoId, string FormularioCodigo) : IQuery<Result<FormularioApresentadoDoProcessoDto>>;
 
 /// <summary>
 /// Projeta a configuração viva pela mesma projeção do certame divulgado, com o catálogo vivo: a
@@ -44,9 +44,10 @@ public static class ObterFormularioApresentadoDoRascunhoQueryHandler
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
         ProcessoSeletivo? processo = await repository.ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return processo is null
+        // Provisório até a retirada da finalidade: o código desconhecido é o mesmo não encontrado do formulário ausente.
+        return processo is null || EstruturaFormulario.FinalidadeDoCodigo(query.FormularioCodigo) is not { } finalidade
             ? NaoEncontrado(query.ProcessoSeletivoId)
-            : await ProjetarAsync(processo, query.Finalidade, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
+            : await ProjetarAsync(processo, finalidade, fatoCandidatoReader, resolvedorFuso, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<FormularioApresentadoDoProcessoDto>> ProjetarAsync(

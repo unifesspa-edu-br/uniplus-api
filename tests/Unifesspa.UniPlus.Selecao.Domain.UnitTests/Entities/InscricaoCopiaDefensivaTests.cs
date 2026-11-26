@@ -14,7 +14,7 @@ public sealed class InscricaoCopiaDefensivaTests
     [Fact]
     public void Reidratar_ListaDeAceitesAlterada_PreservaAceitesDaInscricao()
     {
-        List<AceiteDeTermo> aceites = [new("TERMO", Guid.NewGuid(), "hash")];
+        List<AceiteDeTermo> aceites = [new(FormularioDeTeste.CodigoDaInscricao, "TERMO", Guid.NewGuid(), "hash")];
         Inscricao inscricao = Inscricao.Reidratar(Guid.NewGuid(), Guid.NewGuid(),
             TitularDaInscricao.Reidratar(PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer"),
             EstadoDaInscricao.Reidratar(SituacaoInscricao.Rascunho, null, CancelamentoDaInscricao.Reidratar(null, null, null)),

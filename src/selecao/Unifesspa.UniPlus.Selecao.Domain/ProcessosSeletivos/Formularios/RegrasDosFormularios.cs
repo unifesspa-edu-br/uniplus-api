@@ -227,6 +227,14 @@ public static class RegrasDosFormularios
         return mudanca;
     }
 
+    public static DomainError FormularioInexistente(CodigoDoFormulario codigo)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        return new(
+            FormularioProcessoErrorCodes.FormularioInexistente,
+            $"O processo não tem formulário de {codigo.Valor}; defina o formulário antes dos itens e termos.");
+    }
+
     public static DomainError FormularioInexistente(FinalidadeFormulario finalidade) => new(
         FormularioProcessoErrorCodes.FormularioInexistente,
         $"O processo não tem formulário de {finalidade.Codigo()}; defina o formulário antes dos itens e termos.");

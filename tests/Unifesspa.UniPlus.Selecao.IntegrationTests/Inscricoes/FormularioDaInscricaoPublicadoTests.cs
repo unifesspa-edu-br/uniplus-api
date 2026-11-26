@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -86,7 +87,7 @@ public sealed class FormularioDaInscricaoPublicadoTests
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoComFator(nameof(FormularioDaIsencao_NaoTrazAsDependenciasDoFator), comIsencao: true));
 
         Result<FormularioApresentadoDoProcessoDto> formulario = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.IsencaoTaxa), ProcessoSeletivoRepositoryDeTeste.Criar(db),
+            new ObterFormularioApresentadoQuery(processoId, FinalidadeFormulario.IsencaoTaxa.Codigo()), ProcessoSeletivoRepositoryDeTeste.Criar(db),
             new CertameDivulgadoRepository(db), RegistroCodecs, EnderecosSemCopia(), CancellationToken.None);
 
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);

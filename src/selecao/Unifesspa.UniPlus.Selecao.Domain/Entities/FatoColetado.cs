@@ -189,6 +189,28 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
             : Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, finalidade));
     }
 
+    /// <summary>O item do formulário dado: a mesma conferência da criação, e o formulário que o produz fica ligado a ele.</summary>
+    /// <exception cref="ArgumentException">A cópia do catálogo vem sem hipótese legal, finalidade do tratamento ou descrição.</exception>
+    public static Result<FatoColetado> Criar(
+        string fatoCodigo,
+        int ordem,
+        string? paginaCodigo,
+        ApresentacaoDoCampo apresentacao,
+        RegrasDoCampo regras,
+        CopiaDoItemNoCatalogo copia,
+        FormularioProcesso formulario)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        Result<FatoColetado> criado = Criar(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, formulario.Finalidade);
+        if (criado.IsSuccess)
+        {
+            criado.Value!.VincularFormulario(formulario);
+        }
+
+        return criado;
+    }
+
     /// <summary>
     /// Confere a cópia do catálogo contra a forma do item — o formato existe se, e só se, o campo é
     /// de texto, e cabe na coluna — e o vocabulário fechado da classificação, sem mudar o item.

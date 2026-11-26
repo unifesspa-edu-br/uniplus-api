@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -65,7 +66,7 @@ internal static class ApoioDoFormularioApresentado
     {
         ICertameDivulgadoRepository divulgacao = divulgadoRepository ?? RepositorioComDivulgacao(processoId);
         return ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade),
+            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()),
             repository,
             divulgacao,
             RegistroReconhecendoVersaoCorrente,
@@ -159,7 +160,7 @@ internal static class ApoioDoFormularioApresentado
     {
         ICertameDivulgadoRepository lida = divulgacao ?? RepositorioComDivulgacao(processoId);
         return ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade),
+            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()),
             MockComVersaoVigente(processoId, envelopeJson),
             lida,
             RegistroReidratando(reidratado),

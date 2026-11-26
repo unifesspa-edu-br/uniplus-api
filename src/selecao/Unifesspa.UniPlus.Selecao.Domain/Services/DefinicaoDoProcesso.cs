@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// Os formulários do processo como uma definição só para o avaliador (ADR-0135): cada seção de cada
@@ -51,21 +53,36 @@ public static class DefinicaoDoProcesso
         [.. termos.OrderBy(static t => t.Finalidade).ThenBy(static t => t.Ordem)
             .Select(static t => new DefinicaoTermo(CodigoDoTermo(t.Finalidade!.Value, t.Codigo), t.Exibicao, t.Obrigatoriedade))];
 
-    /// <summary>O código da página na definição do processo: a seção, ou a finalidade para o item sem seção.</summary>
-    public static string CodigoDaPagina(FinalidadeFormulario finalidade, string? secao) =>
-        secao is null ? finalidade.ToString() : $"{finalidade}:{secao}";
+    /// <summary>O código da página na definição do processo: <c>CODIGO:SECAO</c>, ou só o código do formulário para o item sem seção.</summary>
+    public static string CodigoDaPagina(CodigoDoFormulario formulario, string? secao)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+        return secao is null ? formulario.Valor : $"{formulario.Valor}:{secao}";
+    }
 
-    /// <summary>O código do termo na definição do processo.</summary>
-    public static string CodigoDoTermo(FinalidadeFormulario finalidade, string codigo) =>
-        $"{finalidade}:{codigo}";
+    /// <summary>O código do termo na definição do processo: <c>CODIGO:TERMO</c>.</summary>
+    public static string CodigoDoTermo(CodigoDoFormulario formulario, string codigo)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+        return $"{formulario.Valor}:{codigo}";
+    }
 
-    /// <summary>Se a página ou o termo, pelo código que tem na definição do processo, é da finalidade.</summary>
-    public static bool EhDaFinalidade(string codigo, FinalidadeFormulario finalidade)
+    /// <summary>Se a página ou o termo, pelo código que tem na definição do processo, é do formulário.</summary>
+    public static bool EhDoFormulario(string codigo, CodigoDoFormulario formulario)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        string prefixo = finalidade.ToString();
-        return codigo == prefixo || codigo.StartsWith(prefixo + ":", StringComparison.Ordinal);
+        ArgumentNullException.ThrowIfNull(formulario);
+        return codigo == formulario.Valor || codigo.StartsWith(formulario.Valor + ":", StringComparison.Ordinal);
     }
+
+    // Provisório até a retirada da finalidade: as operações por finalidade delegam às do código do formulário.
+    public static string CodigoDaPagina(FinalidadeFormulario finalidade, string? secao) => CodigoDaPagina(CodigoDe(finalidade), secao);
+
+    public static string CodigoDoTermo(FinalidadeFormulario finalidade, string codigo) => CodigoDoTermo(CodigoDe(finalidade), codigo);
+
+    public static bool EhDaFinalidade(string codigo, FinalidadeFormulario finalidade) => EhDoFormulario(codigo, CodigoDe(finalidade));
+
+    private static CodigoDoFormulario CodigoDe(FinalidadeFormulario finalidade) => CodigoDoFormulario.Criar(finalidade.Codigo()).Value!;
 
     private static IEnumerable<DefinicaoPagina> PaginasDaFinalidade(
         FinalidadeFormulario finalidade, FormularioProcesso? formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)

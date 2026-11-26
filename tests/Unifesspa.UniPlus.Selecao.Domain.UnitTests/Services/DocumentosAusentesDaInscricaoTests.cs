@@ -119,7 +119,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
     private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao, bool gatilhoFalso = false) =>
         new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComMomento(new MomentoDaExigencia(Fase, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : []))
             .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, []))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))

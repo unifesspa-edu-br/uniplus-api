@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -102,7 +103,7 @@ internal sealed class CenarioDeFormularioPublicado
     {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioApresentadoDoProcessoDto> lido = await ObterFormularioApresentadoQueryHandler.Handle(
-            new ObterFormularioApresentadoQuery(processoId, finalidade), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
+            new ObterFormularioApresentadoQuery(processoId, finalidade.Codigo()), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
             new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
@@ -115,7 +116,7 @@ internal sealed class CenarioDeFormularioPublicado
         leitor.ListarAsync(Arg.Any<CancellationToken>()).Returns(catalogoVivo);
         await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioApresentadoDoProcessoDto> rascunho = await ObterFormularioApresentadoDoRascunhoQueryHandler.Handle(
-            new ObterFormularioApresentadoDoRascunhoQuery(processoId, FinalidadeFormulario.Inscricao),
+            new ObterFormularioApresentadoDoRascunhoQuery(processoId, FinalidadeFormulario.Inscricao.Codigo()),
             ProcessoSeletivoRepositoryDeTeste.Criar(rascunhoContext), leitor, FusoInstitucionalDeTeste(), CancellationToken.None);
 
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);

@@ -112,7 +112,7 @@ internal static class ApoioDaIdentidadeDeNegocio
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar(tipoDocumentoNome == "Alfa Documento" ? "exigencia_alfa" : "exigencia_zeta").Value!,
             id,
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(tipoDocumentoOrigemId, "TIPO_COMUM", tipoDocumentoNome, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
-                new MomentoDaExigencia(faseId, null, FinalidadeFormulario.Inscricao),
+                new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
                 new IndeferimentoDoDocumento(false, null, []),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!),

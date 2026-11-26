@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -78,6 +79,43 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         return Result<FormularioProcesso>.Success(formulario);
     }
 
+    /// <summary>
+    /// Acumula as recusas de forma (ADR-0125): o título e a estrutura das páginas, conferida pelo que o formulário
+    /// declara e pelo cronograma que diz se a fase dele coleta inscrição.
+    /// </summary>
+    /// <param name="declarado">O código, a fase e a obrigatoriedade do formulário.</param>
+    /// <param name="cronograma">As fases do processo, para conferir se a fase do formulário coleta inscrição.</param>
+    /// <param name="modeloDeOrigem">O modelo de que o formulário partiu, quando partiu de um.</param>
+    public static Result<FormularioProcesso> Criar(
+        FormularioDeclarado declarado,
+        CronogramaDoProcesso cronograma,
+        string? titulo,
+        IReadOnlyList<PaginaDoFormulario> paginas,
+        ModeloDeOrigem? modeloDeOrigem = null)
+    {
+        ArgumentNullException.ThrowIfNull(declarado);
+        ArgumentNullException.ThrowIfNull(paginas);
+        List<FieldError> erros = ValidarForma(declarado, cronograma, titulo, paginas);
+        if (erros.Count > 0)
+        {
+            return Result<FormularioProcesso>.ValidationFailure(erros);
+        }
+
+        FormularioProcesso formulario = Novo(declarado, titulo, modeloDeOrigem);
+        formulario.AdicionarPaginas(paginas);
+        return Result<FormularioProcesso>.Success(formulario);
+    }
+
+    private static FormularioProcesso Novo(FormularioDeclarado declarado, string? titulo, ModeloDeOrigem? modeloDeOrigem) => new()
+    {
+        Finalidade = declarado.FinalidadeProvisoria,
+        Codigo = declarado.Codigo,
+        Obrigatorio = declarado.Obrigatorio,
+        FaseId = declarado.FaseId == Guid.Empty ? null : declarado.FaseId,
+        Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
+        ModeloDeOrigem = modeloDeOrigem,
+    };
+
     // Enquanto a finalidade identifica o formulário, o código e a obrigatoriedade derivam dela, num lugar só.
     private static FormularioProcesso Novo(FinalidadeFormulario finalidade, Guid? faseId, string? titulo, ModeloDeOrigem? modeloDeOrigem) => new()
     {
@@ -88,6 +126,13 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         Titulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim(),
         ModeloDeOrigem = modeloDeOrigem,
     };
+
+    private static List<FieldError> ValidarForma(
+        FormularioDeclarado declarado, CronogramaDoProcesso cronograma, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas) =>
+    [
+        .. FormaDoCabecalho.ValidarTitulo(titulo),
+        .. EstruturaFormulario.ValidarPaginas(declarado.Estrutura(cronograma), [.. paginas.Select(static e => e.Estrutura)]),
+    ];
 
     private static List<FieldError> ValidarForma(FinalidadeFormulario? finalidade, string? titulo, IReadOnlyList<PaginaDoFormulario> paginas)
     {

@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A montagem que as classes de teste da inscrição gravada compartilham: o Postgres real da fixture, os dados comuns
@@ -48,7 +49,7 @@ internal sealed class CenarioDaInscricaoGravada
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },
         },
         new HashSet<Guid> { OfertaDoProcesso },
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal) { ["TERMO_VERACIDADE"] = new(VersaoDoTermoVeracidade, "sha256-abc") });
+        new Dictionary<TermoNoFormulario, TermoAdmitido>() { [FormularioDeTeste.TermoDaInscricao("TERMO_VERACIDADE")] = new(VersaoDoTermoVeracidade, "sha256-abc") });
 
     internal static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
@@ -74,7 +75,7 @@ internal sealed class CenarioDaInscricaoGravada
 
     internal static PrecondicaoIfMatch PrecondicaoDe(Inscricao inscricao) => PrecondicaoIfMatch.DeTags([inscricao.ETag]);
 
-    internal static AceiteDeTermo AceiteDoTermoDeVeracidade() => new("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc");
+    internal static AceiteDeTermo AceiteDoTermoDeVeracidade() => new(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc");
 
     internal static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemGrupos() => new(StringComparer.Ordinal);
 

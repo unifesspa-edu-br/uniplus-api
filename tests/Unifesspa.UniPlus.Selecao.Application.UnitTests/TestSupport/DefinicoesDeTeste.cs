@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Respostas admitidas para o teste que mexe no agregado sem montar a versão do formulário.</summary>
 internal static class DefinicoesDeTeste
@@ -19,7 +20,7 @@ internal static class DefinicoesDeTeste
         respostas.Keys.ToHashSet(StringComparer.Ordinal),
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>(),
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
+        new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     public static Dictionary<string, DefinicaoDaResposta> Nenhuma() => new(StringComparer.Ordinal);
 }

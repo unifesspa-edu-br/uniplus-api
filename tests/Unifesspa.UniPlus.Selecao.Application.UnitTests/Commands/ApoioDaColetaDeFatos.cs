@@ -49,12 +49,12 @@ internal static class ApoioDaColetaDeFatos
     internal static Task<Result> DefinirNaHabilitacaoAsync(ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens) =>
         HandleAsync(
             NovosMocks(processo, processo.Id),
-            new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens));
+            new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), itens));
 
     /// <summary>Define os itens, e os grupos quando há, no formulário de inscrição do processo.</summary>
     internal static Task<Result> DefinirNaInscricaoAsync(
         Mocks mocks, ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput>? grupos = null) =>
-        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao, itens, grupos));
+        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao.Codigo(), itens, grupos));
 
     internal static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
         [.. DeclaradosDoCandidato(), .. OpcoesDeCurso(), .. DerivadosDoCandidato(), .. DaHabilitacao()];
@@ -133,7 +133,7 @@ internal static class ApoioDaColetaDeFatos
             .Construir();
 
     internal static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
-        processo.Id, FinalidadeFormulario.Habilitacao,
+        processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
         [EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").NaSecao(FormularioDeTeste.Secao).Construir()],
         [grupo]);
 }

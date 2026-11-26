@@ -71,7 +71,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
     private static Task<Result> HandleAsync(Mocks mocks, ProcessoSeletivo processo, params TermoExigidoInput[] termos) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao, termos),
+            new DefinirTermosDoFormularioCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), termos),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueColetaCorRaca() => ProcessoQueColeta(ItemCorRaca());

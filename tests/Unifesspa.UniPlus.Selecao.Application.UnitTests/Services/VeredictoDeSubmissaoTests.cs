@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O resultado da submissão considera: a ausência de resposta a um item obrigatório, um
@@ -253,7 +254,7 @@ public sealed class VeredictoDeSubmissaoTests
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         Guid versaoId = Guid.NewGuid();
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
-        AceiteDeTermo aceite = new("DECLARACAO_VERACIDADE", versaoId, new string('b', 64));
+        AceiteDeTermo aceite = new(FormularioDeTeste.CodigoDaInscricao, "DECLARACAO_VERACIDADE", versaoId, new string('b', 64));
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
 
@@ -267,7 +268,7 @@ public sealed class VeredictoDeSubmissaoTests
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         Guid versaoId = Guid.NewGuid();
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
-        AceiteDeTermo aceite = new("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
+        AceiteDeTermo aceite = new(FormularioDeTeste.CodigoDaInscricao, "DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
 

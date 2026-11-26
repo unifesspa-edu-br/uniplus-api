@@ -36,11 +36,11 @@ public sealed record InscricaoRequest(
 public sealed record OcorrenciaDeGrupoInscricaoInput(string Id, IReadOnlyDictionary<string, JsonElement>? Respostas);
 
 /// <summary>
-/// O aceite de um termo exigido pelo formulário: a versão e o hash são os que a inscrição carrega da
+/// O aceite de um termo exigido por um formulário da inscrição: a versão e o hash são os que a inscrição carrega da
 /// versão do formulário da inscrição, nunca os do catálogo vivo — um termo ausente desta lista é um termo
 /// não aceito.
 /// </summary>
-public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string HashVersao);
+public sealed record AceiteDeTermoInput(string FormularioCodigo, string Codigo, Guid VersaoId, string HashVersao);
 
 /// <summary>
 /// A inscrição do dono do token, com formulário e escolhas da versão correspondente.
@@ -86,7 +86,7 @@ public sealed record InscricaoDto
             g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
                 [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
             StringComparer.Ordinal),
-        [.. inscricao.Formulario.Preenchimento.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))]);
+        [.. inscricao.Formulario.Preenchimento.Aceites.Select(static a => new AceiteDeTermoInput(a.FormularioCodigo, a.Codigo, a.VersaoId, a.HashVersao))]);
 
     private static EscolhasDeCursoDaInscricaoDto EscolhasDe(
         Inscricao inscricao, int numeroDeOpcoesDeCurso, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)

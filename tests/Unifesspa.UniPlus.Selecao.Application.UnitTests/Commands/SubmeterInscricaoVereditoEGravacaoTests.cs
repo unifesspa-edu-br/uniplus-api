@@ -92,7 +92,7 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
 
         Dictionary<string, JsonElement> respostas = RespostasDoEstrangeiro(cenario.Cpf, informado);
         InscricaoRequest request = new(
-            OfertaDo(cenario.Configuracao), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
+            OfertaDo(cenario.Configuracao), respostas, null, [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
 
         Result<ReciboDaInscricaoDto> resultado = await cenario.SubmeterAsync(request);
 
@@ -111,7 +111,7 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
         // Só o aceite do termo vem nesta chamada — APELIDO já estava gravado pela chamada de Salvar.
         InscricaoRequest request = new(
             OfertaDo(cenario.Configuracao), new Dictionary<string, JsonElement>(StringComparer.Ordinal), null,
-            [new AceiteDeTermoInput("TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
+            [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
 
         Result<ReciboDaInscricaoDto> resultado = await cenario.SubmeterAsync(request);
 
@@ -160,7 +160,7 @@ public sealed class SubmeterInscricaoVereditoEGravacaoTests
     private static InscricaoRequest PedidoSemApelido(CenarioDoEnvioDeTeste cenario)
     {
         return new InscricaoRequest(OfertaDo(cenario.Configuracao), RespostasDoConjuntoBasico(cenario.Cpf), null,
-            [new AceiteDeTermoInput("TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
+            [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, "TERMO_VERACIDADE", cenario.Termo.VersaoId, cenario.Termo.Hash)]);
     }
 
     private static Dictionary<string, JsonElement> RespostasDoEstrangeiro(Cpf cpf, string informado)

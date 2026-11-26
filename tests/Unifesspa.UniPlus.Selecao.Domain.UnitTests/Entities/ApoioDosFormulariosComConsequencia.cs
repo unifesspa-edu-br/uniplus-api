@@ -40,7 +40,7 @@ internal static class ApoioDosFormulariosComConsequencia
     {
         Guid fase = finalidade == FinalidadeFormulario.Habilitacao ? AcrescentarFaseDaHabilitacao(processo) : processo.CronogramaFases.Single().Id;
         DocumentoExigido exigencia = new DocumentoExigidoBuilder()
-            .ComMomento(new MomentoDaExigencia(fase, null, finalidade))
+            .ComMomento(new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(finalidade)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
                 [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidade)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))

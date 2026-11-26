@@ -222,7 +222,7 @@ internal sealed class CenarioDeInscricaoPublicada
             processo.DistribuicaoVagas.Single().OfertaCursoOrigemId,
             respostas,
             GruposDoPedido(),
-            [new AceiteDeTermoInput(termo.Codigo, termo.VersaoId, termo.HashVersao)]);
+            [new AceiteDeTermoInput(FormularioDeTeste.CodigoDaInscricao, termo.Codigo, termo.VersaoId, termo.HashVersao)]);
     }
 
     private static Dictionary<string, JsonElement> RespostasDeIdentificacao() => new(StringComparer.Ordinal)

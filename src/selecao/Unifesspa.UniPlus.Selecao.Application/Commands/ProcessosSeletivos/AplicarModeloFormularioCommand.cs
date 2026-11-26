@@ -10,15 +10,14 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Aplica ao processo a cópia de um modelo de formulário (UNI-REQ-0144, ADR-0061): o formulário da
-/// finalidade do modelo é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois
-/// não muda o processo.
+/// Aplica ao processo a cópia de um modelo no formulário do código informado (UNI-REQ-0144, ADR-0061): o
+/// formulário é criado ou substituído por inteiro. Só em rascunho; mudar o modelo depois não muda o processo.
 /// </summary>
-public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId)
+public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId, string FormularioCodigo)
     : ICommand<Result<AplicacaoDeModeloDto>>;
 
-/// <summary>O corpo da aplicação: o modelo escolhido.</summary>
-public sealed record AplicacaoDeModeloInput(Guid ModeloId);
+/// <summary>O corpo da aplicação: o modelo escolhido e o código do formulário que recebe a cópia.</summary>
+public sealed record AplicacaoDeModeloInput(Guid ModeloId, string FormularioCodigo);
 
 /// <summary>
 /// O que a aplicação fez além de copiar: os fatos que vieram de outra finalidade para a inscrição,

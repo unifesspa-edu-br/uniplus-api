@@ -29,7 +29,7 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
         new HashSet<string>(StringComparer.Ordinal) { Campo },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>(),
-        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
+        new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     private static Dictionary<string, JsonElement> Endereco(
         string? logradouro = "Rua Brigadeiro Eduardo Gomes",

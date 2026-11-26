@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -164,7 +165,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     };
 
     private static CopiaDeModeloDeFormulario CopiaDoModelo(string nome) => new(
-        FinalidadeFormulario.Habilitacao, "Formulário", [
+        CodigoDoFormulario.Criar(FinalidadeFormulario.Habilitacao.Codigo()).Value!, "Formulário", [
             PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
             PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
         ], [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));

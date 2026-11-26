@@ -193,7 +193,7 @@ public sealed class ConsequenciasDasBancasTests
 
     private static DocumentoExigido ExigenciaDaEtapa(ProcessoSeletivo processo, string codigo) =>
         new DocumentoExigidoBuilder()
-            .ComMomento(new MomentoDaExigencia(processo.CronogramaFases.Single().Id, processo.Etapas.Single().Id, FinalidadeFormulario.Inscricao))
+            .ComMomento(new MomentoDaExigencia(processo.CronogramaFases.Single().Id, processo.Etapas.Single().Id, FormularioDeTeste.CodigoDoPapel(FinalidadeFormulario.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
                 [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(codigo)).Value!]))
             .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))

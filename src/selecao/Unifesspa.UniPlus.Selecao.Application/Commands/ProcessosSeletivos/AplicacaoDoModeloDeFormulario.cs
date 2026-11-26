@@ -40,7 +40,8 @@ internal sealed class AplicacaoDoModeloDeFormulario(
     // um documento desfaz a aplicação inteira.
     private async Task<Result<AplicacaoDeModeloDto>> CopiarDocumentosEGravarAsync(PlanoDaAplicacaoDoModelo plano, CancellationToken cancellationToken)
     {
-        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, plano.Copia.Finalidade, cadastros.Documentos)
+        FinalidadeFormulario finalidade = CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade);
+        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, finalidade, cadastros.Documentos)
             .CopiarAsync(modelo.Conteudo.ConjuntoDeDocumentos ?? new ConjuntoDeDocumentosDoModeloInput(null, null), plano.Catalogo, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
@@ -48,7 +49,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(CatalogoDe<FinalidadeFormulario>.Obter(modelo.Finalidade)));
+        return Result<AplicacaoDeModeloDto>.Success(plano.Relatorio.ParaDto(finalidade));
     }
 
     // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do handler,

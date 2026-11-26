@@ -9,11 +9,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class PreenchimentoDoCandidatoTests
 {
     private static RespostasAdmitidas Admitidas => new(new Dictionary<string, DefinicaoDaResposta>(), new HashSet<string>(),
-        new Dictionary<string, IReadOnlySet<string>>(), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>());
+        new Dictionary<string, IReadOnlySet<string>>(), new HashSet<Guid>(), new Dictionary<TermoNoFormulario, TermoAdmitido>());
 
     private static PreenchimentoDoCandidato Criar(IReadOnlyDictionary<string, JsonElement>? respostas = null,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>? grupos = null, IReadOnlyList<AceiteDeTermo>? aceites = null) =>
@@ -64,7 +65,7 @@ public sealed class PreenchimentoDoCandidatoTests
             ["G"] = [new("1", new Dictionary<string, JsonElement>
             { ["B"] = JsonSerializer.SerializeToElement(alteracao == "grupo" ? 2 : 1) })]
         },
-        [new("T", Guid.Empty, alteracao == "aceite" ? "outro" : "hash")]);
+        [new(FormularioDeTeste.CodigoDaInscricao, "T", Guid.Empty, alteracao == "aceite" ? "outro" : "hash")]);
 
     [Fact]
     public void Criar_ColecoesMutadas_PreservaCopiaProfunda()
@@ -72,7 +73,7 @@ public sealed class PreenchimentoDoCandidatoTests
         Dictionary<string, JsonElement> respostas = new() { ["A"] = JsonSerializer.SerializeToElement(1) };
         List<OcorrenciaDeGrupoInscricao> ocorrencias = [new("1", respostas)];
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new() { ["G"] = ocorrencias };
-        List<AceiteDeTermo> aceites = [new("T", Guid.Empty, "hash")];
+        List<AceiteDeTermo> aceites = [new(FormularioDeTeste.CodigoDaInscricao, "T", Guid.Empty, "hash")];
         PreenchimentoDoCandidato valor = Criar(respostas, grupos, aceites);
         respostas.Clear(); ocorrencias.Clear(); grupos.Clear(); aceites.Clear();
         valor.Respostas.Should().ContainKey("A");
@@ -124,8 +125,8 @@ public sealed class PreenchimentoDoCandidatoTests
     [Fact]
     public void RecusasDosAceites_RepetidosEForaDaVersao_AcumulaNaOrdem()
     {
-        PreenchimentoDoCandidato valor = Criar(aceites: [new("A", Guid.Empty, "errado"), new("A", Guid.Empty, "errado"), new("B", Guid.Empty, "x")]);
-        Dictionary<string, TermoAdmitido> termos = new() { ["A"] = new(Guid.Empty, "certo") };
+        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.Empty, "x")]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new() { [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "certo") };
         valor.RecusasDosAceites(termos).Select(static r => (r.Field, r.Error.Code, r.Error.Message)).Should().Equal(
             ("aceites[0]", InscricaoErrorCodes.AceiteDeOutraVersao, "O aceite do termo 'A' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."),
             ("aceites[1]", InscricaoErrorCodes.AceiteRepetido, "O termo 'A' foi aceito mais de uma vez. Envie um único aceite para cada termo."),
@@ -135,12 +136,12 @@ public sealed class PreenchimentoDoCandidatoTests
     [Fact]
     public void ComAceitesAdmitidos_VersaoFixadaOutraVersaoETermoFora_MantemApenasVersaoFixada()
     {
-        AceiteDeTermo valido = new("A", Guid.Empty, "abc");
-        PreenchimentoDoCandidato valor = Criar(aceites: [valido, new("B", Guid.NewGuid(), "abc"), new("FORA", Guid.Empty, "abc")]);
+        AceiteDeTermo valido = new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "abc");
+        PreenchimentoDoCandidato valor = Criar(aceites: [valido, new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.NewGuid(), "abc"), new(FormularioDeTeste.CodigoDaInscricao, "FORA", Guid.Empty, "abc")]);
         RespostasAdmitidas admitidas = Admitidas with
         {
-            Termos = new Dictionary<string, TermoAdmitido>
-            { ["A"] = new(Guid.Empty, "abc"), ["B"] = new(Guid.Empty, "abc") }
+            Termos = new Dictionary<TermoNoFormulario, TermoAdmitido>
+            { [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "abc"), [FormularioDeTeste.TermoDaInscricao("B")] = new(Guid.Empty, "abc") }
         };
 
         valor.ComAceitesAdmitidos(admitidas).Aceites.Should().Equal(valido);
@@ -149,13 +150,13 @@ public sealed class PreenchimentoDoCandidatoTests
     [Fact]
     public void ComAceitesAdmitidos_RecusasDeVersao_DescartaRecusadosEMantemApenasNaoRecusados()
     {
-        PreenchimentoDoCandidato valor = Criar(aceites: [new("A", Guid.Empty, "abc"), new("B", Guid.NewGuid(), "abc"),
-            new("C", Guid.Empty, "ABC"), new("FORA", Guid.Empty, "abc")]);
-        Dictionary<string, TermoAdmitido> termos = new()
+        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "abc"), new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.NewGuid(), "abc"),
+            new(FormularioDeTeste.CodigoDaInscricao, "C", Guid.Empty, "ABC"), new(FormularioDeTeste.CodigoDaInscricao, "FORA", Guid.Empty, "abc")]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new()
         {
-            ["A"] = new(Guid.Empty, "abc"),
-            ["B"] = new(Guid.Empty, "abc"),
-            ["C"] = new(Guid.Empty, "abc")
+            [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "abc"),
+            [FormularioDeTeste.TermoDaInscricao("B")] = new(Guid.Empty, "abc"),
+            [FormularioDeTeste.TermoDaInscricao("C")] = new(Guid.Empty, "abc")
         };
         IReadOnlyList<AceiteDeTermo> mantidos = valor.ComAceitesAdmitidos(Admitidas with { Termos = termos }).Aceites;
         List<FieldError> recusas = valor.RecusasDosAceites(termos).ToList();
@@ -169,9 +170,9 @@ public sealed class PreenchimentoDoCandidatoTests
     [Fact]
     public void RecusasDosAceites_RepetidoForaEDaOutraVersao_PreservaPrecedenciaEOrdemDoEnvio()
     {
-        PreenchimentoDoCandidato valor = Criar(aceites: [new("A", Guid.Empty, "abc"), new("A", Guid.NewGuid(), "errado"),
-            new("FORA", Guid.Empty, "abc"), new("B", Guid.NewGuid(), "abc")]);
-        Dictionary<string, TermoAdmitido> termos = new() { ["A"] = new(Guid.Empty, "abc"), ["B"] = new(Guid.Empty, "abc") };
+        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "abc"), new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.NewGuid(), "errado"),
+            new(FormularioDeTeste.CodigoDaInscricao, "FORA", Guid.Empty, "abc"), new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.NewGuid(), "abc")]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new() { [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "abc"), [FormularioDeTeste.TermoDaInscricao("B")] = new(Guid.Empty, "abc") };
 
         valor.RecusasDosAceites(termos).Select(static r => (r.Field, r.Error.Code)).Should().Equal(
             ("aceites[1]", InscricaoErrorCodes.AceiteRepetido),

@@ -18,7 +18,7 @@ internal static class InscricaoEnviadaDeTeste
     {
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
         rascunho.Submeter("000001",
-            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)),
+            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []), new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<TermoNoFormulario, TermoAdmitido>()),
             new ApuracaoDoEnvio(FormularioDeTeste.AvaliacaoSemOcultos, semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), [], null), PrecondicaoIfMatch.DeTags([rascunho.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
 
         return rascunho;

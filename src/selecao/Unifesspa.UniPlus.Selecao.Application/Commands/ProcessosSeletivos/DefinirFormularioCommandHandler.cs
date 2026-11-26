@@ -46,6 +46,10 @@ public static class DefinirFormularioCommandHandler
         return definido;
     }
 
+    // Provisório até a retirada da finalidade: o código do pedido ainda é traduzido para a finalidade que a conferência usa.
+    private static FinalidadeFormulario FinalidadeDo(DefinirFormularioCommand command) =>
+        FormularioDeclarado.FinalidadeProvisoriaDe(command.FormularioCodigo, command.Obrigatorio);
+
     internal static DomainError ProcessoNaoEncontrado(Guid id) =>
         new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {id} não encontrado.");
 
@@ -72,7 +76,7 @@ public static class DefinirFormularioCommandHandler
     private static async Task<FormularioLido> LerAsync(
         DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        bool inscricao = command.Finalidade == FinalidadeFormulario.Inscricao;
+        bool inscricao = FinalidadeDo(command) == FinalidadeFormulario.Inscricao;
         (IReadOnlyList<PaginaDoFormularioInput> entradas, List<FieldError> daSecao) = inscricao
             ? ConjuntoBasicoDaInscricao.MesclarPaginas(command.Paginas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo))
             : (command.Paginas ?? [], []);
@@ -82,7 +86,7 @@ public static class DefinirFormularioCommandHandler
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, command.Finalidade);
+        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, FinalidadeDo(command));
         List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto), .. consequencia.Errors];
         List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
         return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros, consequencia.Value);
@@ -104,7 +108,7 @@ public static class DefinirFormularioCommandHandler
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
+                processo.Declaracao(), FinalidadeDo(command), command.FaseId, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 
@@ -117,7 +121,7 @@ public static class DefinirFormularioCommandHandler
         }
 
         Result definido = processo.DefinirFormulario(
-            command.Finalidade, command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
+            FinalidadeDo(command), command.FaseId, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
@@ -142,7 +146,7 @@ public static class DefinirFormularioCommandHandler
     }
 }
 
-/// <summary>Remove o formulário da finalidade; a regra de só em rascunho é do processo.</summary>
+/// <summary>Remove o formulário do código; a regra de só em rascunho é do processo.</summary>
 public static class RemoverFormularioCommandHandler
 {
     public static async Task<Result> Handle(
@@ -157,12 +161,18 @@ public static class RemoverFormularioCommandHandler
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result removido = processo is null
             ? Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
-            : processo.RemoverFormulario(command.Finalidade);
+            : Remover(processo, command.FormularioCodigo);
         if (removido.IsSuccess)
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return removido;
+    }
+
+    private static Result Remover(ProcessoSeletivo processo, string formularioCodigo)
+    {
+        Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(formularioCodigo);
+        return codigo.IsFailure ? Result.Failure(codigo.Error!) : processo.RemoverFormulario(codigo.Value!);
     }
 }

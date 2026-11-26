@@ -129,7 +129,7 @@ public sealed class InscricaoVersoesTests
     private static Inscricao ComDadosDaVersaoAnterior()
     {
         Inscricao inscricao = NovaInscricao();
-        inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), RespostasDaVersaoAnterior(), GruposDaVersaoAnterior(), [new AceiteDeTermo(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd), new AceiteDeTermo(TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade)]), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        inscricao.Salvar(PreenchimentoDoCandidato.ParaValidacao(OpcoesDeCursoDaInscricao.Reidratar(null, null), RespostasDaVersaoAnterior(), GruposDaVersaoAnterior(), [new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd), new AceiteDeTermo(FormularioDeTeste.CodigoDaInscricao, TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade)]), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         return inscricao;
     }
 
@@ -155,10 +155,10 @@ public sealed class InscricaoVersoesTests
             {
                 ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO" },
             },
-            Termos = new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)
+            Termos = new Dictionary<TermoNoFormulario, TermoAdmitido>()
             {
-                [TermoLgpd] = new(VersaoDoTermoLgpd, "hash-lgpd-v3"),
-                [TermoVeracidade] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+                [FormularioDeTeste.TermoDaInscricao(TermoLgpd)] = new(VersaoDoTermoLgpd, "hash-lgpd-v3"),
+                [FormularioDeTeste.TermoDaInscricao(TermoVeracidade)] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
             },
         };
 

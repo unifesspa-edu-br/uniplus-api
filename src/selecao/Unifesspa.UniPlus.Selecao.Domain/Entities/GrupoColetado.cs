@@ -85,10 +85,10 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// <summary>
     /// Acumula as violações da forma do grupo e, quando ele inclui o candidato, as da identificação
     /// da ocorrência dele (ADR-0125); a citação dos campos e a posição do grupo são do formulário
-    /// inteiro, conferidas pelo processo. O grupo adota a finalidade dos campos, que têm de ser a
-    /// mesma: o processo vincula a do formulário depois, e o envelope remonta os campos com a lida.
+    /// inteiro, conferidas pelo processo. O grupo adota a finalidade e o formulário dos campos, que têm de ser os
+    /// mesmos: o processo vincula o do formulário depois, e o envelope remonta os campos com o lido.
     /// </summary>
-    /// <exception cref="ArgumentException">Os campos são de finalidades diferentes.</exception>
+    /// <exception cref="ArgumentException">Os campos são de finalidades ou de formulários diferentes.</exception>
     public static Result<GrupoColetado> Criar(
         string codigo,
         int ordem,
@@ -119,6 +119,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     private void AdotarCampos(IReadOnlyList<FatoColetado> subitens)
     {
         Finalidade = FinalidadeComumDos(subitens);
+        FormularioId = FormularioComumDos(subitens);
         foreach (FatoColetado subitem in subitens)
         {
             subitem.VincularGrupo(Id);
@@ -130,6 +131,11 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
         campos.Select(static c => c.Finalidade).Distinct().ToList() is [var comum]
             ? comum
             : throw new ArgumentException("Os campos do grupo são de finalidades diferentes: o grupo tem a finalidade dos seus campos.", nameof(campos));
+
+    private static Guid? FormularioComumDos(IReadOnlyList<FatoColetado> campos) =>
+        campos.Select(static c => c.FormularioId).Distinct().ToList() is [var comum]
+            ? comum
+            : throw new ArgumentException("Os campos do grupo são de formulários diferentes: o grupo tem o formulário dos seus campos.", nameof(campos));
 
     /// <summary>O grupo no que o grafo do formulário confere.</summary>
     public GrupoDoGrafo ParaGrafo() =>

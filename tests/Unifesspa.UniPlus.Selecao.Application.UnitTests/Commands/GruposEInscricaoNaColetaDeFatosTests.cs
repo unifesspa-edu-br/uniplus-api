@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -79,7 +80,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(),
             [EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ComObrigatoriedade("NUNCA").ExibidoQuando([[Condicao(null!, "IGUAL", true)]]).Construir()]);
 
         Result resultado = await HandleAsync(mocks, command);
@@ -95,7 +96,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
             .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"FATO_{i}", i).ComRotulo("Campo").Construir())];
 
-        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens));
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), itens));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
@@ -271,7 +272,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
             .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"ITEM_{i}", i).ComRotulo("Item").ComObrigatoriedade("NUNCA").Construir())];
 
         Result resultado = await HandleAsync(
-            mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, [Composicao()]));
+            mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao.Codigo(), itens, [Composicao()]));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
@@ -295,7 +296,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoComInscricao();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao,
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Inscricao.Codigo(),
         [
             EntradaDoFatoColetadoDeTeste.Coletando("BAIXA_RENDA").ComRotulo("Baixa renda").ExibidoQuando([[Condicao("NACIONALIDADE", "DIFERENTE", "ESTRANGEIRO")]]).NaSecao(FormularioDeTeste.Secao).Construir(),
         ]);
@@ -313,7 +314,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoComInscricao();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(
-            processo.Id, FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens]);
+            processo.Id, FinalidadeFormulario.Inscricao.Codigo(), [.. ConjuntoBasicoDaInscricao.Itens]);
 
         Result resultado = await HandleAsync(mocks, command);
 

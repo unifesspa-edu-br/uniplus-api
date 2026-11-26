@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -57,6 +58,9 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// não coleta formulário nenhum. Declarada por quem configura, nunca deduzida da fase.
     /// </summary>
     public FinalidadeFormulario? Finalidade { get; private set; }
+
+    /// <summary>O código do formulário a que o documento pertence; nulo só em fase que não coleta formulário nenhum.</summary>
+    public CodigoDoFormulario? FormularioCodigo { get; private set; }
 
     /// <summary>Id do <c>TipoDocumento</c> vivo no momento da configuração — snapshot-copy (ADR-0061), sem FK cross-módulo.</summary>
     public Guid TipoDocumentoOrigemId { get; private set; }
@@ -215,6 +219,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         Chave = chave;
         ExigidoNaFaseId = declarado.Momento.FaseId;
         ExigidoNaEtapaId = declarado.Momento.EtapaId;
+        FormularioCodigo = declarado.Momento.Formulario;
         Finalidade = declarado.Momento.Finalidade;
         CopiarTipo(declarado.Tipo);
         FatosComprovados = [.. declarado.FatosComprovados ?? []];

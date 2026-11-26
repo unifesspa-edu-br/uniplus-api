@@ -31,7 +31,10 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 "Condicoes", "BasesLegais", "PrazoDeEmissao", "Validade", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes", "Requisitos",
             ],
-            [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("FormularioCodigo", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade."),
+            ]),
 
         [typeof(CondicaoGatilho)] = (
             ["Clausula", "Fato", "Operador", "Valor"],
@@ -135,6 +138,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
                 ("Codigo", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
                 ("FaseId", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
                 ("Obrigatorio", "Agrupamento recomputado do formulário — o documento congela o formulário, não esta visão."),
+                ("FinalidadeProvisoria", "Calculada do código, até o documento passar a congelar o código no lugar da finalidade."),
             ]),
 
         [typeof(CodigoDoFormulario)] = ([], [("Valor", "Calculado da finalidade, que o documento congela — congelá-lo duplicaria a fonte de verdade.")]),
