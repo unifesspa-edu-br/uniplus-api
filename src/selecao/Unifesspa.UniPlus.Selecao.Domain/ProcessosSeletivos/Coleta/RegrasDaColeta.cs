@@ -30,41 +30,41 @@ public static class RegrasDaColeta
         Result conferencia = ConferirFatosColetados(configuracao, formulario, finalidade, fatosColetados, gruposFinais);
         return conferencia.IsFailure
             ? Result<MudancaDaConfiguracao>.ValidationFailure(conferencia.Errors)
-            : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(configuracao, finalidade, fatosColetados, gruposFinais));
+            : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(configuracao, formulario, fatosColetados, gruposFinais));
     }
 
     /// <summary>
-    /// Sai tudo o que a finalidade coletava, itens e campos dos grupos, e entram os itens e os grupos
-    /// novos, já vinculados a ela.
+    /// Sai tudo o que o formulário coletava, itens e campos dos grupos, e entram os itens e os grupos
+    /// novos, já vinculados a ele.
     /// </summary>
     internal static MudancaDaConfiguracao PlanejarTroca(
         ConfiguracaoDeclarada configuracao,
-        FinalidadeFormulario finalidade,
+        FormularioProcesso formulario,
         IReadOnlyList<FatoColetado> fatosColetados,
         IReadOnlyList<GrupoColetado> grupos)
     {
         MudancaDaConfiguracao mudanca = new()
         {
             Campos = Troca.Substituindo(
-                configuracao.Coleta.Campos.Where(f => f.Finalidade == finalidade),
+                configuracao.Coleta.Campos.Where(f => f.Finalidade == formulario.Finalidade),
                 [.. fatosColetados, .. grupos.SelectMany(static g => g.Subitens)]),
-            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade), grupos),
+            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade), grupos),
         };
-        VincularFinalidade(finalidade, fatosColetados, grupos);
+        VincularAoFormulario(formulario, fatosColetados, grupos);
         return mudanca;
     }
 
-    private static void VincularFinalidade(
-        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
+    private static void VincularAoFormulario(
+        FormularioProcesso formulario, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
     {
         foreach (FatoColetado fato in fatosColetados)
         {
-            fato.VincularFinalidade(finalidade);
+            fato.VincularFormulario(formulario);
         }
 
         foreach (GrupoColetado grupo in grupos)
         {
-            grupo.VincularFinalidade(finalidade);
+            grupo.VincularFormulario(formulario);
         }
     }
 

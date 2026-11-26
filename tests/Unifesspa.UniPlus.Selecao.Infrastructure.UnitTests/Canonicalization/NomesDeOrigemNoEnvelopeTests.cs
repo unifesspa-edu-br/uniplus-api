@@ -71,8 +71,8 @@ public sealed class NomesDeOrigemNoEnvelopeTests
 
         leitor.Falhou.Should().BeFalse();
         documento["formularios"]![0]!["modeloOrigem"]!["nome"]!.GetValue<string>().Should().Be("Formulário");
-        formularios.Single().ModeloOrigemNome.Should().Be("Formulário");
-        formularios.Single().ModeloOrigemCodigo.Should().Be("MODELO");
+        formularios.Single().ModeloDeOrigem!.Nome.Should().Be("Formulário");
+        formularios.Single().ModeloDeOrigem!.Codigo.Should().Be("MODELO");
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Configuracao.Cronograma.CronogramaFases.Single().TipoFaseNome.Should().Be("Resultado final");
-        resultado.Value.Configuracao.Coleta.Formularios.Single().ModeloOrigemNome.Should().Be("Formulário");
+        resultado.Value.Configuracao.Coleta.Formularios.Single().ModeloDeOrigem!.Nome.Should().Be("Formulário");
     }
 
     private static EntradaCanonicalizacao EntradaComModelo()
@@ -103,23 +103,22 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     public void ModeloDeOrigem_Nulo_RestauraAusencia()
     {
         LeitorEnvelope leitor = new();
-        (Guid? id, string? codigo, string? nome) = LeituraDosFormularios.LerModeloDeOrigem(
+        ModeloDeOrigem? origem = LeituraDosFormularios.LerModeloDeOrigem(
             leitor, new JsonObject { ["modeloOrigem"] = null }, "formulario");
 
         leitor.Falhou.Should().BeFalse();
-        id.Should().BeNull();
-        codigo.Should().BeNull();
-        nome.Should().BeNull();
+        origem.Should().BeNull();
     }
 
     [Theory]
-    [InlineData(null, null, false)]
+    [InlineData(null, null, true)]
     [InlineData("MODELO", "Modelo", false)]
     [InlineData(null, "Modelo", true)]
     [InlineData("MODELO", null, true)]
     [InlineData("MODELO", "", true)]
     [InlineData("MODELO", "  ", true)]
-    public void ModeloDeOrigem_CodigoENome_ExigeCoerencia(string? codigo, string? nome, bool falha)
+    [InlineData("  ", "Modelo", true)]
+    public void ModeloDeOrigem_CodigoENome_ExigeAmbosPreenchidos(string? codigo, string? nome, bool falha)
     {
         JsonObject modelo = new() { ["id"] = Guid.NewGuid().ToString(), ["codigo"] = codigo, ["nome"] = nome };
         LeitorEnvelope leitor = new();
@@ -132,11 +131,20 @@ public sealed class NomesDeOrigemNoEnvelopeTests
     [InlineData(true)]
     public void ModeloDeOrigem_NomeAusenteOuAcimaDoLimite_Recusa(bool ausente)
     {
-        JsonObject modelo = new() { ["id"] = Guid.NewGuid().ToString(), ["codigo"] = "MODELO", ["nome"] = new string('a', FormularioProcesso.ModeloOrigemNomeMaxLength + 1) };
+        JsonObject modelo = new() { ["id"] = Guid.NewGuid().ToString(), ["codigo"] = "MODELO", ["nome"] = new string('a', ModeloDeOrigem.NomeMaxLength + 1) };
         if (ausente)
         {
             modelo.Remove("nome");
         }
+        LeitorEnvelope leitor = new();
+        LeituraDosFormularios.LerModeloDeOrigem(leitor, new JsonObject { ["modeloOrigem"] = modelo }, "formulario");
+        leitor.Falhou.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ModeloDeOrigem_CodigoAcimaDoLimite_Recusa()
+    {
+        JsonObject modelo = new() { ["id"] = Guid.NewGuid().ToString(), ["codigo"] = new string('A', ModeloDeOrigem.CodigoMaxLength + 1), ["nome"] = "Modelo" };
         LeitorEnvelope leitor = new();
         LeituraDosFormularios.LerModeloDeOrigem(leitor, new JsonObject { ["modeloOrigem"] = modelo }, "formulario");
         leitor.Falhou.Should().BeTrue();
@@ -159,6 +167,5 @@ public sealed class NomesDeOrigemNoEnvelopeTests
         FinalidadeFormulario.Habilitacao, "Formulário", [
             PaginaDoFormulario.Criar(new PaginaEstrutura("DADOS", 0, TipoPaginaFormulario.Secao, null), "Dados", null, null).Value!,
             PaginaDoFormulario.Criar(new PaginaEstrutura("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite), "Revisão", null, null).Value!,
-        ], [], [], [], [], Guid.NewGuid(), "MODELO")
-    { ModeloNome = nome };
+        ], [], [], [], [], new ModeloDeOrigem(Guid.NewGuid(), "MODELO", nome));
 }

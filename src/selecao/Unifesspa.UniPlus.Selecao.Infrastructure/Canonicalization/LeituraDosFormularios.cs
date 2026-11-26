@@ -79,15 +79,15 @@ internal static class LeituraDosFormularios
         FinalidadeFormulario? finalidade = EstruturaFormulario.FinalidadeDoCodigo(leitor.TextoNaoVazio(bloco, "finalidade", path));
         Guid? faseId = leitor.IdentificadorOpcional(bloco, "faseId", path);
         string? titulo = leitor.TextoOpcional(bloco, "titulo", path, LimitesDoEnvelope.NomeDeCadastro);
-        (Guid? modeloId, string? modeloCodigo, string? modeloNome) = LerModeloDeOrigem(leitor, bloco, path);
+        ModeloDeOrigem? modeloDeOrigem = LerModeloDeOrigem(leitor, bloco, path);
         List<PaginaDoFormulario> paginas = LerPaginasDoFormulario(leitor, bloco, path);
         JsonArray itensDeTermo = leitor.Array(bloco, "termos", path);
         ConsequenciaDoDescumprimento? consequencia = leitor.CodigoDeContratoOpcional<ConsequenciaDoDescumprimento>(bloco, "consequenciaDaFaltaDeEnvio", path);
-        return new DeclaracaoFormulario(finalidade, faseId, titulo, modeloId, modeloCodigo, modeloNome, paginas, itensDeTermo, consequencia);
+        return new DeclaracaoFormulario(finalidade, faseId, titulo, modeloDeOrigem, paginas, itensDeTermo, consequencia);
     }
 
     private sealed record DeclaracaoFormulario(
-        FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, Guid? ModeloId, string? ModeloCodigo, string? ModeloNome,
+        FinalidadeFormulario? Finalidade, Guid? FaseId, string? Titulo, ModeloDeOrigem? ModeloDeOrigem,
         IReadOnlyList<PaginaDoFormulario> Paginas, JsonArray Termos, ConsequenciaDoDescumprimento? Consequencia);
 
     private static FormularioComTermosExigidos? CriarFormulario(
@@ -98,7 +98,7 @@ internal static class LeituraDosFormularios
             return leitor.Recusar<FormularioComTermosExigidos?>($"'{path}.finalidade' fora do vocabulário, repetida ou fora de ordem.");
         }
         Result<FormularioProcesso> formulario = FormularioProcesso.Criar(declaracao.Finalidade, declaracao.FaseId, declaracao.Titulo,
-            declaracao.Paginas, declaracao.ModeloId, declaracao.ModeloCodigo, declaracao.ModeloNome);
+            declaracao.Paginas, declaracao.ModeloDeOrigem);
         if (formulario.IsFailure)
         {
             return leitor.Propagar<FormularioComTermosExigidos?>(formulario.Errors, path);
@@ -140,25 +140,20 @@ internal static class LeituraDosFormularios
         (anteriores.Count == 0 || termo.Ordem > anteriores[^1].Ordem)
         && !anteriores.Any(anterior => string.Equals(anterior.Codigo, termo.Codigo, StringComparison.Ordinal));
 
-    internal static (Guid? Id, string? Codigo, string? Nome) LerModeloDeOrigem(LeitorEnvelope leitor, JsonObject bloco, string path)
+    internal static ModeloDeOrigem? LerModeloDeOrigem(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         if (leitor.ObjetoOpcional(bloco, "modeloOrigem", path) is not { } modelo)
         {
-            return (null, null, null);
+            return null;
         }
 
         string pathModelo = $"{path}.modeloOrigem";
         leitor.ExigirChaves(modelo, pathModelo, "id", "codigo", "nome");
         Guid id = leitor.Identificador(modelo, "id", pathModelo);
-        string? codigo = leitor.TextoOpcional(modelo, "codigo", pathModelo, LimitesDoEnvelope.CodigoModeloDeFormulario);
-        string? nome = leitor.TextoOpcional(modelo, "nome", pathModelo, LimitesDoEnvelope.NomeModeloDeFormulario);
-        return !leitor.Falhou && !OrigemCoerente(codigo, nome)
-            ? leitor.Recusar<(Guid?, string?, string?)>($"'{pathModelo}' exige código e nome preenchidos ou ambos nulos.")
-            : (id, codigo, nome);
+        string codigo = leitor.TextoNaoVazio(modelo, "codigo", pathModelo, LimitesDoEnvelope.CodigoModeloDeFormulario);
+        string nome = leitor.TextoNaoVazio(modelo, "nome", pathModelo, LimitesDoEnvelope.NomeModeloDeFormulario);
+        return leitor.Falhou ? null : new ModeloDeOrigem(id, codigo, nome);
     }
-
-    private static bool OrigemCoerente(string? codigo, string? nome) =>
-        (codigo is null && nome is null) || (!string.IsNullOrWhiteSpace(codigo) && !string.IsNullOrWhiteSpace(nome));
 
     private static List<PaginaDoFormulario> LerPaginasDoFormulario(LeitorEnvelope leitor, JsonObject bloco, string path)
     {

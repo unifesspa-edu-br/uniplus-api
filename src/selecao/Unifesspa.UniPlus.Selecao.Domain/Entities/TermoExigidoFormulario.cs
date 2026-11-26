@@ -24,6 +24,9 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
     public Guid ProcessoSeletivoId { get; private set; }
 
+    /// <summary>O formulário que exige o termo; atribuído pelo processo.</summary>
+    public Guid? FormularioId { get; private set; }
+
     /// <summary>A finalidade do formulário que exige o termo; atribuída pelo processo.</summary>
     public FinalidadeFormulario? Finalidade { get; private set; }
 
@@ -134,7 +137,11 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 
-    internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
+    internal void VincularFormulario(FormularioProcesso formulario)
+    {
+        FormularioId = formulario.Id;
+        Finalidade = formulario.Finalidade;
+    }
 }
 
 /// <summary>A versão do catálogo escolhida para o termo, com o conteúdo que o processo congela.</summary>

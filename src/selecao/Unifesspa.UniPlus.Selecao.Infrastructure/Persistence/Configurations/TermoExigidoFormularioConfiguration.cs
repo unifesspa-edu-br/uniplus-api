@@ -39,6 +39,8 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
 
+        builder.Property(t => t.FormularioId)
+            .HasComment("Identificador do formulário em que o termo é exigido; nulo enquanto o termo só se liga ao formulário pela finalidade.");
         builder.Property(t => t.Codigo).HasMaxLength(FormaDoTermo.CodigoMaxLength).IsRequired();
         builder.Property(t => t.Ordem).IsRequired();
         builder.Property(t => t.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
@@ -63,6 +65,12 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.Ignore(t => t.SemFormaDeAceite);
         builder.Ignore(t => t.Condicoes);
         builder.Ignore(t => t.FatosCitados);
+
+        builder.HasOne<FormularioProcesso>()
+            .WithMany()
+            .HasForeignKey(t => t.FormularioId)
+            .HasConstraintName("fk_termos_exigidos_formulario_formulario_processo")
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Invariantes do agregado, garantidas também contra escrita concorrente.
         builder.HasIndex(t => new { t.ProcessoSeletivoId, t.Finalidade, t.Codigo })

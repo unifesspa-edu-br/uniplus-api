@@ -19,6 +19,6 @@ internal sealed record PlanoDaCopiaDoModelo(
         }
 
         Existente.Substituir(Novo);
-        Existente.RegistrarOrigem(Copia.ModeloId, Copia.ModeloCodigo, Copia.ModeloNome);
+        Existente.RegistrarOrigem(Copia.Origem);
     }
 }

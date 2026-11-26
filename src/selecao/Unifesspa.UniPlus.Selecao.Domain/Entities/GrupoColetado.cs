@@ -23,6 +23,9 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
 
     public Guid ProcessoSeletivoId { get; private set; }
 
+    /// <summary>O formulário do grupo; atribuído pelo processo ao definir os itens.</summary>
+    public Guid? FormularioId { get; private set; }
+
     /// <summary>A finalidade do formulário do grupo; atribuída pelo processo ao definir os itens.</summary>
     public FinalidadeFormulario? Finalidade { get; private set; }
 
@@ -151,12 +154,13 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
         }
     }
 
-    internal void VincularFinalidade(FinalidadeFormulario finalidade)
+    internal void VincularFormulario(FormularioProcesso formulario)
     {
-        Finalidade = finalidade;
+        FormularioId = formulario.Id;
+        Finalidade = formulario.Finalidade;
         foreach (FatoColetado subitem in _subitens)
         {
-            subitem.VincularFinalidade(finalidade);
+            subitem.VincularFormulario(formulario);
         }
     }
 }

@@ -52,11 +52,11 @@ internal static class SerializacaoDosFormularios
     };
 
     private static JsonObject? SerializarModeloDeOrigem(FormularioProcesso formulario) =>
-        formulario.ModeloOrigemId is { } modelo ? new JsonObject
+        formulario.ModeloDeOrigem is { } modelo ? new JsonObject
         {
-            ["id"] = JsonValue.Create(modelo),
-            ["codigo"] = formulario.ModeloOrigemCodigo is { } codigo ? HashCanonicalComputer.NormalizeNfc(codigo) : null,
-            ["nome"] = formulario.ModeloOrigemNome is { } nome ? HashCanonicalComputer.NormalizeNfc(nome) : null,
+            ["id"] = JsonValue.Create(modelo.Id),
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(modelo.Codigo),
+            ["nome"] = HashCanonicalComputer.NormalizeNfc(modelo.Nome),
         } : null;
 
     private static JsonNode SerializarPagina(PaginaDoFormulario pagina)

@@ -11,6 +11,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Converters;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FormularioProcesso"/> (UNI-REQ-0144): filho de
@@ -26,6 +29,10 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
 
         builder.ToTable("formularios_processo", t =>
         {
+            t.HasCheckConstraint("ck_formularios_processo_codigo_formato", $"codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
+            t.HasCheckConstraint("ck_formularios_processo_modelo_origem_completo",
+                "(modelo_origem_id IS NULL AND modelo_origem_codigo IS NULL AND modelo_origem_nome IS NULL) "
+                + "OR (modelo_origem_id IS NOT NULL AND modelo_origem_codigo IS NOT NULL AND modelo_origem_nome IS NOT NULL)");
             t.HasCheckConstraint("ck_formularios_processo_finalidade", $"finalidade IN ({SqlDosCodigosDeContrato.Lista<FinalidadeFormulario>()})");
             t.HasCheckConstraint("ck_formularios_processo_consequencia_da_falta_de_envio",
                 $"consequencia_da_falta_de_envio IS NULL OR consequencia_da_falta_de_envio IN ({SqlDosCodigosDeContrato.Lista<ConsequenciaDoDescumprimento>()})");
@@ -35,17 +42,25 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(f => f.Finalidade).HasMaxLength(TamanhoDoCodigoDeContrato.Maximo).IsRequired().HasComment("Finalidade do formulário.");
         builder.Property(f => f.Titulo).HasMaxLength(FormaDoCabecalho.TituloMaxLength);
-        builder.Property(f => f.ModeloOrigemCodigo).HasMaxLength(FormularioProcesso.ModeloOrigemCodigoMaxLength);
-        builder.Property(f => f.ModeloOrigemNome).HasColumnName("modelo_origem_nome").HasMaxLength(FormularioProcesso.ModeloOrigemNomeMaxLength)
-            .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
+        builder.Property(f => f.Codigo)
+            .HasConversion<CodigoDoFormularioValueConverter>()
+            .HasMaxLength(CodigoDoFormulario.TamanhoMaximo).IsRequired()
+            .HasComment("Código que identifica o formulário no processo; único no processo.");
+        builder.Property(f => f.Obrigatorio).IsRequired()
+            .HasComment("Indica se o candidato é obrigado a enviar o formulário.");
+        builder.OwnsOne(f => f.ModeloDeOrigem, ConfigurarModeloDeOrigem);
         builder.Property(f => f.ConsequenciaDaFaltaDeEnvio).HasMaxLength(30)
             .ClassificaComo(ClassificacaoDeProtecao.Publico)
             .HasComment("Consequência própria da falta de envio do formulário pelo candidato, nula quando o edital não a declara.");
         builder.Ignore(f => f.Estrutura);
+        builder.Ignore(f => f.Declarado);
 
         builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Finalidade })
             .IsUnique()
             .HasDatabaseName("ux_formularios_processo_processo_finalidade");
+        builder.HasIndex(f => new { f.ProcessoSeletivoId, f.Codigo })
+            .IsUnique()
+            .HasDatabaseName("ux_formularios_processo_processo_codigo");
 
         builder.HasMany(f => f.Paginas)
             .WithOne()
@@ -54,6 +69,17 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.Paginas).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+
+    private static void ConfigurarModeloDeOrigem(OwnedNavigationBuilder<FormularioProcesso, ModeloDeOrigem> modelo)
+    {
+        modelo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+        modelo.Property(m => m.Id).HasColumnName("modelo_origem_id").IsRequired()
+            .HasComment("Identificador do modelo de formulário de origem, nulo quando não há modelo.");
+        modelo.Property(m => m.Codigo).HasColumnName("modelo_origem_codigo").HasMaxLength(ModeloDeOrigem.CodigoMaxLength).IsRequired()
+            .HasComment("Código copiado do modelo de formulário de origem, nulo quando não há modelo.");
+        modelo.Property(m => m.Nome).HasColumnName("modelo_origem_nome").HasMaxLength(ModeloDeOrigem.NomeMaxLength).IsRequired()
+            .HasComment("Nome copiado do modelo de formulário de origem, nulo quando não há modelo.");
     }
 }
 
