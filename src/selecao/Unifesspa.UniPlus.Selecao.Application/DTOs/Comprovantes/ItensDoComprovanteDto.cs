@@ -34,5 +34,5 @@ public sealed record ItemDoComprovanteDto(
     CodigoComRotulo<FormaDoValorDoItem> Tipo,
     CodigoComRotulo<ExibicaoDoValorDoItem> Componente,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    [property: Description("O valor respondido, na forma indicada pelo tipo; ausente quando o item não foi respondido.")]
+    [property: Description(DescricaoDoValorDoItem.Texto)]
     JsonElement? Valor);

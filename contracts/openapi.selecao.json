@@ -24149,6 +24149,7 @@
                 "type": "null"
               },
               {
+                "description": "O valor do item, na forma que \u0060tipo\u0060 define (a forma de cada c\u00F3digo est\u00E1 em \u0060FormaDoValorDoItemCodigo\u0060). O \u0060componente\u0060 s\u00F3 diz como a tela mostra o valor, sem mudar a forma. Com tipo \u0060OPCAO\u0060 ou \u0060OPCOES\u0060, o valor sai como c\u00F3digo e r\u00F3tulo (uma lista no caso de \u0060OPCOES\u0060). O r\u00F3tulo pode vir das op\u00E7\u00F5es declaradas pelo processo e congeladas na publica\u00E7\u00E3o ou dos valores de dom\u00EDnio congelados; para UF, vem da lista oficial. Se n\u00E3o houver r\u00F3tulo, usa-se o pr\u00F3prio c\u00F3digo. No caso de munic\u00EDpio, o c\u00F3digo e o nome gravados na resposta saem como foram gravados. Ausente quando o item n\u00E3o foi respondido.",
                 "$ref": "#/components/schemas/JsonElement"
               }
             ]
@@ -24185,7 +24186,7 @@
                 "type": "null"
               },
               {
-                "description": "O valor respondido, na forma indicada pelo tipo; ausente quando o item n\u00E3o foi respondido.",
+                "description": "O valor do item, na forma que \u0060tipo\u0060 define (a forma de cada c\u00F3digo est\u00E1 em \u0060FormaDoValorDoItemCodigo\u0060). O \u0060componente\u0060 s\u00F3 diz como a tela mostra o valor, sem mudar a forma. Com tipo \u0060OPCAO\u0060 ou \u0060OPCOES\u0060, o valor sai como c\u00F3digo e r\u00F3tulo (uma lista no caso de \u0060OPCOES\u0060). O r\u00F3tulo pode vir das op\u00E7\u00F5es declaradas pelo processo e congeladas na publica\u00E7\u00E3o ou dos valores de dom\u00EDnio congelados; para UF, vem da lista oficial. Se n\u00E3o houver r\u00F3tulo, usa-se o pr\u00F3prio c\u00F3digo. No caso de munic\u00EDpio, o c\u00F3digo e o nome gravados na resposta saem como foram gravados. Ausente quando o item n\u00E3o foi respondido.",
                 "$ref": "#/components/schemas/JsonElement"
               }
             ]

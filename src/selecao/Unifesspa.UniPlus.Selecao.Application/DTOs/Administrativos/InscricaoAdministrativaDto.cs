@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 
+using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -110,6 +111,7 @@ public sealed record ItemDeRespostaDto : ItemClassificado
     /// O valor, na forma que o <see cref="Tipo"/> define.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [Description(DescricaoDoValorDoItem.Texto)]
     public JsonElement? Valor { get; init; }
 
     /// <summary>

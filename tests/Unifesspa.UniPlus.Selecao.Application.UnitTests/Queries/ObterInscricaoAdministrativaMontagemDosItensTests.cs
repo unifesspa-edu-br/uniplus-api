@@ -69,6 +69,22 @@ public sealed class ObterInscricaoAdministrativaMontagemDosItensTests
         item.Valor!.Value.GetProperty("codigo").GetString().Should().Be("PARDA");
     }
 
+    [Theory(DisplayName = "A opção usa o rótulo congelado com qualquer componente")]
+    [InlineData(null, "PADRAO")]
+    [InlineData("SITUACAO", "SITUACAO")]
+    public async Task Opcao_ComponenteDeExibicao_PreservaValorCongelado(string? componente, string codigoComponente)
+    {
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+            .Fato("SITUACAO_TESTE", "PESSOAL", TipoDeCampo.EscolhaUnica, Texto("EM_ANALISE"), new MetadadosDoFatoDeTeste { Componente = componente })
+            .OpcaoCongelada("SITUACAO_TESTE", "EM_ANALISE", "Em análise");
+
+        ItemDeRespostaDto item = ItensDe(await ConsultarDto(cenario, ComDadosPessoais())).Single();
+
+        item.Tipo.Codigo.Should().Be("OPCAO");
+        item.Componente.Codigo.Should().Be(codigoComponente);
+        item.Valor!.Value.GetRawText().Should().Be("{\"codigo\":\"EM_ANALISE\",\"rotulo\":\"Em an\\u00E1lise\"}");
+    }
+
     [Theory(DisplayName = "A UF sai pelo nome da lista fixa, venha o valor como sigla ou como código IBGE, ainda que a versão tenha congelado só a sigla")]
     [InlineData("PA")]
     [InlineData("15")]

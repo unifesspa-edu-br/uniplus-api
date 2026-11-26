@@ -260,6 +260,16 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         CodigosDeEnumNoContrato.ReferenciaOsCodigos(spec.RootElement, "ApresentacaoDoCampoDto", "tipoDeCampo").Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O componente de situação descreve a exibição do rótulo")]
+    public async Task ComponenteDeSituacao_NoContrato_DescreveEtiqueta()
+    {
+        JsonElement schemas = await ObterSchemasAsync();
+
+        schemas.GetProperty("ComponenteDeExibicaoCodigo").GetProperty("description").GetString()
+            !.Split('\n').Single(static linha => linha.Contains("`SITUACAO`:", StringComparison.Ordinal))
+            .Should().Contain("A tela mostra o rótulo numa etiqueta, sem mudar a forma do valor");
+    }
+
     private async Task<string> ObterDocumentoAsync()
     {
         using HttpClient client = _factory.CreateClient();
