@@ -116,7 +116,7 @@ internal static class ConferenciasDasEliminacoes
             ? RecusaDaAreaForaDoQuadro(indice, corte, quadro, aceitas)
             : new($"regrasEliminacao[{indice}]", new DomainError(
                 "ConfiguracaoClassificacao.CorteEmAreaRepetido",
-                $"A área {corte.AreaCodigo} já tem corte; declare no máximo um corte por área."));
+                "A área já tem corte; declare no máximo um corte por área."));
 
     private static FieldError? RecusaDaAreaForaDoQuadro(
         int indice,
@@ -127,5 +127,5 @@ internal static class ConferenciasDasEliminacoes
             ? null
             : new($"regrasEliminacao[{indice}].areaCodigo", new DomainError(
                 "ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro",
-                $"A área {corte.AreaCodigo} do corte não está em todos os grupos do quadro de pesos por área da classificação. Áreas aceitas: {ConferenciasDoQuadroDePesosPorArea.ListarAreas(quadro!, aceitas)}."));
+                $"A área do corte não está em todos os grupos do quadro de pesos por área da classificação. Áreas aceitas: {ConferenciasDoQuadroDePesosPorArea.ListarAreas(quadro!, aceitas)}."));
 }

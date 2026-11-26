@@ -119,7 +119,7 @@ internal static class RegrasDaClassificacao
             .GroupBy(static v => v.Ordem)
             .Select(static criterio => new FieldError(ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, new DomainError(
                 DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
-                $"O critério de desempate na ordem {criterio.Key} cita área que o quadro de pesos por área desta classificação não tem em todos os grupos: {string.Join(", ", criterio.Select(static v => v.Codigo))}.")));
+                $"O critério de desempate na ordem {criterio.Key} cita área que o quadro de pesos por área desta classificação não tem em todos os grupos.")));
 
     private static List<OpcaoDeclaradaFato> EdicoesDoEnemSemClassificacaoEnem(ConfiguracaoDeclarada configuracao, ConfiguracaoClassificacao classificacao) =>
         classificacao.BaseadoEmEnem

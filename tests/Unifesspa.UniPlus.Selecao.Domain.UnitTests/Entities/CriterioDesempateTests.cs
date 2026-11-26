@@ -228,7 +228,18 @@ public sealed class CriterioDesempateTests
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
         erro.Field.Should().Be("areas[2]");
         erro.Error.Code.Should().Be("CriterioDesempate.AreaRepetida");
-        erro.Error.Message.Should().Contain("REDACAO");
+        erro.Error.Message.Should().NotContain("REDACAO");
+    }
+
+    [Fact(DisplayName = "A recusa da área repetida não repete o código enviado e mantém o código de erro e o campo")]
+    public void Criar_MaiorNotaAreaEnem_AreaRepetida_MensagemSemOCodigoEnviado()
+    {
+        Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
+            1, Regra(RegraDeDesempate.MaiorNotaPorAreaDoEnem), new ParametrosDesempateMaiorNotaAreaEnem(["AREA_REPETIDA_DE_TESTE", "AREA_REPETIDA_DE_TESTE"]));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("areas[1]", "CriterioDesempate.AreaRepetida"));
+        erro.Error.Message.Should().NotContain("AREA_REPETIDA_DE_TESTE");
     }
 
     [Theory(DisplayName = "Código de área fora da forma do cadastro é recusado no campo do item")]

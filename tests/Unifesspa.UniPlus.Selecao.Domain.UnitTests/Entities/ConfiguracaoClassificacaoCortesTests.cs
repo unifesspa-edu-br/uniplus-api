@@ -42,7 +42,27 @@ public sealed class ConfiguracaoClassificacaoCortesTests
         FieldError erro = resultado.Errors.Single();
         erro.Field.Should().Be("regrasEliminacao[1].areaCodigo");
         erro.Error.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro");
-        erro.Error.Message.Should().Contain("FISICA").And.Contain("REDACAO (Redação)");
+        erro.Error.Message.Should().NotContain("FISICA").And.Contain("REDACAO (Redação)");
+    }
+
+    [Fact(DisplayName = "A recusa do corte repetido não repete o código da área enviado e mantém o código de erro e o campo")]
+    public void Criar_CorteRepetidoNaMesmaArea_MensagemSemOCodigoEnviado()
+    {
+        Result<ConfiguracaoClassificacao> resultado = CriarEnemLocal(CorteEm("REDACAO"), CorteEm("REDACAO", 500m));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("regrasEliminacao[1]", "ConfiguracaoClassificacao.CorteEmAreaRepetido"));
+        erro.Error.Message.Should().NotContain("REDACAO");
+    }
+
+    [Fact(DisplayName = "A recusa do corte fora do quadro não repete o código da área enviado e mantém o código de erro e o campo")]
+    public void Criar_CorteForaDoQuadro_MensagemSemOCodigoEnviado()
+    {
+        Result<ConfiguracaoClassificacao> resultado = CriarEnemLocal(CorteEm("AREA_FORA_DO_QUADRO"));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("regrasEliminacao[0].areaCodigo", "ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro"));
+        erro.Error.Message.Should().NotContain("AREA_FORA_DO_QUADRO").And.Contain("Áreas aceitas:");
     }
 
     [Fact(DisplayName = "Corte em área que só parte dos grupos tem é recusado")]

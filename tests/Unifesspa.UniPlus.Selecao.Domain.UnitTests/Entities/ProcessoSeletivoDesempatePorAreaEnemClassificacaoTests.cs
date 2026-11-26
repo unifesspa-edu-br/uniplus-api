@@ -115,8 +115,8 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
         Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()));
 
         result.Errors.Select(static e => e.Field).Should().Equal("resolucaoPesoAreaEnem", "resolucaoPesoAreaEnem");
-        result.Errors[0].Error.Message.Should().Contain("ordem 1").And.Contain("MATEMATICA, CIENCIAS_HUMANAS").And.Contain("Áreas aceitas:");
-        result.Errors[1].Error.Message.Should().Contain("ordem 2").And.Contain("CIENCIAS_DA_NATUREZA").And.NotContain("Áreas aceitas");
+        result.Errors[0].Error.Message.Should().Contain("ordem 1").And.NotContain("MATEMATICA").And.NotContain("CIENCIAS_HUMANAS").And.Contain("Áreas aceitas:");
+        result.Errors[1].Error.Message.Should().Contain("ordem 2").And.NotContain("CIENCIAS_DA_NATUREZA").And.NotContain("Áreas aceitas");
     }
 
     [Fact(DisplayName = "A mesma área citada por dois critérios por área é recusada no campo da segunda citação")]
@@ -128,7 +128,32 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
         (erro.Field, erro.Error.Code).Should().Be(("criterios[2].parametros.areas[1]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
-        erro.Error.Message.Should().Contain("REDACAO").And.Contain("ordem 1");
+        erro.Error.Message.Should().NotContain("REDACAO").And.Contain("ordem 1");
+    }
+
+    [Fact(DisplayName = "A recusa da área citada por outro critério não repete o código enviado e mantém o código de erro e o campo")]
+    public void DefinirCriteriosDesempate_AreaCitadaPorOutroCriterio_MensagemSemOCodigoEnviado()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result result = processo.DefinirCriteriosDesempate([PorArea(1, "AREA_CITADA_DUAS_VEZES"), PorArea(2, "AREA_CITADA_DUAS_VEZES")]);
+
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("criterios[1].parametros.areas[0]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
+        erro.Error.Message.Should().NotContain("AREA_CITADA_DUAS_VEZES").And.Contain("ordem 1").And.Contain("ordem 2");
+    }
+
+    [Fact(DisplayName = "A recusa por área fora do quadro, na classificação, não repete o código enviado e mantém o código de erro e o campo")]
+    public void DefinirClassificacao_AreaForaDoQuadro_MensagemSemOCodigoEnviado()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirCriteriosDesempate([PorArea(1, "AREA_FORA_DO_QUADRO")]).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem());
+
+        FieldError erro = result.Errors.Should().ContainSingle().Subject;
+        (erro.Field, erro.Error.Code).Should().Be(("resolucaoPesoAreaEnem", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
+        erro.Error.Message.Should().NotContain("AREA_FORA_DO_QUADRO").And.Contain("ordem 1").And.Contain("Áreas aceitas:");
     }
 
     [Fact(DisplayName = "A área repetida entre critérios fora da ordem do desempate é recusada na citação de ordem maior")]
@@ -180,7 +205,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemForaDoQuadro");
-        result.Error.Message.Should().Contain("MATEMATICA");
+        result.Error.Message.Should().NotContain("MATEMATICA");
         processo.Classificacao.Should().BeNull();
     }
 
