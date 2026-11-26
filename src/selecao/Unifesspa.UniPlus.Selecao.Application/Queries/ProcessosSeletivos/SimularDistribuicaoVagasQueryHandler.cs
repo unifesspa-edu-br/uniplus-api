@@ -9,6 +9,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// Handler do <see cref="SimularDistribuicaoVagasQuery"/> (issue #1282):
 /// resolve cada oferta contra os mesmos cadastros vivos e o mesmo catálogo
@@ -50,12 +52,9 @@ public static class SimularDistribuicaoVagasQueryHandler
 
         if (!await processoSeletivoRepository.ExisteAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
         {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Failure(ProcessoNaoEncontrado(query.ProcessoSeletivoId));
+            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         return await resolvedor.ResolverTodasAsync(query.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
     }
-
-    private static DomainError ProcessoNaoEncontrado(Guid processoSeletivoId) =>
-        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado.");
 }

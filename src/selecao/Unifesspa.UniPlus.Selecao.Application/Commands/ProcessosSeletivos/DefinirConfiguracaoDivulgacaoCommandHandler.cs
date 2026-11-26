@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>

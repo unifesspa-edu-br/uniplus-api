@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -38,12 +40,9 @@ public static class DefinirTermosDoFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? ProcessoNaoEncontrado(command.ProcessoSeletivoId)
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
             : await DefinirAsync(command, processo, fatoCandidatoReader, termoConsentimentoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
-
-    private static Result ProcessoNaoEncontrado(Guid processoSeletivoId) =>
-        Result.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado."));
 
     private static async Task<Result> DefinirAsync(
         DefinirTermosDoFormularioCommand command,

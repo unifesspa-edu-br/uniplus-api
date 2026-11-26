@@ -66,7 +66,7 @@ public static class ObterIndicadoresDoProcessoQueryHandler
     {
         EstadoDoProcesso? estado = await processos.ObterEstadoAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (estado is null)
-            return Result<EstadoDoProcesso>.Failure(ErroNaoEncontrado());
+            return Result<EstadoDoProcesso>.Failure(AcessoAoProcesso.NaoEncontrado());
 
         ResultadoDoAcesso acesso = await AutorizarAsync(estado, processoSeletivoId, verificador, cancellationToken)
             .ConfigureAwait(false);
@@ -98,7 +98,7 @@ public static class ObterIndicadoresDoProcessoQueryHandler
     private static DomainError ErroDoAcesso(ResultadoDoAcesso acesso) =>
         acesso is ResultadoDoAcesso.Impedido or ResultadoDoAcesso.IdentidadeIncompleta
             ? AcessoAoProcesso.Recusa(acesso)
-            : ErroNaoEncontrado();
+            : AcessoAoProcesso.NaoEncontrado();
 
     private static async Task<Result<IndicadoresDoProcessoDto>> MontarRespostaAsync(
         Guid processoSeletivoId,
@@ -136,9 +136,6 @@ public static class ObterIndicadoresDoProcessoQueryHandler
 
     private static IndicadorDoProcessoDto CriarIndicador(CodigoIndicadorDoProcesso indicador, long valor, string? descricao = null) =>
         new(indicador.Codigo(), valor, indicador.Rotulo(), descricao ?? indicador.Descricao()!);
-
-    private static DomainError ErroNaoEncontrado() =>
-        new(AcessoAoProcesso.NaoEncontrado(Guid.Empty).Code, "Processo não encontrado.");
 
     private static bool EstaEmRascunho(EstadoDoProcesso estado) => estado.Situacao == SituacaoDoProcessoSeletivo.Rascunho;
 }

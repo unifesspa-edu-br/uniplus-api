@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
@@ -30,9 +32,7 @@ public static class DefinirTaxaInscricaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            return Result.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         // Fora do rascunho a recusa vem antes das regras de negócio.

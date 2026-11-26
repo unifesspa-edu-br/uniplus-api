@@ -6,6 +6,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -46,7 +48,7 @@ public static class DefinirFatosColetadosCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result escrita = processo is null
-            ? ProcessoNaoEncontrado(command.ProcessoSeletivoId)
+            ? Result.Failure(AcessoAoProcesso.NaoEncontrado())
             : await EscreverAsync(command, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         if (escrita.IsSuccess)
         {
@@ -55,9 +57,6 @@ public static class DefinirFatosColetadosCommandHandler
 
         return escrita;
     }
-
-    private static Result ProcessoNaoEncontrado(Guid processoSeletivoId) =>
-        Result.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado."));
 
     private static async Task<Result> EscreverAsync(
         DefinirFatosColetadosCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)

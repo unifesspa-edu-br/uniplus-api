@@ -40,7 +40,7 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         ArgumentNullException.ThrowIfNull(clock);
 
         return await donos.DoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null
-            ? Result<IniciarEnvioDoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado(command.ProcessoSeletivoId))
+            ? Result<IniciarEnvioDoDocumentoAPublicarDto>.Failure(AcessoAoProcesso.NaoEncontrado())
             : await IniciarAsync(command, documentoAPublicarRepository, storage, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
     }
 

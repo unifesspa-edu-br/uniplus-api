@@ -47,7 +47,7 @@ public sealed class DescricaoDosRascunhos
     }
 
     private static Result<string> DescricaoDeVersaoAusente(DomainError erro) =>
-        erro.Code == AcessoAoProcesso.NaoEncontrado(Guid.Empty).Code
+        erro.Code == AcessoAoProcesso.NaoEncontrado().Code
             ? Result<string>.Success(DescricaoPadrao)
             : Result<string>.Failure(erro);
 

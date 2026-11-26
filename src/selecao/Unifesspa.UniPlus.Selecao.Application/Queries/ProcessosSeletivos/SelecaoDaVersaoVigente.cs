@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -16,6 +17,6 @@ internal static class SelecaoDaVersaoVigente
         bool existe = await repositorio.ExisteAsync(processoId, cancellationToken).ConfigureAwait(false);
         return Result<VersaoConfiguracao>.Failure(existe
             ? new DomainError("Snapshot.VigenteAusente", $"Nenhuma publicação vigente para o instante {instante:O}.")
-            : new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoId} não encontrado."));
+            : AcessoAoProcesso.NaoEncontrado());
     }
 }

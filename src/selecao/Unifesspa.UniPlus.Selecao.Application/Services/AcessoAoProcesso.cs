@@ -303,10 +303,10 @@ public static class AcessoAoProcesso
 
     /// <summary>
     /// A recusa do processo que não existe e a de quem não o alcança: a mesma, para o acesso negado não revelar que o
-    /// processo existe.
+    /// processo existe. Não cita o identificador, e é a única definição deste erro.
     /// </summary>
-    public static DomainError NaoEncontrado(Guid processoId) =>
-        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoId} não encontrado.");
+    public static DomainError NaoEncontrado() =>
+        new("ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado.");
 
     /// <summary>
     /// Confere <see cref="PermissaoSelecao.ProcessosConfigurar"/> na unidade que o processo carregado tem agora. O filtro
@@ -325,7 +325,7 @@ public static class AcessoAoProcesso
         return acesso switch
         {
             ResultadoDoAcesso.Permitido => Result.Success(),
-            ResultadoDoAcesso.Negado => Result.Failure(NaoEncontrado(processoId)),
+            ResultadoDoAcesso.Negado => Result.Failure(NaoEncontrado()),
             _ => Result.Failure(Recusa(acesso)),
         };
     }

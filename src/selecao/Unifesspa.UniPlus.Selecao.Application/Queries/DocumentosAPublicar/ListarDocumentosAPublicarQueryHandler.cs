@@ -31,7 +31,7 @@ public static class ListarDocumentosAPublicarQueryHandler
         // filtro global: o processo excluído logicamente não tem dono e é recusado como inexistente, mesmo com a linha
         // e os documentos preservados. O documento de rascunho é apagado de fato com ele, e não sobra para ler.
         return await donos.DoProcessoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null
-            ? Result<ListarDocumentosAPublicarResult>.Failure(AcessoAoProcesso.NaoEncontrado(query.ProcessoSeletivoId))
+            ? Result<ListarDocumentosAPublicarResult>.Failure(AcessoAoProcesso.NaoEncontrado())
             : await ListarAsync(query, documentoAPublicarRepository, cancellationToken).ConfigureAwait(false);
     }
 

@@ -4,6 +4,8 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
 
+using Services;
+
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>O órgão que numera o ato e a divulgação do certame, conferidos antes de qualquer escrita.</summary>
@@ -28,7 +30,7 @@ public sealed class ConferenciaDoProcessoDivulgado(
             .ConfigureAwait(false);
         if (orgao is null)
         {
-            return Falha("Processo seletivo não encontrado.", "ProcessoSeletivo.NaoEncontrado");
+            return Result<ProcessoDivulgadoConferido>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         return await ConferirDivulgacaoAsync(processoSeletivoId, orgao, cancellationToken).ConfigureAwait(false);

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.ExportacaoDaVersaoPublicada;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -40,6 +41,6 @@ public static class ExportarVersaoPublicadaQueryHandler
         bool existe = await repositorio.ExisteAsync(processoId, cancellationToken).ConfigureAwait(false);
         return Result<VersaoConfiguracao>.Failure(existe
             ? new DomainError("ProcessoSeletivo.VersaoNaoEncontrada", $"A versão {numero} não foi encontrada para o processo seletivo.")
-            : new DomainError("ProcessoSeletivo.NaoEncontrado", "Processo seletivo não encontrado."));
+            : AcessoAoProcesso.NaoEncontrado());
     }
 }

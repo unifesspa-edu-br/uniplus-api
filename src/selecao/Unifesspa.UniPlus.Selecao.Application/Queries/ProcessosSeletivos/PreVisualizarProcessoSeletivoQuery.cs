@@ -62,8 +62,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         ProcessoSeletivo? processo = await repository.ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<PreVisualizacaoDoProcessoDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<PreVisualizacaoDoProcessoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         return await AvaliarAsync(processo, query.Simulacao ?? new(null, null, null, null), fatoCandidatoReader, cancellationToken).ConfigureAwait(false);

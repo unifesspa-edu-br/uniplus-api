@@ -6,6 +6,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -32,14 +34,14 @@ public static class DefinirOpcoesDeclaradasCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return RecusaDoProcesso(processo, command.ProcessoSeletivoId)
+        return RecusaDoProcesso(processo)
             ?? await DefinirAsync(command, processo!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     // Fora do rascunho a recusa vem antes de consultar cadastros.
-    private static Result? RecusaDoProcesso(ProcessoSeletivo? processo, Guid processoSeletivoId) => processo switch
+    private static Result? RecusaDoProcesso(ProcessoSeletivo? processo) => processo switch
     {
-        null => Result.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado.")),
+        null => Result.Failure(AcessoAoProcesso.NaoEncontrado()),
         _ => processo.MutacaoBloqueada() is { } bloqueio ? Result.Failure(bloqueio) : null,
     };
 

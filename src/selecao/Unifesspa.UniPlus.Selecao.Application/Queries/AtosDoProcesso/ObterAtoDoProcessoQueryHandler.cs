@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -42,9 +43,7 @@ public static class ObterAtoDoProcessoQueryHandler
     {
         if (!await processoSeletivoRepository.ExisteAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
         {
-            return Result<AtoDoProcesso>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<AtoDoProcesso>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         AtoDoProcesso? ato = await atoDoProcessoRepository.ObterComAnexosAsync(query.AtoId, cancellationToken).ConfigureAwait(false);

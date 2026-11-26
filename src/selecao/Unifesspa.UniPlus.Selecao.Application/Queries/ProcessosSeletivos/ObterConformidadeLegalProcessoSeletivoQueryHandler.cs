@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
@@ -67,9 +68,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<ConformidadeLegalProcessoSeletivoDto>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<ConformidadeLegalProcessoSeletivoDto>.Failure(AcessoAoProcesso.NaoEncontrado());
         }
 
         string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
