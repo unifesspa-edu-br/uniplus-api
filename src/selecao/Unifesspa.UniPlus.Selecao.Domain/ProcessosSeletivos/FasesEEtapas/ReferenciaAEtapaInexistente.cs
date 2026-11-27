@@ -12,4 +12,14 @@ internal static class ReferenciaAEtapaInexistente
     internal static DomainError PelaEliminacao(Guid etapaRef) => new(
         "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
         $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo.");
+
+    /// <summary>A recusa do critério de desempate do documento que cita uma etapa inexistente, pela posição (a partir de 1) na lista enviada.</summary>
+    internal static DomainError PeloDesempateNaPosicao(int posicao) => new(
+        "ProcessoSeletivo.EtapaRefDesempateInexistente",
+        $"O critério de desempate na posição {posicao} cita uma etapa que não existe neste processo.");
+
+    /// <summary>A recusa da regra de eliminação do documento que cita uma etapa inexistente, pela posição (a partir de 1) na lista enviada.</summary>
+    internal static DomainError PelaEliminacaoNaPosicao(int posicao) => new(
+        "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
+        $"A regra de eliminação na posição {posicao} cita uma etapa que não existe neste processo.");
 }

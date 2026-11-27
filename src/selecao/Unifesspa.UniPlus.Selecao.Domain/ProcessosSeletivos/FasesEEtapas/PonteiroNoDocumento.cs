@@ -53,6 +53,7 @@ public static class PonteiroNoDocumento
         ["classificacao.regrasEliminacao[].areaCodigo"] = "classificacao.regrasEliminacao[].parametros.areaCodigo",
         ["classificacao.criterios[].ordem"] = "classificacao.criteriosDeDesempate[]",
         ["classificacao.criterios[].parametros.etapaRef"] = "classificacao.criteriosDeDesempate[].parametros.etapaChave",
+        ["classificacao.criterios[].parametros.fato"] = "classificacao.criteriosDeDesempate[].parametros.codigoDoDado",
         ["formularios[].itens[].fatoCodigo"] = "formularios[].itens[].codigoDoDado",
         ["formularios[].grupos[].subitens[].fatoCodigo"] = "formularios[].grupos[].subitens[].codigoDoDado",
     };

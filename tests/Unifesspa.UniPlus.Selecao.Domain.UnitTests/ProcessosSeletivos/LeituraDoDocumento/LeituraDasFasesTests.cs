@@ -99,4 +99,13 @@ public sealed class LeituraDasFasesTests
         cronograma.ConferirCompletude(Utc).Where(static causa => causa.Error.Code == "ProcessoSeletivo.FaseSemUnidadeResponsavel")
             .Select(static causa => causa.Field).Should().Equal("fases[1].unidadeResponsavel");
     }
+
+    [Fact(DisplayName = "A chave repetida entre uma fase adotada e outra recusada guarda a adotada e não marca a chave como recusada")]
+    public void ChaveRepetida_GuardaAAdotadaENaoMarcaComoRecusada()
+    {
+        FasesLidas lidas = LeituraDasFases.Ler([Fase(0, "avaliacao", "INSCRICAO"), Fase(1, "avaliacao", "FASE-DIGITADA")], Cadastros());
+
+        lidas.CodigoPelaChave.Should().ContainSingle().Which.Should().Be(new KeyValuePair<string, string>("avaliacao", "INSCRICAO"));
+        lidas.ChavesRecusadas.Should().BeEmpty();
+    }
 }

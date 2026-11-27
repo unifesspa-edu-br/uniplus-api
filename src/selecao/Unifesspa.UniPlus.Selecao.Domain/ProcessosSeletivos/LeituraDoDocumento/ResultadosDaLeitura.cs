@@ -50,8 +50,15 @@ internal sealed record RegraDeRecursoLida(
     internal static RegraDeRecursoLida Nenhuma { get; } = new(null, []);
 }
 
-/// <summary>As fases adotadas, na ordem canônica, e a origem que liga cada uma ao documento e guarda as partes recusadas.</summary>
-internal sealed record FasesLidas(IReadOnlyList<FaseCronograma> Fases, OrigemNoDocumento Origem);
+/// <summary>
+/// As fases adotadas, na ordem canônica; o código da fase adotada por chave e as chaves das fases que a leitura recusou, que as etapas
+/// consultam para achar a fase que citam; e a origem que liga cada fase ao documento e guarda as partes recusadas.
+/// </summary>
+internal sealed record FasesLidas(
+    IReadOnlyList<FaseCronograma> Fases,
+    IReadOnlyDictionary<string, string> CodigoPelaChave,
+    IReadOnlySet<string> ChavesRecusadas,
+    OrigemNoDocumento Origem);
 
 /// <summary>A identidade declarada, a localidade e a convenção de contagem, que ficam no cronograma, e as partes recusadas da identificação.</summary>
 internal sealed record IdentificacaoLida(

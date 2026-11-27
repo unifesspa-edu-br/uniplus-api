@@ -43,6 +43,7 @@ public sealed class CadastrosCitadosNoDocumentoTests
         vazios.Unidades.Should().BeEmpty();
         vazios.Regras.Should().BeEmpty();
         vazios.TiposDeAto.Should().BeEmpty();
+        vazios.DadosDoDesempate.Should().BeEmpty();
         Cadastros().Unidades.ContainsKey("INEXISTENTE").Should().BeFalse();
     }
 

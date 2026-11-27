@@ -13,18 +13,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class EtapasNoCronograma
 {
+    /// <summary>
+    /// Toda etapa declara uma fase que está no cronograma. Com fase recusada pela leitura na lista, a fase da etapa pode ser a
+    /// recusada, e a regra não julga: a causa é a da leitura.
+    /// </summary>
     public static IReadOnlyList<FieldError> ConferirFaseDasEtapas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         ArgumentNullException.ThrowIfNull(cronograma);
         ArgumentNullException.ThrowIfNull(etapas);
 
-        return
-        [
-            .. etapas.Etapas
-                .Select(static (etapa, posicao) => (etapa, posicao))
-                .Where(par => par.etapa.FaseCodigo is { } codigo && !cronograma.TemFaseDeCodigo(codigo))
-                .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma(par.etapa.Nome))),
-        ];
+        return cronograma.TemParteRecusadaNaListaDeFases ? [] : EtapasComFaseForaDoCronograma(cronograma, etapas);
     }
 
     public static IReadOnlyList<FieldError> ConferirJanelaDasEtapas(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
@@ -64,7 +62,9 @@ public static class EtapasNoCronograma
     public static ItemConformidade ItemDaFaseDeclaradaPelaEtapa(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => Item(
         "cronograma_etapa_declara_a_fase",
         "Cronograma: toda etapa declara uma fase que está no cronograma",
-        ConferirFaseDasEtapas(cronograma, etapas).Count == 0 && etapas.ConferirCompletude().Count == 0);
+        ConferirFaseDasEtapas(cronograma, etapas).Count == 0
+            && etapas.ConferirCompletude().Count == 0
+            && !etapas.Etapas.Any(etapa => FaseDaEtapaSemComoConferir(cronograma, etapas, etapa)));
 
     public static ItemConformidade ItemDaJanelaDaEtapaNaFase(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) => Item(
         "cronograma_etapa_fora_da_janela_da_fase",
@@ -75,9 +75,23 @@ public static class EtapasNoCronograma
         "ProcessoSeletivo.EtapaSemFaseNoCronograma",
         $"A etapa \"{nomeDaEtapa}\" declara uma fase que não está no cronograma deste processo.");
 
+    private static List<FieldError> EtapasComFaseForaDoCronograma(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    [
+        .. etapas.Etapas
+            .Select(static (etapa, posicao) => (etapa, posicao))
+            .Where(par => par.etapa.FaseCodigo is { } codigo && !cronograma.TemFaseDeCodigo(codigo))
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma(par.etapa.Nome))),
+    ];
+
     private static DomainError AvaliacaoSemEtapa(string codigoDaFase) => new(
         "ProcessoSeletivo.AvaliacaoSemEtapa",
         $"A fase '{codigoDaFase}' agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
+
+    // A fase que a leitura recusou pode ser a da etapa: o que a regra não julga deixa o item pendente, não aprovado.
+    private static bool FaseDaEtapaSemComoConferir(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, EtapaDeclarada etapa) =>
+        etapa.FaseCodigo is { } codigo
+            ? cronograma.TemParteRecusadaNaListaDeFases && !cronograma.TemFaseDeCodigo(codigo)
+            : etapas.FaseSemJulgar(etapa);
 
     private static bool HaEtapaSemFaseDeclarada(EtapasDoProcesso etapas) => etapas.Etapas.Any(static etapa => etapa.FaseCodigo is null);
 
