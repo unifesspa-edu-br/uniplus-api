@@ -107,15 +107,15 @@ internal static class EstruturaDoCronograma
             return null;
         }
 
-        return MesmoMomento(cronograma, aresta, antecessora, sucessora, momentos)
-            ?? OrdemViolada(cronograma, aresta, antecessora, sucessora, momentos)
+        return MesmoMomento(cronograma, antecessora, sucessora, momentos)
+            ?? OrdemViolada(cronograma, antecessora, sucessora, momentos)
             ?? SobreposicaoNaoPermitida(cronograma, aresta, antecessora, sucessora);
     }
 
     // A marca, e não a ordem, pôs as duas no mesmo momento: a recusa fica na fase que vem depois na lista. A lista com fase recusada
     // pela leitura não diz quem tem a marca.
     private static FieldError? MesmoMomento(
-        CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos)
+        CronogramaDoProcesso cronograma, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos)
     {
         bool juntasPelaMarca = antecessora.Ordem != sucessora.Ordem && momentos[antecessora.Ordem] == momentos[sucessora.Ordem];
         if (cronograma.TemParteRecusadaNaListaDeFases || !juntasPelaMarca)
@@ -130,18 +130,18 @@ internal static class EstruturaDoCronograma
             CampoDaMarca,
             new DomainError(
                 ProcessoSeletivoErrorCodes.FasesComPrecedenciaNoMesmoMomento,
-                $"A fase '{aresta.AntecessoraCodigo}' vem antes da fase '{aresta.SucessoraCodigo}' no cadastro de precedência, e as duas estão marcadas para acontecer no mesmo momento. Retire a marca \"no mesmo momento da anterior\" que junta as duas ou separe-as na ordem do cronograma."));
+                $"A fase {antecessora.Citacao} vem antes da fase {sucessora.Citacao} no cadastro de precedência, e as duas estão marcadas para acontecer no mesmo momento. Retire a marca \"no mesmo momento da anterior\" que junta as duas ou separe-as na ordem do cronograma."));
     }
 
     private static FieldError? OrdemViolada(
-        CronogramaDoProcesso cronograma, ArestaPrecedencia aresta, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos) =>
+        CronogramaDoProcesso cronograma, FaseDeclarada antecessora, FaseDeclarada sucessora, IReadOnlyDictionary<int, int> momentos) =>
         antecessora.Ordem == sucessora.Ordem || momentos[antecessora.Ordem] > momentos[sucessora.Ordem]
             ? CronogramaDoProcesso.NaFase(
                 cronograma.PosicaoDe(sucessora),
                 "ordem",
                 new DomainError(
                     "ProcessoSeletivo.PrecedenciaFaseViolada",
-                    $"A fase '{aresta.AntecessoraCodigo}' (ordem {antecessora.Ordem}) precede '{aresta.SucessoraCodigo}' (ordem {sucessora.Ordem}) — a ordem declarada viola a precedência do cadastro."))
+                    $"A fase {antecessora.Citacao} (ordem {antecessora.Ordem}) precede {sucessora.Citacao} (ordem {sucessora.Ordem}) — a ordem declarada viola a precedência do cadastro."))
             : null;
 
     // Janela invertida não tem extremos confiáveis: a sobreposição daquela fase não se avalia, e a recusa da janela já está na declaração.

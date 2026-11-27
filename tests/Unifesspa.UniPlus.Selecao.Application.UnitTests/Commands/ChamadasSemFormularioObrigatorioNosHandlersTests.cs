@@ -45,6 +45,9 @@ public sealed class ChamadasSemFormularioObrigatorioNosHandlersTests
         (Result resposta, IEnumerable<object> eventos) = await servicos.PublicarAsync(processo.Id);
 
         DasChamadas(resposta).Select(static e => e.Field).Should().Equal("/cronograma/fases/1", "/cronograma/fases/2");
+        DasChamadas(resposta).Select(static e => e.Error.Message).Should().OnlyContain(static mensagem => mensagem.Contains("'Habilitação'", StringComparison.Ordinal)
+            || mensagem.Contains("'Avaliação'", StringComparison.Ordinal));
+        DasChamadas(resposta).Should().NotContain(static e => e.Error.Message.Contains("HABILITACAO", StringComparison.Ordinal));
         eventos.Should().BeEmpty();
         await servicos.NadaFoiGravadoAsync();
     }

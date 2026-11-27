@@ -70,7 +70,7 @@ public sealed class MarcaNoCronogramaPeloEndpointTests(CascadingFixture ambiente
         ErroDaRecusa erro = (await ErrosDaRecusaAsync(recusada)).Should().ContainSingle().Which;
         (erro.Campo, erro.Codigo).Should().Be((CampoDaMarca(1), CodigoDaPrecedencia));
         erro.Identificadores.Should().BeNull();
-        erro.Mensagem.Should().Contain("RESULTADO_FINAL").And.Contain("HABILITACAO");
+        erro.Mensagem.Should().Contain("'Resultado final'").And.Contain("'Habilitação'").And.NotContain("RESULTADO_FINAL").And.NotContain("HABILITACAO", "a mensagem cita o nome da fase, nunca o código");
     }
 
     [Fact(DisplayName = "A primeira e a terceira fase de um grupo no mesmo momento, ligadas por precedência, são recusadas mesmo sem serem vizinhas")]

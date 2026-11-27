@@ -122,5 +122,5 @@ internal static class ExigenciaDasBancasDaHomologacao
         FaseDeclarada.ListaDasBancasRequeridas,
         new DomainError(
             ProcessoSeletivoErrorCodes.HomologacaoDasInscricoesSemBanca,
-            $"A fase '{par.Fase.Codigo}' homologa as inscrições, e nem ela nem as etapas dela preveem banca que julgue a homologação das inscrições. Toda origem de candidatos exige essa banca. Acrescente-a à fase ou a uma etapa dela."));
+            $"A fase {par.Fase.Citacao} homologa as inscrições, e nem ela nem as etapas dela preveem banca que julgue a homologação das inscrições. Toda origem de candidatos exige essa banca. Acrescente-a à fase ou a uma etapa dela."));
 }

@@ -36,7 +36,7 @@ public sealed class ObrigatoriedadeDasChamadasTests
         recusas.Should().ContainSingle();
         recusas[0].Error.Code.Should().Be(FormularioProcessoErrorCodes.ChamadasSemFormularioObrigatorio);
         recusas[0].Field.Should().Be("fases[1]");
-        recusas[0].Error.Message.Should().Contain("HABILITACAO");
+        recusas[0].Error.Message.Should().Contain("'Habilitação'").And.NotContain("HABILITACAO");
     }
 
     [Fact(DisplayName = "A fase organizada em chamadas com formulário obrigatório é aceita")]

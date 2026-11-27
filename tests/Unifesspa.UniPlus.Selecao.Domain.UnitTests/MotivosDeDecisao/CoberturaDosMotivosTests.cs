@@ -36,7 +36,7 @@ public sealed class CoberturaDosMotivosTests
         falta.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
         falta.Field.Should().Be("motivosDeDecisao");
         falta.Error.Message.Should().Be(
-            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.");
+            $"A fase 'Inscrição' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.");
     }
 
     [Fact(DisplayName = "Motivo de outro tipo ou de outro fundamento não cobre o fundamento")]
@@ -79,8 +79,8 @@ public sealed class CoberturaDosMotivosTests
         FieldError[] faltas = Faltas(processo, escolhidos);
 
         faltas.Select(f => f.Error.Message).Should().Equal(
-            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo favorável para o fundamento de isenção {"CADASTRO_UNICO"}.",
-            $"A fase 'HOMOLOGACAO_INSCRICOES' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"CADASTRO_UNICO"}.");
+            $"A fase 'Homologação das inscrições' precisa de ao menos um motivo favorável para o fundamento de isenção {"CADASTRO_UNICO"}.",
+            $"A fase 'Homologação das inscrições' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"CADASTRO_UNICO"}.");
     }
 
     [Fact(DisplayName = "A etapa que declara o tipo de isenção também é lugar da cobertura, depois das fases")]
@@ -90,7 +90,7 @@ public sealed class CoberturaDosMotivosTests
         ProcessoParaMotivos.DeclararNaEtapa(processo, "Prova discursiva", TipoMotivoDeDecisao.IsencaoDaTaxa);
 
         Faltas(processo).Select(f => f.Error.Message[..f.Error.Message.IndexOf(" precisa", StringComparison.Ordinal)]).Distinct().Should().Equal(
-            "A fase 'INSCRICAO'", "A etapa 'Prova discursiva'");
+            "A fase 'Inscrição'", "A etapa 'Prova discursiva'");
     }
 
     [Fact(DisplayName = "Fundamento habilitado sem fase nem etapa que declare o tipo de isenção recusa com tipo de decisão não declarado, um por fundamento")]

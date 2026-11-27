@@ -54,6 +54,8 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
 
     public string TipoFaseNome { get; private set; } = string.Empty;
 
+    public CitacaoDaFase Citacao => new(TipoFaseNome);
+
     /// <summary>A unidade responsável, opcional no rascunho e exigida na publicação.</summary>
     public UnidadeResponsavelSnapshot? UnidadeResponsavel { get; private set; }
 

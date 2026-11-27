@@ -42,7 +42,7 @@ public sealed class InstanciaSuperiorNaoAdmitidaTests
         recusa.Field.Should().Be("fases[0].regraRecurso.admiteInstanciaSuperior");
         recusa.Error.Code.Should().Be("Banca.TipoNaoAdmiteInstanciaSuperior");
         recusa.Error.Message.Should().Be(
-            "O recurso da fase 'AVALIACAO' admite instância superior, mas o recurso do item avaliado pela banca 'Banca de heteroidentificação 1' (Heteroidentificação) se encerra na 1ª instância. Declare que o recurso não admite instância superior.");
+            "O recurso da fase 'Fase de avaliação' admite instância superior, mas o recurso do item avaliado pela banca 'Banca de heteroidentificação 1' (Heteroidentificação) se encerra na 1ª instância. Declare que o recurso não admite instância superior.");
     }
 
     [Fact(DisplayName = "O recurso da etapa que admite instância superior sobre item que se encerra na 1ª é recusado, na posição do recurso")]

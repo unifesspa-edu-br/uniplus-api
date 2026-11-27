@@ -69,10 +69,11 @@ public sealed class MesmoMomentoNaEstruturaDoCronogramaTests
     [Fact(DisplayName = "Fases ligadas por precedência no mesmo momento são recusadas na que vem depois, citando as duas")]
     public void Precedencia_FasesLigadasNoMesmoMomento_RecusaNaMarcada()
     {
-        CronogramaDoProcesso cronograma = Cronograma(new ModeloDeFase("A", 1).Declarar(), new ModeloDeFase("B", 2).NoMesmoMomento().Declarar());
+        CronogramaDoProcesso cronograma = Cronograma(
+            (new ModeloDeFase("A", 1) with { Nome = "Primeira fase" }).Declarar(), (new ModeloDeFase("B", 2) with { Nome = "Segunda fase" }).NoMesmoMomento().Declarar());
 
         Precedencia(cronograma, Aresta("A", "B")).Should().Equal(("fases[1].noMesmoMomentoDaAnterior", FasesLigadas));
-        cronograma.ConferirPrecedencia([Aresta("A", "B")]).Single().Error.Message.Should().Contain("'A'").And.Contain("'B'");
+        cronograma.ConferirPrecedencia([Aresta("A", "B")]).Single().Error.Message.Should().Contain("'Primeira fase'").And.Contain("'Segunda fase'").And.NotContain("'A'");
     }
 
     [Fact(DisplayName = "A primeira e a terceira de uma cadeia marcada, sem serem vizinhas, também são recusadas")]

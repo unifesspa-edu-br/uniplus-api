@@ -68,7 +68,7 @@ internal static class ConferenciaDaSegundaInstancia
             fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas),
             SobraNaFase(fase, posicao, EtapasNoAlcanceDaBancaDaFase(fase, etapas)),
             banca => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]",
-                ExigenciaDaBancaDaSegundaInstancia.FaseComMaisDeUmaBanca(fase.Codigo, fase.Bancas.BancasDaSegundaInstancia.Count, banca)));
+                ExigenciaDaBancaDaSegundaInstancia.FaseComMaisDeUmaBanca(fase.Citacao, fase.Bancas.BancasDaSegundaInstancia.Count, banca)));
 
     private static Veredicto ExcessoNaEtapa(EtapaDeclarada etapa, int posicao) =>
         ExcessoDasBancas(
@@ -118,7 +118,7 @@ internal static class ConferenciaDaSegundaInstancia
             || JulgadorasIndeterminadas.BancasDaFaseDaEtapaIncertas(cronograma, etapa)
             || recusadosPelaInstanciaSuperior.Any(item => item.Recurso.Etapa?.Posicao == posicao);
 
-        return cortada ? Veredicto.SemJulgar : new([CausaDaFaltaNaEtapa(etapa, posicao)], Indeterminado: false);
+        return cortada ? Veredicto.SemJulgar : new([CausaDaFaltaNaEtapa(cronograma, etapa, posicao)], Indeterminado: false);
     }
 
     // A etapa cujos recursos têm parte recusada pode admitir instância superior: a falta fica para ser julgada, e não afirmada.
@@ -129,10 +129,10 @@ internal static class ConferenciaDaSegundaInstancia
             FaseDaEtapa(cronograma, etapa)?.Bancas.BancasDaSegundaInstancia.Count > 0);
 
     private static FieldError CausaDaFaltaNaFase(FaseDeclarada fase, int posicao) => CronogramaDoProcesso.NaFase(
-        posicao, FaseDeclarada.ListaDasBancasRequeridas, ExigenciaDaBancaDaSegundaInstancia.FaseSemBancaDaSegundaInstancia(fase.Codigo));
+        posicao, FaseDeclarada.ListaDasBancasRequeridas, ExigenciaDaBancaDaSegundaInstancia.FaseSemBancaDaSegundaInstancia(fase.Citacao));
 
-    private static FieldError CausaDaFaltaNaEtapa(EtapaDeclarada etapa, int posicao) => EtapasDoProcesso.NaEtapa(
-        posicao, EtapaDeclarada.ListaDasBancas, ExigenciaDaBancaDaSegundaInstancia.EtapaSemBancaDaSegundaInstancia(posicao, etapa.FaseCodigo));
+    private static FieldError CausaDaFaltaNaEtapa(CronogramaDoProcesso cronograma, EtapaDeclarada etapa, int posicao) => EtapasDoProcesso.NaEtapa(
+        posicao, EtapaDeclarada.ListaDasBancas, ExigenciaDaBancaDaSegundaInstancia.EtapaSemBancaDaSegundaInstancia(posicao, FaseDaEtapa(cronograma, etapa)?.Citacao));
 
     private static Veredicto SobraNaFase(FaseDeclarada fase, int posicao, AlcanceDaBancaDaFase alcance)
     {
@@ -173,8 +173,8 @@ internal static class ConferenciaDaSegundaInstancia
             posicao,
             $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]",
             alcance.EtapaQueAdmiteTemBancaPropria
-                ? ExigenciaDaBancaDaSegundaInstancia.FaseComBancaSoComEtapasQueTemBancaPropria(fase.Codigo, banca)
-                : ExigenciaDaBancaDaSegundaInstancia.FaseComBancaSemNenhumRecursoQueAdmita(fase.Codigo, banca));
+                ? ExigenciaDaBancaDaSegundaInstancia.FaseComBancaSoComEtapasQueTemBancaPropria(fase.Citacao, banca)
+                : ExigenciaDaBancaDaSegundaInstancia.FaseComBancaSemNenhumRecursoQueAdmita(fase.Citacao, banca));
 
     // O ponto único da leitura estrita da banca da fase: ela só tem recurso para julgar se o da fase admite instância superior ou se
     // alguma etapa da fase que admite não tem banca de 2ª instância própria. Trocar essa leitura muda só este método.

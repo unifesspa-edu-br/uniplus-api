@@ -13,7 +13,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Fases
 public sealed class ExcessoDeBancasDaSegundaInstanciaTests
 {
     private const string Item = "cronograma_uma_banca_da_segunda_instancia_por_fase_ou_etapa";
-    private const string DetalheFase = "A fase 'AVALIACAO' prevê 3 bancas com o papel 'Julga o recurso em 2ª instância', e a 2ª instância é julgada por uma única banca na fase. Mantenha uma e retire as demais, a começar pela banca 'Banca de análise de recursos de 2ª instância 2'.";
+    private const string DetalheFase = "A fase 'Fase de avaliação' prevê 3 bancas com o papel 'Julga o recurso em 2ª instância', e a 2ª instância é julgada por uma única banca na fase. Mantenha uma e retire as demais, a começar pela banca 'Banca de análise de recursos de 2ª instância 2'.";
     private const string DetalheEtapa = "A etapa na posição 1 prevê 3 bancas com o papel 'Julga o recurso em 2ª instância', e a 2ª instância é julgada por uma única banca na etapa. Mantenha uma e retire as demais, a começar pela banca 'Banca de análise de recursos de 2ª instância 2'.";
 
     [Fact]

@@ -29,6 +29,8 @@ public sealed class QuemJulgaORecursoTests
 {
     private const string Fase = "AVALIACAO";
 
+    private const string NomeDaFase = "Fase de avaliação";
+
     private static readonly ProcedimentoDeRecursoDeclarado[] DaNota = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa)];
 
     private static readonly TipoDeBancaCopiado Entrevista = Avaliadora(TipoDeBanca.Entrevista, false, TipoMotivoDeDecisao.NotaDaEtapa);
@@ -161,8 +163,8 @@ public sealed class QuemJulgaORecursoTests
         Itens(FaseComRecurso(Fase, doisTipos), etapa)
             .Select(static item => (item.Recurso.Onde, item.Procedimento?.TipoDeDecisao))
             .Should().Equal(
-                ($"fase '{Fase}'", TipoMotivoDeDecisao.AnaliseDocumental),
-                ($"fase '{Fase}'", TipoMotivoDeDecisao.NotaDaEtapa),
+                ($"fase '{NomeDaFase}'", TipoMotivoDeDecisao.AnaliseDocumental),
+                ($"fase '{NomeDaFase}'", TipoMotivoDeDecisao.NotaDaEtapa),
                 ("etapa na posição 1", TipoMotivoDeDecisao.NotaDaEtapa));
     }
 

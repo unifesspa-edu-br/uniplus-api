@@ -68,25 +68,32 @@ internal static class LeituraDoCronograma
         Guid id = leitor.Identificador(item, "id", path);
         ChaveLocal chave = ChavesNoEnvelope.Ler(leitor, item, path);
         int ordem = leitor.Inteiro(item, "ordem", path);
-        OrigemCanonicaDaFase origem = LerOrigemCanonica(leitor, item, path);
+        OrigemCanonicaDaFase? origem = LerOrigemCanonica(leitor, item, path);
         DecisoesDeCronogramaDaFase decisoes = LerDecisoesSemUnidade(leitor, item, path, ordem);
         bool emiteParecerIndividual = leitor.Booleano(item, "emiteParecerIndividual", path);
 
-        return leitor.Falhou
+        return leitor.Falhou || origem is null
             ? null
             : LerFilhasEMontar(leitor, item, path, (id, chave), origem, decisoes, emiteParecerIndividual);
     }
 
-    private static OrigemCanonicaDaFase LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path) => new(
-        leitor.Identificador(item, "tipoFaseOrigemId", path),
-        leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo),
-        leitor.CodigoDeContrato<OrigemDataFase>(item, "origemData", path),
-        leitor.Booleano(item, "agrupaEtapas", path),
-        leitor.Booleano(item, "permiteComplementacao", path),
-        leitor.Booleano(item, "coletaInscricao", path),
-        leitor.Booleano(item, "coletaSolicitacaoIsencao", path),
-        leitor.Booleano(item, "organizadaEmChamadas", path))
-    { Nome = leitor.TextoNaoVazio(item, "tipoFaseNome", path, LimitesDoEnvelope.TipoFaseNome) };
+    // O nome ausente já falhou a leitura; sem ele a origem não existe, e quem chamou não monta a fase.
+    private static OrigemCanonicaDaFase? LerOrigemCanonica(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        Guid origemId = leitor.Identificador(item, "tipoFaseOrigemId", path);
+        string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo);
+        OrigemDataFase origemData = leitor.CodigoDeContrato<OrigemDataFase>(item, "origemData", path);
+        bool agrupaEtapas = leitor.Booleano(item, "agrupaEtapas", path);
+        bool permiteComplementacao = leitor.Booleano(item, "permiteComplementacao", path);
+        bool coletaInscricao = leitor.Booleano(item, "coletaInscricao", path);
+        bool coletaSolicitacaoIsencao = leitor.Booleano(item, "coletaSolicitacaoIsencao", path);
+        bool organizadaEmChamadas = leitor.Booleano(item, "organizadaEmChamadas", path);
+        string? nome = leitor.TextoNaoVazio(item, "tipoFaseNome", path, LimitesDoEnvelope.TipoFaseNome);
+
+        return string.IsNullOrWhiteSpace(nome)
+            ? null
+            : new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao, organizadaEmChamadas) { Nome = nome };
+    }
 
     // A unidade responsável vem depois das filhas na ordem da gramática, e completa estas decisões.
     private static DecisoesDeCronogramaDaFase LerDecisoesSemUnidade(

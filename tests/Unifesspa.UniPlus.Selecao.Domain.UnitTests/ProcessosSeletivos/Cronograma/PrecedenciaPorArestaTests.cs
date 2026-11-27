@@ -26,6 +26,16 @@ public sealed class PrecedenciaPorArestaTests
         Precedencia(cronograma, Aresta("A", "B")).Should().Equal(("fases[1].ordem", "ProcessoSeletivo.PrecedenciaFaseViolada"));
     }
 
+    [Fact(DisplayName = "A precedência violada cita cada fase pelo nome, entre aspas e com a ordem, e nunca pelo código")]
+    public void ConferirPrecedencia_OrdemInvertida_CitaONomeEAOrdem()
+    {
+        CronogramaDoProcesso cronograma = Cronograma(
+            (new ModeloDeFase("A", 2) with { Nome = "Primeira fase" }).Declarar(), (new ModeloDeFase("B", 1) with { Nome = "Segunda fase" }).Declarar());
+
+        cronograma.ConferirPrecedencia([Aresta("A", "B")]).Single().Error.Message.Should().Be(
+            "A fase 'Primeira fase' (ordem 2) precede 'Segunda fase' (ordem 1) — a ordem declarada viola a precedência do cadastro.");
+    }
+
     [Fact(DisplayName = "Aresta com fase ausente do cronograma não se aplica")]
     public void ConferirPrecedencia_FaseAusente_NaoSeAplica()
     {

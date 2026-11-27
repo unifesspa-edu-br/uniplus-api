@@ -27,6 +27,8 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Fases
 public sealed class RecursoSemBancaQueJulgueTests
 {
     private const string Fase = "AVALIACAO";
+
+    private const string NomeDaFase = "Fase de avaliação";
     private const string Papel = "Julga o recurso em 1ª instância";
 
     private static readonly ProcedimentoDeRecursoDeclarado[] DaNota = [Procedimento(TipoMotivoDeDecisao.NotaDaEtapa)];
@@ -47,7 +49,7 @@ public sealed class RecursoSemBancaQueJulgueTests
         recusa.Field.Should().Be("fases[0].bancasRequeridas");
         recusa.Error.Code.Should().Be("Cronograma.RecursoSemBanca");
         recusa.Error.Message.Should().Be(
-            $"A fase '{Fase}' admite recurso de Homologação das inscrições, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel '{Papel}', e nem a fase nem as etapas dela têm banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
+            $"A fase '{NomeDaFase}' admite recurso de Homologação das inscrições, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel '{Papel}', e nem a fase nem as etapas dela têm banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
     }
 
     [Fact(DisplayName = "A etapa com recurso de um tipo de decisão e sem quem o julgue é recusada, com o detalhe da etapa")]
@@ -60,7 +62,7 @@ public sealed class RecursoSemBancaQueJulgueTests
 
         recusa.Field.Should().Be("etapas[0].bancas");
         recusa.Error.Message.Should().Be(
-            $"A etapa na posição 1 admite recurso de Nota da etapa, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase '{Fase}', em que ela acontece, têm banca com o papel '{Papel}', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
+            $"A etapa na posição 1 admite recurso de Nota da etapa, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase '{NomeDaFase}', em que ela acontece, têm banca com o papel '{Papel}', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
     }
 
     [Fact(DisplayName = "O recurso sem procedimento declarado é recusado, na fase e na etapa, dizendo que só a banca com o papel pode julgá-lo")]
@@ -71,7 +73,7 @@ public sealed class RecursoSemBancaQueJulgueTests
         IReadOnlyList<FieldError> recusas = Recusas(FaseComRecurso(Fase, []), etapa);
 
         recusas.Select(static recusa => recusa.Error.Message).Should().Equal(
-            $"A fase '{Fase}' admite recurso sem procedimento declarado, e só uma banca com o papel '{Papel}' pode julgá-lo. Acrescente essa banca.",
+            $"A fase '{NomeDaFase}' admite recurso sem procedimento declarado, e só uma banca com o papel '{Papel}' pode julgá-lo. Acrescente essa banca.",
             $"A etapa na posição 1 admite recurso sem procedimento declarado, e só uma banca com o papel '{Papel}' pode julgá-lo. Acrescente essa banca.");
     }
 

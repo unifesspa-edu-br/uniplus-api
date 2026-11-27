@@ -53,7 +53,7 @@ public sealed class InicioDaAvaliacaoNoLugarTests
     }
 
     private static FaseDaVersaoPublicada UmaFase(string codigo) =>
-        new(Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, null, new JanelaDeTempo(InicioDoPeriodo, null), ColetaInscricao: false, []);
+        new(Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, $"Fase de teste {codigo}", null, new JanelaDeTempo(InicioDoPeriodo, null), false, []);
 
     private static FasesDaVersaoPublicada VersaoDaFase(FaseDaVersaoPublicada fase) => new(Guid.CreateVersion7(), VigenciaDaVersao, null, [fase]);
 }

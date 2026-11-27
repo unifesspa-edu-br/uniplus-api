@@ -63,19 +63,19 @@ public static class ConferenciaDosPrazosDaRetificacao
     {
         if (basePublicada.Inicio != nova.Inicio)
         {
-            yield return Recusa($"{caminho}.inicio", RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase '{basePublicada.Codigo}' já concluiu, e o início dela não muda.");
+            yield return Recusa($"{caminho}.inicio", RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase {basePublicada.Citacao} já concluiu, e o início dela não muda.");
         }
 
         if (basePublicada.Fim != nova.Fim)
         {
-            yield return Recusa($"{caminho}.fim", RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase '{basePublicada.Codigo}' já concluiu, e o término dela não muda.");
+            yield return Recusa($"{caminho}.fim", RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase {basePublicada.Citacao} já concluiu, e o término dela não muda.");
         }
     }
 
     private static IEnumerable<FieldError> RecusaDoInicio(FaseCronograma basePublicada, FaseCronograma nova, string caminho) =>
         basePublicada.Inicio == nova.Inicio
             ? []
-            : [Recusa($"{caminho}.inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado, $"A fase '{basePublicada.Codigo}' já começou, e o início dela não muda.")];
+            : [Recusa($"{caminho}.inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado, $"A fase {basePublicada.Citacao} já começou, e o início dela não muda.")];
 
     // O término é conferido do mais específico ao mais geral, e só a primeira recusa vale no campo.
     private static IEnumerable<FieldError> RecusaDoTermino(FaseCronograma basePublicada, FaseCronograma nova, string caminho, AndamentoDasFases andamento) =>
@@ -96,11 +96,11 @@ public static class ConferenciaDosPrazosDaRetificacao
 
         if (fimPublicado < andamento.Fatos.Instante && fimNovo != fimPublicado && andamento.Da(basePublicada) != AndamentoDaFase.PorComecar)
         {
-            return new DomainError(RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta, $"O período de isenção da fase '{basePublicada.Codigo}' já encerrou, e ela não reabre.");
+            return new DomainError(RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta, $"O período de isenção da fase {basePublicada.Citacao} já encerrou, e ela não reabre.");
         }
 
         return fimNovo < fimPublicado
-            ? new DomainError(RetificacaoErrorCodes.JanelaDeIsencaoReduzida, $"O período de isenção da fase '{basePublicada.Codigo}' não se reduz.")
+            ? new DomainError(RetificacaoErrorCodes.JanelaDeIsencaoReduzida, $"O período de isenção da fase {basePublicada.Citacao} não se reduz.")
             : null;
     }
 
@@ -116,7 +116,7 @@ public static class ConferenciaDosPrazosDaRetificacao
         return PrimeiraFasePosteriorIniciada(basePublicada, andamento) is { } posterior
             ? new DomainError(
                 RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada,
-                $"A fase '{basePublicada.Codigo}' já concluiu e a fase '{posterior.Codigo}' já começou: a data final da fase '{basePublicada.Codigo}' não pode mais ser prorrogada.")
+                $"A fase {basePublicada.Citacao} já concluiu e a fase {posterior.Citacao} já começou: a data final da fase {basePublicada.Citacao} não pode mais ser prorrogada.")
             : null;
     }
 
@@ -143,14 +143,14 @@ public static class ConferenciaDosPrazosDaRetificacao
         }
 
         return basePublicada.ColetaInscricao
-            ? new DomainError(RetificacaoErrorCodes.TerminoDaInscricaoAntecipado, $"O término das inscrições da fase '{basePublicada.Codigo}' não é antecipado.")
+            ? new DomainError(RetificacaoErrorCodes.TerminoDaInscricaoAntecipado, $"O término das inscrições da fase {basePublicada.Citacao} não é antecipado.")
             : RecusaDoTerminoDaFaseIniciada(basePublicada, andamento.Da(basePublicada));
     }
 
     private static DomainError? RecusaDoTerminoDaFaseIniciada(FaseCronograma basePublicada, AndamentoDaFase situacao) => situacao switch
     {
-        AndamentoDaFase.EmAndamento => new DomainError(RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado, $"A fase '{basePublicada.Codigo}' está em andamento, e o término dela não é antecipado."),
-        AndamentoDaFase.Concluida => new DomainError(RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase '{basePublicada.Codigo}' já concluiu, e o término dela não é antecipado."),
+        AndamentoDaFase.EmAndamento => new DomainError(RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado, $"A fase {basePublicada.Citacao} está em andamento, e o término dela não é antecipado."),
+        AndamentoDaFase.Concluida => new DomainError(RetificacaoErrorCodes.FaseConcluidaAlterada, $"A fase {basePublicada.Citacao} já concluiu, e o término dela não é antecipado."),
         _ => null,
     };
 

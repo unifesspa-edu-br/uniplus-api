@@ -71,7 +71,7 @@ public sealed class VotacaoDoRecursoDaBancaTests
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0]");
         recusa.Error.Code.Should().Be(CodigoDaRecusa);
         recusa.Error.Message.Should().Be(
-            "A banca 'Banca de análise de recursos 1' da fase 'RESULTADO_FINAL' decide por ato individual e julga recurso com o papel 'Julga o recurso em 1ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
+            "A banca 'Banca de análise de recursos 1' da fase 'Resultado final' decide por ato individual e julga recurso com o papel 'Julga o recurso em 1ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
     }
 
     [Fact(DisplayName = "A banca da etapa que julga recurso e decide por ato individual sem votação é recusada, citando a posição da etapa")]
@@ -115,7 +115,7 @@ public sealed class VotacaoDoRecursoDaBancaTests
 
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0]");
         recusa.Error.Code.Should().Be(CodigoDaRecusa);
-        recusa.Error.Message.Should().Be("A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'RESULTADO_FINAL' não declara a regra de deliberação.");
+        recusa.Error.Message.Should().Be("A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'Resultado final' não declara a regra de deliberação.");
     }
 
     [Theory(DisplayName = "O papel que não julga recurso decide por ato individual sem votação sem ser recusado")]

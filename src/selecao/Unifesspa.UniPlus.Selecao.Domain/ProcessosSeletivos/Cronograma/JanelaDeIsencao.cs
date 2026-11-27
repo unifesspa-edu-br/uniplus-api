@@ -56,7 +56,7 @@ internal static class JanelaDeIsencao
             extremoAusente,
             new DomainError(
                 "ProcessoSeletivo.JanelaDeIsencaoSemPrazo",
-                $"A fase '{fase.Codigo}' abre a solicitação de isenção e precisa de início e fim definidos."));
+                $"A fase {fase.Citacao} abre a solicitação de isenção e precisa de início e fim definidos."));
 
     // A duração é independente da inscrição: um certame de importação externa não tem fase de coleta, e sem esta conferência
     // publicaria janela de um dia sem que nada acusasse.

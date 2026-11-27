@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
@@ -202,9 +203,8 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
     private static Result<DateTimeOffset> InicioDaJanelaDaFase(FaseCronograma fase) =>
         fase.Inicio is { } inicio && fase.Fim is not null
             ? Result<DateTimeOffset>.Success(inicio)
-            : Result<DateTimeOffset>.Failure(new DomainError(
-                "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
-                $"A fase '{fase.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período."));
+            : Result<DateTimeOffset>.Failure(
+                RecusasDaJanelaDaInscricao.FaseQueColetaInscricaoSemJanela(fase.Citacao));
 
     /// <summary>
     /// Zona irresolvível é defeito de instalação, e os gates de publicação a mapeiam para 500.

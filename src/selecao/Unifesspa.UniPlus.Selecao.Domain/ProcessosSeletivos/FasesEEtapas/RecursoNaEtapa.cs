@@ -36,7 +36,9 @@ internal sealed record RecursoNaEtapa(CronogramaDoProcesso Cronograma, EtapaJulg
         EtapasDoProcesso.NaEtapa(Julgada.Posicao, $"{EtapaDeclarada.ListaDosRecursos}[{PosicaoDoRecurso}].{QuemJulgaORecurso.CampoDaInstanciaSuperior}", erro);
 
     public DomainError SemBanca(TipoMotivoDeDecisao? tipoDeDecisao) =>
-        RecusasDoRecurso.SemBancaNaEtapa(Julgada.Posicao, Julgada.Etapa.FaseCodigo, tipoDeDecisao);
+        RecusasDoRecurso.SemBancaNaEtapa(Julgada.Posicao, FaseDaEtapa?.Citacao, tipoDeDecisao);
+
+    private FaseDeclarada? FaseDaEtapa => Julgada.Etapa.FaseCodigo is { } codigo ? Cronograma.FaseDeCodigo(codigo) : null;
 
     private IEnumerable<BancaDeclarada> BancasDasFasesDaEtapa() => Cronograma.Fases
         .Where(fase => string.Equals(fase.Codigo, Julgada.Etapa.FaseCodigo, StringComparison.Ordinal))

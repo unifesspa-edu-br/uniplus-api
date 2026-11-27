@@ -18,7 +18,7 @@ internal static class VersoesPublicadasDeTeste
 
     internal static FaseDaVersaoPublicada UmaFase(
         Guid? origem = null, DateTimeOffset? inicio = null, bool coletaInscricao = false, params EtapaDaVersaoPublicada[] etapas) =>
-        new(Guid.CreateVersion7(), origem ?? Guid.CreateVersion7(), "FASE", null, new JanelaDeTempo(inicio, null), coletaInscricao, etapas);
+        new(Guid.CreateVersion7(), origem ?? Guid.CreateVersion7(), "FASE", "Fase de teste publicada", null, new JanelaDeTempo(inicio, null), coletaInscricao, etapas);
 
     internal static EtapaDaVersaoPublicada UmaEtapa(DateTimeOffset? inicio = null) =>
         new(Guid.CreateVersion7(), "Etapa", new JanelaDeTempo(inicio, null));
