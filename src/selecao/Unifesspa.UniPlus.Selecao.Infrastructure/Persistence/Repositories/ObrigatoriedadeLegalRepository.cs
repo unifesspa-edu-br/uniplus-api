@@ -25,14 +25,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalRepository
 {
     private readonly UniPlusDbContext _context;
-    private readonly TimeProvider _timeProvider;
 
-    public ObrigatoriedadeLegalRepository(UniPlusDbContext context, TimeProvider timeProvider)
+    public ObrigatoriedadeLegalRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(timeProvider);
         _context = context;
-        _timeProvider = timeProvider;
     }
 
     public async Task<ObrigatoriedadeLegal?> ObterPorIdAsync(
@@ -82,10 +79,10 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         PaginationDirection direction,
         string? tipoProcessoCodigo,
         CategoriaObrigatoriedade? categoria,
-        bool vigentes,
+        DateOnly? vigentesEm,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<ObrigatoriedadeLegal> query = Filtrar(tipoProcessoCodigo, categoria, vigentes);
+        IQueryable<ObrigatoriedadeLegal> query = Filtrar(tipoProcessoCodigo, categoria, vigentesEm);
 
         CursorKeysetPage<ObrigatoriedadeLegal> page = await CursorKeyset
             .ApplyAsync(query, afterId, limit, direction, cancellationToken)
@@ -94,7 +91,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
-    private IQueryable<ObrigatoriedadeLegal> Filtrar(string? tipoProcessoCodigo, CategoriaObrigatoriedade? categoria, bool vigentes)
+    private IQueryable<ObrigatoriedadeLegal> Filtrar(string? tipoProcessoCodigo, CategoriaObrigatoriedade? categoria, DateOnly? vigentesEm)
     {
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais.AsNoTracking();
         if (!string.IsNullOrEmpty(tipoProcessoCodigo))
@@ -105,14 +102,11 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         {
             query = query.Where(o => o.Categoria == valor);
         }
-        return vigentes ? FiltrarVigentes(query) : query;
+        return vigentesEm is { } dia ? FiltrarVigentes(query, dia) : query;
     }
 
-    private IQueryable<ObrigatoriedadeLegal> FiltrarVigentes(IQueryable<ObrigatoriedadeLegal> query)
-    {
-        DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
-        return query.Where(o => o.VigenciaInicio <= hoje && (o.VigenciaFim == null || o.VigenciaFim > hoje));
-    }
+    private static IQueryable<ObrigatoriedadeLegal> FiltrarVigentes(IQueryable<ObrigatoriedadeLegal> query, DateOnly dia) =>
+        query.Where(o => o.VigenciaInicio <= dia && (o.VigenciaFim == null || o.VigenciaFim > dia));
 
     public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoProcessoAsync(
         string tipoProcessoCodigo,

@@ -20,7 +20,7 @@ public sealed class ListagemDeObrigatoriedadesLegaisTests(ObrigatoriedadeLegalDb
         await using UniPlusDbContext contexto = fixture.CreateDbContext("admin");
         contexto.ObrigatoriedadesLegais.AddRange(Regra(TodosOsTiposDeProcesso.Codigo, "REGRA_TODOS"), Regra("SISU", "REGRA_SISU"));
         await contexto.SaveChangesAsync();
-        ObrigatoriedadeLegalRepository repositorio = new(contexto, TimeProvider.System);
+        ObrigatoriedadeLegalRepository repositorio = new(contexto);
 
         (await ListarAsync(repositorio, TodosOsTiposDeProcesso.Codigo)).Should().Equal("REGRA_TODOS");
         (await ListarAsync(repositorio, "SISU")).Should().Equal("REGRA_SISU");
@@ -33,7 +33,7 @@ public sealed class ListagemDeObrigatoriedadesLegaisTests(ObrigatoriedadeLegalDb
     private static async Task<string[]> ListarAsync(ObrigatoriedadeLegalRepository repositorio, string codigo)
     {
         (IReadOnlyList<ObrigatoriedadeLegal> itens, _, _) = await repositorio.ListarPaginadoAsync(
-            null, 20, PaginationDirection.Next, codigo, null, false);
+            null, 20, PaginationDirection.Next, codigo, null, null);
         return [.. itens.Select(regra => regra.RegraCodigo)];
     }
 

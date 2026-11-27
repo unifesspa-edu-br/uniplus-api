@@ -89,12 +89,16 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     private async Task<IActionResult> ListarPaginadoAsync(
         ListarObrigatoriedadesLegaisQuery consulta, PageRequest page, CancellationToken cancellationToken)
     {
-        ListarObrigatoriedadesLegaisResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
+        Result<ListarObrigatoriedadesLegaisResult> resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
 
         return await this.OkPaginatedAsync(
-            resultado.Items,
-            resultado.AnteriorAfterId,
-            resultado.ProximoAfterId,
+            resultado.Value!.Items,
+            resultado.Value.AnteriorAfterId,
+            resultado.Value.ProximoAfterId,
             page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
