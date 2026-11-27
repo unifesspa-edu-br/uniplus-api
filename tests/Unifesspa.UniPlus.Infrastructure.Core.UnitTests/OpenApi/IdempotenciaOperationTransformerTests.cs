@@ -11,11 +11,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Apoio.ControllersDeTeste;
 
 public sealed class IdempotenciaOperationTransformerTests
 {
-    [Theory]
-    [InlineData("409")]
-    [InlineData("413")]
-    public async Task TransformAsync_Should_AddTypedBody_WhenStatusIsNotDeclaredByAction(string status)
+    [Fact]
+    public async Task TransformAsync_Should_AddTypedBody_WhenStatusIsNotDeclaredByAction()
     {
+        const string status = "409";
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
@@ -64,7 +63,7 @@ public sealed class IdempotenciaOperationTransformerTests
 
         operation.Responses["409"].Description.Should().Be("Conflito de domínio específico");
         operation.Responses["409"].Content.Should().BeNullOrEmpty("a declaração própria da action não é sobrescrita nem ganha corpo");
-        operation.Responses.Should().ContainKey("413");
+        operation.Responses.Should().NotContainKey("413", "o 413 é do limite de corpo do servidor, não do filtro");
     }
 
     private static OpenApiOperationTransformerContext Context(string actionName) =>

@@ -54,6 +54,10 @@
     <Content Include="ProcessosSeletivos/Fixtures/schema-version.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../seeds/seed-tipos-ato.json" Link="seeds/seed-tipos-ato.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em

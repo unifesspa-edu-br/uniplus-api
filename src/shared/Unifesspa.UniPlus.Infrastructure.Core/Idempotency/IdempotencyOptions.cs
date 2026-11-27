@@ -26,7 +26,4 @@ public sealed record IdempotencyOptions
     /// microssegundos inteiros, a precisão do banco.
     /// </summary>
     public TimeSpan Ttl { get; init => field = value.TruncadoEmMicrossegundos(); } = TimeSpan.FromHours(24);
-
-    /// <summary>Tamanho máximo do request body aceito (rejeita 413 antes do hash).</summary>
-    public long MaxBodyBytes { get; init; } = 1L * 1024 * 1024; // 1 MiB
 }
