@@ -49,6 +49,12 @@ using Microsoft.Extensions.DependencyInjection;
 /// texto da mensagem do framework.
 /// </para>
 /// <para>
+/// <strong>Propriedade do corpo recusada só pela obrigatoriedade implícita</strong> (texto não
+/// anulável omitido ou <c>null</c>) também é respondida aqui, reconhecida pela descrição do tipo
+/// do corpo e não pela mensagem — ver <see cref="CamposObrigatoriosDoCorpo"/>. Uma propriedade com
+/// outra validação continua delegada.
+/// </para>
+/// <para>
 /// A recusa de conversão só é reivindicada quando <b>toda</b> chave reprovada está anotada.
 /// Basta uma que não esteja para este tipo devolver <see langword="null"/> — essa uma reprovou
 /// por validação, e a mensagem dela vale mais do que qualquer recusa genérica.
@@ -90,39 +96,91 @@ public static class InvalidRequestProblemFactory
         ArgumentNullException.ThrowIfNull(context);
 
         HashSet<string> bodyKeys = BodyKeys(context);
+
+        return CamposObrigatoriosDoCorpo.Identificar(context, bodyKeys) is { Count: > 0 } obrigatorios
+            ? RecusaDeCamposObrigatoriosDoCorpo(context, obrigatorios)
+            : RecusaDeLeitura(context, bodyKeys);
+    }
+
+    /// <summary>
+    /// A ordem das três perguntas importa, e é a do afunilamento. Quando o corpo veio e não
+    /// desserializa, o MVC reprova TAMBÉM o parâmetro que o receberia — então perguntar
+    /// "faltou corpo?" antes de "o corpo é ilegível?" responde "faltou corpo" para um
+    /// documento que chegou. O sinal de que houve documento é a entrada que aponta posição
+    /// dentro dele; ela desempata.
+    /// </summary>
+    private static IActionResult? RecusaDeLeitura(ActionContext context, HashSet<string> bodyKeys)
+    {
         HashSet<string> binderKeys = BinderKeys(context);
-
-        // A ordem das três perguntas importa, e é a do afunilamento. Quando o corpo veio e não
-        // desserializa, o MVC reprova TAMBÉM o parâmetro que o receberia — então perguntar
-        // "faltou corpo?" antes de "o corpo é ilegível?" responde "faltou corpo" para um
-        // documento que chegou. O sinal de que houve documento é a entrada que aponta posição
-        // dentro dele; ela desempata.
-        bool unreadable = HasDeserializationFailure(context.ModelState);
         IReadOnlyList<string> missing = MissingFields(context.ModelState, binderKeys);
-        bool bodyAbsent = !unreadable
-            && BodyProvablyAbsent(context.HttpContext.Request)
-            && HasAbsentBody(context.ModelState, bodyKeys);
 
+        return missing.Count > 0
+            ? RecusaDeCamposAusentes(context, missing)
+            : RecusaGenerica(context, bodyKeys, binderKeys);
+    }
+
+    private static IActionResult? RecusaGenerica(ActionContext context, HashSet<string> bodyKeys, HashSet<string> binderKeys)
+    {
+        bool unreadable = HasDeserializationFailure(context.ModelState);
+        bool bodyAbsent = !unreadable && BodyAbsent(context, bodyKeys);
         IReadOnlyList<string> naoConvertidos = NaoConvertidos(context, binderKeys);
-
-        if (!unreadable && !bodyAbsent && missing.Count == 0 && naoConvertidos.Count == 0)
+        if (!unreadable && !bodyAbsent && naoConvertidos.Count == 0)
         {
             return null;
         }
 
-        IDomainErrorMapper mapper = context.HttpContext.RequestServices.GetRequiredService<IDomainErrorMapper>();
-
-        // Nomear os campos é o que mais serve a quem chamou, então vem primeiro quando há o que
-        // nomear. Corpo ausente fica por último porque é o caso em que não há documento onde
-        // procurar campo nenhum.
-        (string code, string detail) =
-            missing.Count > 0 ? (InvalidRequestErrorCodes.MissingRequiredField, $"A requisição não declara {Enumerate(missing)}.")
-            : unreadable ? (InvalidRequestErrorCodes.Malformed, DetalheDeLeitura(context.HttpContext))
-            : naoConvertidos.Count > 0 ? (InvalidRequestErrorCodes.InvalidValue, $"A requisição traz {EnumerateParameters(naoConvertidos)} com valor que não corresponde ao tipo declarado.")
-            : (InvalidRequestErrorCodes.MissingBody, "A requisição não traz corpo, e este recurso exige um.");
-
-        return Result.Failure(new DomainError(code, detail)).ToActionResult(mapper);
+        (string code, string detail) = CodigoEDetalhe(context.HttpContext, unreadable, naoConvertidos);
+        return Result.Failure(new DomainError(code, detail))
+            .ToActionResult(context.HttpContext.RequestServices.GetRequiredService<IDomainErrorMapper>());
     }
+
+    private static bool BodyAbsent(ActionContext context, HashSet<string> bodyKeys) =>
+        BodyProvablyAbsent(context.HttpContext.Request) && HasAbsentBody(context.ModelState, bodyKeys);
+
+    /// <summary>
+    /// Nomear os campos é o que mais serve a quem chamou, então vem primeiro quando há o que
+    /// nomear. Corpo ausente fica por último porque é o caso em que não há documento onde
+    /// procurar campo nenhum.
+    /// </summary>
+    private static (string Code, string Detail) CodigoEDetalhe(
+        HttpContext httpContext, bool unreadable, IReadOnlyList<string> naoConvertidos) =>
+        unreadable ? (InvalidRequestErrorCodes.Malformed, DetalheDeLeitura(httpContext))
+        : naoConvertidos.Count > 0 ? (InvalidRequestErrorCodes.InvalidValue, $"A requisição traz {EnumerateParameters(naoConvertidos)} com valor que não corresponde ao tipo declarado.")
+        : (InvalidRequestErrorCodes.MissingBody, "A requisição não traz corpo, e este recurso exige um.");
+
+    /// <summary>
+    /// Um item de <c>errors[]</c> por campo, todos com o mesmo código; o <c>detail</c> da raiz nomeia
+    /// todos de uma vez, o que o item único da primeira violação não faria.
+    /// </summary>
+    private static IActionResult RecusaDeCamposObrigatoriosDoCorpo(ActionContext context, IReadOnlyList<string> campos) =>
+        RecusaPorCampo(context, campos, DetalheDosCamposSemValor);
+
+    /// <summary>
+    /// O campo obrigatório que o corpo não declara (propriedade omitida ou do item de uma lista), com o mesmo
+    /// <c>errors[]</c> por campo da recusa de valor nulo.
+    /// </summary>
+    private static IActionResult RecusaDeCamposAusentes(ActionContext context, IReadOnlyList<string> campos) =>
+        RecusaPorCampo(context, campos, static lista => $"A requisição não declara {Enumerate(lista)}.");
+
+    private static IActionResult RecusaPorCampo(
+        ActionContext context, IReadOnlyList<string> campos, Func<IReadOnlyList<string>, string> detalhe)
+    {
+        IDomainErrorMapper mapper = context.HttpContext.RequestServices.GetRequiredService<IDomainErrorMapper>();
+        IActionResult resposta = Result.ValidationFailure([.. campos.Select(campo => new FieldError(
+            campo,
+            new DomainError(InvalidRequestErrorCodes.MissingRequiredField, detalhe([campo]))))])
+            .ToActionResult(mapper);
+
+        if (resposta is ObjectResult { Value: ProblemDetails problema })
+        {
+            problema.Detail = detalhe(campos);
+        }
+
+        return resposta;
+    }
+
+    private static string DetalheDosCamposSemValor(IReadOnlyList<string> campos) =>
+        $"A requisição não traz valor para {Enumerate(campos)}.";
 
     /// <summary>
     /// A frase da recusa de leitura do corpo: a que nomeia o campo, quando se sabe qual não
@@ -177,24 +235,10 @@ public static class InvalidRequestProblemFactory
             return [];
         }
 
-        SortedSet<string> nomes = new(StringComparer.Ordinal);
+        string?[] parametros = [.. Reprovadas(context.ModelState)
+            .Select(entry => anotadas.Contains(entry.Key) ? ParametroDe(entry.Key, binderKeys) : null)];
 
-        foreach (KeyValuePair<string, ModelStateEntry> entry in context.ModelState)
-        {
-            if (entry.Value.ValidationState != ModelValidationState.Invalid)
-            {
-                continue;
-            }
-
-            if (!anotadas.Contains(entry.Key) || ParametroDe(entry.Key, binderKeys) is not { } parametro)
-            {
-                return [];
-            }
-
-            nomes.Add(parametro);
-        }
-
-        return [.. nomes];
+        return parametros.Contains(null) ? [] : [.. parametros.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)!];
     }
 
     /// <summary>
@@ -215,27 +259,19 @@ public static class InvalidRequestProblemFactory
     /// enche a mensagem de ruído sem acrescentar uma instrução que o cliente já não tenha.
     /// </para>
     /// </remarks>
-    private static string? ParametroDe(string key, HashSet<string> binderKeys)
-    {
-        if (binderKeys.TryGetValue(key, out string? exato))
-        {
-            return exato;
-        }
+    private static string? ParametroDe(string key, HashSet<string> binderKeys) =>
+        binderKeys.TryGetValue(key, out string? exato)
+            ? exato
+            : binderKeys.FirstOrDefault(parametro => EhFilhoDe(key, parametro));
 
-        foreach (string parametro in binderKeys)
-        {
-            // O separador é o que distingue o filho do homônimo: sem exigi-lo, um parâmetro
-            // chamado `tipoUnidade` seria atribuído ao parâmetro `tipo`.
-            if (key.Length > parametro.Length
-                && key.StartsWith(parametro, StringComparison.OrdinalIgnoreCase)
-                && (key[parametro.Length] is '[' or '.'))
-            {
-                return parametro;
-            }
-        }
-
-        return null;
-    }
+    /// <summary>
+    /// O separador é o que distingue o filho do homônimo: sem exigi-lo, um parâmetro chamado
+    /// <c>tipoUnidade</c> seria atribuído ao parâmetro <c>tipo</c>.
+    /// </summary>
+    private static bool EhFilhoDe(string key, string parametro) =>
+        key.Length > parametro.Length
+        && key.StartsWith(parametro, StringComparison.OrdinalIgnoreCase)
+        && key[parametro.Length] is '[' or '.';
 
     /// <summary>
     /// As chaves sob as quais uma falha diz respeito ao CORPO INTEIRO, e não a um campo dele: a
@@ -330,65 +366,60 @@ public static class InvalidRequestProblemFactory
             && bodyKeys.Contains(entry.Key));
 
     /// <summary>
-    /// Os nomes de campo que a recusa consegue afirmar, sem nenhum texto do framework junto.
+    /// Os nomes de campo que a recusa consegue afirmar, sem nenhum texto do framework junto. Só as
+    /// entradas reprovadas contam: o ModelState traz TODAS as propriedades da requisição, e a que
+    /// casou não descreve defeito nenhum.
     /// </summary>
-    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState, HashSet<string> binderKeys)
+    private static IReadOnlyList<string> MissingFields(ModelStateDictionary modelState, HashSet<string> binderKeys) =>
+        [.. Reprovadas(modelState)
+            .SelectMany(reprovada => NamesOf(reprovada.Key, reprovada.Entry, binderKeys))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+
+    private static IEnumerable<string> NamesOf(string key, ModelStateEntry entry, HashSet<string> binderKeys) =>
+        SyntheticKey.IsMatch(key) ? NamesEnumeratedByDeserializer(entry).Select(nome => CampoNoDocumento(key, nome))
+        : binderKeys.Contains(key) && NoValueSent(entry) ? [key]
+        : [];
+
+    /// <summary>
+    /// O campo no ponteiro do contrato: a posição que o desserializador anotou na chave (<c>$[0]</c>, <c>$.etapas[1]</c>)
+    /// sem o <c>$</c> inicial, seguida do nome. Na raiz do documento, o nome sozinho.
+    /// </summary>
+    private static string CampoNoDocumento(string chave, string nome)
     {
-        SortedSet<string> names = new(StringComparer.Ordinal);
-
-        foreach (KeyValuePair<string, ModelStateEntry> entry in modelState)
-        {
-            // Entrada que casou não descreve defeito nenhum: o ModelState traz TODAS as
-            // propriedades da requisição, não só as reprovadas.
-            if (entry.Value.ValidationState != ModelValidationState.Invalid)
-            {
-                continue;
-            }
-
-            if (SyntheticKey.IsMatch(entry.Key))
-            {
-                foreach (ModelError error in entry.Value.Errors)
-                {
-                    // A mensagem chega ora no campo de texto, ora na exceção que o formatter
-                    // guardou — depende de por onde a recusa passou. Ler as duas evita depender
-                    // de um detalhe de configuração que não controlamos; o recorte é o mesmo, e
-                    // é ele que mantém o nome do tipo de fora.
-                    Match list = NamesAfterIncluding.Match(
-                        string.IsNullOrEmpty(error.ErrorMessage)
-                            ? error.Exception?.Message ?? string.Empty
-                            : error.ErrorMessage);
-                    if (!list.Success)
-                    {
-                        continue;
-                    }
-
-                    names.UnionWith(SingleQuoted
-                        .Matches(list.Groups["list"].Value)
-                        .Select(static match => match.Groups["name"].Value));
-                }
-
-                continue;
-            }
-
-            // Fora do corpo, o que caracteriza ausência é não haver valor tentado nem valor
-            // cru: não houve o que converter, porque nada veio. `?vigentes=abc` também reprova,
-            // mas ali o campo FOI declarado — só não converte —, e quem responde por ele é o
-            // factory anterior da cadeia.
-            //
-            // A checagem vale só para chave de parâmetro do BINDER. Propriedade de dentro do
-            // corpo satisfaz a mesma condição mesmo tendo vindo com `null`, porque o input
-            // formatter não preenche esses valores para o modelo — dizer "não declarou" ali
-            // seria falso, e engoliria a mensagem de quem de fato reprovou.
-            if (binderKeys.Contains(entry.Key)
-                && entry.Value.AttemptedValue is null
-                && entry.Value.RawValue is null)
-            {
-                names.Add(entry.Key);
-            }
-        }
-
-        return [.. names];
+        string posicao = chave.TrimStart('$').TrimStart('.');
+        return posicao.Length == 0 ? nome : $"{posicao}.{nome}";
     }
+
+    /// <summary>
+    /// A mensagem chega ora no campo de texto, ora na exceção que o formatter guardou — depende de
+    /// por onde a recusa passou. Ler as duas evita depender de um detalhe de configuração que não
+    /// controlamos; o recorte é o mesmo, e é ele que mantém o nome do tipo de fora.
+    /// </summary>
+    private static IEnumerable<string> NamesEnumeratedByDeserializer(ModelStateEntry entry) =>
+        entry.Errors
+            .Select(static error => NamesAfterIncluding.Match(
+                string.IsNullOrEmpty(error.ErrorMessage) ? error.Exception?.Message ?? string.Empty : error.ErrorMessage))
+            .Where(static list => list.Success)
+            .SelectMany(static list => SingleQuoted.Matches(list.Groups["list"].Value))
+            .Select(static match => match.Groups["name"].Value);
+
+    /// <summary>
+    /// Fora do corpo, o que caracteriza ausência é não haver valor tentado nem valor cru: não
+    /// houve o que converter, porque nada veio. <c>?vigentes=abc</c> também reprova, mas ali o
+    /// campo FOI declarado — só não converte —, e quem responde por ele é o factory anterior da
+    /// cadeia. A checagem vale só para chave de parâmetro do BINDER (o chamador a restringe):
+    /// propriedade de dentro do corpo satisfaz a mesma condição mesmo tendo vindo com <c>null</c>, porque o input formatter
+    /// não preenche esses valores para o modelo — dizer "não declarou" ali seria falso, e
+    /// engoliria a mensagem de quem de fato reprovou.
+    /// </summary>
+    private static bool NoValueSent(ModelStateEntry entry) =>
+        entry.AttemptedValue is null && entry.RawValue is null;
+
+    private static IEnumerable<(string Key, ModelStateEntry Entry)> Reprovadas(ModelStateDictionary modelState) =>
+        modelState
+            .Where(static entry => entry.Value?.ValidationState == ModelValidationState.Invalid)
+            .Select(static entry => (entry.Key, entry.Value!));
 
     /// <summary>
     /// Se alguma entrada aponta posição no documento — a marca de que HAVIA documento e quem
