@@ -73,6 +73,23 @@ internal sealed class ModalidadeReader : IModalidadeReader
         return entidade is null ? null : ParaView(entidade);
     }
 
+    public async Task<IReadOnlyList<ModalidadeView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoModalidade> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoModalidade.Criar);
+        List<Modalidade> entidades = await _dbContext.Modalidades
+            .AsNoTracking()
+            .Where(e => codigosDoLote.Contains(e.Codigo))
+            .OrderBy(e => e.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
     // Código fora do formato não tem modalidade viva, então a consulta é dispensável.
     private static CodigoModalidade? CodigoInformado(string codigo)
     {

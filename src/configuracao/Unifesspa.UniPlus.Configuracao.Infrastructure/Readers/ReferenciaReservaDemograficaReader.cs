@@ -52,6 +52,23 @@ internal sealed class ReferenciaReservaDemograficaReader : IReferenciaReservaDem
         return entidade is null ? null : ParaView(entidade);
     }
 
+    public async Task<IReadOnlyList<ReferenciaReservaDemograficaView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<string> censosDoLote = CodigosDoLote.Textuais(codigos);
+        List<ReferenciaReservaDemografica> entidades = await _dbContext.ReferenciasReservaDemografica
+            .AsNoTracking()
+            .Where(r => censosDoLote.Contains(r.CensoReferencia))
+            .OrderBy(r => r.CensoReferencia)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
     private static ReferenciaReservaDemograficaView ParaView(ReferenciaReservaDemografica r) =>
         new(
             r.Id,

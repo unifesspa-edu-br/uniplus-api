@@ -54,6 +54,26 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
         return entidade is null ? null : await ParaViewComCursoAsync(entidade, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<OfertaCursoView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<string> codigosDoLote = CodigosDoLote.Textuais(codigos);
+        List<OfertaCurso> entidades = await _dbContext.OfertasCurso
+            .AsNoTracking()
+            .Where(o => codigosDoLote.Contains(o.Codigo))
+            .OrderBy(o => o.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        Dictionary<Guid, CursoDaOferta> cursos = await ObterCursosAsync(
+            [.. entidades.Select(o => o.CursoId).Distinct()], cancellationToken).ConfigureAwait(false);
+
+        return [.. entidades.Select(o => ParaView(o, cursos.GetValueOrDefault(o.CursoId)))];
+    }
+
     private async Task<OfertaCursoView> ParaViewComCursoAsync(OfertaCurso entidade, CancellationToken cancellationToken)
     {
         Dictionary<Guid, CursoDaOferta> cursos = await ObterCursosAsync(

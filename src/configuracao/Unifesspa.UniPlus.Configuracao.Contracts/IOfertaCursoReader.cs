@@ -22,4 +22,14 @@ public interface IOfertaCursoReader
     Task<OfertaCursoView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As ofertas de curso vivas (não soft-deleted) dos <paramref name="codigos"/>, numa só leitura, ordenadas por
+    /// <c>Codigo</c> ascendente. O código sem cadastro vivo — fora do formato, inexistente ou removido — não aparece
+    /// no resultado, e um código repetido no lote devolve o cadastro uma só vez. A comparação usa os códigos exatos,
+    /// sem aparar nem normalizar.
+    /// </summary>
+    Task<IReadOnlyList<OfertaCursoView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
 }

@@ -22,4 +22,14 @@ public interface IReferenciaReservaDemograficaReader
     Task<ReferenciaReservaDemograficaView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As referências de reserva demográfica vivas (não soft-deleted) dos <paramref name="codigos"/>, numa só leitura, ordenadas por
+    /// <c>CensoReferencia</c> ascendente. O código sem cadastro vivo — fora do formato, inexistente ou removido — não aparece
+    /// no resultado, e um código repetido no lote devolve o cadastro uma só vez. A comparação usa os códigos exatos,
+    /// sem aparar nem normalizar.
+    /// </summary>
+    Task<IReadOnlyList<ReferenciaReservaDemograficaView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
 }

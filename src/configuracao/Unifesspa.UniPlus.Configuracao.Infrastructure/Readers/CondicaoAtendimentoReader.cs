@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -50,6 +51,23 @@ internal sealed class CondicaoAtendimentoReader : ICondicaoAtendimentoReader
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
+    }
+
+    public async Task<IReadOnlyList<CondicaoAtendimentoView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoCondicao> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoCondicao.Criar);
+        List<CondicaoAtendimentoEspecializado> entidades = await _dbContext.CondicoesAtendimento
+            .AsNoTracking()
+            .Where(e => codigosDoLote.Contains(e.Codigo))
+            .OrderBy(e => e.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
     }
 
     private static CondicaoAtendimentoView ParaView(CondicaoAtendimentoEspecializado c) =>

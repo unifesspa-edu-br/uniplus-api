@@ -20,4 +20,13 @@ internal static class CodigosDoLote
             .Select(resultado => resultado.Value!)
             .Distinct()];
     }
+
+    /// <summary>
+    /// Os códigos de texto livre de um lote, sem repetição. O caractere nulo não cabe em coluna de texto do
+    /// Postgres e faria o parâmetro ser recusado: esse código não tem cadastro.
+    /// </summary>
+    internal static List<string> Textuais(IReadOnlyCollection<string> codigos) =>
+        [.. codigos
+            .Where(static codigo => !codigo.Contains('\0', StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)];
 }

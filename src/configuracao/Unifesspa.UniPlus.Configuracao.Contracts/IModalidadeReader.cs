@@ -35,4 +35,14 @@ public interface IModalidadeReader
     Task<ModalidadeView?> ObterVivaPorCodigoAsync(
         string codigo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As modalidades vivas (não soft-deleted) dos <paramref name="codigos"/>, numa só leitura, ordenadas por
+    /// <c>Codigo</c> ascendente. O código sem cadastro vivo — fora do formato, inexistente ou removido — não aparece
+    /// no resultado, e um código repetido no lote devolve o cadastro uma só vez. A comparação usa os códigos exatos,
+    /// sem aparar nem normalizar.
+    /// </summary>
+    Task<IReadOnlyList<ModalidadeView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
 }

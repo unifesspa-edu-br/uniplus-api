@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -50,6 +51,23 @@ internal sealed class TipoDeficienciaReader : ITipoDeficienciaReader
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
+    }
+
+    public async Task<IReadOnlyList<TipoDeficienciaView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoTipoDeficiencia> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoTipoDeficiencia.Criar);
+        List<TipoDeficiencia> entidades = await _dbContext.TiposDeficiencia
+            .AsNoTracking()
+            .Where(e => codigosDoLote.Contains(e.Codigo))
+            .OrderBy(e => e.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
     }
 
     private static TipoDeficienciaView ParaView(TipoDeficiencia t) =>
