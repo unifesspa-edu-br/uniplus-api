@@ -49,13 +49,13 @@ public sealed class MontagemDoAtoNormativoTests
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
     }
 
-    [Fact(DisplayName = "Código fora do formato sem versão vigente é recusado pelo catálogo")]
-    public async Task Montar_TipoForaDoFormatoSemVersaoVigente_Recusa()
+    [Fact(DisplayName = "O catálogo recebe o código do tipo exatamente como veio, sem aparar espaços")]
+    public async Task Montar_CodigoComEspacos_BuscaNoCatalogoSemAparar()
     {
-        Result<AtoMontado> montado = await Montar(Comando() with { TipoCodigo = "aviso" });
+        Result<AtoMontado> montado = await Montar(Comando() with { TipoCodigo = " EDITAL_ABERTURA " });
 
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
-        await _tipos.Received().ObterVigenteAsync("aviso", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+        await _tipos.Received().ObterVigenteAsync(" EDITAL_ABERTURA ", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Recusa o ato de processo seletivo fora do registro pelo domínio")]

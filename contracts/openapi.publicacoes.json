@@ -1211,6 +1211,8 @@
             "format": "uuid"
           },
           "codigo": {
+            "maxLength": 60,
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "type": [
               "null",
               "string"
@@ -1297,6 +1299,8 @@
         "type": "object",
         "properties": {
           "codigo": {
+            "maxLength": 60,
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "type": [
               "null",
               "string"
@@ -1530,6 +1534,8 @@
             ]
           },
           "tipoCodigo": {
+            "maxLength": 60,
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "type": "string"
           },
           "dataDoAto": {
@@ -1777,6 +1783,8 @@
         "type": "object",
         "properties": {
           "entidadeTipo": {
+            "maxLength": 60,
+            "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
             "type": "string"
           },
           "entidadeId": {

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
 using FluentValidation;
 
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -56,8 +55,9 @@ public sealed class RegistrarAtoNormativoCommandValidator
         RuleFor(x => x.TipoCodigo)
             .NotEmpty().WithMessage(AtoNormativoRegras.TipoCodigoObrigatorio)
             .MaximumLength(AtoNormativoRegras.TipoCodigoMaxLength).WithMessage(AtoNormativoRegras.TipoCodigoTamanho)
+            .Must(AtoNormativoRegras.EstaEmBrancoOuNoFormatoDeCodigo)
+            .WithMessage(AtoNormativoRegras.TipoCodigoFormato).WithErrorCode(CodigosDeValidacao.Formato)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.TipoCodigo));
-
     }
 
     private void ValidarDocumento()
@@ -145,7 +145,7 @@ public sealed class RegistrarAtoNormativoCommandValidator
         vinculo.RuleFor(v => v.EntidadeTipo)
             .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeTipoObrigatorio)
             .MaximumLength(AtoNormativoRegras.EntidadeTipoMaxLength).WithMessage(AtoNormativoRegras.EntidadeTipoTamanho)
-            .Must(tipo => tipo is null || FormatoDoCodigo.TemFormatoValido(tipo))
+            .Must(AtoNormativoRegras.EstaEmBrancoOuNoFormatoDeCodigo)
             .WithMessage(AtoNormativoRegras.EntidadeTipoFormato).WithErrorCode(CodigosDeValidacao.Formato)
             .OverridePropertyName(nameof(VinculoEntidadeInput.EntidadeTipo));
         vinculo.RuleFor(v => v.EntidadeId)

@@ -14,7 +14,6 @@ public sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNorm
     private const int OrgaoMaxLength = 200;
     private const int SerieMaxLength = 100;
     private const int NumeroMaxLength = 60;
-    private const int TipoCodigoMaxLength = 60;
     private const int TipoNomeMaxLength = 200;
     private const int AssinanteMaxLength = 200;
     private const int MotivoRetificacaoMaxLength = 1000;
@@ -84,7 +83,7 @@ public sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNorm
         builder.Property(a => a.Serie).HasMaxLength(SerieMaxLength).IsRequired();
         builder.Property(a => a.Ano).IsRequired();
         builder.Property(a => a.Numero).HasMaxLength(NumeroMaxLength);
-        builder.Property(a => a.TipoCodigo).HasMaxLength(TipoCodigoMaxLength).IsRequired();
+        builder.Property(a => a.TipoCodigo).HasMaxLength(TipoAtoPublicado.TamanhoMaximoDoCodigo).IsRequired();
         builder.Property(a => a.TipoNome).HasMaxLength(TipoNomeMaxLength);
 
         builder.Property(a => a.CongelaConfiguracao).IsRequired();

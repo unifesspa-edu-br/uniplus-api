@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using FluentValidation.Results;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
 /// <summary>
@@ -23,9 +24,57 @@ public sealed class RegistrarAtoNormativoCommandValidatorTests
 
     private readonly RegistrarAtoNormativoCommandValidator _validator = new();
 
-    [Fact(DisplayName = "O catálogo confere o formato do tipo de ato e recusa tipo sem versão vigente")]
-    public void Validar_TipoForaDoFormato_Aceita() =>
-        _validator.Validate(Comando() with { TipoCodigo = "aviso" }).IsValid.Should().BeTrue();
+    [Theory(DisplayName = "Código do tipo de ato com espaços, minúsculas ou número é recusado no campo tipoCodigo")]
+    [InlineData(" EDITAL_ABERTURA ")]
+    [InlineData("edital_abertura")]
+    [InlineData("5")]
+    public void TipoCodigoForaDoFormato_Recusado(string tipoCodigo)
+    {
+        ValidationResult resultado = _validator.Validate(Comando() with { TipoCodigo = tipoCodigo });
+
+        ValidationFailure falha = resultado.Errors.Should().ContainSingle().Subject;
+        falha.PropertyName.Should().Be("TipoCodigo");
+        falha.ErrorCode.Should().Be(CodigosDeValidacao.Formato);
+        falha.ErrorMessage.Should().NotContain(tipoCodigo);
+    }
+
+    [Fact(DisplayName = "Código do tipo de ato em branco é recusado só como obrigatório")]
+    public void TipoCodigoEmBranco_RecusadoSoComoObrigatorio()
+    {
+        ValidationResult resultado = _validator.Validate(Comando() with { TipoCodigo = "   " });
+
+        resultado.Errors.Should().ContainSingle().Which.ErrorMessage.Should().Be(AtoNormativoRegras.TipoCodigoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Código do tipo de ato fora do formato acumula com as demais causas")]
+    public void TipoCodigoForaDoFormato_AcumulaComAsDemaisCausas()
+    {
+        ValidationResult resultado = _validator.Validate(Comando() with { TipoCodigo = "edital_abertura", Ano = 0 });
+
+        resultado.Errors.Select(falha => falha.PropertyName).Should().BeEquivalentTo("TipoCodigo", "Ano");
+    }
+
+    [Theory(DisplayName = "Tipo da entidade vinculada com espaços, minúsculas, hífen ou número é recusado no campo entidadeTipo")]
+    [InlineData(" OUTRO_TIPO ")]
+    [InlineData("outro_tipo")]
+    [InlineData("processo-seletivo")]
+    [InlineData("3")]
+    public void EntidadeTipoForaDoFormato_Recusado(string entidadeTipo)
+    {
+        ValidationResult resultado = _validator.Validate(
+            Comando() with { Vinculos = [new VinculoEntidadeInput(entidadeTipo, Guid.CreateVersion7())] });
+
+        ValidationFailure falha = resultado.Errors.Should().ContainSingle().Subject;
+        falha.PropertyName.Should().EndWith("EntidadeTipo");
+        falha.ErrorCode.Should().Be(CodigosDeValidacao.Formato);
+        falha.ErrorMessage.Should().NotContain(entidadeTipo);
+    }
+
+    [Fact(DisplayName = "Códigos exatos do tipo de ato e da entidade vinculada passam")]
+    public void CodigosExatos_Passam() =>
+        _validator.Validate(
+            Comando() with { TipoCodigo = "EDITAL_ABERTURA", Vinculos = [new VinculoEntidadeInput("OUTRO_TIPO", Guid.CreateVersion7())] })
+            .IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Comando válido passa")]
     public void Valido()
