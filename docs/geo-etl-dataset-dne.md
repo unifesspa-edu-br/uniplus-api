@@ -35,11 +35,11 @@ dumps .sql  ──psql -f──▶  uniplus_geo_staging (15 tabelas varchar)
 
 Na stack local, o staging é o banco próprio `uniplus_geo_staging` (schema `public`, role `uniplus_geo_staging_app`), que o `docker/init-db.sql` cria vazio e o `geo-api` lê por `ConnectionStrings__GeoStagingDb`. Sem a carga, o Geo sobe sem cidades nem logradouros, e a busca de CEP e de município não acha nada.
 
-1. **Restaurar os dumps.** Descompacte os 15 dumps da release (ex.: `tbl_cep_202601_postgresql.zip`) num diretório e restaure cada um. Na release 202601 isso levou cerca de 30 minutos, quase todo no `logradouro`:
+1. **Restaurar os dumps.** Descompacte os 15 dumps da release (ex.: `tbl_cep_202609_postgresql.zip`, que traz as tabelas `tbl_cep_202610_*`) num diretório e restaure cada um. Na release 202610 isso levou cerca de 5 minutos em HML, quase todo no `logradouro`:
 
    ```bash
    cd <diretório dos dumps>
-   for f in tbl_cep_202601_n_*.sql; do
+   for f in tbl_cep_202610_n_*.sql; do
      docker compose -p <projeto> -f <api>/docker/docker-compose.yml exec -T postgres \
        psql -q -U uniplus_geo_staging_app -d uniplus_geo_staging -v ON_ERROR_STOP=1 < "$f"
    done
@@ -55,10 +55,10 @@ Na stack local, o staging é o banco próprio `uniplus_geo_staging` (schema `pub
      --data-urlencode 'password=Uni+Teste26' | jq -r .access_token)
    curl -i -X POST http://localhost:5400/api/admin/geo/importacoes \
      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -H "Idempotency-Key: $(uuidgen)" -d '{"Versao":"202601"}'
+     -H "Idempotency-Key: $(uuidgen)" -d '{"Versao":"202610"}'
    ```
 
-   A resposta é `202`, com `Location`. Consulte o `Location` com o mesmo token até `status` = `Concluida`; na 202601 a importação levou menos de um minuto.
+   A resposta é `202`, com `Location`. Consulte o `Location` com o mesmo token até `status` = `Concluida`; na 202610 a importação levou cerca de 5 minutos (medido em HML).
 
 3. **Conferir:** `GET http://localhost:5400/api/cep/{cep}` com o token responde `200` com o endereço.
 
