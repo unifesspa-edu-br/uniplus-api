@@ -20,9 +20,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ProcessosDeInscricaoDeTeste
 {
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
@@ -161,7 +161,7 @@ internal static class ProcessosDeInscricaoDeTeste
         List<FaseCronograma> fases = [FaseDeResultadoFinal()];
         if (comIsencao)
         {
-            // A janela de isenção abre com a inscrição e fecha antes dela: é fase à parte.
+            // O período de isenção abre com a inscrição e fecha antes dela: é fase à parte.
             fases.Add(IsencaoDaTaxaDeTeste.FaseDeIsencaoDaTaxa(
                 ordem: 2, inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero)));
         }

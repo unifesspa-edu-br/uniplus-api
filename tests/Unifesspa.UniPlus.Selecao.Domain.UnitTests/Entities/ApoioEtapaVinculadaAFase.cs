@@ -31,9 +31,9 @@ internal static class ApoioEtapaVinculadaAFase
     internal static FaseCronograma Fase(
         int ordem, string codigo, DateTimeOffset? inicio = null, DateTimeOffset? fim = null) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), codigo, inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-                ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                Guid.CreateVersion7(), codigo, inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
+                coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
@@ -71,8 +71,8 @@ internal static class ApoioEtapaVinculadaAFase
     }
 
     internal static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

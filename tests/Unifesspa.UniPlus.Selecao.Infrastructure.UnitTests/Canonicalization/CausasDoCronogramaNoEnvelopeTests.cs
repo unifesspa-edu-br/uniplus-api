@@ -39,33 +39,41 @@ public sealed class CausasDoCronogramaNoEnvelopeTests
     {
         JsonObject fase = Fase();
         JsonArray bancas = fase["bancasRequeridas"]!.AsArray();
-        JsonObject banca = bancas[0]!.AsObject();
-        JsonArray categorias = banca["candidatosAtendidos"]!.AsArray();
+        JsonArray categorias = bancas[0]!["candidatosAtendidos"]!.AsArray();
         categorias.Add(categorias[0]!.DeepClone());
         if (quantidade == 2)
         {
-            JsonObject segunda = banca.DeepClone().AsObject();
-            segunda["id"] = Guid.NewGuid().ToString();
-            segunda["chave"] = "banca_dois";
-            segunda["posicaoNoTipo"] = 2;
-            bancas.Add(segunda);
+            bancas.Add(SegundaBancaIgualAPrimeira(bancas[0]!.AsObject()));
         }
-        return new JsonObject
-        {
-            ["cronogramaFases"] = new JsonObject
-            {
-                ["origemCandidatos"] = OrigemCandidatos.ImportacaoExterna.Codigo(),
-                ["fases"] = new JsonArray(fase),
-            }
-        };
+
+        return DocumentoComAFase(fase);
     }
+
+    private static JsonObject SegundaBancaIgualAPrimeira(JsonObject primeira)
+    {
+        JsonObject segunda = primeira.DeepClone().AsObject();
+        segunda["id"] = Guid.NewGuid().ToString();
+        segunda["chave"] = "banca_dois";
+        segunda["posicaoNoTipo"] = 2;
+
+        return segunda;
+    }
+
+    private static JsonObject DocumentoComAFase(JsonObject fase) => new()
+    {
+        ["cronogramaFases"] = new JsonObject
+        {
+            ["origemCandidatos"] = OrigemCandidatos.ImportacaoExterna.Codigo(),
+            ["fases"] = new JsonArray(fase),
+        }
+    };
 
     private static JsonObject Fase()
     {
         TipoDeBancaCopiado tipo = new(Guid.NewGuid(), TipoDeBanca.AnaliseDocumental, "Banca", PapelDaBanca.AvaliaOMerito, false, false, []);
         CategoriaJulgada categoria = CategoriaJulgada.Criar(Guid.NewGuid(), "VALOR_FICTICIO_X", "Categoria fictícia");
         BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, tipo, [categoria]);
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false));
+        OrigemCanonicaDaFase origem = OrigensDoTipoDeFaseDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false);
         FaseCronograma fase = FaseCronograma.Reidratar(ChaveLocal.Criar("fase_selecao").Value, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([], false, null), [banca]);
         return JsonNode.Parse(SerializacaoDoCronograma.SerializarFase(fase).ToJsonString())!.AsObject();

@@ -41,7 +41,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
         FaseCronograma nova = Fase(3, origem, comRecurso);
         nova.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id.Should().NotBe(produtoAnterior);
         FaseCronograma inserida = FaseCronograma.Criar(ChaveLocal.Criar("fase_habilitacao").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, false, false, false, false)),
+            OrigensDoTipoDeFaseDeTeste.Da(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, false, false, false, false),
             new DecisoesDeCronogramaDaFase(2, null, null, UnidadesDeTeste.Ceps), new PublicacoesDaFase([], false, null), []).Value!;
         processo.DefinirCronogramaFases([processo.CronogramaFases.Single(f => f.Ordem == 1), inserida, nova], []).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();
@@ -67,7 +67,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
     {
         ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Preliminar);
         return FaseCronograma.Criar(ChaveLocal.Criar("fase_resultado_final").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(origem, "RESULTADO_FINAL", OrigemDataFase.NaExecucao, false, false, false, false)),
+            OrigensDoTipoDeFaseDeTeste.Da(origem, "RESULTADO_FINAL", OrigemDataFase.NaExecucao, false, false, false, false),
             new DecisoesDeCronogramaDaFase(ordem, null, null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], false,
                 comRecurso ? Recurso(preliminar.Id) : null), comRecurso ? [BancasDeTeste.DeRecursosDaFase()] : []).Value!;

@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/CondicaoDeHomologacaoComDefeitoDeTeste.cs" Link="CondicaoDeHomologacaoComDefeitoDeTeste.cs" />
-    <Compile Include="../Shared/OrigensCanonicasDeTeste.cs" Link="OrigensCanonicasDeTeste.cs" />
+    <Compile Include="../Shared/OrigensDoTipoDeFaseDeTeste.cs" Link="OrigensDoTipoDeFaseDeTeste.cs" />
     <Compile Include="../Shared/EnvelopesDeReferenciaDeTeste.cs" Link="EnvelopesDeReferenciaDeTeste.cs" />
     <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />

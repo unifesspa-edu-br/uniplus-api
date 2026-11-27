@@ -130,9 +130,9 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     }
 
     private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelDaPublicacaoPrevista? Papel)[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))], EmiteParecerIndividual: false,

@@ -147,10 +147,9 @@ public sealed class CronogramaComRegraDeHomologacaoTests
 
     private static FaseCronograma Fase(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         IdDaFase,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "HOMOLOGACAO_INSCRICOES", OrigemData: OrigemDataFase.NoEdital,
-            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)
-        { Nome = "Homologação" }),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            origemId: new Guid("4444dddd-0000-4000-8000-000000000001"), codigo: "HOMOLOGACAO_INSCRICOES", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false).ComNome("Homologação"),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000001"), "CEPS", "CEPS", "Centro de Processos Seletivos")),
         new PublicacoesDaFase(

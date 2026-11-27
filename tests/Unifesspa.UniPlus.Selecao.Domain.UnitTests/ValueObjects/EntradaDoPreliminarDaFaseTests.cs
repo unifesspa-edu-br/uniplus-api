@@ -187,7 +187,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Func<PublicacoesDaFase, PublicacoesDaFase>? publicacoes = null,
         IReadOnlyList<BancaRequerida>? bancas = null) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            Alterar(origem, OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false))),
+            Alterar(origem, OrigensDoTipoDeFaseDeTeste.Da(OrigemDaFase, "PROVA", OrigemDataFase.NoEdital, false, false, false, false)),
             Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), UnidadesDeTeste.Ceps)),
             Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelDaPublicacaoPrevista.Preliminar)], false, null)),
             bancas ?? []).Value!;

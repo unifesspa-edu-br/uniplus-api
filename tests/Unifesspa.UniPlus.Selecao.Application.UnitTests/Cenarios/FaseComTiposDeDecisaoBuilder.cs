@@ -12,9 +12,8 @@ internal static class FaseComTiposDeDecisaoBuilder
             [.. fase.BancasRequeridas]);
 
     private static OrigemCanonicaDaFase Origem(FaseCronograma fase) =>
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas,
-            fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao)
-        { Nome = fase.TipoFaseNome });
+        OrigensDoTipoDeFaseDeTeste.Da(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas,
+            fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao).ComNome(fase.TipoFaseNome);
 
     private static DecisoesDeCronogramaDaFase Cronograma(FaseCronograma fase) =>
         new(fase.Ordem, fase.Inicio, fase.Fim, fase.UnidadeResponsavel)

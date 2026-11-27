@@ -53,9 +53,9 @@ internal static class FormulariosDoDocumentoDeTeste
     internal static FaseCronograma Fase(bool coletaInscricao) =>
         FaseCronograma.Criar(
             ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), coletaInscricao ? "INSCRICAO" : "RESULTADO_FINAL", OrigemDataFase.NoEdital, AgrupaEtapas: !coletaInscricao,
-                PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                Guid.CreateVersion7(), coletaInscricao ? "INSCRICAO" : "RESULTADO_FINAL", OrigemDataFase.NoEdital, agrupaEtapas: !coletaInscricao,
+                permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 1, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(

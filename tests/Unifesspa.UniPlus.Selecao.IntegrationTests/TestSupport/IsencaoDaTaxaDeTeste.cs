@@ -21,9 +21,9 @@ internal static class IsencaoDaTaxaDeTeste
     internal static FaseCronograma FaseDeIsencaoDaTaxa(int ordem, DateTimeOffset inicio, DateTimeOffset fim) =>
         FaseCronograma.Criar(
             ChaveLocal.Criar("fase_isencao").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "ISENCAO_DA_TAXA", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: true)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: true),
             new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [TipoMotivoDeDecisao.IsencaoDaTaxa.Codigo()]),
             bancasRequeridas: []).Value!;

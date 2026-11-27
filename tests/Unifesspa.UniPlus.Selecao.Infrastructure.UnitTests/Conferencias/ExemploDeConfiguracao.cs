@@ -53,9 +53,9 @@ internal static class ExemploDeConfiguracao
         // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
         processo.DefinirCronogramaFases([
             FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-                OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                    OrigemId: new Guid("44444444-4444-4444-4444-444444444444"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
-                    ColetaInscricao: false, ColetaSolicitacaoIsencao: false) { Nome = "Resultado final" }),
+                OrigensDoTipoDeFaseDeTeste.Da(
+                    origemId: new Guid("44444444-4444-4444-4444-444444444444"), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
+                    coletaInscricao: false, coletaSolicitacaoIsencao: false).ComNome("Resultado final"),
                 new DecisoesDeCronogramaDaFase(
                     Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
