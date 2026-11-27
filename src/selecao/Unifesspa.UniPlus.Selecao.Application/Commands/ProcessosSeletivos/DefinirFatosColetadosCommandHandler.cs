@@ -93,45 +93,39 @@ public static class DefinirFatosColetadosCommandHandler
         FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso ? Result.ValidationFailure(excesso) : null;
 
     /// <summary>
-    /// A forma vem antes da leitura do catálogo, sem I/O; o item de forma inválida só não segue para a
-    /// conferência contra o catálogo, e as recusas acumulam no mesmo <c>errors[]</c> (ADR-0125).
+    /// A leitura da forma dos itens e dos grupos usa só o formato do dado no catálogo, lido depois da recusa por quantidade;
+    /// o item recusado na leitura só não segue para a resolução contra o catálogo. As recusas da leitura, da resolução, da
+    /// seção dos dados básicos e do vínculo novo acumulam no mesmo <c>errors[]</c> (ADR-0125).
     /// </summary>
     private static async Task<ColetaResolvida> ResolverNoCatalogoAsync(
         ProcessoSeletivo processo, ColetaMesclada coleta, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        ItensLidos itensLidos = EscritaDosItens.Ler(coleta.Itens);
-        GruposLidos gruposLidos = EscritaDosItens.LerGrupos(coleta.Grupos);
         IReadOnlyList<FatoCandidatoView> fatosDoCatalogo = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, fatosDoCatalogo);
+        ItensLidos itensLidos = LeituraDosItensDoFormulario.Ler(coleta.Itens, contexto);
+        GruposLidos gruposLidos = LeituraDosItensDoFormulario.LerGrupos(coleta.Grupos, contexto);
         (List<FatoColetado> fatos, List<FieldError> erros) = EscritaDosItens.Resolver(itensLidos, contexto);
         (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(gruposLidos, contexto);
-        return new ColetaResolvida(contexto, fatos, grupos, [.. erros, .. errosDosGrupos, .. coleta.RecusasDaSecao]);
+        List<FieldError> vinculoNovo = RecusasDoVinculoNovo(processo, contexto, itensLidos, gruposLidos);
+        return new ColetaResolvida(fatos, grupos, [.. erros, .. errosDosGrupos, .. coleta.RecusasDaSecao, .. vinculoNovo]);
     }
+
+    private static List<FieldError> RecusasDoVinculoNovo(ProcessoSeletivo processo, ContextoDoCatalogo contexto, ItensLidos itens, GruposLidos grupos) =>
+        [.. ConferenciaDeVinculoNovo.Conferir(
+            contexto.Fatos,
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
+            VinculosDeFatos.De(
+                itens.CodigosEnviados.Concat(grupos.CodigosEnviados),
+                itens.CondicoesLidas.Concat(grupos.CondicoesLidas).Select(static c => (c.Fato, c.Valor)))).Errors];
 
     private static Result Gravar(
         CodigoDoFormulario codigo, DefinirFatosColetadosCommand command, ProcessoSeletivo processo, ColetaMesclada coleta, ColetaResolvida resolvida)
     {
-        Result vinculoNovo = ConferirVinculoNovo(processo, resolvida);
-        if (vinculoNovo.IsFailure)
-        {
-            return vinculoNovo;
-        }
-
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
         Result gravado = processo.DefinirFatosColetados(codigo, resolvida.Fatos, command.Grupos is null && !coleta.GruposOmitidosRegravados ? null : resolvida.Grupos);
         return gravado.IsFailure ? Result.ValidationFailure(gravado.Errors) : Result.Success();
     }
 
-    private static Result ConferirVinculoNovo(ProcessoSeletivo processo, ColetaResolvida resolvida) =>
-        ConferenciaDeVinculoNovo.Conferir(
-            resolvida.Contexto.Fatos,
-            ReferenciasVivas.Vinculos(processo.Declaracao()),
-            VinculosDeFatos.De(
-                resolvida.Fatos.Concat(resolvida.Grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo),
-                resolvida.Fatos.SelectMany(static f => f.Condicoes).Concat(resolvida.Grupos.SelectMany(static g => g.Condicoes))
-                    .Select(static c => (c.Fato, c.Valor))));
-
-    /// <summary>Os itens e grupos criados contra o catálogo, o contexto que o conferiu e as recusas de toda a leitura.</summary>
-    private sealed record ColetaResolvida(
-        ContextoDoCatalogo Contexto, List<FatoColetado> Fatos, List<GrupoColetado> Grupos, List<FieldError> Erros);
+    /// <summary>Os itens e grupos criados contra o catálogo e as recusas de toda a leitura.</summary>
+    private sealed record ColetaResolvida(List<FatoColetado> Fatos, List<GrupoColetado> Grupos, List<FieldError> Erros);
 }

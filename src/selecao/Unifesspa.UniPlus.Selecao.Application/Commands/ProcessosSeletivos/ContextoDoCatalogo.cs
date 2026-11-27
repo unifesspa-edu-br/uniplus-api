@@ -38,4 +38,8 @@ internal sealed record ContextoDoCatalogo(
         VocabularioDeFatos.ParaRegras(catalogo),
         VocabularioDeFatos.Descritores(catalogo),
         VocabularioDeFatos.DominiosDinamicos(processo, catalogo));
+
+    /// <summary>O formato da resposta do dado no catálogo, em código; nulo quando o dado não é de texto ou não é conhecido.</summary>
+    public string? FormatoDoDado(string? codigo) =>
+        codigo is { } chave && Fatos.TryGetValue(chave, out FatoCandidatoView? dado) ? dado.Formato?.Codigo : null;
 }

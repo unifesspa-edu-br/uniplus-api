@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using System.Text.Json;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -26,6 +28,39 @@ public sealed record RegrasLidasDoCampo(
     {
         ArgumentNullException.ThrowIfNull(regras);
         return new(regras.Exibicao, regras.Obrigatoriedade, [.. regras.Restricoes], regras.Impedimento);
+    }
+
+    /// <summary>
+    /// As condições das regras lidas, para os vínculos e as referências a valor do processo: a exibição, a condição da
+    /// obrigatoriedade, a do impedimento, as das opções permitidas e, porque as opções citam valores do próprio dado, a
+    /// pertinência do dado a esses valores. A parte nula não foi lida e não vincula.
+    /// </summary>
+    /// <param name="dadoDoCampo">O código do dado que o campo coleta.</param>
+    public IEnumerable<CondicaoDnf> CondicoesDoCampo(string? dadoDoCampo)
+    {
+        return (Exibicao?.Clausulas ?? [])
+            .Concat(Obrigatoriedade?.Predicado?.Clausulas ?? [])
+            .Concat(Impedimento?.Quando.Clausulas ?? [])
+            .SelectMany(static clausula => clausula.Condicoes)
+            .Concat(CondicoesDasOpcoes(dadoDoCampo));
+    }
+
+    private IEnumerable<CondicaoDnf> CondicoesDasOpcoes(string? dadoDoCampo)
+    {
+        foreach (OpcoesPermitidas opcoes in Restricoes.OfType<OpcoesPermitidas>())
+        {
+            foreach (CondicaoDnf condicao in opcoes.Entradas.SelectMany(static e => e.Quando?.Clausulas ?? []).SelectMany(static c => c.Condicoes))
+            {
+                yield return condicao;
+            }
+
+            Result<CondicaoDnf> pertinencia = CondicaoDnf.Criar(
+                dadoDoCampo ?? string.Empty, Operador.AlgumDe, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal)));
+            if (pertinencia.IsSuccess)
+            {
+                yield return pertinencia.Value!;
+            }
+        }
     }
 
     /// <summary>

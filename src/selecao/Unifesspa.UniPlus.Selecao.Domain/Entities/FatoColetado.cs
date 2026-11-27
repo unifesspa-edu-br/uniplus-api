@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Text.Json;
-
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -287,22 +285,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// pré-condição, a obrigatoriedade, o impedimento, as condições das opções e, porque as opções
     /// permitidas citam valores do próprio fato, a pertinência do fato a esses valores.
     /// </summary>
-    public IEnumerable<CondicaoDnf> Condicoes
-    {
-        get
-        {
-            OpcoesPermitidas? opcoes = Restricoes.OfType<OpcoesPermitidas>().SingleOrDefault();
-            IEnumerable<CondicaoDnf> dasOpcoes = opcoes is null
-                ? []
-                : opcoes.Entradas.SelectMany(static e => e.Quando?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
-                    .Append(CondicaoDnf.Criar(
-                        FatoCodigo, Operador.AlgumDe, JsonSerializer.SerializeToElement(opcoes.ValoresCitados.Order(StringComparer.Ordinal))).Value!);
-            return _precondicoes.Select(static c => c.ParaCondicaoDnf())
-                .Concat((Obrigatoriedade.Predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes))
-                .Concat((Impedimento?.Quando.Clausulas ?? []).SelectMany(static c => c.Condicoes))
-                .Concat(dasOpcoes);
-        }
-    }
+    public IEnumerable<CondicaoDnf> Condicoes => RegrasLidasDoCampo.De(Regras).CondicoesDoCampo(FatoCodigo);
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
