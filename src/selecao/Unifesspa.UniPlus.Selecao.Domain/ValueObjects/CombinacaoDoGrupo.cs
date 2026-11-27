@@ -12,31 +12,25 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
     public static Result<CombinacaoDoGrupo> Declarar(
         FormaDeComprovacao forma, int? quantidadeMinima, string? consequenciaDoDescumprimento, int quantidadeDeItens, bool temBaseLegal, bool abrePrazoParaReenvio = false)
     {
-        DomainError? recusa = forma == FormaDeComprovacao.TodosOsItens
-            ? RecusaQuandoExigeTodosOsItens(quantidadeMinima, consequenciaDoDescumprimento, temBaseLegal)
-            : RecusaQuandoExigeQuantidadeMinima(quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, consequenciaDoDescumprimento, quantidadeDeItens, temBaseLegal);
-        return recusa is not null ? Result<CombinacaoDoGrupo>.Failure(recusa)
+        List<FieldError> recusas = [.. RecusasDaCombinacao(forma, quantidadeMinima, consequenciaDoDescumprimento, quantidadeDeItens, temBaseLegal)];
+        return recusas.Count > 0 ? Result<CombinacaoDoGrupo>.ValidationFailure(recusas)
             : Result<CombinacaoDoGrupo>.Success(forma == FormaDeComprovacao.TodosOsItens
                 ? new(forma, null, null, abrePrazoParaReenvio)
                 : new(forma, quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao, NormalizarConsequencia(consequenciaDoDescumprimento), abrePrazoParaReenvio));
     }
 
-    private static DomainError? RecusaQuandoExigeTodosOsItens(int? quantidadeMinima, string? consequenciaDoDescumprimento, bool temBaseLegal)
+    private static IEnumerable<FieldError> RecusasDaCombinacao(
+        FormaDeComprovacao forma, int? quantidadeMinima, string? consequenciaDoDescumprimento, int quantidadeDeItens, bool temBaseLegal)
     {
-        if (RecusaDaQuantidade(FormaDeComprovacao.TodosOsItens, quantidadeMinima, 0) is { } quantidade)
-        {
-            return quantidade;
-        }
-        return RecusaDaConsequencia(FormaDeComprovacao.TodosOsItens, consequenciaDoDescumprimento) ?? RecusaDaBaseLegal(FormaDeComprovacao.TodosOsItens, consequenciaDoDescumprimento, temBaseLegal);
-    }
-
-    private static DomainError? RecusaQuandoExigeQuantidadeMinima(int quantidadeMinima, string? consequenciaDoDescumprimento, int quantidadeDeItens, bool temBaseLegal)
-    {
-        if (RecusaDaQuantidade(FormaDeComprovacao.QuantidadeMinimaDeItens, quantidadeMinima, quantidadeDeItens) is { } quantidade)
-        {
-            return quantidade;
-        }
-        return RecusaDaConsequencia(FormaDeComprovacao.QuantidadeMinimaDeItens, consequenciaDoDescumprimento) ?? RecusaDaBaseLegal(FormaDeComprovacao.QuantidadeMinimaDeItens, consequenciaDoDescumprimento, temBaseLegal);
+        int? quantidade = forma == FormaDeComprovacao.TodosOsItens ? quantidadeMinima : quantidadeMinima ?? RegraDeComprovacao.QuantidadeMinimaPadrao;
+        int itens = forma == FormaDeComprovacao.TodosOsItens ? 0 : quantidadeDeItens;
+        DomainError?[] recusas =
+        [
+            RecusaDaQuantidade(forma, quantidade, itens),
+            RecusaDaConsequencia(forma, consequenciaDoDescumprimento),
+            RecusaDaBaseLegal(forma, consequenciaDoDescumprimento, temBaseLegal),
+        ];
+        return recusas.OfType<DomainError>().Select(static recusa => new FieldError(null, recusa));
     }
 
     internal static DomainError? RecusaDaConsequencia(FormaDeComprovacao forma, string? consequenciaDoDescumprimento)

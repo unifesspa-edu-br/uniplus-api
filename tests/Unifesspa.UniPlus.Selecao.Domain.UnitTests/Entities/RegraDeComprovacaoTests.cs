@@ -153,6 +153,18 @@ public sealed class RegraDeComprovacaoTests
         resultado.Error!.Code.Should().Be("RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos");
     }
 
+    [Fact(DisplayName = "CriarGrupo devolve a recusa da composição e as da combinação, nessa ordem")]
+    public void CriarGrupo_RecusasIndependentes_DevolveTodasNaOrdem()
+    {
+        Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarGrupo(new(FormaDeComprovacao.TodosOsItens, 1, "ELIMINA_DO_PROCESSO"), 0, [BaseLegalResolvida()], []);
+
+        resultado.Errors.Select(erro => erro.Error.Code).Should().Equal(
+            "RegraDeComprovacao.GrupoSemItens",
+            "RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos",
+            "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos",
+            "RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos");
+    }
+
     [Fact(DisplayName = "CriarGrupo TodosOsItens recusa base legal")]
     public void CriarGrupo_TodosOsItens_ComBaseLegal_Recusa()
     {

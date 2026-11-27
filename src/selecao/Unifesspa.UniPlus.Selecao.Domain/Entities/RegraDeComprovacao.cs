@@ -86,13 +86,9 @@ public sealed class RegraDeComprovacao : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(itens);
         ConferirFormaDoGrupo(declaracao.Forma);
         ArgumentOutOfRangeException.ThrowIfNegative(ordem);
-        DomainError? recusa = ComposicaoDoGrupo.Recusa(itens, grupoDoFormularioParaRepeticao);
-        if (recusa is not null)
-        {
-            return Result<RegraDeComprovacao>.Failure(recusa);
-        }
         Result<CombinacaoDoGrupo> combinacao = CombinacaoDoGrupo.Declarar(declaracao.Forma, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, itens.Count, basesLegais.Count > 0, declaracao.AbrePrazoParaReenvio);
-        return combinacao.IsFailure ? Result<RegraDeComprovacao>.Failure(combinacao.Error!)
+        List<FieldError> recusas = [.. ComposicaoDoGrupo.Recusas(itens, grupoDoFormularioParaRepeticao), .. combinacao.Errors];
+        return recusas.Count > 0 ? Result<RegraDeComprovacao>.ValidationFailure(recusas)
             : Result<RegraDeComprovacao>.Success(NovoGrupo(ordem, combinacao.Value!, basesLegais, itens, grupoDoFormularioParaRepeticao?.Trim()));
     }
 

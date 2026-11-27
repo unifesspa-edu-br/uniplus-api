@@ -7,9 +7,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>Coerência estrutural entre os descendentes de um grupo de exigências.</summary>
 internal static class ComposicaoDoGrupo
 {
-    internal static DomainError? Recusa(IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao) =>
-        Recusas(itens, grupoDoFormularioParaRepeticao).FirstOrDefault()?.Error;
-
     internal static List<FieldError> Recusas(IReadOnlyList<RegraDeComprovacao> itens, string? grupoDoFormularioParaRepeticao)
     {
         if (RecusaSeVazio(itens.Count) is { } vazio)
