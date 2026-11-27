@@ -141,7 +141,7 @@ internal static class RegrasDoCronograma
             .FirstOrDefault(static usada => usada.Campo is not null) is { Campo: { } campo } usadaPorOutra
             ? new DomainError(
                 "FaseCronograma.ReferenciadaPorExigenciaViva",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{usadaPorOutra.Documento.TipoDocumentoNome}', exigido em outra fase, usa a data dela como referência {campo}. Grave primeiro a troca da referência {campo} e depois remova a fase.")
+                $"A fase {antiga.Citacao} (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{usadaPorOutra.Documento.TipoDocumentoNome}', exigido em outra fase, usa a data dela como referência {campo}. Grave primeiro a troca da referência {campo} e depois remova a fase.")
             : null;
 
     private static DomainError? EtapaDaFaseReferenciadaPelaClassificacao(ConfiguracaoDeclarada configuracao, FaseCronograma antiga) =>
@@ -150,14 +150,14 @@ internal static class RegrasDoCronograma
             && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(configuracao, e.Id)) is { } etapaReferenciada
             ? new DomainError(
                 "FaseCronograma.EtapaDaFaseReferenciada",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.")
+                $"A fase {antiga.Citacao} (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.")
             : null;
 
     private static DomainError? FormularioRespondidoNaFase(ConfiguracaoDeclarada configuracao, FaseCronograma antiga) =>
         configuracao.Coleta.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
             ? new DomainError(
                 FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {formularioDaFase.Codigo.Valor} é respondido nela — troque a fase do formulário antes.")
+                $"A fase {antiga.Citacao} (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {formularioDaFase.Codigo.Valor} é respondido nela — troque a fase do formulário antes.")
             : null;
 
     private static DomainError? ComplementacaoQueAPendenciaDeReenvioExige(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova) =>
@@ -165,6 +165,6 @@ internal static class RegrasDoCronograma
         && RegrasDasExigencias.ExisteConsequenciaPendenciaReenvioNaFase(configuracao, antiga.Id)
             ? new DomainError(
                 "FaseCronograma.PendenciaReenvioExigeComplementacao",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.")
+                $"A fase {antiga.Citacao} (ordem {antiga.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.")
             : null;
 }

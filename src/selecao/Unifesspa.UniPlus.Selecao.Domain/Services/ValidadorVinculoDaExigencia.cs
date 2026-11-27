@@ -70,6 +70,6 @@ public static class ValidadorVinculoDaExigencia
 
         return string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal)
             ? null
-            : new DomainError("DocumentoExigido.EtapaNaoPertenceAFase", $"A etapa da exigência não acontece na fase {fase.Codigo}.");
+            : new DomainError("DocumentoExigido.EtapaNaoPertenceAFase", $"A etapa da exigência não acontece na fase {fase.Citacao}.");
     }
 }

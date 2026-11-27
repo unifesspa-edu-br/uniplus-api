@@ -69,7 +69,7 @@ public sealed class FasesNoEnvelopeFormatoTests
         const string envelope = """
             {"etapas":[{"id":"11111111-1111-4111-8111-111111111111","nome":"Etapa","faseCodigo":"AVALIACAO"}],
              "cronogramaFases":{"fases":[{"id":"22222222-2222-4222-8222-222222222222",
-             "tipoFaseOrigemId":"33333333-3333-4333-8333-333333333333","codigo":"AVALIACAO","coletaInscricao":false,
+             "tipoFaseOrigemId":"33333333-3333-4333-8333-333333333333","codigo":"AVALIACAO","tipoFaseNome":"Avaliação","coletaInscricao":false,
              "unidadeResponsavel":{"origemId":"44444444-4444-4444-8444-444444444444","codigo":"U","sigla":"U","nome":"Unidade"}}]}}
             """;
         Guid fase = Guid.Parse("22222222-2222-4222-8222-222222222222");

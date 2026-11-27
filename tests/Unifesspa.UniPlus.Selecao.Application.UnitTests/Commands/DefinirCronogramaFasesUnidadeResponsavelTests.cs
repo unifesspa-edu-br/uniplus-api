@@ -84,7 +84,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[0].unidadeResponsavelId");
         recusa.Error.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
-        recusa.Error.Message.Should().Contain("RESULTADO_FINAL").And.NotContainEquivalentOf("a1d0ec10").And.NotContainEquivalentOf(unidadeExcluida.ToString());
+        recusa.Error.Message.Should().Contain("'Resultado Final'").And.NotContain("RESULTADO_FINAL").And.NotContainEquivalentOf("a1d0ec10").And.NotContainEquivalentOf(unidadeExcluida.ToString());
         cenario.Processo.CronogramaFases.Should().BeEmpty("a recusa não grava o cronograma");
     }
 

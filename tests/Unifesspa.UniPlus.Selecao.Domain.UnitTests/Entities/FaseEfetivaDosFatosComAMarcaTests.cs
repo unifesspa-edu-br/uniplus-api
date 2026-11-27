@@ -66,7 +66,7 @@ public sealed class FaseEfetivaDosFatosComAMarcaTests
 
         recusa.Should().NotBeNull();
         recusa!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        recusa.Message.Should().Contain("'INSCRICAO'").And.Contain("(ordem 2)").And.Contain("(ordem 1)");
+        recusa.Message.Should().Contain("'Inscrição'").And.NotContain("INSCRICAO").And.Contain("(ordem 2)").And.Contain("(ordem 1)");
     }
 
     [Fact(DisplayName = "Com a marca na inscrição, a isenção e a inscrição acontecem juntas e o documento exigido na isenção cita o fato da inscrição")]

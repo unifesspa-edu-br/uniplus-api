@@ -27,10 +27,10 @@ public sealed class SegundaInstanciaNaConfiguracaoTests
     private const string CodigoDaFaltaNaEtapa = "Banca.EtapaSemBancaDaSegundaInstancia";
 
     private const string DetalheDaFaltaNaFase =
-        "A fase 'AVALIACAO' admite recurso em 2ª instância, e nenhuma banca prevista nela tem o papel 'Julga o recurso em 2ª instância'. Acrescente à fase uma banca com esse papel, ou declare que o recurso não admite instância superior.";
+        "A fase 'Fase de avaliação' admite recurso em 2ª instância, e nenhuma banca prevista nela tem o papel 'Julga o recurso em 2ª instância'. Acrescente à fase uma banca com esse papel, ou declare que o recurso não admite instância superior.";
 
     private const string DetalheDaFaltaNaSegundaEtapa =
-        "A etapa na posição 2 admite recurso em 2ª instância, e nem ela nem a fase 'AVALIACAO', em que ela acontece, têm banca com o papel 'Julga o recurso em 2ª instância'. Acrescente uma banca com esse papel à etapa ou à fase, ou declare que o recurso não admite instância superior.";
+        "A etapa na posição 2 admite recurso em 2ª instância, e nem ela nem a fase 'Fase de avaliação', em que ela acontece, têm banca com o papel 'Julga o recurso em 2ª instância'. Acrescente uma banca com esse papel à etapa ou à fase, ou declare que o recurso não admite instância superior.";
 
     private static void DeveFicarPendenteSemCausa(Cenario cenario)
     {

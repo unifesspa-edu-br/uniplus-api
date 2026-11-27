@@ -148,7 +148,7 @@ internal static class RegrasDasEtapas
             && !string.Equals(etapaNova.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal)
                 ? new DomainError(
                     "DocumentoExigido.EtapaNaoPertenceAFase",
-                    $"A etapa {exigencia.ExigidoNaEtapaId} coleta o documento {exigencia.TipoDocumentoNome} na fase {faseDaExigencia.Codigo} e não pode passar para outra fase sem antes reconfigurar a exigência.")
+                    $"A etapa {exigencia.ExigidoNaEtapaId} coleta o documento {exigencia.TipoDocumentoNome} na fase {faseDaExigencia.Citacao} e não pode passar para outra fase sem antes reconfigurar a exigência.")
                 : null;
     }
 

@@ -40,7 +40,7 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
 
         return new FasesIniciadas(
             UnidadesPublicadas(versoes, iniciadas),
-            CodigosNaVersaoVigente(versoes, iniciadas),
+            CitacoesNaVersaoVigente(versoes, iniciadas),
             EtapasIniciadas(versoes, inicio.EtapasIniciadas(agora)),
             inicio.FasesProdutoras(agora));
     }
@@ -52,10 +52,10 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
             .Where(g => iniciadas.Contains(g.Key))
             .Select(static g => KeyValuePair.Create(g.Key, g.First().UnidadeResponsavelOrigemId));
 
-    private static IEnumerable<KeyValuePair<Guid, string>> CodigosNaVersaoVigente(IReadOnlyList<FasesDaVersaoPublicada> versoes, HashSet<Guid> iniciadas) =>
+    private static IEnumerable<KeyValuePair<Guid, CitacaoDaFase>> CitacoesNaVersaoVigente(IReadOnlyList<FasesDaVersaoPublicada> versoes, HashSet<Guid> iniciadas) =>
         (versoes.Count > 0 ? versoes[0].Fases : [])
             .Where(f => iniciadas.Contains(f.FaseCanonicaOrigemId))
-            .Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.Codigo));
+            .Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.Citacao));
 
     // A etapa se identifica pelo id, estável entre as versões; o nome é o da versão mais vigente em que ela aparece.
     private static IEnumerable<EtapaIniciada> EtapasIniciadas(IReadOnlyList<FasesDaVersaoPublicada> versoes, HashSet<Guid> iniciadas) =>

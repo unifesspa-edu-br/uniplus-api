@@ -49,9 +49,7 @@ internal static class CompletudeDoCronograma
             ? [CronogramaDoProcesso.NaFase(
                 cronograma.PosicaoDe(ancora),
                 extremoAusente,
-                new DomainError(
-                    "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
-                    $"A fase '{ancora.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período."))]
+                RecusasDaJanelaDaInscricao.FaseQueColetaInscricaoSemJanela(ancora.Citacao))]
             : [];
 
     private static IEnumerable<FieldError> UnidadesResponsaveisAusentes(CronogramaDoProcesso cronograma) =>
@@ -63,7 +61,7 @@ internal static class CompletudeDoCronograma
                 FaseDeclarada.CampoDaUnidadeResponsavel,
                 new DomainError(
                     "ProcessoSeletivo.FaseSemUnidadeResponsavel",
-                    $"A fase '{par.fase.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.")));
+                    $"A fase {par.fase.Citacao} não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.")));
 
     // A fase que não publica definitivo só conclui no fim do período: sem a data final, a fase seguinte não teria o fato que a libera.
     // A fase com data fixada no edital já recusa o período incompleto, e a lista de produtos recusada não diz o que a fase publica.
@@ -76,7 +74,7 @@ internal static class CompletudeDoCronograma
                 "fim",
                 new DomainError(
                     ProcessoSeletivoErrorCodes.FaseSemDefinitivoSemDataFinal,
-                    $"A fase '{par.fase.Codigo}' não publica resultado definitivo e não declara a data final do período. Declare a data final no cronograma; ela pode ser mudada depois por retificação do edital.")));
+                    $"A fase {par.fase.Citacao} não publica resultado definitivo e não declara a data final do período. Declare a data final no cronograma; ela pode ser mudada depois por retificação do edital.")));
 
     private static bool SemDefinitivoSemDataFinal(FaseDeclarada fase) =>
         !fase.DataFixadaNoEdital

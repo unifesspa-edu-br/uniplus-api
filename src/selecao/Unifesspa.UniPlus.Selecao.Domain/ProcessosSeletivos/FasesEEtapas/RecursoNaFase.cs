@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal sealed record RecursoNaFase(FaseDeclarada Fase, int Posicao, RecursoDeclarado Recurso, EtapasDoProcesso Etapas) : IRecursoNoLugar
 {
-    public string Onde => $"fase '{Fase.Codigo}'";
+    public string Onde => $"fase {Fase.Citacao}";
 
     public EtapaJulgada? Etapa => null;
 
@@ -33,7 +33,7 @@ internal sealed record RecursoNaFase(FaseDeclarada Fase, int Posicao, RecursoDec
         CronogramaDoProcesso.NaFase(Posicao, $"{FaseDeclarada.CampoDaRegraDeRecurso}.{QuemJulgaORecurso.CampoDaInstanciaSuperior}", erro);
 
     public DomainError SemBanca(TipoMotivoDeDecisao? tipoDeDecisao) =>
-        RecusasDoRecurso.SemBancaNaFase(Fase.Codigo, tipoDeDecisao);
+        RecusasDoRecurso.SemBancaNaFase(Fase.Citacao, tipoDeDecisao);
 
     private IEnumerable<BancaDeclarada> OndeSeProcura(AlvoDoProcedimentoDeRecurso? alvo) => alvo switch
     {

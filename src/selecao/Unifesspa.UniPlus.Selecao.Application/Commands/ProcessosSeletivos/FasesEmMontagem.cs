@@ -205,7 +205,7 @@ internal sealed class FasesEmMontagem
         return unidade is null
             ? InterrupcaoDaEdicao.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
                 FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
-                $"Unidade responsável da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
+                $"Unidade responsável da fase {new CitacaoDaFase(canonica.Nome)} não encontrada ou não está mais viva."))
             : Result<UnidadeResponsavelSnapshot?>.Success(unidade);
     }
 

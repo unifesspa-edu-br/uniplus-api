@@ -111,7 +111,7 @@ public static class RegrasDosFatos
         conhecida.Fase is { } fase && ordem.Posterior(fase, faseDaInscricao)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
-                $"O fato que decide quem recebe o acréscimo só é conhecido na fase '{fase.Codigo}', depois da inscrição.")
+                $"O fato que decide quem recebe o acréscimo só é conhecido na fase {fase.Citacao}, depois da inscrição.")
             : null;
 
     private static DomainError? RecusaDoFatoSoDeFormularioFacultativo(

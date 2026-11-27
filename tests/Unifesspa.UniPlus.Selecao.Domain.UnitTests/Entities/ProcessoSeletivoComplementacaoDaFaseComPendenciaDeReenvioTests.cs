@@ -51,7 +51,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
-        resultado.Error.Message.Should().Be($"A fase '{fase.Codigo}' (ordem {fase.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.");
+        resultado.Error.Message.Should().Be($"A fase '{fase.TipoFaseNome}' (ordem {fase.Ordem}) precisa permitir complementação, pois uma regra de comprovação dessa fase prevê reenvio.");
     }
 
     [Fact(DisplayName = "Retirar PermiteComplementacao sem exigência com prazo para reenvio é aceito (contraprova)")]

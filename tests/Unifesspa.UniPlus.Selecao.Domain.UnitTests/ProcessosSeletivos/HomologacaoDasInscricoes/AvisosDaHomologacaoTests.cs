@@ -15,8 +15,8 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homol
 /// <summary>O aviso de que uma fase homologa toda inscrição enviada: nunca bloqueia, só pede confirmação.</summary>
 public sealed class AvisosDaHomologacaoTests
 {
-    private static ModeloDeFase Vazia(string codigo) =>
-        new ModeloDeFase(codigo, 1).Homologando(RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []));
+    private static ModeloDeFase Vazia(string codigo, string nome = "Homologação das inscrições") =>
+        (new ModeloDeFase(codigo, 1) with { Nome = nome }).Homologando(RegraDeHomologacaoDasInscricoes.Declarar("RESULTADO_HOMOLOGACAO", []));
 
     private static ModeloDeFase ComConfirmacao(string codigo) =>
         new ModeloDeFase(codigo, 1).Homologando(
@@ -33,7 +33,7 @@ public sealed class AvisosDaHomologacaoTests
         AvisoConformidade aviso = avisos.Should().ContainSingle().Subject;
         aviso.Codigo.Should().Be(CodigosDeAvisoDeConformidade.HomologacaoDasInscricoesSemCondicao);
         aviso.Dimensao.Should().Be(DimensaoConformidade.Cronograma);
-        aviso.Mensagem.Should().Contain("HOMOLOGACAO_INSCRICOES");
+        aviso.Mensagem.Should().Contain("'Homologação das inscrições'").And.NotContain("HOMOLOGACAO_INSCRICOES");
     }
 
     [Fact(DisplayName = "Regra com condição não gera aviso")]
@@ -48,11 +48,11 @@ public sealed class AvisosDaHomologacaoTests
     public void VariasFases_UmAvisoPorFaseVazia()
     {
         IReadOnlyList<AvisoConformidade> avisos = AvisosDaHomologacao.Da(
-            Cronograma(Vazia("FASE_B"), ComConfirmacao("FASE_C"), Vazia("FASE_A")));
+            Cronograma(Vazia("FASE_B", "Segunda fase"), ComConfirmacao("FASE_C"), Vazia("FASE_A", "Primeira fase")));
 
         avisos.Should().HaveCount(2);
-        avisos[0].Mensagem.Should().Contain("FASE_B");
-        avisos[1].Mensagem.Should().Contain("FASE_A");
+        avisos[0].Mensagem.Should().Contain("'Segunda fase'").And.NotContain("FASE_B");
+        avisos[1].Mensagem.Should().Contain("'Primeira fase'").And.NotContain("FASE_A");
     }
 
     [Fact(DisplayName = "A regra a que a leitura recusou alguma alternativa não é dada como vazia: sem aviso")]

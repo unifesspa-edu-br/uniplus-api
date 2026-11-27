@@ -160,7 +160,7 @@ public sealed class DeliberacaoEMinimoDeQuemJulgaTests
         recusa.Field.Should().Be("fases[0].bancasRequeridas[0]");
         recusa.Error.Code.Should().Be("Banca.RegraDeDeliberacaoObrigatoria");
         recusa.Error.Message.Should().Be(
-            "A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'AVALIACAO' decide por ato individual e julga recurso com o papel 'Julga o recurso em 2ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
+            "A banca 'Banca de análise de recursos de 2ª instância 1' da fase 'Fase de avaliação' decide por ato individual e julga recurso com o papel 'Julga o recurso em 2ª instância', mas não declara a votação do recurso. Declare o quórum, o critério e o encerramento usados no julgamento do recurso.");
         ItemDoPainel(ItemDaDeliberacao, Fases(fase), Etapas()).Ok.Should().BeFalse();
     }
 

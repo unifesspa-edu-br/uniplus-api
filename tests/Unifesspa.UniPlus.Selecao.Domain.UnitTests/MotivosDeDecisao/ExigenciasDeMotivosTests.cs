@@ -70,9 +70,9 @@ public sealed class ExigenciasDeMotivosTests
         faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivosDeDecisao");
         faltas.Select(f => f.Error.Message).Should().Equal(
         [
-            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"CADASTRO_UNICO"}.",
-            $"A fase 'INSCRICAO' precisa de ao menos um motivo favorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.",
-            $"A fase 'INSCRICAO' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.",
+            $"A fase 'Inscrição' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"CADASTRO_UNICO"}.",
+            $"A fase 'Inscrição' precisa de ao menos um motivo favorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.",
+            $"A fase 'Inscrição' precisa de ao menos um motivo desfavorável para o fundamento de isenção {"DOACAO_MEDULA_OSSEA"}.",
         ]);
     }
 

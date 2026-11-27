@@ -63,7 +63,7 @@ public sealed class ConferenciaDeConformidadeTests
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
-        publicar.Error.Message.Should().Contain("RESULTADO_FINAL");
+        publicar.Error.Message.Should().Contain("'Resultado final'").And.NotContain("RESULTADO_FINAL");
         processo.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho, "a recusa não congela nada");
     }
 

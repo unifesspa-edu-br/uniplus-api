@@ -54,10 +54,15 @@ public sealed record FaseDaVersaoPublicada(
     Guid Id,
     Guid FaseCanonicaOrigemId,
     string Codigo,
+    string TipoFaseNome,
     Guid? UnidadeResponsavelOrigemId,
     JanelaDeTempo Periodo,
     bool ColetaInscricao,
-    IReadOnlyList<EtapaDaVersaoPublicada> Etapas);
+    IReadOnlyList<EtapaDaVersaoPublicada> Etapas)
+{
+    /// <summary>A fase citada pelo nome que a versão publicada guardou.</summary>
+    public CitacaoDaFase Citacao => new(TipoFaseNome);
+}
 
 /// <summary>Uma etapa da fase, com o período próprio que a versão declara.</summary>
 public sealed record EtapaDaVersaoPublicada(Guid Id, string Nome, JanelaDeTempo Periodo);

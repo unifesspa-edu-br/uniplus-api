@@ -14199,7 +14199,7 @@
       "oQueAconteceu": [
         "A banca que julga recurso foi declarada com candidatos atendidos, isto é, com a\nlista de categorias de documento que ela atende. A banca que julga recurso atende\ntodos os candidatos da fase: ela analisa o recurso inteiro (UNI-REQ-0274 e\nUNI-REQ-0398), e não uma parte dele.",
         "Os candidatos atendidos existem para repartir o trabalho entre bancas do mesmo\ntipo, como descrito em\n[candidatos atendidos obrigatórios](/erros/uniplus.selecao.banca_requerida.candidatos_atendidos_obrigatorios).\nNuma banca que julga recurso, uma lista deixaria parte dos recursos sem quem os\njulgue.",
-        "A regra vale para a banca cujo papel, registrado nela quando foi criada, é o de\njulgar recurso: a banca de análise de recursos de 1ª instância (UNI-REQ-0473).\nCom a banca de 2ª instância, a mesma recusa vale também para ela. A mensagem cita a fase pelo código,\na banca pelo nome do tipo e pelo número dela e o papel dela.",
+        "A regra vale para a banca cujo papel, registrado nela quando foi criada, é o de\njulgar recurso: a banca de análise de recursos de 1ª instância (UNI-REQ-0473).\nCom a banca de 2ª instância, a mesma recusa vale também para ela. A mensagem começa por \"Na fase\", sem nomear a fase, e cita\na banca pelo nome do tipo e pelo número dela e o papel dela.",
         "Só a banca da fase tem candidatos atendidos: a recusa sai na gravação do\ncronograma, na leitura do documento de configuração e na publicação, no campo\n`fases[i].bancasRequeridas[p].categoriasDocumentoIds`. Na gravação ela vem na\nlista `errors[]`."
       ],
       "comoResolver": [
@@ -14355,7 +14355,7 @@
       ],
       "oQueAconteceu": [
         "O recurso da etapa declara que admite instância superior, e nem a etapa nem a\nfase em que ela acontece preveem uma banca com o papel de julgar o recurso em 2ª\ninstância (UNI-REQ-0454). Serve a banca de 2ª instância da própria etapa ou a da\nfase da etapa. A banca de análise de recursos de 1ª instância, da etapa ou da\nfase, não atende: a 2ª instância é outra banca, de papel próprio.",
-        "A mensagem cita a etapa pela posição, e não pelo nome, e a fase pelo código. A\nconferência é de completude e roda na publicação e na retificação em ato único.\nA recusa vem como o código desta página no corpo da resposta, e não na lista\n`errors[]`, e aponta o campo `etapas[i].bancas`. O item fica sem conferência, e a\nrecusa não sai, enquanto parte das bancas da etapa, das bancas da fase dela ou\ndos recursos da etapa estiver recusada por outro motivo, ou quando o recurso já\nfoi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
+        "A mensagem cita a etapa pela posição, e não pelo nome, e a fase pelo nome que a unidade vê. A\nconferência é de completude e roda na publicação e na retificação em ato único.\nA recusa vem como o código desta página no corpo da resposta, e não na lista\n`errors[]`, e aponta o campo `etapas[i].bancas`. O item fica sem conferência, e a\nrecusa não sai, enquanto parte das bancas da etapa, das bancas da fase dela ou\ndos recursos da etapa estiver recusada por outro motivo, ou quando o recurso já\nfoi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
       ],
       "comoResolver": [
         "Escolha um dos caminhos:",
@@ -14375,8 +14375,8 @@
       "oQueAconteceu": [
         "A fase prevê uma banca com o papel de julgar o recurso em 2ª instância, e não há recurso que ela possa julgar (UNI-REQ-0491). A banca de 2ª instância da fase julga o recurso da própria fase e os recursos das etapas dela que não têm banca de 2ª instância própria. Por isso a banca da fase é aceita quando o recurso da fase admite instância superior, ou quando uma etapa da fase tem recurso que admite instância superior e não tem banca de 2ª instância própria. Se todas as etapas com esse recurso já têm a sua banca, a da fase sobra e é recusada.",
         "O rascunho do processo aceita essa banca, porque é montado aos poucos. A recusa sai na publicação e na retificação em ato único, uma por banca, como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `fases[i].bancasRequeridas[p]`, em que `i` é a posição da fase e `p`, a da banca, e a resposta traz o código da fase e a identificação da banca em `identificadores`. Nesse lugar, a recusa de [mais de uma banca de 2ª instância](/erros/uniplus.selecao.banca.fase_com_mais_de_uma_banca_da_segunda_instancia) não sai.",
-        "A mensagem da resposta cita a fase pelo código e a banca pelo nome do tipo e pela posição dela, e tem duas formas:",
-        "- nenhum recurso admite instância superior: \"A fase '*código da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e nenhum recurso da fase ou das etapas dela admite instância superior. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca, ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\";\n- só admitem etapas que já têm a sua banca: \"A fase '*código da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e não há recurso para ela julgar: o recurso da fase não admite instância superior, e cada etapa da fase com recurso que admite instância superior já tem a sua banca de 2ª instância, que o julga. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca; ou retire a banca de 2ª instância de uma dessas etapas, para que a da fase julgue o recurso dela; ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\""
+        "A mensagem da resposta cita a fase pelo nome, entre aspas simples, e a banca pelo nome do tipo e pela posição dela, e tem duas formas:",
+        "- nenhum recurso admite instância superior: \"A fase '*nome da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e nenhum recurso da fase ou das etapas dela admite instância superior. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca, ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\";\n- só admitem etapas que já têm a sua banca: \"A fase '*nome da fase*' prevê a banca '*tipo e posição*', com o papel 'Julga o recurso em 2ª instância', e não há recurso para ela julgar: o recurso da fase não admite instância superior, e cada etapa da fase com recurso que admite instância superior já tem a sua banca de 2ª instância, que o julga. A banca de 2ª instância da fase julga o recurso da fase e os das etapas dela que não têm banca de 2ª instância própria. Retire essa banca; ou retire a banca de 2ª instância de uma dessas etapas, para que a da fase julgue o recurso dela; ou declare que o recurso da fase, ou o de uma etapa dela sem banca de 2ª instância própria, admite instância superior.\""
       ],
       "comoResolver": [
         "Escolha um dos caminhos:",
@@ -14394,7 +14394,7 @@
       ],
       "oQueAconteceu": [
         "A fase prevê duas ou mais bancas com o papel de julgar o recurso em 2ª instância.\nA 2ª instância é um colegiado único (UNI-REQ-0454): a fase admite uma única banca\ncom esse papel.",
-        "A mensagem cita a fase pelo código, a quantidade de bancas com o papel e a\nsegunda banca, pelo nome do tipo e pelo número dela, que é a primeira a retirar.\nUma banca na fase e outra numa etapa dela são aceitas: a regra conta por lugar.\nNo lugar em que sai a recusa de banca de 2ª instância sem recurso para\njulgar, esta recusa não sai: primeiro se retiram as bancas que não têm recurso\npara julgar.",
+        "A mensagem cita a fase pelo nome, a quantidade de bancas com o papel e a\nsegunda banca, pelo nome do tipo e pelo número dela, que é a primeira a retirar.\nUma banca na fase e outra numa etapa dela são aceitas: a regra conta por lugar.\nNo lugar em que sai a recusa de banca de 2ª instância sem recurso para\njulgar, esta recusa não sai: primeiro se retiram as bancas que não têm recurso\npara julgar.",
         "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o campo `fases[i].bancasRequeridas[p]`, com a\nidentificação da banca para a tela ligar a recusa à banca certa."
       ],
       "comoResolver": [
@@ -14414,7 +14414,7 @@
       "oQueAconteceu": [
         "O recurso da fase declara que admite instância superior, e a própria fase não\nprevê uma banca com o papel de julgar o recurso em 2ª instância (UNI-REQ-0454).\nNão servem a banca de uma etapa da fase nem a banca de análise de recursos de 1ª\ninstância: a 2ª instância é outra banca, de papel próprio.",
         "O papel é registrado na banca quando ela é criada, e a conferência olha esse\npapel, e não o nome do tipo. A configuração não diz qual órgão é a 2ª instância:\nquem a integra é definido na designação da banca.",
-        "A mensagem cita a fase pelo código. A conferência é de completude e roda na\npublicação e na retificação em ato único. A recusa vem como o código desta página\nno corpo da resposta, e não na lista `errors[]`, e aponta o campo\n`fases[i].bancasRequeridas`. O item fica sem conferência, e a recusa não sai,\nenquanto parte das bancas ou dos recursos da fase estiver recusada por outro\nmotivo, ou quando o recurso já foi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
+        "A mensagem cita a fase pelo nome, entre aspas simples. A conferência é de completude e roda na\npublicação e na retificação em ato único. A recusa vem como o código desta página\nno corpo da resposta, e não na lista `errors[]`, e aponta o campo\n`fases[i].bancasRequeridas`. O item fica sem conferência, e a recusa não sai,\nenquanto parte das bancas ou dos recursos da fase estiver recusada por outro\nmotivo, ou quando o recurso já foi recusado pelo\n[tipo que não admite instância superior](/erros/uniplus.selecao.banca.tipo_nao_admite_instancia_superior)."
       ],
       "comoResolver": [
         "Escolha um dos caminhos:",
@@ -14622,7 +14622,7 @@
       "oQueAconteceu": [
         "O cadastro de tipos de banca diz, para alguns tipos, que o tipo exige duas ou\nmais bancas na fase ou na etapa em que é usado (UNI-REQ-0476). O edital usa um\ndesses tipos e prevê só uma banca dele. A publicação é recusada.",
         "Há dois casos:",
-        "- **Falta no lugar.** A fase ou a etapa tem uma única banca do tipo. A mensagem\n  cita a fase pelo código, ou a etapa pela posição, e a banca pelo nome do tipo\n  e pelo número dela, por exemplo \"Banca de heteroidentificação 1\".\n- **Falta no grupo (só na fase).** As bancas do tipo atendem candidatos\n  diferentes, isto é, cada uma declara as suas categorias de documento\n  (UNI-REQ-0470), e um dos grupos de candidatos atendidos fica com uma banca só.\n  Nesse caso a exigência vale para cada grupo, e não para a fase inteira.",
+        "- **Falta no lugar.** A fase ou a etapa tem uma única banca do tipo. A mensagem\n  cita a fase pelo nome, ou a etapa pela posição, e a banca pelo nome do tipo\n  e pelo número dela, por exemplo \"Banca de heteroidentificação 1\".\n- **Falta no grupo (só na fase).** As bancas do tipo atendem candidatos\n  diferentes, isto é, cada uma declara as suas categorias de documento\n  (UNI-REQ-0470), e um dos grupos de candidatos atendidos fica com uma banca só.\n  Nesse caso a exigência vale para cada grupo, e não para a fase inteira.",
         "A característica \"exige duas ou mais bancas\" é do cadastro do tipo e fica\nregistrada no processo quando a banca é criada. Mudar o cadastro depois não\naltera uma banca que já está configurada: a regra olha o que foi registrado em\ncada banca, e a recusa cita a primeira banca que traz a exigência. A conferência\nconta todas as bancas do mesmo tipo.",
         "A conferência é de completude: o rascunho é salvo com uma banca só, e a recusa\nvem na publicação e na retificação em ato único. A recusa vem como o código\ndesta página no corpo da resposta, e não na lista `errors[]`. O campo apontado é\n`fases[i].bancasRequeridas[p]` na fase e `etapas[i].bancas[p]` na etapa, com a\nidentificação da banca para a tela ligar a recusa à banca certa."
       ],
@@ -14644,7 +14644,7 @@
       "oQueAconteceu": [
         "O período de recurso da fase ou da etapa declara que admite instância superior,\nmas a banca que avaliou o item recorrido é de um tipo que encerra o recurso na\n1ª instância (UNI-REQ-0478). Para esses tipos, o recurso é julgado em 1ª\ninstância, por banca diferente da que avaliou, e a decisão é final no Uni+; o\nsistema não exige banca nem prazo de 2ª instância nesse período. Por isso o\nedital não pode declarar o contrário.",
         "A característica \"encerra o recurso na 1ª instância\" é do cadastro do tipo e\nfica registrada no processo quando a banca é criada. Mudar o cadastro depois não\naltera uma banca já configurada. Se mais de uma banca avaliou o item e alguma\ndelas tem a característica, o recurso é recusado.",
-        "A mensagem cita a fase pelo código, ou a etapa pela posição, a banca pelo nome do\ntipo e pelo número dela, e o tipo de decisão do item. A recusa vem na\npublicação e na retificação em ato único, como o código desta página no corpo da\nresposta, e não na lista `errors[]`. O campo apontado é\n`fases[i].regraRecurso.admiteInstanciaSuperior` na fase e\n`etapas[i].recursos[j].admiteInstanciaSuperior` na etapa."
+        "A mensagem cita a fase pelo nome, ou a etapa pela posição, a banca pelo nome do\ntipo e pelo número dela, e o tipo de decisão do item. A recusa vem na\npublicação e na retificação em ato único, como o código desta página no corpo da\nresposta, e não na lista `errors[]`. O campo apontado é\n`fases[i].regraRecurso.admiteInstanciaSuperior` na fase e\n`etapas[i].recursos[j].admiteInstanciaSuperior` na etapa."
       ],
       "comoResolver": [
         "Declare que o recurso não admite instância superior. Com isso, o período não\nprecisa de banca de 2ª instância nem de prazo de 2ª instância.",
@@ -14687,7 +14687,7 @@
         "- bancas do mesmo tipo com o **mesmo conjunto de categorias** atendem os mesmos\n  candidatos e julgam em paralelo, dividindo o trabalho;\n- bancas do mesmo tipo **todas sem categorias** formam um grupo só, que atende\n  todos os candidatos, também em paralelo;\n- bancas do mesmo tipo com categorias **diferentes** repartem as categorias\n  entre si.",
         "Misturar bancas com categorias e banca sem categorias não permite saber quem\natende quem, e por isso é recusado. A comparação do conjunto não depende da ordem\nem que as categorias são declaradas.",
         "A etapa não declara categorias: as bancas do mesmo tipo na etapa formam um grupo\nsó, e esta recusa vale só para a fase.",
-        "A mensagem cita a fase pelo código, o tipo e a banca sem categorias, pelo nome do\ntipo e pelo número dela. A recusa sai na gravação do cronograma, na leitura do\ndocumento e na publicação, no campo `fases[i].bancasRequeridas[p].categoriasDocumentoIds`,\ne na gravação vem na lista `errors[]`."
+        "A mensagem começa por \"Na fase\", sem nomear a fase, e cita o tipo e a banca sem categorias, pelo nome do\ntipo e pelo número dela. A recusa sai na gravação do cronograma, na leitura do\ndocumento e na publicação, no campo `fases[i].bancasRequeridas[p].categoriasDocumentoIds`,\ne na gravação vem na lista `errors[]`."
       ],
       "comoResolver": [
         "Escolha um dos caminhos:",
@@ -14706,7 +14706,7 @@
       "oQueAconteceu": [
         "Uma banca da fase cita a mesma categoria de documento duas ou mais vezes nos\ncandidatos atendidos.",
         "Os candidatos atendidos são o conjunto de categorias que aquela banca julga\n(UNI-REQ-0470). Repetir uma categoria não acrescenta nada e deixa a declaração\nambígua entre engano de digitação e intenção de dizer outra coisa. Como o\nconjunto vai congelado na configuração publicada e responde pelo parecer e pelo\nrecurso do certame inteiro, a repetição é recusada na origem.",
-        "A recusa vale para qualquer banca da fase, tenha ela outras bancas do mesmo tipo\nou não. A mensagem cita a fase pelo código e a banca pelo nome do tipo e pelo\nnúmero dela, e o campo apontado é `fases[i].bancasRequeridas[p].categoriasDocumentoIds[k]`.\nNa gravação a recusa vem na lista `errors[]`."
+        "A recusa vale para qualquer banca da fase, tenha ela outras bancas do mesmo tipo\nou não. A mensagem começa por \"Na fase\", sem nomear a fase, e cita a banca pelo nome do tipo e pelo\nnúmero dela, e o campo apontado é `fases[i].bancasRequeridas[p].categoriasDocumentoIds[k]`.\nNa gravação a recusa vem na lista `errors[]`."
       ],
       "comoResolver": [
         "Remova a repetição. Se a intenção era dar à banca competência sobre mais de uma\nmatéria, declare categorias distintas, uma para cada. Se era corrigir a categoria,\ntroque-a em vez de acrescentar a nova ao lado da anterior.",
@@ -17512,7 +17512,7 @@
         "1. a banca **dedicada** de recursos da etapa (papel \"Julga o recurso em 1ª instância\"),\n   quando a etapa do item recorrido tem uma;\n2. a banca **dedicada** de recursos da fase, quando a etapa não tem;\n3. sem banca dedicada, a banca que **avaliou** o item recorrido, na etapa ou na fase em\n   que a avaliação foi feita.",
         "A banca de importação (de notas do INEP ou de candidatos) e a banca de 2ª instância\nnunca julgam o recurso em 1ª instância.",
         "A recusa tem três formas, conforme o caso. A mensagem da resposta diz:",
-        "- **fase com tipo de decisão:** \"A fase '*código da fase*' admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com\n  o papel 'Julga o recurso em 1ª instância', e nem a fase nem as etapas dela têm banca\n  que tenha avaliado esse item. Acrescente uma dessas bancas.\";\n- **etapa com tipo de decisão:** \"A etapa na posição *n* admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase\n  '*código da fase*', em que ela acontece, têm banca com o papel 'Julga o recurso em 1ª\n  instância', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas\n  bancas.\";\n- **recurso sem procedimento declarado:** \"A fase '*código da fase*' (ou a etapa na\n  posição *n*) admite recurso sem procedimento declarado, e só uma banca com o papel\n  'Julga o recurso em 1ª instância' pode julgá-lo. Acrescente essa banca.\"",
+        "- **fase com tipo de decisão:** \"A fase '*nome da fase*' admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com\n  o papel 'Julga o recurso em 1ª instância', e nem a fase nem as etapas dela têm banca\n  que tenha avaliado esse item. Acrescente uma dessas bancas.\";\n- **etapa com tipo de decisão:** \"A etapa na posição *n* admite recurso de *tipo de\n  decisão*, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase\n  '*nome da fase*', em que ela acontece, têm banca com o papel 'Julga o recurso em 1ª\n  instância', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas\n  bancas.\";\n- **recurso sem procedimento declarado:** \"A fase '*nome da fase*' (ou a etapa na\n  posição *n*) admite recurso sem procedimento declarado, e só uma banca com o papel\n  'Julga o recurso em 1ª instância' pode julgá-lo. Acrescente essa banca.\"",
         "O campo da recusa é `fases[i].bancasRequeridas` ou `etapas[i].bancas`. A conferência roda\nno congelamento do processo: na publicação e na retificação em ato único. A gravação do\ncronograma não a faz. A recusa vem como o código desta página no corpo da resposta, e não\nna lista `errors[]`; ela aponta uma pendência por vez, a primeira que encontra."
       ],
       "comoResolver": [
@@ -18396,7 +18396,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um documento exigido declara a fase em que é exigido e, opcionalmente, a etapa em que é\ncoletado, e a etapa tem de acontecer na mesma fase da exigência. Isso deixou de valer em uma\ndestas situações:",
-        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A mensagem de\n  detalhe diz que a etapa da exigência não acontece na fase e traz o código dessa fase, sem o\n  identificador da etapa;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
+        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A mensagem de\n  detalhe diz que a etapa da exigência não acontece na fase e traz o nome dessa fase, sem o\n  identificador da etapa;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
         "Na definição dos documentos, o sistema confere o vínculo de cada exigência nesta ordem: a fase,\no formulário a que o documento pertence, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo))\ne a etapa na fase. Esta é a última, e o primeiro defeito encontrado interrompe a definição."
       ],
       "comoResolver": [
@@ -18498,7 +18498,7 @@
       "oQueAconteceu": [
         "Nenhum documento é pedido antes de o fato de que ele depende ser conhecido. A exigência\ndepende de um fato que só passa a ser conhecido numa fase com ordem posterior à da fase em que\no documento é exigido. O fato pode vir da condição do documento ou de um campo do grupo\nrepetível pelo qual a exigência se repete; no segundo caso, a condição do documento não é a\ncausa. A mensagem de detalhe nomeia o fato e a fase dele, com a ordem de cada fase.",
         "O fato é conhecido na mais tardia entre: a fase em que o catálogo de fatos o situa, a fase do\nformulário que o coleta e, para o fato derivado por regra, as fases dos fatos de que ele\ndepende. Para o campo de grupo repetível, vale a fase do formulário que coleta o grupo.",
-        "A ordem das fases é a **ordem derivada do cronograma**: a posição de cada fase na\nlista, somada à escolha \"no mesmo momento da anterior\" (UNI-REQ-0485), que faz duas\nfases ocuparem o mesmo momento. Uma fase que acontece no mesmo momento da fase da\nexigência não é posterior a ela, então não causa esta recusa. Por isso, o pedido de\nisenção ordenado antes da inscrição só pode exigir documento por um fato coletado\nna inscrição se o edital deixar as duas no mesmo momento: a inscrição, e cada fase\nque ficar entre ela e a isenção, precisam estar marcadas com \"no mesmo momento da\nanterior\". Sem isso, a inscrição vem depois e a recusa sai. A mensagem da resposta diz: \"O fato '*código do fato*' só é conhecido na fase '*código da\nfase*' (ordem N), posterior à fase em que o documento é exigido (ordem M).\" Vale na gravação,\nna publicação e na retificação.",
+        "A ordem das fases é a **ordem derivada do cronograma**: a posição de cada fase na\nlista, somada à escolha \"no mesmo momento da anterior\" (UNI-REQ-0485), que faz duas\nfases ocuparem o mesmo momento. Uma fase que acontece no mesmo momento da fase da\nexigência não é posterior a ela, então não causa esta recusa. Por isso, o pedido de\nisenção ordenado antes da inscrição só pode exigir documento por um fato coletado\nna inscrição se o edital deixar as duas no mesmo momento: a inscrição, e cada fase\nque ficar entre ela e a isenção, precisam estar marcadas com \"no mesmo momento da\nanterior\". Sem isso, a inscrição vem depois e a recusa sai. A mensagem da resposta diz: \"O fato '*código do fato*' só é conhecido na fase '*nome da\nfase*' (ordem N), posterior à fase em que o documento é exigido (ordem M).\" Vale na gravação,\nna publicação e na retificação.",
         "A conferência acontece na definição dos documentos exigidos, na aplicação de um modelo de\nformulário e, com o catálogo de fatos, na publicação e na retificação em ato único. Ela vem depois de\n[`ponto_resolucao_fora_do_cronograma`](/erros/uniplus.selecao.documento_exigido.ponto_resolucao_fora_do_cronograma)\ne antes de\n[`fato_de_formulario_nao_alcancado`](/erros/uniplus.selecao.documento_exigido.fato_de_formulario_nao_alcancado)."
       ],
       "comoResolver": [
@@ -19390,7 +19390,7 @@
       "codigo": "uniplus.selecao.fase_cronograma.etapa_da_fase_referenciada",
       "requisitos": [],
       "oQueAconteceu": [
-        "As etapas de uma fase saem junto com ela quando o cronograma é redefinido sem a\nfase. Isso não acontece se uma etapa dela é usada por configuração de fora da\nfase: um critério de desempate pela maior nota da etapa ou uma regra de eliminação\nda classificação que cita a etapa. Remover a fase deixaria o desempate ou a\neliminação apontando para uma etapa que deixou de existir. A mensagem traz o\ncódigo e a ordem da fase e o nome da etapa.",
+        "As etapas de uma fase saem junto com ela quando o cronograma é redefinido sem a\nfase. Isso não acontece se uma etapa dela é usada por configuração de fora da\nfase: um critério de desempate pela maior nota da etapa ou uma regra de eliminação\nda classificação que cita a etapa. Remover a fase deixaria o desempate ou a\neliminação apontando para uma etapa que deixou de existir. A mensagem traz o\nnome e a ordem da fase e o nome da etapa.",
         "A conferência é feita fase por fase, na ordem em que o processo as tem, e para na\nprimeira recusa. Para uma fase removida, vem depois da recusa por documento\nexigido que usa a fase como referência\n([`referenciada_por_exigencia_viva`](/erros/uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva))\ne antes da recusa por formulário respondido na fase\n([`fase_referenciada_por_formulario`](/erros/uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario)).\nNada é gravado."
       ],
       "comoResolver": [
@@ -19450,7 +19450,7 @@
       "codigo": "uniplus.selecao.fase_cronograma.janela_invertida",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma fase do cronograma foi declarada com `inicio` e `fim` e o `fim` é anterior ao\n`inicio`. O período com fim igual ao início é aceito; só o fim anterior ao início é\nrecusado. A recusa vem em `fases[n].fim`, e a mensagem traz o código da fase e os\ndois instantes.",
+        "Uma fase do cronograma foi declarada com `inicio` e `fim` e o `fim` é anterior ao\n`inicio`. O período com fim igual ao início é aceito; só o fim anterior ao início é\nrecusado. A recusa vem em `fases[n].fim`, e a mensagem diz que a data de término é anterior\nà data de início, sem citar a fase.",
         "A conferência vale seja qual for a origem da data da fase: mesmo a fase cuja data\né definida na execução, e não no edital, não pode ser declarada com período\ninvertido. Ela é feita ao montar cada fase, junto com as outras violações da\nmesma fase (atos repetidos, parecer individual sem resultado, por exemplo), e\nsó para a fase cujos atos foram montados sem recusa; por isso uma violação nos\natos de uma fase pode esconder, até ser corrigida, o período invertido dela."
       ],
       "comoResolver": [
@@ -19464,7 +19464,7 @@
       "codigo": "uniplus.selecao.fase_cronograma.janela_obrigatoria_em_data_no_edital",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada fase canônica do cadastro diz quando a data da fase é fixada: no edital ou\nna execução. A fase cuja data é fixada no edital precisa trazer, no cronograma, o\n`inicio` e o `fim` do período; a fase cuja data é definida na execução pode ficar\nsem data, e a unidade responsável a define depois. O pedido de definição do\ncronograma (`PUT .../cronograma-fases`) declarou uma fase de data no edital sem\n`inicio`, sem `fim` ou sem os dois. A mensagem traz o código da fase, e a recusa\nvem em `fases[n]`.",
+        "Cada fase canônica do cadastro diz quando a data da fase é fixada: no edital ou\nna execução. A fase cuja data é fixada no edital precisa trazer, no cronograma, o\n`inicio` e o `fim` do período; a fase cuja data é definida na execução pode ficar\nsem data, e a unidade responsável a define depois. O pedido de definição do\ncronograma (`PUT .../cronograma-fases`) declarou uma fase de data no edital sem\n`inicio`, sem `fim` ou sem os dois. A mensagem diz que a fase com data fixada no edital exige início e término do\nperíodo, sem citar a fase, e a recusa vem em `fases[n]`.",
         "A origem da data não é escolhida no pedido: vem da fase canônica citada em\n`faseCanonicaId`. A conferência é feita ao montar cada fase, junto com as outras\nviolações da mesma fase, e só para a fase cujos atos foram montados sem recusa;\numa violação nos atos da fase pode esconder, até ser corrigida, o período\nincompleto."
       ],
       "comoResolver": [
@@ -20552,7 +20552,7 @@
         "UNI-REQ-0265"
       ],
       "oQueAconteceu": [
-        "A regra de homologação não aponta um resultado da fase ou aponta um resultado que não é produto da fase com papel declarado. A mensagem não traz o código da fase; o campo do erro aponta `resultadoAtoCodigo`\nda regra de homologação."
+        "A regra de homologação não aponta um resultado da fase ou aponta um resultado que não é produto da fase com papel declarado. A mensagem não cita a fase; o campo do erro aponta `resultadoAtoCodigo`\nda regra de homologação."
       ],
       "comoResolver": [
         "Informe na regra um resultado que seja produto da própria fase, com seu papel."
@@ -23578,7 +23578,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O cronograma do processo inclui uma fase que, pelo cadastro de fases, agrupa etapas\npontuadas (como a das provas), mas nenhuma etapa do processo declara acontecer nela.\nA fase existiria no edital sem nada para avaliar. A recusa sai com **422**.",
-        "A mensagem de detalhe diz que a fase agrupa etapas no cronograma e nenhuma etapa declara\nacontecer nela; ela não traz o código da fase, e o campo do erro aponta a fase no cronograma.",
+        "A mensagem de detalhe diz que a fase agrupa etapas no cronograma e nenhuma etapa declara\nacontecer nela; ela não cita a fase, e o campo do erro aponta a fase no cronograma.",
         "A gravação do cronograma não barra esse estado de imediato: ele é legítimo enquanto o\ncertame está sendo montado, e quem o recusa é a publicação. A mesma conferência vale\nna retificação em ato único, que gera nova\nversão, e a operação é recusada antes de qualquer gravação."
       ],
       "comoResolver": [
@@ -24017,7 +24017,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_comeca_antes_da_fase",
       "requisitos": [],
       "oQueAconteceu": [
-        "O início declarado para uma etapa é anterior ao início da fase do cronograma em que\nela acontece. A etapa é parte da fase, então o período dela cabe dentro do período da\nfase. A mensagem de detalhe diz que a etapa começa antes do período da fase; ela não traz o nome da\netapa, as datas nem o código da fase, e o campo do erro aponta o início da etapa. A recusa\nsai com **422**.",
+        "O início declarado para uma etapa é anterior ao início da fase do cronograma em que\nela acontece. A etapa é parte da fase, então o período dela cabe dentro do período da\nfase. A mensagem de detalhe diz que a etapa começa antes do período da fase; ela não traz o nome da\netapa, as datas nem a fase, e o campo do erro aponta o início da etapa. A recusa\nsai com **422**.",
         "Só se compara o que os dois lados declararam: fase sem período não contém nada, e\netapa sem período acontece no período da fase. Início igual ao da fase passa. A etapa que\ndeclara apenas um dos extremos herda o outro da fase.",
         "A regra vale ao definir as etapas, ao definir o cronograma (que pode mover a fase por\nbaixo de etapas já datadas) e, como defesa, na publicação e na retificação em ato único, para que nenhuma versão congele uma prova marcada\npara antes da fase que a contém."
       ],
@@ -24037,7 +24037,7 @@
       "oQueAconteceu": [
         "O período da etapa não tem nenhum ponto em comum com o período da fase do cronograma em\nque ela acontece. Há dois casos, e a mensagem de detalhe diz qual ocorreu:",
         "- a etapa **começa depois** de a fase ter terminado;\n- a etapa **termina antes** de a fase ter começado.",
-        "A mensagem de detalhe não traz o nome da etapa, as datas nem o código da fase; o campo do erro\naponta o início ou o fim da etapa, conforme o caso.",
+        "A mensagem de detalhe não traz o nome da etapa, as datas nem a fase; o campo do erro\naponta o início ou o fim da etapa, conforme o caso.",
         "A etapa é parte da fase, então o período dela cabe dentro do período da fase. Só se\ncompara o que os dois lados declararam, e a etapa que declara apenas um dos extremos\nherda o outro da fase; por isso uma prova que só diz quando começa pode cair fora de uma\nfase que já terminou. A recusa sai com **422**.",
         "A regra vale ao definir as etapas, ao definir o cronograma e, como defesa, na\npublicação e na retificação em ato único.",
         "Os casos em que a etapa começa antes da fase ou termina depois dela têm códigos\npróprios: [`etapa_comeca_antes_da_fase`](/erros/uniplus.selecao.processo_seletivo.etapa_comeca_antes_da_fase)\ne [`etapa_termina_depois_da_fase`](/erros/uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase)."
@@ -24226,7 +24226,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_no_cronograma",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma das etapas enviadas declara acontecer em uma fase, identificada pelo código, que\nnão está no cronograma do processo. A etapa vive dentro de uma fase do cronograma, então\na fase precisa existir nele. A mensagem de detalhe diz que há etapa que declara uma fase fora do cronograma; ela não traz o\nnome da etapa nem o código da fase, e o campo do erro aponta a fase declarada na etapa. A\nrecusa sai com **422** e as etapas anteriores permanecem.",
+        "Uma das etapas enviadas declara acontecer em uma fase, identificada pelo código, que\nnão está no cronograma do processo. A etapa vive dentro de uma fase do cronograma, então\na fase precisa existir nele. A mensagem de detalhe diz que há etapa que declara uma fase fora do cronograma; ela não traz o\nnome da etapa nem a fase, e o campo do erro aponta a fase declarada na etapa. A\nrecusa sai com **422** e as etapas anteriores permanecem.",
         "Uma etapa sem fase declarada não é recusada por este código; no rascunho ela é aceita,\ne quem a barra é a publicação."
       ],
       "comoResolver": [
@@ -24241,7 +24241,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase",
       "requisitos": [],
       "oQueAconteceu": [
-        "O fim declarado para uma etapa é posterior ao fim da fase do cronograma em que ela\nacontece. A etapa é parte da fase, então o período dela cabe dentro do período da fase. A\nmensagem de detalhe diz que a etapa termina depois do período da fase; ela não traz o nome da\netapa, as datas nem o código da fase, e o campo do erro aponta o fim da etapa. A recusa sai com **422**.",
+        "O fim declarado para uma etapa é posterior ao fim da fase do cronograma em que ela\nacontece. A etapa é parte da fase, então o período dela cabe dentro do período da fase. A\nmensagem de detalhe diz que a etapa termina depois do período da fase; ela não traz o nome da\netapa, as datas nem a fase, e o campo do erro aponta o fim da etapa. A recusa sai com **422**.",
         "Só se compara o que os dois lados declararam: fase sem período não contém nada, e etapa\nsem período acontece no período da fase. Fim igual ao da fase passa. A etapa que declara\napenas um dos extremos herda o outro da fase.",
         "A regra vale ao definir as etapas, ao definir o cronograma (que pode encurtar a fase por\nbaixo de etapas já datadas) e, como defesa, na publicação e na retificação em ato único, para que nenhuma versão congele uma prova marcada\npara depois do fim da fase que a contém."
       ],
@@ -24328,7 +24328,7 @@
       "oQueAconteceu": [
         "Uma fase do cronograma publica o resultado **preliminar** de um tipo de ato e não publica o resultado **definitivo** do mesmo tipo. O preliminar abre um ciclo de recurso, e sem o definitivo a matéria fica aberta, sem desfecho previsto para o candidato (UNI-REQ-0157 e UNI-REQ-0211). Toda fase que publica um resultado preliminar publica, nela mesma, o definitivo do mesmo tipo de ato: não existe outra fase que conclua o ciclo. Um definitivo de outro tipo de ato não fecha o ciclo, porque a matéria é o tipo de ato.",
         "A conferência roda na publicação inicial e na retificação em ato único; a gravação do cronograma não a faz. A recusa vem como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `/cronograma/fases/{i}/produtos`, em que `i` é a posição da fase no documento, e a resposta traz o código da fase em `identificadores`, no formato `[{\"lista\": \"fases\", \"identificador\": \"<código da fase>\"}]`. Se a lista de produtos da fase tem parte recusada, a conferência espera essa parte ser corrigida.",
-        "A mensagem da resposta diz: \"A fase '*código da fase*' publica o resultado preliminar do ato '*tipo de ato*' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.\""
+        "A mensagem da resposta diz: \"A fase '*nome da fase*' publica o resultado preliminar do ato '*tipo de ato*' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.\""
       ],
       "comoResolver": [
         "Acrescente aos produtos da fase o resultado definitivo do mesmo tipo de ato do preliminar, com o papel definitivo. Se o edital não quer ciclo de recurso para aquela matéria, retire o resultado preliminar. O painel de conformidade mostra esta pendência antes da publicação, no item `cronograma_conclusao_do_ciclo_recursal`. Para a etapa, a recusa equivalente é [etapa com preliminar sem definitivo](/erros/uniplus.selecao.processo_seletivo.etapa_com_preliminar_sem_definitivo)."
@@ -24363,7 +24363,7 @@
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "O novo cronograma deixa de incluir uma fase na qual um formulário do processo é\nrespondido. O formulário fica ligado a uma fase do cronograma e abre e fecha com o prazo\ndela; sem a fase, ele ficaria sem onde ser respondido. A mensagem de detalhe cita a fase\n(com o código e a ordem) e o código do formulário. A recusa sai com **422** e o\ncronograma anterior permanece.",
+        "O novo cronograma deixa de incluir uma fase na qual um formulário do processo é\nrespondido. O formulário fica ligado a uma fase do cronograma e abre e fecha com o prazo\ndela; sem a fase, ele ficaria sem onde ser respondido. A mensagem de detalhe cita a fase\n(com o nome e a ordem) e o código do formulário. A recusa sai com **422** e o\ncronograma anterior permanece.",
         "Se a fase removida também sustenta outras coisas, a recusa vem primeiro pela que o\nsistema confere antes: a idade máxima de emissão de documento exigido em outra fase e a\netapa citada por critério de desempate ou regra de eliminação. Este código aparece\nquando resta o formulário."
       ],
       "comoResolver": [
@@ -24382,7 +24382,7 @@
       "oQueAconteceu": [
         "Uma fase do cronograma não publica resultado definitivo e também não declara a data final do período. A fase que não publica definitivo só conclui no fim do período: sem a data final, a fase seguinte não teria o fato que a libera (UNI-REQ-0211). A fase com data fixada no edital já recusa o período incompleto por outra causa, e a fase cuja lista de produtos foi recusada não é conferida aqui, porque não se sabe o que ela publica.",
         "A conferência roda na publicação inicial e na retificação em ato único; a gravação do cronograma não a faz. A recusa vem como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `/cronograma/fases/{i}/fim`, em que `i` é a posição da fase no documento, e a resposta traz o código da fase em `identificadores`, no formato `[{\"lista\": \"fases\", \"identificador\": \"<código da fase>\"}]`.",
-        "A mensagem da resposta diz: \"A fase '*código da fase*' não publica resultado definitivo e não declara a data final do período. Declare a data final no cronograma; ela pode ser mudada depois por retificação do edital.\""
+        "A mensagem da resposta diz: \"A fase '*nome da fase*' não publica resultado definitivo e não declara a data final do período. Declare a data final no cronograma; ela pode ser mudada depois por retificação do edital.\""
       ],
       "comoResolver": [
         "Declare a data final do período da fase no cronograma. Se a fase publica um resultado definitivo, declare-o entre os produtos dela: a fase passa a terminar nele. O painel de conformidade mostra esta pendência antes da publicação, no item `cronograma_fase_sem_definitivo_sem_data_final`."
@@ -24396,7 +24396,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel",
       "requisitos": [],
       "oQueAconteceu": [
-        "Ao menos uma fase do cronograma não tem a unidade da Unifesspa que responde por ela.\nToda fase publicada responde a uma unidade da Unifesspa, e é essa unidade que responde\npelos atos e pelos recursos daquela fase. A mensagem de detalhe cita o código da\nprimeira fase sem unidade, na ordem do cronograma. A recusa sai com **422**, antes de\ngerar a versão.",
+        "Ao menos uma fase do cronograma não tem a unidade da Unifesspa que responde por ela.\nToda fase publicada responde a uma unidade da Unifesspa, e é essa unidade que responde\npelos atos e pelos recursos daquela fase. A mensagem de detalhe cita o nome da\nprimeira fase sem unidade, na ordem do cronograma. A recusa sai com **422**, antes de\ngerar a versão.",
         "No rascunho a unidade é opcional, e o cronograma é gravado sem ela; quem a exige é a\noperação que gera versão: a publicação e a retificação em ato único. A consulta de conformidade do processo\n(`GET /api/selecao/processos-seletivos/{id}/conformidade`) mostra a pendência antes da\ntentativa."
       ],
       "comoResolver": [
@@ -24415,7 +24415,7 @@
       ],
       "oQueAconteceu": [
         "O cadastro de fases diz que certas fases vêm antes de outras: por exemplo,\n`RESULTADO_FINAL` antes de `HABILITACAO`. Quando o edital marca uma fase com \"no\nmesmo momento da anterior\" (UNI-REQ-0485), ela passa a acontecer no mesmo momento\nda fase que vem antes na lista. Se as duas fases ficam no mesmo momento e o\ncadastro de precedência põe uma antes da outra, a ordem do cadastro deixa de\nvaler, e a recusa sai com **422**.",
-        "Os códigos das duas fases vêm do cadastro de precedência, e não do que a pessoa\ndigitou. A mensagem da resposta diz: \"A fase '*códigoAntecessora*' vem antes da fase\n'*códigoSucessora*' no cadastro de precedência, e as duas estão marcadas para\nacontecer no mesmo momento. Retire a marca \"no mesmo momento da anterior\" que junta\nas duas ou separe-as na ordem do cronograma.\" A recusa fica na fase de maior\nordem. Vale também para a primeira e a terceira fase de um grupo no mesmo momento,\nmesmo sem serem vizinhas.",
+        "As duas fases vêm do cadastro de precedência, e não do que a pessoa\ndigitou. A mensagem da resposta diz: \"A fase '*nome da antecessora*' vem antes da fase\n'*nome da sucessora*' no cadastro de precedência, e as duas estão marcadas para\nacontecer no mesmo momento. Retire a marca \"no mesmo momento da anterior\" que junta\nas duas ou separe-as na ordem do cronograma.\" A recusa fica na fase de maior\nordem. Vale também para a primeira e a terceira fase de um grupo no mesmo momento,\nmesmo sem serem vizinhas.",
         "Se a ordem do cronograma está invertida em relação ao cadastro **e** a marca junta\nas duas fases, vale esta recusa, e não a de\n[`precedencia_fase_violada`](/erros/uniplus.selecao.processo_seletivo.precedencia_fase_violada).\nQuando a ordem está invertida e as duas fases não estão juntas pela marca, a\nrecusa continua sendo a de precedência violada.",
         "O campo da recusa depende da operação:",
         "- ao definir o cronograma (`PUT`), é `fases[i].noMesmoMomentoDaAnterior`, sem\n  identificadores;\n- na publicação e na retificação em ato único, é\n  `/cronograma/fases/{i}/noMesmoMomentoDaAnterior`, com o código da fase em\n  `identificadores`, no formato `[{\"lista\": \"fases\", \"identificador\": \"<código da fase>\"}]`.",
@@ -24529,7 +24529,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.fato_elegibilidade_conhecido_depois_da_inscricao",
       "requisitos": [],
       "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso (FADA) cita um fato que decide quem recebe o acréscimo, mas esse fato só é\nconhecido em uma fase posterior à da inscrição. O acréscimo é decidido a partir do que a\npessoa candidata informa ao se inscrever; um fato que só passa a existir depois não\nserve a isso. A mensagem de detalhe cita o código do fato e a fase em que ele passa a ser\nconhecido. A recusa sai com **422**, antes de gerar a versão.",
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (FADA) cita um fato que decide quem recebe o acréscimo, mas esse fato só é\nconhecido em uma fase posterior à da inscrição. O acréscimo é decidido a partir do que a\npessoa candidata informa ao se inscrever; um fato que só passa a existir depois não\nserve a isso. A mensagem de detalhe cita a fase, pelo nome, em que o fato passa a ser\nconhecido, sem repetir o código do fato. A recusa sai com **422**, antes de gerar a versão.",
         "A fase em que o fato é conhecido vem do catálogo de fatos do candidato; para um fato\nderivado, ela depende da fase dos fatos de que ele depende. Por isso a recusa pode\naparecer na hora de gerar a versão mesmo que a consulta de conformidade do processo, que\nnão usa o catálogo nessa conferência, não a tenha apontado."
       ],
       "comoResolver": [
@@ -24647,7 +24647,7 @@
       ],
       "oQueAconteceu": [
         "O processo, qualquer que seja a origem das inscrições (inscrição pelo sistema,\nnota do ENEM por inscrição própria ou importação de fora, como no SISU), tem a\nfase que homologa as inscrições, e ela, com as etapas dela, não prevê nenhuma banca cujo tipo julgue a homologação das inscrições\n(UNI-REQ-0340). Quem julga a homologação das inscrições é essa banca, por ato\nindividual (UNI-REQ-0338).",
-        "A mensagem cita a fase pelo código. Mais de uma banca desse tipo é aceita. A banca é reconhecida pelo que o tipo\ndela julga, registrado na banca quando ela é criada, e não pelo nome do tipo.",
+        "A mensagem cita a fase pelo nome, entre aspas simples. Mais de uma banca desse tipo é aceita. A banca é reconhecida pelo que o tipo\ndela julga, registrado na banca quando ela é criada, e não pelo nome do tipo.",
         "Esta página trata da **banca**. A falta da **fase** que homologa as inscrições\ntem recusa própria:\n[importação externa](/erros/uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes),\n[nota do ENEM](/erros/uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes)\ne [inscrição própria](/erros/uniplus.selecao.processo_seletivo.inscricao_propria_sem_homologacao_das_inscricoes).",
         "A conferência é de completude e roda na publicação e na retificação em ato\núnico. A recusa vem como o código desta página no corpo da resposta, e não na\nlista `errors[]`, e aponta o lugar `fases[i].bancasRequeridas`."
       ],

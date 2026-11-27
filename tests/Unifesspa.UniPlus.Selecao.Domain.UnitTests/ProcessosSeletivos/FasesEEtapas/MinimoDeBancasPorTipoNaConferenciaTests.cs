@@ -66,7 +66,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
         falta.Field.Should().Be("fases[0].bancasRequeridas[0]");
         falta.Error.Code.Should().Be(Codigo);
         falta.Error.Message.Should().Be(
-            "A fase 'AVALIACAO' prevê só a banca 'Banca de heteroidentificação 1' desse tipo, e este tipo de banca exige duas ou mais bancas. Acrescente outra banca do mesmo tipo.");
+            "A fase 'Fase de avaliação' prevê só a banca 'Banca de heteroidentificação 1' desse tipo, e este tipo de banca exige duas ou mais bancas. Acrescente outra banca do mesmo tipo.");
     }
 
     [Fact(DisplayName = "A etapa com uma só banca do tipo que exige duas ou mais é recusada, citando a etapa pela posição")]
@@ -120,7 +120,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
 
         Causas(faltas).Should().Equal(("fases[0].bancasRequeridas[0]", Codigo), ("fases[0].bancasRequeridas[1]", Codigo));
         faltas[1].Error.Message.Should().Be(
-            "Na fase 'AVALIACAO', a banca 'Banca de heteroidentificação 2' é a única do tipo no seu grupo de candidatos atendidos, e este tipo de banca exige duas ou mais bancas em cada grupo. Acrescente outra banca do mesmo tipo com as mesmas categorias de documento.");
+            "Na fase 'Fase de avaliação', a banca 'Banca de heteroidentificação 2' é a única do tipo no seu grupo de candidatos atendidos, e este tipo de banca exige duas ou mais bancas em cada grupo. Acrescente outra banca do mesmo tipo com as mesmas categorias de documento.");
     }
 
     [Fact(DisplayName = "O grupo com duas bancas cumpre o mínimo, e o grupo que ficou com uma só é recusado")]
@@ -135,7 +135,7 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
     {
         IReadOnlyList<FieldError> faltas = Faltas(Fase(Heteroidentificacao(Renda)));
 
-        faltas.Should().ContainSingle().Which.Error.Message.Should().StartWith("A fase 'AVALIACAO' prevê só a banca");
+        faltas.Should().ContainSingle().Which.Error.Message.Should().StartWith("A fase 'Fase de avaliação' prevê só a banca");
     }
 
     [Fact(DisplayName = "As faltas saem na ordem das fases e das etapas, e dentro do lugar pela primeira posição de cada tipo")]
@@ -183,20 +183,20 @@ public sealed class MinimoDeBancasPorTipoNaConferenciaTests
         IReadOnlyList<FieldError> faltas = ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, Etapas());
 
         Causas(faltas).Should().Equal(("fases[0].bancasRequeridas[0]", Codigo));
-        faltas.Single().Error.Message.Should().StartWith("A fase 'AVALIACAO' prevê só a banca");
+        faltas.Single().Error.Message.Should().StartWith("A fase 'Fase de avaliação' prevê só a banca");
         ItemAprovado(cronograma, Etapas()).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Os candidatos atendidos recusados numa fase não mudam a falta do lugar na outra fase")]
     public void CandidatosAtendidosRecusadosNaPrimeiraFase_FaltaDoLugarDaSegundaFase()
     {
-        ModeloDeFase segunda = new ModeloDeFase("SEGUNDA_FASE", 2) with { Bancas = [Heteroidentificacao()] };
+        ModeloDeFase segunda = new ModeloDeFase("SEGUNDA_FASE", 2) with { Nome = "Segunda Fase", Bancas = [Heteroidentificacao()] };
         CronogramaDoProcesso cronograma = Fases(Fase(Heteroidentificacao(Renda), Heteroidentificacao()), segunda);
 
         IReadOnlyList<FieldError> faltas = ConferenciaDasBancas.ConferirMinimoDeBancasPorTipo(cronograma, Etapas());
 
         Causas(faltas).Should().Equal(("fases[1].bancasRequeridas[0]", Codigo));
-        faltas.Single().Error.Message.Should().StartWith("A fase 'SEGUNDA_FASE' prevê só a banca");
+        faltas.Single().Error.Message.Should().StartWith("A fase 'Segunda Fase' prevê só a banca");
         ItemAprovado(cronograma, Etapas()).Should().BeFalse();
     }
 

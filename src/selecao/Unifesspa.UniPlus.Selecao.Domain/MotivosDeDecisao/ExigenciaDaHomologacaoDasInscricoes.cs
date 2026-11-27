@@ -60,7 +60,7 @@ public sealed class ExigenciaDaHomologacaoDasInscricoes : IExigenciaDeMotivos
     private static FieldError TipoNaoDeclarado(FaseDeclarada fase, int posicao) =>
         CronogramaDoProcesso.NaFase(posicao, CampoDaRegra, new DomainError(
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-            $"A fase '{fase.Codigo}' tem regra de homologação das inscrições, mas não declara o tipo de decisão de homologação das inscrições."));
+            $"A fase {fase.Citacao} tem regra de homologação das inscrições, mas não declara o tipo de decisão de homologação das inscrições."));
 
     private static IEnumerable<FieldError> FaltasDasCondicoes(FaseDeclarada fase, int posicao, RegraDeHomologacaoDasInscricoes regra, IReadOnlyCollection<MotivoDeDecisaoDoProcesso> escolhidos)
     {
@@ -79,12 +79,12 @@ public sealed class ExigenciaDaHomologacaoDasInscricoes : IExigenciaDeMotivos
     {
         if (codigo is null)
         {
-            return $"A condição da fase '{fase.Codigo}' não informa motivo desfavorável.";
+            return $"A condição da fase {fase.Citacao} não informa motivo desfavorável.";
         }
 
         MotivoDeDecisaoDoProcesso? motivo = escolhidos.FirstOrDefault(m => m.Lugar == lugar && string.Equals(m.Codigo.Valor, codigo, StringComparison.Ordinal));
         string causa = motivo is null ? "não foi escolhido na fase" : motivo.Tipo != Tipo ? "é de outro tipo de decisão" : "é favorável";
-        return $"O motivo da condição da fase '{fase.Codigo}' {causa}.";
+        return $"O motivo da condição da fase {fase.Citacao} {causa}.";
     }
 
     /// <summary>A fase com regra de homologação e o lugar que a sua própria declaração ocupa no retrato, não o de outra fase de mesma origem.</summary>

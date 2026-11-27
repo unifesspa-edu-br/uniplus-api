@@ -43,18 +43,18 @@ public static class ConferenciaDasFasesIniciadas
         fasesNoDocumento
             .Select(static (fase, posicao) => (fase, posicao))
             .Where(par => iniciadas.UnidadeTrocada(par.fase))
-            .Select(static par => Recusa(
+            .Select(par => Recusa(
                 $"fases[{par.posicao}].{UnidadeDaFase}",
                 "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
-                $"A fase '{par.fase.Codigo}' (ordem {par.fase.Ordem}) já começou, e a unidade responsável por ela não muda."));
+                $"A fase {iniciadas.CitacaoPublicada(par.fase)} (ordem {par.fase.Ordem}) já começou, e a unidade responsável por ela não muda."));
 
     // Remover a fase numa retificação e recolocá-la com outra unidade na seguinte contornaria a recusa da troca. Só conta
     // a fase que a versão publicada vigente ainda traz: a que já saiu de uma versão anterior não é removida agora.
     private static IEnumerable<FieldError> RecusasDaRemocaoDaFase(FasesIniciadas iniciadas, IReadOnlyCollection<FaseCronograma> fases) =>
-        iniciadas.CodigosDasFasesRemovidas(fases).Select(static codigo => Recusa(
+        iniciadas.CitacoesDasFasesRemovidas(fases).Select(static citacao => Recusa(
             FasesNoDocumento,
             "FaseCronograma.FaseIniciadaNaoSaiDoCronograma",
-            $"A fase '{codigo}' já começou, e ela não sai do cronograma."));
+            $"A fase {citacao} já começou, e ela não sai do cronograma."));
 
     private static IEnumerable<FieldError> RecusasDaRemocaoDaEtapa(FasesIniciadas iniciadas, IReadOnlyCollection<EtapaProcesso> etapas) =>
         iniciadas.EtapasRemovidas(etapas).Select(static etapa => Recusa(

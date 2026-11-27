@@ -164,7 +164,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
-        resultado.Error.Message.Should().Contain("HABILITACAO");
+        resultado.Error.Message.Should().Contain("'Habilitação'").And.NotContain("HABILITACAO");
     }
 
     private static FaseCronograma FaseDeMatricula() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

@@ -21,6 +21,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.Ordem)] = NaoEntra("Posição na linha do tempo: o que muda o preliminar é o prazo e a unidade, não o número da posição."),
         [nameof(FaseCronograma.FaseCanonicaOrigemId)] = NaoEntra("É a identidade da fase entre versões."),
         [nameof(FaseCronograma.TipoFaseNome)] = NaoEntra("É cópia do nome do tipo de fase, só para leitura: trocar o nome não troca a fase."),
+        [nameof(FaseCronograma.Citacao)] = NaoEntra("Derivada de TipoFaseNome, que já não entra."),
         [nameof(FaseCronograma.NoMesmoMomentoDaAnterior)] = NaoEntra("Muda o momento da fase, e a retificação confere o momento à parte, pela marca e pelas fases que vêm antes."),
         [nameof(FaseCronograma.Codigo)] = Entra("O código vem do conjunto canônico e diz qual fase ela é: trocá-lo troca a fase."),
         [nameof(FaseCronograma.UnidadeResponsavel)] = Entra("A origem da unidade define quem decide o preliminar; código, sigla e nome não mudam a entrada."),
@@ -38,7 +39,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(FaseCronograma.BancasRequeridas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
         [nameof(FaseCronograma.TiposDeDecisao)] = Entra("Os tipos de decisão dizem o que o preliminar decide e o que dele se pode contestar."),
-        [nameof(FaseCronograma.RegraDeHomologacao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
+        [nameof(FaseCronograma.RegraDeHomologacao)] = NaoEntra("A regra de homologação das inscrições não entra na comparação do preliminar."),
     };
 
     internal static readonly Dictionary<string, Classificacao> DaEtapa = new()

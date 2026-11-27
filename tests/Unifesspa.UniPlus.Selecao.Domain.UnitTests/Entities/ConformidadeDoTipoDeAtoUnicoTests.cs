@@ -251,7 +251,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
 
         aviso.Codigo.Should().Be(CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
         aviso.Dimensao.Should().Be(DimensaoConformidade.Cronograma);
-        aviso.Mensagem.Should().Contain("'RESULTADO_CLASSIFICACAO'").And.Contain("na fase 'CLASSIFICACAO' e na fase 'HABILITACAO'");
+        aviso.Mensagem.Should().Contain("'RESULTADO_CLASSIFICACAO'").And.Contain("na fase 'Classificação' e na fase 'Habilitação'");
     }
 
     [Fact(DisplayName = "Aviso: o mesmo tipo definitivo numa fase e numa etapa gera o aviso nomeando a etapa")]
@@ -266,7 +266,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().ContainSingle().Which.Mensagem
-            .Should().Contain("na fase 'CLASSIFICACAO' e na etapa 'Prova Objetiva' (ordem 1)");
+            .Should().Contain("na fase 'Classificação' e na etapa 'Prova Objetiva' (ordem 1)");
     }
 
     [Fact(DisplayName = "Aviso: o tipo definitivo em um lugar só, ainda que com preliminar, não gera aviso")]

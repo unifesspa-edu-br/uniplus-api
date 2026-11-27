@@ -28,6 +28,9 @@ using Veredicto = Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtap
 internal static class ApoioDaSegundaInstancia
 {
     internal const string Fase = "AVALIACAO";
+
+    internal const string NomeDaFase = "Fase de avaliação";
+
     internal const string ItemDaFalta = "cronograma_instancia_superior_com_banca_da_segunda_instancia";
     internal const string ItemDaSobra = "cronograma_banca_da_segunda_instancia_com_recurso_para_julgar";
 

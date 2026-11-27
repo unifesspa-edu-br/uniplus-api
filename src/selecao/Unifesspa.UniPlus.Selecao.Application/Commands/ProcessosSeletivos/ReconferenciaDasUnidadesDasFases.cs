@@ -77,5 +77,5 @@ internal static class ReconferenciaDasUnidadesDasFases
         $"fases[{indice}].unidadeResponsavel",
         new DomainError(
             "FaseCronograma.UnidadeResponsavelNaoEncontrada",
-            $"Unidade responsável '{fase.UnidadeResponsavel!.Sigla}' (código '{fase.UnidadeResponsavel.Codigo}') da fase '{fase.Codigo}' não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
+            $"Unidade responsável '{fase.UnidadeResponsavel!.Sigla}' (código '{fase.UnidadeResponsavel.Codigo}') da fase {fase.Citacao} não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
 }

@@ -51,7 +51,7 @@ public sealed class LugaresDaDecisao
         ArgumentNullException.ThrowIfNull(etapas);
 
         IEnumerable<LugarNoProcesso> dasFases = OrdemDaConfiguracao.Fases(fases).Select((f, posicao) => new LugarNoProcesso(
-            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), f.Id, $"A fase '{f.Codigo}'", f.TiposDeDecisao.ToHashSet(), TiposRecusadosEm(origem, ListaDasFases, posicao)));
+            LugarDaDecisao.DaFase(f.FaseCanonicaOrigemId), f.Id, $"A fase {f.Citacao}", f.TiposDeDecisao.ToHashSet(), TiposRecusadosEm(origem, ListaDasFases, posicao)));
         IEnumerable<LugarNoProcesso> dasEtapas = OrdemDaConfiguracao.Etapas(etapas).Select((e, posicao) => new LugarNoProcesso(
             LugarDaDecisao.DaEtapa(e.Id), e.Id, $"A etapa '{e.Nome}'", e.TiposDeDecisao.ToHashSet(), TiposRecusadosEm(origem, ListaDasEtapas, posicao)));
 

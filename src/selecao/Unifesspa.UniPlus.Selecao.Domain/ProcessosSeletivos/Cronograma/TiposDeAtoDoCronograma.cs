@@ -29,7 +29,7 @@ public static class TiposDeAtoDoCronograma
 
         return [
             .. configuracao.Cronograma.CronogramaFases.SelectMany(static fase => fase.Produtos
-                .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, LugarDaDeclaracao.DaFase(fase.Codigo), produto.Papel))),
+                .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, LugarDaDeclaracao.DaFase(fase.Citacao), produto.Papel))),
             .. configuracao.Avaliacao.Etapas.SelectMany(static etapa => etapa.Produtos
                 .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, LugarDaDeclaracao.DaEtapa(etapa.Nome, etapa.Ordem), produto.Papel))),
         ];

@@ -16,26 +16,26 @@ public sealed record EtapaIniciada(Guid Id, string Nome, bool NaVersaoVigente);
 public sealed record FasesIniciadas
 {
     private readonly Dictionary<Guid, Guid?> _unidadesPublicadas;
-    private readonly Dictionary<Guid, string> _codigosNaVersaoVigente;
+    private readonly Dictionary<Guid, CitacaoDaFase> _citacoesNaVersaoVigente;
     private readonly Dictionary<Guid, EtapaIniciada> _etapas;
     private readonly HashSet<Guid> _fasesProdutoras;
 
     /// <summary>
-    /// Cria o conjunto a partir da fase canônica de origem e da unidade publicada de cada fase iniciada, e do código das
+    /// Cria o conjunto a partir da fase canônica de origem e da unidade publicada de cada fase iniciada, e da citação (o nome) das
     /// fases iniciadas que a versão publicada vigente ainda traz no cronograma: só essas podem ser removidas. As etapas
     /// iniciadas seguem a mesma regra. As fases produtoras são as que começaram por algo que pertence à própria fase: a
     /// janela dela, um ato dela ou uma decisão no lugar dela.
     /// </summary>
     public FasesIniciadas(
         IEnumerable<KeyValuePair<Guid, Guid?>> unidadesPublicadas,
-        IEnumerable<KeyValuePair<Guid, string>>? codigosNaVersaoVigente = null,
+        IEnumerable<KeyValuePair<Guid, CitacaoDaFase>>? citacoesNaVersaoVigente = null,
         IEnumerable<EtapaIniciada>? etapas = null,
         IEnumerable<Guid>? fasesProdutoras = null)
     {
         ArgumentNullException.ThrowIfNull(unidadesPublicadas);
 
         _unidadesPublicadas = new(unidadesPublicadas);
-        _codigosNaVersaoVigente = new(codigosNaVersaoVigente ?? []);
+        _citacoesNaVersaoVigente = new(citacoesNaVersaoVigente ?? []);
         _etapas = (etapas ?? []).ToDictionary(static e => e.Id);
         _fasesProdutoras = [.. fasesProdutoras ?? []];
     }
@@ -72,16 +72,27 @@ public sealed record FasesIniciadas
     }
 
     /// <summary>
-    /// O código das fases iniciadas que a versão publicada vigente ainda traz e que não estão entre as informadas. A
-    /// fase que já saiu de uma versão anterior não conta como removida agora.
+    /// A citação, pelo nome na versão publicada vigente, das fases iniciadas que ela ainda traz e que não estão entre as
+    /// informadas. A fase que já saiu de uma versão anterior não conta como removida agora.
     /// </summary>
-    public IEnumerable<string> CodigosDasFasesRemovidas(IEnumerable<FaseCronograma> fases)
+    public IEnumerable<CitacaoDaFase> CitacoesDasFasesRemovidas(IEnumerable<FaseCronograma> fases)
     {
         ArgumentNullException.ThrowIfNull(fases);
 
         HashSet<Guid> restantes = [.. fases.Select(static f => f.FaseCanonicaOrigemId)];
 
-        return _codigosNaVersaoVigente.Where(f => !restantes.Contains(f.Key)).Select(static f => f.Value);
+        return _citacoesNaVersaoVigente.Where(f => !restantes.Contains(f.Key)).Select(static f => f.Value);
+    }
+
+    /// <summary>
+    /// A citação da fase pelo nome que ela tem na versão publicada vigente; sem ela na versão vigente, a da própria
+    /// fase. O código segue sendo a identidade da fase; só o texto da recusa usa o nome.
+    /// </summary>
+    public CitacaoDaFase CitacaoPublicada(FaseCronograma fase)
+    {
+        ArgumentNullException.ThrowIfNull(fase);
+
+        return _citacoesNaVersaoVigente.TryGetValue(fase.FaseCanonicaOrigemId, out CitacaoDaFase? publicada) ? publicada : fase.Citacao;
     }
 
     /// <summary>As etapas iniciadas que a versão publicada vigente ainda traz e que não estão entre as informadas.</summary>

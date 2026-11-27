@@ -199,16 +199,16 @@ public sealed record CronogramaDoProcesso
     public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
     [
         .. Fases.SelectMany(static (fase, posicao) =>
-            TiposJulgaveis(fase).Select(tipo => NaFase(posicao, FaseDeclarada.ListaDosProdutos, PreliminarSemDefinitivo(fase.Codigo, tipo)))),
+            TiposJulgaveis(fase).Select(tipo => NaFase(posicao, FaseDeclarada.ListaDosProdutos, PreliminarSemDefinitivo(fase.Citacao, tipo)))),
     ];
 
     // O ciclo de um preliminar sem definitivo lê a lista dos produtos inteira: com parte recusada, o definitivo pode ser ela.
     private static IReadOnlyList<string> TiposJulgaveis(FaseDeclarada fase) =>
         fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos) ? [] : fase.Atos.TiposComCicloAberto();
 
-    private static DomainError PreliminarSemDefinitivo(string codigoDaFase, string tipo) => new(
+    private static DomainError PreliminarSemDefinitivo(CitacaoDaFase fase, string tipo) => new(
         ProcessoSeletivoErrorCodes.FaseComPreliminarSemDefinitivo,
-        $"A fase '{codigoDaFase}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.");
+        $"A fase {fase} publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.");
 
     /// <exception cref="InvalidOperationException">Há fase que coleta isenção com janela a conferir e o fuso institucional não foi informado.</exception>
     public IReadOnlyList<FieldError> ConferirCompletude(TimeZoneInfo? fuso) => CompletudeDoCronograma.Recusas(this, fuso);

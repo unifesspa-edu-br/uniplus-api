@@ -34,6 +34,7 @@ public sealed record FaseDeclarada
     public const string CampoDaRegraDeHomologacao = "regraDeHomologacao";
 
     private readonly IReadOnlySet<string> _caminhosComParteRecusada;
+    private readonly OrigemCanonicaDaFase _origem;
     private readonly DecisoesDeCronogramaDaFase _decisoes;
 
     private FaseDeclarada(
@@ -46,15 +47,10 @@ public sealed record FaseDeclarada
         IReadOnlySet<string> caminhosComParteRecusada)
     {
         Id = id;
-        OrigemId = origem.OrigemId;
-        Codigo = origem.Codigo;
+        _origem = origem;
+        Citacao = new CitacaoDaFase(origem.Nome);
         _decisoes = decisoes;
         Janela = new JanelaDeTempo(decisoes.Inicio, decisoes.Fim);
-        DataFixadaNoEdital = origem.OrigemData == OrigemDataFase.NoEdital;
-        AgrupaEtapas = origem.AgrupaEtapas;
-        ColetaInscricao = origem.ColetaInscricao;
-        ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
-        OrganizadaEmChamadas = origem.OrganizadaEmChamadas;
         Atos = atos;
         Bancas = bancas;
         Recusas = recusas;
@@ -63,9 +59,11 @@ public sealed record FaseDeclarada
 
     public Guid Id { get; }
 
-    public Guid OrigemId { get; }
+    public Guid OrigemId => _origem.OrigemId;
 
-    public string Codigo { get; }
+    public string Codigo => _origem.Codigo;
+
+    public CitacaoDaFase Citacao { get; }
 
     public int Ordem => _decisoes.Ordem;
 
@@ -75,17 +73,17 @@ public sealed record FaseDeclarada
     public JanelaDeTempo Janela { get; }
 
     /// <summary>Se o período da fase é fixado no edital, e por isso o período inteiro é obrigatório.</summary>
-    public bool DataFixadaNoEdital { get; }
+    public bool DataFixadaNoEdital => _origem.OrigemData == OrigemDataFase.NoEdital;
 
     public bool TemUnidadeResponsavel => _decisoes.UnidadeResponsavel is not null;
 
-    public bool AgrupaEtapas { get; }
+    public bool AgrupaEtapas => _origem.AgrupaEtapas;
 
-    public bool ColetaInscricao { get; }
+    public bool ColetaInscricao => _origem.ColetaInscricao;
 
-    public bool ColetaSolicitacaoIsencao { get; }
+    public bool ColetaSolicitacaoIsencao => _origem.ColetaSolicitacaoIsencao;
 
-    public bool OrganizadaEmChamadas { get; }
+    public bool OrganizadaEmChamadas => _origem.OrganizadaEmChamadas;
 
     public AtosDaFase Atos { get; }
 
