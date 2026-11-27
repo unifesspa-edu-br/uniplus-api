@@ -14,11 +14,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class FaseDoCronogramaPublicavelDeTeste
 {
     internal static FaseCronograma Criar(
-        string codigo, int ordem, DateTimeOffset inicio, DateTimeOffset fim, bool noMesmoMomentoDaAnterior = false, bool coletaSolicitacaoIsencao = false) =>
+        string codigo, int ordem, DateTimeOffset inicio, DateTimeOffset fim, bool noMesmoMomentoDaAnterior = false, bool coletaSolicitacaoIsencao = false,
+        bool? organizadaEmChamadas = null, Guid? origemId = null) =>
         FaseCronograma.Criar(FormacaoDeChaveLocal.Formar("fase", codigo, new ChavesEmUso()),
             OrigensCanonicasDeTeste.Da(
-                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
-                coletaSolicitacaoIsencao: coletaSolicitacaoIsencao),
+                origemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: coletaSolicitacaoIsencao, organizadaEmChamadas: organizadaEmChamadas ?? false),
             new DecisoesDeCronogramaDaFase(ordem, inicio, fim, UnidadeResponsavel: UnidadesDeTeste.Ceps) { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

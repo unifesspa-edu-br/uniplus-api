@@ -64,7 +64,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
     private static UnidadeView Unidade(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, codigo.ToLowerInvariant(), $"Unidade {codigo}", null, "ADMINISTRATIVA", false, null);
 
-    private static FaseCanonicaView Fase(string codigo) => new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, false, null, false, false, "NO_EDITAL");
+    private static FaseCanonicaView Fase(string codigo) => new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, false, null, false, false, false, "NO_EDITAL");
 
     private Task<Result<IdentificacaoECronogramaLidos>> Ler(string documento = Documento) =>
         _leitura.LerAsync(JsonNode.Parse(documento)!.AsObject(), CancellationToken.None);

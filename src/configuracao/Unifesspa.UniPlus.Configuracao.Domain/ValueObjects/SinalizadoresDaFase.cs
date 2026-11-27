@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// As marcas que dizem o que uma <see cref="Entities.FaseCanonica"/> faz no certame: se agrupa as
-/// etapas pontuadas, se admite complementação documental, se coleta inscrição e se coleta a
-/// solicitação de isenção da taxa. Andam juntas porque a coerência entre elas e o código da fase
+/// etapas pontuadas, se admite complementação documental, se coleta inscrição, se coleta a
+/// solicitação de isenção da taxa e se é organizada em chamadas. Andam juntas porque a coerência entre elas e o código da fase
 /// é regra do conjunto: nenhuma marca se confere sozinha.
 /// </summary>
 /// <remarks>
@@ -19,11 +19,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="PermiteComplementacao">Verdadeiro quando a fase admite complementação documental — só onde a lei permite.</param>
 /// <param name="ColetaInscricao">Verdadeiro quando a fase coleta inscrições — decide o piso mínimo do cronograma quando a origem dos candidatos é inscrição própria.</param>
 /// <param name="ColetaSolicitacaoIsencao">Verdadeiro quando a fase abre a janela em que o candidato pede isenção da taxa — exclusiva da fase de solicitação de isenção e incompatível com a coleta de inscrição.</param>
+/// <param name="OrganizadaEmChamadas">Verdadeiro quando a fase se repete em chamadas, cada uma com os seus convocados — o edital passa a exigir ao menos um formulário obrigatório nela.</param>
 public sealed record SinalizadoresDaFase(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     bool ColetaInscricao,
-    bool ColetaSolicitacaoIsencao)
+    bool ColetaSolicitacaoIsencao,
+    bool OrganizadaEmChamadas)
 {
     /// <summary>
     /// As recusas das marcas, acumuladas na ordem: agrupamento de etapas, complementação, marca de

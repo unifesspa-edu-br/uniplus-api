@@ -17,9 +17,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 {
-    /// <summary>O código canônico da fase de habilitação no catálogo de fases.</summary>
-    public const string CodigoFaseHabilitacao = "HABILITACAO";
-
     private readonly List<PaginaDoFormulario> _paginas = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -249,6 +246,9 @@ public static class FormularioProcessoErrorCodes
 
     /// <summary>O processo que cobra taxa não tem formulário facultativo na fase da janela de isenção.</summary>
     public const string TaxaSemFormularioDeIsencao = "FormularioProcesso.TaxaSemFormularioDeIsencao";
+
+    /// <summary>A fase organizada em chamadas não tem formulário obrigatório.</summary>
+    public const string ChamadasSemFormularioObrigatorio = "FormularioProcesso.ChamadasSemFormularioObrigatorio";
 
     /// <summary>A primeira fase depois da importação não tem o formulário obrigatório dos dados básicos que faltam.</summary>
     public const string PosImportacaoSemFormularioObrigatorio = "FormularioProcesso.PosImportacaoSemFormularioObrigatorio";

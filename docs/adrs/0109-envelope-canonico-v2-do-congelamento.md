@@ -389,3 +389,9 @@ O documento congelado guarda o bloco `manifestacaoDeInteresse`, com como o edita
 O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio processo ao congelar e, na recodificação, da configuração publicada. A leitura aceita texto ou nulo e aplica de novo a declaração do domínio: o código que o catálogo não conhece recusa o documento, no caminho `manifestacaoDeInteresse`, sem repetir o valor. É um bloco interno, registrado em `ClassificacaoDosBlocosDoCertame`: a página pública do certame não o mostra. A declaração não é obrigatória para publicar. O prazo da manifestação não é declarado: é da publicação de cada chamada. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda a manifestação muda o resumo da versão.
+
+## Emenda 11 (2026-11-27) — a fase organizada em chamadas no documento congelado
+
+Cada fase do cronograma guarda a marca `organizadaEmChamadas`, copiada do cadastro de fases ao congelar, junto de `coletaInscricao` e `coletaSolicitacaoIsencao`. A marca é obrigatória em toda fase, verdadeira ou falsa, entra nos bytes e no resumo (hash) da versão e é lida do próprio documento: alterar o cadastro vivo depois não muda a versão publicada. A conferência de que toda fase com a marca tem ao menos um formulário obrigatório lê só a marca congelada. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda a marca de uma fase muda o resumo da versão.

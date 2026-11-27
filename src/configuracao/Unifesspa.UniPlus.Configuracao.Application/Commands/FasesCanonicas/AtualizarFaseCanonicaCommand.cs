@@ -22,10 +22,11 @@ public sealed record AtualizarFaseCanonicaCommand(
     string? BaseLegal = null,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
+    bool OrganizadaEmChamadas = false,
     [property: AceitaCodigosDe<OrigemDataFase>] string? OrigemData = null,
     Guid? UnidadeSugeridaId = null) : ICommand<Result>
 {
-    /// <summary>Os quatro sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
+    /// <summary>Os cinco sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
     public SinalizadoresDaFase Sinalizadores() =>
-        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao, OrganizadaEmChamadas);
 }

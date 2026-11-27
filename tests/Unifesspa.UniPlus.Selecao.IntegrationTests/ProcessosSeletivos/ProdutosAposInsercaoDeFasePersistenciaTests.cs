@@ -41,7 +41,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
         FaseCronograma nova = Fase(3, origem, comRecurso);
         nova.Produtos.Single(p => p.Papel == PapelDaPublicacaoPrevista.Preliminar).Id.Should().NotBe(produtoAnterior);
         FaseCronograma inserida = FaseCronograma.Criar(ChaveLocal.Criar("fase_habilitacao").Value!,
-            OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, false, false, false, false),
+            OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NaExecucao, false, false, false, false, organizadaEmChamadas: false),
             new DecisoesDeCronogramaDaFase(2, null, null, UnidadesDeTeste.Ceps), new PublicacoesDaFase([], false, null), []).Value!;
         processo.DefinirCronogramaFases([processo.CronogramaFases.Single(f => f.Ordem == 1), inserida, nova], []).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();

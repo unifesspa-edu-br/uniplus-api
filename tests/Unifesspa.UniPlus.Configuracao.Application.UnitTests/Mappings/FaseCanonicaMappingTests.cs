@@ -32,12 +32,25 @@ public sealed class FaseCanonicaMappingTests
         FaseCanonica fase = FaseCanonica.Criar(
             "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, baseLegal: null, origemData: "NO_EDITAL",
             sinalizadores: new SinalizadoresDaFase(
-                AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
+                AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 
         FaseCanonicaDto dto = fase.ToDto();
 
         dto.PermiteComplementacao.Should().BeTrue();
         dto.AdmiteComplementacao.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "O DTO projeta a marca de organizada em chamadas como a fase a tem")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ToDto_ProjetaAMarcaDeOrganizadaEmChamadas(bool organizada)
+    {
+        FaseCanonica fase = FaseCanonica.Criar(
+            "HABILITACAO", "Habilitação", null, baseLegal: null, origemData: "NO_EDITAL",
+            sinalizadores: new SinalizadoresDaFase(
+                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: organizada)).Value!;
+
+        fase.ToDto().OrganizadaEmChamadas.Should().Be(organizada);
     }
 
     [Fact(DisplayName = "O DTO projeta a unidade sugerida congelada quando a fase a tem")]
@@ -64,5 +77,5 @@ public sealed class FaseCanonicaMappingTests
         FaseCanonica.Criar(
             codigo, "Fase de teste", null, baseLegal: null, origemData: "NO_EDITAL",
             sinalizadores: new SinalizadoresDaFase(
-                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
+                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 }

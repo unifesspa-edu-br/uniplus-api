@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261126214810_Inicial")]
+    [Migration("20261127214459_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -13201,6 +13201,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("ordem")
                         .HasComment("Posição da fase no cronograma.");
 
+                    b.Property<bool>("OrganizadaEmChamadas")
+                        .HasColumnType("boolean")
+                        .HasColumnName("organizada_em_chamadas")
+                        .HasComment("Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.");
+
                     b.Property<string>("OrigemData")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -17810,6 +17815,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("coleta_solicitacao_isencao")
                                 .HasComment("Indica se a fase coleta solicitações de isenção.");
 
+                            b1.Property<bool>("OrganizadaEmChamadas")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("organizada_em_chamadas")
+                                .HasComment("Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.");
+
                             b1.Property<bool>("PermiteComplementacao")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("boolean")
@@ -17832,6 +17844,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = true,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17840,6 +17853,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = true,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17848,6 +17862,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = true
                                 },
                                 new
@@ -17856,6 +17871,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17864,6 +17880,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = true,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17872,6 +17889,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17880,6 +17898,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17888,6 +17907,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17896,6 +17916,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17904,6 +17925,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = true,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17912,6 +17934,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17920,6 +17943,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17928,6 +17952,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 },
                                 new
@@ -17936,6 +17961,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                     AgrupaEtapas = false,
                                     ColetaInscricao = false,
                                     ColetaSolicitacaoIsencao = false,
+                                    OrganizadaEmChamadas = false,
                                     PermiteComplementacao = false
                                 });
                         });

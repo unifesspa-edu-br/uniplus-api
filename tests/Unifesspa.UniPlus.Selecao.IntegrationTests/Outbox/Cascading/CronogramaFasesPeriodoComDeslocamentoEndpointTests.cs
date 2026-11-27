@@ -181,7 +181,7 @@ public sealed class CronogramaFasesPeriodoComDeslocamentoEndpointTests
         Result<FaseCanonica> criada = FaseCanonica.Criar(
             CodigoFaseComPeriodo, "Ensalamento", null, baseLegal: null, origemData: "NO_EDITAL",
             sinalizadores: new Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.SinalizadoresDaFase(
-                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
+                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
 
         config.FasesCanonicas.Add(criada.Value!);

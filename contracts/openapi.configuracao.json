@@ -16894,6 +16894,10 @@
             "type": "boolean",
             "default": false
           },
+          "organizadaEmChamadas": {
+            "type": "boolean",
+            "default": false
+          },
           "origemData": {
             "oneOf": [
               {
@@ -18884,6 +18888,10 @@
             "default": false
           },
           "coletaSolicitacaoIsencao": {
+            "type": "boolean",
+            "default": false
+          },
+          "organizadaEmChamadas": {
             "type": "boolean",
             "default": false
           },
@@ -21457,6 +21465,7 @@
           "baseLegal",
           "coletaInscricao",
           "coletaSolicitacaoIsencao",
+          "organizadaEmChamadas",
           "origemData",
           "unidadeSugerida",
           "criadoEm"
@@ -21501,6 +21510,9 @@
             "type": "boolean"
           },
           "coletaSolicitacaoIsencao": {
+            "type": "boolean"
+          },
+          "organizadaEmChamadas": {
             "type": "boolean"
           },
           "origemData": {

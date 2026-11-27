@@ -31,7 +31,8 @@ internal static class OrigensCanonicasDeTeste
 
     /// <summary>
     /// A origem canônica de uma fase de teste. O nome é o que o cadastro daria ao código (por exemplo, "Inscrição"
-    /// para INSCRICAO), sempre diferente do código; <see cref="ComNome"/> o troca.
+    /// para INSCRICAO), sempre diferente do código; <see cref="ComNome"/> o troca. A fase não é organizada em chamadas,
+    /// salvo a HABILITACAO, que já nasce marcada como no cadastro semeado; quem precisa dela sem a marca passa <c>false</c>.
     /// </summary>
     internal static OrigemCanonicaDaFase Da(
         Guid origemId,
@@ -40,8 +41,10 @@ internal static class OrigensCanonicasDeTeste
         bool agrupaEtapas,
         bool permiteComplementacao,
         bool coletaInscricao,
-        bool coletaSolicitacaoIsencao) =>
-        new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao)
+        bool coletaSolicitacaoIsencao,
+        bool? organizadaEmChamadas = null) =>
+        new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
+            organizadaEmChamadas ?? string.Equals(codigo, "HABILITACAO", StringComparison.Ordinal))
         {
             Nome = NomeDoCodigo(codigo),
         };

@@ -29,6 +29,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.PermiteComplementacao)] = Entra("Muda o que o candidato pode acrescentar antes da decisão."),
         [nameof(FaseCronograma.ColetaInscricao)] = Entra("Muda quem entra no certame."),
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = Entra("Muda quem pede isenção."),
+        [nameof(FaseCronograma.OrganizadaEmChamadas)] = NaoEntra("Só decide se o edital exige formulário obrigatório na fase; não muda o resultado que o preliminar publica."),
         [nameof(FaseCronograma.Inicio)] = Entra("O período da fase delimita o que o preliminar considera."),
         [nameof(FaseCronograma.Fim)] = Entra("O período da fase delimita o que o preliminar considera."),
         [nameof(FaseCronograma.EmiteParecerIndividual)] = Entra("O parecer individual é o fundamento do recurso."),

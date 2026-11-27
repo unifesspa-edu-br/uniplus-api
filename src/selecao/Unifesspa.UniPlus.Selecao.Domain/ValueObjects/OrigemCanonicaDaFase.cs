@@ -15,7 +15,8 @@ public sealed record OrigemCanonicaDaFase(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     bool ColetaInscricao,
-    bool ColetaSolicitacaoIsencao)
+    bool ColetaSolicitacaoIsencao,
+    bool OrganizadaEmChamadas)
 {
     public string Nome { get; init; } = string.Empty;
 }

@@ -54,7 +54,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true, coletaIsencao: isencaoNaFaseDaInscricao);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         FaseCronograma isencao = isencaoNaFaseDaInscricao ? inscricao : Fase(2, "SOLICITACAO_ISENCAO", coletaIsencao: true);
-        FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
+        FaseCronograma habilitacao = Fase(3, "HABILITACAO");
         FaseCronograma[] fases = isencaoNaFaseDaInscricao ? [inscricao, habilitacao] : [inscricao, isencao, habilitacao];
         processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
         DefinirFormulariosDoAcrescimo(processo, inscricao, isencao, habilitacao);
@@ -67,7 +67,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     {
         FaseCronograma isencao = Fase(1, "SOLICITACAO_ISENCAO", coletaIsencao: true);
         FaseCronograma inscricao = Fase(2, "INSCRICAO", coletaInscricao: true);
-        FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
+        FaseCronograma habilitacao = Fase(3, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         processo.DefinirCronogramaFases([isencao, inscricao, habilitacao], []).IsSuccess.Should().BeTrue();
         DefinirFormulariosDoAcrescimo(processo, inscricao, isencao, habilitacao);
@@ -192,7 +192,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     {
         ProcessoSeletivo processo = Processo();
         Aplicar(processo, "PEDE_O_ACRESCIMO");
-        Dictionary<string, string> catalogo = new(StringComparer.Ordinal) { ["PEDE_O_ACRESCIMO"] = FormularioProcesso.CodigoFaseHabilitacao };
+        Dictionary<string, string> catalogo = new(StringComparer.Ordinal) { ["PEDE_O_ACRESCIMO"] = "HABILITACAO" };
 
         RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), SemCatalogo, SemCatalogo).Should().BeNull();
         RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), catalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);

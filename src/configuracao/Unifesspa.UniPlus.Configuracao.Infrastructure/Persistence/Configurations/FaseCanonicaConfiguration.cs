@@ -120,10 +120,13 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             .HasColumnName("coleta_inscricao").IsRequired().HasDefaultValue(false);
         sinalizadores.Property(s => s.ColetaSolicitacaoIsencao)
             .HasColumnName("coleta_solicitacao_isencao").IsRequired().HasDefaultValue(false);
+        sinalizadores.Property(s => s.OrganizadaEmChamadas)
+            .HasColumnName("organizada_em_chamadas").IsRequired().HasDefaultValue(false);
         sinalizadores.Property(s => s.AgrupaEtapas).HasComment("Indica se a fase agrupa etapas de avaliação.");
         sinalizadores.Property(s => s.PermiteComplementacao).HasComment("Indica se a fase permite complementação.");
         sinalizadores.Property(s => s.ColetaInscricao).HasComment("Indica se a fase coleta inscrições.");
         sinalizadores.Property(s => s.ColetaSolicitacaoIsencao).HasComment("Indica se a fase coleta solicitações de isenção.");
+        sinalizadores.Property(s => s.OrganizadaEmChamadas).HasComment("Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.");
         sinalizadores.HasData(SinalizadoresDoSeed());
     }
 
@@ -135,6 +138,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             item.PermiteComplementacao,
             item.ColetaInscricao,
             item.ColetaSolicitacaoIsencao,
+            item.OrganizadaEmChamadas,
         });
 
     /// <summary>

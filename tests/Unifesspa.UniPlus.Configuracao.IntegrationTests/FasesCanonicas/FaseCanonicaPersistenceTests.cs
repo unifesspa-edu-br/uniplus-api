@@ -188,5 +188,5 @@ public sealed class FaseCanonicaPersistenceTests
             // A marca acompanha o código: a factory recusa a fase de isenção sem ela.
             new SinalizadoresDaFase(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao)).Value!;
+                ColetaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, OrganizadaEmChamadas: false)).Value!;
 }

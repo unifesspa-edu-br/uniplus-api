@@ -33,11 +33,13 @@ internal static class CondicoesParaRegistrarConfiguracao
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(configuracao)),
         Conferencia.Unica("fada", static (configuracao, _) => PendenciasDosFatos.PendenciaDeMunicipioDoFadaForaDaArea(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(configuracao)),
-        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciasDaInscricao(configuracao)),
+        Conferencia.Varias("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciasDaInscricao(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDoConjuntoBasico(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDaEdicaoDoEnem(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDaFaseDosFormularios(configuracao)),
-        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciasDaIsencao(configuracao)),
+        Conferencia.Varias("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciasDaIsencao(configuracao)),
+        new(static (configuracao, _) => PendenciasDosFormularios.PendenciasDasChamadas(configuracao)),
+        Conferencia.Varias("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciasDaPrimeiraFaseDepoisDaImportacao(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDosItensForaDeSecao(configuracao)),
         Conferencia.Unica("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDosItensEmExcesso(configuracao)),
         Conferencia.Unica("distribuicaoVagas", static (configuracao, _) => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(configuracao.Vagas.DistribuicaoVagas)),
@@ -55,14 +57,16 @@ internal static class CondicoesParaRegistrarConfiguracao
 
         return
         [
-            .. Conferencias.SelectMany(conferencia => conferencia.Pendencias(configuracao, cadastros)
-                .Select(pendencia => new FieldError(conferencia.Bloco, pendencia))),
+            .. Conferencias.SelectMany(conferencia => conferencia.Pendencias(configuracao, cadastros)),
         ];
     }
 
-    private sealed record Conferencia(string Bloco, Func<ConfiguracaoDeclarada, CadastrosDaConfiguracao, IEnumerable<DomainError>> Pendencias)
+    private sealed record Conferencia(Func<ConfiguracaoDeclarada, CadastrosDaConfiguracao, IEnumerable<FieldError>> Pendencias)
     {
         internal static Conferencia Unica(string bloco, Func<ConfiguracaoDeclarada, CadastrosDaConfiguracao, DomainError?> pendencia) =>
-            new(bloco, (configuracao, cadastros) => pendencia(configuracao, cadastros) is { } causa ? [causa] : []);
+            Varias(bloco, (configuracao, cadastros) => pendencia(configuracao, cadastros) is { } causa ? [causa] : []);
+
+        internal static Conferencia Varias(string bloco, Func<ConfiguracaoDeclarada, CadastrosDaConfiguracao, IEnumerable<DomainError>> pendencias) =>
+            new((configuracao, cadastros) => pendencias(configuracao, cadastros).Select(pendencia => new FieldError(bloco, pendencia)));
     }
 }

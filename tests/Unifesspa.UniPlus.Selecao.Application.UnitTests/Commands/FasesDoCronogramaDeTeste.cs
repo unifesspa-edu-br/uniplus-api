@@ -76,7 +76,7 @@ internal static class FasesDoCronogramaDeTeste
     private static FaseCanonicaView FaseCanonica(string codigo, string nome) => new(
         Guid.CreateVersion7(), codigo, nome, null,
         AgrupaEtapas: false, PermiteComplementacao: false, BaseLegal: null,
-        ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrigemData: "NO_EDITAL");
+        ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false, OrigemData: "NO_EDITAL");
 
     private static RegraCatalogo RegraDoCatalogo(string codigo, TipoRegra tipo, string baseLegal) =>
         RegraCatalogo.Criar(

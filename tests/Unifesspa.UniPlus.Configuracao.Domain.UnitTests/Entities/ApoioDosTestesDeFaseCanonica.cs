@@ -25,6 +25,7 @@ internal static class ApoioDosTestesDeFaseCanonica
         bool agrupaEtapas = false,
         bool permiteComplementacao = false,
         bool coletaInscricao = false,
-        bool coletaSolicitacaoIsencao = false) =>
-        new(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao);
+        bool coletaSolicitacaoIsencao = false,
+        bool organizadaEmChamadas = false) =>
+        new(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao, organizadaEmChamadas);
 }

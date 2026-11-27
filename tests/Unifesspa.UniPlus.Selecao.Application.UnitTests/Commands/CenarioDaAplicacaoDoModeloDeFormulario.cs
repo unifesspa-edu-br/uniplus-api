@@ -50,7 +50,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 "SIM").Value!],
         });
         Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
-        Processo.DefinirCronogramaFases([FaseDoCronograma("INSCRICAO", 1, coletaInscricao: true), FaseDoCronograma(FormularioProcesso.CodigoFaseHabilitacao, 2, coletaInscricao: false)], [])
+        Processo.DefinirCronogramaFases([FaseDoCronograma("INSCRICAO", 1, coletaInscricao: true), FaseDoCronograma("HABILITACAO", 2, coletaInscricao: false)], [])
             .IsSuccess.Should().BeTrue();
     }
 

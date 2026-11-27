@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Os sinalizadores da fase canônica no banco: as quatro colunas da linha de <c>tipos_de_fase</c>
+/// Os sinalizadores da fase canônica no banco: as cinco colunas da linha de <c>tipos_de_fase</c>
 /// que o valor <see cref="SinalizadoresDaFase"/> grava e lê, e os dois CHECKs que as cruzam com o
 /// código e entre si.
 /// </summary>
@@ -61,7 +61,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
         string codigo, bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao)
     {
         await LiberarSlotAsync(codigo);
-        var sinalizadores = new SinalizadoresDaFase(agrupaEtapas, permiteComplementacao, coletaInscricao, ColetaSolicitacaoIsencao: false);
+        var sinalizadores = new SinalizadoresDaFase(agrupaEtapas, permiteComplementacao, coletaInscricao, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false);
         FaseCanonica fase = FaseCanonica.Criar(codigo, "Fase", null, null, "NO_EDITAL", sinalizadores).Value!;
         await GravarComoAsync("admin-a", fase);
 
@@ -70,15 +70,30 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
         lida.Sinalizadores.Should().Be(sinalizadores);
     }
 
+    [Theory(DisplayName = "A marca de organizada em chamadas grava na coluna própria e volta igual na leitura")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task OrganizadaEmChamadas_GravaEVolta(bool organizada)
+    {
+        await LiberarSlotAsync("HABILITACAO");
+        var sinalizadores = new SinalizadoresDaFase(false, false, false, false, organizada);
+        FaseCanonica fase = FaseCanonica.Criar("HABILITACAO", "Habilitação", null, null, "NO_EDITAL", sinalizadores).Value!;
+        await GravarComoAsync("admin-a", fase);
+
+        FaseCanonica lida = await LerAsync(fase.Id);
+
+        lida.Sinalizadores.OrganizadaEmChamadas.Should().Be(organizada);
+    }
+
     [Fact(DisplayName = "Atualizar troca os sinalizadores gravados e a leitura devolve os novos")]
     public async Task Atualizar_TrocaOsSinalizadoresGravados()
     {
         await LiberarSlotAsync("HOMOLOGACAO_INSCRICOES");
         FaseCanonica fase = FaseCanonica.Criar(
-            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, null, "NO_EDITAL", new SinalizadoresDaFase(false, false, false, false)).Value!;
+            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, null, "NO_EDITAL", new SinalizadoresDaFase(false, false, false, false, false)).Value!;
         await GravarComoAsync("admin-a", fase);
 
-        await AtualizarComoAsync("admin-b", fase.Id, new SinalizadoresDaFase(false, true, false, false));
+        await AtualizarComoAsync("admin-b", fase.Id, new SinalizadoresDaFase(false, true, false, false, false));
 
         FaseCanonica lida = await LerAsync(fase.Id);
         lida.Sinalizadores.PermiteComplementacao.Should().BeTrue();

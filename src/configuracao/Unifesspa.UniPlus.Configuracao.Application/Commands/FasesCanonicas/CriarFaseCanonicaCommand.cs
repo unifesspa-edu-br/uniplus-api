@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (<c>OrigemData</c>), unidade sugerida opcional (<c>UnidadeSugeridaId</c>, resolvida no cadastro
 /// de unidades pelo handler) e os sinalizadores <c>AgrupaEtapas</c> /
 /// <c>PermiteComplementacao</c> / <c>ColetaInscricao</c> /
-/// <c>ColetaSolicitacaoIsencao</c> (falsos por omissão). O ator de auditoria
+/// <c>ColetaSolicitacaoIsencao</c> / <c>OrganizadaEmChamadas</c> (falsos por omissão). O ator de auditoria
 /// (<c>created_by</c>) é carimbado server-side via <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
@@ -30,10 +30,11 @@ public sealed record CriarFaseCanonicaCommand(
     string? BaseLegal = null,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
+    bool OrganizadaEmChamadas = false,
     [property: AceitaCodigosDe<OrigemDataFase>] string? OrigemData = null,
     Guid? UnidadeSugeridaId = null) : ICommand<Result<Guid>>
 {
-    /// <summary>Os quatro sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
+    /// <summary>Os cinco sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
     public SinalizadoresDaFase Sinalizadores() =>
-        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao, OrganizadaEmChamadas);
 }

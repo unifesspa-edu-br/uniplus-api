@@ -46,7 +46,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
 
     private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.Da(origemId: Guid.CreateVersion7(), codigo: codigo, origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
+            OrigensCanonicasDeTeste.Da(origemId: Guid.CreateVersion7(), codigo: codigo, origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, organizadaEmChamadas: false),
             new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

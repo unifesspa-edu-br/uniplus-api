@@ -150,12 +150,12 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
 
     private static FaseCronograma FaseDeHabilitacaoDepoisDasDemais(ProcessoSeletivo processo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.Da(
-            Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
-            coletaSolicitacaoIsencao: false),
+            Guid.CreateVersion7(), "HABILITACAO", OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+            coletaSolicitacaoIsencao: false, organizadaEmChamadas: false),
         new DecisoesDeCronogramaDaFase(
             processo.CronogramaFases.Max(static f => f.Ordem) + 1, Inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("HABILITACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, com o rótulo e o tipo congelados do catálogo")]

@@ -281,7 +281,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static Cenario Publicado(bool comHabilitacao = true)
     {
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
-        FaseCronograma habilitacao = Fase(2, FormularioProcesso.CodigoFaseHabilitacao);
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
         FaseCronograma matricula = Fase(3, "MATRICULA");
         ProcessoSeletivo processo = ProcessoComFases(inscricao, habilitacao, matricula);
         processo.DefinirItens([Item("TEM_RENDA", 0)], grupos: [Familia(2, "MEMBRO_RENDA")]).IsSuccess.Should().BeTrue();

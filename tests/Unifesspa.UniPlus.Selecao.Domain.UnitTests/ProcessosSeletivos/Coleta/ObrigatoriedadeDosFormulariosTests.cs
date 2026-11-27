@@ -22,7 +22,7 @@ public sealed class ObrigatoriedadeDosFormulariosTests
     private readonly FaseCronograma _inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
     private readonly FaseCronograma _isencao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
     private readonly FaseCronograma _inscricaoEIsencao = FaseDeTeste.Criar(3, "INSCRICAO_E_ISENCAO", coletaInscricao: true, coletaSolicitacaoIsencao: true);
-    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(5, "HABILITACAO");
+    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(5, "HABILITACAO", organizadaEmChamadas: false);
 
     private IReadOnlyList<string> Codigos(ProcessoDosFormularios processo, params FormularioDeclarado[] formularios) =>
         Codigos(processo, [.. formularios.Select(static formulario => ColetaDeTeste.Coleta(formulario))]);

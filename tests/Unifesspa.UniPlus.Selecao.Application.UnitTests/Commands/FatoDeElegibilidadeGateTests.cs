@@ -85,8 +85,8 @@ public sealed class FatoDeElegibilidadeGateTests
 
     private static FaseCronograma FaseDoCronograma() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.Da(
-            origemId: Guid.CreateVersion7(), codigo: FormularioProcesso.CodigoFaseHabilitacao, origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false),
+            origemId: Guid.CreateVersion7(), codigo: "HABILITACAO", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false, organizadaEmChamadas: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -143,7 +143,7 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         FatoCandidatoView pedido = new(
             Guid.CreateVersion7(), Fato, "Pede o acréscimo", "Descrição do fato.", CodigoComRotulo<TipoDoDado>.De(TipoDoDado.SimOuNao), CodigoComRotulo<OrigemFato>.De(OrigemFato.Declarado), CodigoComRotulo<QuantidadeDeValores>.De(QuantidadeDeValores.ValorUnico), null,
-            FormularioProcesso.CodigoFaseHabilitacao, $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")), HipoteseLegal: CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+            "HABILITACAO", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: CodigoComRotulo<ClassificacaoDeProtecao>.De(CatalogoDe<ClassificacaoDeProtecao>.Obter("PESSOAL")), HipoteseLegal: CodigoComRotulo<HipoteseLegalTratamento>.De(CatalogoDe<HipoteseLegalTratamento>.Obter(ProtecaoDoFatoDeTeste.HipoteseLegal)), FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[pedido]));
         return reader;
