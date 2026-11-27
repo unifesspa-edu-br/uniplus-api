@@ -1,24 +1,26 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.AtosNormativos;
 
 using System.Net;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static AtoNormativoApoio;
-using static AtosDaEntidadeApoio;
 
 /// <summary>
-/// O registro do ato por HTTP recusa, no envelope da ADR-0023, o texto obrigatório que o corpo omite ou traz
-/// com <c>null</c>, no campo do ato e no de um vínculo da lista. As duas formas de ausência dão a mesma
-/// resposta, e um corpo completo continua sendo registrado.
+/// O registro do ato por HTTP entrega ao domínio o texto obrigatório que o corpo omite ou traz com <c>null</c>,
+/// no campo do ato, no de um vínculo e no de um anexo da lista: a recusa é a do domínio, 422 com o código da regra e
+/// o campo apontado, e as duas formas de ausência dão a mesma resposta.
 /// </summary>
 [Collection(PublicacoesEndpointCollection.Name)]
 public sealed class CampoObrigatorioNoRegistroDoAtoEndpointTests
 {
+    private const string Prefixo = "uniplus.publicacoes.ato_normativo.";
+    private const string PrefixoDoAnexo = "uniplus.publicacoes.anexo_do_ato.";
+
     private readonly PublicacoesEndpointFixture _fixture;
     private readonly AtoNormativoApoio _apoio;
 
@@ -28,88 +30,107 @@ public sealed class CampoObrigatorioNoRegistroDoAtoEndpointTests
         _apoio = new AtoNormativoApoio(fixture);
     }
 
-    [Fact(DisplayName = "Assinante omitido no ato é recusado com 400 no envelope e o campo nomeado")]
-    public async Task Registrar_AssinanteOmitido_Retorna400NoEnvelope()
+    public static TheoryData<string, string, bool> CamposDoAto => new()
     {
-        string tipo = await _apoio.CriarTipoVigenteAsync();
-        using HttpClient client = _fixture.Factory.CreateClient();
+        { "orgao", Prefixo + "texto_invalido", true },
+        { "orgao", Prefixo + "texto_invalido", false },
+        { "serie", Prefixo + "texto_invalido", true },
+        { "serie", Prefixo + "texto_invalido", false },
+        { "tipoCodigo", "uniplus.publicacoes.tipo_ato.codigo_obrigatorio", true },
+        { "tipoCodigo", "uniplus.publicacoes.tipo_ato.codigo_obrigatorio", false },
+        { "documentoHash", Prefixo + "hash_do_documento_invalido", true },
+        { "documentoHash", Prefixo + "hash_do_documento_invalido", false },
+        { "assinante", Prefixo + "texto_invalido", true },
+        { "assinante", Prefixo + "texto_invalido", false },
+    };
 
-        HttpResponseMessage resposta = await PostAtoAsync(client, PayloadSemAssinante(tipo));
+    public static TheoryData<string, string, bool> CamposDoVinculoEDoAnexo => new()
+    {
+        { "vinculos[0].entidadeTipo", Prefixo + "vinculo_tipo_de_entidade_invalido", true },
+        { "vinculos[0].entidadeTipo", Prefixo + "vinculo_tipo_de_entidade_invalido", false },
+        { "anexos[0].nome", PrefixoDoAnexo + "nome_invalido", true },
+        { "anexos[0].nome", PrefixoDoAnexo + "nome_invalido", false },
+        { "anexos[0].tipoMidia", PrefixoDoAnexo + "tipo_midia_invalido", true },
+        { "anexos[0].tipoMidia", PrefixoDoAnexo + "tipo_midia_invalido", false },
+        { "anexos[0].hash", PrefixoDoAnexo + "hash_invalido", true },
+        { "anexos[0].hash", PrefixoDoAnexo + "hash_invalido", false },
+    };
 
-        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, "assinante");
+    [Theory(DisplayName = "Campo do ato omitido ou null chega ao domínio e é recusado com 422 e o código da regra")]
+    [MemberData(nameof(CamposDoAto))]
+    public async Task Registrar_CampoDoAtoAusente_RecusaPeloDominio(string campo, string codigo, bool omitido)
+    {
+        ArgumentNullException.ThrowIfNull(campo);
+        Dictionary<string, object?> corpo = await CorpoValidoAsync();
+        Ausentar(corpo, campo, omitido);
+
+        await ExigirUnicaRecusaAsync(corpo, campo, codigo);
     }
 
-    [Fact(DisplayName = "Assinante null no ato dá a mesma resposta do omitido")]
-    public async Task Registrar_AssinanteNull_DaAMesmaRespostaDoOmitido()
+    [Theory(DisplayName = "Campo de vínculo ou de anexo omitido ou null chega ao domínio e é recusado com 422 no item")]
+    [MemberData(nameof(CamposDoVinculoEDoAnexo))]
+    public async Task Registrar_CampoAninhadoAusente_RecusaPeloDominio(string caminho, string codigo, bool omitido)
     {
-        string tipo = await _apoio.CriarTipoVigenteAsync();
-        using HttpClient client = _fixture.Factory.CreateClient();
+        ArgumentNullException.ThrowIfNull(caminho);
+        Dictionary<string, object?> corpo = await CorpoValidoAsync();
+        corpo["vinculos"] = new[] { new Dictionary<string, object?> { ["entidadeTipo"] = "OBJETO_A", ["entidadeId"] = Guid.CreateVersion7() } };
+        corpo["anexos"] = new[] { new Dictionary<string, object?> { ["nome"] = "Anexo I.pdf", ["tipoMidia"] = "application/pdf", ["hash"] = HashValido } };
+        Ausentar(corpo, caminho, omitido);
 
-        HttpResponseMessage resposta = await PostAtoAsync(client, PayloadComVinculos(tipo, assinante: null));
-
-        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, "assinante");
-    }
-
-    [Fact(DisplayName = "Tipo da entidade omitido em vínculo da lista é recusado com 400 e o ponteiro com índice")]
-    public async Task Registrar_EntidadeTipoOmitidaNoVinculo_Retorna400ComPonteiroDoItem()
-    {
-        string tipo = await _apoio.CriarTipoVigenteAsync();
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage resposta = await PostAtoAsync(
-            client, PayloadComVinculos(tipo, vinculos: [new { entidadeId = Guid.CreateVersion7() }]));
-
-        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, "vinculos[0].entidadeTipo");
-    }
-
-    [Fact(DisplayName = "Tipo da entidade null em vínculo da lista dá a mesma resposta do omitido")]
-    public async Task Registrar_EntidadeTipoNullNoVinculo_DaAMesmaRespostaDoOmitido()
-    {
-        string tipo = await _apoio.CriarTipoVigenteAsync();
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage resposta = await PostAtoAsync(
-            client, PayloadComVinculos(tipo, vinculos: [new { entidadeTipo = (string?)null, entidadeId = Guid.CreateVersion7() }]));
-
-        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, "vinculos[0].entidadeTipo");
+        await ExigirUnicaRecusaAsync(corpo, caminho, codigo);
     }
 
     [Fact(DisplayName = "Corpo completo continua sendo registrado com 201")]
     public async Task Registrar_CorpoCompleto_Retorna201()
     {
-        string tipo = await _apoio.CriarTipoVigenteAsync();
+        Dictionary<string, object?> corpo = await CorpoValidoAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage resposta = await PostAtoAsync(
-            client, PayloadComVinculos(tipo, vinculos: [Vinculo(Guid.CreateVersion7())]));
+        HttpResponseMessage resposta = await PostAtoAsync(client, corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    private static object PayloadSemAssinante(string tipoCodigo) =>
-        new
+    private static void Ausentar(Dictionary<string, object?> corpo, string caminho, bool omitido)
+    {
+        ArgumentNullException.ThrowIfNull(caminho);
+        Dictionary<string, object?> dono = caminho.Contains('.', StringComparison.Ordinal)
+            ? ((Dictionary<string, object?>[])corpo[caminho[..caminho.IndexOf('[', StringComparison.Ordinal)]]!)[0]
+            : corpo;
+        string campo = caminho[(caminho.LastIndexOf('.') + 1)..];
+        if (omitido)
         {
-            orgao = "CEPS",
-            serie = SerieUnica(),
-            ano = 2026,
-            numero = "13",
-            tipoCodigo,
-            dataDoAto = Publicacao,
-            documentoHash = HashValido,
-        };
+            dono.Remove(campo);
+        }
+        else
+        {
+            dono[campo] = null;
+        }
+    }
 
-    private static object PayloadComVinculos(
-        string tipoCodigo, string? assinante = PersonasDeTeste.NomeKevinCarvalho, object[]? vinculos = null) =>
-        new
+    private async Task ExigirUnicaRecusaAsync(Dictionary<string, object?> corpo, string campo, string codigo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PostAtoAsync(client, corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(erro => (erro.GetProperty("field").GetString(), erro.GetProperty("code").GetString()))
+            .Should().Equal((campo, codigo));
+    }
+
+    private async Task<Dictionary<string, object?>> CorpoValidoAsync() =>
+        new()
         {
-            orgao = "CEPS",
-            serie = SerieUnica(),
-            ano = 2026,
-            numero = "13",
-            tipoCodigo,
-            dataDoAto = Publicacao,
-            documentoHash = HashValido,
-            assinante,
-            vinculos = vinculos ?? [],
+            ["orgao"] = "CEPS",
+            ["serie"] = SerieUnica(),
+            ["ano"] = 2026,
+            ["numero"] = "13",
+            ["tipoCodigo"] = await _apoio.CriarTipoVigenteAsync(),
+            ["dataDoAto"] = Publicacao,
+            ["documentoHash"] = HashValido,
+            ["assinante"] = PersonasDeTeste.NomeKevinCarvalho,
         };
 }

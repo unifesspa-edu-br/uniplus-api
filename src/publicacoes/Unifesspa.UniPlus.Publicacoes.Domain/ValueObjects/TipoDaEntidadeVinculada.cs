@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// A forma do rótulo opaco que nomeia o tipo da entidade a que um ato se vincula (ADR-0105):
@@ -10,6 +12,12 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// </summary>
 public static class TipoDaEntidadeVinculada
 {
+    private static readonly CampoDeCodigo Campo = new(
+        "O tipo da entidade vinculada",
+        TamanhoMaximo,
+        AtoNormativoErrorCodes.VinculoTipoDeEntidadeInvalido,
+        AtoNormativoErrorCodes.VinculoTipoDeEntidadeInvalido);
+
     /// <summary>Máximo de caracteres do rótulo, como recebido.</summary>
     public const int TamanhoMaximo = 60;
 
@@ -21,23 +29,8 @@ public static class TipoDaEntidadeVinculada
         valor is not null && FormatoDoCodigo.TemFormatoValido(valor);
 
     /// <summary>
-    /// O rótulo recebido, ou a exceção de última linha quando está em branco, passa de
-    /// <see cref="TamanhoMaximo"/> ou foge da forma canônica. O validator recusa o mesmo antes, com 422.
+    /// A recusa do rótulo recebido, como chegou, quando está em branco, passa de <see cref="TamanhoMaximo"/>
+    /// ou foge da forma canônica; nulo quando é aceitável.
     /// </summary>
-    internal static string Conferido(string? entidadeTipo)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(entidadeTipo);
-        string tipo = entidadeTipo;
-        if (tipo.Length > TamanhoMaximo)
-        {
-            throw new ArgumentException($"Tipo da entidade deve ter no máximo {TamanhoMaximo} caracteres.", nameof(entidadeTipo));
-        }
-
-        if (!TemFormaCanonica(tipo))
-        {
-            throw new ArgumentException("Tipo da entidade deve começar com letra maiúscula e conter apenas letras maiúsculas sem acento, algarismos e sublinhado entre palavras.", nameof(entidadeTipo));
-        }
-
-        return tipo;
-    }
+    internal static FieldError? Recusa(string? entidadeTipo) => Campo.Recusa(entidadeTipo, "entidadeTipo");
 }

@@ -1,7 +1,8 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// A essência documental e normativa do ato (ADR-0105): a numeração, o tipo copiado do catálogo, a data
@@ -23,91 +24,76 @@ public readonly record struct EssenciaDocumentalDoAto(
     string Assinante,
     RelacaoDeRetificacao Retificacao)
 {
-    private const int OrgaoMaxLength = 200;
-    private const int SerieMaxLength = 100;
-    private const int NumeroMaxLength = 60;
-    private const int TipoNomeMaxLength = 200;
-    private const int AssinanteMaxLength = 200;
-    private const int MotivoRetificacaoMaxLength = 1000;
+    private const int TipoNomeMaximo = 200;
+    private const int AssinanteMaximo = 200;
 
     /// <summary>
-    /// A essência normalizada e coerente, ou a exceção da primeira invariante violada, na ordem: órgão,
-    /// série, código do tipo, assinante, número, motivo da retificação, nome do tipo, ano, hash do
-    /// documento, ato retificado vazio e simetria do par de retificação. A validação de negócio é do
-    /// handler e do validator; aqui ficam as invariantes de última linha, que lançam.
+    /// A essência normalizada e coerente, ou a exceção da primeira recusa de <see cref="Conferir"/>.
+    /// A validação de negócio acumulada é da conferência da declaração; aqui ficam as invariantes de
+    /// última linha, que lançam.
     /// </summary>
-    internal EssenciaDocumentalDoAto Conferida()
-    {
-        EssenciaDocumentalDoAto normalizada = ComTextosExigidosNormalizados().ComTextosOpcionaisNormalizados();
-        ExigirAnoPositivo(normalizada.Numeracao.Ano);
-        ExigirHashDoDocumento(normalizada.DocumentoHash);
+    internal EssenciaDocumentalDoAto Conferida() => Conferir().ValorOuLancar();
 
-        return normalizada with { Retificacao = normalizada.Retificacao.ParConferido() };
+    /// <summary>
+    /// Todas as recusas da essência, na ordem do corpo: numeração, código do tipo, nome do tipo,
+    /// hash do documento, assinante e retificação.
+    /// </summary>
+    internal ParteConferida<EssenciaDocumentalDoAto> Conferir()
+    {
+        ParteConferida<NumeracaoDoAto> numeracao = Numeracao.Conferir();
+        ParteConferida<TipoDoAtoNoRegistro> tipo = ConferirTipo();
+        ParteConferida<(string Hash, string Assinante)> documento = ConferirDocumento(DocumentoHash, Assinante);
+        ParteConferida<RelacaoDeRetificacao> retificacao = Retificacao.Conferir();
+        FieldError[] recusas = [.. numeracao.Recusas, .. tipo.Recusas, .. documento.Recusas, .. retificacao.Recusas];
+
+        return recusas.Length > 0
+            ? ParteConferida<EssenciaDocumentalDoAto>.Recusada(recusas)
+            : ParteConferida<EssenciaDocumentalDoAto>.Aceita(ComPartes(numeracao.Valor, tipo.Valor, documento.Valor, retificacao.Valor));
     }
 
-    /// <summary>
-    /// Passos 1 a 4: órgão, série, código do tipo e assinante, sem espaços nas pontas e até o
-    /// limite; vazio lança.
-    /// </summary>
-    private EssenciaDocumentalDoAto ComTextosExigidosNormalizados() =>
+    private EssenciaDocumentalDoAto ComPartes(
+        NumeracaoDoAto numeracao, TipoDoAtoNoRegistro tipo, (string Hash, string Assinante) documento, RelacaoDeRetificacao retificacao) =>
         this with
         {
-            Numeracao = Numeracao with
-            {
-                Orgao = Exigido(Numeracao.Orgao, OrgaoMaxLength, "orgao"),
-                Serie = Exigido(Numeracao.Serie, SerieMaxLength, "serie"),
-            },
-            Tipo = Tipo with { Codigo = CodigoConferido(Tipo.Codigo) },
-            Assinante = Exigido(Assinante, AssinanteMaxLength, "assinante"),
+            Numeracao = numeracao,
+            Tipo = tipo,
+            DocumentoHash = documento.Hash,
+            Assinante = documento.Assinante,
+            Retificacao = retificacao,
         };
 
-    /// <summary>
-    /// Passos 5 a 7: número, motivo da retificação e nome do tipo; vazio vira nulo, e o que passa
-    /// do limite lança. O motivo vem antes do nome do tipo porque é o passo anterior.
-    /// </summary>
-    private EssenciaDocumentalDoAto ComTextosOpcionaisNormalizados() =>
-        this with
-        {
-            Numeracao = Numeracao with { Numero = Opcional(Numeracao.Numero, NumeroMaxLength, "numero") },
-            Retificacao = Retificacao with { Motivo = Opcional(Retificacao.Motivo, MotivoRetificacaoMaxLength, "motivoRetificacao") },
-            Tipo = Tipo with { Nome = Opcional(Tipo.Nome, TipoNomeMaxLength, "tipoNome") },
-        };
-
-    private static string CodigoConferido(string tipoCodigo)
+    private ParteConferida<TipoDoAtoNoRegistro> ConferirTipo()
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
-        if (tipoCodigo.Length > TipoAtoPublicado.TamanhoMaximoDoCodigo || !FormatoDoCodigo.TemFormatoValido(tipoCodigo))
-        {
-            throw new ArgumentException("Código do tipo de ato fora do formato.", nameof(tipoCodigo));
-        }
+        ParteConferida<string> codigo = ConferirCodigoDoTipo(Tipo.Codigo);
+        ParteConferida<string> nome = TextoDoAto.Opcional(Tipo.Nome, TipoNomeMaximo, "tipoNome", "O nome do tipo de ato");
+        TipoDoAtoNoRegistro tipo = Tipo;
 
-        return tipoCodigo;
+        return ParteConferida<TipoDoAtoNoRegistro>.Compor(
+            [.. codigo.Recusas, .. nome.Recusas],
+            () => tipo with { Codigo = codigo.Valor!, Nome = nome.Valor });
     }
 
-    private static string Exigido(string valor, int maxLength, string paramName)
+    /// <summary>O código do tipo como chegou: a regra é a do cadastro do tipo, sem normalizar.</summary>
+    internal static ParteConferida<string> ConferirCodigoDoTipo(string? tipoCodigo) =>
+        ParteConferida<string>.Decidida(tipoCodigo, TipoAtoPublicado.CampoDoCodigo.Recusa(tipoCodigo, "tipoCodigo"));
+
+    /// <summary>As recusas do hash e do assinante, nessa ordem; o assinante sai sem espaços nas pontas.</summary>
+    internal static ParteConferida<(string Hash, string Assinante)> ConferirDocumento(string? documentoHash, string? assinante)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(valor, paramName);
-        return AteOLimite(valor.Trim(), maxLength, paramName);
+        ParteConferida<string> hash = ConferirHashDoDocumento(documentoHash);
+        ParteConferida<string> quemAssina = TextoDoAto.Obrigatorio(assinante, AssinanteMaximo, "assinante", "O assinante");
+
+        return ParteConferida<(string Hash, string Assinante)>.Compor(
+            [.. hash.Recusas, .. quemAssina.Recusas],
+            () => (hash.Valor!, quemAssina.Valor!));
     }
 
-    private static string? Opcional(string? valor, int maxLength, string paramName) =>
-        string.IsNullOrWhiteSpace(valor) ? null : AteOLimite(valor.Trim(), maxLength, paramName);
-
-    private static string AteOLimite(string texto, int maxLength, string paramName) =>
-        texto.Length <= maxLength
-            ? texto
-            : throw new ArgumentException($"'{paramName}' deve ter no máximo {maxLength} caracteres.", paramName);
-
-    private static void ExigirAnoPositivo(int ano) =>
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ano);
-
-    private static void ExigirHashDoDocumento(string documentoHash)
-    {
-        if (!HashSha256.TemFormatoValido(documentoHash))
-        {
-            throw new ArgumentException(
-                "Hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).",
-                nameof(documentoHash));
-        }
-    }
+    private static ParteConferida<string> ConferirHashDoDocumento(string? documentoHash) =>
+        ParteConferida<string>.Decidida(
+            documentoHash,
+            HashSha256.TemFormatoValido(documentoHash)
+                ? null
+                : new FieldError("documentoHash", new DomainError(
+                    AtoNormativoErrorCodes.HashDoDocumentoInvalido,
+                    "O hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).")));
 }

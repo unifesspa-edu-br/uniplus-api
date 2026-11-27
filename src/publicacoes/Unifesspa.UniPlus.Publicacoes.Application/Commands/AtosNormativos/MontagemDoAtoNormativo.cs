@@ -9,9 +9,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
-/// Monta o <see cref="AtoNormativo"/> de um <see cref="RegistrarAtoNormativoCommand"/>: confere o
-/// que o registro exige, resolve o tipo e a versão do objeto, aplica a cadeia de
-/// retificação e reserva as vagas do objeto. Não grava o ato: quem chama o adiciona e salva.
+/// Monta o <see cref="AtoNormativo"/> de um <see cref="RegistrarAtoNormativoCommand"/>: confere a
+/// forma do pedido pelo domínio, resolve o tipo e a cadeia de retificação no banco, junta todas as
+/// recusas na ordem do corpo do pedido e, sem nenhuma recusa, reserva as vagas do objeto. Não grava o
+/// ato: quem chama o adiciona e salva.
 /// </summary>
 public sealed class MontagemDoAtoNormativo(
     ITipoAtoPublicadoRepository tipos,
@@ -19,64 +20,45 @@ public sealed class MontagemDoAtoNormativo(
     CadeiaDeRetificacaoDoAto cadeia,
     ReservaDasVagasDoObjeto reservaDasVagas)
 {
+    private const string RegistroPeloDominioExigidoMensagem =
+        "Os atos deste objeto são registrados pelo módulo dono dele, inclusive a retificação: este endpoint "
+        + "não recebe o arquivo do documento, e o ato ficaria sem documento. Publique o ato pelo módulo dono do objeto.";
+
     public async Task<Result<AtoMontado>> MontarAsync(
         RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        Result<DadosConferidos> conferidos = await ConferirAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
-        if (conferidos.IsFailure)
-        {
-            return Result<AtoMontado>.Failure(conferidos.Error!);
-        }
+        DeclaracaoDoAtoNormativo declaracao = DeclaracaoDe(command);
+        ConferenciaDaDeclaracaoDoAto forma = ConferenciaDaDeclaracaoDoAto.De(declaracao);
+        TipoResolvido tipo = await ResolverTipoAsync(command, forma.CodigoDoTipo, publicadoEm, cancellationToken).ConfigureAwait(false);
+        RetificacaoLida retificacao = await LerRetificacaoAsync(command, forma.Retificacao, tipo.Tipo, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> recusas = NaOrdemDoPedido(command, declaracao, forma, tipo, retificacao);
 
-        AtoNormativo ato = Criar(command, conferidos.Value!, publicadoEm);
-        DomainError? recusa = await ReservarAsync(command, ato, conferidos.Value!, cancellationToken).ConfigureAwait(false);
-
-        return recusa is null
-            ? Result<AtoMontado>.Success(new AtoMontado(ato, conferidos.Value!.Linhagem.IdsDaPropriaCadeia))
-            : Result<AtoMontado>.Failure(recusa);
+        return recusas.Count > 0
+            ? Result<AtoMontado>.ValidationFailure(recusas)
+            : await MontarSemRecusaAsync(command, publicadoEm, forma, tipo.Tipo!.Value, retificacao.Herdados, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// O ato que trata de objeto cujos atos pertencem ao domínio dele não nasce pelo endpoint:
-    /// este registro não recebe o arquivo, e o ato ficaria sem documento.
-    /// </summary>
-    private static DomainError? RecusaDoVinculoExclusivoDoDominio(IEnumerable<string> entidadesTipo) =>
-        entidadesTipo
-            .Where(EntidadesDeRegistroPeloDominio.Contem)
-            .Select(RegistroPeloDominioExigido)
-            .FirstOrDefault();
-
-    private static DomainError RegistroPeloDominioExigido(string entidadeTipo) =>
-        new(
-            AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
-            $"Os atos do objeto vinculado ('{entidadeTipo}') são registrados pelo seu próprio domínio, "
-            + "inclusive a retificação de um ato desse objeto: este endpoint não recebe o arquivo do "
-            + "documento, e o ato ficaria sem documento. Publique o ato pelo módulo dono do objeto "
-            + "(a Seleção, no caso do processo seletivo).");
-
-    private static (string Nome, string TipoMidia, string Hash)[] AnexosConferiveis(RegistrarAtoNormativoCommand command) =>
-        [.. (command.Anexos ?? []).Select(a => (a.Nome, a.TipoMidia, a.Hash))];
-
-    /// <summary>
-    /// Os anexos são conferidos antes de qualquer ida ao banco: a recusa não depende de estado
-    /// gravado, e o registro pela porta de escrita, que não passa pelo validator, recebe a mesma
-    /// recusa nomeada. A recusa do vínculo declarado vem antes de tudo.
-    /// </summary>
-    private static DomainError? RecusaDaEntrada(RegistrarAtoNormativoCommand command)
-    {
-        if (!command.ChegouPeloDominioDono
-            && RecusaDoVinculoExclusivoDoDominio(CadeiaDeRetificacaoDoAto.VinculosDeclarados(command).Select(v => v.Tipo))
-                is { } declarado)
+    private static DeclaracaoDoAtoNormativo DeclaracaoDe(RegistrarAtoNormativoCommand command) =>
+        new()
         {
-            return declarado;
-        }
+            Numeracao = new NumeracaoDoAto(command.Orgao ?? string.Empty, command.Serie ?? string.Empty, command.Ano, command.Numero),
+            TipoCodigo = command.TipoCodigo,
+            DocumentoHash = command.DocumentoHash,
+            Assinante = command.Assinante,
+            VersaoDoObjetoId = command.VersaoDoObjetoId,
+            VersaoDoObjetoHash = command.VersaoDoObjetoHash,
+            Retificacao = new RelacaoDeRetificacao(command.AtoRetificadoId, command.MotivoRetificacao),
+            Vinculos = [.. (command.Vinculos ?? []).Select(VinculoDeclarado)],
+            Anexos = [.. (command.Anexos ?? []).Select(AnexoDeclarado)],
+        };
 
-        return (command.Anexos ?? []).Any(a => a is null)
-            ? AnexoDoAtoErros.Nulo()
-            : AnexoDoAto.Conferir(AnexosConferiveis(command));
-    }
+    private static EntidadeVinculada? VinculoDeclarado(VinculoEntidadeInput? vinculo) =>
+        vinculo is null ? null : new EntidadeVinculada(vinculo.EntidadeTipo ?? string.Empty, vinculo.EntidadeId);
+
+    private static (string? Nome, string? TipoMidia, string? Hash)? AnexoDeclarado(AnexoDoAtoInput? anexo) =>
+        anexo is null ? null : (anexo.Nome, anexo.TipoMidia, anexo.Hash);
 
     /// <summary>
     /// Os atributos de consequência do tipo ou vêm CONFERIDOS pelo domínio que publicou (registro
@@ -85,23 +67,32 @@ public sealed class MontagemDoAtoNormativo(
     /// NÃO é relido: o cadastro é editável, e reler faria um edital publicado como congelante ser
     /// registrado com um tipo que já não congela. O nome do tipo segue o mesmo caminho, porque é
     /// ele que compõe o título público do ato. A versão vigente é a do dia civil da publicação no fuso
-    /// institucional: a data que o documento declara não escolhe o tipo.
+    /// institucional: a data que o documento declara não escolhe o tipo. O catálogo só é lido para o
+    /// código aceito na forma.
     /// </summary>
-    private async Task<Result<TipoDoAtoNoRegistro>> ResolverTipoAsync(
-        RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
+    private async Task<TipoResolvido> ResolverTipoAsync(
+        RegistrarAtoNormativoCommand command,
+        ParteConferida<string> codigo,
+        DateTimeOffset publicadoEm,
+        CancellationToken cancellationToken)
     {
+        if (!codigo.EstaAceita)
+        {
+            return TipoResolvido.Ausente;
+        }
+
         if (command.AtributosDoTipo is { } conferidos)
         {
-            return Result<TipoDoAtoNoRegistro>.Success(TipoConferidoPeloDominio(command.TipoCodigo, conferidos));
+            return TipoResolvido.Resolvido(TipoConferidoPeloDominio(codigo.Valor!, conferidos));
         }
 
         Result<DateOnly> diaDaPublicacao = fuso.DiaCivilDe(publicadoEm);
         return diaDaPublicacao.IsFailure
-            ? Result<TipoDoAtoNoRegistro>.Failure(diaDaPublicacao.Error!)
-            : await ResolverNoCatalogoAsync(command.TipoCodigo, diaDaPublicacao.Value, cancellationToken).ConfigureAwait(false);
+            ? TipoResolvido.Recusado(diaDaPublicacao.Errors)
+            : await ResolverNoCatalogoAsync(codigo.Valor!, diaDaPublicacao.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result<TipoDoAtoNoRegistro>> ResolverNoCatalogoAsync(
+    private async Task<TipoResolvido> ResolverNoCatalogoAsync(
         string tipoCodigo, DateOnly diaDaPublicacao, CancellationToken cancellationToken)
     {
         TipoAtoPublicado? tipo = await tipos
@@ -109,94 +100,120 @@ public sealed class MontagemDoAtoNormativo(
             .ConfigureAwait(false);
 
         return tipo is null
-            ? Result<TipoDoAtoNoRegistro>.Failure(new DomainError(
-                AtoNormativoErrorCodes.TipoSemVersaoVigente,
-                $"Não há versão vigente do tipo de ato '{tipoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
-            : Result<TipoDoAtoNoRegistro>.Success(TipoDoAtoNoRegistro.CopiadoDe(tipo));
+            ? TipoResolvido.Recusado([TipoSemVersaoVigente(diaDaPublicacao)])
+            : TipoResolvido.Resolvido(TipoDoAtoNoRegistro.CopiadoDe(tipo));
     }
+
+    private static FieldError TipoSemVersaoVigente(DateOnly diaDaPublicacao) =>
+        new(
+            "tipoCodigo",
+            new DomainError(
+                AtoNormativoErrorCodes.TipoSemVersaoVigente,
+                $"O tipo de ato informado não tem versão cadastrada que valha na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."));
 
     private static TipoDoAtoNoRegistro TipoConferidoPeloDominio(string codigo, AtributosDoTipoAto atributos) =>
         new(codigo, atributos.Nome, atributos.CongelaConfiguracao, atributos.EfeitoIrreversivel, atributos.UnicoPorObjeto);
 
     /// <summary>
-    /// O par {id, hash} é recebido por valor, completo ou ausente. Ausente devolve
-    /// <see langword="null"/>: o ato não se refere a versão de objeto.
-    /// </summary>
-    private static Result<ReferenciaVersaoDoObjeto>? ResolverVersaoDoObjeto(RegistrarAtoNormativoCommand command)
-    {
-        bool temId = command.VersaoDoObjetoId.HasValue;
-        if (!temId && command.VersaoDoObjetoHash is null)
-        {
-            return null;
-        }
-
-        return temId != (command.VersaoDoObjetoHash is not null)
-            ? Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoDoObjetoIncompleta, AtoNormativoRegras.VersaoDoObjetoIncompleta))
-            : CriarReferenciaDaVersao(command.VersaoDoObjetoId!.Value, command.VersaoDoObjetoHash!);
-    }
-
-    /// <summary>
-    /// O validator já rejeita id vazio e hash malformado; se ainda assim a factory recusar, a
-    /// recusa é traduzida para um código mapeado em vez de vazar o erro do value object como
-    /// "erro não mapeado".
-    /// </summary>
-    private static Result<ReferenciaVersaoDoObjeto> CriarReferenciaDaVersao(Guid id, string hash)
-    {
-        Result<ReferenciaVersaoDoObjeto> versao = ReferenciaVersaoDoObjeto.Criar(id, hash);
-        return versao.IsFailure
-            ? Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoDoObjetoIncompleta, versao.Error!.Message))
-            : versao;
-    }
-
-    private async Task<Result<DadosConferidos>> ConferirAsync(
-        RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
-    {
-        if (RecusaDaEntrada(command) is { } recusa)
-        {
-            return Result<DadosConferidos>.Failure(recusa);
-        }
-
-        Result<TipoDoAtoNoRegistro> tipo = await ResolverTipoAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
-        return tipo.IsFailure
-            ? Result<DadosConferidos>.Failure(tipo.Error!)
-            : await ConferirVersaoAsync(command, tipo.Value!, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<Result<DadosConferidos>> ConferirVersaoAsync(
-        RegistrarAtoNormativoCommand command, TipoDoAtoNoRegistro tipo, CancellationToken cancellationToken)
-    {
-        Result<ReferenciaVersaoDoObjeto>? versao = ResolverVersaoDoObjeto(command);
-        return versao is { IsFailure: true }
-            ? Result<DadosConferidos>.Failure(versao.Error!)
-            : await ConferirCadeiaAsync(command, tipo, versao?.Value, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
     /// Quando o registro emenda outro ato, as invariantes da cadeia que dependem do ato retificado
     /// são verificadas com o retificado em mãos (ADR-0103). Os vínculos herdados só se conhecem
-    /// depois da resolução: uma retificação que não repete o vínculo o herda do ato retificado, e
-    /// nasceria sem documento do mesmo jeito.
+    /// depois de achar o ato retificado: uma retificação que não repete o vínculo o herda dele, e
+    /// nasceria sem documento do mesmo jeito. Só a retificação aceita na forma e com ato retificado
+    /// preenchido lê o banco.
     /// </summary>
-    private async Task<Result<DadosConferidos>> ConferirCadeiaAsync(
+    private async Task<RetificacaoLida> LerRetificacaoAsync(
         RegistrarAtoNormativoCommand command,
-        TipoDoAtoNoRegistro tipo,
-        ReferenciaVersaoDoObjeto? versao,
+        ParteConferida<RelacaoDeRetificacao> retificacao,
+        TipoDoAtoNoRegistro? tipo,
         CancellationToken cancellationToken)
     {
-        DomainError? retificacao = await cadeia
-            .ConferirAsync(command, tipo.CongelaConfiguracao, cancellationToken).ConfigureAwait(false);
-        if (retificacao is not null)
+        if (retificacao is not { EstaAceita: true, Valor.AtoRetificadoId: { } retificadoId })
         {
-            return Result<DadosConferidos>.Failure(retificacao);
+            return RetificacaoLida.Nenhuma;
         }
 
-        LinhagemDoAto linhagem = await cadeia.ResolverAsync(command, cancellationToken).ConfigureAwait(false);
-        return !command.ChegouPeloDominioDono
-            && RecusaDoVinculoExclusivoDoDominio(linhagem.Vinculos.Select(v => v.Tipo)) is { } herdado
-            ? Result<DadosConferidos>.Failure(herdado)
-            : Result<DadosConferidos>.Success(new DadosConferidos(tipo, versao, linhagem));
+        IReadOnlyList<FieldError> daCadeia = await cadeia.ConferirAsync(retificadoId, tipo, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EntidadeVinculada> herdados = CadeiaDeRetificacaoDoAto.RetificadoExiste(daCadeia)
+            ? await cadeia.ListarVinculosHerdadosAsync(retificadoId, cancellationToken).ConfigureAwait(false)
+            : [];
+
+        return new RetificacaoLida([.. daCadeia, .. RecusaDaHeranca(command.ChegouPeloDominioDono, herdados)], herdados);
+    }
+
+    private static IEnumerable<FieldError> RecusaDaHeranca(bool chegouPeloDominioDono, IEnumerable<EntidadeVinculada> herdados) =>
+        !chegouPeloDominioDono && herdados.Any(vinculo => EntidadesDeRegistroPeloDominio.Contem(vinculo.Tipo))
+            ? [RegistroPeloDominioExigido("atoRetificadoId")]
+            : [];
+
+    /// <summary>
+    /// O ato que trata de objeto cujos atos pertencem ao domínio dele não nasce pelo endpoint: este
+    /// registro não recebe o arquivo, e o ato ficaria sem documento. A recusa aponta o tipo da
+    /// entidade do vínculo, sem escrever o valor recebido.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusaDoVinculoExclusivoDoDominio(
+        bool chegouPeloDominioDono, string campo, EntidadeVinculada? vinculo) =>
+        !chegouPeloDominioDono && vinculo is { } declarado && EntidadesDeRegistroPeloDominio.Contem(declarado.Tipo)
+            ? [RegistroPeloDominioExigido(campo)]
+            : [];
+
+    private static FieldError RegistroPeloDominioExigido(string campo) =>
+        new(campo, new DomainError(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio, RegistroPeloDominioExigidoMensagem));
+
+    /// <summary>
+    /// Todas as recusas do pedido, campo a campo na ordem do corpo: numeração, código do tipo (forma ou
+    /// tipo sem versão vigente), documento, versão do objeto, ato retificado (forma, cadeia e herança),
+    /// motivo, cada vínculo (tipo da entidade, registro pelo domínio dono, identificador, repetição) e
+    /// anexos.
+    /// </summary>
+    private static IReadOnlyList<FieldError> NaOrdemDoPedido(
+        RegistrarAtoNormativoCommand command,
+        DeclaracaoDoAtoNormativo declaracao,
+        ConferenciaDaDeclaracaoDoAto forma,
+        TipoResolvido tipo,
+        RetificacaoLida retificacao) =>
+    [
+        .. forma.Numeracao.Recusas,
+        .. forma.CodigoDoTipo.Recusas,
+        .. tipo.Recusas,
+        .. forma.Documento.Recusas,
+        .. forma.VersaoDoObjeto.Recusas,
+        .. forma.Retificacao.Recusas,
+        .. retificacao.Recusas,
+        .. forma.Vinculos.SelectMany((parte, posicao) =>
+            RecusasDoVinculo(command.ChegouPeloDominioDono, parte, posicao, declaracao.Vinculos[posicao])),
+        .. forma.RecusasDosAnexos,
+    ];
+
+    private static IEnumerable<FieldError> RecusasDoVinculo(
+        bool chegouPeloDominioDono, ParteConferida<EntidadeVinculada> parte, int posicao, EntidadeVinculada? declarado)
+    {
+        string campoDoTipo = $"vinculos[{posicao}].entidadeTipo";
+        return
+        [
+            .. parte.Recusas.Where(recusa => recusa.Field == campoDoTipo),
+            .. RecusaDoVinculoExclusivoDoDominio(chegouPeloDominioDono, campoDoTipo, declarado),
+            .. parte.Recusas.Where(recusa => recusa.Field != campoDoTipo),
+        ];
+    }
+
+    private async Task<Result<AtoMontado>> MontarSemRecusaAsync(
+        RegistrarAtoNormativoCommand command,
+        DateTimeOffset publicadoEm,
+        ConferenciaDaDeclaracaoDoAto forma,
+        TipoDoAtoNoRegistro tipo,
+        IReadOnlyList<EntidadeVinculada> herdados,
+        CancellationToken cancellationToken)
+    {
+        Guid? retificadoId = forma.Retificacao.Valor.AtoRetificadoId;
+        LinhagemDoAto linhagem = await cadeia
+            .ResolverAsync(retificadoId, [.. forma.Vinculos.Select(vinculo => vinculo.Valor)], herdados, cancellationToken)
+            .ConfigureAwait(false);
+        AtoNormativo ato = Criar(command, publicadoEm, forma, tipo, linhagem);
+        DomainError? recusa = await ReservarAsync(retificadoId, ato, linhagem, cancellationToken).ConfigureAwait(false);
+
+        return recusa is null
+            ? Result<AtoMontado>.Success(new AtoMontado(ato, linhagem.IdsDaPropriaCadeia))
+            : Result<AtoMontado>.Failure(recusa);
     }
 
     /// <summary>
@@ -205,47 +222,50 @@ public sealed class MontagemDoAtoNormativo(
     /// factory gerá-lo.
     /// </summary>
     private static AtoNormativo Criar(
-        RegistrarAtoNormativoCommand command, DadosConferidos dados, DateTimeOffset publicadoEm) =>
+        RegistrarAtoNormativoCommand command,
+        DateTimeOffset publicadoEm,
+        ConferenciaDaDeclaracaoDoAto forma,
+        TipoDoAtoNoRegistro tipo,
+        LinhagemDoAto linhagem) =>
         AtoNormativo.Registrar(
             command.AtoId ?? Guid.Empty,
-            EssenciaDeclarada(command, dados.Tipo),
+            EssenciaDeclarada(command, forma, tipo),
             publicadoEm,
-            dados.Versao,
-            dados.Linhagem.Vinculos,
-            AnexosConferiveis(command));
+            forma.VersaoDoObjeto.Valor,
+            linhagem.Vinculos,
+            [.. (command.Anexos ?? []).Select(anexo => (anexo.Nome!, anexo.TipoMidia!, anexo.Hash!))]);
 
-    /// <summary>
-    /// A essência que o comando declara, com o tipo já resolvido (no catálogo ou conferido pelo
-    /// domínio que publicou).
-    /// </summary>
-    private static EssenciaDocumentalDoAto EssenciaDeclarada(RegistrarAtoNormativoCommand command, TipoDoAtoNoRegistro tipo) =>
+    private static EssenciaDocumentalDoAto EssenciaDeclarada(
+        RegistrarAtoNormativoCommand command, ConferenciaDaDeclaracaoDoAto forma, TipoDoAtoNoRegistro tipo) =>
         new(
-            new NumeracaoDoAto(
-                command.Orgao,
-                command.Serie,
-                command.Ano,
-                command.Numero),
+            forma.Numeracao.Valor,
             tipo,
             command.DataDoAto,
-            command.DocumentoHash,
-            command.Assinante,
-            new RelacaoDeRetificacao(
-                command.AtoRetificadoId,
-                command.MotivoRetificacao));
+            forma.Documento.Valor.Hash,
+            forma.Documento.Valor.Assinante,
+            forma.Retificacao.Valor);
 
     private async Task<DomainError?> ReservarAsync(
-        RegistrarAtoNormativoCommand command, AtoNormativo ato, DadosConferidos dados, CancellationToken cancellationToken)
+        Guid? retificadoId, AtoNormativo ato, LinhagemDoAto linhagem, CancellationToken cancellationToken)
     {
-        Guid raiz = await cadeia
-            .ObterRaizAsync(command.AtoRetificadoId, ato.Id, cancellationToken).ConfigureAwait(false);
+        Guid raiz = await cadeia.ObterRaizAsync(retificadoId, ato.Id, cancellationToken).ConfigureAwait(false);
         return await reservaDasVagas
-            .ReservarAsync(ato, dados.Linhagem.IdsDaPropriaCadeia, raiz, cancellationToken).ConfigureAwait(false);
+            .ReservarAsync(ato, linhagem.IdsDaPropriaCadeia, raiz, cancellationToken).ConfigureAwait(false);
     }
 
-    private sealed record DadosConferidos(
-        TipoDoAtoNoRegistro Tipo,
-        ReferenciaVersaoDoObjeto? Versao,
-        LinhagemDoAto Linhagem);
+    private sealed record TipoResolvido(TipoDoAtoNoRegistro? Tipo, IReadOnlyList<FieldError> Recusas)
+    {
+        public static TipoResolvido Ausente { get; } = new(null, []);
+
+        public static TipoResolvido Resolvido(TipoDoAtoNoRegistro tipo) => new(tipo, []);
+
+        public static TipoResolvido Recusado(IReadOnlyList<FieldError> recusas) => new(null, recusas);
+    }
+
+    private sealed record RetificacaoLida(IReadOnlyList<FieldError> Recusas, IReadOnlyList<EntidadeVinculada> Herdados)
+    {
+        public static RetificacaoLida Nenhuma { get; } = new([], []);
+    }
 }
 
 /// <summary>

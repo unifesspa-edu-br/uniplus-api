@@ -53,14 +53,14 @@ public sealed class PublicacaoDoAtoDoProcesso(
         AtoDoProcesso atoDoProcesso,
         CancellationToken cancellationToken)
     {
-        DomainError? recusa = await RegistrarEGravarAsync(ato, atoDoProcesso, cancellationToken).ConfigureAwait(false);
+        Result gravado = await RegistrarEGravarAsync(ato, atoDoProcesso, cancellationToken).ConfigureAwait(false);
 
-        return recusa is not null
-            ? (Result<AtoPublicadoDto>.Failure(recusa), [])
+        return gravado.IsFailure
+            ? (Result<AtoPublicadoDto>.ValidationFailure(gravado.Errors), [])
             : (Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(atoDoProcesso.Id)), [new CopiarDocumentosDoAtoAoAcervo(ato.Dados.ProcessoSeletivoId, atoDoProcesso.Id)]);
     }
 
-    private async Task<DomainError?> RegistrarEGravarAsync(
+    private async Task<Result> RegistrarEGravarAsync(
         AtoAPublicar ato,
         AtoDoProcesso atoDoProcesso,
         CancellationToken cancellationToken)
@@ -71,25 +71,25 @@ public sealed class PublicacaoDoAtoDoProcesso(
         if (aceito.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return aceito.Error;
+            return aceito;
         }
 
         ato.Processo.Divulgado.AbrirEntradaDoAto(atoDoProcesso.Id, numeroVersao: null);
         return await SalvarAsync(atoDoProcesso, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<DomainError?> SalvarAsync(
+    private async Task<Result> SalvarAsync(
         AtoDoProcesso atoDoProcesso, CancellationToken cancellationToken)
     {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return null;
+            return Result.Success();
         }
         catch (Exception excecao) when (Traduzir(excecao, atoDoProcesso) is { } recusa)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return recusa;
+            return Result.Failure(recusa);
         }
     }
 

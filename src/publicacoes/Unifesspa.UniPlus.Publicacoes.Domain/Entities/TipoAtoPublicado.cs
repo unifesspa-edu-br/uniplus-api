@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
@@ -42,6 +43,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 public sealed class TipoAtoPublicado : SoftDeletableEntity, IAuditableEntity
 {
     public const int TamanhoMaximoDoCodigo = 60;
+
+    /// <summary>A regra do código do tipo, a mesma no cadastro do tipo e no registro do ato.</summary>
+    internal static readonly CampoDeCodigo CampoDoCodigo = new(
+        "Código do tipo de ato", TamanhoMaximoDoCodigo, TipoAtoPublicadoErrorCodes.CodigoObrigatorio, TipoAtoPublicadoErrorCodes.CodigoFormato);
 
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;

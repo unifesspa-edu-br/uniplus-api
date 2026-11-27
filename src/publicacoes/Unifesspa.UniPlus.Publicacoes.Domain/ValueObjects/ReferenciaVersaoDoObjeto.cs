@@ -36,28 +36,36 @@ public sealed record ReferenciaVersaoDoObjeto
     public string Hash { get; }
 
     /// <summary>
-    /// Cria a referência validando que <paramref name="id"/> não é
-    /// <see cref="Guid.Empty"/> e que <paramref name="hash"/> tem o formato de um
-    /// SHA-256 hex minúsculo (64 caracteres).
+    /// A referência do par declarado, completa ou ausente (ambos nulos). Acumula as recusas do
+    /// identificador e do hash, todas com o código de versão do objeto incompleta, cada uma apontando o
+    /// campo que falta ou está errado.
     /// </summary>
-    public static Result<ReferenciaVersaoDoObjeto> Criar(Guid id, string hash) =>
-        RecusaDaReferencia(id, hash) is { } recusa
-            ? Result<ReferenciaVersaoDoObjeto>.Failure(recusa)
-            : Result<ReferenciaVersaoDoObjeto>.Success(new ReferenciaVersaoDoObjeto(id, hash));
-
-    private static DomainError? RecusaDaReferencia(Guid id, string hash)
+    internal static ParteConferida<ReferenciaVersaoDoObjeto> DoPar(Guid? id, string? hash)
     {
-        if (id == Guid.Empty)
-        {
-            return new DomainError(
-                ReferenciaVersaoDoObjetoErrorCodes.IdObrigatorio,
-                "Identificador da versão do objeto é obrigatório.");
-        }
+        FieldError[] recusas = [.. new[] { RecusaDoId(id, hash), RecusaDoHash(id, hash) }.OfType<FieldError>()];
 
-        return HashSha256.TemFormatoValido(hash)
-            ? null
-            : new DomainError(
-                ReferenciaVersaoDoObjetoErrorCodes.HashInvalido,
-                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).");
+        return recusas.Length > 0
+            ? ParteConferida<ReferenciaVersaoDoObjeto>.Recusada(recusas)
+            : ParteConferida<ReferenciaVersaoDoObjeto>.Aceita(id is null ? null : new ReferenciaVersaoDoObjeto(id.Value, hash!));
     }
+
+    private static FieldError? RecusaDoId(Guid? id, string? hash) =>
+        (id, hash) switch
+        {
+            (null, not null) => Incompleta("versaoDoObjetoId", "Informe o identificador da versão do objeto, junto com o hash."),
+            (var vazio, _) when vazio == Guid.Empty => Incompleta("versaoDoObjetoId", "O identificador da versão do objeto não pode ser vazio."),
+            _ => null,
+        };
+
+    private static FieldError? RecusaDoHash(Guid? id, string? hash) =>
+        (id, hash) switch
+        {
+            (not null, null) => Incompleta("versaoDoObjetoHash", "Informe o hash da versão do objeto, junto com o identificador."),
+            (_, not null) when !HashSha256.TemFormatoValido(hash) =>
+                Incompleta("versaoDoObjetoHash", "O hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."),
+            _ => null,
+        };
+
+    private static FieldError Incompleta(string campo, string mensagem) =>
+        new(campo, new DomainError(AtoNormativoErrorCodes.VersaoDoObjetoIncompleta, mensagem));
 }

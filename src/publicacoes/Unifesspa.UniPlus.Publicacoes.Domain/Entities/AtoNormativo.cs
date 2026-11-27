@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
@@ -179,7 +181,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// <summary>
     /// Registra um ato publicado. A <paramref name="essencia"/> traz os atributos de consequência já
     /// resolvidos por valor do catálogo vigente; a validação de negócio (existência de versão vigente,
-    /// formato do payload) é responsabilidade do handler e do validator. Aqui ficam as invariantes de
+    /// formato do payload) é responsabilidade da conferência da declaração. Aqui ficam as invariantes de
     /// última linha, que lançam — o agregado nunca materializa em estado inválido. As regras de
     /// retificação que dependem do ato retificado (classe de congelamento coincidente, linearidade da
     /// cadeia) são do handler, que as consulta no repositório; a essência garante só a simetria de
@@ -197,7 +199,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// handler, não daqui.
     ///
     /// Os <paramref name="anexos"/> são guardados na ordem recebida; a regra do que um anexo
-    /// precisa ter é de <see cref="AnexoDoAto.Conferir"/>.
+    /// precisa ter é de <see cref="AnexoDoAto.Recusas"/>.
     /// </summary>
     public static AtoNormativo Registrar(
         Guid id,
@@ -220,33 +222,60 @@ public sealed class AtoNormativo : IForensicEntity
     }
 
     /// <summary>
-    /// O trio (ato, tipo, id) é único: repetir a mesma entidade no mesmo ato não acrescenta vínculo
-    /// nenhum, e o índice único do banco recusaria a segunda linha. O validator já devolve 422 antes;
-    /// aqui é a última linha.
+    /// Todas as recusas dos vínculos, uma parte por posição: o elemento nulo (campo
+    /// <c>vinculos[i]</c>) ou então o tipo e o identificador da entidade e, por último, a repetição.
+    /// O trio (ato, tipo, id) é único: a segunda ocorrência da mesma entidade não acrescenta vínculo
+    /// nenhum, e o índice único do banco recusaria a segunda linha. A recusa da repetição não escreve o
+    /// tipo nem o identificador.
     /// </summary>
+    internal static IReadOnlyList<ParteConferida<EntidadeVinculada>> ConferirVinculos(IReadOnlyList<EntidadeVinculada?> vinculos)
+    {
+        HashSet<EntidadeVinculada> jaVinculadas = [];
+        return [.. vinculos.Select((vinculo, posicao) => ConferirVinculo(vinculo, $"vinculos[{posicao}]", jaVinculadas))];
+    }
+
+    private static ParteConferida<EntidadeVinculada> ConferirVinculo(
+        EntidadeVinculada? vinculo, string caminho, HashSet<EntidadeVinculada> jaVinculadas)
+    {
+        if (vinculo is not { } entidade)
+        {
+            return RecusaDoVinculo(caminho, AtoNormativoErrorCodes.VinculoNulo, "Vínculo nulo na lista de vínculos; retire o elemento ou preencha.");
+        }
+
+        ParteConferida<EntidadeVinculada> conferida = entidade.Conferir();
+        FieldError[] daForma = [.. conferida.Recusas.Select(recusa => recusa.NoCaminhoDe(caminho))];
+        FieldError[] daRepeticao = jaVinculadas.Add(entidade) ? [] : [RepeticaoDoVinculo(caminho)];
+        FieldError[] recusas = [.. daForma, .. daRepeticao];
+
+        return recusas.Length == 0 ? conferida : ParteConferida<EntidadeVinculada>.Recusada(recusas);
+    }
+
+    private static FieldError RepeticaoDoVinculo(string caminho) =>
+        new(caminho, new DomainError(
+            AtoNormativoErrorCodes.VinculoRepetido,
+            "A mesma entidade foi vinculada mais de uma vez a este ato. Retire a repetição."));
+
+    private static ParteConferida<EntidadeVinculada> RecusaDoVinculo(string caminho, string codigo, string mensagem) =>
+        ParteConferida<EntidadeVinculada>.Recusada([new(caminho, new DomainError(codigo, mensagem))]);
+
     private void Vincular(IEnumerable<EntidadeVinculada> vinculos)
     {
-        foreach (EntidadeVinculada entidade in vinculos)
+        IReadOnlyList<ParteConferida<EntidadeVinculada>> partes =
+            ConferirVinculos([.. vinculos.Select(vinculo => (EntidadeVinculada?)vinculo)]);
+
+        foreach (ParteConferida<EntidadeVinculada> parte in partes)
         {
-            VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(this, entidade);
-
-            if (_vinculos.Exists(v => v.Entidade == vinculo.Entidade))
-            {
-                throw new ArgumentException(
-                    $"A entidade {vinculo.EntidadeTipo}/{vinculo.EntidadeId} está vinculada mais de uma vez ao mesmo ato.",
-                    nameof(vinculos));
-            }
-
-            _vinculos.Add(vinculo);
+            _vinculos.Add(VinculoAtoEntidade.Criar(this, parte.ValorOuLancar()));
         }
     }
 
     private void Anexar(IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos)
     {
         (string Nome, string TipoMidia, string Hash)[] recebidos = [.. anexos];
-        if (AnexoDoAto.Conferir(recebidos) is { } recusa)
+        IReadOnlyList<FieldError> recusas = AnexoDoAto.Recusas(AnexoDoAto.Declarados(recebidos));
+        if (recusas.Count > 0)
         {
-            throw new ArgumentException(recusa.Message, nameof(anexos));
+            throw new ArgumentException(recusas[0].Error.Message, recusas[0].Field);
         }
 
         _anexos.AddRange(recebidos.Select((anexo, ordem) =>

@@ -60,22 +60,29 @@ public sealed partial class AnexoDoAto : IForensicEntity
     }
 
     /// <summary>
-    /// Confere a lista de anexos de um ato e devolve a primeira recusa, ou nulo quando todos
-    /// são aceitáveis. É a regra única do que um anexo precisa ter: o handler a aplica para
-    /// devolver o erro nomeado, e <see cref="Criar"/> a reaplica como última linha.
+    /// Todas as recusas da lista de anexos de um ato, na ordem: a quantidade excedida (campo
+    /// <c>anexos</c>) e, para cada anexo na posição de envio, o elemento nulo ou então o nome, o tipo de
+    /// mídia, o hash e o nome repetido. A quantidade excedida não dispensa a conferência de cada anexo.
+    /// É a regra única do que um anexo precisa ter: <see cref="Criar"/> a reaplica como última linha.
     /// </summary>
-    public static DomainError? Conferir(IReadOnlyCollection<(string Nome, string TipoMidia, string Hash)> anexos)
+    public static IReadOnlyList<FieldError> Recusas(IReadOnlyList<(string? Nome, string? TipoMidia, string? Hash)?> anexos)
     {
         ArgumentNullException.ThrowIfNull(anexos);
 
-        return anexos.Count > QuantidadeMaxima
-            ? AnexoDoAtoErros.QuantidadeExcedida(anexos.Count)
-            : PrimeiraRecusaEntreOsAnexos(anexos);
+        FieldError[] daLista = anexos.Count > QuantidadeMaxima
+            ? [new("anexos", AnexoDoAtoErros.QuantidadeExcedida())]
+            : [];
+
+        return [.. daLista, .. RecusasDosItens(anexos)];
     }
+
+    internal static IReadOnlyList<(string? Nome, string? TipoMidia, string? Hash)?> Declarados(
+        IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos) =>
+        [.. anexos.Select(anexo => ((string? Nome, string? TipoMidia, string? Hash)?)anexo)];
 
     /// <summary>
     /// Cria o anexo de <paramref name="ato"/> na posição <paramref name="ordem"/>. Última
-    /// linha das invariantes: a recusa nomeada é devolvida por <see cref="Conferir"/>.
+    /// linha das invariantes: a recusa é a primeira de <see cref="Recusas"/>.
     /// </summary>
     public static AnexoDoAto Criar(AtoNormativo ato, int ordem, string nome, string tipoMidia, string hash)
     {
@@ -87,7 +94,7 @@ public sealed partial class AnexoDoAto : IForensicEntity
         {
             AtoId = ato.Id,
             Ordem = ordem,
-            Nome = nome.Trim(),
+            Nome = NomeDoAnexoPublicado.Normalizar(nome),
             TipoMidia = NormalizarTipoMidia(tipoMidia),
             Hash = hash,
         };
@@ -95,55 +102,44 @@ public sealed partial class AnexoDoAto : IForensicEntity
 
     private static void ExigirAceitavel(string nome, string tipoMidia, string hash)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(tipoMidia);
-
-        if (Conferir([(nome, tipoMidia, hash)]) is { } recusa)
+        if (RecusasDoAnexo((nome, tipoMidia, hash)).FirstOrDefault() is { } recusa)
         {
-            throw new ArgumentException(recusa.Message, nameof(nome));
+            throw new ArgumentException(recusa.Error.Message, recusa.Field);
         }
     }
 
-    /// <summary>
-    /// A primeira recusa entre os anexos, na ordem de envio: a do próprio anexo (nome, tipo de
-    /// mídia, hash) e, depois, a do nome já usado por um anexo anterior.
-    /// </summary>
-    private static DomainError? PrimeiraRecusaEntreOsAnexos(IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos)
+    private static IEnumerable<FieldError> RecusasDosItens(IReadOnlyList<(string? Nome, string? TipoMidia, string? Hash)?> anexos)
     {
-        HashSet<string> nomes = new(NomeDoAnexoPublicado.Comparador);
-
-        foreach ((string Nome, string TipoMidia, string Hash) anexo in anexos)
-        {
-            if ((RecusaDoAnexo(anexo) ?? RecusaDoNomeRepetido(anexo.Nome, nomes)) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
+        HashSet<string> nomesJaVistos = new(NomeDoAnexoPublicado.Comparador);
+        return anexos.SelectMany((anexo, posicao) =>
+            RecusasDoItem(anexo, nomesJaVistos).Select(recusa => recusa.NoCaminhoDe($"anexos[{posicao}]")));
     }
 
-    private static DomainError? RecusaDoAnexo((string Nome, string TipoMidia, string Hash) anexo)
-    {
-        string nome = NomeDoAnexoPublicado.Normalizar(anexo.Nome);
-        if (nome.Length == 0 || nome.Length > NomeMaxLength)
+    private static IEnumerable<FieldError> RecusasDoItem(
+        (string? Nome, string? TipoMidia, string? Hash)? anexo, HashSet<string> nomesJaVistos) =>
+        anexo is { } declarado
+            ? [.. RecusasDoAnexo(declarado), .. RecusaDoNomeRepetido(declarado.Nome, nomesJaVistos)]
+            : [new FieldError(string.Empty, AnexoDoAtoErros.Nulo())];
+
+    private static IEnumerable<FieldError> RecusasDoAnexo((string? Nome, string? TipoMidia, string? Hash) anexo) =>
+        new FieldError?[]
         {
-            return AnexoDoAtoErros.NomeInvalido();
-        }
+            NomeValido(NomeDoAnexoPublicado.Normalizar(anexo.Nome)) ? null : new("nome", AnexoDoAtoErros.NomeInvalido()),
+            TipoMidiaValido(NormalizarTipoMidia(anexo.TipoMidia)) ? null : new("tipoMidia", AnexoDoAtoErros.TipoMidiaInvalido()),
+            HashSha256.TemFormatoValido(anexo.Hash) ? null : new("hash", AnexoDoAtoErros.HashInvalido()),
+        }.OfType<FieldError>();
 
-        if (!TipoMidiaValido(NormalizarTipoMidia(anexo.TipoMidia)))
-        {
-            return AnexoDoAtoErros.TipoMidiaInvalido(nome);
-        }
-
-        return HashSha256.TemFormatoValido(anexo.Hash) ? null : AnexoDoAtoErros.HashInvalido(nome);
-    }
-
-    private static DomainError? RecusaDoNomeRepetido(string nome, HashSet<string> nomesJaVistos)
+    private static IEnumerable<FieldError> RecusaDoNomeRepetido(string? nome, HashSet<string> nomesJaVistos)
     {
         string nomeNormalizado = NomeDoAnexoPublicado.Normalizar(nome);
-        return nomesJaVistos.Add(nomeNormalizado) ? null : AnexoDoAtoErros.NomeDuplicado(nomeNormalizado);
+        if (NomeValido(nomeNormalizado) && !nomesJaVistos.Add(nomeNormalizado))
+        {
+            yield return new("nome", AnexoDoAtoErros.NomeDuplicado());
+        }
     }
+
+    private static bool NomeValido(string nomeNormalizado) =>
+        nomeNormalizado.Length is > 0 and <= NomeMaxLength;
 
     private static string NormalizarTipoMidia(string? tipoMidia) =>
         tipoMidia?.Trim().ToLower(CultureInfo.InvariantCulture) ?? string.Empty;
