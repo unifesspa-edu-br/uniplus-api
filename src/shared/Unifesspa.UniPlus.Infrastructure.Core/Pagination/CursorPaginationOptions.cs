@@ -35,6 +35,18 @@ public sealed record CursorPaginationOptions
     public int LimitMax { get; init; } = 100;
 
     /// <summary>
+    /// Maior valor de filtro, sem os espaços das pontas, que o link de navegação repete; um valor maior fica de fora do
+    /// link. Não pode ficar abaixo do maior termo de busca que as listagens aceitam.
+    /// </summary>
+    public int ComprimentoMaximoDoValorNoLink { get; init; } = 256;
+
+    /// <summary>
+    /// Maior tamanho do cabeçalho <c>Link</c>; acima dele, os links saem só com a paginação. Cada cursor carrega a
+    /// chave de continuação, então o cabeçalho de uso legítimo passa de alguns milhares de caracteres.
+    /// </summary>
+    public int ComprimentoMaximoDoCabecalhoLink { get; init; } = 16384;
+
+    /// <summary>
     /// Nome da chave com que o cursor é cifrado em <see cref="Cryptography.IUniPlusEncryptionService"/>.
     /// Um deployable que compõe a coleção de outro com paginação própria usa chave própria: quem
     /// detém a chave consegue emitir cursor para qualquer coleção cifrada com ela (ADR-0131).

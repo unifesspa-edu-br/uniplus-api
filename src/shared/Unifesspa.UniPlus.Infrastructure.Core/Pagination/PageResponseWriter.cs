@@ -80,10 +80,27 @@ internal sealed class PageResponseWriter
         string? previousCursor = await EncodeAsync(previous, PaginationDirection.Prev, account, cancellationToken).ConfigureAwait(false);
         string? nextCursor = await EncodeAsync(next, PaginationDirection.Next, account, cancellationToken).ConfigureAwait(false);
 
-        PageLinks links = PageLinks.ForRequest(_controller.Request, previousCursor, nextCursor);
-        _controller.Response.Headers[LinkHeader] = LinkHeaderBuilder.Build(links);
+        _controller.Response.Headers[LinkHeader] = MontarCabecalhoLink(previousCursor, nextCursor);
         _controller.Response.Headers[PageSizeHeader] = items.Count.ToString(CultureInfo.InvariantCulture);
         return _controller.Ok(items);
+    }
+
+    /// <summary>
+    /// O link repete só os filtros que a ação declara. Se o cabeçalho passar do tamanho máximo configurado, sai de novo só
+    /// com a paginação: <c>self</c> continua presente, e <c>next</c> e <c>prev</c> continuam quando há página.
+    /// </summary>
+    private string MontarCabecalhoLink(string? previousCursor, string? nextCursor)
+    {
+        IServiceProvider services = _controller.HttpContext.RequestServices;
+        CursorPaginationOptions options = services.GetRequiredService<IOptions<CursorPaginationOptions>>().Value;
+        FiltrosDeclaradosDaListagem declarados = services.GetRequiredService<FiltrosDasListagens>().Da(_controller.ControllerContext.ActionDescriptor);
+
+        IReadOnlyList<string> filtros = declarados.PartesDoLink(_controller.Request.Query, options.ComprimentoMaximoDoValorNoLink);
+        string cabecalho = LinkHeaderBuilder.Build(PageLinks.ForRequest(_controller.Request, previousCursor, nextCursor, filtros));
+
+        return cabecalho.Length <= options.ComprimentoMaximoDoCabecalhoLink
+            ? cabecalho
+            : LinkHeaderBuilder.Build(PageLinks.ForRequest(_controller.Request, previousCursor, nextCursor, []));
     }
 
     /// <summary>

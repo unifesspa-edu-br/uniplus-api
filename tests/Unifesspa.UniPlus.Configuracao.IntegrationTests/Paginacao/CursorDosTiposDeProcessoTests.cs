@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Paginacao;
 
+using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Paginacao;
 
@@ -54,6 +56,16 @@ public sealed class CursorDosTiposDeProcessoTests : IAsyncLifetime
         using ProvaDoCursor prova = await ProvaAsync();
 
         await prova.ConfereOLinkAnteriorAsync(string.Empty, static link => LinkDePaginacao.ComParametro(link, "apenasAtivos", "true"));
+    }
+
+    [Fact(DisplayName = "A lista de tipos de processo não declara a busca: o link da próxima página não a devolve")]
+    public async Task Link_BuscaQueAListaNaoDeclara_NaoVoltaNoLink()
+    {
+        using ProvaDoCursor prova = await ProvaAsync();
+
+        string proximo = await prova.ProximoAsync("q=termo-ficticio");
+
+        proximo.Should().NotContain("termo-ficticio");
     }
 
     private async Task<ProvaDoCursor> ProvaAsync()

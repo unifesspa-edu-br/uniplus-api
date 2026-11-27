@@ -40,6 +40,7 @@ internal static class CursorBinderTestSupport
         services.AddSingleton(Options.Create(new CursorPaginationOptions()));
         services.AddSingleton<IUniPlusEncryptionService>(_ => CreateCipher());
         services.AddSingleton<CursorEncoder>();
+        services.AddSingleton(new FiltrosDasListagens(Mvc.Descricoes));
         return services;
     }
 
