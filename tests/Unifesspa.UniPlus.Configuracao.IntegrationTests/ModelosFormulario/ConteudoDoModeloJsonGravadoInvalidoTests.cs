@@ -28,7 +28,7 @@ public sealed class ConteudoDoModeloJsonGravadoInvalidoTests
         """{"escolha":"EXIGE_DOCUMENTO_VALIDO","referencia":{"tipo":"DATA_ESPECIFICA","data":"2027-02-01","faseCodigo":null},"efeitoDoVencimento":"ACEITAR_COM_AVISO"}""";
 
     private const string Documento =
-        $$"""{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaIndeferimento":"INDEFERIMENTO","basesLegais":[],"prazoDeEmissao":null,"validade":{{Validade}},"porOpcao":null}""";
+        $$"""{"faseCodigo":"INSCRICAO","tipoDocumentoCodigo":"RG","obrigatorio":true,"quando":null,"consequenciaDoDescumprimento":"INDEFERIMENTO","abrePrazoParaReenvio":false,"basesLegais":[],"prazoDeEmissao":null,"validade":{{Validade}},"porOpcao":null}""";
 
     private const string Conteudo =
         $$"""{"titulo":null,"paginas":[{{Pagina}}],"itens":[],"termos":[{{Termo}}],"pressupostos":[],"grupos":[],"documentosExigidos":[{{Documento}}],"gruposDeDocumentos":[]}""";
