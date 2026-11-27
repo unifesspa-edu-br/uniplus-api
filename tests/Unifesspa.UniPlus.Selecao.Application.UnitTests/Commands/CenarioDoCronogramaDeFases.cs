@@ -116,6 +116,8 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public TimeProvider Relogio { get; set; } = TimeProvider.System;
 
+    public IResolvedorFusoInstitucional Fuso { get; set; } = new ResolvedorFusoDeTeste();
+
     public CenarioDoCronogramaDeFases ComUnidadeNoCadastro(UnidadeResponsavelSnapshot unidade)
     {
         UnidadeResponsavel.ResolverAsync(unidade.OrigemId, Arg.Any<CancellationToken>()).Returns(unidade);
@@ -174,7 +176,7 @@ internal sealed class CenarioDoCronogramaDeFases
     private async Task<Result> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio)
     {
         Result resultado = await DefinirCronogramaFasesCommandHandler.Handle(
-            command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
+            command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, new LeituraDoInstanteDoComando(Relogio, Fuso), CancellationToken.None);
         return resultado;
     }
 

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -27,7 +28,8 @@ internal sealed record CadastrosDeApoioDeDefinirEtapas(
     ITipoBancaReader? TiposDeBanca = null,
     IRegraCatalogoReader? Regras = null,
     ITipoAtoPublicadoReader? Atos = null,
-    IRegistroCodecsEnvelope? Codecs = null)
+    IRegistroCodecsEnvelope? Codecs = null,
+    LeituraDoInstanteDoComando? Instantes = null)
 {
     /// <summary>A definição das etapas sobre o repositório dado, com dublê inerte no que o cenário não informou.</summary>
     internal DefinicaoDasEtapas Definicao(ITipoEtapaReader tipoEtapa, IProcessoSeletivoRepository repository) => new(
@@ -85,10 +87,13 @@ internal static class CenariosDeDefinirEtapas
             repository,
             (cadastros ?? new CadastrosDeApoioDeDefinirEtapas()).Definicao(tipoEtapaReader ?? ReaderPadrao(), repository),
             unitOfWork,
-            TimeProvider.System,
+            cadastros?.Instantes ?? InstantesDoRelogioDoSistema(),
             CancellationToken.None);
         return resultado;
     }
+
+    /// <summary>A leitura do instante pelo relógio do sistema, no fuso institucional.</summary>
+    internal static LeituraDoInstanteDoComando InstantesDoRelogioDoSistema() => new(TimeProvider.System, new ResolvedorFusoDeTeste());
 
     /// <summary>A definição das etapas sobre o repositório e a escolha de motivos dados, com os cadastros que resolvem os dois tipos de etapa.</summary>
     internal static DefinicaoDasEtapas DefinicaoDasEtapasComMotivos(IProcessoSeletivoRepository repository, IMotivoDeDecisaoDoProcessoRepository motivos) => new(
