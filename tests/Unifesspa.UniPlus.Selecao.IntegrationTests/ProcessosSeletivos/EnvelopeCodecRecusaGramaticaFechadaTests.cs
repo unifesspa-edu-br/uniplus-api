@@ -124,7 +124,7 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
     [Fact(DisplayName = "Chave desconhecida DENTRO do 18º bloco (retificacao) é recusada")]
     public void ChaveDesconhecidaNaRetificacao_Recusa()
     {
-        JsonObject envelope = EnvelopeDosBytes(BytesComRetificacaoDe(ExemploDeEnvelope.AtoAbertura, "motivo"));
+        JsonObject envelope = EnvelopeDosBytes(BytesComRetificacaoDe(ExemploDeProcessoSeletivo.AtoAbertura, "motivo"));
         envelope["retificacao"]!.AsObject()["chaveIntrusa"] = "x";
 
         byte[] retificada = PerfilCanonicoV1.Instancia.Serializar(envelope);

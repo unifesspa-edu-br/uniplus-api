@@ -157,7 +157,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = "testes", Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = "testes", Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         return publicacao.Value!;

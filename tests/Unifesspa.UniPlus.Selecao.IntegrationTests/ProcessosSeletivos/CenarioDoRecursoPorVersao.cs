@@ -97,7 +97,7 @@ internal sealed class CenarioDoRecursoPorVersao
     public async Task<Result<ConfiguracaoVigente>> LerAsync(Guid processoId, DateTimeOffset instante)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ConfiguracaoVigenteDoProcesso leitor = new(ProcessoSeletivoRepositoryDeTeste.Criar(context), ExemploDeEnvelope.Registro);
+        ConfiguracaoVigenteDoProcesso leitor = new(ProcessoSeletivoRepositoryDeTeste.Criar(context), ExemploDeProcessoSeletivo.Registro);
 
         return await leitor.LerAsync(processoId, instante, CancellationToken.None);
     }

@@ -18,17 +18,17 @@ internal static class VersoesDoEnvelopeDeTeste
 {
     public static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         return processo;
     }
 
     public static byte[] BytesDoExemplo() =>
-        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico())).Bytes;
+        ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico())).Bytes;
 
     public static byte[] BytesComRetificacaoDe(Guid atoRetificadoId, string motivo) =>
-        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(
-            ExemploDeEnvelopeProcessoRico.ProcessoRico(),
+        ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(
+            ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(),
             new RetificacaoDoEdital(atoRetificadoId, motivo))).Bytes;
 
     public static JsonObject EnvelopeDosBytes(byte[] bytes) =>
@@ -37,25 +37,25 @@ internal static class VersoesDoEnvelopeDeTeste
     public static (VersaoConfiguracao Versao, byte[] Bytes) VersaoRica()
     {
         byte[] bytes = BytesDoExemplo();
-        return (ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
+        return (ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes), bytes);
     }
 
     public static VersaoConfiguracao VersaoComSchema(string schemaVersion) =>
-        AbrirVersaoDoExemplo(schemaVersion, PerfilCanonicoV1.Instancia.Algoritmo, ExemploDeEnvelope.HashDocumento);
+        AbrirVersaoDoExemplo(schemaVersion, PerfilCanonicoV1.Instancia.Algoritmo, ExemploDeProcessoSeletivo.HashDocumento);
 
     public static VersaoConfiguracao VersaoComAlgoritmoDeHash(string algoritmoHash) =>
-        AbrirVersaoDoExemplo(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, algoritmoHash, ExemploDeEnvelope.HashDocumento);
+        AbrirVersaoDoExemplo(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, algoritmoHash, ExemploDeProcessoSeletivo.HashDocumento);
 
     public static VersaoConfiguracao VersaoComHashDoAtoCriador(string atoCriadorHash) =>
         AbrirVersaoDoExemplo(SnapshotPublicacaoCanonicalizer.SchemaVersionAtual, PerfilCanonicoV1.Instancia.Algoritmo, atoCriadorHash);
 
     public static Result<EnvelopeReidratado> ReidratarComoAbertura(byte[] bytes) =>
-        ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));
+        ExemploDeProcessoSeletivo.Registro.Reidratar(ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(ProcessoPublicado(), bytes));
 
     public static Result<EnvelopeReidratado> ReidratarComoSucessora(byte[] abertura, byte[] sucessora)
     {
-        VersaoConfiguracao v1 = ExemploDeEnvelopeEntrada.VersaoDeAbertura(ProcessoPublicado(), abertura);
-        return ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeRetificacao(v1, sucessora));
+        VersaoConfiguracao v1 = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(ProcessoPublicado(), abertura);
+        return ExemploDeProcessoSeletivo.Registro.Reidratar(ExemploDeProcessoSeletivoEntrada.VersaoDeRetificacao(v1, sucessora));
     }
 
     /// <summary>
@@ -82,5 +82,5 @@ internal static class VersoesDoEnvelopeDeTeste
     private static VersaoConfiguracao AbrirVersaoDoExemplo(string schemaVersion, string algoritmoHash, string atoCriadorHash) =>
         VersaoConfiguracao.Abrir(
             ProcessoPublicado().Id, new DocumentoCongelado(BytesDoExemplo(), schemaVersion, algoritmoHash, atoCriadorHash),
-            atoCriadorId: ExemploDeEnvelope.AtoAbertura, atorUsuarioContaId: ExemploDeEnvelope.Ator, instante: DateTimeOffset.UnixEpoch);
+            atoCriadorId: ExemploDeProcessoSeletivo.AtoAbertura, atorUsuarioContaId: ExemploDeProcessoSeletivo.Ator, instante: DateTimeOffset.UnixEpoch);
 }

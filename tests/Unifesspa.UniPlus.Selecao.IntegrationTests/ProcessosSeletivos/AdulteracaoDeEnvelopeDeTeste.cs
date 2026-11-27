@@ -25,8 +25,8 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 {
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comRegrasDeComprovacao = false)
     {
-        byte[] originais = ExemploDeEnvelope.Canonicalizador.Canonicalizar(
-            ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegrasDeComprovacao))).Bytes;
+        byte[] originais = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(
+            ExemploDeProcessoSeletivoEntrada.Entrada(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comRegrasDeComprovacao: comRegrasDeComprovacao))).Bytes;
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de
         // integridade não é o que os recusa. É a gramática.
@@ -36,7 +36,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     /// <summary>
     /// Mesmo raciocínio de <see cref="ReidratarComEnvelopeAdulterado"/>, mas sobre o processo de
     /// referência da golden fixture (<see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>) —
-    /// é ele, não <see cref="ExemploDeEnvelopeProcessoRico.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
+    /// é ele, não <see cref="ExemploDeProcessoSeletivoProcessoRico.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
     /// populado, e por isso <c>metadadosFatos[].valoresDominioDeclarados</c> só existe aqui.
     /// </summary>
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
@@ -47,7 +47,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 
         byte[] adulterados = BytesAdulterados(congelado.Bytes, adulterar);
 
-        return ExemploDeEnvelope.Registro.Reidratar(PublicarSobreBytes(processo, dados, congelado, adulterados));
+        return ExemploDeProcessoSeletivo.Registro.Reidratar(PublicarSobreBytes(processo, dados, congelado, adulterados));
     }
 
     public static JsonObject FatoColetadoPorCodigo(JsonObject envelope, string codigo) =>
@@ -89,7 +89,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, EnvelopeDeReferencia.HashFixo), AtorUsuarioContaId = ExemploDeEnvelope.Ator, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, EnvelopeDeReferencia.HashFixo), AtorUsuarioContaId = ExemploDeProcessoSeletivo.Ator, Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

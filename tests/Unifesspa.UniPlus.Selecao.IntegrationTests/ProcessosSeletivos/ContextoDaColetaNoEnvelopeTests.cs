@@ -34,8 +34,8 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     [Fact(DisplayName = "O formulário no documento congelado carrega a fase pelo identificador e a obrigatoriedade que o processo declara")]
     public void Canonicalizar_Formularios_CarregamFaseEObrigatoriedade()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
-        JsonNode envelope = JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes)!;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comRegrasDeComprovacao: true);
+        JsonNode envelope = JsonNode.Parse(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes)!;
 
         envelope["formularios"]!.AsArray().Select(static f => (f!["codigo"]!.GetValue<string>(), f["obrigatorio"]!.GetValue<bool>(), f["faseId"]?.GetValue<Guid>()))
             .Should().BeEquivalentTo(processo.Formularios.Select(static f => (f.Codigo.Valor, f.Obrigatorio, f.FaseId)));
@@ -111,11 +111,11 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     [Fact]
     public void Canonicalizar_ReferenciaTemporal_EscreveRotuloDeclarado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 15), null).Value!;
         processo.DefinirReferenciaTemporalFatos(referencia).IsSuccess.Should().BeTrue();
 
-        JsonNode envelope = JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes)!;
+        JsonNode envelope = JsonNode.Parse(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes)!;
 
         Conferir<ReferenciaTipo>(envelope["documentosExigidos"]!["referenciaTemporalDosDados"]!, "tipo");
     }
@@ -159,9 +159,9 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     public void Canonicalizar_ObrigatoriedadeLegal_EscreveRotuloDeclarado()
     {
         RegraAvaliada regra = RegraDeObrigatoriedade();
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo, conformidade: new ResultadoConformidade([regra], []));
-        JsonNode envelope = JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada).Bytes)!;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        EntradaCanonicalizacao entrada = ExemploDeProcessoSeletivoEntrada.Entrada(processo, conformidade: new ResultadoConformidade([regra], []));
+        JsonNode envelope = JsonNode.Parse(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(entrada).Bytes)!;
 
         Conferir<CategoriaObrigatoriedade>(envelope["documentosExigidos"]!["obrigatoriedades"]![0]!, "categoria");
     }
@@ -169,8 +169,8 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     [Fact]
     public void SerializarRegrasDeComprovacao_BaseLegal_EscreveRotulosDeclarados()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        RegraDeComprovacao original = ExemploDeEnvelopeDocumentos.RegrasDeComprovacaoRicas(0, false)[1];
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        RegraDeComprovacao original = ExemploDeProcessoSeletivoDocumentos.RegrasDeComprovacaoRicas(0, false)[1];
         BaseLegalDaComprovacao baseLegal = BaseLegalDaComprovacao.Criar("Norma institucional", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.ReidratarGrupo(original.Id, 0,
             new CombinacaoDoGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null), [baseLegal], [.. original.Itens], null);
@@ -185,8 +185,8 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     [Fact]
     public void SerializarRegrasDeComprovacao_Consequencia_EscreveRotuloDeclarado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        RegraDeComprovacao original = ExemploDeEnvelopeDocumentos.RegrasDeComprovacaoRicas(0, false)[1];
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        RegraDeComprovacao original = ExemploDeProcessoSeletivoDocumentos.RegrasDeComprovacaoRicas(0, false)[1];
         BaseLegalDaComprovacao baseLegal = BaseLegalDaComprovacao.Criar("Norma institucional", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!;
         RegraDeComprovacao grupo = RegraDeComprovacao.ReidratarGrupo(original.Id, 0,
             new CombinacaoDoGrupo(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "ELIMINA_DO_PROCESSO"), [baseLegal], [.. original.Itens], null);
@@ -198,8 +198,8 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     [Fact]
     public void SerializarRegrasDeComprovacao_Distincao_EscreveRotuloDeclarado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        DocumentoExigido documento = ExemploDeEnvelopeDocumentos.RegrasDeComprovacaoRicas(0, false)[0].DocumentoExigido!;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        DocumentoExigido documento = ExemploDeProcessoSeletivoDocumentos.RegrasDeComprovacaoRicas(0, false)[0].DocumentoExigido!;
         Result<RegraDeComprovacao> resultado = RegraDeComprovacao.CriarRegraDeDocumento(documento, 0, quantidadeMinima: 3,
             criterioDeDistincao: CriterioDeDistincaoDasApresentacoes.CompetenciaMensal, dataReferencia: new DateOnly(2026, 3, 31));
         resultado.IsSuccess.Should().BeTrue();
@@ -216,8 +216,8 @@ public sealed class ContextoDaColetaNoEnvelopeTests
     private static JsonNode ExigenciaDeReferencia() =>
         JsonNode.Parse(EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!["documentosExigidos"]!["exigencias"]![0]!;
 
-    private static JsonNode Envelope() => JsonNode.Parse(ExemploDeEnvelope.Canonicalizador.Canonicalizar(
-        ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico(comRegrasDeComprovacao: true))).Bytes)!;
+    private static JsonNode Envelope() => JsonNode.Parse(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(
+        ExemploDeProcessoSeletivoEntrada.Entrada(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comRegrasDeComprovacao: true))).Bytes)!;
 
     private static void ConferirIdentificadoPeloCodigo(JsonNode objeto, string campo)
     {

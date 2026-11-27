@@ -26,12 +26,12 @@ public sealed class EnvelopeLidoFormulariosTests
     [Fact(DisplayName = "Dois formulários, cada um com item de ordem 0 e um termo, reproduzem os bytes")]
     public void RoundTrip_DoisFormularios_OrdemRepetidaEntreEles()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         DefinirHabilitacao(processo);
 
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
-        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["codigo"]!.GetValue<string>())
             .Should().Equal("HABILITACAO", "INSCRICAO");
     }
@@ -39,12 +39,12 @@ public sealed class EnvelopeLidoFormulariosTests
     [Fact(DisplayName = "Item com obrigatoriedade QUANDO, ajuda e confirmação reproduz os bytes")]
     public void RoundTrip_RegrasDoItem()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         DefinirItensComBolsa(processo);
 
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
-        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         JsonObject bolsa = Envelope(congelado)["dadosDosFormularios"]!.AsArray()
             .Single(static f => f!["codigoDoDado"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
         bolsa["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
@@ -54,15 +54,15 @@ public sealed class EnvelopeLidoFormulariosTests
     [Fact(DisplayName = "Termo que aparece só para quem optou pelas cotas da lei reproduz os bytes")]
     public void RoundTrip_FormularioCitaAOpcaoPelasCotas()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         PredicadoDnf optou = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         processo.DefinirTermos(
-            [ExemploDeEnvelopeEntrada.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))]).IsSuccess.Should().BeTrue();
+            [ExemploDeProcessoSeletivoEntrada.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))]).IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         FidelidadeDoEnvelopeDeTeste.Conferir(processo, versao, congelado);
         Envelope(congelado)["calculosDosDados"]!.AsArray()
             .Select(static d => d!["codigoDoDado"]!.GetValue<string>())
@@ -73,12 +73,12 @@ public sealed class EnvelopeLidoFormulariosTests
     [Fact(DisplayName = "Campos de texto com formato, de data e de endereço reproduzem os bytes")]
     public void RoundTrip_CampoDeTexto()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         DefinirCamposDeTexto(processo);
 
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
-        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["dadosDosFormularios"]!.AsArray()
             .Single(static f => f!["codigoDoDado"]!.GetValue<string>() == "NOME_SOCIAL")!["formato"]!.GetValue<string>()
             .Should().Be("NOME_PESSOA");
@@ -89,19 +89,19 @@ public sealed class EnvelopeLidoFormulariosTests
     [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoDoEdital ORIGINAL, recuperada do próprio envelope")]
     public void RoundTrip_VersaoRetificada()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        RetificacaoDoEdital retificacao = new(ExemploDeEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        RetificacaoDoEdital retificacao = new(ExemploDeProcessoSeletivo.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
 
-        SnapshotCanonico abertura = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo, retificacao));
+        SnapshotCanonico abertura = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo, retificacao));
 
-        VersaoConfiguracao v1 = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, abertura.Bytes);
-        VersaoConfiguracao v2 = ExemploDeEnvelopeEntrada.VersaoDeRetificacao(v1, congelado.Bytes);
+        VersaoConfiguracao v1 = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, abertura.Bytes);
+        VersaoConfiguracao v2 = ExemploDeProcessoSeletivoEntrada.VersaoDeRetificacao(v1, congelado.Bytes);
 
         EnvelopeReidratado envelope = FidelidadeDoEnvelopeDeTeste.Conferir(processo, v2, congelado);
 
         envelope.Retificacao.Should().NotBeNull("a versão N>1 carrega o bloco retificacao");
-        envelope.Retificacao!.EditalRetificadoId.Should().Be(ExemploDeEnvelope.AtoAbertura);
+        envelope.Retificacao!.EditalRetificadoId.Should().Be(ExemploDeProcessoSeletivo.AtoAbertura);
         envelope.Retificacao.Motivo.Should().Be("Correção do quadro de vagas do curso de Direito");
     }
 
@@ -121,7 +121,7 @@ public sealed class EnvelopeLidoFormulariosTests
         processo.DefinirFormulario(FormulariosDoProcessoDeTeste.Declarado(FormulariosDoProcessoDeTeste.Habilitacao, habilitacao.Id, obrigatorio: true), "Habilitação", FormulariosDoProcessoDeTeste.PaginasSemConjuntoBasico())
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(codigo, [CertificadoEmitidoSeCorOuRacaPreta()]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(codigo, [ExemploDeEnvelopeEntrada.Termo("VERACIDADE", 0)])
+        processo.DefinirTermosDoFormulario(codigo, [ExemploDeProcessoSeletivoEntrada.Termo("VERACIDADE", 0)])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -185,7 +185,7 @@ public sealed class EnvelopeLidoFormulariosTests
 
     private static void ConferirDerivacoesDoRecortePublico(VersaoConfiguracao versao)
     {
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
         avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);

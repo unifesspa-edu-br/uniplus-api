@@ -40,7 +40,7 @@ public sealed class FormatoDosCodigosDoFormularioNoBancoTests : IClassFixture<In
 
     private async Task<Guid> GravarProcessoAsync(int variante)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(variante);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(variante);
         await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         contexto.ProcessosSeletivos.Add(processo);
         await contexto.SaveChangesAsync();

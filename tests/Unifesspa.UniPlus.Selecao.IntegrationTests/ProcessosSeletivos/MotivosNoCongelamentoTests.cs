@@ -19,10 +19,10 @@ public sealed class MotivosNoCongelamentoTests
     [Fact]
     public void Canonicalizar_DoisMotivos_ReidrataEReproduzBytes()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         MotivoDeDecisaoDeclarado[] motivos = Motivos();
         SnapshotCanonico snapshot = Congelar(processo, motivos);
-        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, snapshot.Bytes), snapshot);
+        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, snapshot.Bytes), snapshot);
         JsonArray bloco = ApoioDoEnvelopeCodec.Envelope(snapshot)["motivosDeDecisao"]!.AsArray();
 
         lido.Configuracao.MotivosDeDecisao.Should().BeEquivalentTo(motivos);
@@ -32,7 +32,7 @@ public sealed class MotivosNoCongelamentoTests
     [Fact]
     public void Canonicalizar_MotivoAlterado_MudaBytesEResumo()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         MotivoDeDecisaoDeclarado[] motivos = Motivos();
         SnapshotCanonico original = Congelar(processo, motivos);
         motivos[0] = motivos[0] with { Descricao = "Outra descrição" };
@@ -45,7 +45,7 @@ public sealed class MotivosNoCongelamentoTests
     [Fact]
     public void Canonicalizar_SemMotivos_CongelaListaVazia()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         SnapshotCanonico snapshot = Congelar(processo, []);
         ApoioDoEnvelopeCodec.Envelope(snapshot)["motivosDeDecisao"]!.AsArray().Should().BeEmpty();
     }
@@ -57,21 +57,21 @@ public sealed class MotivosNoCongelamentoTests
     [Fact]
     public void Reidratar_Retificacao_PreservaMotivoAnteriorEInclusao()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         MotivoDeDecisaoDeclarado[] motivos = Motivos();
-        VersaoConfiguracao anterior = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, Congelar(processo, [motivos[1]]).Bytes);
-        EntradaCanonicalizacao entrada = ExemploDeEnvelopeEntrada.Entrada(processo, new RetificacaoDoEdital(anterior.AtoCriadorId, "Inclusão de motivo"))
+        VersaoConfiguracao anterior = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, Congelar(processo, [motivos[1]]).Bytes);
+        EntradaCanonicalizacao entrada = ExemploDeProcessoSeletivoEntrada.Entrada(processo, new RetificacaoDoEdital(anterior.AtoCriadorId, "Inclusão de motivo"))
             with
         { Configuracao = processo.Declaracao(motivos) };
-        SnapshotCanonico snapshot = ExemploDeEnvelope.Canonicalizador.Canonicalizar(entrada);
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeRetificacao(anterior, snapshot.Bytes);
+        SnapshotCanonico snapshot = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(entrada);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeRetificacao(anterior, snapshot.Bytes);
 
         EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, versao, snapshot);
         lido.Configuracao.MotivosDeDecisao.Should().BeEquivalentTo(motivos);
     }
 
     private static SnapshotCanonico Congelar(ProcessoSeletivo processo, IReadOnlyList<MotivoDeDecisaoDeclarado> motivos) =>
-        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo) with { Configuracao = processo.Declaracao(motivos) });
+        ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo) with { Configuracao = processo.Declaracao(motivos) });
 
     private static MotivoDeDecisaoDeclarado[] Motivos() =>
     [

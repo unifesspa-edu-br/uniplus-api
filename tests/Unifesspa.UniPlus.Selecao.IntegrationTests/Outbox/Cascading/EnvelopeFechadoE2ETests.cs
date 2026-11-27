@@ -55,10 +55,10 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Payload
 /// <c>EnvelopeCodecRoundTripTests</c>, <c>PoliticaDeOrdenacaoTests</c>). O que não existia em teste
 /// algum era a <b>corrente inteira</b>, pelo caminho HTTP, com um processo que exercita fatos
 /// coletados, cascata de remanejamento, divulgação e formulário — o exemplo rico só era exercitado
-/// por chamada direta ao domínio (<c>ExemploDeEnvelope</c>), nunca publicado por HTTP.
+/// por chamada direta ao domínio (<c>ExemploDeProcessoSeletivo</c>), nunca publicado por HTTP.
 /// </para>
 /// <para>
-/// A golden fixture de <c>ExemploDeEnvelope</c> <b>não é oráculo</b> deste teste: a API de cronograma
+/// A golden fixture de <c>ExemploDeProcessoSeletivo</c> <b>não é oráculo</b> deste teste: a API de cronograma
 /// resolve <c>FaseCanonicaId</c>/<c>TiposBancaIds</c> contra o catálogo vivo de Configuração, e o
 /// envelope produzido por HTTP é semanticamente equivalente ao do exemplo de domínio, não idêntico
 /// byte a byte. Os catálogos que os handlers resolvem (fases canônicas, tipos de banca, ofertas de

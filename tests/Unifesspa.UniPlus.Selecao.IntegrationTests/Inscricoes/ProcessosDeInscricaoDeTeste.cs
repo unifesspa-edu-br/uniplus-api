@@ -44,7 +44,7 @@ internal static class ProcessosDeInscricaoDeTeste
         DefinirCamposDaInscricao(processo, camposAdicionais);
         DefinirFormularioDaIsencao(processo, comIsencao);
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([ExemploDeProcessoSeletivoEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
 
         return processo;
     }

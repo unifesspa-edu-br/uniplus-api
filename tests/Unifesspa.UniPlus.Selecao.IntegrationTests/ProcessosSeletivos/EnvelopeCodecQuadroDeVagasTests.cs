@@ -26,7 +26,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
 
-        JsonObject envelope = Envelope(ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)));
+        JsonObject envelope = Envelope(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)));
 
         JsonObject distribuicao = envelope["distribuicao"]!.AsArray()[0]!.AsObject();
         distribuicao["percentualDaReservaLegal"].Should().BeNull();
@@ -44,10 +44,10 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         ConfiguracaoDistribuicaoVagas publicada = processo.DistribuicaoVagas.Single();
         publicada.Quadro.TotalDeVagasDoEdital.Should().Be(VagasOfertadasBaseDoQuadroFixado);
         publicada.Quadro.QuantidadeDe("AC").Should().Be(21, "a regra de ajuste do quadro retirou da ampla as 4 vagas que passavam do total");
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
 
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         reidratado.IsSuccess.Should().BeTrue($"a distribuição reduzida tem de voltar do envelope: {reidratado.Error?.Code} {reidratado.Error?.Message}");
         ConferirQueVoltouIgual(publicada, reidratado.Value!.Configuracao.Vagas.DistribuicaoVagas.Single());
@@ -74,13 +74,13 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         ArgumentNullException.ThrowIfNull(caminho);
 
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
         Mutar(adulterado, caminho, valorNovo);
 
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         reidratado.IsFailure.Should().BeTrue($"'{caminho}' não bate com o quadro que a declaração monta");
         reidratado.Error!.Message.Should().Contain("o quadro congelado não é o que a declaração da oferta monta");
@@ -90,13 +90,13 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     public void Reidratar_QuantidadeDeclaradaNegativa_Recusa()
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
         Mutar(adulterado, "modalidades.1.quantidadeDeclarada", "-3");
 
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         reidratado.IsFailure.Should().BeTrue();
         reidratado.Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
@@ -109,8 +109,8 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
             new DistribuicaoDeVagasDeclarada
             {
                 VagasOfertadasBase = VagasOfertadasBaseDoQuadroFixado,
-                RegraDeDistribuicao = ExemploDeEnvelope.Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'),
-                RegraDeAjuste = ExemploDeEnvelope.Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), 'b'),
+                RegraDeDistribuicao = ExemploDeProcessoSeletivo.Regra(RegraDeDistribuicaoDeVagas.Institucional.Codigo(), 'a'),
+                RegraDeAjuste = ExemploDeProcessoSeletivo.Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), 'b'),
                 AjusteDoQuadro = ajuste,
                 Modalidades = [ModalidadeDoQuadroFixado("AC", 25, null), ModalidadeDoQuadroFixado("IND", 10, "AC"), ModalidadeDoQuadroFixado("QUI", 9, "AC")],
             },

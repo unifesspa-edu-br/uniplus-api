@@ -24,7 +24,7 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     {
         VersaoConfiguracao versao = VersaoComSchema("9.9");
 
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
@@ -81,7 +81,7 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     {
         VersaoConfiguracao versao = VersaoComAlgoritmoDeHash("md5@v0");
 
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.AlgoritmoNaoSuportado);
@@ -98,7 +98,7 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     {
         VersaoConfiguracao versao = VersaoComHashDoAtoCriador(new string('7', 64));
 
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao);
@@ -107,7 +107,7 @@ public sealed class EnvelopeCodecRecusaVersaoEIntegridadeTests
     [Fact(DisplayName = "A versão 1 não pode carregar o 18º bloco — ela abre a cadeia e não retifica ato algum")]
     public void Versao1ComBlocoDeRetificacao_Recusa()
     {
-        byte[] bytes = BytesComRetificacaoDe(ExemploDeEnvelope.AtoAbertura, "motivo qualquer");
+        byte[] bytes = BytesComRetificacaoDe(ExemploDeProcessoSeletivo.AtoAbertura, "motivo qualquer");
 
         Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(bytes);
 

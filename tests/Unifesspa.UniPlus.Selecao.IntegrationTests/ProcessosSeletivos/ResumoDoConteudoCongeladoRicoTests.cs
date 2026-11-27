@@ -28,8 +28,8 @@ public sealed class ResumoDoConteudoCongeladoRicoTests
     [Fact(DisplayName = "Exemplo rico, com dois termos exigidos, tem o resumo do conteúdo congelado igual ao literal")]
     public void ExemploRico_ResumoDoConteudoCongelado_IgualAoLiteral()
     {
-        SnapshotCanonico snapshot = ExemploDeEnvelope.Canonicalizador.Canonicalizar(
-            ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico()));
+        SnapshotCanonico snapshot = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(
+            ExemploDeProcessoSeletivoEntrada.Entrada(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico()));
 
         HashCanonicalComputer.ComputeSha256Hex(snapshot.Bytes).Should().Be(ResumoDoExemploRico);
     }

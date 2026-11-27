@@ -34,10 +34,10 @@ internal static class FidelidadeDoEnvelopeDeTeste
 
     internal static void ConferirMutacao(string caminho, string valor, bool ordena)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico original = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        SnapshotCanonico original = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
         byte[] alterados = Alterar(original, caminho, valor);
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, alterados);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, alterados);
         EnvelopeReidratado envelope = ApoioDoEnvelopeCodec.Reidratado(versao);
         ProcessoSeletivo lido = ProcessoDoGrafoLidoDeTeste.Criar(processo, envelope.Configuracao);
         byte[] recodificados = Recodificar(lido, envelope).Bytes;
