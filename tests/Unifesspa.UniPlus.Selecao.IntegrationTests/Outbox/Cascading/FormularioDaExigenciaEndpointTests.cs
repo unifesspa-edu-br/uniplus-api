@@ -75,6 +75,20 @@ public sealed class FormularioDaExigenciaEndpointTests
         problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.codigo_obrigatorio");
     }
 
+    [Fact(DisplayName = "O documento exigido com o código do formulário ausente do corpo é recusado com 422 e o código do erro diz que o código é obrigatório")]
+    public async Task DefinirDocumentosExigidos_CodigoDoFormularioAusenteDoCorpo_Recusa()
+    {
+        (ProcessoSeletivo processo, Guid tipoDocumentoId, string bolsista) = await SemearCenarioAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
+            client, processo.Id, [RegraDoDocumentoComMomento(bolsista, tipoDocumentoId, new { faseId = processo.CronogramaFases.Single().Id })]);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.codigo_obrigatorio");
+    }
+
     [Fact(DisplayName = "O documento exigido que cita um formulário que o processo não tem é recusado com 422 e o código do erro diz que o formulário não existe")]
     public async Task DefinirDocumentosExigidos_FormularioInexistente_Recusa()
     {
@@ -108,13 +122,16 @@ public sealed class FormularioDaExigenciaEndpointTests
         return await client.SendAsync(request);
     }
 
-    private static object RegraDoDocumentoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId, string? formularioCodigo) => new
+    private static object RegraDoDocumentoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId, string? formularioCodigo) =>
+        RegraDoDocumentoComMomento(fato, tipoDocumentoId, new { faseId, formularioCodigo });
+
+    private static object RegraDoDocumentoComMomento(string fato, Guid tipoDocumentoId, object momento) => new
     {
         forma = "DOCUMENTO",
         documento = new
         {
             tipoDocumento = new { id = tipoDocumentoId },
-            momento = new { faseId, formularioCodigo },
+            momento,
             aplicabilidade = new
             {
                 tipo = "CONDICIONAL",

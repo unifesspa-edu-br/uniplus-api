@@ -25963,16 +25963,14 @@
             "format": "uuid"
           },
           "formularioCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },
       "MomentoDaExigenciaInput": {
         "required": [
-          "faseId"
+          "faseId",
+          "formularioCodigo"
         ],
         "type": "object",
         "properties": {
@@ -25988,10 +25986,7 @@
             "format": "uuid"
           },
           "formularioCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           }
         }
       },

@@ -52,7 +52,7 @@ public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
 /// formulários que a fase responde. É ele que diz em qual formulário o candidato apresenta o documento,
 /// porque dois formulários podem dividir a fase.
 /// </param>
-public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, string? FormularioCodigo = null)
+public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, [property: ObrigatorioNoContrato] string? FormularioCodigo = null)
 {
     /// <summary>O caminho do código do formulário no pedido.</summary>
     public const string CaminhoDoFormulario = "momento.formularioCodigo";
