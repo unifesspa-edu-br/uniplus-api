@@ -173,5 +173,8 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
 
         public Task<UnidadeView?> ObterPorCodigoAsync(string codigo, CancellationToken cancellationToken = default) =>
             Task.FromResult(unidades.FirstOrDefault(u => u.Codigo == codigo));
+
+        public Task<IReadOnlyList<UnidadeView>> ListarPorCodigosAsync(IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<UnidadeView>>([.. unidades.Where(u => codigos.Contains(u.Codigo))]);
     }
 }
