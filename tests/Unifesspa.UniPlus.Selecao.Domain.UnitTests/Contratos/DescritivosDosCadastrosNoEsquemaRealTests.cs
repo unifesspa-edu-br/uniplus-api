@@ -16,6 +16,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -143,20 +146,18 @@ public sealed class DescritivosDosCadastrosNoEsquemaRealTests
         return new(tipos);
     }
 
-    private static IDescricaoDeCadastro[] DescricoesDaOferta()
-    {
-        IOfertaCursoReader ofertas = Substitute.For<IOfertaCursoReader>();
-        ofertas.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([OfertaDeMedicina()]);
-        IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
-        modalidades.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([new ModalidadeView(
-            Guid.CreateVersion7(), "AMPLA_CONCORRENCIA", "Vagas sem reserva", "AMPLA", "VAGAS_PROPRIAS", null, null, null, null, null, PredicadoDnf.SemClausula, null, null)]);
-        return [new DescricaoDeOfertasDeCurso(ofertas), new DescricaoDeModalidades(modalidades)];
-    }
+    private static IDescricaoDeCadastro[] DescricoesDaOferta() =>
+    [
+        new DescricaoDeOfertasDeCurso(new Dictionary<string, OfertaDeCursoCitada> { ["MEDICINA_MARABA"] = OfertaDeMedicina() }),
+        new DescricaoDeModalidades(new Dictionary<string, ModalidadeNoCadastro>
+        {
+            ["AMPLA_CONCORRENCIA"] = ModalidadesNoCadastroDeTeste.Da("AMPLA_CONCORRENCIA", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas)
+                with { Descricao = "Vagas sem reserva" },
+        }),
+    ];
 
-    private static OfertaCursoView OfertaDeMedicina() => new(
-        Guid.CreateVersion7(), "MEDICINA_MARABA", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "CAMAR",
-        "Campus Universitário de Marabá", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO", "VESPERTINO"],
-        null, null, null, null, null, null, "Medicina", "Bacharelado");
+    private static OfertaDeCursoCitada OfertaDeMedicina() => new(
+        Guid.CreateVersion7(), "MEDICINA_MARABA", "Medicina", "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO", "VESPERTINO"], null, null, null);
 
     private static IDescricaoDeCadastro[] DescricoesDoAtendimento()
     {

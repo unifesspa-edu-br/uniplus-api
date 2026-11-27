@@ -234,7 +234,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeMotivosDeDecisao>();
         AddDescricoesDosCadastrosDaConfiguracao(services);
         services.AddScoped<IDescricaoDeCadastro, DescricaoDaParticipacaoDaReserva>();
-        services.AddScoped<DescricaoDoDocumentoDoRascunho>();
+        services.AddScoped<LeituraDasVagasDoRascunho>();
         services.AddScoped<DescricaoDaLocalidade>();
         services.AddScoped<ExportacaoDoRascunho>();
     }
@@ -246,8 +246,6 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeCategoriasDeDocumento>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeBanca>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeEtapa>();
-        services.AddScoped<IDescricaoDeCadastro, DescricaoDeOfertasDeCurso>();
-        services.AddScoped<IDescricaoDeCadastro, DescricaoDeModalidades>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeCondicoesDeAtendimento>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeRecursosDeAcessibilidade>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDeficiencia>();

@@ -132,6 +132,23 @@ public sealed class ObterRascunhoDeProcessoSeletivoQueryHandlerTests
         await _cenario.Pesos.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
     }
 
+    [Fact(DisplayName = "A unidade atual sem permissão recusa 404 antes de consultar os cadastros das vagas")]
+    public async Task UnidadeAtualSemPermissao_NaoConsultaOsCadastrosDasVagas()
+    {
+        CadastrosDasVagasDoRascunhoDeTeste.Cadastrar(_cenario);
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(
+            CenarioDoRascunho.Cga, CadastrosDasVagasDoRascunhoDeTeste.Documento(CadastrosDasVagasDoRascunhoDeTeste.Distribuicao(CadastrosDasVagasDoRascunhoDeTeste.OfertaDePedagogia)));
+
+        Result<RascunhoExportadoDto> resultado = await Obter(rascunho.Id);
+
+        resultado.IsFailure.Should().BeTrue();
+        await _cenario.Ofertas.DidNotReceiveWithAnyArgs().ListarVivasPorCodigosAsync(default!, default);
+        await _cenario.Modalidades.DidNotReceiveWithAnyArgs().ListarVivosPorCodigosAsync(default!, default);
+        await _cenario.ReferenciasDemograficas.DidNotReceiveWithAnyArgs().ListarVivasPorCodigosAsync(default!, default);
+        await _cenario.Regras.DidNotReceiveWithAnyArgs().ListarPorReferenciasAsync(default!, default);
+        await _cenario.Pesos.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
     [Fact(DisplayName = "A unidade atual com permissão consulta o cadastro de pesos pela resolução que o documento cita")]
     public async Task UnidadeAtualComPermissao_ConsultaOsPesosPelaResolucaoCitada()
     {

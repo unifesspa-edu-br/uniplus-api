@@ -27,11 +27,11 @@ public sealed class LeituraDosCadastrosDoCatalogoCitados(
     IFatoCandidatoReader dadosDoCandidato)
 {
     internal async Task<CadastrosDoCatalogoCitados> LerAsync(CodigosCitadosPorCadastro codigos, DateOnly dia, CancellationToken cancellationToken) => new(
-        await RegrasAsync(codigos.Regras, cancellationToken).ConfigureAwait(false),
+        await LerRegrasAsync(codigos.Regras, cancellationToken).ConfigureAwait(false),
         await DadosDoDesempateAsync(codigos.Regras, cancellationToken).ConfigureAwait(false),
         await TiposDeAtoAsync(codigos.TiposDeAto, dia, cancellationToken).ConfigureAwait(false));
 
-    private async Task<IReadOnlyDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>> RegrasAsync(
+    internal async Task<IReadOnlyDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>> LerRegrasAsync(
         IReadOnlyList<(string Codigo, string Versao)> citadas, CancellationToken cancellationToken) =>
         citadas.Count == 0
             ? new Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>()

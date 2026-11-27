@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services.ListagemDeInscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
@@ -31,7 +32,7 @@ public sealed class RegistroDaAplicacaoTests
         typeof(ProjetorDaInscricaoAdministrativa), typeof(LeituraDaInscricaoAdministrativa),
         typeof(ProjetorDaListagemDeInscricoes), typeof(ResolvedorDoEscopoDeNotasDoEnem),
         typeof(PreparacaoDaImportacaoDeNotas), typeof(ImportacaoDasNotasDoEnem),
-        typeof(DetalheDoLoteDeNotasMontador), typeof(GeracaoDoEnvioAoInep),
+        typeof(DetalheDoLoteDeNotasMontador), typeof(GeracaoDoEnvioAoInep), typeof(LeituraDasVagasDoRascunho), typeof(ExportacaoDoRascunho),
     };
 
     [Theory]
@@ -71,6 +72,7 @@ public sealed class RegistroDaAplicacaoTests
         servicos.AddOptions();
         servicos.AddSelecaoApplication();
         PortasDaInscricaoDeTeste.AdicionarA(servicos);
+        PortasDoRascunhoDeTeste.AdicionarA(servicos);
         return servicos;
     }
 }

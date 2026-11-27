@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -21,6 +22,13 @@ public sealed record VagasLidas(VagasDeclaradas Vagas, OrigemNoDocumento Origem)
             ? LerBloco(vagas, cadastros)
             : new(new([], null, null, null, null, null), OrigemNoDocumento.Identidade);
     }
+
+    /// <summary>
+    /// As distribuições que a leitura adotou, cada uma com a posição que tinha na lista enviada; a que a leitura recusou não aparece.
+    /// </summary>
+    public IReadOnlyList<(int PosicaoNoDocumento, ConfiguracaoDistribuicaoVagas Distribuicao)> DistribuicoesNaPosicaoDoDocumento() =>
+        [.. Vagas.DistribuicaoVagas.Select((distribuicao, canonica) =>
+            (Origem.PosicaoDeOrigem(LeituraDasDistribuicoesDeVagas.Lista, canonica), distribuicao))];
 
     private static VagasLidas LerBloco(VagasNoDocumento vagas, CadastrosCitadosNoDocumento cadastros)
     {

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using System.Text.Json.Nodes;
 
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 using NSubstitute;
 
@@ -12,9 +13,11 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -50,7 +53,16 @@ internal sealed class CenarioDoRascunho
             Task.FromResult(Decidir(chamada.ArgAt<ResourceContext?>(1))));
         Geo.ConferirMunicipioAsync(default!, default!, default).ReturnsForAnyArgs(Result<string>.Failure(
             new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município desconhecido do Geo (dublê de teste).")));
+        SemCadastrosDasVagas();
         PodeConfigurarEm(Ceps);
+    }
+
+    private void SemCadastrosDasVagas()
+    {
+        Ofertas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs([]);
+        Modalidades.ListarVivosPorCodigosAsync(default!, default).ReturnsForAnyArgs([]);
+        ReferenciasDemograficas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs([]);
+        Regras.ListarPorReferenciasAsync(default!, default).ReturnsForAnyArgs([]);
     }
 
     public IEsquemaDoDocumentoDaConfiguracao Esquema { get; } = Substitute.For<IEsquemaDoDocumentoDaConfiguracao>();
@@ -95,8 +107,35 @@ internal sealed class CenarioDoRascunho
 
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
-    public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos), new DescricaoDaParticipacaoDaReserva(), new DescricaoDePesosPorAreaDoEnem(Pesos, Esquema)]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
+    public IOfertaCursoReader Ofertas { get; } = Substitute.For<IOfertaCursoReader>();
+
+    public IModalidadeReader Modalidades { get; } = Substitute.For<IModalidadeReader>();
+
+    public IReferenciaReservaDemograficaReader ReferenciasDemograficas { get; } = Substitute.For<IReferenciaReservaDemograficaReader>();
+
+    public IRegraCatalogoReader Regras { get; } = Substitute.For<IRegraCatalogoReader>();
+
+    public FakeTimeProvider Relogio { get; } = new();
+
+    public LeituraDasVagasDoRascunho LeituraDasVagas => new(
+        new LeituraDosCadastrosDasVagasCitados(
+            Ofertas,
+            Modalidades,
+            ReferenciasDemograficas,
+            Substitute.For<ICondicaoAtendimentoReader>(),
+            Substitute.For<IRecursoAcessibilidadeReader>(),
+            Substitute.For<ITipoDeficienciaReader>(),
+            Substitute.For<IBaseLegalDoFadaReader>()),
+        new LeituraDosCadastrosDoCatalogoCitados(Regras, Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IFatoCandidatoReader>()),
+        Relogio);
+
+    public ExportacaoDoRascunho Exportacao => new(
+        Unidades,
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos), new DescricaoDaParticipacaoDaReserva(), new DescricaoDePesosPorAreaDoEnem(Pesos, Esquema)],
+        LeituraDasVagas,
+        Resolucao,
+        new DescricaoDaLocalidade(Geo),
+        Esquema);
 
     public CenarioDoRascunho GeoConhece(string codigoIbge, string nome)
     {

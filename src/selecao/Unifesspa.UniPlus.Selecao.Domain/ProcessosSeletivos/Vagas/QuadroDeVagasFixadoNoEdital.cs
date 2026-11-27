@@ -10,5 +10,8 @@ public sealed record QuadroDeVagasFixadoNoEdital(
     IReadOnlyList<VagasDaModalidade> VagasRetiradasNoAjuste)
     : QuadroDeVagas(Vagas, TotalDeVagasDoEdital)
 {
+    /// <summary>As vagas retiradas no ajuste na ordem ordinal do código da modalidade.</summary>
+    public IReadOnlyList<VagasDaModalidade> VagasRetiradasPeloCodigoDaModalidade() => PeloCodigoDaModalidade(VagasRetiradasNoAjuste);
+
     public int TotalDeVagasRetiradasNoAjuste => VagasRetiradasNoAjuste.Sum(static vagas => vagas.Quantidade);
 }

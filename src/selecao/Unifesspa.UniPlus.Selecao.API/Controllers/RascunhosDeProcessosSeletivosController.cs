@@ -37,6 +37,12 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
 {
     private const string DescricaoDoETag = "A revisão do rascunho que a resposta descreve, para o If-Match da próxima substituição ou exclusão.";
 
+    private const string DescricaoDaExportacao =
+        "Exporta o documento do rascunho. Traz o id do rascunho na raiz e, ao lado dos códigos, os descritivos só de leitura que o Uni+ "
+        + "já guarda nos cadastros. Em cada distribuição de vagas, traz o quadro de vagas por modalidade e o total de vagas do edital, "
+        + "calculados dos cadastros no momento da exportação; a distribuição que não puder ser calculada permanece no documento sem esses dois campos. O descritivo cujo cadastro "
+        + "não resolve também é omitido. Não traz versao nem publicadoEm, que não existem antes da publicação.";
+
     private const string DescricaoDoCorpoAcimaDoLimiteNaCriacao =
         "O corpo passa de 2 MiB (uniplus.idempotency.body_muito_grande), ou o documento passa do limite de profundidade ou de nós do formato "
         + "(uniplus.selecao.documento_da_configuracao.acima_do_limite).";
@@ -125,11 +131,14 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// prova no Geo (omitido se o Geo não responde ou se há mais municípios distintos que o limite), o quadro de pesos por área do
     /// Enem da resolução citada na classificação e o rótulo de cada valor de código e da participação da reserva de cada chamada.
     /// O descritivo cujo cadastro não resolve é omitido. Não traz <c>versao</c> nem <c>publicadoEm</c>, que não existem
-    /// antes da publicação, nem o quadro de vagas calculado, que ainda não é preenchido. O <c>ETag</c> da resposta identifica a
-    /// revisão exportada.
+    /// antes da publicação. Em cada distribuição de vagas traz o quadro por modalidade e o total de vagas do edital, calculados
+    /// dos cadastros vivos no momento da exportação; a distribuição que não pode ser calculada permanece no documento sem esses dois campos. O <c>ETag</c> da resposta
+    /// identifica a revisão exportada.
     /// </summary>
     [HttpGet("{id:guid}")]
     [EndpointName("ObterRascunhoDeProcessoSeletivo")]
+    [EndpointSummary("Exporta o documento do rascunho")]
+    [EndpointDescription(DescricaoDaExportacao)]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "rascunho-de-processo-seletivo", Versions = [1])]
     [RespostaJson(EsquemaPublicadoDoDocumento.Componente)]

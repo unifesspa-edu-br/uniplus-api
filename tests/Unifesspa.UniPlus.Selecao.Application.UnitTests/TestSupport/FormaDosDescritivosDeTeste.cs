@@ -69,7 +69,15 @@ internal static class FormaDosDescritivosDeTeste
             ["codigo"] = FormaDeTeste.Valor(),
             ["descricao"] = FormaDeTeste.Valor(somenteLeitura),
         })),
+        ["quadro"] = Quadro(somenteLeitura),
+        ["totalDeVagasDoEdital"] = FormaDeTeste.Valor(somenteLeitura, "integer"),
     });
+
+    private static FormaDoNo Quadro(bool somenteLeitura) => FormaDeTeste.Lista(FormaDeTeste.Objeto(new()
+    {
+        ["modalidadeCodigo"] = FormaDeTeste.Valor(),
+        ["quantidade"] = FormaDeTeste.Valor(false, "integer"),
+    }), somenteLeitura);
 
     private static FormaDoNo Atendimento(bool somenteLeitura) => FormaDeTeste.Objeto(new()
     {

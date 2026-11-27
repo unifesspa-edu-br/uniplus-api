@@ -4,12 +4,11 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
-using NSubstitute;
-
-using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DescricaoDeModalidadesTests
 {
@@ -20,14 +19,14 @@ public sealed class DescricaoDeModalidadesTests
             { "codigo": "MODALIDADE_REMOVIDA" } ] } ] }
         """;
 
-    private readonly IModalidadeReader _modalidades = Substitute.For<IModalidadeReader>();
+    private readonly Dictionary<string, ModalidadeNoCadastro> _modalidades = new(StringComparer.Ordinal)
+    {
+        ["AMPLA_CONCORRENCIA"] = Modalidade("AMPLA_CONCORRENCIA", "Vagas sem reserva"),
+        ["SEM_DESCRICAO"] = Modalidade("SEM_DESCRICAO", null),
+    };
 
-    public DescricaoDeModalidadesTests() =>
-        _modalidades.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns(
-            [Modalidade("AMPLA_CONCORRENCIA", "Vagas sem reserva"), Modalidade("SEM_DESCRICAO", null)]);
-
-    private static ModalidadeView Modalidade(string codigo, string? descricao) => new(
-        Guid.CreateVersion7(), codigo, descricao, "AMPLA", "VAGAS_PROPRIAS", null, null, null, null, null, PredicadoDnf.SemClausula, null, null);
+    private static ModalidadeNoCadastro Modalidade(string codigo, string? descricao) =>
+        ModalidadesNoCadastroDeTeste.Da(codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = descricao };
 
     [Fact(DisplayName = "A descrição da modalidade entra logo depois do código, sem alterar a quantidade declarada")]
     public async Task Descrever_ModalidadeComDescricao_TrazADescricaoAoLadoDoCodigo()
@@ -48,13 +47,5 @@ public sealed class DescricaoDeModalidadesTests
         JsonArray modalidades = documento["distribuicaoVagas"]![0]!["modalidades"]!.AsArray();
         DocumentoDescritoDeTeste.Chaves(modalidades[1]).Should().Equal("codigo");
         DocumentoDescritoDeTeste.Chaves(modalidades[2]).Should().Equal("codigo");
-    }
-
-    [Fact(DisplayName = "O cadastro de modalidades é lido uma vez para o documento inteiro")]
-    public async Task Descrever_VariasModalidades_LeOCadastroUmaVez()
-    {
-        await DocumentoDescritoDeTeste.DescreverAsync(DocumentoComModalidades, new DescricaoDeModalidades(_modalidades));
-
-        await _modalidades.Received(1).ListarVivosAsync(Arg.Any<CancellationToken>());
     }
 }
