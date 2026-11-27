@@ -41,7 +41,7 @@ public sealed class EtapaVinculadaAFaseTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Etapa que começa antes da fase é recusada, nomeando etapa e fase")]
+    [Fact(DisplayName = "Etapa que começa antes da fase é recusada sem repetir o nome da etapa nem o código da fase")]
     public void EtapaComecaAntesDaFase_Recusada()
     {
         ProcessoSeletivo processo = ProcessoComFaseDeMarco();
@@ -52,10 +52,10 @@ public sealed class EtapaVinculadaAFaseTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComecaAntesDaFase");
-        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+        resultado.Error.Message.Should().Contain("período da fase").And.NotContain("Prova objetiva").And.NotContain("AVALIACAO").And.NotContain("2027");
     }
 
-    [Fact(DisplayName = "Etapa que termina depois da fase é recusada, nomeando etapa e fase")]
+    [Fact(DisplayName = "Etapa que termina depois da fase é recusada sem repetir o nome da etapa nem o código da fase")]
     public void EtapaTerminaDepoisDaFase_Recusada()
     {
         ProcessoSeletivo processo = ProcessoComFaseDeMarco();
@@ -66,7 +66,7 @@ public sealed class EtapaVinculadaAFaseTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaTerminaDepoisDaFase");
-        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+        resultado.Error.Message.Should().Contain("período da fase").And.NotContain("Prova objetiva").And.NotContain("AVALIACAO").And.NotContain("2027");
     }
 
     [Fact(DisplayName = "Etapa que transborda dos dois lados é recusada pelo início, sem somar mensagens")]
@@ -154,7 +154,7 @@ public sealed class EtapaVinculadaAFaseTests
             "a etapa herda da fase o extremo que não declarou, e herdá-lo aqui produziria uma "
             + "janela que termina antes de começar");
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaForaDaJanelaDaFase");
-        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+        resultado.Error.Message.Should().Contain("período da fase").And.NotContain("Prova objetiva").And.NotContain("AVALIACAO").And.NotContain("2027");
     }
 
     [Fact(DisplayName = "Fase de meia janela confere o extremo que declarou")]
@@ -188,7 +188,7 @@ public sealed class EtapaVinculadaAFaseTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComecaAntesDaFase");
-        resultado.Error.Message.Should().Contain("Prova objetiva").And.Contain("AVALIACAO");
+        resultado.Error.Message.Should().Contain("período da fase").And.NotContain("Prova objetiva").And.NotContain("AVALIACAO").And.NotContain("2027");
     }
 
     // ── A fase também se move ──

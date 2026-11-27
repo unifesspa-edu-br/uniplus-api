@@ -48,7 +48,7 @@ public static class EtapasNoCronograma
                 .. cronograma.Fases
                     .Select(static (fase, posicao) => (fase, posicao))
                     .Where(par => par.fase.AgrupaEtapas && !cronograma.CodigoAmbiguo(par.fase.Codigo) && !AlgumaEtapaAcontece(etapas, par.fase))
-                    .Select(static par => CronogramaDoProcesso.NaFase(par.posicao, "faseCanonicaId", AvaliacaoSemEtapa(par.fase.Codigo))),
+                    .Select(static par => CronogramaDoProcesso.NaFase(par.posicao, "faseCanonicaId", AvaliacaoSemEtapa())),
             ];
     }
 
@@ -71,21 +71,21 @@ public static class EtapasNoCronograma
         "Cronograma: a etapa acontece dentro do período da fase que a abriga",
         ConferirJanelaDasEtapas(cronograma, etapas).Count == 0 && !etapas.Etapas.Any(etapa => JanelaSemComoConferir(cronograma, etapa)));
 
-    internal static DomainError EtapaSemFaseNoCronograma(string nomeDaEtapa) => new(
+    internal static DomainError EtapaSemFaseNoCronograma() => new(
         "ProcessoSeletivo.EtapaSemFaseNoCronograma",
-        $"A etapa \"{nomeDaEtapa}\" declara uma fase que não está no cronograma deste processo.");
+        "Há etapa que declara uma fase que não está no cronograma deste processo.");
 
     private static List<FieldError> EtapasComFaseForaDoCronograma(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
         .. etapas.Etapas
             .Select(static (etapa, posicao) => (etapa, posicao))
             .Where(par => par.etapa.FaseCodigo is { } codigo && !cronograma.TemFaseDeCodigo(codigo))
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma(par.etapa.Nome))),
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseNoCronograma())),
     ];
 
-    private static DomainError AvaliacaoSemEtapa(string codigoDaFase) => new(
+    private static DomainError AvaliacaoSemEtapa() => new(
         "ProcessoSeletivo.AvaliacaoSemEtapa",
-        $"A fase '{codigoDaFase}' agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
+        "Fase que agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
 
     // A fase que a leitura recusou pode ser a da etapa: o que a regra não julga deixa o item pendente, não aprovado.
     private static bool FaseDaEtapaSemComoConferir(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, EtapaDeclarada etapa) =>
@@ -111,35 +111,35 @@ public static class EtapasNoCronograma
         fase is null
             ? []
             : [
-                .. Causa(posicao, "inicio", etapa.Janela.Inicio is { } inicio ? CausaDoInicio(etapa, fase, inicio) : null),
-                .. Causa(posicao, "fim", etapa.Janela.Fim is { } fim ? CausaDoFim(etapa, fase, fim) : null),
+                .. Causa(posicao, "inicio", etapa.Janela.Inicio is { } inicio ? CausaDoInicio(fase, inicio) : null),
+                .. Causa(posicao, "fim", etapa.Janela.Fim is { } fim ? CausaDoFim(fase, fim) : null),
             ];
 
     private static IEnumerable<FieldError> Causa(int posicao, string campo, DomainError? erro) =>
         erro is null ? [] : [EtapasDoProcesso.NaEtapa(posicao, campo, erro)];
 
     // A etapa que declara só um extremo herda o outro da fase, e por isso cada extremo é conferido contra a janela inteira.
-    private static DomainError? CausaDoInicio(EtapaDeclarada etapa, FaseDeclarada fase, DateTimeOffset inicio) =>
+    private static DomainError? CausaDoInicio(FaseDeclarada fase, DateTimeOffset inicio) =>
         fase.Janela.PosicaoDe(inicio) switch
         {
             PosicaoNaJanela.Antes => new DomainError(
                 "ProcessoSeletivo.EtapaComecaAntesDaFase",
-                $"A etapa \"{etapa.Nome}\" começa em {inicio:O}, antes da fase {fase.Codigo} ({fase.Janela.Inicio:O}) — a etapa acontece dentro da fase."),
+                "A etapa começa antes do período da fase que a abriga: a etapa acontece dentro do período da fase."),
             PosicaoNaJanela.Depois => new DomainError(
                 "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
-                $"A etapa \"{etapa.Nome}\" começa em {inicio:O}, depois de a fase {fase.Codigo} ter terminado ({fase.Janela.Fim:O}) — a etapa acontece dentro da fase."),
+                "A etapa começa depois do fim do período da fase que a abriga: a etapa acontece dentro do período da fase."),
             _ => null,
         };
 
-    private static DomainError? CausaDoFim(EtapaDeclarada etapa, FaseDeclarada fase, DateTimeOffset fim) =>
+    private static DomainError? CausaDoFim(FaseDeclarada fase, DateTimeOffset fim) =>
         fase.Janela.PosicaoDe(fim) switch
         {
             PosicaoNaJanela.Depois => new DomainError(
                 "ProcessoSeletivo.EtapaTerminaDepoisDaFase",
-                $"A etapa \"{etapa.Nome}\" termina em {fim:O}, depois da fase {fase.Codigo} ({fase.Janela.Fim:O}) — a etapa acontece dentro da fase."),
+                "A etapa termina depois do período da fase que a abriga: a etapa acontece dentro do período da fase."),
             PosicaoNaJanela.Antes => new DomainError(
                 "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
-                $"A etapa \"{etapa.Nome}\" termina em {fim:O}, antes de a fase {fase.Codigo} ter começado ({fase.Janela.Inicio:O}) — a etapa acontece dentro da fase."),
+                "A etapa termina antes do início do período da fase que a abriga: a etapa acontece dentro do período da fase."),
             _ => null,
         };
 

@@ -84,7 +84,7 @@ internal static class AplicacaoDeModeloDeFormulario
         erros.AddRange(CodigosDeOutrosFormularios(configuracao, copia, existente));
         erros.AddRange(copia.DerivacoesNovas
             .Where(static c => DerivacoesDaOferta.Deriva(c.CodigoFato))
-            .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao(c.CodigoFato))));
+            .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao())));
 
         erros.AddRange(DerivacoesRepetidas(configuracao, copia));
         return erros;

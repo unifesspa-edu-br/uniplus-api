@@ -99,7 +99,7 @@ internal sealed class FasesEmMontagem
         FaseCronogramaInput input, int indice, InsumosDaFase insumos, CancellationToken cancellationToken)
     {
         Result<ProdutosConferidos<ProdutoDaFase>> produtos = await _produtos
-            .MontarAsync(input, indice, insumos.Canonica.Codigo, cancellationToken).ConfigureAwait(false);
+            .MontarAsync(input, indice, cancellationToken).ConfigureAwait(false);
         if (produtos.IsFailure)
         {
             return Result.ValidationFailure(produtos.Errors);
@@ -139,7 +139,7 @@ internal sealed class FasesEmMontagem
         {
             CriarFase(input, indice, insumos, produtos.Produtos, regraRecurso, regraDeHomologacao);
         }
-        else if (ConferenciaDaRegraDeHomologacao.ResultadoAusente(insumos.Canonica.Codigo, regraDeHomologacao) is { } resultadoAusente)
+        else if (ConferenciaDaRegraDeHomologacao.ResultadoAusente(regraDeHomologacao) is { } resultadoAusente)
         {
             _recusas.Add(ComIndice(resultadoAusente, indice));
         }
@@ -168,7 +168,7 @@ internal sealed class FasesEmMontagem
         return canonica is null
             ? InterrupcaoDaEdicao.Com<InsumosDaFase>($"fases[{indice}].faseCanonicaId", new DomainError(
                 FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
-                $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."))
+                "Fase canônica não encontrada ou não está mais viva."))
             : await ResolverInsumosDaFaseAsync(input, indice, canonica, cancellationToken).ConfigureAwait(false);
     }
 
@@ -205,7 +205,7 @@ internal sealed class FasesEmMontagem
         return unidade is null
             ? InterrupcaoDaEdicao.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
                 FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
-                $"Unidade responsável {id} da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
+                $"Unidade responsável da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
             : Result<UnidadeResponsavelSnapshot?>.Success(unidade);
     }
 

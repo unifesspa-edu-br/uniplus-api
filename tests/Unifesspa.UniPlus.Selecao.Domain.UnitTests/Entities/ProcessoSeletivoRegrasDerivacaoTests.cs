@@ -100,6 +100,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
         resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
+        resultado.Error.Message.Should().NotContain(codigoFato);
     }
 
     [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada na conferência de pré-canonicalização")]
@@ -174,6 +175,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado);
+        resultado.Error.Message.Should().NotContain(Derivado);
     }
 
     [Fact(DisplayName = "Ordem de regra duplicada na mesma configuração é recusada")]

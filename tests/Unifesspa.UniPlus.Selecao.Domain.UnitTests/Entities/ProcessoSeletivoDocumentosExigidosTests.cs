@@ -39,11 +39,13 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
+        Guid faseDoPedido = Guid.Parse("f1a5e000-0000-7000-8000-00000000fa5e");
 
-        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(Guid.CreateVersion7()));
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(faseDoPedido));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
+        resultado.Error.Message.Should().NotContainEquivalentOf(faseDoPedido.ToString()).And.NotContainEquivalentOf("f1a5e000");
     }
 
     [Fact(DisplayName = "Fase viva do cronograma do próprio processo é aceita")]

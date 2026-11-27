@@ -98,15 +98,15 @@ public static class RegrasDaColeta
         ConfiguracaoDerivacaoFato configuracao, HashSet<string> codigos, HashSet<string> dosGrupos)
     {
         return DerivacoesDaOferta.Deriva(configuracao.CodigoFato)
-            ? DerivacoesDaOferta.RecusaDeConfiguracao(configuracao.CodigoFato)
+            ? DerivacoesDaOferta.RecusaDeConfiguracao()
             : !codigos.Add(configuracao.CodigoFato)
                 ? new DomainError(
                     ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
-                    $"O fato '{configuracao.CodigoFato}' tem mais de uma configuração de derivação neste processo.")
+                    "Há dado do candidato com mais de uma configuração de derivação neste processo.")
                 : dosGrupos.Contains(configuracao.CodigoFato)
                     ? new DomainError(
                         ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
-                        $"O código '{configuracao.CodigoFato}' já é de um grupo repetível ou de um campo de grupo do processo.")
+                        "O código do dado do candidato já é de um grupo repetível ou de um campo de grupo do processo.")
                     : null;
     }
 

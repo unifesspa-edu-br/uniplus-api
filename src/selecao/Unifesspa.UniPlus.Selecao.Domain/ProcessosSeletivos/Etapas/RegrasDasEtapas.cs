@@ -180,22 +180,22 @@ internal static class RegrasDasEtapas
         return etapasDoEnem.Count == 0 ? null
             : EtapaNotaEnemSemClassificacaoEnem(etapasDoEnem, classificacao)
                 ?? (etapasDoEnem.Count > 1
-                    ? ConjuntoDasEtapas.NotaDoEnemDuplicada([.. etapasDoEnem.Select(static e => e.Nome)])
+                    ? ConjuntoDasEtapas.NotaDoEnemDuplicada()
                     : CausaDaEtapaUnicaDoEnem(etapasDoEnem[0]));
     }
 
     /// <summary>A etapa de nota do ENEM sob classificação que não é a baseada em ENEM calculada pela média ponderada.</summary>
     internal static DomainError? EtapaNotaEnemSemClassificacaoEnem(IEnumerable<EtapaProcesso> etapas, ConfiguracaoClassificacao? classificacao) =>
-        classificacao is { CalculaPelosPesosPorAreaDoEnem: false } && etapas.FirstOrDefault(static e => e.DeclaraNotaDoEnem) is { } etapaDoEnem
+        classificacao is { CalculaPelosPesosPorAreaDoEnem: false } && etapas.Any(static e => e.DeclaraNotaDoEnem)
             ? new DomainError(
                 "ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem",
-                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada.")
+                "Uma etapa tem a nota vinda do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada.")
             : null;
 
     // A banca e o produto da etapa do ENEM são recusados na declaração das etapas, que numera as etapas como o cliente as enviou:
     // repeti-los aqui, por outra lista, daria à mesma etapa dois números.
     private static DomainError? CausaDaEtapaUnicaDoEnem(EtapaProcesso etapaDoEnem) =>
-        !etapaDoEnem.ComponeNota ? ConjuntoDasEtapas.NotaDoEnemNaoCompoeNota(etapaDoEnem.Nome) : null;
+        !etapaDoEnem.ComponeNota ? ConjuntoDasEtapas.NotaDoEnemNaoCompoeNota() : null;
 
     /// <summary>
     /// A etapa é referenciada por configuração que não pertence à fase dela — critério de

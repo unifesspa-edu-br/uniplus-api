@@ -122,6 +122,18 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa");
     }
 
+    [Fact(DisplayName = "A recusa da ampla concorrência negativa não repete as quantidades enviadas")]
+    public void AmplaConcorrenciaNegativa_MensagemSemAsQuantidadesEnviadas()
+    {
+        Dictionary<string, int> retiradas = new(StringComparer.Ordinal) { ["MODALIDADE_FICTICIA_ZETA"] = 90210 };
+
+        Result<QuadroDeVagasDaLeiDeCotas> resultado = CalculadoraQuadroVagasLei12711.Calcular(
+            4731, 0.5m, Demografica(50, 10, 10), retiradas, SemSuplementares);
+
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa");
+        resultado.Error.Message.Should().Be("A ampla concorrência resultaria negativa com as reservas pedidas: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
+    }
+
     [Fact(DisplayName = "CA-08 — conservação: Σ(sub-reservas) + Σ(retiradas) + AC = VO, em todo vetor calculado")]
     public void Quadro_ConservaVagasOfertadas()
     {
@@ -147,6 +159,8 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroChaveColide");
+        resultado.Error.Message.Should().NotContain(ModalidadesFederaisLei12711.Ac)
+            .And.Contain("coincide com uma sub-reserva federal ou com a ampla concorrência");
     }
 
     [Fact(DisplayName = "V8 — art. 11 §único: curso pequeno (VO=3) capa com prioridade LB, sem bloqueio")]

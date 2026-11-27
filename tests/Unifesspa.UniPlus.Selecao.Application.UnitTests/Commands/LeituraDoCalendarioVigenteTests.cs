@@ -94,14 +94,16 @@ public sealed class LeituraDoCalendarioVigenteTests
     public void DiaRepetido_Recusado()
     {
         CalendarioVigenteView vigente = View(
-            new DiaNaoUtilView(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null, null),
-            new DiaNaoUtilView(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null, null));
+            new DiaNaoUtilView(new DateOnly(2031, 3, 17), "NACIONAL", null, null, null, null),
+            new DiaNaoUtilView(new DateOnly(2031, 3, 17), "NACIONAL", null, null, null, null));
 
         Result<CalendarioDiasUteisCongelado?> resultado = LeituraDoCalendarioVigente.Traduzir(vigente);
 
         resultado.IsFailure.Should().BeTrue(
             "dois registros idênticos indicam cadastro inconsistente; absorvê-los esconderia o defeito num artefato imutável");
         resultado.Error!.Code.Should().Be("CalendarioDiasUteisCongelado.DiaDuplicado");
+        resultado.Error.Message.Should().Be("O calendário tem um dia repetido com a mesma abrangência e o mesmo recorte territorial.");
+        resultado.Error.Message.Should().NotContain("2031").And.NotContain("17/03");
     }
 
     [Fact(DisplayName = "Município cujo código IBGE não corresponde à UF é recusado pela verificação do cadastro de cidade")]

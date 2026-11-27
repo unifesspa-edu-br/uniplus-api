@@ -50,11 +50,14 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho();
         cenario.FaseCanonicaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((FaseCanonicaView?)null);
+        Guid faseDoPedido = Guid.Parse("fa5ec0de-0000-7000-8000-00000000fa5e");
 
-        Result resultado = await cenario.DefinirFasesAsync(EntradaDaFase(Guid.CreateVersion7()));
+        Result resultado = await cenario.DefinirFasesAsync(EntradaDaFase(faseDoPedido));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.FaseCanonicaNaoEncontrada");
+        resultado.Error.Message.Should().Be("Fase canônica não encontrada ou não está mais viva.")
+            .And.NotContainEquivalentOf("fa5ec0de");
     }
 
     [Fact(DisplayName = "Handle com fase conforme resolve e persiste — devolve o ETag da sessão (ou null em rascunho)")]

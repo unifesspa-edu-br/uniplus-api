@@ -264,8 +264,15 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
             RetificacaoErrorCodes.CicloNovoNaoDeclarado, RetificacaoErrorCodes.CicloNovoNaoDeclarado,
             RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto, RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto);
         resultado.Recusas.Select(static r => r.Field).Should().AllSatisfy(static campo => campo.Should().BeNull());
-        resultado.Recusas.Select(static r => r.Error.Message).Zip([.. AtosEmOrdem(piso), .. AtosEmOrdem(definitivosDeclarados)])
+        ConferirAtosCitadosSoNoPiso([.. resultado.Recusas.Select(static r => r.Error.Message)], piso, definitivosDeclarados);
+    }
+
+    private static void ConferirAtosCitadosSoNoPiso(string[] mensagens, IdentidadeDoItemDoEdital[] piso, IdentidadeDoItemDoEdital[] declarados)
+    {
+        mensagens.Take(2).Zip(AtosEmOrdem(piso))
             .Should().OnlyContain(static par => par.First.Contains($"'{par.Second}'", StringComparison.Ordinal));
+        mensagens.Skip(2).Zip(AtosEmOrdem(declarados))
+            .Should().OnlyContain(static par => !par.First.Contains(par.Second, StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Fase do lugar do preliminar ausente no cronograma novo não exige declarar o ciclo aqui")]

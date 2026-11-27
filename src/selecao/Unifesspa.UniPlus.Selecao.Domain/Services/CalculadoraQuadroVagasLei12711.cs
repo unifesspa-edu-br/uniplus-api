@@ -64,7 +64,7 @@ public static class CalculadoraQuadroVagasLei12711
         int ampla = vagasOfertadasBase - alocacao.Total - retiradas.Values.Sum();
 
         return ampla < 0
-            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(AmplaConcorrenciaNegativa(ampla, vagasOfertadasBase))
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(AmplaConcorrenciaNegativa())
             : Result<QuadroDeVagasDaLeiDeCotas>.Success(
                 Compor(vagasOfertadasBase, reservaLegalNominal, alocacao, ampla, retiradas, suplementares));
     }
@@ -96,9 +96,9 @@ public static class CalculadoraQuadroVagasLei12711
         }
     }
 
-    private static DomainError AmplaConcorrenciaNegativa(int ampla, int vagasOfertadasBase) => new(
+    private static DomainError AmplaConcorrenciaNegativa() => new(
         "ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa",
-        $"A ampla concorrência resultaria negativa ({ampla}) para {vagasOfertadasBase} vagas ofertadas base: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
+        "A ampla concorrência resultaria negativa com as reservas pedidas: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
 
     /// <summary>
     /// Uma retirada ou suplemento cujo código coincide com uma sub-reserva
@@ -109,13 +109,13 @@ public static class CalculadoraQuadroVagasLei12711
     private static Result ValidarColisaoDeChave(
         IReadOnlyDictionary<string, int> retiradas, IReadOnlyDictionary<string, int> suplementares)
     {
-        string? chaveColidida = retiradas.Keys.Concat(suplementares.Keys)
-            .FirstOrDefault(codigo => ModalidadesFederaisLei12711.CodigosComAc.Contains(codigo, StringComparer.Ordinal));
+        bool colide = retiradas.Keys.Concat(suplementares.Keys)
+            .Any(codigo => ModalidadesFederaisLei12711.CodigosComAc.Contains(codigo, StringComparer.Ordinal));
 
-        return chaveColidida is not null
+        return colide
             ? Result.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.QuadroChaveColide",
-                $"\"{chaveColidida}\" é uma sub-reserva federal ou a ampla concorrência — não pode ser retirada nem suplemento."))
+                "O código de uma retirada ou de um suplemento coincide com uma sub-reserva federal ou com a ampla concorrência — não pode ser retirada nem suplemento."))
             : Result.Success();
     }
 }

@@ -167,7 +167,9 @@ public sealed class FormulariosDoProcessoTests
     {
         ProcessoSeletivo processo = ComHabilitacao();
 
-        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
+        DomainError semFase = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!;
+        semFase.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
+        semFase.Message.Should().NotContain("HABILITACAO");
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
     }
 

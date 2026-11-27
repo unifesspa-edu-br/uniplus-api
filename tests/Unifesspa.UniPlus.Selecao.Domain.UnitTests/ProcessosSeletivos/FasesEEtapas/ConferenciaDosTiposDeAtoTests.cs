@@ -36,13 +36,13 @@ public sealed class ConferenciaDosTiposDeAtoTests
     public void ResultadoSemPapel_FaseEEtapa_RecusaNoPapel()
     {
         CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("COMUNICADO", null), ProdutoDaFase.Criar("RESULTADO_FINAL", null)));
-        EtapasDoProcesso etapas = Etapas(EtapaCom(ProdutoDaEtapa.Criar("RESULTADO_FINAL", null)) with { Ordem = 4 });
+        EtapasDoProcesso etapas = Etapas(EtapaCom(ProdutoDaEtapa.Criar("RESULTADO_FINAL", null)) with { Nome = "Etapa fictícia zeta", Ordem = 4 });
 
         Causas(ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, etapas, Catalogo)).Should().Equal(
             ("fases[0].produtos[1].papel", "ProcessoSeletivo.ResultadoDeclaradoSemPapel"),
             ("etapas[0].produtos[0].papel", "ProcessoSeletivo.ResultadoDeclaradoSemPapel"));
-        ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, etapas, Catalogo)[1].Error.Message
-            .Should().Contain("declarado na etapa 'Redação' (ordem 4)");
+        ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, etapas, Catalogo).Select(static recusa => recusa.Error.Message)
+            .Should().OnlyContain(static mensagem => mensagem == "O tipo de ato declarado é resultado no catálogo e precisa de papel: o resultado sem preliminar é declarado definitivo.");
     }
 
     [Fact(DisplayName = "O resultado com papel e o ato que não é resultado sem papel não são recusados")]
@@ -60,10 +60,12 @@ public sealed class ConferenciaDosTiposDeAtoTests
 
         Causas(ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, Etapas(), Catalogo))
             .Should().Equal(("fases[0].produtos[0].papel", "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado"));
+        ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, Etapas(), Catalogo).Single().Error.Message
+            .Should().Be("O tipo de ato declarado congela a configuração e não pode ser item de resultado: a correção de um resultado não cria versão nova.");
         ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null))), Etapas(), Catalogo).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O tipo único declarado em dois lugares é recusado no campo do produto da segunda ocorrência, citando os lugares")]
+    [Fact(DisplayName = "O tipo único declarado em dois lugares é recusado no campo do produto da segunda ocorrência, sem citar os lugares")]
     public void TipoUnico_DeclaradoDuasVezes_RecusaNoCampoDaSegundaOcorrencia()
     {
         CronogramaDoProcesso cronograma = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null)));
@@ -72,17 +74,16 @@ public sealed class ConferenciaDosTiposDeAtoTests
         IReadOnlyList<FieldError> recusas = ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(cronograma, etapas, Catalogo);
 
         Causas(recusas).Should().Equal(("etapas[0].produtos[0].atoCodigo", "ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez"));
-        recusas.Single().Error.Message.Should().Be("O tipo de ato 'Edital' só pode ser publicado uma vez por processo e está declarado na fase 'RESULTADO' e na etapa 'Redação' (ordem 1).");
+        recusas.Single().Error.Message.Should().Be("O tipo de ato 'Edital' só pode ser publicado uma vez por processo e está declarado mais de uma vez.");
     }
 
-    [Fact(DisplayName = "O tipo único declarado duas vezes no mesmo lugar cita a contagem, e declarado uma vez não é recusado")]
-    public void TipoUnico_MesmoLugar_CitaAContagem()
+    [Fact(DisplayName = "O tipo único declarado duas vezes no mesmo lugar é recusado no segundo produto, e declarado uma vez não é recusado")]
+    public void TipoUnico_MesmoLugar_RecusaNoSegundoProduto()
     {
         CronogramaDoProcesso duas = Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null), ProdutoDaFase.Criar("EDITAL", PapelDaPublicacaoPrevista.Definitivo)));
 
         FieldError causa = ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(duas, Etapas(), Catalogo).Single();
 
-        causa.Error.Message.Should().Contain("na fase 'RESULTADO' (2 vezes)");
         causa.Field.Should().Be("fases[0].produtos[1].atoCodigo");
         ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null))), Etapas(), Catalogo).Should().BeEmpty();
     }
@@ -104,7 +105,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
             new Dictionary<string, string> { ["EDITAL"] = "Edital" }, ["EDITAL"]);
 
         ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null))), Etapas(), comRegistrado)
-            .Single().Should().Match<FieldError>(static causa => causa.Field == null && causa.Error.Message.Contains("no ato já registrado do processo", StringComparison.Ordinal));
+            .Single().Should().Match<FieldError>(static causa => causa.Field == null && causa.Error.Message.EndsWith("está declarado mais de uma vez.", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Os três itens saem nesta ordem, verdes quando conformes e vermelhos cada um com a sua causa")]
