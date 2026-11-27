@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Prova, contra Postgres real, que a corrida entre a conferência de unicidade e a gravação da Unidade vira a
@@ -157,7 +158,7 @@ public sealed class GravacaoDaUnidadeCorridaTests : IClassFixture<UnidadeDbFixtu
     private static Task<Result> AtualizarComConferenciaObsoletaAsync(UniPlusDbContext ctx, AtualizarUnidadeCommand command)
     {
         (ConferenciaDoCadastroDaUnidade conferencia, GravacaoDaUnidade gravacao) = MontarComConferenciaObsoleta(ctx);
-        return AtualizarUnidadeCommandHandler.Handle(command, conferencia, gravacao, TimeProvider.System, CancellationToken.None);
+        return AtualizarUnidadeCommandHandler.Handle(command, conferencia, gravacao, new ResolvedorFusoDeTeste(), TimeProvider.System, CancellationToken.None);
     }
 
     private static (ConferenciaDoCadastroDaUnidade Conferencia, GravacaoDaUnidade Gravacao) MontarComConferenciaObsoleta(

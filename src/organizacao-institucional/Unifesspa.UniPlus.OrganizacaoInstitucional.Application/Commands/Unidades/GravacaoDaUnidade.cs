@@ -45,9 +45,9 @@ public sealed class GravacaoDaUnidade
     }
 
     internal async Task<Result> GravarAtualizacaoAsync(
-        Unidade unidade, AtualizarUnidadeCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
+        Unidade unidade, AtualizarUnidadeCommand command, DateOnly dia, CancellationToken cancellationToken)
     {
-        Result aplicada = AplicarAtualizacao(unidade, command, agora);
+        Result aplicada = AplicarAtualizacao(unidade, command, dia);
         if (aplicada.IsFailure)
         {
             return aplicada;
@@ -106,12 +106,12 @@ public sealed class GravacaoDaUnidade
             _ => null,
         };
 
-    private static Result AplicarAtualizacao(Unidade unidade, AtualizarUnidadeCommand command, DateTimeOffset agora) =>
+    private static Result AplicarAtualizacao(Unidade unidade, AtualizarUnidadeCommand command, DateOnly dia) =>
         unidade.Atualizar(
             command.Nome,
             new MudancaDeIdentificadores(
                 command.Identificadores(),
-                DateOnly.FromDateTime(agora.UtcDateTime),
+                dia,
                 command.MotivoMudancaIdentificador),
             command.Cidade(),
             command.VigenciaFim,
