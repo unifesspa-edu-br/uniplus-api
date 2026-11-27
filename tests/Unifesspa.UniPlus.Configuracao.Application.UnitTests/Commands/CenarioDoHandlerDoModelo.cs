@@ -79,16 +79,23 @@ internal sealed class CenarioDoHandlerDoModelo
     }
 
     public Task<Result<Guid>> CriarAsync(ConteudoDoModeloInput conteudo, string? tipo = null) =>
-        CriarModeloFormularioCommandHandler.Handle(
-            new CriarModeloFormularioCommand("HABILITACAO_MEDICINA", EntradaDeOutraFaseObrigatoria, new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
-            Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
+        CriarAsync("HABILITACAO_MEDICINA", new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo);
 
-    public Task<Result> AtualizarAsync(ModeloFormulario existente, ConteudoDoModeloInput conteudo, string? tipo)
+    public Task<Result<Guid>> CriarAsync(string codigo, DescritivoDoModeloInput descritivo, ConteudoDoModeloInput conteudo) =>
+        CriarAsync(new CriarModeloFormularioCommand(codigo, EntradaDeOutraFaseObrigatoria, descritivo, conteudo));
+
+    public Task<Result<Guid>> CriarAsync(CriarModeloFormularioCommand comando) =>
+        CriarModeloFormularioCommandHandler.Handle(comando, Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
+
+    public Task<Result> AtualizarAsync(ModeloFormulario existente, ConteudoDoModeloInput conteudo, string? tipo) =>
+        AtualizarAsync(existente, new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo);
+
+    public Task<Result> AtualizarAsync(ModeloFormulario existente, DescritivoDoModeloInput descritivo, ConteudoDoModeloInput conteudo)
     {
         ArgumentNullException.ThrowIfNull(existente);
         Repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         return AtualizarModeloFormularioCommandHandler.Handle(
-            new AtualizarModeloFormularioCommand(existente.Id, new DescritivoDoModeloInput("Habilitação Medicina", null, tipo), conteudo),
+            new AtualizarModeloFormularioCommand(existente.Id, descritivo, conteudo),
             Repository, Fatos, Termos, Tipos, UnitOfWork, CancellationToken.None);
     }
 
@@ -98,7 +105,7 @@ internal sealed class CenarioDoHandlerDoModelo
         ItemDoModelo item = new(
             "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, tipo,
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação Medicina", null, tipo), DeOutraFaseObrigatoria,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }
@@ -122,6 +129,20 @@ internal sealed class CenarioDoHandlerDoModelo
             Grupos = [EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")
                 .ComOcorrencias(1, 10).ComObrigatoriedade("SEMPRE").ComCampos(campos).Construir()],
         };
+
+    /// <summary>O item que a leitura recusa: a obrigatoriedade não é uma das conhecidas.</summary>
+    public static FatoColetadoInput ItemNaoLido(string fato, int ordem) => Montar(fato, ordem).ComObrigatoriedade("INEXISTENTE").Construir();
+
+    /// <summary>O item que a leitura aceita e o domínio recusa: o rótulo está vazio.</summary>
+    public static FatoColetadoInput ItemSemRotulo(string fato, int ordem, string tipo = "SIM_OU_NAO") =>
+        Montar(fato, ordem, tipo).ComRotulo(string.Empty).Construir();
+
+    /// <summary>O conteúdo com a segunda página de código dado, no lugar da revisão.</summary>
+    public static ConteudoDoModeloInput ComSegundaPagina(ConteudoDoModeloInput conteudo, string codigo)
+    {
+        ArgumentNullException.ThrowIfNull(conteudo);
+        return conteudo with { Paginas = [conteudo.Paginas![0], EntradaDaPaginaDoFormularioDeTeste.Secao(codigo, 1).ComTitulo("Outra").Construir()] };
+    }
 
     public static FatoColetadoInput Campo(string fato, int ordem, string tipo = "SIM_OU_NAO") => Montar(fato, ordem, tipo).NaSecao(null).Construir();
 

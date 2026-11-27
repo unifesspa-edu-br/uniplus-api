@@ -16,14 +16,20 @@ public sealed record ConjuntoDeDocumentosDoModelo(
     /// <summary>O caminho do conjunto no conteúdo do modelo.</summary>
     public const string Caminho = "conjuntoDeDocumentos";
 
+    /// <summary>O caminho da lista de documentos avulsos, sem a posição.</summary>
+    public const string ListaDosDocumentos = $"{Caminho}.documentosExigidos";
+
+    /// <summary>O caminho da lista de grupos de documentos, sem a posição.</summary>
+    public const string ListaDosGrupos = $"{Caminho}.gruposDeDocumentos";
+
     /// <summary>O modelo que não exige documento.</summary>
     public static ConjuntoDeDocumentosDoModelo Nenhum { get; } = new([], []);
 
     /// <summary>O caminho do documento avulso na posição dada, no conteúdo do modelo.</summary>
-    public static string CaminhoDoDocumento(int documento) => $"{Caminho}.documentosExigidos[{documento}]";
+    public static string CaminhoDoDocumento(int documento) => $"{ListaDosDocumentos}[{documento}]";
 
     /// <summary>O caminho do grupo de documentos na posição dada, no conteúdo do modelo.</summary>
-    public static string CaminhoDoGrupo(int grupo) => $"{Caminho}.gruposDeDocumentos[{grupo}]";
+    public static string CaminhoDoGrupo(int grupo) => $"{ListaDosGrupos}[{grupo}]";
 
     /// <summary>O caminho do documento na posição dada do grupo, no conteúdo do modelo.</summary>
     public static string CaminhoDoDocumentoDoGrupo(int grupo, int documento) => $"{CaminhoDoGrupo(grupo)}.documentos[{documento}]";

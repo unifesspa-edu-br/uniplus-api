@@ -14,10 +14,11 @@ public static class FormaDaPagina
 
     /// <summary>
     /// Código e título obrigatórios e limitados, ordem não negativa, descrição e aviso limitados, e
-    /// exibição condicional só na seção — o bloco de sistema aparece sempre.
+    /// exibição condicional só na seção — o bloco de sistema aparece sempre. O tipo nulo é o que não se leu: só a
+    /// regra da exibição, que depende dele, deixa de ser conferida.
     /// </summary>
     public static List<FieldError> Conferir(
-        string? codigo, int ordem, TipoPaginaFormulario tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
+        string? codigo, int ordem, TipoPaginaFormulario? tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
     [
         .. RecusasDoCodigo(codigo),
         .. RecusasDaOrdem(ordem),
@@ -73,9 +74,9 @@ public static class FormaDaPagina
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaExibicao(TipoPaginaFormulario tipo, bool temExibicao)
+    private static IEnumerable<FieldError> RecusasDaExibicao(TipoPaginaFormulario? tipo, bool temExibicao)
     {
-        if (temExibicao && tipo != TipoPaginaFormulario.Secao)
+        if (temExibicao && tipo is { } lido && lido != TipoPaginaFormulario.Secao)
         {
             yield return new("exibicao", new DomainError(
                 EstruturaFormularioErrorCodes.ExibicaoForaDeSecao,

@@ -304,7 +304,7 @@ public static class SementePsrMedicina2027
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
         ModeloFormulario modelo = Declaracao.Exigir(
-            ModeloFormulario.Criar(codigo, nome, descricao, declaracao, TipoProcessoCodigo, conteudo, derivacoes), $"modelo {codigo}");
+            ModeloFormulario.Criar(codigo, new DescritivoDoModelo(nome, descricao, TipoProcessoCodigo), declaracao, conteudo, derivacoes), $"modelo {codigo}");
         Declaracao.Exigir(modelo.Ativar(), $"ativação do modelo {codigo}");
         return SqlDaSemente.ComandoDoModelo(Id(TabelaModelo, n), modelo, Declaracao);
     }

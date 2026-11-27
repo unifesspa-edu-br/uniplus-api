@@ -120,7 +120,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext configuracao = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ModeloFormulario modelo = await configuracao.ModelosFormulario.SingleAsync(m => m.Id == modeloId);
-        modelo.Atualizar("Editado", null, null, conteudo, new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal))
+        modelo.Atualizar(new DescritivoDoModelo("Editado", null, null), conteudo, new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal))
             .IsSuccess.Should().BeTrue();
         await configuracao.SaveChangesAsync();
     }
@@ -144,7 +144,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     private async Task<Guid> SemearModeloAsync(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Modelo", null, declaracao, null, conteudo,
+            $"MODELO_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), new DescritivoDoModelo("Modelo", null, null), declaracao, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

@@ -27,7 +27,7 @@ public sealed class ModeloFormularioPressupostosTests
         new("Habilitação", [Dados, Revisao], itens, [], pressupostos, grupos);
 
     private static Result<ModeloFormulario> Criar(DeclaracaoDoFormulario declaracao, ConteudoDoModelo conteudo) =>
-        ModeloFormulario.Criar("HABILITACAO_MEDICINA", "Habilitação Medicina 2027", null, declaracao, "REGULAR_UNIFICADO", conteudo, SemDerivacoes);
+        ModeloFormulario.Criar("HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação Medicina 2027", null, "REGULAR_UNIFICADO"), declaracao, conteudo, SemDerivacoes);
 
     [Fact(DisplayName = "Modelo que serve à fase de inscrição não tem pressupostos")]
     public void Inscricao_ComPressuposto_Recusa()

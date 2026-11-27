@@ -30,12 +30,6 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static readonly CampoDeCodigo CampoCodigo = new(
         "Código do modelo", CodigoMaxLength, ModeloFormularioErrorCodes.CodigoObrigatorio, ModeloFormularioErrorCodes.CodigoFormatoInvalido);
-    private static readonly CampoDeCodigo CampoTipoProcesso = new(
-        "Código do tipo de processo", TipoProcessoCodigoMaxLength, ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco,
-        ModeloFormularioErrorCodes.TipoProcessoCodigoFormatoInvalido);
-
-    /// <summary>O caminho do descritivo — nome, descrição e tipo de processo — no corpo da escrita, onde as recusas dele se apontam.</summary>
-    public const string CaminhoDoDescritivo = "descritivo";
 
     private const string CaminhoDaDeclaracao = "declaracao";
 
@@ -70,49 +64,35 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     /// <param name="derivacoes">As dependências de cada derivado por regra do catálogo, para o grafo.</param>
     public static Result<ModeloFormulario> Criar(
         string? codigo,
-        string? nome,
-        string? descricao,
+        DescritivoDoModelo descritivo,
         DeclaracaoDoFormulario? declaracao,
-        string? tipoProcessoCodigo,
         ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        ArgumentNullException.ThrowIfNull(conteudo);
-        ArgumentNullException.ThrowIfNull(derivacoes);
-
-        ConteudoDoModelo normalizado = conteudo.NaFormaGravada();
-        List<FieldError> erros = ConferirCadastro(codigo, nome, descricao, tipoProcessoCodigo, declaracao);
-        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(declaracao, normalizado, derivacoes));
+        List<FieldError> erros = ConferirCriacao(codigo, descritivo, declaracao, conteudo, derivacoes, conteudoPorInteiro: true);
         if (erros.Count > 0)
         {
             return Result<ModeloFormulario>.ValidationFailure(erros);
         }
 
         ModeloFormulario modelo = Declarado(codigo!, declaracao!.Value);
-        modelo.Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
+        modelo.Aplicar(descritivo, conteudo.NaFormaGravada());
         return Result<ModeloFormulario>.Success(modelo);
     }
 
     /// <summary>Substitui o descritivo e o conteúdo; o código e a declaração são imutáveis.</summary>
     public Result Atualizar(
-        string? nome,
-        string? descricao,
-        string? tipoProcessoCodigo,
+        DescritivoDoModelo descritivo,
         ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
     {
-        ArgumentNullException.ThrowIfNull(conteudo);
-        ArgumentNullException.ThrowIfNull(derivacoes);
-
-        ConteudoDoModelo normalizado = conteudo.NaFormaGravada();
-        List<FieldError> erros = ConferirDescritivo(nome, descricao, tipoProcessoCodigo);
-        erros.AddRange(ConferenciaDoConteudoDoModelo.Conferir(Declaracao, normalizado, derivacoes));
+        List<FieldError> erros = ConferirAtualizacao(descritivo, conteudo, derivacoes, conteudoPorInteiro: true);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
         }
 
-        Aplicar(nome ?? string.Empty, descricao, tipoProcessoCodigo, normalizado);
+        Aplicar(descritivo, conteudo.NaFormaGravada());
         return Result.Success();
     }
 
@@ -141,16 +121,51 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// O que o cadastro confere fora do conteúdo — código, descritivo, tipo de processo e declaração
-    /// —, para que essas recusas saiam junto das do conteúdo mesmo quando ele não chega a ser lido.
+    /// Todas as recusas da criação, na ordem das regras: código, descritivo, declaração e conteúdo. Não muda
+    /// nada. <paramref name="conteudoPorInteiro"/> é falso quando parte do conteúdo enviado não pôde ser lida:
+    /// o que depende do conteúdo inteiro — a estrutura e o grafo de coleta — não é conferido.
     /// </summary>
-    public static List<FieldError> ConferirCadastro(
-        string? codigo, string? nome, string? descricao, string? tipoProcessoCodigo, DeclaracaoDoFormulario? declaracao) =>
-        [.. ValidarCodigo(codigo), .. ValidarDescritivo(nome, descricao, tipoProcessoCodigo), .. ValidarDeclaracao(declaracao)];
+    public static List<FieldError> ConferirCriacao(
+        string? codigo,
+        DescritivoDoModelo descritivo,
+        DeclaracaoDoFormulario? declaracao,
+        ConteudoDoModelo conteudo,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
+        bool conteudoPorInteiro)
+    {
+        ArgumentNullException.ThrowIfNull(descritivo);
+        ArgumentNullException.ThrowIfNull(conteudo);
+        ArgumentNullException.ThrowIfNull(derivacoes);
 
-    /// <summary>O que a edição confere fora do conteúdo: o descritivo e o tipo de processo.</summary>
-    public static List<FieldError> ConferirDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
-        ValidarDescritivo(nome, descricao, tipoProcessoCodigo);
+        return
+        [
+            .. ValidarCodigo(codigo),
+            .. descritivo.Conferir(),
+            .. ValidarDeclaracao(declaracao),
+            .. ConferenciaDoConteudoDoModelo.Conferir(declaracao, conteudo.NaFormaGravada(), derivacoes, conteudoPorInteiro),
+        ];
+    }
+
+    /// <summary>
+    /// Todas as recusas da edição, na ordem das regras: descritivo e conteúdo, com a declaração do modelo
+    /// gravado. Não muda nada; <paramref name="conteudoPorInteiro"/> tem o sentido de <see cref="ConferirCriacao"/>.
+    /// </summary>
+    public List<FieldError> ConferirAtualizacao(
+        DescritivoDoModelo descritivo,
+        ConteudoDoModelo conteudo,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
+        bool conteudoPorInteiro)
+    {
+        ArgumentNullException.ThrowIfNull(descritivo);
+        ArgumentNullException.ThrowIfNull(conteudo);
+        ArgumentNullException.ThrowIfNull(derivacoes);
+
+        return
+        [
+            .. descritivo.Conferir(),
+            .. ConferenciaDoConteudoDoModelo.Conferir(Declaracao, conteudo.NaFormaGravada(), derivacoes, conteudoPorInteiro),
+        ];
+    }
 
     private static List<FieldError> ValidarDeclaracao(DeclaracaoDoFormulario? declaracao) =>
         declaracao is null ? [DeclaracaoIncompleta] : [];
@@ -164,51 +179,6 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     private static List<FieldError> ValidarCodigo(string? codigo) =>
         CampoCodigo.Recusa(codigo, "codigo") is { } erro ? [erro] : [];
 
-    private static List<FieldError> ValidarDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo) =>
-    [
-        .. NoDescritivo(
-        [
-            .. TextoGravavel.Recusar("nome", nome),
-            .. TextoGravavel.Recusar("descricao", descricao),
-            .. ValidarNome(nome),
-            .. ValidarDescricao(descricao),
-            .. ValidarTipoProcesso(tipoProcessoCodigo),
-        ]),
-    ];
-
-    private static IEnumerable<FieldError> NoDescritivo(IEnumerable<FieldError> erros) =>
-        erros.Select(static e => e.NoCaminhoDe(CaminhoDoDescritivo));
-
-    private static IEnumerable<FieldError> ValidarNome(string? nome)
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            yield return new("nome", new DomainError(ModeloFormularioErrorCodes.NomeObrigatorio, "O nome do modelo é obrigatório."));
-        }
-        else if (nome.Trim().Length > NomeMaxLength)
-        {
-            yield return new("nome", new DomainError(
-                ModeloFormularioErrorCodes.NomeTamanho, $"O nome do modelo deve ter no máximo {NomeMaxLength} caracteres."));
-        }
-    }
-
-    private static IEnumerable<FieldError> ValidarDescricao(string? descricao)
-    {
-        if (FormaDoItem.TextoOpcional(descricao) is { Length: > DescricaoMaxLength })
-        {
-            yield return new("descricao", new DomainError(
-                ModeloFormularioErrorCodes.DescricaoTamanho, $"A descrição do modelo deve ter no máximo {DescricaoMaxLength} caracteres."));
-        }
-    }
-
-    private static IEnumerable<FieldError> ValidarTipoProcesso(string? tipoProcessoCodigo)
-    {
-        if (tipoProcessoCodigo is not null && CampoTipoProcesso.Recusa(tipoProcessoCodigo, "tipoProcessoCodigo") is { } erro)
-        {
-            yield return erro;
-        }
-    }
-
     private static ModeloFormulario Declarado(string codigo, DeclaracaoDoFormulario declaracao) => new()
     {
         Codigo = codigo,
@@ -218,11 +188,11 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     };
 
     /// <summary>Grava o descritivo e o conteúdo já na forma gravada, na ordem em que é gravado.</summary>
-    private void Aplicar(string nome, string? descricao, string? tipoProcessoCodigo, ConteudoDoModelo conteudo)
+    private void Aplicar(DescritivoDoModelo descritivo, ConteudoDoModelo conteudo)
     {
-        Nome = nome.Trim();
-        Descricao = FormaDoItem.TextoOpcional(descricao);
-        TipoProcessoCodigo = tipoProcessoCodigo;
+        Nome = (descritivo.Nome ?? string.Empty).Trim();
+        Descricao = FormaDoItem.TextoOpcional(descritivo.Descricao);
+        TipoProcessoCodigo = descritivo.TipoProcessoCodigo;
         Conteudo = conteudo.EmOrdem();
     }
 }

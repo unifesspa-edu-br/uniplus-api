@@ -98,7 +98,7 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
     public void TipoProcessoEmBranco_Recusa()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", null, DeOutraFaseObrigatoria, "   ", Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação", null, "   "), DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco);
     }
@@ -111,6 +111,23 @@ public sealed class ModeloFormularioEstruturaECicloDeVidaTests
         modelo.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("declaracao", new DomainError(ModeloFormularioErrorCodes.DeclaracaoIncompleta, string.Empty)),
             static o => o.Excluding(static e => e.Error.Message));
+    }
+
+    [Fact(DisplayName = "A edição recusada acumula o descritivo e o conteúdo e não muda o modelo; a conferência não muda nada")]
+    public void Atualizar_Recusada_AcumulaERecusaSemMudarOModelo()
+    {
+        ModeloFormulario modelo = Criar(DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)])).Value!;
+        ConteudoDoModelo antes = modelo.Conteudo;
+        DescritivoDoModelo invalido = new(" ", null, null);
+        ConteudoDoModelo foraDeSecao = Conteudo([Item("CERTIFICADO", 0, pagina: null)]);
+
+        List<FieldError> conferidas = modelo.ConferirAtualizacao(invalido, foraDeSecao, SemDerivacoes, conteudoPorInteiro: true);
+        Result atualizada = modelo.Atualizar(invalido, foraDeSecao, SemDerivacoes);
+
+        conferidas.Select(static e => e.Error.Code).Should().Equal(ModeloFormularioErrorCodes.NomeObrigatorio, EstruturaFormularioErrorCodes.ItemForaDeSecao);
+        atualizada.Errors.Select(static e => e.Error.Code).Should().Equal(conferidas.Select(static e => e.Error.Code));
+        modelo.Nome.Should().Be("Habilitação Medicina 2027");
+        modelo.Conteudo.Should().BeSameAs(antes);
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o modelo; repetir o estado atual é recusado")]

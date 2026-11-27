@@ -127,6 +127,19 @@ public sealed class ConjuntoBasicoDoModeloTests
         mesclada.Should().BeSameAs(entrada);
     }
 
+    [Fact(DisplayName = "O item do cliente na seção dos dados básicos não gera recusa de estrutura no domínio: só a escrita recusa a seção reservada")]
+    public void ConferirCriacao_ItemDoClienteNaSecaoReservada_NaoRecusaAEstrutura()
+    {
+        ItemDoModelo doCliente = ItemOpcionalDeBaixaRenda(0) with { PaginaCodigo = ConjuntoBasicoDaInscricao.CodigoDaSecao };
+        ConteudoDoModelo mesclado = ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Modelo", [Secao, Revisao], [doCliente], [], [], []), Formatos);
+
+        List<FieldError> erros = ModeloFormulario.ConferirCriacao(
+            "MODELO_DO_TESTE", new DescritivoDoModelo("Modelo do teste", null, null), DaInscricao, mesclado,
+            new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal), conteudoPorInteiro: true);
+
+        erros.Select(static e => (e.Field, e.Error.Code)).Should().BeEmpty();
+    }
+
     private static ConteudoDoModelo ConteudoComOConjunto() =>
         ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Inscrição", [Dados], [], [], [], []), Formatos);
 
@@ -150,7 +163,7 @@ public sealed class ConjuntoBasicoDoModeloTests
     {
         ConteudoDoModelo conteudo = ConjuntoBasicoDoModelo.Mesclar(new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []), Formatos);
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
-            "MODELO_DO_TESTE", "Modelo do teste", null, declaracao, null, conteudo,
+            "MODELO_DO_TESTE", new DescritivoDoModelo("Modelo do teste", null, null), declaracao, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
         return criado.Value!;

@@ -100,8 +100,8 @@ public sealed class GravacaoDoModeloTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A edição recusada pelo catálogo, depois de mudar o modelo rastreado, o descarta e não salva")]
-    public async Task Atualizar_RecusadaPeloCatalogo_DescartaOModeloJaMudadoSemSalvar()
+    [Fact(DisplayName = "A edição recusada pelo catálogo deixa o modelo rastreado como estava, descarta o rastreamento e não salva")]
+    public async Task Atualizar_RecusadaPeloCatalogo_NaoMudaOModeloEDescartaSemSalvar()
     {
         ModeloFormulario existente = Existente(tipo: null);
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -111,7 +111,7 @@ public sealed class GravacaoDoModeloTests
         Result resultado = await AtualizarAsync(existente.Id, Conteudo(Item("NAO_EXISTE", 0)), nome: "Habilitação Medicina Revisada");
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("conteudo.itens[0].fatoCodigo", ItemFormularioErrorCodes.FatoDesconhecido));
-        nomeNoDescarte.Should().Be("Habilitação Medicina Revisada", "a alteração já tinha chegado ao agregado quando o rastreamento foi descartado");
+        nomeNoDescarte.Should().Be("Habilitação Medicina", "a recusa chega antes de qualquer mudança no agregado");
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

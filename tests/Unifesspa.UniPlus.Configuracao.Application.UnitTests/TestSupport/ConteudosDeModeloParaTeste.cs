@@ -64,7 +64,7 @@ internal static class ConteudosDeModeloParaTeste
         ItemDoModelo item = new(
             "CERTIFICADO", 0, "DADOS", new ApresentacaoDoCampo("Certificado", TipoDeCampo.SimOuNao), null, new RegrasDoCampo(null, Obrigatoriedade.Sempre, []));
         return ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, tipo,
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação Medicina", null, tipo), DeOutraFaseObrigatoria,
             new ConteudoDoModelo("Habilitação", [Secao, Revisao], [item], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }

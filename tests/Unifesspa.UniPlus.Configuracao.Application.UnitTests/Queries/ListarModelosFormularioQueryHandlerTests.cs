@@ -104,7 +104,7 @@ public sealed class ListarModelosFormularioQueryHandlerTests
         PaginaDoModelo dados = new("DADOS", 0, TipoPaginaFormulario.Secao, null, "Dados", null, null, null);
         PaginaDoModelo revisao = new("REVISAO", 1, TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null, null);
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "MODELO_DE_TESTE", "Modelo de teste", null, DeOutraFaseObrigatoria, null,
+            "MODELO_DE_TESTE", new DescritivoDoModelo("Modelo de teste", null, null), DeOutraFaseObrigatoria,
             new ConteudoDoModelo("Habilitação", [dados, revisao], [], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

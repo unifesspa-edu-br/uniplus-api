@@ -43,7 +43,8 @@ public sealed class ModeloFormularioPersistenceTests
         ConteudoDoModelo conteudo = new(
             "Habilitação", PaginasDaHabilitacao(), ItensDaHabilitacao(), [TermoDeVeracidade()], ["FORMA_CONCLUSAO"], [GrupoDaComposicaoFamiliar()]);
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            codigo, "Habilitação Medicina 2027", "Modelo do PSR", new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), "REGULAR_UNIFICADO", conteudo,
+            codigo, new DescritivoDoModelo("Habilitação Medicina 2027", "Modelo do PSR", "REGULAR_UNIFICADO"),
+            new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);
         return modelo.Value!;
@@ -92,7 +93,7 @@ public sealed class ModeloFormularioPersistenceTests
     private static ModeloFormulario NovoDeInscricaoComImpedimento(Impedimento impedimento)
     {
         Result<ModeloFormulario> criado = ModeloFormulario.Criar(
-            $"INS_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), "Inscrição PSIQ 2027", null, DeclaracaoDoFormulario.DaInscricao, "INDIGENA_E_QUILOMBOLA",
+            $"INS_{Guid.NewGuid():N}"[..30].ToUpperInvariant(), new DescritivoDoModelo("Inscrição PSIQ 2027", null, "INDIGENA_E_QUILOMBOLA"), DeclaracaoDoFormulario.DaInscricao,
             ConteudoDaInscricaoComImpedimento(impedimento),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
