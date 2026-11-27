@@ -915,11 +915,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("codigo");
 
-                    b.Property<string>("De")
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("de");
-
                     b.Property<Guid>("ImplantacaoId")
                         .HasColumnType("uuid")
                         .HasColumnName("implantacao_id");
@@ -931,11 +926,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<long>("OrdemNoHistorico")
                         .HasColumnType("bigint")
                         .HasColumnName("ordem_no_historico");
-
-                    b.Property<string>("Para")
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("para");
 
                     b.Property<Guid>("PerfilId")
                         .HasColumnType("uuid")
@@ -964,6 +954,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("divergencias_da_governanca", "autorizacao", t =>
                         {
                             t.HasCheckConstraint("ck_divergencias_da_governanca_tipo", "tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE', 'CLASSIFICACAO', 'ESCOPO')");
+
+                            t.HasCheckConstraint("ck_divergencias_da_governanca_valores", "(tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE') AND classificacao_anterior IS NULL AND classificacao_nova IS NULL AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'CLASSIFICACAO' AND classificacao_anterior IS NOT NULL AND classificacao_nova IS NOT NULL AND classificacao_anterior <> classificacao_nova AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'ESCOPO' AND de_unidade_anterior IS NOT NULL AND de_unidade_novo IS NOT NULL AND de_unidade_anterior <> de_unidade_novo AND classificacao_anterior IS NULL AND classificacao_nova IS NULL)");
                         });
                 });
 
@@ -16887,6 +16879,64 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_divergencias_da_governanca_perfil_perfil_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.MudancaDaClassificacao", "MudancaDaClassificacao", b1 =>
+                        {
+                            b1.Property<Guid>("DivergenciaDaGovernancaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Anterior")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("classificacao_anterior")
+                                .HasComment("Classificação de proteção da permissão antes da troca de catálogo; nula fora da divergência de classificação. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
+
+                            b1.Property<string>("Nova")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("classificacao_nova")
+                                .HasComment("Classificação de proteção da permissão depois da troca de catálogo; nula fora da divergência de classificação. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL.");
+
+                            b1.HasKey("DivergenciaDaGovernancaId");
+
+                            b1.ToTable("divergencias_da_governanca", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DivergenciaDaGovernancaId")
+                                .HasConstraintName("fk_divergencias_da_governanca_divergencias_da_governanca_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.MudancaDoEscopo", "MudancaDoEscopo", b1 =>
+                        {
+                            b1.Property<Guid>("DivergenciaDaGovernancaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("DeUnidadeAnterior")
+                                .HasColumnType("boolean")
+                                .HasColumnName("de_unidade_anterior")
+                                .HasComment("Indica se a permissão valia por unidade antes da troca de catálogo; nula fora da divergência de escopo.");
+
+                            b1.Property<bool>("DeUnidadeNovo")
+                                .HasColumnType("boolean")
+                                .HasColumnName("de_unidade_novo")
+                                .HasComment("Indica se a permissão vale por unidade depois da troca de catálogo; nula fora da divergência de escopo.");
+
+                            b1.HasKey("DivergenciaDaGovernancaId");
+
+                            b1.ToTable("divergencias_da_governanca", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DivergenciaDaGovernancaId")
+                                .HasConstraintName("fk_divergencias_da_governanca_divergencias_da_governanca_id");
+                        });
+
+                    b.Navigation("MudancaDaClassificacao");
+
+                    b.Navigation("MudancaDoEscopo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DocumentoDaVersao", b =>

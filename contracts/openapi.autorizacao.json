@@ -9123,8 +9123,10 @@
           "perfilNome",
           "codigo",
           "tipo",
-          "de",
-          "para",
+          "classificacaoAnterior",
+          "classificacaoNova",
+          "deUnidadeAnterior",
+          "deUnidadeNovo",
           "instante"
         ],
         "type": "object",
@@ -9146,16 +9148,36 @@
           "tipo": {
             "$ref": "#/components/schemas/TipoDeDivergencia"
           },
-          "de": {
-            "type": [
-              "null",
-              "string"
+          "classificacaoAnterior": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecao"
+              }
             ]
           },
-          "para": {
+          "classificacaoNova": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClassificacaoDeProtecao"
+              }
+            ]
+          },
+          "deUnidadeAnterior": {
             "type": [
               "null",
-              "string"
+              "boolean"
+            ]
+          },
+          "deUnidadeNovo": {
+            "type": [
+              "null",
+              "boolean"
             ]
           },
           "instante": {

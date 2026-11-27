@@ -20,6 +20,7 @@ public sealed class ChecksDoModeloDoMonolitoTests
         new("providencias", "ck_providencias_estado", "estado IN ('ABERTA', 'RESPONDIDA', 'ATENDIDA')"),
         new("providencias", "ck_providencias_desfecho_completo", "(estado = 'ABERTA' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'ABERTA' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)"),
         new("divergencias_da_governanca", "ck_divergencias_da_governanca_tipo", "tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE', 'CLASSIFICACAO', 'ESCOPO')"),
+        new("divergencias_da_governanca", "ck_divergencias_da_governanca_valores", "(tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE') AND classificacao_anterior IS NULL AND classificacao_nova IS NULL AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'CLASSIFICACAO' AND classificacao_anterior IS NOT NULL AND classificacao_nova IS NOT NULL AND classificacao_anterior <> classificacao_nova AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'ESCOPO' AND de_unidade_anterior IS NOT NULL AND de_unidade_novo IS NOT NULL AND de_unidade_anterior <> de_unidade_novo AND classificacao_anterior IS NULL AND classificacao_nova IS NULL)"),
         new("revisoes_das_concessoes", "ck_revisoes_das_concessoes_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('CONCLUIDA', 'PRAZO', 'MANUAL')"),
         new("revisoes_das_concessoes", "ck_revisoes_das_concessoes_manual", "COALESCE(forma_do_encerramento = 'MANUAL', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)"),
         new("decisoes_da_versao", "ck_decisoes_da_versao_motivo_na_recusa", "(resultado = 'RECUSADO') = (motivo IS NOT NULL)"),
@@ -107,9 +108,9 @@ public sealed class ChecksDoModeloDoMonolitoTests
         return dados;
     }
 
-    [Fact(DisplayName = "A lista esperada tem as 78 restrições de enum com código de contrato")]
+    [Fact(DisplayName = "A lista esperada tem as 79 restrições de enum com código de contrato")]
     public void ListaEsperada_TemAsRestricoes() =>
-        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(78);
+        Esperadas.Select(esperada => esperada.Nome).Should().OnlyHaveUniqueItems().And.HaveCount(79);
 
     [Theory(DisplayName = "O modelo de design-time guarda a restrição com o nome e o texto literais")]
     [MemberData(nameof(RestricoesEsperadas))]

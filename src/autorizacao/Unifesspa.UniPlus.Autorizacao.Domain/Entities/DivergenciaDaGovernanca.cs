@@ -22,11 +22,11 @@ public sealed class DivergenciaDaGovernanca : IForensicEntity, IRegistroDaTrilha
 
     public TipoDeDivergencia Tipo { get; private init; }
 
-    /// <summary>O valor anterior, em texto estável; nulo na composição.</summary>
-    public string? De { get; private set; }
+    /// <summary>A classificação antes e depois; só na divergência de classificação.</summary>
+    public MudancaDaClassificacao? MudancaDaClassificacao { get; private init; }
 
-    /// <summary>O valor novo, em texto estável; nulo na composição.</summary>
-    public string? Para { get; private set; }
+    /// <summary>O escopo por unidade antes e depois; só na divergência de escopo.</summary>
+    public MudancaDoEscopo? MudancaDoEscopo { get; private init; }
 
     public DateTimeOffset Instante { get; private init; }
 
@@ -40,18 +40,51 @@ public sealed class DivergenciaDaGovernanca : IForensicEntity, IRegistroDaTrilha
     }
 
     public static DivergenciaDaGovernanca DaComposicao(
+        Guid implantacaoId, Guid perfilId, string codigo, TipoDeDivergencia tipo, DateTimeOffset instante, int ordinal)
+    {
+        if (tipo is not (TipoDeDivergencia.ComposicaoFaltante or TipoDeDivergencia.ComposicaoExcedente))
+        {
+            throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "A divergência de composição é a faltante ou a excedente.");
+        }
+
+        return Nova(implantacaoId, perfilId, codigo, tipo, instante, ordinal);
+    }
+
+    public static DivergenciaDaGovernanca DaClassificacao(
+        Guid implantacaoId, Guid perfilId, string codigo, MudancaDaClassificacao mudanca, DateTimeOffset instante, int ordinal)
+    {
+        ArgumentNullException.ThrowIfNull(mudanca);
+
+        return new()
+        {
+            ImplantacaoId = implantacaoId,
+            PerfilId = perfilId,
+            Codigo = codigo,
+            Tipo = TipoDeDivergencia.Classificacao,
+            MudancaDaClassificacao = mudanca,
+            Instante = instante,
+            OrdinalLocal = ordinal,
+        };
+    }
+
+    public static DivergenciaDaGovernanca DoEscopo(
+        Guid implantacaoId, Guid perfilId, string codigo, MudancaDoEscopo mudanca, DateTimeOffset instante, int ordinal)
+    {
+        ArgumentNullException.ThrowIfNull(mudanca);
+
+        return new()
+        {
+            ImplantacaoId = implantacaoId,
+            PerfilId = perfilId,
+            Codigo = codigo,
+            Tipo = TipoDeDivergencia.Escopo,
+            MudancaDoEscopo = mudanca,
+            Instante = instante,
+            OrdinalLocal = ordinal,
+        };
+    }
+
+    private static DivergenciaDaGovernanca Nova(
         Guid implantacaoId, Guid perfilId, string codigo, TipoDeDivergencia tipo, DateTimeOffset instante, int ordinal) =>
         new() { ImplantacaoId = implantacaoId, PerfilId = perfilId, Codigo = codigo, Tipo = tipo, Instante = instante, OrdinalLocal = ordinal };
-
-    public static DivergenciaDaGovernanca DaMudanca(
-        Guid implantacaoId, Guid perfilId, string codigo, TipoDeDivergencia tipo, ValorDivergente valor, DateTimeOffset instante, int ordinal)
-    {
-        ArgumentNullException.ThrowIfNull(valor);
-
-        DivergenciaDaGovernanca divergencia = DaComposicao(implantacaoId, perfilId, codigo, tipo, instante, ordinal);
-        divergencia.De = valor.De;
-        divergencia.Para = valor.Para;
-
-        return divergencia;
-    }
 }
