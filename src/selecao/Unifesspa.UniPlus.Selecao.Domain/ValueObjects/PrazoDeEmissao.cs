@@ -31,25 +31,39 @@ public sealed record PrazoDeEmissao
             return Falha("escolha", PrazoDeEmissaoErrorCodes.EscolhaInvalida, "A escolha do prazo de emissão não é reconhecida.");
         if (escolha == EscolhaDoPrazoDeEmissao.SemPrazo)
             return SemPrazo(valor, unidade, referencia, efeitoForaDoPrazo);
-        return ValidarOsDetalhes(valor, unidade, referencia, efeitoForaDoPrazo)
-            ?? Result<PrazoDeEmissao>.Success(new(escolha, valor, unidade, referencia, efeitoForaDoPrazo));
+        List<FieldError> erros = [.. ValidarValorEUnidade(valor, unidade), .. ValidarReferencia(referencia), .. ValidarEfeito(efeitoForaDoPrazo)];
+
+        return erros.Count > 0
+            ? Result<PrazoDeEmissao>.ValidationFailure([erros[0]])
+            : Result<PrazoDeEmissao>.Success(new(escolha, valor, unidade, referencia, efeitoForaDoPrazo));
     }
 
-    private static Result<PrazoDeEmissao>? ValidarOsDetalhes(int? valor, UnidadeDoPrazoDeEmissao? unidade,
-        DataDeReferenciaDoDocumento? referencia, EfeitoNaAnaliseDoDocumento? efeitoForaDoPrazo)
+    /// <summary>Confere o valor, a unidade e o efeito de um prazo com prazo, que não dependem da data de referência.</summary>
+    public static List<FieldError> ValidarDetalhesIndependentesDaReferencia(
+        int? valor, UnidadeDoPrazoDeEmissao? unidade, EfeitoNaAnaliseDoDocumento? efeitoForaDoPrazo) =>
+        [.. ValidarValorEUnidade(valor, unidade), .. ValidarEfeito(efeitoForaDoPrazo)];
+
+    private static List<FieldError> ValidarValorEUnidade(int? valor, UnidadeDoPrazoDeEmissao? unidade)
     {
+        List<FieldError> erros = [];
         if (valor is null or <= 0)
-            return Falha("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, "Informe um prazo de emissão maior que zero.");
+            erros.Add(Erro("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, "Informe um prazo de emissão maior que zero."));
         if (unidade is null || !Enum.IsDefined(unidade.Value))
-            return Falha("unidade", PrazoDeEmissaoErrorCodes.UnidadeInvalida, "Informe uma unidade válida para o prazo de emissão.");
-        if (valor > LimiteDoValor(unidade.Value))
-            return Falha("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, $"O prazo de emissão não pode passar de {LimiteDoValor(unidade.Value)} na unidade escolhida.");
-        if (referencia is null)
-            return Falha("referencia", DataDeReferenciaDoDocumentoErrorCodes.Ausente, "Informe a data de referência do prazo de emissão.");
-        if (efeitoForaDoPrazo is null || !Enum.IsDefined(efeitoForaDoPrazo.Value))
-            return Falha("efeitoForaDoPrazo", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido, "Informe um efeito válido para o documento fora do prazo.");
-        return null;
+            erros.Add(Erro("unidade", PrazoDeEmissaoErrorCodes.UnidadeInvalida, "Informe uma unidade válida para o prazo de emissão."));
+        else if (valor > LimiteDoValor(unidade.Value))
+            erros.Add(Erro("valor", PrazoDeEmissaoErrorCodes.ValorInvalido, $"O prazo de emissão não pode passar de {LimiteDoValor(unidade.Value)} na unidade escolhida."));
+        return erros;
     }
+
+    private static List<FieldError> ValidarReferencia(DataDeReferenciaDoDocumento? referencia) =>
+        referencia is null
+            ? [Erro("referencia", DataDeReferenciaDoDocumentoErrorCodes.Ausente, "Informe a data de referência do prazo de emissão.")]
+            : [];
+
+    private static List<FieldError> ValidarEfeito(EfeitoNaAnaliseDoDocumento? efeitoForaDoPrazo) =>
+        efeitoForaDoPrazo is null || !Enum.IsDefined(efeitoForaDoPrazo.Value)
+            ? [Erro("efeitoForaDoPrazo", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido, "Informe um efeito válido para o documento fora do prazo.")]
+            : [];
 
     // Cem anos em cada unidade: o maior prazo que ainda cabe numa data de emissão válida.
     private static int LimiteDoValor(UnidadeDoPrazoDeEmissao unidade) => unidade switch
@@ -77,5 +91,7 @@ public sealed record PrazoDeEmissao
             : Result<PrazoDeEmissao>.Success(new(EscolhaDoPrazoDeEmissao.SemPrazo, null, null, null, null));
 
     private static Result<PrazoDeEmissao> Falha(string campo, string codigo, string mensagem) =>
-        Result<PrazoDeEmissao>.ValidationFailure([new FieldError(campo, new DomainError(codigo, mensagem))]);
+        Result<PrazoDeEmissao>.ValidationFailure([Erro(campo, codigo, mensagem)]);
+
+    private static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }

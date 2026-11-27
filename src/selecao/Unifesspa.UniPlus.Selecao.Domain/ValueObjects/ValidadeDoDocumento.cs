@@ -28,10 +28,17 @@ public sealed record ValidadeDoDocumento
             return SemExigencia(referencia, efeitoDoVencimento);
         if (referencia is null)
             return Falha("referencia", DataDeReferenciaDoDocumentoErrorCodes.Ausente, "Informe a data de referência da validade.");
-        if (efeitoDoVencimento is null || !Enum.IsDefined(efeitoDoVencimento.Value))
-            return Falha("efeitoDoVencimento", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido, "Informe um efeito válido para o documento vencido.");
-        return Result<ValidadeDoDocumento>.Success(new(escolha, referencia, efeitoDoVencimento));
+        List<FieldError> recusasDoEfeito = ValidarDetalhesIndependentesDaReferencia(efeitoDoVencimento);
+        return recusasDoEfeito.Count > 0
+            ? Result<ValidadeDoDocumento>.ValidationFailure(recusasDoEfeito)
+            : Result<ValidadeDoDocumento>.Success(new(escolha, referencia, efeitoDoVencimento));
     }
+
+    /// <summary>Confere o efeito do vencimento de uma validade exigida, que não depende da data de referência.</summary>
+    public static List<FieldError> ValidarDetalhesIndependentesDaReferencia(EfeitoNaAnaliseDoDocumento? efeitoDoVencimento) =>
+        efeitoDoVencimento is null || !Enum.IsDefined(efeitoDoVencimento.Value)
+            ? [Erro("efeitoDoVencimento", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido, "Informe um efeito válido para o documento vencido.")]
+            : [];
 
     public bool AtendeAValidade(DateOnly vencimento, DateOnly dataDeReferencia) =>
         Escolha == EscolhaDaValidade.NaoExigeDocumentoValido || vencimento >= dataDeReferencia;
@@ -42,5 +49,7 @@ public sealed record ValidadeDoDocumento
             : Result<ValidadeDoDocumento>.Success(new(EscolhaDaValidade.NaoExigeDocumentoValido, null, null));
 
     private static Result<ValidadeDoDocumento> Falha(string campo, string codigo, string mensagem) =>
-        Result<ValidadeDoDocumento>.ValidationFailure([new FieldError(campo, new DomainError(codigo, mensagem))]);
+        Result<ValidadeDoDocumento>.ValidationFailure([Erro(campo, codigo, mensagem)]);
+
+    private static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }

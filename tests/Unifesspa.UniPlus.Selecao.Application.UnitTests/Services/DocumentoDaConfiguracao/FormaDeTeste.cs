@@ -61,7 +61,7 @@ internal static class FormaDeTeste
         ["finalidadeTratamento"] = Valor(somenteLeitura: true),
         ["hipoteseLegal"] = Valor(somenteLeitura: true),
         ["fatosComprovados"] = Valor(somenteLeitura: true),
-    });
+    }, new ParteComChave("exigencia", EscopoDaChave.Documento));
 
     private static FormaDoNo Fase() => Objeto(new()
     {
