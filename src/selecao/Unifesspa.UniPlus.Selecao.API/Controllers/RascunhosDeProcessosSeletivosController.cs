@@ -43,12 +43,9 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
         + "calculados dos cadastros no momento da exportação; a distribuição que não puder ser calculada permanece no documento sem esses dois campos. O descritivo cujo cadastro "
         + "não resolve também é omitido. Não traz versao nem publicadoEm, que não existem antes da publicação.";
 
-    private const string DescricaoDoCorpoAcimaDoLimiteNaCriacao =
-        "O corpo passa de 2 MiB (uniplus.idempotency.body_muito_grande), ou o documento passa do limite de profundidade ou de nós do formato "
+    private const string DescricaoDoCorpoAcimaDoLimite =
+        "O corpo passa de 2 MiB (uniplus.requisicao.corpo_acima_do_limite), ou o documento passa do limite de profundidade ou de nós do formato "
         + "(uniplus.selecao.documento_da_configuracao.acima_do_limite).";
-
-    private const string DescricaoDoCorpoAcimaDoLimiteNaSubstituicao =
-        "O documento passa de um limite do formato: 2 MiB, profundidade ou quantidade de nós (uniplus.selecao.documento_da_configuracao.acima_do_limite).";
 
     private const string DescricaoDaSubstituicao =
         "Substitui o documento inteiro do rascunho. O corpo é o documento completo: todo bloco que o corpo não traz é apagado, e nada é "
@@ -99,7 +96,8 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     /// </remarks>
     [HttpPost]
     [EndpointName("CriarRascunhoDeProcessoSeletivo")]
-    [RequiresIdempotencyKey(MaxBodyBytes = LimitesDoDocumento.TamanhoMaximoEmBytes)]
+    [RequiresIdempotencyKey]
+    [RequestSizeLimit(LimitesDoDocumento.TamanhoMaximoEmBytes)]
     [Consumes("application/json")]
     [CorpoJson(EsquemaPublicadoDoDocumento.Componente)]
     [EmiteETag(Descricao = DescricaoDoETag)]
@@ -109,7 +107,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden,
         Description = "A pessoa não configura processos na unidade do documento, ou o código não resolve para uma unidade (uniplus.selecao.rascunho_de_processo_seletivo.unidade_fora_da_permissao).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status413PayloadTooLarge,
-        Description = DescricaoDoCorpoAcimaDoLimiteNaCriacao)]
+        Description = DescricaoDoCorpoAcimaDoLimite)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Criar(CancellationToken cancellationToken)
     {
@@ -191,6 +189,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
     [EndpointSummary("Substitui o documento inteiro do rascunho")]
     [EndpointDescription(DescricaoDaSubstituicao)]
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
+    [RequestSizeLimit(LimitesDoDocumento.TamanhoMaximoEmBytes)]
     [Consumes("application/json")]
     [CorpoJson(EsquemaPublicadoDoDocumento.Componente)]
     [PrecondicaoObrigatoria]
@@ -204,7 +203,7 @@ public sealed class RascunhosDeProcessosSeletivosController : ControllerBase
         Description = "O rascunho já foi publicado e virou o processo seletivo de mesmo identificador (uniplus.selecao.rascunho_de_processo_seletivo.ja_publicado).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status413PayloadTooLarge,
-        Description = DescricaoDoCorpoAcimaDoLimiteNaSubstituicao)]
+        Description = DescricaoDoCorpoAcimaDoLimite)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
     public async Task<IActionResult> Substituir(

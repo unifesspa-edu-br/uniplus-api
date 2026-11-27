@@ -3442,11 +3442,6 @@
       "titulo": "Mesma Idempotency-Key reusada com body diferente"
     },
     {
-      "codigo": "uniplus.idempotency.body_muito_grande",
-      "status": 413,
-      "titulo": "Request body excede o limite aceito por endpoints idempotentes"
-    },
-    {
       "codigo": "uniplus.idempotency.key_ausente",
       "status": 400,
       "titulo": "Header Idempotency-Key obrigatório neste endpoint"
@@ -4035,6 +4030,11 @@
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
       "status": 400,
       "titulo": "A requisição não declara campo obrigatório do contrato"
+    },
+    {
+      "codigo": "uniplus.requisicao.corpo_acima_do_limite",
+      "status": 413,
+      "titulo": "O corpo da requisição passa do tamanho aceito"
     },
     {
       "codigo": "uniplus.requisicao.corpo_ausente",

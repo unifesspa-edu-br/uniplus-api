@@ -16,9 +16,11 @@ internal static class MiddlewareDeErrosDeTeste
 {
     internal const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
 
-    internal static GlobalExceptionMiddleware Criar(RequestDelegate next)
+    internal static GlobalExceptionMiddleware Criar(RequestDelegate next) =>
+        Criar(next, Substitute.For<ILogger<GlobalExceptionMiddleware>>());
+
+    internal static GlobalExceptionMiddleware Criar(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
     {
-        ILogger<GlobalExceptionMiddleware> logger = Substitute.For<ILogger<GlobalExceptionMiddleware>>();
         ProblemTypeUriFactory problemTypeUriFactory = new(
             Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
         DomainErrorMappingRegistry mapper = new([new KernelDomainErrorRegistration()], problemTypeUriFactory);

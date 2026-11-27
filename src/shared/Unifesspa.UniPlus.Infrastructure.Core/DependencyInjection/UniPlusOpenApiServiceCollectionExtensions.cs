@@ -105,6 +105,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<AuthorizationOperationTransformer>();
         services.TryAddSingleton<CorpoMultipartOperationTransformer>();
         services.TryAddSingleton<CorpoJsonOperationTransformer>();
+        services.TryAddSingleton<CorpoAcimaDoLimiteOperationTransformer>();
         services.TryAddSingleton<RespostaJsonOperationTransformer>();
         services.TryAddSingleton<VendorMediaTypeOperationTransformer>();
         return services;
@@ -144,6 +145,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
         options.AddOperationTransformer<CorpoJsonOperationTransformer>();
+        options.AddOperationTransformer<CorpoAcimaDoLimiteOperationTransformer>();
         options.AddOperationTransformer<RespostaJsonOperationTransformer>();
 
         // Depois do RespostaJsonOperationTransformer, de quem copia o schema do corpo para as vendor MIME, e depois do

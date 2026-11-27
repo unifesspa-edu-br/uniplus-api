@@ -57,7 +57,7 @@ public sealed class IdempotencyFilter(
     private async Task ExecuteIdempotentAsync(ResourceExecutingContext context, ResourceExecutionDelegate next, RequiresIdempotencyKeyAttribute attribute)
     {
         Result<IdempotencyRequestKey> key = await IdempotencyRequestKeyReader
-            .ReadAsync(context.HttpContext, userContext, BodyLimitOf(attribute))
+            .ReadAsync(context.HttpContext, userContext)
             .ConfigureAwait(false);
         if (key.IsFailure)
         {
@@ -91,9 +91,6 @@ public sealed class IdempotencyFilter(
         await RespondAfterRaceAsync(context, key, aborted).ConfigureAwait(false);
         return false;
     }
-
-    private long BodyLimitOf(RequiresIdempotencyKeyAttribute attribute) =>
-        attribute.MaxBodyBytes >= 0 ? attribute.MaxBodyBytes : _options.MaxBodyBytes;
 
     private Task<bool> TryReserveAsync(IdempotencyRequestKey key, RequiresIdempotencyKeyAttribute attribute, CancellationToken cancellationToken)
     {

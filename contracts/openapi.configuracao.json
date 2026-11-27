@@ -339,7 +339,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -471,7 +471,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -823,7 +823,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -916,16 +916,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           },
           "422": {
             "description": "Mesma Idempotency-Key reusada com corpo diferente (uniplus.idempotency.body_mismatch) \u2014 a chave identifica a requisi\u00E7\u00E3o pelo hash do corpo."
@@ -1090,7 +1080,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1454,7 +1444,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1586,7 +1576,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1870,7 +1860,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2002,7 +1992,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2354,7 +2344,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2486,7 +2476,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2864,7 +2854,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2996,7 +2986,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3358,7 +3348,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3490,7 +3480,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3911,7 +3901,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4117,7 +4107,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4327,7 +4317,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4460,7 +4450,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4592,7 +4582,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4724,7 +4714,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4827,16 +4817,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -4932,16 +4912,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -5244,7 +5214,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5384,7 +5354,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5601,7 +5571,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5712,16 +5682,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -6009,7 +5969,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6141,7 +6101,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6503,7 +6463,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6635,7 +6595,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6980,7 +6940,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7186,7 +7146,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7443,6 +7403,16 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7559,6 +7529,16 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7653,16 +7633,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -7990,7 +7960,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8122,7 +8092,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8507,7 +8477,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8639,7 +8609,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8991,7 +8961,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9123,7 +9093,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9388,7 +9358,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9931,7 +9901,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10054,7 +10024,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10349,7 +10319,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10481,7 +10451,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10833,7 +10803,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10965,7 +10935,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11325,7 +11295,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11457,7 +11427,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11560,16 +11530,6 @@
                 }
               }
             }
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -11658,16 +11618,6 @@
           },
           "409": {
             "description": "Requisi\u00E7\u00E3o concorrente com a mesma Idempotency-Key ainda em processamento (uniplus.idempotency.processing_conflict). Repetir depois, com a MESMA chave. Conclu\u00EDda a opera\u00E7\u00E3o anterior, a repeti\u00E7\u00E3o recebe em replay o resultado dela quando ele \u00E9 guard\u00E1vel; n\u00E3o sendo (5xx, cancelamento, ou conflito que a pr\u00F3pria resposta declara retent\u00E1vel), a reserva \u00E9 liberada e a repeti\u00E7\u00E3o executa de novo.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12031,7 +11981,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12163,7 +12113,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12515,7 +12465,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12647,7 +12597,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12999,7 +12949,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13131,7 +13081,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13483,7 +13433,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13615,7 +13565,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13775,16 +13725,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -14250,7 +14190,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -14382,7 +14322,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -14886,7 +14826,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -15092,7 +15032,7 @@
             }
           },
           "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "description": "O corpo da requisi\u00E7\u00E3o passa do limite de tamanho aceito pela opera\u00E7\u00E3o (uniplus.requisicao.corpo_acima_do_limite). Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conte\u00FAdo. Sem tamanho declarado, com o conte\u00FAdo enviado em partes, a leitura \u00E9 interrompida ao passar do limite, e a verifica\u00E7\u00E3o de acesso pode recusar antes disso.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -15272,16 +15212,6 @@
           },
           "400": {
             "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
-          },
-          "413": {
-            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         },
         "security": [

@@ -161,8 +161,10 @@ public sealed class NotasDoEnemController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Responde 201 com o lote criado, ou 200 com o lote existente quando o arquivo é o do lote vigente.
-    /// O limite do arquivo é de 10 MiB; a recusa de tamanho acontece sem ler o corpo quando o
-    /// <c>Content-Length</c> já o excede. Sem <c>Idempotency-Key</c>: reenviar o mesmo arquivo é
+    /// O arquivo tem no máximo 10 MiB e a requisição inteira, com os campos do formulário, 64 KiB a mais: acima disso a recusa é
+    /// do limite de corpo da operação (413, <c>uniplus.requisicao.corpo_acima_do_limite</c>). Com o tamanho declarado acima do limite, ela vem antes de
+    /// verificar o acesso e de ler o conteúdo; sem tamanho declarado (conteúdo em partes), a leitura é interrompida ao passar do
+    /// limite, e a verificação de acesso pode recusar antes disso. O arquivo acima dos 10 MiB dentro dessa folga é recusado pelo tamanho do arquivo. Sem <c>Idempotency-Key</c>: reenviar o mesmo arquivo é
     /// idempotente pelo hash dele. O formulário tem os campos <c>arquivo</c>, <c>leiauteCodigo</c> e
     /// <c>leiauteVersao</c>; o nome do arquivo enviado nunca é gravado nem logado.
     /// </remarks>
@@ -180,7 +182,8 @@ public sealed class NotasDoEnemController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status413PayloadTooLarge)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status413PayloadTooLarge,
+        Description = "A requisição passa de 10 MiB mais 64 KiB de folga para os campos do formulário (uniplus.requisicao.corpo_acima_do_limite), ou o arquivo passa de 10 MiB (uniplus.selecao.notas_do_enem.arquivo_grande_demais).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status415UnsupportedMediaType)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ImportarNotas(
@@ -204,11 +207,6 @@ public sealed class NotasDoEnemController : ControllerBase
 
     private async Task<(IFormCollection? Formulario, IActionResult? Recusa)> LerFormularioDoRetornoAsync(CancellationToken cancellationToken)
     {
-        if (Request.ContentLength > LimitesDoArquivoDoInep.TamanhoMaximoDaRequisicaoEmBytes)
-        {
-            return (null, Recusa(RecusasDoArquivoDoInep.GrandeDemais));
-        }
-
         if (!Request.HasFormContentType)
         {
             return (null, Recusa(RecusasDoArquivoDoInep.NaoEhFormulario));
@@ -222,10 +220,6 @@ public sealed class NotasDoEnemController : ControllerBase
         try
         {
             return (await Request.ReadFormAsync(cancellationToken).ConfigureAwait(false), null);
-        }
-        catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
-        {
-            return (null, Recusa(RecusasDoArquivoDoInep.GrandeDemais));
         }
         catch (InvalidDataException ex)
         {

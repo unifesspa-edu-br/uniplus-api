@@ -17,12 +17,12 @@ using Microsoft.OpenApi;
 /// O filtro é instalado por <b>convenção</b> (<c>IdempotencyControllerConvention</c>), não por
 /// código do controller — e é justamente por isso que o contrato o ignorava: o autor da action
 /// declara os status que <b>o handler dele</b> devolve, e não sabe (nem deveria precisar
-/// saber) que um resource filter à sua frente responde 400, 409 e 413 por conta própria.
+/// saber) que um resource filter à sua frente responde 400, 409 e 422 por conta própria.
 /// </para>
 /// <para>
 /// O resultado era um contrato que mentia por omissão, e de forma <b>desigual</b>: a maioria
 /// das actions declarava o 400, algumas não; o 409 só aparecia onde havia um 409 de
-/// <i>domínio</i>; e o <b>413 não era declarado em lugar nenhum do repositório</b>. Um cliente
+/// <i>domínio</i>. Um cliente
 /// gerado tratava como inesperada uma resposta que o servidor emite por desenho.
 /// </para>
 /// <para>
@@ -50,9 +50,6 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
             + "Concluída a operação anterior, a repetição recebe em replay o resultado dela "
             + "quando ele é guardável; não sendo (5xx, cancelamento, ou conflito que a própria "
             + "resposta declara retentável), a reserva é liberada e a repetição executa de novo."),
-        ("413",
-            "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). "
-            + "O limite é do filtro, não do servidor."),
         ("422",
             "Mesma Idempotency-Key reusada com corpo diferente (uniplus.idempotency.body_mismatch) — "
             + "a chave identifica a requisição pelo hash do corpo."),
@@ -60,12 +57,11 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
 
     // 400 e 422 ficam só com descrição: quase toda action idempotente já declara o próprio 400/422
     // com corpo tipado (a validação do handler é mais específica), e o injetado aqui só aparece
-    // nas exceções sem declaração própria — corrigidas na action, não generalizadas aqui. 413 é
-    // sempre o filtro (nenhuma action do repositório o declara por conta própria); 409 tem casos
+    // nas exceções sem declaração própria — corrigidas na action, não generalizadas aqui. 409 tem casos
     // de domínio próprios (ex.: AtosNormativosController.Registrar), mas quando não há um, o
     // filtro é a única fonte — e precisa do mesmo corpo tipado que o `AuthorizationOperationTransformer`
     // já dá a 401/403.
-    private static readonly HashSet<string> StatusesWithTypedBody = ["409", "413"];
+    private static readonly HashSet<string> StatusesWithTypedBody = ["409"];
 
     public Task TransformAsync(
         OpenApiOperation operation,
@@ -75,51 +71,41 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (context.Description.ActionDescriptor is not ControllerActionDescriptor descriptor)
+        if (context.Description.ActionDescriptor is ControllerActionDescriptor descriptor && ExigeChave(descriptor))
         {
-            return Task.CompletedTask;
-        }
-
-        // Method-level vence class-level — a mesma resolução que o filtro faz.
-        bool idempotente =
-            descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null
-            || descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
-
-        if (!idempotente)
-        {
-            return Task.CompletedTask;
-        }
-
-        operation.Responses ??= [];
-
-        foreach ((string status, string descricao) in RespostasDoFiltro)
-        {
-            // Não sobrescreve o que a action já declarou: ela conhece a causa dela, e a
-            // descrição específica vale mais que a genérica do filtro.
-            if (operation.Responses.ContainsKey(status))
-            {
-                continue;
-            }
-
-            OpenApiResponse response = new() { Description = descricao };
-
-            // Mesmo tratamento do AuthorizationOperationTransformer para 401/403: referenciar o
-            // schema (não uma resposta só com descrição) é o que faz um cliente gerado tipar o
-            // erro em vez de tratá-lo como corpo desconhecido.
-            if (StatusesWithTypedBody.Contains(status))
-            {
-                response.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
-                {
-                    ["application/problem+json"] = new OpenApiMediaType
-                    {
-                        Schema = new OpenApiSchemaReference("ProblemDetails"),
-                    },
-                };
-            }
-
-            operation.Responses[status] = response;
+            DeclararRespostasDoFiltro(operation);
         }
 
         return Task.CompletedTask;
     }
+
+    // Method-level vence class-level — a mesma resolução que o filtro faz.
+    private static bool ExigeChave(ControllerActionDescriptor descriptor) =>
+        descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null
+        || descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
+
+    private static void DeclararRespostasDoFiltro(OpenApiOperation operation)
+    {
+        operation.Responses ??= [];
+
+        // Não sobrescreve o que a action já declarou: ela conhece a causa dela, e a descrição específica vale mais que a
+        // genérica do filtro.
+        foreach ((string status, string descricao) in RespostasDoFiltro.Where(resposta => !operation.Responses.ContainsKey(resposta.Status)))
+        {
+            operation.Responses[status] = RespostaDoFiltro(status, descricao);
+        }
+    }
+
+    // Mesmo tratamento do AuthorizationOperationTransformer para 401/403: referenciar o schema (não uma resposta só com
+    // descrição) é o que faz um cliente gerado tipar o erro em vez de tratá-lo como corpo desconhecido.
+    private static OpenApiResponse RespostaDoFiltro(string status, string descricao) => new()
+    {
+        Description = descricao,
+        Content = StatusesWithTypedBody.Contains(status)
+            ? new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
+            {
+                ["application/problem+json"] = new OpenApiMediaType { Schema = new OpenApiSchemaReference("ProblemDetails") },
+            }
+            : null,
+    };
 }

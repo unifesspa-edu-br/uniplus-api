@@ -4,6 +4,8 @@ using System.Text;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Http;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Http;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
@@ -22,22 +24,14 @@ public sealed class CorpoDoDocumentoTests
         resultado.Value!.Length.Should().Be(LimitesDoDocumento.TamanhoMaximoEmBytes);
     }
 
-    [Fact(DisplayName = "Um byte além do teto recusa com acima_do_limite como raiz")]
-    public async Task UmByteAlemDoTeto_AcimaDoLimite()
+    [Fact(DisplayName = "A exceção 413 que o servidor lança ao ler além do limite sobe sem ser traduzida")]
+    public async Task LeituraAlemDoLimite_PropagaAExcecaoDoServidor()
     {
-        Result<string> resultado = await CorpoDoDocumento.LerAsync(Corpo(LimitesDoDocumento.TamanhoMaximoEmBytes + 1), CancellationToken.None);
+        using CorpoQueEstouraOLimite corpo = new();
 
-        resultado.Error!.Code.Should().Be(DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite);
-    }
+        Func<Task> leitura = () => CorpoDoDocumento.LerAsync(corpo, CancellationToken.None);
 
-    [Fact(DisplayName = "A leitura para no teto: não consome o resto do corpo")]
-    public async Task AcimaDoTeto_ParaDeLer()
-    {
-        using MemoryStream corpo = Corpo(LimitesDoDocumento.TamanhoMaximoEmBytes * 3);
-
-        await CorpoDoDocumento.LerAsync(corpo, CancellationToken.None);
-
-        corpo.Position.Should().BeLessThan(LimitesDoDocumento.TamanhoMaximoEmBytes + 81920 + 1);
+        (await leitura.Should().ThrowAsync<BadHttpRequestException>()).Which.StatusCode.Should().Be(StatusCodes.Status413PayloadTooLarge);
     }
 
     [Fact(DisplayName = "O corpo vazio é texto vazio, e a forma o recusa depois")]
@@ -74,5 +68,11 @@ public sealed class CorpoDoDocumentoTests
         Func<Task> leitura = () => CorpoDoDocumento.LerAsync(null!, CancellationToken.None);
 
         await leitura.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    private sealed class CorpoQueEstouraOLimite : MemoryStream
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            throw new BadHttpRequestException("Request body too large.", StatusCodes.Status413PayloadTooLarge);
     }
 }
