@@ -15,8 +15,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O código do formulário que vem da rota é conferido antes de qualquer leitura de cadastro: o que está fora do
-/// formato ou em branco é recusado no próprio código, e nada é gravado.
+/// O código do formulário que vem do corpo é conferido antes de qualquer leitura de cadastro: o que está fora do
+/// formato ou em branco é recusado no próprio código. O código fora do formato que vem do caminho equivale a formulário
+/// inexistente. Em nenhum caso algo é gravado.
 /// </summary>
 public sealed class CodigoDoFormularioNaEscritaTests
 {
@@ -60,23 +61,23 @@ public sealed class CodigoDoFormularioNaEscritaTests
         resultado.Error!.Code.Should().Be(CodigoDoFormularioErrorCodes.FormatoInvalido);
     }
 
-    [Fact(DisplayName = "Remover o formulário com código fora do formato é recusado e nada é gravado")]
+    [Fact(DisplayName = "Remover o formulário com código fora do formato é recusado como formulário inexistente e nada é gravado")]
     public async Task Remover_CodigoForaDoFormato_RecusaOCodigo()
     {
         Result resultado = await RemoverFormularioCommandHandler.Handle(
             new RemoverFormularioCommand(_processo.Id, "inscricao"), _repository, _unitOfWork, CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(CodigoDoFormularioErrorCodes.FormatoInvalido);
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Definir os itens com código fora do formato é recusado antes de ler o catálogo")]
+    [Fact(DisplayName = "Definir os itens com código fora do formato é recusado como formulário inexistente antes de ler o catálogo")]
     public async Task DefinirItens_CodigoForaDoFormato_RecusaAntesDoCatalogo()
     {
         Result resultado = await DefinirFatosColetadosCommandHandler.Handle(
             new DefinirFatosColetadosCommand(_processo.Id, "inscricao", []), _repository, _catalogo, _unitOfWork, CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(CodigoDoFormularioErrorCodes.FormatoInvalido);
+        resultado.Error!.Code.Should().Be(FormularioProcessoErrorCodes.NaoEncontrado);
         await ConferirQueNadaFoiLidoNemGravadoAsync();
     }
 
