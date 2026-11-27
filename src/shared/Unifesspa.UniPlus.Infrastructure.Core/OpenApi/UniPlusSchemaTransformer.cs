@@ -11,6 +11,7 @@ using Microsoft.OpenApi;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -47,6 +48,7 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         {
             AplicarVocabularioFechado(schema, context);
             AplicarTokenDeClassificacao(schema, context);
+            AplicarObrigatorioNoContrato(schema, context);
             AplicarInvariantesDaPropriedade(schema, propertyName);
         }
     }
@@ -122,7 +124,7 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
 
     private static void AjustarRequiredDaPropriedade(OpenApiSchema schema, JsonPropertyInfo propriedade)
     {
-        if (TemTokenDeClassificacao(propriedade))
+        if (TemTokenDeClassificacao(propriedade) || TemAtributo<ObrigatorioNoContratoAttribute>(propriedade))
         {
             (schema.Required ??= new HashSet<string>(StringComparer.Ordinal)).Add(propriedade.Name);
         }
@@ -133,8 +135,21 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
     }
 
     private static bool TemTokenDeClassificacao(JsonPropertyInfo propriedade) =>
+        TemAtributo<TokenDeClassificacaoAttribute>(propriedade);
+
+    private static bool TemAtributo<TAtributo>(JsonPropertyInfo propriedade)
+        where TAtributo : Attribute =>
         propriedade.AttributeProvider is MemberInfo membro
-        && Attribute.IsDefined(membro, typeof(TokenDeClassificacaoAttribute), inherit: true);
+        && Attribute.IsDefined(membro, typeof(TAtributo), inherit: true);
+
+    /// <summary>Publica o campo marcado sem aceitar nulo, mantendo o tipo; a obrigatoriedade entra em <c>required</c> no objeto que o contém.</summary>
+    private static void AplicarObrigatorioNoContrato(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        if (context.JsonPropertyInfo is { } propriedade && TemAtributo<ObrigatorioNoContratoAttribute>(propriedade))
+        {
+            schema.Type &= ~JsonSchemaType.Null;
+        }
+    }
 
     /// <summary>Publica o token de classificação como texto não anulável, com o vocabulário fechado dos cinco valores.</summary>
     private static void AplicarTokenDeClassificacao(OpenApiSchema schema, OpenApiSchemaTransformerContext context)

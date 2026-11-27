@@ -46,8 +46,8 @@ public sealed record ProtecaoDeDadosDto(string Classificacao, string Finalidade,
 
 /// <param name="FaseId">Fase do cronograma que exige o documento.</param>
 /// <param name="EtapaId">Etapa da fase que coleta o documento; nula quando é da fase inteira.</param>
-/// <param name="FormularioCodigo">O código do formulário do processo a que o documento pertence; nulo quando a fase não responde formulário nenhum.</param>
-public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, string? FormularioCodigo);
+/// <param name="FormularioCodigo">O código do formulário do processo a que o documento pertence; toda exigência o tem.</param>
+public sealed record MomentoDaExigenciaDto(Guid FaseId, Guid? EtapaId, string FormularioCodigo);
 
 /// <param name="Tipo">Código (<c>GERAL</c> ou <c>CONDICIONAL</c>) e rótulo da aplicabilidade.</param>
 /// <param name="Condicoes">As condições do gatilho.</param>

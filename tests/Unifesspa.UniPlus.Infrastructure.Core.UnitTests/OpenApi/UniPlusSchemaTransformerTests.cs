@@ -12,6 +12,7 @@ using Microsoft.OpenApi;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class UniPlusSchemaTransformerTests
@@ -65,10 +66,26 @@ public sealed class UniPlusSchemaTransformerTests
             .BeEquivalentTo(["PUBLICO", "INTERNO", "PESSOAL", "IDENTIFICADOR", "SENSIVEL"]);
     }
 
-    private static OpenApiSchemaTransformerContext ContextoDoTipo() => new()
+    [Fact(DisplayName = "O campo obrigatório no contrato entra em required do objeto e sai sem aceitar nulo")]
+    public async Task ObrigatorioNoContrato_EntraEmRequiredESaiSemNulo()
+    {
+        OpenApiSchema objeto = new();
+        OpenApiSchema campo = new() { Type = JsonSchemaType.String | JsonSchemaType.Null };
+        UniPlusSchemaTransformer transformer = new();
+
+        await transformer.TransformAsync(objeto, ContextoDoTipo<ComCampoObrigatorio>(), CancellationToken.None);
+        await transformer.TransformAsync(campo, ContextoDaPropriedade<ComCampoObrigatorio>("codigo"), CancellationToken.None);
+
+        objeto.Required.Should().BeEquivalentTo(["codigo"]);
+        campo.Type.Should().Be(JsonSchemaType.String);
+    }
+
+    private static OpenApiSchemaTransformerContext ContextoDoTipo() => ContextoDoTipo<Dto>();
+
+    private static OpenApiSchemaTransformerContext ContextoDoTipo<T>() => new()
     {
         DocumentName = "t",
-        JsonTypeInfo = TipoDe<Dto>(),
+        JsonTypeInfo = TipoDe<T>(),
         JsonPropertyInfo = null,
         ParameterDescription = null,
         ApplicationServices = null!,
@@ -129,6 +146,12 @@ public sealed class UniPlusSchemaTransformerTests
 
         [TokenDeClassificacao]
         public string Token { get; init; } = "";
+    }
+
+    public sealed class ComCampoObrigatorio
+    {
+        [ObrigatorioNoContrato]
+        public string? Codigo { get; init; }
     }
 
     public sealed record Item() : ItemClassificado(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, null);

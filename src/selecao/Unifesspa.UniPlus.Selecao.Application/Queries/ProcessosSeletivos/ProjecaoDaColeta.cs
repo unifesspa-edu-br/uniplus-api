@@ -165,7 +165,7 @@ internal static class ProjecaoDaColeta
     private static MomentoDaExigenciaDto ProjetarMomento(DocumentoExigido documento) => new(
         documento.ExigidoNaFaseId,
         documento.ExigidoNaEtapaId,
-        documento.FormularioCodigo?.Valor);
+        documento.FormularioCodigo.Valor);
 
     private static RequisitosDoDocumentoDto ProjetarRequisitos(DocumentoExigido documento) => new(
         ProjetarFormatosPermitidos(documento.FormatosPermitidos),
