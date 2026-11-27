@@ -55,9 +55,9 @@ internal sealed class SalvarRespostaDeTeste
                 with
             { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([Inscricao.ETag])).IsSuccess.Should().BeTrue();
 
-    public Task<Result<InscricaoDto>> SalvarAsync(InscricaoRequest request, IConferenciaEnderecoGeo? geo = null) =>
+    public Task<Result<InscricaoDto>> SalvarAsync(InscricaoRequest request, IConferenciaEnderecoGeo? geo = null, PrecondicaoIfMatch? precondicao = null) =>
         SalvarDeTeste.Handle(
-            new(ProcessoId, request, PrecondicaoIfMatch.DeTags([Inscricao.ETag])),
+            new(ProcessoId, request, precondicao ?? PrecondicaoIfMatch.DeTags([Inscricao.ETag])),
             Rascunho(Inscricoes, _processos, _codecs, DivulgacaoDeTeste.Relogio),
             Inscricoes, UnitOfWork, UsuarioComCpf(Inscricao.Titular.Cpf), geo);
 }

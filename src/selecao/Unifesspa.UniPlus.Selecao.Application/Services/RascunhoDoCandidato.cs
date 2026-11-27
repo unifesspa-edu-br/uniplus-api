@@ -98,13 +98,12 @@ public sealed class RascunhoDoCandidato(
 
     /// <summary>
     /// A ocorrência de grupo com id repetido ou em branco não se avalia: a identidade da ocorrência é o que a avaliação do
-    /// formulário exige, e sem ela a avaliação lança. A recusa é a mesma do envio e vem da regra de forma do domínio, só a de identidade; as
+    /// formulário exige, e sem ela a avaliação lança. A recusa é a mesma do envio e vem do domínio, só a de identidade; as
     /// demais recusas de forma seguem o curso de antes, na gravação, depois da precondição de versão.
     /// </summary>
     private static Result<PedidoDoRascunho> ComAIdentidadeDasOcorrenciasConferida(PedidoDoRascunho pedido)
     {
-        List<FieldError> repetidas = [.. PreenchimentoDoCandidato.RecusasDeForma(pedido.Corpo.Respostas, pedido.Corpo.Grupos, pedido.Contexto.Admitidas)
-            .Where(static r => r.Error.Code == InscricaoErrorCodes.GrupoIdDuplicado)];
+        IReadOnlyList<FieldError> repetidas = PreenchimentoDoCandidato.RecusasDaIdentidadeDasOcorrencias(pedido.Corpo.Grupos, pedido.Contexto.Admitidas);
         return repetidas.Count > 0 ? Result<PedidoDoRascunho>.ValidationFailure(repetidas) : Result<PedidoDoRascunho>.Success(pedido);
     }
 }

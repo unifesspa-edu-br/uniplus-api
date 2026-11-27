@@ -227,4 +227,48 @@ public sealed class PreenchimentoDoCandidatoTests
             ("ENDERECO", InscricaoErrorCodes.EnderecoSemCep, "Informe o CEP do seu endereço, com 8 dígitos. Se você não sabe o CEP, consulte a busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento."),
             ("ENDERECO", InscricaoErrorCodes.EnderecoComplementoLongo, "O complemento aceita até 300 caracteres. Resuma a descrição do seu endereço."));
     }
+
+    private static RespostasAdmitidas AdmitidasComGrupo => Admitidas with
+    {
+        SubitensPorGrupo = new Dictionary<string, IReadOnlySet<string>> { ["GRUPO"] = new HashSet<string> { "CAMPO" } },
+    };
+
+    private static OcorrenciaDeGrupoInscricao Ocorrencia(string id) => new(id, new Dictionary<string, JsonElement>());
+
+    private static IReadOnlyList<FieldError> IdentidadeDe(RespostasAdmitidas admitidas, params (string Grupo, string[] Ids)[] grupos) =>
+        PreenchimentoDoCandidato.RecusasDaIdentidadeDasOcorrencias(
+            grupos.ToDictionary(static g => g.Grupo, static g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)[.. g.Ids.Select(Ocorrencia)], StringComparer.Ordinal), admitidas);
+
+    [Fact(DisplayName = "A ocorrência com id em branco não tem identidade própria")]
+    public void RecusasDaIdentidadeDasOcorrencias_IdEmBranco_Recusa()
+    {
+        IdentidadeDe(AdmitidasComGrupo, ("GRUPO", ["", "a"])).Select(static r => (r.Field, r.Error.Code))
+            .Should().Equal(("GRUPO.", InscricaoErrorCodes.GrupoIdDuplicado));
+    }
+
+    [Fact(DisplayName = "No id repetido a primeira ocorrência fica válida e só a segunda é recusada")]
+    public void RecusasDaIdentidadeDasOcorrencias_IdRepetido_RecusaSoARepeticao()
+    {
+        IdentidadeDe(AdmitidasComGrupo, ("GRUPO", ["a", "b", "a", "a"])).Select(static r => (r.Field, r.Error.Code))
+            .Should().Equal(("GRUPO.a", InscricaoErrorCodes.GrupoIdDuplicado), ("GRUPO.a", InscricaoErrorCodes.GrupoIdDuplicado));
+    }
+
+    [Fact(DisplayName = "O grupo fora do formulário não tem os ids conferidos na identidade")]
+    public void RecusasDaIdentidadeDasOcorrencias_GrupoForaDoFormulario_NaoConfere()
+    {
+        IdentidadeDe(AdmitidasComGrupo, ("OUTRO", ["a", "a"])).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A forma recusa a ocorrência sem identidade só pela identidade e as demais pelos campos, na ordem das ocorrências")]
+    public void RecusasDeForma_OcorrenciaSemIdentidadeEOutraComCampoForaDoGrupo_MantemAOrdemDasOcorrencias()
+    {
+        RespostasAdmitidas admitidas = AdmitidasComGrupo with { Definicoes = new Dictionary<string, DefinicaoDaResposta> { ["CAMPO"] = new(TipoDoValorDeResposta.Texto, false, false) } };
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new()
+        {
+            ["GRUPO"] = [new("a", new Dictionary<string, JsonElement> { ["FORA"] = JsonSerializer.SerializeToElement("x") }), new("a", new Dictionary<string, JsonElement> { ["FORA"] = JsonSerializer.SerializeToElement("x") })],
+        };
+
+        PreenchimentoDoCandidato.RecusasDeForma(new Dictionary<string, JsonElement>(), grupos, admitidas).Select(static r => (r.Field, r.Error.Code))
+            .Should().Equal(("GRUPO.a.FORA", InscricaoErrorCodes.FatoForaDoGrupo), ("GRUPO.a", InscricaoErrorCodes.GrupoIdDuplicado));
+    }
 }

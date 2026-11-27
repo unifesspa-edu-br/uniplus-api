@@ -98,11 +98,8 @@ public static class VeredictoDeSubmissao
     private static IEnumerable<RecusaDaSubmissao> RecusasDasOcorrencias(
         AvaliacaoGrupo grupo, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
     {
-        HashSet<string> idsVistos = new(StringComparer.Ordinal);
         foreach (AvaliacaoOcorrencia ocorrencia in grupo.Ocorrencias)
         {
-            if (!idsVistos.Add(ocorrencia.Id))
-                yield return Independente(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'."));
             foreach (RecusaDaSubmissao recusa in ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio, classificador))
             {
                 yield return recusa;

@@ -206,18 +206,45 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
             return [new FieldError(codigo, new DomainError(InscricaoErrorCodes.GrupoForaDoFormulario,
                 "Este grupo não pertence ao formulário desta inscrição. Remova-o das respostas."))];
         }
-        HashSet<string> ids = new(StringComparer.Ordinal);
-        return [.. ocorrencias.SelectMany(o => RecusasDaOcorrencia(codigo, o, ids, subitens, definicoes))];
+        HashSet<int> semIdentidade = [.. PosicoesSemIdentidade(ocorrencias)];
+        return [.. ocorrencias.SelectMany((o, posicao) => semIdentidade.Contains(posicao)
+            ? [RecusaDeIdentidade(codigo, o)]
+            : RecusasDaOcorrencia(codigo, o, subitens, definicoes))];
     }
 
-    private static IEnumerable<FieldError> RecusasDaOcorrencia(string grupo, OcorrenciaDeGrupoInscricao ocorrencia, HashSet<string> ids,
+    /// <summary>
+    /// Só a identidade das ocorrências, dos grupos que o formulário tem: sem ela a avaliação do formulário não roda. Grupo fora do
+    /// formulário não tem os ids conferidos.
+    /// </summary>
+    public static IReadOnlyList<FieldError> RecusasDaIdentidadeDasOcorrencias(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos, RespostasAdmitidas admitidas)
+    {
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(admitidas);
+        return [.. grupos.Where(g => admitidas.SubitensPorGrupo.ContainsKey(g.Key))
+            .SelectMany(g => PosicoesSemIdentidade(g.Value).Select(posicao => RecusaDeIdentidade(g.Key, g.Value[posicao])))];
+    }
+
+    /// <summary>Id em branco ou já usado por uma ocorrência anterior: a primeira com o id continua válida.</summary>
+    private static List<int> PosicoesSemIdentidade(IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias)
+    {
+        HashSet<string> ids = new(StringComparer.Ordinal);
+        List<int> posicoes = [];
+        for (int posicao = 0; posicao < ocorrencias.Count; posicao++)
+        {
+            string id = ocorrencias[posicao].Id;
+            if (string.IsNullOrWhiteSpace(id) || !ids.Add(id)) posicoes.Add(posicao);
+        }
+        return posicoes;
+    }
+
+    private static FieldError RecusaDeIdentidade(string grupo, OcorrenciaDeGrupoInscricao ocorrencia) =>
+        new($"{grupo}.{ocorrencia.Id}", new DomainError(InscricaoErrorCodes.GrupoIdDuplicado,
+            "Cada ocorrência do grupo precisa de um identificador próprio, não vazio e não repetido."));
+
+    private static IEnumerable<FieldError> RecusasDaOcorrencia(string grupo, OcorrenciaDeGrupoInscricao ocorrencia,
         IReadOnlySet<string> subitens, IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
     {
-        if (string.IsNullOrWhiteSpace(ocorrencia.Id) || !ids.Add(ocorrencia.Id))
-        {
-            return [new FieldError($"{grupo}.{ocorrencia.Id}", new DomainError(InscricaoErrorCodes.GrupoIdDuplicado,
-                "Cada ocorrência do grupo precisa de um identificador próprio, não vazio e não repetido."))];
-        }
         string prefixo = $"{grupo}.{ocorrencia.Id}.";
         return ocorrencia.Respostas.Keys.Where(fato => !subitens.Contains(fato)).Select(fato => new FieldError(prefixo + fato,
             new DomainError(InscricaoErrorCodes.FatoForaDoGrupo, "Este campo não pertence ao grupo. Remova-o desta ocorrência e responda-o fora do grupo, se o formulário o pedir.")))

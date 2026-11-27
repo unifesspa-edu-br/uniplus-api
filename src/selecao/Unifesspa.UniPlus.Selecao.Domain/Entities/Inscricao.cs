@@ -312,10 +312,11 @@ public sealed class Inscricao : EntityBase
             : AplicarEnvio(numeroGeradoSeNecessario, recebido, admitidas, apuracao, instante);
     }
 
-    // A forma é conferida aqui de novo para o domínio se proteger de um envio que não passou pela conferência do envio; num envio válido não há recusa.
+    // A forma e o endereço são conferidos aqui para o domínio se proteger de um envio que não passou pela conferência do envio; num envio válido não há recusa.
     private IReadOnlyList<FieldError> RecusasDoEnvioCompleto(PreenchimentoDoCandidato recebido, RespostasAdmitidas admitidas, ApuracaoDoEnvio apuracao) =>
     [
         .. recebido.RecusasDeForma(admitidas),
+        .. RecusasDoEnderecoEnviado(recebido.Respostas, admitidas),
         .. RecusasDoEnvio(recebido, admitidas, apuracao),
         .. ModalidadesDoEnvio.DaAvaliacao(apuracao.Avaliacao, recebido.Opcoes).Recusas(recebido.Opcoes, admitidas),
     ];
@@ -365,7 +366,7 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// Acumula as recusas locais na ordem do envio, antes das modalidades e das conferências externas.
-    /// A forma do preenchimento não entra aqui: quem chama a confere uma vez, antes.
+    /// Nem a forma nem o endereço entram aqui: quem chama os confere uma vez, antes (<see cref="RecusasDoEnderecoEnviado"/>).
     /// </summary>
     public IReadOnlyList<FieldError> RecusasDoEnvio(PreenchimentoDoCandidato recebido, RespostasAdmitidas admitidas,
         ApuracaoDoEnvio apuracao, IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? documentosEmVerificacao = null)
@@ -378,19 +379,22 @@ public sealed class Inscricao : EntityBase
         [
             .. apuracao.RecusasDosDerivados(),
             .. Titular.RecusasDoCpf(recebido.Respostas),
-            .. RecusasDoPerfilEnviado(recebido, mescladas, admitidas),
+            .. RecusasDoPerfilEnviado(mescladas, admitidas),
             .. recebido.Opcoes.RecusasAoEnviar(admitidas),
             .. apuracao.Avaliacao.Documentos.RecusasDosAusentes(documentosEmVerificacao),
             .. recebido.RecusasDosAceites(admitidas.Termos),
         ];
     }
 
-    private static IEnumerable<FieldError> RecusasDoPerfilEnviado(PreenchimentoDoCandidato recebido,
-        IReadOnlyDictionary<string, JsonElement> mescladas, RespostasAdmitidas admitidas) =>
+    private static IEnumerable<FieldError> RecusasDoPerfilEnviado(IReadOnlyDictionary<string, JsonElement> mescladas, RespostasAdmitidas admitidas) =>
     [
         .. ConferenciaDosNomesDoTitular.RecusasDoNome(mescladas, admitidas),
         .. ConferenciaDosNomesDoTitular.RecusasDoNomeSocialAoEnviar(mescladas, admitidas),
-        .. PreenchimentoDoCandidato.ParaValidacao(recebido.Opcoes, mescladas, recebido.Grupos, recebido.Aceites).RecusasDoEndereco(admitidas),
     ];
+
+    /// <summary>Confere o endereço do que o envio vai gravar: as respostas recebidas sobre as já gravadas.</summary>
+    public IReadOnlyList<FieldError> RecusasDoEnderecoEnviado(IReadOnlyDictionary<string, JsonElement> respostasRecebidas, RespostasAdmitidas admitidas) =>
+        [.. PreenchimentoDoCandidato.ParaValidacao(Formulario.Preenchimento.Opcoes, Formulario.Preenchimento.RespostasAposMesclar(respostasRecebidas),
+            Formulario.Preenchimento.Grupos, Formulario.Preenchimento.Aceites).RecusasDoEndereco(admitidas)];
 
 }
