@@ -12,7 +12,6 @@ internal static class RecusasDeCadastroDasVagas
     private const string Distribuicao = "ConfiguracaoDistribuicaoVagas.";
     private const string Cascata = "ConfiguracaoCascataRemanejamento.";
     private const string Fada = "ConfiguracaoDoFada.";
-    private const string Atendimento = "AtendimentoEspecializado.";
 
     internal static DomainError OfertaNaoEncontrada() =>
         new(Distribuicao + "OfertaCursoNaoEncontrada", "Oferta de curso não encontrada ou não está mais viva.");
@@ -59,13 +58,4 @@ internal static class RecusasDeCadastroDasVagas
     internal static DomainError CamposDoFadaObrigatorios() => new(
         Fada + "CamposObrigatorios",
         "A regra, a versão dela, o fator e a base legal são obrigatórios quando o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA).");
-
-    internal static DomainError CondicaoNaoEncontrada() =>
-        new(Atendimento + "CondicaoNaoEncontrada", "Condição de atendimento não encontrada ou não está mais viva.");
-
-    internal static DomainError RecursoNaoEncontrado() =>
-        new(Atendimento + "RecursoNaoEncontrado", "Recurso de acessibilidade não encontrado ou não está mais vivo.");
-
-    internal static DomainError TipoDeDeficienciaNaoEncontrado() =>
-        new(Atendimento + "TipoDeficienciaNaoEncontrado", "Tipo de deficiência não encontrado ou não está mais vivo.");
 }

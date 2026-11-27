@@ -35,7 +35,7 @@ internal static class LeituraDoAtendimento
         static opcao => CondicaoOfertada.Criar(opcao.OrigemId, opcao.Codigo, opcao.Nome),
         "condicoes",
         "condicaoCodigo",
-        RecusasDeCadastroDasVagas.CondicaoNaoEncontrada);
+        AtendimentoEspecializado.CondicaoNaoEncontrada);
 
     private static ItensDoAtendimento<RecursoOfertado> Recursos(AtendimentoNoDocumento atendimento, CadastrosCitadosNoDocumento cadastros) => Itens(
         atendimento.Recursos,
@@ -43,7 +43,7 @@ internal static class LeituraDoAtendimento
         static opcao => RecursoOfertado.Criar(opcao.OrigemId, opcao.Codigo, opcao.Nome),
         "recursos",
         "recursoCodigo",
-        RecusasDeCadastroDasVagas.RecursoNaoEncontrado);
+        AtendimentoEspecializado.RecursoNaoEncontrado);
 
     private static ItensDoAtendimento<DeficienciaAtendida> TiposDeDeficiencia(AtendimentoNoDocumento atendimento, CadastrosCitadosNoDocumento cadastros) => Itens(
         atendimento.TiposDeficiencia,
@@ -51,7 +51,7 @@ internal static class LeituraDoAtendimento
         static opcao => DeficienciaAtendida.Criar(opcao.OrigemId, opcao.Codigo, opcao.Nome),
         "tiposDeficiencia",
         "tipoDeficienciaCodigo",
-        RecusasDeCadastroDasVagas.TipoDeDeficienciaNaoEncontrado);
+        AtendimentoEspecializado.TipoDeficienciaNaoEncontrado);
 
     private static AtendimentoLido Montar(
         ItensDoAtendimento<CondicaoOfertada> condicoes, ItensDoAtendimento<RecursoOfertado> recursos, ItensDoAtendimento<DeficienciaAtendida> tipos)
