@@ -14559,7 +14559,7 @@
     {
       "codigo": "uniplus.selecao.base_legal_da_comprovacao.abrangencia_obrigatoria",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0059"
       ],
       "oQueAconteceu": [
         "A base legal não informa uma abrangência reconhecida."
@@ -14575,7 +14575,7 @@
     {
       "codigo": "uniplus.selecao.base_legal_da_comprovacao.referencia_obrigatoria",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0059"
       ],
       "oQueAconteceu": [
         "A base legal não informa a referência da norma."
@@ -14590,7 +14590,7 @@
     {
       "codigo": "uniplus.selecao.base_legal_da_comprovacao.situacao_obrigatoria",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0059"
       ],
       "oQueAconteceu": [
         "A base legal não informa uma situação reconhecida."
@@ -17081,7 +17081,7 @@
     {
       "codigo": "uniplus.selecao.consequencias_do_descumprimento.acrescimo_nao_oferecido",
       "requisitos": [
-        "UNI-REQ-0502"
+        "UNI-REQ-0519"
       ],
       "oQueAconteceu": [
         "Uma exigência, um grupo de comprovação, uma banca ou um formulário determina retirar o acréscimo do Fator de Atenuação das Desigualdades de Acesso, mas o processo não oferece esse acréscimo. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio. A mensagem e o campo da resposta indicam qual deles declarou a retirada."
@@ -17097,7 +17097,7 @@
     {
       "codigo": "uniplus.selecao.consequencias_do_descumprimento.retira_a_modalidade_sem_ampla_concorrencia",
       "requisitos": [
-        "UNI-REQ-0501"
+        "UNI-REQ-0518"
       ],
       "oQueAconteceu": [
         "Uma exigência, um grupo de comprovação, uma banca, um formulário ou uma modalidade determina a retirada da modalidade, mas a oferta que ela alcança não inclui ampla concorrência. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio; a modalidade, a ação quando o indeferimento ocorre. A mensagem e o campo da resposta indicam qual deles declarou a retirada. Uma oferta sem ampla concorrência é apontada uma única vez, mesmo quando mais de uma modalidade dela declara a retirada."
@@ -17113,7 +17113,7 @@
     {
       "codigo": "uniplus.selecao.consequencias_do_descumprimento.sem_modalidade_em_questao",
       "requisitos": [
-        "UNI-REQ-0501"
+        "UNI-REQ-0518"
       ],
       "oQueAconteceu": [
         "Uma exigência, um grupo de comprovação, uma banca ou um formulário determina retirar a modalidade, mas a condição dele não alcança nenhuma modalidade ofertada ou alcança todas elas. A banca declara a consequência da ausência; o formulário, a consequência da falta de envio. A mensagem e o campo da resposta indicam qual deles declarou a retirada."
@@ -18191,7 +18191,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0501"
       ],
       "oQueAconteceu": [
         "A consequência do documento não é reconhecida. Os valores aceitos são `ELIMINA_DO_PROCESSO`, `RETIRA_A_MODALIDADE` e `RETIRA_O_ACRESCIMO`. A declaração é opcional."
@@ -18206,7 +18206,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0523"
       ],
       "oQueAconteceu": [
         "Quando uma modalidade de vaga declara o que acontece com o candidato indeferido (a ação de\nindeferimento), a consequência de indeferimento do documento exigido tem de ser a mesma. O\ndocumento apontado declara uma consequência diferente da ação de uma modalidade que ele pode\nalcançar.",
@@ -18392,7 +18392,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0520"
       ],
       "oQueAconteceu": [
         "Uma exigência ou grupo abre prazo para reenvio, mas a fase correspondente não permite complementação de documentos."
@@ -19320,7 +19320,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0520"
       ],
       "oQueAconteceu": [
         "A fase deixaria de permitir complementação, mas uma exigência ou grupo nela ainda abre prazo para reenvio."
@@ -26342,7 +26342,7 @@
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_proibida_quando_exige_todos",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0521"
       ],
       "oQueAconteceu": [
         "O grupo exige todos os itens, mas informa base legal própria. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
@@ -26357,7 +26357,7 @@
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.base_legal_sem_consequencia",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0521"
       ],
       "oQueAconteceu": [
         "O grupo tem base legal, mas não tem consequência. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
@@ -26372,7 +26372,7 @@
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_incoerente_com_acao_da_vaga",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0523"
       ],
       "oQueAconteceu": [
         "Um grupo com quantidade mínima de itens pode ter consequência própria de indeferimento. Quando uma\nmodalidade de vaga declara o que acontece com o candidato indeferido (a ação de indeferimento),\na consequência do grupo tem de ser a mesma. O grupo apontado declara uma consequência\ndiferente da ação de uma modalidade que ele pode alcançar.",
@@ -26390,7 +26390,7 @@
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.consequencia_invalida",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0501"
       ],
       "oQueAconteceu": [
         "A consequência informada para o grupo não é reconhecida. Na definição dos documentos exigidos, o campo da resposta indica a posição do item."
@@ -26719,7 +26719,7 @@
     {
       "codigo": "uniplus.selecao.regra_de_comprovacao.reenvio_proibido_em_regra_de_documento",
       "requisitos": [
-        "UNI-REQ-0070"
+        "UNI-REQ-0520"
       ],
       "oQueAconteceu": [
         "Uma regra de documento declarou `indeferimento.abrePrazoParaReenvio` como verdadeiro. A regra de documento não tem indeferimento próprio: o reenvio pertence à exigência do documento, em `documento.indeferimento.abrePrazoParaReenvio`, e o grupo de comprovação declara o reenvio no `indeferimento` dele. Sem a recusa, a declaração seria descartada e a leitura seguinte não a traria de volta.",
