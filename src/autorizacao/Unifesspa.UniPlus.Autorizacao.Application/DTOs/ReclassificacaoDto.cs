@@ -66,13 +66,19 @@ public sealed record DecisaoDaReclassificacaoDto(
     IReadOnlyList<Guid> ParaOutraPessoa,
     IReadOnlyList<Guid> PuladasPorEscopo);
 
-/// <summary>Uma divergência da governança para a tela.</summary>
+/// <summary>
+/// Uma divergência da governança para a tela. Na divergência de classificação vêm só <c>ClassificacaoAnterior</c> e
+/// <c>ClassificacaoNova</c>; na de escopo, só <c>DeUnidadeAnterior</c> e <c>DeUnidadeNovo</c> (se a permissão vale por
+/// unidade); na de composição nenhum dos quatro.
+/// </summary>
 public sealed record DivergenciaDaGovernancaDto(
     Guid Id,
     Guid PerfilId,
     string PerfilNome,
     string Codigo,
     CodigoComRotulo<TipoDeDivergencia> Tipo,
-    string? De,
-    string? Para,
+    CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoAnterior,
+    CodigoComRotulo<ClassificacaoDeProtecao>? ClassificacaoNova,
+    bool? DeUnidadeAnterior,
+    bool? DeUnidadeNovo,
     DateTimeOffset Instante);

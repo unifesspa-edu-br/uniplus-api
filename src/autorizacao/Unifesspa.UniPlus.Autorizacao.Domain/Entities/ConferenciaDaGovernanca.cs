@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -49,21 +48,18 @@ public static class ConferenciaDaGovernanca
     {
         if (linhas.Antes.Classificacao != linhas.Depois.Classificacao)
         {
-            yield return DivergenciaDaGovernanca.DaMudanca(
-                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, TipoDeDivergencia.Classificacao,
-                new ValorDivergente(Texto(linhas.Antes.Classificacao), Texto(linhas.Depois.Classificacao)), instante, 0);
+            yield return DivergenciaDaGovernanca.DaClassificacao(
+                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor,
+                new MudancaDaClassificacao(linhas.Antes.Classificacao, linhas.Depois.Classificacao), instante, 0);
         }
 
         if (linhas.Antes.DeUnidade != linhas.Depois.DeUnidade)
         {
-            yield return DivergenciaDaGovernanca.DaMudanca(
-                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, TipoDeDivergencia.Escopo,
-                new ValorDivergente(linhas.Antes.DeUnidade.ToString(), linhas.Depois.DeUnidade.ToString()), instante, 0);
+            yield return DivergenciaDaGovernanca.DoEscopo(
+                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor,
+                new MudancaDoEscopo(linhas.Antes.DeUnidade, linhas.Depois.DeUnidade), instante, 0);
         }
     }
-
-    private static string Texto(ClassificacaoDeProtecao classificacao) =>
-        ClassificacoesDeProtecao.ParaTokenCanonico(classificacao);
 
     private static DivergenciaDaGovernanca Registrar(Guid implantacaoId, PermissaoDeGovernanca permissao, TipoDeDivergencia tipo, DateTimeOffset instante) =>
         DivergenciaDaGovernanca.DaComposicao(implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, tipo, instante, 0);
