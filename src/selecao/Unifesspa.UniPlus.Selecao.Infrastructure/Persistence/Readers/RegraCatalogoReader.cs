@@ -52,6 +52,29 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<RegraCatalogo>> ListarPorReferenciasAsync(
+        IReadOnlyCollection<(string Codigo, string Versao)> referencias,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(referencias);
+
+        // O caractere nulo não cabe em coluna de texto do Postgres: o par com ele não tem regra, e a consulta nem o leva.
+        HashSet<(string Codigo, string Versao)> pares = [.. referencias.Where(static par => !TemCaractereNulo(par.Codigo, par.Versao))];
+        List<string> codigos = [.. pares.Select(static par => par.Codigo).Distinct(StringComparer.Ordinal)];
+        List<RegraCatalogo> dosCodigos = await _dbContext.RolDeRegras
+            .AsNoTracking()
+            .Where(r => codigos.Contains(r.Codigo))
+            .OrderBy(r => r.Codigo)
+            .ThenBy(r => r.Versao)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. dosCodigos.Where(r => pares.Contains((r.Codigo, r.Versao)))];
+    }
+
+    private static bool TemCaractereNulo(string codigo, string versao) =>
+        codigo.Contains('\0', StringComparison.Ordinal) || versao.Contains('\0', StringComparison.Ordinal);
+
     public async Task<(IReadOnlyList<RegraCatalogo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         TipoRegra? tipo,
         Guid? afterId,
