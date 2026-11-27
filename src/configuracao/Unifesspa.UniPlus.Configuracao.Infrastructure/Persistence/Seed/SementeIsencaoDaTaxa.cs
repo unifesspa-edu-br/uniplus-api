@@ -74,9 +74,12 @@ public static class SementeIsencaoDaTaxa
     {
         ModeloFormulario modelo = Declaracao.Exigir(
             ModeloFormulario.Criar(
-                ModeloDeIsencao, "Solicitação de isenção da taxa de inscrição",
-                "Pedido de isenção da taxa de inscrição pela Lei nº 12.799/2013, para qualquer processo seletivo que cobre taxa.",
-                new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: false), tipoProcessoCodigo: null, Conteudo(),
+                ModeloDeIsencao,
+                new DescritivoDoModelo(
+                    "Solicitação de isenção da taxa de inscrição",
+                    "Pedido de isenção da taxa de inscrição pela Lei nº 12.799/2013, para qualquer processo seletivo que cobre taxa.",
+                    TipoProcessoCodigo: null),
+                new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: false), Conteudo(),
                 new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
             $"modelo {ModeloDeIsencao}");
         Declaracao.Exigir(modelo.Ativar(), $"ativação do modelo {ModeloDeIsencao}");

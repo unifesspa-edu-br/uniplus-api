@@ -235,7 +235,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         IReadOnlyList<GrupoDoModelo>? grupos = null)
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", null, DeOutraFaseObrigatoria, null,
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação", null, null), DeOutraFaseObrigatoria,
             new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens, termos ?? [], pressupostos ?? [], grupos ?? []),
             derivacoes ?? new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

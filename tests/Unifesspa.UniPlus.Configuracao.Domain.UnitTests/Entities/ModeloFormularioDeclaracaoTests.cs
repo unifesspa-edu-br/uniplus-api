@@ -45,7 +45,7 @@ public sealed class ModeloFormularioDeclaracaoTests
     {
         ModeloFormulario modelo = Criar(DeOutraFaseFacultativa, Conteudo([Item("CERTIFICADO", 0)])).Value!;
 
-        Result atualizado = modelo.Atualizar("Outro nome", null, null, Conteudo([Item("DIPLOMA", 0)]), SemDerivacoes);
+        Result atualizado = modelo.Atualizar(new DescritivoDoModelo("Outro nome", null, null), Conteudo([Item("DIPLOMA", 0)]), SemDerivacoes);
 
         atualizado.IsSuccess.Should().BeTrue();
         modelo.Declaracao.Should().Be(DeOutraFaseFacultativa);
@@ -67,7 +67,7 @@ public sealed class ModeloFormularioDeclaracaoTests
     public void DeclaracaoAusente_AcumulaComAsDemaisRecusas()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            null, "Nome", null, null, "TIPO", Conteudo([Item("CERTIFICADO", 0)], "SEXO", "SEXO"), SemDerivacoes);
+            null, new DescritivoDoModelo("Nome", null, "TIPO"), null, Conteudo([Item("CERTIFICADO", 0)], "SEXO", "SEXO"), SemDerivacoes);
 
         modelo.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
             [ModeloFormularioErrorCodes.CodigoObrigatorio, ModeloFormularioErrorCodes.DeclaracaoIncompleta, ModeloFormularioErrorCodes.PressupostoRepetido]);
@@ -97,7 +97,7 @@ public sealed class ModeloFormularioDeclaracaoTests
     public void OutraFase_SemTipoDeProcesso_EGravado()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "DADOS_COMPLEMENTARES", "Dados complementares", null, DeOutraFaseObrigatoria, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            "DADOS_COMPLEMENTARES", new DescritivoDoModelo("Dados complementares", null, null), DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         modelo.IsSuccess.Should().BeTrue();
         modelo.Value!.TipoProcessoCodigo.Should().BeNull();

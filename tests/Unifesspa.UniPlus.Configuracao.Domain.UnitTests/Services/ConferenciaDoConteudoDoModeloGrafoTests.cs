@@ -32,7 +32,7 @@ public sealed class ConferenciaDoConteudoDoModeloGrafoTests
         ConteudoDoModelo conteudo,
         DeclaracaoDoFormulario? declaracao = null,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>>? derivacoes = null) =>
-        ConferenciaDoConteudoDoModelo.Conferir(declaracao ?? DeOutraFaseObrigatoria, conteudo, derivacoes ?? SemDerivacoes);
+        ConferenciaDoConteudoDoModelo.Conferir(declaracao ?? DeOutraFaseObrigatoria, conteudo, derivacoes ?? SemDerivacoes, conteudoPorInteiro: true);
 
     private static ItemDoModelo Opcional(string fato, int ordem = 0) => Item(fato, ordem).ComObrigatoriedade(Obrigatoriedade.Nunca);
 

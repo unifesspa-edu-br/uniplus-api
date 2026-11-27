@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
+using CampoDoMembro = (string FatoCodigo, bool TemExibicao, Unifesspa.UniPlus.Regras.Formularios.Obrigatoriedade Obrigatoriedade, System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Regras.Formularios.RestricaoValor> Restricoes);
+
 /// <summary>Os itens lidos pela forma, sem leitura externa: a configuração de cada item cuja forma foi aceita.</summary>
 internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<ConfiguracaoDoItem?> Configuracoes, IReadOnlyList<FieldError> Erros);
 
@@ -145,10 +147,7 @@ internal static class EscritaDosItens
     // forma lida dos campos; as recusas são acumuladas na mesma resposta (ADR-0125).
     private static IEnumerable<FieldError> RecusasDaFormaDoGrupo(
         GrupoColetadoInput input, OcorrenciasLidasDoGrupo ocorrencias, RegrasLidasDoGrupo regras, ItensLidos campos, string caminho) =>
-    [
-        .. ConferirFormaDoGrupo(input, ocorrencias.ParaAConferenciaDaForma, regras, caminho),
-        .. NoCaminho(ConferirCandidatoComoMembro(ocorrencias, input.Subitens ?? [], campos), caminho),
-    ];
+        NoCaminho(FormaDoGrupoNaEntrada.Conferir(input, ocorrencias, regras.Exibicao, regras.Obrigatoriedade, CamposDoMembro(input, campos)), caminho);
 
     private static RegrasLidasDoGrupo LerRegrasDoGrupo(GrupoColetadoInput input, string caminho)
     {
@@ -166,27 +165,17 @@ internal static class EscritaDosItens
         return new RegrasLidasDoGrupo(exibicao.IsSuccess ? exibicao.Value : null, obrigatoriedade, erros);
     }
 
-    private static IEnumerable<FieldError> ConferirFormaDoGrupo(
-        GrupoColetadoInput input, OcorrenciasDoGrupo ocorrencias, RegrasLidasDoGrupo regras, string caminho) =>
-        NoCaminho(
-            FormaDoGrupo.Conferir(
-                input.Codigo, input.Ordem, input.Rotulo, ocorrencias,
-                [.. (input.Subitens ?? []).Select(static s => (s?.FatoCodigo, s?.PaginaCodigo, s?.Regras?.Impedimento is not null))],
-                regras.ParaAConferenciaDaForma),
-            caminho);
-
     private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
         erros.Select(erro => erro.NoCaminhoDoItem(caminho));
 
     /// <summary>
-    /// O candidato como membro pela forma lida dos campos. O campo de forma recusada já tem a
-    /// própria recusa e conta aqui como conforme, para que só a falta do parentesco seja acusada.
+    /// Os campos pela forma lida, para identificar o candidato como membro. O campo de forma recusada já tem a
+    /// própria recusa e fica nulo, para que só a falta do parentesco seja acusada.
     /// </summary>
-    private static IEnumerable<FieldError> ConferirCandidatoComoMembro(
-        OcorrenciasLidasDoGrupo ocorrencias, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
-        ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
-            ? (subitem.FatoCodigo, subitem.Regras?.Exibicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
-            : (subitem.FatoCodigo, false, Obrigatoriedade.Sempre, (IReadOnlyList<RestricaoValor>)[]))]);
+    private static CampoDoMembro?[] CamposDoMembro(GrupoColetadoInput input, ItensLidos lidos) =>
+        [.. (input.Subitens ?? []).Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
+            ? (CampoDoMembro?)(subitem.FatoCodigo, subitem.Regras?.Exibicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
+            : null)];
 
     /// <summary>
     /// Os grupos conferidos contra o catálogo, acumulando tudo no mesmo lote (ADR-0125): os campos

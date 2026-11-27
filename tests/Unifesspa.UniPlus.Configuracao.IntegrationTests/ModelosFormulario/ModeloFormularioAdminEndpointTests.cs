@@ -7,7 +7,9 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModeloFormularioHttp;
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModelosParaTeste;
@@ -153,6 +155,59 @@ public sealed class ModeloFormularioAdminEndpointTests
         depois["conteudo"]!["termos"]!.AsArray().Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O cadastro com item que a leitura recusa e item de forma inválida devolve as duas recusas em errors[], sem gravar o modelo")]
+    public async Task Criar_RecusaDeLeituraEDeForma_DevolveAsDuasEmErrors()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonNode corpo = ComItemNaoLidoEItemSemRotulo(JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!);
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Should().Contain(
+        [
+            ("conteudo.itens[0].regras.obrigatoriedade", "uniplus.configuracao.modelo_formulario.obrigatoriedade_invalida"),
+            ("conteudo.itens[1].apresentacao.rotulo", "uniplus.item_formulario.rotulo_obrigatorio"),
+        ]);
+    }
+
+    [Fact(DisplayName = "O cadastro com grupo sem mínimo e com máximo zero devolve as duas recusas do grupo em errors[], o mínimo antes do máximo")]
+    public async Task Criar_GrupoSemMinimoEComMaximoZero_DevolveAsDuasRecusasDoGrupo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonNode corpo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!;
+        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").ComObrigatoriedade("SEMPRE")
+            .ComCampos(EntradaDoFatoColetadoDeTeste.Coletando("MAIOR_IDADE").ComRotulo("Maior de idade").DoTipo("SIM_OU_NAO").Construir()).Construir()
+            with { Ocorrencias = new OcorrenciasDoGrupoInput(null, false, 0) };
+        corpo["conteudo"]!["grupos"] = new JsonArray(JsonSerializer.SerializeToNode(grupo));
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Where(static e => e.Item1!.StartsWith("conteudo.grupos[0]", StringComparison.Ordinal)).Should().Equal(
+            ("conteudo.grupos[0].ocorrencias.minimo", "uniplus.grupo_formulario.ocorrencias_obrigatorias"),
+            ("conteudo.grupos[0].ocorrencias.maximo", "uniplus.grupo_formulario.contagem_incoerente"));
+    }
+
+    [Fact(DisplayName = "A edição com item que a leitura recusa e item de forma inválida devolve as duas recusas em errors[], e a leitura seguinte mostra o modelo inalterado")]
+    public async Task Atualizar_RecusaDeLeituraEDeForma_DevolveAsDuasEMantemOModelo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        JsonObject antes = await ObterAsync(client, id);
+        JsonNode conteudo = ComItemNaoLidoEItemSemRotulo(new JsonObject { ["conteudo"] = antes["conteudo"]!.DeepClone() })["conteudo"]!;
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Nome que não deve ficar", conteudo));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Should().Contain(
+        [
+            ("conteudo.itens[0].regras.obrigatoriedade", "uniplus.configuracao.modelo_formulario.obrigatoriedade_invalida"),
+            ("conteudo.itens[1].apresentacao.rotulo", "uniplus.item_formulario.rotulo_obrigatorio"),
+        ]);
+        JsonNode.DeepEquals(await ObterAsync(client, id), antes).Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Tipo de processo com caractere nulo é recusado pelo modelo, sem chegar ao banco; na lista, a página é vazia")]
     public async Task TipoProcessoComCaractereNulo_RecusaSemErroDoBanco()
     {
@@ -246,6 +301,21 @@ public sealed class ModeloFormularioAdminEndpointTests
         ["termo"] = new JsonObject { ["termoId"] = Guid.NewGuid(), ["versaoId"] = Guid.NewGuid() },
         ["regras"] = new JsonObject { ["exibicao"] = null, ["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE" } },
     });
+
+    private static JsonNode ComItemNaoLidoEItemSemRotulo(JsonNode corpo)
+    {
+        JsonArray itens = corpo["conteudo"]!["itens"]!.AsArray();
+        itens[0]!["regras"]!["obrigatoriedade"]!["tipo"] = "INEXISTENTE";
+        itens[1]!["apresentacao"]!["rotulo"] = string.Empty;
+        return corpo;
+    }
+
+    private static async Task<(string?, string?)[]> ErrosAsync(HttpResponseMessage resposta)
+    {
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        return [.. problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(static e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString()))];
+    }
 
     private static async Task ConferirCodigoDoErroAsync(HttpResponseMessage resposta, string codigo)
     {

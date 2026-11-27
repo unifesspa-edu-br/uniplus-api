@@ -33,7 +33,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
         ConjuntoDeDocumentosDoModelo conjunto = new([documento], [new GrupoDeDocumentosDoModelo(1, null, [documento])]);
         ModeloFormulario existente = Existente(null);
         return ModeloFormulario.Criar(
-            existente.Codigo, existente.Nome, null, existente.Declaracao, null,
+            existente.Codigo, new DescritivoDoModelo(existente.Nome, null, null), existente.Declaracao,
             existente.Conteudo with { ConjuntoDeDocumentos = conjunto },
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
     }

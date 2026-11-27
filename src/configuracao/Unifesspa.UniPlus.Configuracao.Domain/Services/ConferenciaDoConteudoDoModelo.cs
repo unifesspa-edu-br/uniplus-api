@@ -9,35 +9,46 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// As regras do conteúdo do modelo de formulário, as mesmas do formulário do processo, aplicadas por
 /// <c>Unifesspa.UniPlus.Regras</c>. As recusas acumulam (ADR-0125) na ordem das regras: o cabeçalho, a forma
 /// de cada página, item, grupo e termo, o teto de itens e os pressupostos; a estrutura pela declaração e o
-/// grafo de coleta só são conferidos sobre partes bem formadas, porque dependem delas.
+/// grafo de coleta só são conferidos sobre partes bem formadas e sobre o conteúdo inteiro, porque dependem
+/// de todas as partes.
 /// </summary>
 public static class ConferenciaDoConteudoDoModelo
 {
+    /// <summary>O caminho do conteúdo no corpo da escrita, onde as recusas dele se apontam.</summary>
+    public const string CaminhoDoConteudo = "conteudo";
+
     /// <summary>As recusas do conteúdo apontam o campo dentro dele, no caminho da escrita.</summary>
     public static IEnumerable<FieldError> NoConteudo(IEnumerable<FieldError> erros) =>
-        erros.Select(static e => e.NoCaminhoDe("conteudo"));
+        erros.Select(static e => e.NoCaminhoDe(CaminhoDoConteudo));
 
     /// <summary>
     /// Confere o conteúdo na forma gravada (<see cref="ConteudoDoModelo.NaFormaGravada"/>), com as recusas
     /// no caminho do conteúdo. As <paramref name="derivacoes"/> são as dependências de cada derivado por
-    /// regra do catálogo, para o grafo.
+    /// regra do catálogo, para o grafo. Com <paramref name="conteudoPorInteiro"/> falso, parte do que foi enviado
+    /// não está em <paramref name="conteudo"/>: a estrutura e o grafo não são conferidos, mas as demais regras sim.
     /// </summary>
     public static List<FieldError> Conferir(
-        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        DeclaracaoDoFormulario? declaracao,
+        ConteudoDoModelo conteudo,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
+        bool conteudoPorInteiro)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(derivacoes);
 
-        return [.. NoConteudo(ConferirNormalizado(declaracao, conteudo, derivacoes))];
+        return [.. NoConteudo(ConferirNormalizado(declaracao, conteudo, derivacoes, conteudoPorInteiro))];
     }
 
     private static List<FieldError> ConferirNormalizado(
-        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
+        DeclaracaoDoFormulario? declaracao,
+        ConteudoDoModelo conteudo,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
+        bool conteudoPorInteiro)
     {
         List<FieldError> erros = ConferirPartesDoConteudo(declaracao, conteudo);
 
         // A estrutura depende da declaração, recusada no cadastro quando incompleta.
-        return erros.Count > 0 || declaracao is not { } declarada
+        return erros.Count > 0 || !conteudoPorInteiro || declaracao is not { } declarada
             ? erros
             : ConferirEstruturaEGrafo(declarada, conteudo, derivacoes);
     }

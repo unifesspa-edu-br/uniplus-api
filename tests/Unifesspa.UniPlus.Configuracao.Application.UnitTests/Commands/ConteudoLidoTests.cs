@@ -300,10 +300,15 @@ public sealed class ConteudoLidoTests
         Malformada("grupos[0]", EntradaNula),
         ClausulaVazia("grupos[1].regras.exibicao"),
         ClausulaVazia("grupos[1].regras.obrigatoriedade.predicado"),
+        ParentescoAusente("grupos[1]"),
         Malformada("grupos[1].subitens[0]", EntradaNula),
         ClausulaVazia("grupos[1].subitens[1].regras.exibicao"),
         ("grupos[2].regras.obrigatoriedade", ModeloFormularioErrorCodes.ObrigatoriedadeInvalida, ObrigatoriedadeIncoerente),
+        ParentescoAusente("grupos[2]"),
     ];
+
+    private static Recusa ParentescoAusente(string grupo) =>
+        ($"{grupo}.subitens", GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto, "O grupo que inclui o candidato pede o parentesco (PARENTESCO) em cada ocorrência.");
 
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
     [

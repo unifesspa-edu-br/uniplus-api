@@ -54,8 +54,8 @@ internal static class GravacaoDoModelo
         Result resultado = await mutacao(modelo).ConfigureAwait(false);
         if (resultado.IsFailure)
         {
-            // A edição recusada pelo catálogo pode já ter mudado o modelo rastreado; sem descartar,
-            // o SaveChangesAsync do outbox o gravaria mesmo com a recusa.
+            // Sem descartar o que estiver pendente no modelo rastreado, o SaveChangesAsync do outbox
+            // o gravaria mesmo com a recusa.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return resultado;
         }

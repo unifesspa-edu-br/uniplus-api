@@ -151,7 +151,8 @@ public sealed class SqlDoModeloDaSementeTests
     {
         ModeloFormulario modelo = Declaracao.Exigir(
             ModeloFormulario.Criar(
-                "MODELO_DE_TESTE", "Modelo de teste", null, new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), null, ConteudoQueCita(pares),
+                "MODELO_DE_TESTE", new DescritivoDoModelo("Modelo de teste", null, null),
+                new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: true), ConteudoQueCita(pares),
                 new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
             "modelo de teste");
         return SqlDaSemente.ComandoDoModelo(ModeloId, modelo, Declaracao);
