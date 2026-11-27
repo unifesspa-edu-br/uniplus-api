@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -12,23 +13,81 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 {
     private const string MensagemDoReenvio = "Informe se o indeferimento abre prazo para reenvio.";
 
+    private readonly List<DocumentoDeGrupoNaoLido> _documentosDeGruposNaoLidos = [];
+
     public ConjuntoLidoDeDocumentos Ler(ConjuntoDeDocumentosDoModeloInput? entrada) => new(
-        _recusas.Lista(entrada?.DocumentosExigidos, $"{ConjuntoDeDocumentosDoModelo.Caminho}.documentosExigidos", LerDocumento),
-        _recusas.Lista(entrada?.GruposDeDocumentos, $"{ConjuntoDeDocumentosDoModelo.Caminho}.gruposDeDocumentos", LerGrupoDeDocumentos));
+        _recusas.Lista(entrada?.DocumentosExigidos, ConjuntoDeDocumentosDoModelo.ListaDosDocumentos, LerDocumento),
+        _recusas.ListaComPosicao(entrada?.GruposDeDocumentos, ConjuntoDeDocumentosDoModelo.ListaDosGrupos, LerGrupoDeDocumentos),
+        _documentosDeGruposNaoLidos);
 
     /// <summary>
     /// Lê o grupo de documentos: a quantidade mínima fica como veio, a recusa de que ela caiba nos documentos
     /// é do processo, e cada documento é lido como o avulso.
     /// </summary>
-    private GrupoLidoDeDocumentos? LerGrupoDeDocumentos(GrupoDeDocumentosDoModeloInput entrada, string campo)
+    private GrupoLidoDeDocumentos? LerGrupoDeDocumentos(GrupoDeDocumentosDoModeloInput entrada, int posicao, string campo)
     {
         int recusasAntes = _recusas.Recusas.Count;
         IndeferimentoDoGrupoDeDocumentosDoModelo? indeferimento = LerIndeferimentoDoGrupo(entrada, campo);
-        List<(int Indice, DocumentoExigidoDoModelo Documento)> documentos = _recusas.Lista(entrada.Documentos, $"{campo}.documentos", LerDocumento);
-        return _recusas.RecusouDesde(recusasAntes)
-            ? null
-            : new GrupoLidoDeDocumentos(new GrupoDeDocumentosDoModelo(entrada.QuantidadeMinima, indeferimento, [.. documentos.Select(static d => d.Documento)]), documentos);
+        int antesDosDocumentos = _recusas.Recusas.Count;
+        DocumentosLidosDoGrupo documentos = LerDocumentosDoGrupo(entrada, campo);
+        if (_recusas.RecusouDesde(recusasAntes))
+        {
+            RecusarGrupoNaoLido(entrada, posicao, documentos, antesDosDocumentos);
+            return null;
+        }
+
+        return new GrupoLidoDeDocumentos(
+            new GrupoDeDocumentosDoModelo(entrada.QuantidadeMinima, indeferimento, [.. documentos.Lidos.Select(static d => d.Documento)]), documentos.Lidos);
     }
+
+    /// <summary>
+    /// Lê os documentos do grupo e guarda, na ordem do pedido, as recusas de cada um: as da leitura, dos textos e do formato
+    /// dos códigos, se não se leu, ou as dos textos e do formato, se se leu.
+    /// </summary>
+    private DocumentosLidosDoGrupo LerDocumentosDoGrupo(GrupoDeDocumentosDoModeloInput entrada, string campo)
+    {
+        List<(int Indice, DocumentoExigidoDoModelo Documento)> lidos = [];
+        List<FieldError> recusasNaOrdem = [];
+        foreach ((int indice, DocumentoExigidoDoModeloInput? documento) in (entrada.Documentos ?? []).Index())
+        {
+            (DocumentoExigidoDoModelo? lido, List<FieldError> doDocumento) = LerDocumentoDoGrupo(documento, $"{campo}.documentos[{indice}]");
+            if (lido is not null)
+            {
+                lidos.Add((indice, lido));
+            }
+
+            recusasNaOrdem.AddRange(doDocumento);
+        }
+
+        return new DocumentosLidosDoGrupo(lidos, recusasNaOrdem);
+    }
+
+    private (DocumentoExigidoDoModelo? Documento, List<FieldError> Recusas) LerDocumentoDoGrupo(DocumentoExigidoDoModeloInput? documento, string caminho)
+    {
+        int antes = _recusas.Recusas.Count;
+        DocumentoExigidoDoModelo? lido = _recusas.LerPresente(documento, caminho, LerDocumento);
+        return (lido, lido is null ? _recusas.Recusas.GetRange(antes, _recusas.Recusas.Count - antes) : [.. RecusasDoDocumentoLido(lido, caminho)]);
+    }
+
+    /// <summary>
+    /// Recusa os textos do grupo e, na ordem do pedido, as de cada documento: o domínio não verá o grupo. Os documentos que
+    /// se leu seguem para a conferência no catálogo.
+    /// </summary>
+    private void RecusarGrupoNaoLido(GrupoDeDocumentosDoModeloInput entrada, int posicao, DocumentosLidosDoGrupo documentos, int posicaoDosDocumentos)
+    {
+        string campo = ConjuntoDeDocumentosDoModelo.CaminhoDoGrupo(posicao);
+        _recusas.Recusas.RemoveRange(posicaoDosDocumentos, _recusas.Recusas.Count - posicaoDosDocumentos);
+        IEnumerable<(string Campo, string? Texto)> textosDoGrupo = entrada.Indeferimento is { } indeferimento
+            ? TextosDoConteudoDoModelo.DoIndeferimento(campo, indeferimento.ConsequenciaDoDescumprimento, BasesNaPosicaoDoPedido(indeferimento.BasesLegais))
+            : [];
+        _recusas.Recusas.AddRange(RecusasDaLeituraDoModelo.TextosNaoGravaveis(textosDoGrupo));
+        _recusas.Recusas.AddRange(documentos.RecusasNaOrdem);
+        _documentosDeGruposNaoLidos.AddRange(documentos.Lidos.Select(d => new DocumentoDeGrupoNaoLido(posicao, d.Indice, d.Documento)));
+    }
+
+    private static IEnumerable<FieldError> RecusasDoDocumentoLido(DocumentoExigidoDoModelo documento, string caminho) =>
+        RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoDocumentoLido(caminho, documento))
+            .Concat(FormatoDosCodigosDoConteudo.ConferirDocumento(documento, caminho));
 
     private IndeferimentoDoGrupoDeDocumentosDoModelo? LerIndeferimentoDoGrupo(GrupoDeDocumentosDoModeloInput grupo, string campo)
     {
@@ -57,11 +116,37 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         int recusasAntes = _recusas.Recusas.Count;
         PredicadoDnf? quando = _recusas.LerPredicado(entrada.Quando, $"{campo}.quando");
         IndeferimentoDoDocumentoDoModelo indeferimento = LerIndeferimento(entrada, campo);
-        RequisitosDoDocumentoDoModelo? requisitos = LerRequisitos(entrada.Requisitos, campo);
+        RequisitosLidosDoDocumento requisitos = LerRequisitos(entrada.Requisitos, campo);
         ExigenciaPorOpcao? porOpcao = entrada.PorOpcao is { } opcoes ? LerExigenciaPorOpcao(opcoes, campo) : null;
-        return _recusas.RecusouDesde(recusasAntes)
-            ? null
-            : new DocumentoExigidoDoModelo(entrada.FaseCodigo, entrada.TipoDocumentoCodigo, quando, indeferimento, requisitos!, porOpcao);
+        if (_recusas.RecusouDesde(recusasAntes))
+        {
+            RecusarDocumentoNaoLido(entrada, campo, quando, requisitos);
+            return null;
+        }
+
+        return new DocumentoExigidoDoModelo(entrada.FaseCodigo, entrada.TipoDocumentoCodigo, quando, indeferimento, requisitos.Declarados!, porOpcao);
+    }
+
+    /// <summary>
+    /// Recusa os textos e o formato dos códigos do documento que a leitura recusou, com o que se leu dele e nas posições do
+    /// pedido: o código ausente já foi recusado, e o texto da condição malformada não conta.
+    /// </summary>
+    private void RecusarDocumentoNaoLido(
+        DocumentoExigidoDoModeloInput entrada, string campo, PredicadoDnf? quando, RequisitosLidosDoDocumento requisitos)
+    {
+        List<(string Campo, string? Texto)> referencias = [.. requisitos.ReferenciasInformadas.Select(r => ($"{campo}.{r.Campo}", r.Texto))];
+        (string? fatoPorOpcao, IReadOnlyList<string?>? exceto) = entrada.PorOpcao is { } porOpcao
+            ? (porOpcao.FatoCodigo, porOpcao.Exceto ?? [])
+            : (null, null);
+        IEnumerable<(string Campo, string? Texto)> opcoes = exceto is null
+            ? []
+            : TextosDoConteudoDoModelo.DaExigenciaPorOpcao(campo, fatoPorOpcao, exceto);
+        IEnumerable<(string Campo, string? Texto)> indeferimento = TextosDoConteudoDoModelo.DoIndeferimento(
+            campo, entrada.Indeferimento?.ConsequenciaDoDescumprimento, BasesNaPosicaoDoPedido(entrada.Indeferimento?.BasesLegais));
+        _recusas.Recusas.AddRange(RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoDocumento(
+            campo, entrada.FaseCodigo, entrada.TipoDocumentoCodigo, quando, referencias, opcoes, indeferimento)));
+        _recusas.Recusas.AddRange(FormatoDosCodigosDoConteudo.ConferirCodigosInformados(
+            entrada.FaseCodigo, entrada.TipoDocumentoCodigo, referencias, fatoPorOpcao, exceto, campo));
     }
 
     private IndeferimentoDoDocumentoDoModelo LerIndeferimento(DocumentoExigidoDoModeloInput entrada, string campo)
@@ -87,11 +172,11 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         return false;
     }
 
-    private RequisitosDoDocumentoDoModelo? LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)
+    private RequisitosLidosDoDocumento LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)
     {
         RequisitosLidosDoDocumento requisitos = RequisitosLidosDoDocumento.Ler(entrada);
         _recusas.Recusas.AddRange(requisitos.Recusas.Select(recusa => recusa.NoCaminhoDoItem(campo)));
-        return requisitos.Declarados;
+        return requisitos;
     }
 
     private List<BaseLegalDoModelo> LerBasesLegais(IReadOnlyList<BaseLegalDoModeloInput?>? entradas, string campo)
@@ -104,8 +189,11 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 
         ConferirBasesLegais(bases, campo);
 
-        return [.. bases.OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoModelo(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))];
+        return [.. BasesNaPosicaoDoPedido(bases).OfType<BaseLegalDoModelo>()];
     }
+
+    private static IReadOnlyList<BaseLegalDoModelo?> BasesNaPosicaoDoPedido(IReadOnlyList<BaseLegalDoModeloInput?>? entradas) =>
+        [.. (entradas ?? []).Select(static b => b is null ? null : new BaseLegalDoModelo(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))];
 
     private void ConferirBasesLegais(IReadOnlyList<BaseLegalDoModeloInput?> bases, string campo)
     {
@@ -167,3 +255,6 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
     }
 
 }
+
+/// <summary>Os documentos de um grupo que a leitura aceitou, com a posição de cada um, e as recusas de todos, na ordem do pedido.</summary>
+internal sealed record DocumentosLidosDoGrupo(List<(int Indice, DocumentoExigidoDoModelo Documento)> Lidos, List<FieldError> RecusasNaOrdem);

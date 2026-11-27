@@ -131,14 +131,24 @@ public static class FormaDoItem
         return
         [
             .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
-            .. apresentacao.ConferirAjuda().Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
+            .. RecusasDaAjuda(apresentacao.Ajuda).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
             .. RecusasDoFormato(apresentacao.TipoDeCampo, formato),
-            .. regras.ConferirNoCampo(fatoCodigo ?? string.Empty, apresentacao.TipoDeCampo)
+            .. RegrasLidasDoCampo.De(regras).ConferirNoCampo(fatoCodigo ?? string.Empty, apresentacao.TipoDeCampo)
                 .Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
         ];
     }
 
-    private static IEnumerable<FieldError> RecusasDoFormato(TipoDeCampo tipoDeCampo, string? formato)
+    /// <summary>A ajuda, quando há, cabe no limite. O rótulo é conferido com o código e a ordem do item.</summary>
+    public static IEnumerable<FieldError> RecusasDaAjuda(string? ajuda)
+    {
+        if (TextoOpcional(ajuda) is { Length: > AjudaMaxLength })
+        {
+            yield return new("ajuda", new DomainError(
+                ItemFormularioErrorCodes.AjudaTamanho, $"A ajuda do campo tem no máximo {AjudaMaxLength} caracteres."));
+        }
+    }
+
+    internal static IEnumerable<FieldError> RecusasDoFormato(TipoDeCampo tipoDeCampo, string? formato)
     {
         string? formatoNormalizado = TextoOpcional(formato);
         if ((tipoDeCampo == TipoDeCampo.Texto) != (formatoNormalizado is not null)

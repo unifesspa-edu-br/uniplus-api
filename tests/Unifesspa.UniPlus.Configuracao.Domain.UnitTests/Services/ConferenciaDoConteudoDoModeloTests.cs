@@ -130,6 +130,16 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         Codigos(erros).Should().Equal(ItemFormularioErrorCodes.ItensEmExcesso);
     }
 
+    [Fact(DisplayName = "Com parte do conteúdo fora, o teto de itens não é conferido pelo domínio; a forma dos itens continua")]
+    public void TetoDeItens_ConteudoSemParte_NaoConfereOExcesso()
+    {
+        ConteudoDoModelo conteudo = Conteudo(ItensComOPrimeiroSemRotulo(FormaDoItem.MaximoDeItens + 1));
+
+        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo, SemDerivacoes, conteudoPorInteiro: false);
+
+        Codigos(erros).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
+    }
+
     [Fact(DisplayName = "O item com impedimento fora do modelo de inscrição é recusado, e no de inscrição passa")]
     public void Impedimento_SoNaInscricao()
     {
@@ -167,6 +177,24 @@ public sealed class ConferenciaDoConteudoDoModeloTests
 
         Campos(erros).Should().Equal("conteudo.termos[0].codigo", "conteudo.termos[2].codigo");
         Codigos(erros).Should().Equal(TermoFormularioErrorCodes.CodigoObrigatorio, TermoFormularioErrorCodes.CodigoDuplicado);
+    }
+
+    [Fact(DisplayName = "Com parte do conteúdo fora, a unicidade dos termos não é conferida; a forma de cada termo continua")]
+    public void Termos_ConteudoSemParte_NaoConfereUnicidade()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Termos = [Termo(" ", 0), Termo("LGPD", 1), Termo("LGPD", 1)] };
+
+        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo, SemDerivacoes, conteudoPorInteiro: false);
+
+        Codigos(erros).Should().Equal(TermoFormularioErrorCodes.CodigoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Com o conteúdo por inteiro, o código e a ordem repetidos dos termos são recusados uma vez cada")]
+    public void Termos_ConteudoPorInteiro_ConfereUnicidade()
+    {
+        ConteudoDoModelo conteudo = Conteudo(Item("CERTIFICADO")) with { Termos = [Termo("LGPD", 1), Termo("LGPD", 1)] };
+
+        Codigos(Conferir(conteudo)).Should().Equal(TermoFormularioErrorCodes.CodigoDuplicado, TermoFormularioErrorCodes.OrdemDuplicada);
     }
 
     [Fact(DisplayName = "O modelo de inscrição não tem pressupostos")]

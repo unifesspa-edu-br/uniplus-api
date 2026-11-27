@@ -171,14 +171,29 @@ public sealed class ModeloFormularioAdminEndpointTests
         ]);
     }
 
+    [Fact(DisplayName = "O cadastro com 201 itens, um deles com ajuda acima de 1000 caracteres, devolve em errors[] a recusa do excesso e a da ajuda")]
+    public async Task Criar_DuzentosEUmItensComAjudaLonga_DevolveOExcessoEAAjuda()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonNode corpo = ComDuzentosEUmItens(JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!);
+        corpo["conteudo"]!["itens"]![3]!["apresentacao"]!["ajuda"] = new string('a', 1001);
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, corpo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Should().Equal(
+            ("conteudo.itens", "uniplus.item_formulario.itens_em_excesso"),
+            ("conteudo.itens[3].apresentacao.ajuda", "uniplus.item_formulario.ajuda_tamanho"));
+    }
+
     [Fact(DisplayName = "O cadastro com grupo sem mínimo e com máximo zero devolve as duas recusas do grupo em errors[], o mínimo antes do máximo")]
     public async Task Criar_GrupoSemMinimoEComMaximoZero_DevolveAsDuasRecusasDoGrupo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         JsonNode corpo = JsonSerializer.SerializeToNode(Habilitacao(CodigoUnico()))!;
-        GrupoColetadoInput grupo = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").ComObrigatoriedade("SEMPRE")
-            .ComCampos(EntradaDoFatoColetadoDeTeste.Coletando("MAIOR_IDADE").ComRotulo("Maior de idade").DoTipo("SIM_OU_NAO").Construir()).Construir()
-            with { Ocorrencias = new OcorrenciasDoGrupoInput(null, false, 0) };
+        GrupoColetadoInput comOcorrencias = EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO", 1).ComRotulo("Composição").ComObrigatoriedade("SEMPRE")
+            .ComCampos(EntradaDoFatoColetadoDeTeste.Coletando("MAIOR_IDADE").ComRotulo("Maior de idade").DoTipo("SIM_OU_NAO").Construir()).Construir();
+        GrupoColetadoInput grupo = comOcorrencias with { Ocorrencias = new OcorrenciasDoGrupoInput(null, false, 0) };
         corpo["conteudo"]!["grupos"] = new JsonArray(JsonSerializer.SerializeToNode(grupo));
 
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, corpo);
@@ -301,6 +316,21 @@ public sealed class ModeloFormularioAdminEndpointTests
         ["termo"] = new JsonObject { ["termoId"] = Guid.NewGuid(), ["versaoId"] = Guid.NewGuid() },
         ["regras"] = new JsonObject { ["exibicao"] = null, ["obrigatoriedade"] = new JsonObject { ["tipo"] = "SEMPRE" } },
     });
+
+    private static JsonNode ComDuzentosEUmItens(JsonNode corpo)
+    {
+        JsonArray itens = corpo["conteudo"]!["itens"]!.AsArray();
+        JsonNode modelo = itens[0]!.DeepClone();
+        itens.Clear();
+        for (int ordem = 0; ordem < 201; ordem++)
+        {
+            JsonNode item = modelo.DeepClone();
+            item["ordem"] = ordem;
+            itens.Add(item);
+        }
+
+        return corpo;
+    }
 
     private static JsonNode ComItemNaoLidoEItemSemRotulo(JsonNode corpo)
     {

@@ -70,7 +70,7 @@ internal static class ConferenciaDoModelo
         return [
             .. ConferirItens(conteudo.Itens, catalogo),
             .. ConferirGrupos(conteudo.Grupos, catalogo),
-            .. ConferirDocumentos(conteudo.Documentos.ComCaminho(), catalogo),
+            .. ConferirDocumentos(conteudo.Documentos.ComCaminhoNaOrdemDoPedido(), catalogo),
             .. ConferirPaginas(conteudo.Paginas, catalogo),
             .. ConferirTermos(conteudo.Termos, catalogo, versoes, existentes.Termos),
             .. ConferirPressupostos(conteudo.Pressupostos, catalogo),
@@ -108,8 +108,15 @@ internal static class ConferenciaDoModelo
     private static IEnumerable<FieldError> ConferirItens(IReadOnlyList<(int Indice, ItemDoModelo Item)> itens, CatalogoDoModelo catalogo) =>
         itens.SelectMany(item => ConferirCampo(item.Item, $"itens[{item.Indice}]", catalogo, ConferenciaNoCatalogo.FatoDoItem));
 
-    private static IEnumerable<FieldError> ConferirGrupos(IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> grupos, CatalogoDoModelo catalogo) =>
-        grupos.SelectMany(grupo => ConferirGrupo(grupo.Grupo, $"grupos[{grupo.Indice}]", catalogo));
+    /// <summary>
+    /// Os grupos lidos e, dos grupos que a leitura recusou, os campos que ela aceitou, cada um na posição do grupo no pedido.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirGrupos(GruposLidos grupos, CatalogoDoModelo catalogo) =>
+        grupos.Lidos.Select(grupo => (Posicao: grupo.Indice, Recusas: ConferirGrupo(grupo.Grupo, $"grupos[{grupo.Indice}]", catalogo)))
+            .Concat(grupos.CamposDeGruposNaoLidos.Select(campo =>
+                (Posicao: campo.Grupo, Recusas: ConferirCampo(campo.Campo, campo.Caminho, catalogo, ConferenciaNoCatalogo.FatoDoSubitem))))
+            .OrderBy(static parte => parte.Posicao)
+            .SelectMany(static parte => parte.Recusas);
 
     private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho, CatalogoDoModelo catalogo) =>
     [

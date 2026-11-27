@@ -16,8 +16,15 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// <param name="PrazoDeEmissao">O prazo lido, ou nulo quando ausente ou sem escolha reconhecida.</param>
 /// <param name="Validade">A validade lida, ou nula quando ausente ou sem escolha reconhecida.</param>
 /// <param name="Recusas">As recusas da leitura, no caminho a partir do documento.</param>
+/// <param name="ReferenciasInformadas">
+/// O código de fase de cada referência que veio no pedido, no caminho a partir do documento, também quando o resto do
+/// prazo ou da validade não foi lido.
+/// </param>
 internal sealed record RequisitosLidosDoDocumento(
-    PrazoDeEmissaoDoModelo? PrazoDeEmissao, ValidadeDoDocumentoDoModelo? Validade, IReadOnlyList<FieldError> Recusas)
+    PrazoDeEmissaoDoModelo? PrazoDeEmissao,
+    ValidadeDoDocumentoDoModelo? Validade,
+    IReadOnlyList<FieldError> Recusas,
+    IReadOnlyList<(string Campo, string? Texto)> ReferenciasInformadas)
 {
     private const string CaminhoDoPrazo = "requisitos.prazoDeEmissao";
     private const string CaminhoDaValidade = "requisitos.validade";
@@ -29,12 +36,14 @@ internal sealed record RequisitosLidosDoDocumento(
     public static RequisitosLidosDoDocumento Ler(RequisitosDoDocumentoDoModeloInput? entrada)
     {
         List<FieldError> recusas = [];
-        PrazoDeEmissaoDoModelo? prazo = LerPrazo(entrada?.PrazoDeEmissao, recusas);
-        ValidadeDoDocumentoDoModelo? validade = LerValidade(entrada?.Validade, recusas);
-        return new RequisitosLidosDoDocumento(prazo, validade, recusas);
+        List<(string Campo, string? Texto)> referencias = [];
+        PrazoDeEmissaoDoModelo? prazo = LerPrazo(entrada?.PrazoDeEmissao, recusas, referencias);
+        ValidadeDoDocumentoDoModelo? validade = LerValidade(entrada?.Validade, recusas, referencias);
+        return new RequisitosLidosDoDocumento(prazo, validade, recusas, referencias);
     }
 
-    private static PrazoDeEmissaoDoModelo? LerPrazo(PrazoDeEmissaoDoModeloInput? entrada, List<FieldError> recusas)
+    private static PrazoDeEmissaoDoModelo? LerPrazo(
+        PrazoDeEmissaoDoModeloInput? entrada, List<FieldError> recusas, List<(string Campo, string? Texto)> referencias)
     {
         if (entrada is null)
         {
@@ -43,13 +52,14 @@ internal sealed record RequisitosLidosDoDocumento(
 
         EscolhaDoPrazoDeEmissao? escolha = Lido(EscolhaDoPrazoDeEmissaoDaEntrada.Ler(entrada.Escolha), $"{CaminhoDoPrazo}.escolha", recusas);
         UnidadeDoPrazoDeEmissao? unidade = Opcional(entrada.Unidade, UnidadeDoPrazoDeEmissaoDaEntrada.Ler, $"{CaminhoDoPrazo}.unidade", recusas);
-        DataDeReferenciaDoDocumentoDoModelo? referencia = LerReferencia(entrada.Referencia, $"{CaminhoDoPrazo}.referencia", recusas);
+        DataDeReferenciaDoDocumentoDoModelo? referencia = LerReferencia(entrada.Referencia, $"{CaminhoDoPrazo}.referencia", recusas, referencias);
         EfeitoNaAnaliseDoDocumento? efeito = Opcional(
             entrada.EfeitoForaDoPrazo, EfeitoNaAnaliseDoDocumentoDaEntrada.Ler, $"{CaminhoDoPrazo}.efeitoForaDoPrazo", recusas);
         return escolha is { } lida ? new PrazoDeEmissaoDoModelo(lida, entrada.Valor, unidade, referencia, efeito) : null;
     }
 
-    private static ValidadeDoDocumentoDoModelo? LerValidade(ValidadeDoDocumentoDoModeloInput? entrada, List<FieldError> recusas)
+    private static ValidadeDoDocumentoDoModelo? LerValidade(
+        ValidadeDoDocumentoDoModeloInput? entrada, List<FieldError> recusas, List<(string Campo, string? Texto)> referencias)
     {
         if (entrada is null)
         {
@@ -57,19 +67,24 @@ internal sealed record RequisitosLidosDoDocumento(
         }
 
         EscolhaDaValidade? escolha = Lido(EscolhaDaValidadeDaEntrada.Ler(entrada.Escolha), $"{CaminhoDaValidade}.escolha", recusas);
-        DataDeReferenciaDoDocumentoDoModelo? referencia = LerReferencia(entrada.Referencia, $"{CaminhoDaValidade}.referencia", recusas);
+        DataDeReferenciaDoDocumentoDoModelo? referencia = LerReferencia(entrada.Referencia, $"{CaminhoDaValidade}.referencia", recusas, referencias);
         EfeitoNaAnaliseDoDocumento? efeito = Opcional(
             entrada.EfeitoDoVencimento, EfeitoNaAnaliseDoDocumentoDaEntrada.Ler, $"{CaminhoDaValidade}.efeitoDoVencimento", recusas);
         return escolha is { } lida ? new ValidadeDoDocumentoDoModelo(lida, referencia, efeito) : null;
     }
 
     private static DataDeReferenciaDoDocumentoDoModelo? LerReferencia(
-        DataDeReferenciaDoDocumentoDoModeloInput? entrada, string caminho, List<FieldError> recusas)
+        DataDeReferenciaDoDocumentoDoModeloInput? entrada,
+        string caminho,
+        List<FieldError> recusas,
+        List<(string Campo, string? Texto)> referencias)
     {
         if (entrada is null)
         {
             return null;
         }
+
+        referencias.Add(($"{caminho}.faseCodigo", entrada.FaseCodigo));
 
         TipoDaDataDeReferencia? tipo = Lido(TipoDaDataDeReferenciaDaEntrada.Ler(entrada.Tipo), $"{caminho}.tipo", recusas);
         return tipo is { } lido ? new DataDeReferenciaDoDocumentoDoModelo(lido, entrada.FaseCodigo, entrada.Data) : null;

@@ -123,7 +123,7 @@ public sealed class ConjuntoLidoDeDocumentosTests
     {
         ConteudoLido lido = Ler(ConjuntoComRecusas(), out _);
 
-        lido.Documentos.ComCaminho().Select(static c => (c.Caminho, c.Documento.TipoDocumentoCodigo)).Should().Equal(
+        lido.Documentos.ComCaminhoNaOrdemDoPedido().Select(static c => (c.Caminho, c.Documento.TipoDocumentoCodigo)).Should().Equal(
             ("conjuntoDeDocumentos.documentosExigidos[0]", "RG"),
             ("conjuntoDeDocumentos.documentosExigidos[2]", "LAUDO"),
             ("conjuntoDeDocumentos.gruposDeDocumentos[1].documentos[0]", "HISTORICO"),
