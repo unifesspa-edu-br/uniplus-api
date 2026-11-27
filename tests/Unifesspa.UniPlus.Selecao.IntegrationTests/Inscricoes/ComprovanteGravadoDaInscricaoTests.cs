@@ -165,7 +165,7 @@ public sealed class ComprovanteGravadoDaInscricaoTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(Guid.CreateVersion7(), null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", []),
+                new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", [], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
 

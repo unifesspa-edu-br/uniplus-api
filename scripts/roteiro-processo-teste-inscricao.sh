@@ -1098,18 +1098,18 @@ documentos_comuns_da_habilitacao() {
         def documento($codigo; $prazo): {forma: "DOCUMENTO", documento: {
             tipoDocumento: {id: id($codigo)}, momento: {faseId: $fase, formularioCodigo: "HABILITACAO"},
             aplicabilidade: {tipo: "GERAL", condicoes: []},
-            indeferimento: {obrigatorio: true, consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases},
+            indeferimento: {obrigatorio: true, abrePrazoParaReenvio: false, consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases},
             requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: $prazo,
                 validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null}, fatosComprovados: []}};
         def sem_prazo: {escolha: "SEM_PRAZO"};
         (["FOTO_3X4", "RG", "HISTORICO_ENSINO_MEDIO"] | map(documento(.; sem_prazo))) +
         [documento("COMPROVANTE_RESIDENCIA"; {escolha: "COM_PRAZO", valor: 90, unidade: "DIAS", referencia: {tipo: "DATA_DA_APRESENTACAO"}, efeitoForaDoPrazo: "RECUSAR_DOCUMENTO"}),
-         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases},
+         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases, abrePrazoParaReenvio: false},
           itens: [documento("CERTIFICADO_ENSINO_MEDIO"; sem_prazo),
                   (documento("DECLARACAO_CONCLUSAO_ENSINO_MEDIO"; sem_prazo) |
                    .documento.indeferimento.basesLegais |= map(.observacao = "Aceita quando o certificado ainda não tiver sido recebido, se atualizada e emitida há no máximo 90 dias ou dentro do prazo de validade da instituição de origem. A pessoa candidata ou responsável legal deve assinar termo de responsabilidade e entregar o certificado em até 60 dias após a matrícula."))] |
                  map(.documento.indeferimento.consequenciaDoDescumprimento = null)},
-         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases},
+         {forma: "QUANTIDADE_MINIMA_DE_ITENS", cardinalidade: {quantidadeMinima: 1}, indeferimento: {consequenciaDoDescumprimento: "ELIMINA_DO_PROCESSO", basesLegais: $bases, abrePrazoParaReenvio: false},
           itens: (["CERTIDAO_NASCIMENTO", "CERTIDAO_CASAMENTO"] | map(documento(.; sem_prazo) | .documento.indeferimento.consequenciaDoDescumprimento = null))}]'
 }
 
@@ -1119,7 +1119,7 @@ documentos_do_fada() {
         def regra($tipo; $condicoes; $observacao): {forma: "DOCUMENTO", documento: {
             tipoDocumento: {id: $tipo}, momento: {faseId: $fase, formularioCodigo: "HABILITACAO"},
             aplicabilidade: {tipo: "CONDICIONAL", condicoes: $condicoes},
-            indeferimento: {obrigatorio: true, consequenciaDoDescumprimento: "RETIRA_O_ACRESCIMO", basesLegais: ($bases | map(.observacao = $observacao))},
+            indeferimento: {obrigatorio: true, abrePrazoParaReenvio: false, consequenciaDoDescumprimento: "RETIRA_O_ACRESCIMO", basesLegais: ($bases | map(.observacao = $observacao))},
             requisitos: {formatosPermitidos: "QUALQUER", tamanhoMaximoBytes: null, prazoDeEmissao: {escolha: "SEM_PRAZO"}, validade: {escolha: "NAO_EXIGE_DOCUMENTO_VALIDO"}, modelo: null}, fatosComprovados: []}};
         def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
         [regra($historico; [pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "ALGUM_DE", valor: "[\"REGULAR\",\"EJA\"]"}, pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}]; null),
@@ -1148,7 +1148,7 @@ definir_documentos_exigidos() {
                 tipo: (.tipo | codigo),
                 condicoes: [.condicoes[] | {clausula, fato, operador, valor}]
             }),
-            indeferimento: (.indeferimento | {obrigatorio, consequenciaDoDescumprimento: (.consequenciaDoDescumprimento | codigo), basesLegais: $bases}),
+            indeferimento: (.indeferimento | {obrigatorio, abrePrazoParaReenvio, consequenciaDoDescumprimento: (.consequenciaDoDescumprimento | codigo), basesLegais: $bases}),
             requisitos: (.requisitos | {
                 formatosPermitidos: (.formatosPermitidos | if type == "array" then
                     map({formato: (.formato | codigo), tamanhoMaximoBytesMax}) else . end), tamanhoMaximoBytes,

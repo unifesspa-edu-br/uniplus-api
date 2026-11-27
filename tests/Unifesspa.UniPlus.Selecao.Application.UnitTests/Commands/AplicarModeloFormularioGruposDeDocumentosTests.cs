@@ -142,7 +142,7 @@ public sealed class AplicarModeloFormularioGruposDeDocumentosTests
         DocumentoExigidoDoModeloInput laudo = new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
+            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [], false));
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Modelo(
             PapelDoFormularioDeTeste.Inscricao,

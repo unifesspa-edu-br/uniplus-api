@@ -30,7 +30,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "chave"
+        "chave",
+        "obrigatorio",
+        "abrePrazoParaReenvio"
       ],
       "properties": {
         "id": {
@@ -137,12 +139,12 @@
         },
         "obrigatorio": {
           "title": "Obrigatório",
-          "description": "Se a entrega do documento é obrigatória.",
+          "description": "Se a entrega do documento é obrigatória. É obrigatório informar: ausente, o documento é recusado, e não vale falso.",
           "type": "boolean"
         },
         "abrePrazoParaReenvio": {
           "title": "Prazo para reenvio",
-          "description": "Indica se será aberto prazo para reenvio.",
+          "description": "Indica se será aberto prazo para reenvio. É obrigatório informar: ausente, o documento é recusado, e não vale falso.",
           "type": "boolean"
         },
         "consequenciaDoDescumprimento": {

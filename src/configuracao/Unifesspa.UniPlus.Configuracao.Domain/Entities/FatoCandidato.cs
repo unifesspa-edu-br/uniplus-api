@@ -344,7 +344,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// obrigatória quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>. A
     /// <paramref name="orientacao"/>, opcional, é o que o candidato vê abaixo da opção.
     /// </summary>
-    public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null) =>
+    public Result AdicionarValorDominio(string codigo, string? descricao, int? ordem, bool ativo, string? orientacao = null) =>
         Valores.Adicionar(codigo, descricao, ordem, ativo, orientacao);
 
     /// <summary>

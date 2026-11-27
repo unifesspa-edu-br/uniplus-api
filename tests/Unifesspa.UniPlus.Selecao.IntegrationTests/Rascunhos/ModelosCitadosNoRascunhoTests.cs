@@ -105,17 +105,17 @@ public sealed class ModelosCitadosNoRascunhoTests(CascadingFixture fixture)
     private Task<HttpResponseMessage> SalvarAsync(Guid rascunho, string documento, string revisao) =>
         _cliente.EnviarAsync(Conta, HttpMethod.Put, $"{Rota}/{rascunho}", documento, ifMatch: $"\"{revisao}\"");
 
-    private static string DocumentoSemModelo() => """
+    private static string DocumentoSemModelo() => $$"""
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
           "identificacao": { "nome": "Processo de exemplo", "unidadeAdministradoraCodigo": "CEPS" },
           "provaPresencial": { "temProvaPresencial": false, "municipios": [] },
-          "documentosExigidos": { "exigencias": [ { "chave": "declaracao" } ] } }
+          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", {{EscolhasDaExigenciaDeTeste.Json}} } ] } }
         """;
 
     private static string DocumentoComModelo(Guid modelo) => $$"""
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
           "identificacao": { "nome": "Processo de exemplo", "unidadeAdministradoraCodigo": "CEPS" },
           "provaPresencial": { "temProvaPresencial": false, "municipios": [] },
-          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "modeloId": "{{modelo}}" } ] } }
+          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", {{EscolhasDaExigenciaDeTeste.Json}}, "modeloId": "{{modelo}}" } ] } }
         """;
 }

@@ -59,17 +59,31 @@ public static class ConferenciaDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(quantidadesDoQuadro);
 
-        return
-        [
-            .. Presentes(
-                VagasOfertadasBaseInvalidas(vagasOfertadasBase),
-                PercentualForaDoLimite(percentualDaReservaLegal),
-                PrecisaoDecimal.Recusa(percentualDaReservaLegal, PercentualPrecisao, PercentualEscala, "percentualDaReservaLegal",
-                    "O percentual da reserva legal deve ter no máximo 1 dígito inteiro e 4 casas decimais."),
-                ModalidadesAusentes(quantidadeDeModalidades)),
-            .. QuantidadesNegativas(quantidadesDoQuadro),
-        ];
+        return [.. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades), .. QuantidadesNegativas(quantidadesDoQuadro)];
     }
+
+    /// <summary>
+    /// A forma do pedido: a mesma conferência, com a quantidade que falta e a negativa recusadas juntas, na ordem das
+    /// linhas do quadro, para que a pessoa corrija de cima para baixo.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ConferirFormaDoPedido(
+        int vagasOfertadasBase,
+        decimal? percentualDaReservaLegal,
+        int quantidadeDeModalidades,
+        IReadOnlyList<int?> quantidadesDoQuadro)
+    {
+        ArgumentNullException.ThrowIfNull(quantidadesDoQuadro);
+
+        return [.. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades), .. QuantidadesDoQuadro(quantidadesDoQuadro)];
+    }
+
+    private static IEnumerable<FieldError> FormaSemQuantidades(int vagasOfertadasBase, decimal? percentualDaReservaLegal, int quantidadeDeModalidades) =>
+        Presentes(
+            VagasOfertadasBaseInvalidas(vagasOfertadasBase),
+            PercentualForaDoLimite(percentualDaReservaLegal),
+            PrecisaoDecimal.Recusa(percentualDaReservaLegal, PercentualPrecisao, PercentualEscala, "percentualDaReservaLegal",
+                "O percentual da reserva legal deve ter no máximo 1 dígito inteiro e 4 casas decimais."),
+            ModalidadesAusentes(quantidadeDeModalidades));
 
     /// <summary>A forma da declaração: a do pedido, lida das próprias modalidades e das quantidades que elas trazem.</summary>
     internal static IReadOnlyList<FieldError> ConferirForma(DistribuicaoDeVagasDeclarada declarada)
@@ -114,13 +128,23 @@ public static class ConferenciaDaDistribuicaoDeVagas
                 "A oferta deve ter ao menos uma modalidade selecionada.")
             : null;
 
+    private static IEnumerable<FieldError> QuantidadesDoQuadro(IReadOnlyList<int?> quantidades) =>
+        quantidades
+            .Select(static (quantidade, indice) => quantidade is null
+                ? Recusa($"quadro[{indice}].quantidade", CodigosDeValidacao.Obrigatorio, "Informe a quantidade de vagas da modalidade.")
+                : RecusaDaQuantidadeNegativa(quantidade, indice))
+            .OfType<FieldError>();
+
     private static IEnumerable<FieldError> QuantidadesNegativas(IReadOnlyList<int?> quantidades) =>
         quantidades
-            .Select(static (quantidade, indice) => quantidade is < 0
-                ? Recusa($"quadro[{indice}].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa,
-                    $"A quantidade de vagas declarada não pode ser negativa ({quantidade}).")
-                : null)
+            .Select(static (quantidade, indice) => RecusaDaQuantidadeNegativa(quantidade, indice))
             .OfType<FieldError>();
+
+    private static FieldError? RecusaDaQuantidadeNegativa(int? quantidade, int indice) =>
+        quantidade is < 0
+            ? Recusa($"quadro[{indice}].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa,
+                $"A quantidade de vagas declarada não pode ser negativa ({quantidade}).")
+            : null;
 
     private static FieldError? ModalidadesRepetidas(IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         modalidades.Select(static m => m.Codigo).Distinct(StringComparer.Ordinal).Count() != modalidades.Count
@@ -242,10 +266,14 @@ public static class ConferenciaDaDistribuicaoDeVagas
     // A fronteira entre o calculado e o declarado: na Lei de Cotas, a sub-reserva e a ampla concorrência
     // nunca aceitam quantidade fixada, e a retirada e o suplemento sempre exigem; no quadro fixado, toda
     // modalidade exige a quantidade, porque não há cálculo algum.
-    private static IEnumerable<FieldError> RecusasDeFronteiraDaQuantidade(DistribuicaoDeVagasDeclarada declarada) =>
-        declarada.NoRamoFederal ? [.. declarada.Modalidades.Select(FronteiraDaLeiDeCotas).OfType<FieldError>()]
-            : declarada.NoQuadroFixo ? [.. declarada.Modalidades.Select(FronteiraDoQuadroFixado).OfType<FieldError>()]
+    private static IEnumerable<FieldError> RecusasDeFronteiraDaQuantidade(DistribuicaoDeVagasDeclarada declarada)
+    {
+        IEnumerable<ModalidadeSelecionada> modalidades = declarada.Modalidades.Where(m => !declarada.ModalidadesComQuantidadeRecusada.Contains(m.ModalidadeOrigemId));
+
+        return declarada.NoRamoFederal ? [.. modalidades.Select(FronteiraDaLeiDeCotas).OfType<FieldError>()]
+            : declarada.NoQuadroFixo ? [.. modalidades.Select(FronteiraDoQuadroFixado).OfType<FieldError>()]
             : [];
+    }
 
     private static FieldError? FronteiraDoQuadroFixado(ModalidadeSelecionada modalidade) =>
         modalidade.QuantidadeDeclarada is null

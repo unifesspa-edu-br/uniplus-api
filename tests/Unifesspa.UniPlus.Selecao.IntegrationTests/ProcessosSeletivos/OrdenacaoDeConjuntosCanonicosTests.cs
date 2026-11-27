@@ -165,7 +165,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(false, null, []),
+                new IndeferimentoDoDocumento(false, null, [], false),
                 RequisitosDoDocumentoDeTeste.Com(formatosAceitos),
                 null)).Value!;
 

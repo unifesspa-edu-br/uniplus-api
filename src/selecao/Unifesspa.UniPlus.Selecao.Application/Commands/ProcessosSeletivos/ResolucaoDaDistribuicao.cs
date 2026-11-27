@@ -197,11 +197,11 @@ internal sealed class ResolucaoDaDistribuicao(
     // de ids crus, e é da aplicação.
     private IReadOnlyList<FieldError> ConferirForma() =>
     [
-        .. ConferenciaDaDistribuicaoDeVagas.ConferirForma(
+        .. ConferenciaDaDistribuicaoDeVagas.ConferirFormaDoPedido(
             pedido.VagasOfertadasBase,
             pedido.PercentualDaReservaLegal,
             pedido.ModalidadeIds.Count,
-            [.. pedido.Quadro.Select(static linha => (int?)linha.Quantidade)]),
+            [.. pedido.Quadro.Select(static linha => linha.Quantidade)]),
         .. pedido.Quadro
             .Select((linha, indice) => (linha, indice))
             .Where(par => !pedido.ModalidadeIds.Contains(par.linha.ModalidadeId))
@@ -220,6 +220,7 @@ internal sealed class ResolucaoDaDistribuicao(
         AjusteDoQuadro = pedido.AjusteDoQuadro,
         Modalidades = _modalidades,
         Recusados = _recusados,
+        ModalidadesComQuantidadeRecusada = pedido.Quadro.Where(static linha => linha.Quantidade is null).Select(static linha => linha.ModalidadeId).ToHashSet(),
     };
 
     // A oferta não encontrada não dá teto nem grupo de área do ENEM, e a regra recusada não dá rol.

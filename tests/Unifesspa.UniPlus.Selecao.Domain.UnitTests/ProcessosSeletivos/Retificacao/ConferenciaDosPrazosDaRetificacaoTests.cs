@@ -310,7 +310,8 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
             etapa.Id,
             new IdentificacaoDaEtapa(etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Ordem, etapa.FaseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima,
-                etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, etapa.EscalaDeAtendimento), []);
+                etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao,
+                etapa.EscalaDeAtendimento?.Select(static nivel => new NivelDeAtendimentoDeclarado(nivel.Rotulo, nivel.Fracao, nivel.Chave.Valor)).ToList()), []);
         copia.DefinirJanelaEParecer(inicio, inicio.AddDays(3), false).IsSuccess.Should().BeTrue();
         return copia;
     }

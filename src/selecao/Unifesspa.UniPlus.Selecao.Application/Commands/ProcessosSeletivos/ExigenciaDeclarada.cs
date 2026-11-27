@@ -21,7 +21,9 @@ internal static class ExigenciaDeclarada
     public static IReadOnlyList<CondicaoGatilhoInput> Condicoes(this ItemDocumentoExigidoInput item) =>
         item.Aplicabilidade?.Condicoes ?? [];
 
-    public static bool Obrigatorio(this ItemDocumentoExigidoInput item) => item.Indeferimento?.Obrigatorio ?? false;
+    public static bool? Obrigatorio(this ItemDocumentoExigidoInput item) => item.Indeferimento?.Obrigatorio;
+
+    public static bool? AbrePrazoParaReenvio(this ItemDocumentoExigidoInput item) => item.Indeferimento?.AbrePrazoParaReenvio;
 
     public static string? ConsequenciaDoDescumprimento(this ItemDocumentoExigidoInput item) => item.Indeferimento?.ConsequenciaDoDescumprimento;
 

@@ -22532,12 +22532,16 @@
         "required": [
           "obrigatorio",
           "consequenciaDoDescumprimento",
-          "basesLegais"
+          "basesLegais",
+          "abrePrazoParaReenvio"
         ],
         "type": "object",
         "properties": {
           "obrigatorio": {
-            "type": "boolean"
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "consequenciaDoDescumprimento": {
             "oneOf": [
@@ -22559,8 +22563,10 @@
             }
           },
           "abrePrazoParaReenvio": {
-            "type": "boolean",
-            "default": false
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -22592,7 +22598,8 @@
       "IndeferimentoDoGrupoDeDocumentosDoModeloInput": {
         "required": [
           "consequenciaDoDescumprimento",
-          "basesLegais"
+          "basesLegais",
+          "abrePrazoParaReenvio"
         ],
         "type": "object",
         "properties": {
@@ -22616,8 +22623,10 @@
             }
           },
           "abrePrazoParaReenvio": {
-            "type": "boolean",
-            "default": false
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -26378,7 +26387,10 @@
             ]
           },
           "ordem": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "orientacao": {

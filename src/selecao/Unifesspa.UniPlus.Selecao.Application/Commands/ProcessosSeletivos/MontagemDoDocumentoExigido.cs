@@ -90,7 +90,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
             CopiaDosCadastrosDasVagas.TipoDeDocumento(tipo),
             new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FormularioDoCodigo(documentoInformado.FormularioCodigo())!),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
-            new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.ConsequenciaDoDescumprimento(), basesLegais, documentoInformado.Indeferimento?.AbrePrazoParaReenvio ?? false),
+            new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.ConsequenciaDoDescumprimento(), basesLegais, documentoInformado.AbrePrazoParaReenvio()),
             new RequisitosDoDocumento(restricoes.Formatos, documentoInformado.TamanhoMaximoBytes(), restricoes.Modelo, restricoes.Prazo, restricoes.Validade),
             documentoInformado.FatosComprovados);
         return contexto.Reconhecimento.Criar(documentoInformado.Chave, tipo.Codigo, declarado);

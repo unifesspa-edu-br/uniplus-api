@@ -78,15 +78,15 @@ internal static class CasosDeRecusaDaRegra
         Caso(RegraDeDocumento(repete: "GRUPO_INEXISTENTE"), "grupo_para_repeticao_nao_declarado", "grupoDoFormularioParaRepeticao",
             "O grupo de repetição informado não existe nos formulários do processo. Escolha um grupo existente ou retire a repetição.");
 
-    internal static object GrupoCom(object[] itens) => new { forma = "TODOS_OS_ITENS", itens };
+    internal static object GrupoCom(object[] itens) => new { forma = "TODOS_OS_ITENS", indeferimento = new { abrePrazoParaReenvio = false }, itens };
     internal static object RegraSemDocumento() => new { forma = "DOCUMENTO" };
-    internal static object GrupoVazio() => new { forma = "QUANTIDADE_MINIMA_DE_ITENS", itens = Array.Empty<object>() };
+    internal static object GrupoVazio() => new { forma = "QUANTIDADE_MINIMA_DE_ITENS", indeferimento = new { abrePrazoParaReenvio = false }, itens = Array.Empty<object>() };
 
     private static CasoDeRecusaDaRegra Caso(object regra, string codigo, string campo, string mensagem) =>
         new([regra], Prefixo + codigo, $"regrasDeComprovacao[0].{campo}", Item + mensagem);
 
     private static object Grupo(string tipo, object? documento = null, int? quantidade = null, string? consequenciaDoDescumprimento = null, object[]? bases = null) =>
-        new { forma = tipo, documento, cardinalidade = new { quantidadeMinima = quantidade }, indeferimento = new { consequenciaDoDescumprimento, basesLegais = bases }, itens = new[] { RegraDeDocumento() } };
+        new { forma = tipo, documento, cardinalidade = new { quantidadeMinima = quantidade }, indeferimento = new { consequenciaDoDescumprimento, basesLegais = bases, abrePrazoParaReenvio = false }, itens = new[] { RegraDeDocumento() } };
 
     private static object RegraDeDocumento(int? quantidade = null, object[]? itens = null, string? criterio = null,
         DateOnly? data = null, string[]? ocorrencias = null, string? repete = null) =>
@@ -108,7 +108,7 @@ internal static class CasosDeRecusaDaRegra
         tipoDocumento = new { id = Guid.CreateVersion7() },
         momento = new { faseId = Guid.CreateVersion7(), formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao },
         aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
-        indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+        indeferimento = new { obrigatorio = true, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() },
         requisitos = new { formatosPermitidos = "QUALQUER" },
     };
 

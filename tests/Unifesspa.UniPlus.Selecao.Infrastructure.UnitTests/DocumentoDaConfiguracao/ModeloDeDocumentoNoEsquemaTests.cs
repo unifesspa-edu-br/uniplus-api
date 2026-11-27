@@ -35,7 +35,7 @@ public sealed class ModeloDeDocumentoNoEsquemaTests
 
     private static Result<DocumentoLido> Ler(string identificador) => Leitura.Ler($$"""
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "modeloId": "{{identificador}}",
+          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "obrigatorio": true, "abrePrazoParaReenvio": false, "modeloId": "{{identificador}}",
             "modelo": { "nomeArquivo": "Declaração.odt", "formato": "ODT" } } ] } }
         """);
 }

@@ -93,7 +93,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(Guid.CreateVersion7(), null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(true, null, []),
+                new IndeferimentoDoDocumento(true, null, [], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
                 null)).Value!;
         return (context, inscricao.Id, laudo);

@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _recusas)
 {
+    private const string MensagemDoReenvio = "Informe se o indeferimento abre prazo para reenvio.";
+
     public ConjuntoLidoDeDocumentos Ler(ConjuntoDeDocumentosDoModeloInput? entrada) => new(
         _recusas.Lista(entrada?.DocumentosExigidos, $"{ConjuntoDeDocumentosDoModelo.Caminho}.documentosExigidos", LerDocumento),
         _recusas.Lista(entrada?.GruposDeDocumentos, $"{ConjuntoDeDocumentosDoModelo.Caminho}.gruposDeDocumentos", LerGrupoDeDocumentos));
@@ -21,24 +23,27 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
     private GrupoLidoDeDocumentos? LerGrupoDeDocumentos(GrupoDeDocumentosDoModeloInput entrada, string campo)
     {
         int recusasAntes = _recusas.Recusas.Count;
-        IndeferimentoDoGrupoDeDocumentosDoModelo? indeferimento = LerIndeferimentoDoGrupo(entrada.Indeferimento, campo);
+        IndeferimentoDoGrupoDeDocumentosDoModelo? indeferimento = LerIndeferimentoDoGrupo(entrada, campo);
         List<(int Indice, DocumentoExigidoDoModelo Documento)> documentos = _recusas.Lista(entrada.Documentos, $"{campo}.documentos", LerDocumento);
         return _recusas.RecusouDesde(recusasAntes)
             ? null
             : new GrupoLidoDeDocumentos(new GrupoDeDocumentosDoModelo(entrada.QuantidadeMinima, indeferimento, [.. documentos.Select(static d => d.Documento)]), documentos);
     }
 
-    private IndeferimentoDoGrupoDeDocumentosDoModelo? LerIndeferimentoDoGrupo(IndeferimentoDoGrupoDeDocumentosDoModeloInput? entrada, string campo)
+    private IndeferimentoDoGrupoDeDocumentosDoModelo? LerIndeferimentoDoGrupo(GrupoDeDocumentosDoModeloInput grupo, string campo)
     {
-        if (entrada is null)
+        if (grupo.Indeferimento is not { } entrada)
         {
             return null;
         }
 
         List<BaseLegalDoModelo> basesLegais = LerBasesLegais(entrada.BasesLegais, $"{campo}.indeferimento");
         LerConsequencia(entrada.ConsequenciaDoDescumprimento, $"{campo}.indeferimento.consequenciaDoDescumprimento");
+        bool abrePrazo = grupo.Documentos is { Count: > 0 }
+            ? Informado(entrada.AbrePrazoParaReenvio, $"{campo}.indeferimento.abrePrazoParaReenvio", MensagemDoReenvio)
+            : entrada.AbrePrazoParaReenvio is true;
 
-        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.ConsequenciaDoDescumprimento, basesLegais, entrada.AbrePrazoParaReenvio);
+        return new IndeferimentoDoGrupoDeDocumentosDoModelo(entrada.ConsequenciaDoDescumprimento, basesLegais, abrePrazo);
     }
 
     /// <summary>
@@ -61,11 +66,25 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 
     private IndeferimentoDoDocumentoDoModelo LerIndeferimento(DocumentoExigidoDoModeloInput entrada, string campo)
     {
-        List<BaseLegalDoModelo> basesLegais = LerBasesLegais(entrada.Indeferimento?.BasesLegais, $"{campo}.indeferimento");
+        string caminho = $"{campo}.indeferimento";
+        IndeferimentoDoDocumentoDoModeloInput? bloco = entrada.Indeferimento;
+        List<BaseLegalDoModelo> basesLegais = LerBasesLegais(bloco?.BasesLegais, caminho);
         RecusarCodigosAusentes(entrada, campo);
-        LerConsequencia(entrada.Indeferimento?.ConsequenciaDoDescumprimento, $"{campo}.indeferimento.consequenciaDoDescumprimento");
-        return new IndeferimentoDoDocumentoDoModelo(
-            entrada.Indeferimento?.Obrigatorio ?? false, entrada.Indeferimento?.ConsequenciaDoDescumprimento, basesLegais, entrada.Indeferimento?.AbrePrazoParaReenvio ?? false);
+        LerConsequencia(bloco?.ConsequenciaDoDescumprimento, $"{caminho}.consequenciaDoDescumprimento");
+        bool obrigatorio = Informado(bloco?.Obrigatorio, $"{caminho}.obrigatorio", "Informe se o documento é obrigatório.");
+        bool abrePrazo = Informado(bloco?.AbrePrazoParaReenvio, $"{caminho}.abrePrazoParaReenvio", MensagemDoReenvio);
+        return new IndeferimentoDoDocumentoDoModelo(obrigatorio, bloco?.ConsequenciaDoDescumprimento, basesLegais, abrePrazo);
+    }
+
+    private bool Informado(bool? valor, string campo, string mensagem)
+    {
+        if (valor is { } informado)
+        {
+            return informado;
+        }
+
+        _recusas.RecusarEntradaMalformada(campo, mensagem);
+        return false;
     }
 
     private RequisitosDoDocumentoDoModelo? LerRequisitos(RequisitosDoDocumentoDoModeloInput? entrada, string campo)

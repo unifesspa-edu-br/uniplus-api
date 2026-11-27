@@ -57,6 +57,6 @@ public sealed class DadosComprovadosNoEsquemaTests
 
     private static Result<DocumentoLido> Ler(string dadosComprovados) => Leitura.Ler($$"""
         { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "dadosComprovados": {{dadosComprovados}} } ] } }
+          "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "obrigatorio": true, "abrePrazoParaReenvio": false, "dadosComprovados": {{dadosComprovados}} } ] } }
         """);
 }

@@ -294,8 +294,11 @@ internal static class LeituraDasEtapas
         List<ItemDeAvaliacao> itens = LerItensDeAvaliacao(leitor, item, caminho);
         List<NivelDeAtendimento>? escalaDeAtendimento = LerEscalaDeAtendimento(leitor, item, caminho);
 
-        return (new(peso, notaMinima, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao, escalaDeAtendimento), itens);
+        return (new(peso, notaMinima, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao, NiveisDeclarados(escalaDeAtendimento)), itens);
     }
+
+    private static List<NivelDeAtendimentoDeclarado>? NiveisDeclarados(List<NivelDeAtendimento>? niveis) =>
+        niveis?.Select(static nivel => new NivelDeAtendimentoDeclarado(nivel.Rotulo, nivel.Fracao, nivel.Chave.Valor)).ToList();
 
     // Limites que hoje só o FluentValidation do comando impõe: um envelope legítimo já os
     // satisfaz. Regra de coerência entre campos fica de fora de propósito, porque uma regra criada

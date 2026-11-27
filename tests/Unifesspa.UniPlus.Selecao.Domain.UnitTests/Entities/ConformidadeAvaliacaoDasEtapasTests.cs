@@ -97,7 +97,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
         Publicar(processo).IsSuccess.Should().BeTrue();
     }
 
-    private static readonly NivelDeAtendimento[] Escala = [new("Atendeu", 1m), new("Atendeu parcialmente", 0.5m), new("Não atendeu", 0m)];
+    private static readonly NivelDeAtendimentoDeclarado[] Escala = [new("Atendeu", 1m, null), new("Atendeu parcialmente", 0.5m, null), new("Não atendeu", 0m, null)];
 
     [Fact(DisplayName = "A soma das pontuações dos itens diferente da nota máxima recusa a publicação; igual publica")]
     public void ItensForaDaNotaMaxima_RecusaPublicacao()

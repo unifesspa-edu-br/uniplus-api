@@ -170,7 +170,7 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
           "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
           "identificacao": { "nome": "Processo fictício", "unidadeAdministradoraCodigo": "CEPS", "tipoProcessoCodigo": "SISU" },
           "cronograma": { "fases": [{ "chave": "inscricao", "tipoFaseCodigo": "INSCRICAO", "unidadeResponsavelCodigo": "CEPS" }] },
-          "documentosExigidos": { "exigencias": [{ "chave": "comprovante", "tipoDocumentoCodigo": "{{codigo}}", "faseChave": "inscricao" }] },
+          "documentosExigidos": { "exigencias": [{ "chave": "comprovante", "tipoDocumentoCodigo": "{{codigo}}", {{EscolhasDaExigenciaDeTeste.Json}}, "faseChave": "inscricao" }] },
           "motivosDeDecisao": [{ "faseChave": "inscricao", "tipoDeDecisaoCodigo": "ISENCAO_DA_TAXA", "codigo": "{{codigo}}" }],
           "provaPresencial": { "temProvaPresencial": true, "municipios": [{ "codigoIbge": "1504208", "uf": "PA" }, { "codigoIbge": "1501402", "uf": "PA" }] }
         }

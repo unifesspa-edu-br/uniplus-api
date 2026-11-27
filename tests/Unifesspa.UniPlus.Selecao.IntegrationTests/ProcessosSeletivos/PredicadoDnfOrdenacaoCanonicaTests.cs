@@ -149,7 +149,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .NaFase(fase.Id)
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, condicoes))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false))
             .Construir();
 
         processo.DefinirDocumentosExigidosNosFormulariosMinimos(

@@ -42,7 +42,7 @@ internal sealed record ModeloDeEtapa(string Nome)
 
     internal IReadOnlyList<ItemDeAvaliacaoDeclarado> Itens { get; init; } = [];
 
-    internal IReadOnlyList<NivelDeAtendimento?>? Escala { get; init; }
+    internal IReadOnlyList<NivelDeAtendimentoDeclarado?>? Escala { get; init; }
 
     internal ConceitoDaEtapa? Conceito { get; init; }
 

@@ -108,7 +108,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoCodigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(exigidoNaFaseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, null, []),
+            new IndeferimentoDoDocumento(false, null, [], false),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
             null)).Value!;
 

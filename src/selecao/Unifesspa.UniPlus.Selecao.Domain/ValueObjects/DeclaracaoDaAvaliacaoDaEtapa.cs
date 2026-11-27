@@ -6,8 +6,8 @@ using Enums;
 /// Como a nota da etapa é declarada e obtida: o peso, a nota mínima, a escala em que a nota é lançada
 /// (máxima e passo), a forma de avaliação, a regra que consolida as notas dos avaliadores e a escala de
 /// atendimento. É entrada de fábrica de vida curta, superficialmente imutável: carrega a coleção
-/// somente leitura e as instâncias de <see cref="ReferenciaRegra"/> e <see cref="NivelDeAtendimento"/>
-/// que a etapa passa a possuir, e nunca é guardada pela entidade, que copia os valores.
+/// somente leitura e a instância de <see cref="ReferenciaRegra"/> que a etapa passa a possuir, e nunca é
+/// guardada pela entidade, que copia os valores.
 /// </summary>
 /// <remarks>
 /// A escala de atendimento admite elemento nulo porque a conferência da forma, que roda antes de
@@ -21,4 +21,4 @@ public sealed record DeclaracaoDaAvaliacaoDaEtapa(
     decimal? PassoDoLancamento,
     FormaDeAvaliacao? FormaDeAvaliacao,
     ReferenciaRegra? RegraConsolidacao,
-    IReadOnlyList<NivelDeAtendimento?>? EscalaDeAtendimento);
+    IReadOnlyList<NivelDeAtendimentoDeclarado?>? EscalaDeAtendimento);

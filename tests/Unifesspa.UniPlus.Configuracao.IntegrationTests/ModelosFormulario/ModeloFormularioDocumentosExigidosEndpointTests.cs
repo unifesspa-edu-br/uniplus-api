@@ -8,6 +8,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.DocumentosDoModeloParaTeste;
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModeloFormularioHttp;
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModelosParaTeste;
 
@@ -169,25 +170,6 @@ public sealed class ModeloFormularioDocumentosExigidosEndpointTests
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         return [.. problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())];
     }
-
-    private static JsonObject GrupoDeDocumentos() => new()
-    {
-        ["quantidadeMinima"] = 1,
-        ["indeferimento"] = new JsonObject { ["consequenciaDoDescumprimento"] = "ELIMINA_DO_PROCESSO", ["basesLegais"] = new JsonArray() },
-        ["documentos"] = new JsonArray(Documento()),
-    };
-
-    private static JsonObject ConjuntoCom(JsonArray documentos, JsonArray? grupos = null) =>
-        new() { ["documentosExigidos"] = documentos, ["gruposDeDocumentos"] = grupos ?? new JsonArray() };
-
-    private static JsonObject Documento(string? faseCodigo = "HABILITACAO", JsonNode? quando = null, string? porOpcaoDoFato = null) => new()
-    {
-        ["faseCodigo"] = faseCodigo,
-        ["tipoDocumentoCodigo"] = "COMPROVANTE_RESIDENCIA",
-        ["quando"] = quando,
-        ["indeferimento"] = new JsonObject { ["obrigatorio"] = true, ["consequenciaDoDescumprimento"] = "ELIMINA_DO_PROCESSO", ["basesLegais"] = new JsonArray() },
-        ["porOpcao"] = porOpcaoDoFato is null ? null : new JsonObject { ["fatoCodigo"] = porOpcaoDoFato, ["exceto"] = new JsonArray() },
-    };
 
     private static JsonObject RequisitosComPrazo(string escolha) => new()
     {

@@ -19,7 +19,7 @@ public sealed class RegraDeDocumentoTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(faseId ?? Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(aplicabilidade, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

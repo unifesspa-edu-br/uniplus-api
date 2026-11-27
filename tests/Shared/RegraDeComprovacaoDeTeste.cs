@@ -25,8 +25,9 @@ internal sealed record RegraDeComprovacaoDeTeste
 
     public static RegraDeComprovacaoDeTeste DeDocumento(ItemDocumentoExigidoDeTeste documento) => DeDocumento(documento.Construir());
 
-    /// <summary>A regra de grupo com os itens informados.</summary>
-    public static RegraDeComprovacaoDeTeste Grupo(string forma, params RegraDeComprovacaoInformada[] itens) => new() { Forma = forma, Itens = itens };
+    /// <summary>A regra de grupo com os itens informados e o indeferimento que não abre prazo para reenvio.</summary>
+    public static RegraDeComprovacaoDeTeste Grupo(string forma, params RegraDeComprovacaoInformada[] itens) =>
+        new() { Forma = forma, Itens = itens, Indeferimento = new(AbrePrazoParaReenvio: false) };
 
     public RegraDeComprovacaoDeTeste ComForma(string forma) => this with { Forma = forma };
 
@@ -37,7 +38,11 @@ internal sealed record RegraDeComprovacaoDeTeste
         this with { Distincao = new(chave, dataReferencia, ocorrenciasEsperadas), ComCardinalidade = true };
 
     public RegraDeComprovacaoDeTeste ComIndeferimento(string? consequencia, params BaseLegalInput[] basesLegais) =>
-        this with { Indeferimento = new(consequencia, basesLegais) };
+        this with { Indeferimento = new(consequencia, basesLegais, Indeferimento?.AbrePrazoParaReenvio) };
+
+    /// <summary>O grupo que não declara se o indeferimento abre prazo para reenvio.</summary>
+    public RegraDeComprovacaoDeTeste SemEscolhaDeReenvio() =>
+        this with { Indeferimento = (Indeferimento ?? new()) with { AbrePrazoParaReenvio = null } };
 
     public RegraDeComprovacaoDeTeste ComReenvio() =>
         this with { Indeferimento = (Indeferimento ?? new()) with { AbrePrazoParaReenvio = true } };

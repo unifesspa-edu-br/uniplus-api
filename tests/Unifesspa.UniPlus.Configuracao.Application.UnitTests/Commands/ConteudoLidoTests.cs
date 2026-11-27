@@ -136,7 +136,7 @@ public sealed class ConteudoLidoTests
     [Fact(DisplayName = "O documento sem bases legais e com a exigência por opção sem exceções é lido sem recusa, com as duas listas vazias")]
     public void Ler_DocumentoSemBasesLegaisNemExcecoes_LeSemRecusa()
     {
-        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", null), PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
+        DocumentoExigidoDoModeloInput documento = DocumentoValido() with { Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", null, false), PorOpcao = new ExigenciaPorOpcaoInput("CONDICAO", null) };
 
         LeituraDoConteudo leitura = new(Formatos);
         ConteudoLido lido = leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(documento)));
@@ -178,7 +178,7 @@ public sealed class ConteudoLidoTests
     {
         DocumentoExigidoDoModeloInput documento = DocumentoValido() with
         {
-            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, string.Empty, []),
+            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(true, string.Empty, [], false),
             Requisitos = RequisitosDoDocumentoDoModeloBuilder.AindaNaoEscolhidos().ComEscolhaDePrazo("naoExiste").Construir(),
             PorOpcao = new ExigenciaPorOpcaoInput(string.Empty, []),
         };
@@ -280,7 +280,7 @@ public sealed class ConteudoLidoTests
     private static DocumentoExigidoDoModeloInput[] DocumentosRecusados() =>
     [
         ElementoNulo<DocumentoExigidoDoModeloInput>(),
-        new(string.Empty, " ", PredicadoSemCondicao, new IndeferimentoDoDocumentoDoModeloInput(true, null, [ElementoNulo<BaseLegalDoModeloInput>()]), PorOpcao: new ExigenciaPorOpcaoInput(string.Empty, [" "])),
+        new(string.Empty, " ", PredicadoSemCondicao, new IndeferimentoDoDocumentoDoModeloInput(true, null, [ElementoNulo<BaseLegalDoModeloInput>()], false), PorOpcao: new ExigenciaPorOpcaoInput(string.Empty, [" "])),
     ];
 
     private static Recusa[] RecusasDosDocumentos() =>
@@ -340,7 +340,7 @@ public sealed class ConteudoLidoTests
 
     private static DocumentoExigidoDoModeloInput DocumentoValido() =>
         new("INSCRICAO", "LAUDO_MEDICO", Quando("CERTIFICADO"),
-            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)], false),
             PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO", ["OUTRA", "TERCEIRA"]));
 
     private static DocumentoExigidoDoModelo DocumentoEsperado() =>

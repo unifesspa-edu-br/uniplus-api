@@ -142,7 +142,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         return basesLegais.IsFailure
             ? Result<RegraDeComprovacao>.ValidationFailure(basesLegais.Errors)
             : RegraDeComprovacao.CriarGrupo(
-                new(declaracao.Forma!.Value, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, regra.Indeferimento?.AbrePrazoParaReenvio ?? false), ordem, basesLegais.Value!, itens, regra.GrupoDoFormularioParaRepeticao);
+                new(declaracao.Forma!.Value, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, regra.Indeferimento?.AbrePrazoParaReenvio is true), ordem, basesLegais.Value!, itens, regra.GrupoDoFormularioParaRepeticao);
     }
 
     private static Result<IReadOnlyList<BaseLegalDaComprovacao>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>

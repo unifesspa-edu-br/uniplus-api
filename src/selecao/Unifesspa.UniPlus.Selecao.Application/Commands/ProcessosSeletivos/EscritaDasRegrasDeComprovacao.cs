@@ -22,7 +22,7 @@ internal static class EscritaDasRegrasDeComprovacao
             regra.QuantidadeMinima(), regra.ConsequenciaDoDescumprimentoDoGrupo(), regra.BasesLegaisDoGrupo().Count > 0, DistincaoDe(regra));
         List<FieldError> recusas = [.. declaracao.Recusas.Select(erro => Contextualizar(erro, caminho, indice))];
         recusas.AddRange(FormaDaRegra(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
-        recusas.AddRange(ReenvioProprioDaRegraDeDocumento(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
+        recusas.AddRange(ReenvioDaRegra(regra, declaracao.Forma).Select(erro => erro.NoCaminhoDe(caminho)));
         DomainError? repeticao = ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, grupos);
         if (repeticao is not null)
         {
@@ -69,8 +69,8 @@ internal static class EscritaDasRegrasDeComprovacao
         _ => campo,
     };
 
-    private static IEnumerable<FieldError> ReenvioProprioDaRegraDeDocumento(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma) =>
-        forma == FormaDeComprovacao.Documento && CombinacaoDoGrupo.RecusaDoReenvioEmRegraDeDocumento(regra.Indeferimento?.AbrePrazoParaReenvio ?? false) is { } recusa
+    private static IEnumerable<FieldError> ReenvioDaRegra(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma) =>
+        forma is { } reconhecida && CombinacaoDoGrupo.RecusaDoReenvio(reconhecida, regra.Indeferimento?.AbrePrazoParaReenvio) is { } recusa
             ? [new("indeferimento.abrePrazoParaReenvio", recusa)] : [];
 
     private static List<FieldError> FormaDaRegra(RegraDeComprovacaoInformada regra, FormaDeComprovacao? forma)
@@ -95,7 +95,9 @@ internal static class EscritaDasRegrasDeComprovacao
                 EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade()),
                 documento.ConsequenciaDoDescumprimento(),
                 documento.Condicoes().Count,
-                fatosComprovados: documento.FatosComprovados))
+                documento.FatosComprovados,
+                documento.Obrigatorio(),
+                documento.AbrePrazoParaReenvio()))
             .Concat(RequisitosDoDocumento.ValidarTamanho(documento.TamanhoMaximoBytes()))
             .Select(EscritaDaExigencia.NoCaminhoDoPedido),
     ];

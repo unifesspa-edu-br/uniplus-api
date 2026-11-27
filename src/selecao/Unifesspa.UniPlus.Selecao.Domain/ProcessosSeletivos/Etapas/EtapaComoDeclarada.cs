@@ -21,7 +21,10 @@ internal static class EtapaComoDeclarada
         colecoesComParteRecusada);
 
     private static DeclaracaoDaAvaliacaoDaEtapa Avaliacao(EtapaProcesso etapa) => new(
-        etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, etapa.EscalaDeAtendimento);
+        etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, EscalaDeAtendimento(etapa));
+
+    private static List<NivelDeAtendimentoDeclarado>? EscalaDeAtendimento(EtapaProcesso etapa) =>
+        etapa.EscalaDeAtendimento is { } escala ? [.. escala.Select(static nivel => new NivelDeAtendimentoDeclarado(nivel.Rotulo, nivel.Fracao, nivel.Chave.Valor))] : null;
 
     private static PublicacoesDaEtapa Publicacoes(EtapaProcesso etapa) => new(
         [.. OrdemDaConfiguracao.ProdutosDaEtapa(etapa.Produtos)],

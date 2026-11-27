@@ -170,7 +170,7 @@ public sealed class FormularioDaExigenciaEndpointTests
             tipoDocumento = new { id = tipoDocumentoId },
             momento,
             aplicabilidade = new { tipo = "CONDICIONAL", condicoes },
-            indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = true, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() },
             requisitos = new { formatosPermitidos = "QUALQUER" },
         },
     };

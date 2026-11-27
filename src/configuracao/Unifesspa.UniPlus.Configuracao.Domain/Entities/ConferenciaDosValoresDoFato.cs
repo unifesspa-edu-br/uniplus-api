@@ -31,13 +31,13 @@ internal static class ConferenciaDosValoresDoFato
         ?? (fonteValores != FonteValoresFato.Catalogo ? RecusaForaDeFonteGlobal : null);
 
     internal static Result<NovoValorDoFato> ConferirNovo(
-        string codigo, string? descricao, string? orientacao, int ordem, OrigemFato origem, IReadOnlyCollection<string> existentes)
+        string codigo, string? descricao, string? orientacao, int? ordem, OrigemFato origem, IReadOnlyCollection<string> existentes)
     {
         Result<TextosDoValor> textos = ConferirTextos(origem, descricao, orientacao);
         List<FieldError> erros = [.. Presentes(RecusaDoCodigo(codigo, existentes)), .. textos.Errors, .. Presentes(RecusaDaOrdem(ordem))];
-        return erros.Count > 0
-            ? Result<NovoValorDoFato>.ValidationFailure(erros)
-            : Result<NovoValorDoFato>.Success(new NovoValorDoFato(codigo, textos.Value, ordem));
+        return erros.Count == 0 && ordem is { } valor
+            ? Result<NovoValorDoFato>.Success(new NovoValorDoFato(codigo, textos.Value, valor))
+            : Result<NovoValorDoFato>.ValidationFailure(erros);
     }
 
     /// <summary>A descrição e a orientação aparadas; as recusas acumulam, cada uma no seu campo (ADR-0125).</summary>
@@ -73,8 +73,12 @@ internal static class ConferenciaDosValoresDoFato
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 
-    private static FieldError? RecusaDaOrdem(int ordem) =>
-        ordem < 0 ? Recusa("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa.") : null;
+    private static FieldError? RecusaDaOrdem(int? ordem) => ordem switch
+    {
+        null => Recusa("ordem", CodigosDeValidacao.Obrigatorio, "Informe a ordem do valor de domínio."),
+        < 0 => Recusa("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa."),
+        _ => null,
+    };
 
     private static string? AparadoOuNulo(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
 

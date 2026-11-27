@@ -21,7 +21,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
     private readonly CenarioDoHandlerDoModelo _cenario = new();
 
     private static DocumentoExigidoDoModeloInput LaudoQueExigeAoMenos(string fato) =>
-        new("INSCRICAO", "LAUDO_MEDICO", Quando(fato, true), new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
+        new("INSCRICAO", "LAUDO_MEDICO", Quando(fato, true), new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [], false));
 
     private static ConteudoDoModeloInput ComGrupoDeDocumentos(GrupoDeDocumentosDoModeloInput grupo) =>
         Conteudo(Item("CERTIFICADO", 0)) with { ConjuntoDeDocumentos = ConjuntoDeDocumentosDoModeloBuilder.Vazio().ComGrupos(grupo).Construir() };
@@ -44,7 +44,7 @@ public sealed class ModeloFormularioGruposDeDocumentosTests
         ModeloFormulario? gravado = null;
         await _cenario.Repository.AdicionarAsync(Arg.Do<ModeloFormulario>(m => gravado = m), Arg.Any<CancellationToken>());
         GrupoDeDocumentosDoModeloInput grupo = new(
-            2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_O_ACRESCIMO", []), [LaudoQueExigeAoMenos("CERTIFICADO")]);
+            2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_O_ACRESCIMO", [], false), [LaudoQueExigeAoMenos("CERTIFICADO")]);
 
         Result<Guid> resultado = await _cenario.CriarAsync(ComGrupoDeDocumentos(grupo));
 

@@ -31,7 +31,8 @@ public sealed record ExigenciaNoDocumento(
     /// <summary>Se a entrega é obrigatória; ausente é nulo, porque o domínio é que o recusa.</summary>
     public bool? Obrigatorio { get; init; }
 
-    public bool AbrePrazoParaReenvio { get; init; }
+    /// <summary>Se o indeferimento abre prazo para reenvio; ausente é nulo, porque o domínio é que o recusa.</summary>
+    public bool? AbrePrazoParaReenvio { get; init; }
 
     public ConsequenciaDoDescumprimento? ConsequenciaDoDescumprimento { get; init; }
 

@@ -86,7 +86,7 @@ public sealed class ExigenciaComFatoDeFasePosteriorEndpointTests(CascadingFixtur
             tipo = "CONDICIONAL",
             condicoes = new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } },
         },
-        indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
+        indeferimento = new { obrigatorio = true, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() },
         requisitos = new { formatosPermitidos = "QUALQUER" },
     };
 

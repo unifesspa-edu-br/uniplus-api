@@ -159,7 +159,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, []),
-                new IndeferimentoDoDocumento(true, null, [baseLegal]),
+                new IndeferimentoDoDocumento(true, null, [baseLegal], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidosNosFormulariosMinimos(

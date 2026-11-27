@@ -15,7 +15,7 @@ internal sealed class DocumentoExigidoBuilder
     private CopiaDoTipoDeDocumento _tipo = new(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal);
     private MomentoDaExigencia _momento = new(Guid.CreateVersion7(), null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao));
     private AplicabilidadeDaExigencia _aplicabilidade = new(Aplicabilidade.Geral, []);
-    private IndeferimentoDoDocumento _indeferimento = new(true, null, []);
+    private IndeferimentoDoDocumento _indeferimento = new(true, null, [], false);
     private static readonly ChavesEmUso Chaves = new();
     private ChaveLocal? _chave;
     private RequisitosDoDocumento? _requisitos;

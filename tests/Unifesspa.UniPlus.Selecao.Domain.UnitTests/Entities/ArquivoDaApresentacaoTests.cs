@@ -23,7 +23,7 @@ public sealed class ArquivoDaApresentacaoTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

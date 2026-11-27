@@ -44,7 +44,7 @@ internal static class ApoioDosFormulariosComConsequencia
             .ComMomento(new MomentoDaExigencia(fase, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
                 [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidade)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false))
             .Construir();
         Result definido = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);
         definido.IsSuccess.Should().BeTrue(string.Join("; ", definido.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));

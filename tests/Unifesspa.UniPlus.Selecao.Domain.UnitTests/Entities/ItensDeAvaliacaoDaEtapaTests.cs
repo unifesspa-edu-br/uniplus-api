@@ -19,16 +19,16 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
     private static TipoEtapaSnapshot Tipo(bool doEnem = false) =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ENTREVISTA", "Entrevista", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: doEnem).Value!;
 
-    private static readonly NivelDeAtendimento[] EscalaCompleta =
+    private static readonly NivelDeAtendimentoDeclarado[] EscalaCompleta =
     [
-        new("Atendeu", 1m),
-        new("Atendeu parcialmente", 0.5m),
-        new("Não atendeu", 0m),
+        new("Atendeu", 1m, null),
+        new("Atendeu parcialmente", 0.5m, null),
+        new("Não atendeu", 0m, null),
     ];
 
     private static Result<EtapaProcesso> Criar(
         IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens,
-        IReadOnlyList<NivelDeAtendimento>? escala = null,
+        IReadOnlyList<NivelDeAtendimentoDeclarado?>? escala = null,
         FormaDeAvaliacao? forma = FormaDeAvaliacao.Humana,
         decimal? passo = null,
         bool doEnem = false) =>
@@ -51,10 +51,10 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         etapa.EscalaDeAtendimento!.Select(static n => (n.Fracao, n.Ordem)).Should().Equal((0m, 1), (0.5m, 2), (1m, 3));
     }
 
-    [Fact(DisplayName = "A ordem recebida nos níveis é ignorada e substituída pela posição")]
-    public void Criar_NiveisComOrdemInformada_UsaPosicao()
+    [Fact(DisplayName = "A ordem dos níveis é a posição em que foram declarados")]
+    public void Criar_Niveis_UsaPosicao()
     {
-        NivelDeAtendimento[] niveis = [new("Parcial", 0.5m) { Ordem = 9 }, new("Completo", 1m) { Ordem = 4 }];
+        NivelDeAtendimentoDeclarado[] niveis = [new("Parcial", 0.5m, null), new("Completo", 1m, null)];
         EtapaProcesso etapa = Criar([Item("Critério", 10m)], niveis).Value!;
 
         etapa.EscalaDeAtendimento!.Select(static nivel => (nivel.Rotulo, nivel.Ordem))
@@ -139,7 +139,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
 
     [Fact(DisplayName = "A escala exige um nível que valha a pontuação inteira")]
     public void Criar_EscalaSemNivelCompleto_Recusa() =>
-        Codigos(Criar([Item("A", 10m)], [new("Atendeu parcialmente", 0.5m), new("Não atendeu", 0m)]))
+        Codigos(Criar([Item("A", 10m)], [new("Atendeu parcialmente", 0.5m, null), new("Não atendeu", 0m, null)]))
             .Should().Equal(NiveisDeAtendimento.SemNivelCompleto);
 
     [Theory(DisplayName = "A fração do nível fica entre 0 e 1")]
@@ -147,15 +147,15 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
     [InlineData(1.1)]
     public void Criar_FracaoForaDoIntervalo_Recusa(double fracao)
     {
-        Result<EtapaProcesso> resultado = Criar([Item("A", 10m)], [new("Atendeu", 1m), new("Excedeu", (decimal)fracao)]);
+        Result<EtapaProcesso> resultado = Criar([Item("A", 10m)], [new("Atendeu", 1m, null), new("Excedeu", (decimal)fracao, null)]);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("escalaDeAtendimento[1].fracao");
-        Codigos(resultado).Should().Equal("uniplus.validacao.formato");
+        Codigos(resultado).Should().Equal(NiveisDeAtendimento.FracaoInvalida);
     }
 
     [Fact(DisplayName = "O rótulo do nível é obrigatório e não se repete na escala")]
     public void Criar_NiveisComRotuloInvalido_Recusa() =>
-        Codigos(Criar([Item("A", 10m)], [new("Atendeu", 1m), new(" ", 0.5m), new("Atendeu", 0m)]))
+        Codigos(Criar([Item("A", 10m)], [new("Atendeu", 1m, null), new(" ", 0.5m, null), new("Atendeu", 0m, null)]))
             .Should().BeEquivalentTo(NiveisDeAtendimento.RotuloInvalido, NiveisDeAtendimento.NivelDuplicado);
 
     [Fact(DisplayName = "A escala só vale com itens")]

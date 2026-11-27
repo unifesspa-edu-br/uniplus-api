@@ -30,7 +30,7 @@ public sealed class DocumentoExigidoPorGruposTests
         new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
         new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao),
         new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-        new IndeferimentoDoDocumento(true, null, []),
+        new IndeferimentoDoDocumento(true, null, [], false),
         new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
         null);
 
@@ -69,7 +69,7 @@ public sealed class DocumentoExigidoPorGruposTests
     {
         DocumentoExigido exigencia = Reidratada(Declarada() with
         {
-            Indeferimento = new(false, "ELIMINA_DO_PROCESSO", []),
+            Indeferimento = new(false, "ELIMINA_DO_PROCESSO", [], false),
             Requisitos = new(FormatosPermitidos.Criar(true, null).Value!, 2048, null, null, null),
         });
 
@@ -88,7 +88,7 @@ public sealed class DocumentoExigidoPorGruposTests
         DocumentoExigido exigencia = Reidratada(Declarada() with
         {
             Aplicabilidade = new(Aplicabilidade.Condicional, [condicao]),
-            Indeferimento = new(true, null, [baseLegal]),
+            Indeferimento = new(true, null, [baseLegal], false),
         });
 
         condicao.DocumentoExigidoId.Should().Be(IdCongelado);
@@ -100,7 +100,7 @@ public sealed class DocumentoExigidoPorGruposTests
     [Fact(DisplayName = "Reidratar não normaliza a consequência já congelada")]
     public void Reidratar_NaoNormalizaAConsequencia()
     {
-        DocumentoExigido exigencia = Reidratada(Declarada() with { Indeferimento = new(true, "  ", []) });
+        DocumentoExigido exigencia = Reidratada(Declarada() with { Indeferimento = new(true, "  ", [], false) });
 
         exigencia.ConsequenciaDoDescumprimento.Should().BeNull();
     }
@@ -154,7 +154,7 @@ public sealed class DocumentoExigidoPorGruposTests
     [InlineData("elimina_do_processo")]
     public void Criar_ConsequenciaComEspacosOuMinuscula_Recusa(string consequencia)
     {
-        DocumentoExigidoDeclarado declarada = Declarada() with { Indeferimento = new(true, consequencia, []) };
+        DocumentoExigidoDeclarado declarada = Declarada() with { Indeferimento = new(true, consequencia, [], false) };
 
         Result<DocumentoExigido> resultado = DocumentoExigido.Criar(Chave, declarada);
 
@@ -181,7 +181,7 @@ public sealed class DocumentoExigidoPorGruposTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(Chave, Declarada() with
         {
             Aplicabilidade = new(Aplicabilidade.Condicional, [condicao]),
-            Indeferimento = new(true, null, [baseLegal]),
+            Indeferimento = new(true, null, [baseLegal], false),
         }).Value!;
 
         condicao.DocumentoExigidoId.Should().Be(exigencia.Id);

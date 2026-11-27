@@ -39,14 +39,14 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []),
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", [], false),
             PorOpcao: new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
 
     private static DocumentoExigidoDoModeloInput LaudoQueDependeDeUmFatoDerivado() =>
         new(
             "INSCRICAO", "LAUDO_MEDICO",
             [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
+            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [], false));
 
     private static string MotivosDaRecusa(Result<AplicacaoDeModeloDto> resultado) =>
         string.Join("; ", resultado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}"));
@@ -129,7 +129,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.DeclararAtendimentoEspecializado();
         DocumentoExigidoDoModeloInput documento = DocumentoDoModelo("LAUDO_MEDICO", "PCD") with
         {
-            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)]),
+            Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput("Lei de referência", "FEDERAL", "PENDENTE", null)], false),
         };
 
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(documento));
@@ -173,7 +173,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
 
         List<DocumentoExigidoDoModeloInput> copias = [.. SelecaoDosDocumentosDoModelo.PorOpcaoOfertada(laudo, ofertados)];
 
-        copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Indeferimento!.Obrigatorio);
+        copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Indeferimento!.Obrigatorio == true);
         copias.Select(static c => string.Join(" e ", c.Quando!.Single().Select(static k => $"{k.Fato}={k.Valor.GetRawText()}"))).Should().BeEquivalentTo(
         [
             "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"PCD\"",

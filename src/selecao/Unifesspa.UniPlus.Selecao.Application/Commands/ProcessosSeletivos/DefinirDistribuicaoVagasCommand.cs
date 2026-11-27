@@ -36,7 +36,7 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
 /// institucional; recusada para as modalidades calculadas do ramo federal
 /// (issue #848/ADR-0115).
 /// </summary>
-public sealed record QuantidadeVagaInput(Guid ModalidadeId, int Quantidade);
+public sealed record QuantidadeVagaInput(Guid ModalidadeId, int? Quantidade);
 
 /// <summary>
 /// Substitui integralmente a distribuição de vagas do processo (Story #773,

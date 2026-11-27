@@ -29,7 +29,7 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
         decimal? notaMinima = null,
         decimal? notaMaxima = null,
         decimal? passo = null,
-        IReadOnlyList<NivelDeAtendimento?>? escala = null) =>
+        IReadOnlyList<NivelDeAtendimentoDeclarado?>? escala = null) =>
         new(peso, notaMinima, notaMaxima, passo, FormaDeAvaliacao.Humana, null, escala);
 
     private static (string? Campo, string Codigo)[] Recusas(
@@ -114,7 +114,7 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
     [Fact(DisplayName = "O conceito categórico recusa a escala de atendimento declarada")]
     public void Categorico_ComEscalaDeAtendimento_Recusa()
     {
-        DeclaracaoDaAvaliacaoDaEtapa declaracao = Declaracao(escala: [new NivelDeAtendimento("Atendeu", 1m)]);
+        DeclaracaoDaAvaliacaoDaEtapa declaracao = Declaracao(escala: [new NivelDeAtendimentoDeclarado("Atendeu", 1m, null)]);
 
         Recusas(AptoInapto(), declaracao).Should().Equal(("escalaDeAtendimento", ConceitoDaEtapaErrorCodes.NotaNoConceitoCategorico));
     }
@@ -122,7 +122,7 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
     [Fact(DisplayName = "O conceito categórico com todos os campos de nota recusa um por campo, na ordem")]
     public void Categorico_ComTodosOsCamposDeNota_RecusaUmPorCampo()
     {
-        DeclaracaoDaAvaliacaoDaEtapa declaracao = Declaracao(2m, 5m, 10m, 0.5m, [new NivelDeAtendimento("Atendeu", 1m)]);
+        DeclaracaoDaAvaliacaoDaEtapa declaracao = Declaracao(2m, 5m, 10m, 0.5m, [new NivelDeAtendimentoDeclarado("Atendeu", 1m, null)]);
 
         Recusas(AptoInapto(), declaracao, declaraItens: true).Select(static recusa => recusa.Campo).Should().Equal(
             "notaMaxima", "notaMinima", "peso", "passoDoLancamento", "itensDeAvaliacao", "escalaDeAtendimento");

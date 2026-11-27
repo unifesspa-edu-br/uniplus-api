@@ -32,7 +32,7 @@ internal static class ExigenciasDoDocumentoLidas
     {
         Aplicabilidade = CodigoDoCatalogo<Aplicabilidade>(Texto(exigencia, "aplicabilidade")),
         Obrigatorio = Valor<bool>(exigencia, "obrigatorio"),
-        AbrePrazoParaReenvio = Valor<bool>(exigencia, "abrePrazoParaReenvio") ?? false,
+        AbrePrazoParaReenvio = Valor<bool>(exigencia, "abrePrazoParaReenvio"),
         ConsequenciaDoDescumprimento = CodigoDoCatalogo<ConsequenciaDoDescumprimento>(Texto(exigencia, "consequenciaDoDescumprimento")),
         Condicoes = Condicoes(exigencia["condicoes"]),
         BasesLegais = BasesLegais(exigencia),

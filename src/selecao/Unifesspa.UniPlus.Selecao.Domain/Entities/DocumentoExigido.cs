@@ -122,17 +122,34 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private DocumentoExigido() { }
 
     /// <summary>
-    /// Acumula as recusas de forma da exigência (ADR-0125): aplicabilidade, consequência e fatos comprovados.
-    /// O formulário é conferido contra os formulários do processo, e não aqui.
+    /// Acumula as recusas de forma da exigência (ADR-0125): aplicabilidade, consequência, fatos comprovados e
+    /// as duas escolhas do indeferimento, que não têm valor padrão. O formulário é conferido contra os
+    /// formulários do processo, e não aqui.
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
-        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes, IReadOnlyList<string>? fatosComprovados)
+        Aplicabilidade? aplicabilidade, string? consequenciaDoDescumprimento, int quantidadeCondicoes, IReadOnlyList<string>? fatosComprovados,
+        bool? obrigatorio, bool? abrePrazoParaReenvio)
     {
         List<FieldError> erros = [];
         ValidarAplicabilidade(aplicabilidade, quantidadeCondicoes, erros);
         ValidarConsequencia(consequenciaDoDescumprimento, erros);
         ValidarFatos(fatosComprovados, erros);
+        ValidarEscolhasDoIndeferimento(obrigatorio, abrePrazoParaReenvio, erros);
         return erros;
+    }
+
+    private static void ValidarEscolhasDoIndeferimento(bool? obrigatorio, bool? abrePrazoParaReenvio, List<FieldError> erros)
+    {
+        if (obrigatorio is null)
+        {
+            erros.Add(new("obrigatorio", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se o documento é obrigatório.")));
+        }
+
+        if (abrePrazoParaReenvio is null)
+        {
+            erros.Add(new("abrePrazoParaReenvio", new DomainError(CodigosDeValidacao.Obrigatorio,
+                "Informe se o indeferimento abre prazo para reenvio do documento.")));
+        }
     }
 
     private static void ValidarAplicabilidade(Aplicabilidade? aplicabilidade, int quantidadeCondicoes, List<FieldError> erros)
@@ -187,7 +204,7 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         ExigirPartes(declarado);
         ExigirIdentificadores(declarado.Tipo, declarado.Momento);
         List<FieldError> erros = ValidarFormaBasica(declarado.Aplicabilidade.Tipo, declarado.Indeferimento.ConsequenciaDoDescumprimento,
-            declarado.Aplicabilidade.Condicoes.Count, declarado.FatosComprovados);
+            declarado.Aplicabilidade.Condicoes.Count, declarado.FatosComprovados, declarado.Indeferimento.Obrigatorio, declarado.Indeferimento.AbrePrazoParaReenvio);
         erros.AddRange(RequisitosDoDocumento.ValidarTamanho(declarado.Requisitos.TamanhoMaximoBytes));
         if (erros.Count > 0)
         {
@@ -223,8 +240,10 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
         FatosComprovados = [.. declarado.FatosComprovados ?? []];
         Aplicabilidade = declarado.Aplicabilidade.Tipo
             ?? throw new ArgumentException("A exigência deve declarar a aplicabilidade.", nameof(declarado));
-        Obrigatorio = declarado.Indeferimento.Obrigatorio;
-        AbrePrazoParaReenvio = declarado.Indeferimento.AbrePrazoParaReenvio;
+        Obrigatorio = declarado.Indeferimento.Obrigatorio
+            ?? throw new ArgumentException("A exigência deve declarar se o documento é obrigatório.", nameof(declarado));
+        AbrePrazoParaReenvio = declarado.Indeferimento.AbrePrazoParaReenvio
+            ?? throw new ArgumentException("A exigência deve declarar se o indeferimento abre prazo para reenvio.", nameof(declarado));
         ConsequenciaDoDescumprimento = ObterConsequencia(declarado.Indeferimento.ConsequenciaDoDescumprimento);
         Requisitos = declarado.Requisitos;
     }

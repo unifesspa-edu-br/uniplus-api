@@ -106,7 +106,7 @@ public sealed class NiveisDeAtendimentoPersistenciaTests(ProcessoSeletivoDbFixtu
         return fase.Id;
     }
 
-    private async Task<Guid> GravarEtapaAsync(IReadOnlyList<NivelDeAtendimento> niveis)
+    private async Task<Guid> GravarEtapaAsync(IReadOnlyList<NivelDeAtendimentoDeclarado> niveis)
     {
         await using UniPlusDbContext contexto = fixture.CreateDbContext();
         ProcessoSeletivo processo = EtapaDeAtendimentoBuilder.CriarProcesso(niveis, [new(null, "Item", 10m)]);

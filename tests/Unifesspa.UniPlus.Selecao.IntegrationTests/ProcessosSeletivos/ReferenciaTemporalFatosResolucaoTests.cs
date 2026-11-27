@@ -120,7 +120,7 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]),
-                new IndeferimentoDoDocumento(true, null, [baseLegal]),
+                new IndeferimentoDoDocumento(true, null, [baseLegal], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
 

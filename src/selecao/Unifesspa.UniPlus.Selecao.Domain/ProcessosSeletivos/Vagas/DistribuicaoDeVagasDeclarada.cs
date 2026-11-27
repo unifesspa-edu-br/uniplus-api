@@ -35,6 +35,9 @@ public sealed record DistribuicaoDeVagasDeclarada
     /// <summary>Os dados que o cadastro recusou.</summary>
     public IReadOnlySet<DadoDaDistribuicaoDeVagas> Recusados { get; init; } = FrozenSet<DadoDaDistribuicaoDeVagas>.Empty;
 
+    /// <summary>As modalidades cuja linha do quadro veio sem quantidade: a recusa é uma só, e as fronteiras da quantidade não a repetem.</summary>
+    public IReadOnlySet<Guid> ModalidadesComQuantidadeRecusada { get; init; } = FrozenSet<Guid>.Empty;
+
     /// <summary>O código da regra de distribuição aceita; nulo quando ela foi recusada.</summary>
     public string? CodigoDaRegra =>
         RegraDeDistribuicao is { } regra && !Recusado(DadoDaDistribuicaoDeVagas.RegraDeDistribuicao) ? regra.Codigo : null;

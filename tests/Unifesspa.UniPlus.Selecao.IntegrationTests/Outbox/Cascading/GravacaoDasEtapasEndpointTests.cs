@@ -129,7 +129,7 @@ public sealed class GravacaoDasEtapasEndpointTests(CascadingFixture ambienteDeTe
         using HttpResponseMessage resposta = await EnviarEtapasAsync(cliente, processoId, etapas);
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, corpo);
-        corpo.Should().Contain("uniplus.validacao.formato").And.Contain("A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1.");
+        corpo.Should().Contain("uniplus.selecao.nivel_de_atendimento.fracao_invalida").And.Contain("A fração do nível deve ficar entre 0 e 1.");
     }
 
     [Fact]

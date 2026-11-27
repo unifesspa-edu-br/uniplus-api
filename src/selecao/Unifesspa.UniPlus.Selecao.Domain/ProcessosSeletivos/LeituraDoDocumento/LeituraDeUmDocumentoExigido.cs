@@ -51,7 +51,7 @@ internal static class LeituraDeUmDocumentoExigido
             citacoes.Tipo!,
             new MomentoDaExigencia(citacoes.FaseId!.Value, citacoes.EtapaId, partes.Formulario!),
             new AplicabilidadeDaExigencia(exigencia.Aplicabilidade, partes.Condicoes!),
-            new IndeferimentoDoDocumento(exigencia.Obrigatorio ?? false, CodigoDoValorLido.De(exigencia.ConsequenciaDoDescumprimento), partes.BasesLegais!, exigencia.AbrePrazoParaReenvio),
+            new IndeferimentoDoDocumento(exigencia.Obrigatorio, CodigoDoValorLido.De(exigencia.ConsequenciaDoDescumprimento), partes.BasesLegais!, exigencia.AbrePrazoParaReenvio),
             partes.Requisitos!,
             exigencia.DadosComprovados);
         Result<DocumentoExigido> criado = DocumentoExigido.Criar(chave, declarado);
@@ -59,14 +59,16 @@ internal static class LeituraDeUmDocumentoExigido
         return new(criado.Value, exigencia.PosicaoNoDocumento, exigencia.Chave, criado.Errors);
     }
 
-    // A forma da exigência que a fábrica confere: a aplicabilidade, a consequência, os dados comprovados e o tamanho máximo.
+    // A forma da exigência que a fábrica confere: a aplicabilidade, a consequência, os dados comprovados, as escolhas do indeferimento e o tamanho máximo.
     private static IEnumerable<FieldError> FormaDaExigencia(ExigenciaNoDocumento exigencia) =>
     [
         .. DocumentoExigido.ValidarFormaBasica(
             exigencia.Aplicabilidade,
             CodigoDoValorLido.De(exigencia.ConsequenciaDoDescumprimento),
             exigencia.Condicoes.Sum(static alternativa => alternativa.Count),
-            exigencia.DadosComprovados),
+            exigencia.DadosComprovados,
+            exigencia.Obrigatorio,
+            exigencia.AbrePrazoParaReenvio),
         .. RequisitosDoDocumento.ValidarTamanho(exigencia.TamanhoMaximoBytes),
     ];
 }

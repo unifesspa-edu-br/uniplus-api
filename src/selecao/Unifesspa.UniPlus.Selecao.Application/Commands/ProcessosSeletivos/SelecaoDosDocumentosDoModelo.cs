@@ -190,12 +190,13 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             Indeferimento: IndeferimentoDoGrupo(grupo.Indeferimento),
             Itens: [.. itens.Select(static i => i.Regra)]);
 
-    private static IndeferimentoDoGrupoInput? IndeferimentoDoGrupo(IndeferimentoDoGrupoDeDocumentosDoModeloInput? indeferimento) =>
+    // O bloco do grupo é opcional no modelo: sem ele o grupo não determina resultado, e o reenvio declarado é "não".
+    private static IndeferimentoDoGrupoInput IndeferimentoDoGrupo(IndeferimentoDoGrupoDeDocumentosDoModeloInput? indeferimento) =>
         indeferimento is null
-            ? null
+            ? new IndeferimentoDoGrupoInput(null, [], false)
             : new IndeferimentoDoGrupoInput(
                 indeferimento.ConsequenciaDoDescumprimento,
-                [.. (indeferimento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))], indeferimento.AbrePrazoParaReenvio);
+                [.. (indeferimento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Situacao, b.Observacao))], indeferimento.AbrePrazoParaReenvio is true);
 
     // O documento sem nenhuma cláusula que valha sai da cópia, junto com elas.
     private static DocumentoExigidoDoModeloInput? ComClausulasOfertadas(

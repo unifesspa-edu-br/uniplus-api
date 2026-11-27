@@ -89,9 +89,9 @@ internal static class ConferenciaDasCondicoesDaExigencia
     {
         Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(declarada.Fato, declarada.Operador, InterpretarValor(declarada.Valor));
         recusas.AddRange(condicao.Errors.Select(recusa => recusa.NoCaminhoDe($"{AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes}[{posicao}]")));
-        if (condicao.IsSuccess)
+        if (condicao.IsSuccess && declarada.Clausula is int clausula)
         {
-            linhas.Add((declarada.Clausula, condicao.Value!));
+            linhas.Add((clausula, condicao.Value!));
         }
     }
 

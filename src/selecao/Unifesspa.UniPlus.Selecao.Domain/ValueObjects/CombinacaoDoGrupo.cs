@@ -62,9 +62,18 @@ public sealed record CombinacaoDoGrupo(FormaDeComprovacao Forma, int? Quantidade
         _ => null,
     };
 
-    /// <summary>A regra de documento não tem indeferimento próprio: o reenvio vive na exigência do documento.</summary>
-    public static DomainError? RecusaDoReenvioEmRegraDeDocumento(bool abrePrazoParaReenvio) => abrePrazoParaReenvio
-        ? new("RegraDeComprovacao.ReenvioProibidoEmRegraDeDocumento", "A regra de documento não declara reenvio próprio. Declare o reenvio na exigência do documento.") : null;
+    /// <summary>
+    /// A regra de documento não tem indeferimento próprio (o reenvio vive na exigência do documento): aceita ausente e falso e recusa verdadeiro.
+    /// O grupo declara se o indeferimento abre prazo para reenvio, e a falta é recusada.
+    /// </summary>
+    public static DomainError? RecusaDoReenvio(FormaDeComprovacao forma, bool? abrePrazoParaReenvio) => forma switch
+    {
+        FormaDeComprovacao.Documento when abrePrazoParaReenvio is true => new("RegraDeComprovacao.ReenvioProibidoEmRegraDeDocumento",
+            "A regra de documento não declara reenvio próprio. Declare o reenvio na exigência do documento."),
+        FormaDeComprovacao.Documento => null,
+        _ when abrePrazoParaReenvio is null => new(CodigosDeValidacao.Obrigatorio, "Informe se o indeferimento do grupo abre prazo para reenvio dos documentos."),
+        _ => null,
+    };
 
     internal static string? NormalizarConsequencia(string? consequenciaDoDescumprimento) => string.IsNullOrWhiteSpace(consequenciaDoDescumprimento) ? null : consequenciaDoDescumprimento;
 }

@@ -25,7 +25,9 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     private IReadOnlyList<CondicaoGatilhoInput> Condicoes { get; init; } = [];
 
-    private bool Obrigatorio { get; init; } = true;
+    private bool? Obrigatorio { get; init; } = true;
+
+    private bool? AbrePrazoParaReenvio { get; init; } = false;
 
     private string? Consequencia { get; init; }
 
@@ -56,6 +58,12 @@ internal sealed record ItemDocumentoExigidoDeTeste
 
     public ItemDocumentoExigidoDeTeste Facultativa() => this with { Obrigatorio = false };
 
+    /// <summary>A obrigatoriedade como o pedido a traz; nula, o pedido a omite.</summary>
+    public ItemDocumentoExigidoDeTeste ComObrigatorio(bool? obrigatorio) => this with { Obrigatorio = obrigatorio };
+
+    /// <summary>A escolha de prazo para reenvio como o pedido a traz; nula, o pedido a omite.</summary>
+    public ItemDocumentoExigidoDeTeste ComPrazoParaReenvio(bool? abrePrazoParaReenvio) => this with { AbrePrazoParaReenvio = abrePrazoParaReenvio };
+
     public ItemDocumentoExigidoDeTeste ComConsequencia(string? consequencia) => this with { Consequencia = consequencia };
 
     public ItemDocumentoExigidoDeTeste ComBasesLegais(params BaseLegalInput[] basesLegais) => this with { BasesLegais = basesLegais };
@@ -84,7 +92,7 @@ internal sealed record ItemDocumentoExigidoDeTeste
             new TipoDocumentoDaExigenciaInput(TipoDocumentoId),
             new MomentoDaExigenciaInput(FaseId, EtapaId, FormularioCodigo),
             new AplicabilidadeDaExigenciaInput(Aplicabilidade, Condicoes),
-            new IndeferimentoDoDocumentoInput(Obrigatorio, Consequencia, BasesLegais),
+            new IndeferimentoDoDocumentoInput(Obrigatorio, Consequencia, BasesLegais, AbrePrazoParaReenvio),
             ComRequisitos
                 ? new RequisitosDoDocumentoInput(
                     FormatosPermitidos, TamanhoMaximoBytes, PrazoDeEmissao, Validade, ModeloId is { } modelo ? new ModeloDaExigenciaInput(modelo) : null)

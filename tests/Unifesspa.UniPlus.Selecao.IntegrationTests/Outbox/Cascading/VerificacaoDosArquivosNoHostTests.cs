@@ -52,7 +52,7 @@ public sealed class VerificacaoDosArquivosNoHostTests
     private static (ApresentacaoDeDocumento, ArquivoDaApresentacao) CriarArquivo(Guid inscricaoId, DateTimeOffset publicadoEm)
     {
         DocumentoExigido laudo = new DocumentoExigidoBuilder().ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [])).Construir();
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false)).Construir();
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             apresentacao.Id, inscricaoId, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;

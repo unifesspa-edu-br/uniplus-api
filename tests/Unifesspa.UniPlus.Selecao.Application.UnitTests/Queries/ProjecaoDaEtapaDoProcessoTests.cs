@@ -38,7 +38,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         PassoDoLancamento: 0.5m,
         FormaDeAvaliacao: FormaDeAvaliacao.Humana,
         RegraConsolidacao: ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.CorrecaoIndependente.Codigo(), "v1", HashDaRegra),
-        EscalaDeAtendimento: [NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atende").Value, "Atende", 1m), NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_parcial").Value, "Atende em parte", 0.5m)]);
+        EscalaDeAtendimento: [new NivelDeAtendimentoDeclarado("Atende", 1m, "nivel_atende"), new NivelDeAtendimentoDeclarado("Atende em parte", 0.5m, "nivel_parcial")]);
 
     private static ItemDeAvaliacao[] Itens() =>
     [

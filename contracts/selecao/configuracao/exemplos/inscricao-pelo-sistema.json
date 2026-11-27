@@ -479,6 +479,7 @@
         "formularioCodigo": "INSCRICAO",
         "aplicabilidade": "CONDICIONAL",
         "obrigatorio": true,
+        "abrePrazoParaReenvio": false,
         "condicoes": [
           [
             {
@@ -508,6 +509,7 @@
     "regrasDeComprovacao": [
       {
         "forma": "TODOS_OS_ITENS",
+        "abrePrazoParaReenvio": false,
         "itens": [
           {
             "exigenciaChave": "exigencia_documento_identificacao",

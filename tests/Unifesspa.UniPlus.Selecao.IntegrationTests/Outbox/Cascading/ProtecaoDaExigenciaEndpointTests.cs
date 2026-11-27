@@ -302,7 +302,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             tipoDocumento = new { id = tipoDocumentoId },
             momento = new { faseId = FaseId, formularioCodigo = "INSCRICAO" },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
-            indeferimento = new { obrigatorio = false, basesLegais = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = false, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() },
             requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,
             fatosComprovados,
         };
