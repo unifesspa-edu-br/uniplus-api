@@ -1,11 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -25,6 +30,7 @@ public sealed class LeituraDosCadastrosCitados(
     ITipoAtoPublicadoReader tiposDeAto,
     IRegraCatalogoReader regras,
     IConferenciaEnderecoGeo geo,
+    IFatoCandidatoReader dadosDoCandidato,
     LeituraDosCadastrosDaConfiguracaoCitados cadastrosDaConfiguracao,
     LeituraDoInstanteDoComando leituraDoInstante)
 {
@@ -72,9 +78,12 @@ public sealed class LeituraDosCadastrosCitados(
             FasesCanonicas = daConfiguracao.FasesCanonicas,
             TiposDeBanca = daConfiguracao.TiposDeBanca,
             CategoriasDeDocumento = daConfiguracao.CategoriasDeDocumento,
+            TiposDeEtapa = daConfiguracao.TiposDeEtapa,
+            QuadrosDePesos = daConfiguracao.QuadrosDePesos,
             Localidades = localidade.Achadas,
             LocalidadeNaoConferida = localidade.NaoConferida,
             Regras = await RegrasAsync(codigos.Regras, cancellationToken).ConfigureAwait(false),
+            DadosDoDesempate = await DadosDoDesempateAsync(codigos.Regras, cancellationToken).ConfigureAwait(false),
             TiposDeAto = await TiposDeAtoAsync(codigos.TiposDeAto, instante.Dia, cancellationToken).ConfigureAwait(false),
         };
 
@@ -82,36 +91,32 @@ public sealed class LeituraDosCadastrosCitados(
         IReadOnlyList<string> codigos, CancellationToken cancellationToken)
     {
         Dictionary<string, UnidadeCitada> achadas = new(StringComparer.Ordinal);
-        foreach (string codigo in codigos)
+        foreach (UnidadeView unidade in await UnidadesVivasAsync(codigos, cancellationToken).ConfigureAwait(false))
         {
-            Result<UnidadeCitada?> lida = await UnidadeAsync(codigo, cancellationToken).ConfigureAwait(false);
-            if (lida.IsFailure)
+            Result<UnidadeCitada> citada = Citada(unidade);
+            if (citada.IsFailure)
             {
-                return Result<IReadOnlyDictionary<string, UnidadeCitada>>.Failure(lida.Error!);
+                return Result<IReadOnlyDictionary<string, UnidadeCitada>>.Failure(citada.Error!);
             }
-            if (lida.Value is not null)
-            {
-                achadas[codigo] = lida.Value;
-            }
+
+            achadas[unidade.Codigo] = citada.Value!;
         }
+
         return Result<IReadOnlyDictionary<string, UnidadeCitada>>.Success(achadas);
     }
 
-    private async Task<Result<UnidadeCitada?>> UnidadeAsync(string codigo, CancellationToken cancellationToken)
-    {
-        UnidadeView? unidade = await unidades.ObterPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false);
-        if (unidade is null)
-        {
-            return Result<UnidadeCitada?>.Success(null);
-        }
+    private async Task<IReadOnlyList<UnidadeView>> UnidadesVivasAsync(IReadOnlyList<string> codigos, CancellationToken cancellationToken) =>
+        codigos.Count == 0 ? [] : await unidades.ListarPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false);
 
+    private static Result<UnidadeCitada> Citada(UnidadeView unidade)
+    {
         Result<UnidadeAdministradoraSnapshot> cadastro = UnidadeAdministradoraSnapshot.Criar(
             unidade.Sigla, unidade.Codigo, unidade.Slug, unidade.Nome, unidade.Tipo,
             new CidadeCopiadaDaUnidade(unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf));
 
         return cadastro.IsFailure
-            ? Result<UnidadeCitada?>.Failure(cadastro.Error!)
-            : Result<UnidadeCitada?>.Success(new UnidadeCitada(unidade.Id, cadastro.Value!));
+            ? Result<UnidadeCitada>.Failure(cadastro.Error!)
+            : Result<UnidadeCitada>.Success(new UnidadeCitada(unidade.Id, cadastro.Value!));
     }
 
     // A UF é a do prefixo do código IBGE; o código sem a forma de município não vai ao Geo. Só o município que o Geo confirma, com um
@@ -138,21 +143,19 @@ public sealed class LeituraDosCadastrosCitados(
             : GeoNaoRespondeu;
     }
 
-    private async Task<Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>> RegrasAsync(
-        IReadOnlyList<(string Codigo, string Versao)> citadas, CancellationToken cancellationToken)
-    {
-        Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> achadas = [];
-        foreach ((string codigo, string versao) in citadas)
-        {
-            RegraCatalogo? regra = await regras.ObterAsync(codigo, versao, cancellationToken).ConfigureAwait(false);
-            if (regra is not null)
-            {
-                achadas[(codigo, versao)] = new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia());
-            }
-        }
+    private async Task<IReadOnlyDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>> RegrasAsync(
+        IReadOnlyList<(string Codigo, string Versao)> citadas, CancellationToken cancellationToken) =>
+        citadas.Count == 0
+            ? new Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>()
+            : (await regras.ListarPorReferenciasAsync(citadas, cancellationToken).ConfigureAwait(false))
+                .ToDictionary(static regra => (regra.Codigo, regra.Versao), static regra => new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia()));
 
-        return achadas;
-    }
+    // O vocabulário só é lido quando o documento cita o desempate por condição sobre dado; sem a citação, fica vazio.
+    private async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> DadosDoDesempateAsync(
+        IReadOnlyList<(string Codigo, string Versao)> citadas, CancellationToken cancellationToken) =>
+        citadas.Any(static regra => regra.Codigo == RegraDeDesempate.CondicaoSobreDado.Codigo())
+            ? (await FatosDoDesempate.LerAsync(dadosDoCandidato, cancellationToken).ConfigureAwait(false)).Vocabulario
+            : new Dictionary<string, DescritorFatoCandidato>();
 
     private async Task<HashSet<string>> TiposDeAtoAsync(IReadOnlyList<string> codigos, DateOnly dia, CancellationToken cancellationToken) =>
         codigos.Count == 0

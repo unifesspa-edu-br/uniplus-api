@@ -17,7 +17,7 @@ using static PartesComunsDoDocumentoLidas;
 
 /// <summary>
 /// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva, a
-/// manifestação de interesse e a prova presencial, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
+/// manifestação de interesse, a prova presencial, as etapas e a classificação, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
 /// então aqui só se converte; o que falta fica ausente ou no valor de partida do tipo, e quem o confere é o domínio. Não decide regra.
 /// </summary>
 internal static class DeclaracoesDoDocumentoLidas
@@ -33,6 +33,8 @@ internal static class DeclaracoesDoDocumentoLidas
             CadastroDeReserva = [.. Itens(documento, "cadastroDeReserva").Select(static item => CadastroDeReserva(item.Item))],
             ManifestacaoDeInteresse = Texto(documento, "manifestacaoDeInteresse"),
             ProvaPresencial = ProvaPresencial(Objeto(documento, "provaPresencial")),
+            Etapas = EtapasDoDocumentoLidas.De(documento["etapas"]),
+            Classificacao = ClassificacaoDoDocumentoLida.De(documento["classificacao"]),
         };
     }
 
@@ -65,7 +67,7 @@ internal static class DeclaracoesDoDocumentoLidas
         new(Valor<DateTimeOffset>(fase, "inicio"), Valor<DateTimeOffset>(fase, "fim")),
         Publicacoes(fase),
         [.. Itens(fase, "bancasRequeridas").Select(static item => Banca(item.Posicao, item.Item))],
-        RegraDeRecurso(Objeto(fase, "regraRecurso")))
+        Objeto(fase, "regraRecurso") is { } regraDeRecurso ? RegraDeRecurso(regraDeRecurso) : null)
     {
         NoMesmoMomentoDaAnterior = Valor<bool>(fase, "noMesmoMomentoDaAnterior") ?? false,
     };
@@ -75,22 +77,6 @@ internal static class DeclaracoesDoDocumentoLidas
         Valor<bool>(fase, "emiteParecerIndividual") ?? false,
         TiposDeDecisao(fase),
         RegraDeHomologacao(Objeto(fase, "regraDeHomologacao")));
-
-    private static ProdutoNoDocumento Produto(int posicao, JsonObject produto) =>
-        new(posicao, Texto(produto, "atoCodigo")!, PapelDoProduto(Texto(produto, "papel")));
-
-    private static PapelDaPublicacaoPrevista? PapelDoProduto(string? codigo) => CodigoDoCatalogo<PapelDaPublicacaoPrevista>(codigo);
-
-    private static string?[]? TiposDeDecisao(JsonObject fase) =>
-        fase["tiposDeDecisao"] is JsonArray lista ? [.. lista.Select(static tipo => tipo?.GetValue<string>())] : null;
-
-    private static RegraDeRecursoNoDocumento? RegraDeRecurso(JsonObject? regra) => regra is null
-        ? null
-        : new(
-            new(Texto(regra, "regraCodigo"), Texto(regra, "regraVersao")),
-            Texto(regra, "publicacaoDeReferenciaAtoCodigo"),
-            ParametrosDoRecurso(regra),
-            [.. Itens(regra, "procedimentosDeRecurso").Select(static item => Procedimento(item.Posicao, item.Item))]);
 
     private static RegraDeHomologacaoNoDocumento? RegraDeHomologacao(JsonObject? regra) => regra is null
         ? null

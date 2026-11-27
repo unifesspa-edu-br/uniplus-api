@@ -13,11 +13,14 @@ internal static class LeituraDoJsonDoDocumento
 {
     internal static JsonObject? Objeto(JsonObject? pai, string propriedade) => pai?[propriedade] as JsonObject;
 
+    // Os parâmetros de uma regra que o esquema não conhece vêm sem forma garantida: o que não é texto fica ausente (ou vazio, dentro de lista), e o domínio o recusa.
     internal static string? Texto(JsonObject? pai, string propriedade) =>
-        pai?[propriedade] is JsonValue valor ? valor.GetValue<string>() : null;
+        pai?[propriedade] is JsonValue valor && valor.TryGetValue(out string? texto) ? texto : null;
 
     internal static string[] Textos(JsonObject pai, string propriedade) =>
-        pai[propriedade] is JsonArray lista ? [.. lista.Select(static texto => texto!.GetValue<string>())] : [];
+        pai[propriedade] is JsonArray lista
+            ? [.. lista.Select(static item => item is JsonValue valor && valor.TryGetValue(out string? texto) ? texto : string.Empty)]
+            : [];
 
     // O valor que o tipo não comporta (número fora do inteiro de 32 bits, data mal escrita) fica ausente, e o domínio o recusa.
     internal static T? Valor<T>(JsonObject? pai, string propriedade)
@@ -29,9 +32,16 @@ internal static class LeituraDoJsonDoDocumento
         where T : struct, Enum =>
         CatalogoDe<T>.TentarObter(codigo, out T valor) ? valor : null;
 
-    internal static IEnumerable<(int Posicao, JsonObject Item)> Itens(JsonObject? pai, string propriedade) =>
-        pai?[propriedade] is JsonArray lista ? lista.Select(static (item, posicao) => (posicao, item!.AsObject())) : [];
+    internal static IEnumerable<(int Posicao, JsonObject Item)> Itens(JsonObject? pai, string propriedade) => Itens(pai?[propriedade]);
+
+    // A posição é o índice na lista enviada: o documento não tem ordem escrita.
+    internal static IEnumerable<(int Posicao, JsonObject Item)> Itens(JsonNode? lista) =>
+        lista is JsonArray itens ? itens.Select(static (item, posicao) => (posicao, item!.AsObject())) : [];
 
     internal static ReferenciaDeRegraNoDocumento? Referencia(JsonObject? referencia) =>
         referencia is null ? null : new(Texto(referencia, "codigo"), Texto(referencia, "versao"));
+
+    // A regra que o esquema exige mas o rascunho ainda não traz vira a referência sem código nem versão, que o domínio recusa.
+    internal static ReferenciaDeRegraNoDocumento ReferenciaOuVazia(JsonObject? pai, string propriedade) =>
+        Referencia(Objeto(pai, propriedade)) ?? new ReferenciaDeRegraNoDocumento(null, null);
 }

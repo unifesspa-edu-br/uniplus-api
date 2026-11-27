@@ -113,7 +113,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
         return document.RootElement.Clone();
     }
 
-    private static IReadOnlyList<FatoCandidatoView> FatosDoCatalogo() =>
+    internal static IReadOnlyList<FatoCandidatoView> FatosDoCatalogo() =>
     [
         new FatoCandidatoView(
             Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", "Descrição do fato.",
