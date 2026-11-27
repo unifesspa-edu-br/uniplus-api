@@ -111,20 +111,20 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "obrigatoriedade-legal", Versions = [1])]
     [ProducesResponseType(typeof(ObrigatoriedadeLegalDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        ObrigatoriedadeLegalDto? dto = await _queryBus
+        Result<ObrigatoriedadeLegalDto> resultado = await _queryBus
             .Send(new ObterObrigatoriedadeLegalQuery(id), cancellationToken)
             .ConfigureAwait(false);
-        if (dto is null)
+        if (resultado.IsFailure)
         {
-            return NotFound();
+            return resultado.ToActionResult(_mapper);
         }
 
-        ObrigatoriedadeLegalDto comLinks = dto with { Links = _linksBuilder.Build(dto) };
-        return Ok(comLinks);
+        ObrigatoriedadeLegalDto dto = resultado.Value!;
+        return Ok(dto with { Links = _linksBuilder.Build(dto) });
     }
 
     /// <summary>

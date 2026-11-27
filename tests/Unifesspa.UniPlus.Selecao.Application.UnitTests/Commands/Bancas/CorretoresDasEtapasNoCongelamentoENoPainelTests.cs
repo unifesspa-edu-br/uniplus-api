@@ -20,7 +20,7 @@ public sealed class CorretoresDasEtapasNoCongelamentoENoPainelTests
     private const string ItemDoMinimo = "cronograma_banca_com_o_minimo_de_integrantes";
 
     private static async Task<ConformidadeProcessoSeletivoDto> Painel(ProcessoSeletivo processo) =>
-        (await ProcessoComCorrecaoIndependente.Servicos(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id)))!;
+        (await ProcessoComCorrecaoIndependente.Servicos(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value!;
 
     [Theory(DisplayName = "O painel mostra o item do mínimo de integrantes vermelho com a banca de 2 e verde com a de 3, como a publicação")]
     [InlineData(2, false)]
@@ -55,9 +55,9 @@ public sealed class CorretoresDasEtapasNoCongelamentoENoPainelTests
     {
         ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComBancaDaEtapa(integrantes: 5);
 
-        ConformidadeProcessoSeletivoDto? painel = await ProcessoComCorrecaoIndependente.Servicos(processo)
+        ConformidadeProcessoSeletivoDto? painel = (await ProcessoComCorrecaoIndependente.Servicos(processo)
             .ComRegrasDeConsolidacao(RegrasDeConsolidacaoDeTeste.Catalogo(RegrasDeConsolidacaoDeTeste.AvaliacaoUnica))
-            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
         painel!.Itens.Single(item => item.Codigo == ItemDoMinimo).Ok.Should().BeFalse();
     }

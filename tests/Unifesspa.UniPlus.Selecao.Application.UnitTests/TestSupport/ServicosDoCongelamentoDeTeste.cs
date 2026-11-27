@@ -331,6 +331,6 @@ internal sealed class ServicosDoCongelamentoDeTeste
             Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), new LeituraDasPrecedenciasDosCadastros(Precedencias), MotivosEscolhidos, MunicipiosNoGeo()),
         Catalogos(), Microsoft.Extensions.Options.Options.Create(new ProvaPresencialOptions { LimiteDeMunicipios = LimiteDeMunicipios }));
 
-    public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
+    public Task<Result<ConformidadeProcessoSeletivoDto>> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
         ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);
 }

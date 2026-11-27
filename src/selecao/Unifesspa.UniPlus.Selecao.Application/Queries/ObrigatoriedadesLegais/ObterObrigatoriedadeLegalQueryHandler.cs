@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -15,7 +16,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public static class ObterObrigatoriedadeLegalQueryHandler
 {
-    public static async Task<ObrigatoriedadeLegalDto?> Handle(
+    private static readonly DomainError NaoEncontrada = new("ObrigatoriedadeLegal.NaoEncontrada", "Obrigatoriedade legal não encontrada.");
+
+    public static async Task<Result<ObrigatoriedadeLegalDto>> Handle(
         ObterObrigatoriedadeLegalQuery query,
         IObrigatoriedadeLegalRepository repository,
         ITipoProcessoReader tipos,
@@ -29,11 +32,11 @@ public static class ObterObrigatoriedadeLegalQueryHandler
 
         if (regra is null)
         {
-            return null;
+            return Result<ObrigatoriedadeLegalDto>.Failure(NaoEncontrada);
         }
 
         IReadOnlyDictionary<string, string> nomes = await tipos.ObterNomesPorCodigosAsync(
             regra.TipoProcessoCodigo == TodosOsTiposDeProcesso.Codigo ? [] : [regra.TipoProcessoCodigo], cancellationToken).ConfigureAwait(false);
-        return ObrigatoriedadeLegalMapping.ToDto(regra, nomes);
+        return Result<ObrigatoriedadeLegalDto>.Success(ObrigatoriedadeLegalMapping.ToDto(regra, nomes));
     }
 }

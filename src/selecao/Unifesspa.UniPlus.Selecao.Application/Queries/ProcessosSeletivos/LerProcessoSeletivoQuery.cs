@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using System.Text.Json.Nodes;
 
 using Domain.Entities;
+using Domain.Errors;
 using Domain.Interfaces;
 
 using DTOs;
@@ -15,9 +16,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A leitura do processo por quem o consulta: o que <see cref="ObterProcessoSeletivoQuery"/> devolve, menos o que ainda
-/// não foi publicado para quem não configura o processo. "Não encontrado" é estado normal de leitura.
+/// não foi publicado para quem não configura o processo. Processo inexistente recusa com o erro de processo não encontrado.
 /// </summary>
-public sealed record LerProcessoSeletivoQuery(Guid Id) : IQuery<ProcessoSeletivoDto?>;
+public sealed record LerProcessoSeletivoQuery(Guid Id) : IQuery<Result<ProcessoSeletivoDto>>;
 
 /// <summary>
 /// A configuração viva do processo é administrativa: traz blocos internos e, sob retificação, as edições da sessão que o
@@ -28,7 +29,9 @@ public sealed record LerProcessoSeletivoQuery(Guid Id) : IQuery<ProcessoSeletivo
 /// </summary>
 public static class LerProcessoSeletivoQueryHandler
 {
-    public static async Task<ProcessoSeletivoDto?> Handle(
+    private static readonly DomainError NaoEncontrado = new(ProcessoSeletivoErrorCodes.NaoEncontrado, "Processo seletivo não encontrado.");
+
+    public static async Task<Result<ProcessoSeletivoDto>> Handle(
         LerProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processos,
         ICertameDivulgadoRepository certameDivulgado,
@@ -43,12 +46,12 @@ public static class LerProcessoSeletivoQueryHandler
             .ConfigureAwait(false);
         if (processo is null || estado is null)
         {
-            return null;
+            return Result<ProcessoSeletivoDto>.Failure(NaoEncontrado);
         }
 
-        return await AcessoAoProcesso.ConfiguraAsync(verificador, estado.UnidadeId, query.Id, cancellationToken).ConfigureAwait(false)
-            ? processo
-            : await LerIdentificacaoAsync(query.Id, processo, certameDivulgado, processos, cancellationToken).ConfigureAwait(false);
+        bool configura = await AcessoAoProcesso.ConfiguraAsync(verificador, estado.UnidadeId, query.Id, cancellationToken).ConfigureAwait(false);
+        return Result<ProcessoSeletivoDto>.Success(
+            configura ? processo : await LerIdentificacaoAsync(query.Id, processo, certameDivulgado, processos, cancellationToken).ConfigureAwait(false));
     }
 
     private static void ValidarArgumentos(

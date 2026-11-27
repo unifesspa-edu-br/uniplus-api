@@ -9,6 +9,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -54,6 +55,21 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
         dto!.CadastroDeReserva.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Processo inexistente recusa com o código de processo seletivo não encontrado")]
+    public async Task ProcessoInexistente_RecusaComProcessoNaoEncontrado()
+    {
+        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+        repositorio.ObterComConfiguracaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
+        repositorio.ObterEstadoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((EstadoDoProcesso?)null);
+
+        Result<ProcessoSeletivoDto> resultado = await LerProcessoSeletivoQueryHandler.Handle(
+            new LerProcessoSeletivoQuery(Guid.CreateVersion7()), repositorio,
+            Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IVerificadorDeAcesso>(), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+    }
+
     private static async Task<(ProcessoSeletivoDto? Dto, ProcessoSeletivo Processo)> LerSemConfigurarAsync(string envelope)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
@@ -66,9 +82,9 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
         verificador.PodeAsync(default!, default, default).ReturnsForAnyArgs(ResultadoDoAcesso.IdentidadeIncompleta);
 
-        ProcessoSeletivoDto? dto = await LerProcessoSeletivoQueryHandler.Handle(
+        Result<ProcessoSeletivoDto> resultado = await LerProcessoSeletivoQueryHandler.Handle(
             new LerProcessoSeletivoQuery(processo.Id), repositorio, divulgacoes, verificador, CancellationToken.None);
-        return (dto, processo);
+        return (resultado.Value, processo);
     }
 
     private static (IProcessoSeletivoRepository, ICertameDivulgadoRepository) Repositorios(ProcessoSeletivo processo, string envelope)

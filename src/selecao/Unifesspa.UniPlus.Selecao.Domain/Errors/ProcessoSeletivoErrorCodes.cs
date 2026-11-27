@@ -6,6 +6,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class ProcessoSeletivoErrorCodes
 {
+    /// <summary>O processo seletivo pedido não existe; responde 404.</summary>
+    public const string NaoEncontrado = "ProcessoSeletivo.NaoEncontrado";
+
     /// <summary>O tipo de etapa citado não existe no cadastro ou não está ativo.</summary>
     public const string TipoEtapaNaoEncontradoOuInativo = "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo";
 

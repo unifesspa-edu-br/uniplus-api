@@ -39,7 +39,7 @@ public sealed class ConformidadeDaPrecedenciaNoPainelTests
     private static async Task<bool> ItemOkAsync(ServicosDoCongelamentoDeTeste servicos, ProcessoSeletivo processo)
     {
         servicos.Repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ConformidadeProcessoSeletivoDto? painel = await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ConformidadeProcessoSeletivoDto? painel = (await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
         return painel!.Itens.Single(static item => item.Codigo == ItemDaPrecedencia).Ok;
     }

@@ -112,26 +112,23 @@ public sealed class MotivosDeDecisaoController : ControllerBase
             .ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um motivo pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um motivo pelo Id. Responde 404 com o código do motivo não encontrado quando inexistente.</summary>
     [HttpGet("motivos-de-decisao/{id:guid}")]
     [EndpointName("ObterMotivoDeDecisao")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "motivo-de-decisao", Versions = [1])]
     [ProducesResponseType(typeof(MotivoDeDecisaoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        MotivoDeDecisaoDto? motivo = await _queryBus
+        Result<MotivoDeDecisaoDto> resultado = await _queryBus
             .Send(new ObterMotivoDeDecisaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (motivo is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(motivo with { Links = _linksBuilder.Build(motivo) });
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
