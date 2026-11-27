@@ -63,6 +63,8 @@ internal sealed class CenarioDoRascunho
 
     public ITipoDocumentoReader TiposDeDocumento { get; } = Substitute.For<ITipoDocumentoReader>();
 
+    public IPesoAreaEnemReader Pesos { get; } = Substitute.For<IPesoAreaEnemReader>();
+
     public IMotivoDeDecisaoRepository Motivos { get; } = Substitute.For<IMotivoDeDecisaoRepository>();
 
     public IVerificadorDeAcesso Verificador { get; } = Substitute.For<IVerificadorDeAcesso>();
@@ -94,7 +96,7 @@ internal sealed class CenarioDoRascunho
     public BloqueioDoRascunhoDeProcessoSeletivo Bloqueio => new(Rascunhos, Processos, Verificador);
 
     public ExportacaoDoRascunho Exportacao => new(Unidades, new(Esquema,
-        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos), new DescricaoDaParticipacaoDaReserva()]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
+        [new DescricaoDeUnidades(Unidades), new DescricaoDeTiposDeProcesso(Tipos), new DescricaoDeTiposDeDocumento(TiposDeDocumento), new DescricaoDeMotivosDeDecisao(Motivos), new DescricaoDaParticipacaoDaReserva(), new DescricaoDePesosPorAreaDoEnem(Pesos, Esquema)]), Resolucao, new DescricaoDaLocalidade(Geo), Esquema);
 
     public CenarioDoRascunho GeoConhece(string codigoIbge, string nome)
     {
