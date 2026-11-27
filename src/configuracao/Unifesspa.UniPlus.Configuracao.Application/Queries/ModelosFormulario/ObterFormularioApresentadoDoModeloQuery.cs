@@ -5,20 +5,22 @@ using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Leituras;
 
 /// <summary>
 /// O modelo de formulário no formato que o certame divulgado e o rascunho do processo servem
-/// (ADR-0139), para a simulação do administrador interpretar o modelo antes de aplicá-lo; nulo quando
-/// o modelo não existe.
+/// (ADR-0139), para a simulação do administrador interpretar o modelo antes de aplicá-lo; recusa com o erro
+/// de modelo não encontrado quando o modelo não existe.
 /// </summary>
-public sealed record ObterFormularioApresentadoDoModeloQuery(Guid Id) : IQuery<FormularioApresentado?>;
+public sealed record ObterFormularioApresentadoDoModeloQuery(Guid Id) : IQuery<Result<FormularioApresentado>>;
 
 /// <summary>
 /// Projeta a simulação do modelo — o conteúdo como aplicado, com o catálogo vivo — no formato do
@@ -31,7 +33,7 @@ public sealed record ObterFormularioApresentadoDoModeloQuery(Guid Id) : IQuery<F
 /// </summary>
 public static class ObterFormularioApresentadoDoModeloQueryHandler
 {
-    public static async Task<FormularioApresentado?> Handle(
+    public static async Task<Result<FormularioApresentado>> Handle(
         ObterFormularioApresentadoDoModeloQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
@@ -47,8 +49,9 @@ public static class ObterFormularioApresentadoDoModeloQueryHandler
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
         return modelo is null
-            ? null
-            : await ApresentarAsync(modelo, fatoRepository, cadastro, termoRepository, cancellationToken).ConfigureAwait(false);
+            ? Result<FormularioApresentado>.Failure(new DomainError(ModeloFormularioErrorCodes.NaoEncontrado, "Modelo de formulário não encontrado."))
+            : Result<FormularioApresentado>.Success(
+                await ApresentarAsync(modelo, fatoRepository, cadastro, termoRepository, cancellationToken).ConfigureAwait(false));
     }
 
     private static async Task<FormularioApresentado> ApresentarAsync(

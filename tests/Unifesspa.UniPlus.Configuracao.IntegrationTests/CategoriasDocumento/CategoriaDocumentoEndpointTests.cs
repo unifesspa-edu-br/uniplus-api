@@ -107,7 +107,7 @@ public sealed class CategoriaDocumentoEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/categorias-documento/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.categoria_documento.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/categorias-documento sem autenticação retorna 401")]

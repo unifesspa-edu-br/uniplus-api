@@ -8,8 +8,10 @@ using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.CatalogoDeProtecaoDeTeste;
 
@@ -20,7 +22,7 @@ public sealed class ListarAtosDoItemDaProtecaoQueryHandlerTests
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
 
-    private Task<IReadOnlyList<AtoDaProtecaoDto>?> ListarAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
+    private Task<Result<IReadOnlyList<AtoDaProtecaoDto>>> ListarAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
         ListarAtosDoItemDaProtecaoQueryHandler.Handle(
             new ListarAtosDoItemDaProtecaoQuery(cadastro, id), _tipos, _fatos, _atos, CancellationToken.None);
 
@@ -34,17 +36,30 @@ public sealed class ListarAtosDoItemDaProtecaoQueryHandlerTests
             AtoDaProtecaoDoCatalogo.Registrar(Retrato(fato), AtoDaProtecao.Solicitacao, new AtorDoAto(Emissor, Isabella, "Isabella Priscila Figueiredo"), Agora),
         ]);
 
-        IReadOnlyList<AtoDaProtecaoDto>? atos = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
+        Result<IReadOnlyList<AtoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
 
-        atos.Should().ContainSingle().Which.Ato.Should().Be("SOLICITACAO");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().ContainSingle().Which.Ato.Should().Be("SOLICITACAO");
         await _tipos.DidNotReceive().ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O item que não existe responde nulo, sem ler o registro")]
-    public async Task Inexistente_RespondeNulo()
+    [Fact(DisplayName = "O fato que não existe recusa com o erro de dado do candidato não encontrado, sem ler o registro")]
+    public async Task FatoInexistente_RecusaComDadoDoCandidatoNaoEncontrado()
     {
-        (await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid())).Should().BeNull();
-        (await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid())).Should().BeNull();
+        Result<IReadOnlyList<AtoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
+        await _atos.DidNotReceiveWithAnyArgs().ListarDoItemAsync(default, default, default);
+    }
+
+    [Fact(DisplayName = "O tipo de documento que não existe recusa com o erro de tipo de documento não encontrado, sem ler o registro")]
+    public async Task TipoInexistente_RecusaComTipoDeDocumentoNaoEncontrado()
+    {
+        Result<IReadOnlyList<AtoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
         await _atos.DidNotReceiveWithAnyArgs().ListarDoItemAsync(default, default, default);
     }
 }

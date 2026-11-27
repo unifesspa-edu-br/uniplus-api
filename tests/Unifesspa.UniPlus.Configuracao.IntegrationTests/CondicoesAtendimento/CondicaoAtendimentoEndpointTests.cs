@@ -48,7 +48,7 @@ public sealed class CondicaoAtendimentoEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/condicoes-atendimento/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.condicao_atendimento.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/condicoes-atendimento sem autenticação retorna 401")]

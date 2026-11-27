@@ -63,12 +63,14 @@ public sealed class TiposEtapaController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-etapa", Versions = [1])]
     [ProducesResponseType(typeof(TipoEtapaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoEtapaDto? tipo = await _queryBus.Send(new ObterTipoEtapaPorIdQuery(id), cancellationToken).ConfigureAwait(false);
-        return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
+        Result<TipoEtapaDto> resultado = await _queryBus.Send(new ObterTipoEtapaPorIdQuery(id), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

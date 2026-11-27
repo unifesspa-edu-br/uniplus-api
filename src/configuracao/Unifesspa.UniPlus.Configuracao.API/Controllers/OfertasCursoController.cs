@@ -130,27 +130,23 @@ public sealed class OfertasCursoController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma oferta de curso pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma oferta de curso pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("ofertas-curso/{id:guid}")]
     [EndpointName("ObterOfertaDeCurso")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "oferta-curso", Versions = [1])]
     [ProducesResponseType(typeof(OfertaCursoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        OfertaCursoDto? oferta = await _queryBus
+        Result<OfertaCursoDto> resultado = await _queryBus
             .Send(new ObterOfertaCursoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (oferta is null)
-        {
-            return NotFound();
-        }
-
-        OfertaCursoDto comLinks = oferta with { Links = _linksBuilder.Build(oferta) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

@@ -112,7 +112,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// aprovação, e todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou
     /// <c>fatos</c>. É servido pela permissão de aprovar ou pela de consultar a proteção de dados do catálogo de tipos
     /// de documento e de fatos do candidato, sem abrir a consulta aos cadastros. A leitura é registrada antes da
-    /// resposta (sem o registro, 503).
+    /// resposta (sem o registro, 503). Item inexistente responde 404 com o código do tipo de documento ou do dado do candidato não encontrado.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]
     [EndpointName("ObterProtecaoDoItemDoCatalogo")]
@@ -124,16 +124,16 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(DetalheDaProtecaoDoCatalogoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ObterDetalhe(string cadastro, Guid id, CancellationToken cancellationToken)
     {
-        DetalheDaProtecaoDoCatalogoDto? detalhe = await _queryBus
+        Result<DetalheDaProtecaoDoCatalogoDto> resultado = await _queryBus
             .Send(new ObterDetalheDaProtecaoDoCatalogoQuery(CadastroDaRota(cadastro), id), cancellationToken)
             .ConfigureAwait(false);
 
-        return detalhe is null ? NotFound() : Ok(detalhe);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -152,16 +152,16 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarManifestacoes(string cadastro, Guid id, CancellationToken cancellationToken)
     {
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await _queryBus
             .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaRota(cadastro), id), cancellationToken)
             .ConfigureAwait(false);
 
-        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

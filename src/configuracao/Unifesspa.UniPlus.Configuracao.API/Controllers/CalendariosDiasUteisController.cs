@@ -87,27 +87,23 @@ public sealed class CalendariosDiasUteisController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um calendário pelo Id, com a lista completa de dias não úteis. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um calendário pelo Id, com a lista completa de dias não úteis. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("calendarios-dias-uteis/{id:guid}")]
     [EndpointName("ObterCalendarioDeDiasUteis")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "calendario-dias-uteis", Versions = [1])]
     [ProducesResponseType(typeof(CalendarioDiasUteisDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        CalendarioDiasUteisDto? calendario = await _queryBus
+        Result<CalendarioDiasUteisDto> resultado = await _queryBus
             .Send(new ObterCalendarioDiasUteisPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (calendario is null)
-        {
-            return NotFound();
-        }
-
-        CalendarioDiasUteisDto comLinks = calendario with { Links = _linksBuilder.Build(calendario) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo calendário (nasce não vigente). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

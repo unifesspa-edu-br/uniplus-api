@@ -52,7 +52,7 @@ public sealed class PrecedenciaFaseEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/precedencias-fase/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.precedencia_fase.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/precedencias-fase sem autenticação retorna 401")]

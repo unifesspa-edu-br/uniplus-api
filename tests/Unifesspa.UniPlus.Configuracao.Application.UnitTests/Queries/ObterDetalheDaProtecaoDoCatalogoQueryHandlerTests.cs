@@ -9,9 +9,11 @@ using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.CatalogoDeProtecaoDeTeste;
 
@@ -104,14 +106,32 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
         (await ObterAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id))!.Atos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O item que não existe no cadastro responde nulo")]
-    public async Task Inexistente_RespondeNulo()
+    [Fact(DisplayName = "O fato que não existe recusa com o erro de dado do candidato não encontrado")]
+    public async Task FatoInexistente_RecusaComDadoDoCandidatoNaoEncontrado()
     {
-        (await ObterAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid())).Should().BeNull();
-        (await ObterAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid())).Should().BeNull();
+        Result<DetalheDaProtecaoDoCatalogoDto> resultado = await ResultadoAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
     }
 
-    private Task<DetalheDaProtecaoDoCatalogoDto?> ObterAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
+    [Fact(DisplayName = "O tipo de documento que não existe recusa com o erro de tipo de documento não encontrado")]
+    public async Task TipoInexistente_RecusaComTipoDeDocumentoNaoEncontrado()
+    {
+        Result<DetalheDaProtecaoDoCatalogoDto> resultado = await ResultadoAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
+    }
+
+    private async Task<DetalheDaProtecaoDoCatalogoDto?> ObterAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id)
+    {
+        Result<DetalheDaProtecaoDoCatalogoDto> resultado = await ResultadoAsync(cadastro, id);
+        resultado.IsSuccess.Should().BeTrue();
+        return resultado.Value;
+    }
+
+    private Task<Result<DetalheDaProtecaoDoCatalogoDto>> ResultadoAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
         ObterDetalheDaProtecaoDoCatalogoQueryHandler.Handle(
             new ObterDetalheDaProtecaoDoCatalogoQuery(cadastro, id), _tipos, _fatos, _atos, _manifestacoes, CancellationToken.None);
 

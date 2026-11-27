@@ -52,7 +52,7 @@ public sealed class ModalidadeEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/modalidades/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.modalidade.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/modalidades sem autenticação retorna 401")]

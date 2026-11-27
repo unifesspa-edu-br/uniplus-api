@@ -67,7 +67,7 @@ public sealed class FaseCanonicaEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/fases-canonicas/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.fase_canonica.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/fases-canonicas sem autenticação retorna 401")]

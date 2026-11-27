@@ -48,7 +48,7 @@ public sealed class RecursoAcessibilidadeEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/recursos-acessibilidade/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.recurso_acessibilidade.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/recursos-acessibilidade sem autenticação retorna 401")]

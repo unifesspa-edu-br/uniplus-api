@@ -84,27 +84,23 @@ public sealed class TiposDeficienciaController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um tipo de deficiência pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um tipo de deficiência pelo Id. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("tipos-deficiencia/{id:guid}")]
     [EndpointName("ObterTipoDeDeficiencia")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-deficiencia", Versions = [1])]
     [ProducesResponseType(typeof(TipoDeficienciaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoDeficienciaDto? tipo = await _queryBus
+        Result<TipoDeficienciaDto> resultado = await _queryBus
             .Send(new ObterTipoDeficienciaPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (tipo is null)
-        {
-            return NotFound();
-        }
-
-        TipoDeficienciaDto comLinks = tipo with { Links = _linksBuilder.Build(tipo) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo tipo de deficiência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

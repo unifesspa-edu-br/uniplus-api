@@ -8,8 +8,10 @@ using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.TiposConceito;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class TipoConceitoQueryHandlerTests
 {
@@ -36,31 +38,34 @@ public sealed class TipoConceitoQueryHandlerTests
         TipoConceito tipo = TiposConceitoDeTeste.Categorico();
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
-        TipoConceitoDto? dto = await ObterTipoConceitoPorIdQueryHandler.Handle(
+        Result<TipoConceitoDto> resultado = await ObterTipoConceitoPorIdQueryHandler.Handle(
             new ObterTipoConceitoPorIdQuery(tipo.Id), _repository, CancellationToken.None);
 
-        dto!.Codigo.Should().Be("PARECER_ANALISE");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Codigo.Should().Be("PARECER_ANALISE");
     }
 
-    [Fact(DisplayName = "Obter não devolve o tipo desativado")]
+    [Fact(DisplayName = "Obter recusa o tipo desativado com o erro de tipo de conceito não encontrado")]
     public async Task Obter_TipoDesativado_NaoDevolve()
     {
         TipoConceito tipo = TiposConceitoDeTeste.Numerico();
         tipo.Desativar();
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
-        TipoConceitoDto? dto = await ObterTipoConceitoPorIdQueryHandler.Handle(
+        Result<TipoConceitoDto> resultado = await ObterTipoConceitoPorIdQueryHandler.Handle(
             new ObterTipoConceitoPorIdQuery(tipo.Id), _repository, CancellationToken.None);
 
-        dto.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoConceitoErrorCodes.NaoEncontrado);
     }
 
-    [Fact(DisplayName = "Obter não devolve o tipo inexistente")]
+    [Fact(DisplayName = "Obter recusa o tipo inexistente com o erro de tipo de conceito não encontrado")]
     public async Task Obter_TipoInexistente_NaoDevolve()
     {
-        TipoConceitoDto? dto = await ObterTipoConceitoPorIdQueryHandler.Handle(
+        Result<TipoConceitoDto> resultado = await ObterTipoConceitoPorIdQueryHandler.Handle(
             new ObterTipoConceitoPorIdQuery(Guid.NewGuid()), _repository, CancellationToken.None);
 
-        dto.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoConceitoErrorCodes.NaoEncontrado);
     }
 }

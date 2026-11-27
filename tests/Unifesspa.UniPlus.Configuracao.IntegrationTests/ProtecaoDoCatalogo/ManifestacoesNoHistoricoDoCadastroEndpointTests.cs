@@ -66,7 +66,8 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
         HttpResponseMessage representante = await Enviar(client, HttpMethod.Get, $"{Tipos}/{tipo}/protecao/manifestacoes", Betina);
         HttpResponseMessage inexistente = await Enviar(client, HttpMethod.Get, $"{Tipos}/{Guid.NewGuid()}/protecao/manifestacoes", Marlene);
 
-        (representante.StatusCode, inexistente.StatusCode).Should().Be((HttpStatusCode.Forbidden, HttpStatusCode.NotFound));
+        representante.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await RespostaDeNaoEncontrado.ConferirAsync(inexistente, "uniplus.configuracao.tipo_documento.nao_encontrado");
     }
 
     [Fact(DisplayName = "O Gestor de proteção de dados lê pelas rotas do cadastro com a permissão de consultar a proteção, e a leitura é registrada")]

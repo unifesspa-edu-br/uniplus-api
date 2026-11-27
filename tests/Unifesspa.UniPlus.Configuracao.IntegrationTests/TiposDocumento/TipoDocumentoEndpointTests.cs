@@ -54,7 +54,7 @@ public sealed class TipoDocumentoEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/tipos-documento/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.tipo_documento.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/tipos-documento sem autenticação retorna 401")]

@@ -3,11 +3,17 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ReferenciasReservaD
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterReferenciaReservaDemograficaPorIdQueryHandler
 {
-    public static async Task<ReferenciaReservaDemograficaDto?> Handle(
+    private static readonly DomainError NaoEncontrado = new(
+        ReferenciaReservaDemograficaErrorCodes.NaoEncontrada,
+        "Referência de reserva demográfica não encontrada.");
+
+    public static async Task<Result<ReferenciaReservaDemograficaDto>> Handle(
         ObterReferenciaReservaDemograficaPorIdQuery query,
         IReferenciaReservaDemograficaRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +25,8 @@ public static class ObterReferenciaReservaDemograficaPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return referencia?.ToDto();
+        return referencia is null
+            ? Result<ReferenciaReservaDemograficaDto>.Failure(NaoEncontrado)
+            : Result<ReferenciaReservaDemograficaDto>.Success(referencia.ToDto());
     }
 }

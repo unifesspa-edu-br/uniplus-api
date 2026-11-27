@@ -49,7 +49,7 @@ public sealed class ReferenciaReservaDemograficaEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{ColecaoPath}/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.referencia_reserva_demografica.nao_encontrada");
     }
 
     [Fact(DisplayName = "POST admin sem autenticação retorna 401")]

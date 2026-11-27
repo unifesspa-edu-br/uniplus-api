@@ -81,7 +81,7 @@ public sealed class ModelosFormularioController : ControllerBase
             .ConfigureAwait(false);
     }
 
-    /// <summary>O modelo, ativo ou desativado, com o conteúdo no formato da escrita.</summary>
+    /// <summary>O modelo, ativo ou desativado, com o conteúdo no formato da escrita. Quando inexistente, responde 404 com o código de erro de modelo não encontrado.</summary>
     [HttpGet("admin/modelos-formulario/{id:guid}")]
     [EndpointName("ObterModeloDeFormulario")]
     [ExigePermissao<PermissaoConfiguracao>(
@@ -92,17 +92,19 @@ public sealed class ModelosFormularioController : ControllerBase
     [ProducesResponseType(typeof(ModeloFormularioDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
-        ModeloFormularioDto? modelo = await _queryBus.Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
-        return modelo is null ? NotFound() : Ok(modelo);
+        Result<ModeloFormularioDto> resultado = await _queryBus
+            .Send(new ObterModeloFormularioQuery(id), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
     /// O modelo no formato do formulário apresentado — o mesmo do certame divulgado e do rascunho do
     /// processo —, para a simulação interpretar o modelo antes de aplicá-lo. Não grava nada.
+    /// Quando o modelo não existe, responde 404 com o código de erro de modelo não encontrado.
     /// </summary>
     [HttpGet("admin/modelos-formulario/{id:guid}/apresentacao")]
     [EndpointName("ObterApresentacaoDoModeloDeFormulario")]
@@ -114,13 +116,13 @@ public sealed class ModelosFormularioController : ControllerBase
     [ProducesResponseType(typeof(FormularioApresentado), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterFormularioApresentado(Guid id, CancellationToken cancellationToken)
     {
-        FormularioApresentado? formulario = await _queryBus
+        Result<FormularioApresentado> resultado = await _queryBus
             .Send(new ObterFormularioApresentadoDoModeloQuery(id), cancellationToken).ConfigureAwait(false);
-        return formulario is null ? NotFound() : Ok(formulario);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -151,6 +153,7 @@ public sealed class ModelosFormularioController : ControllerBase
     /// <summary>
     /// Pré-visualiza o modelo com respostas simuladas: o que cada item, cada termo e cada grupo
     /// repetível faria diante delas, pelo mesmo avaliador da inscrição. Não grava nada.
+    /// Quando o modelo não existe, responde 404 com o código de erro de modelo não encontrado.
     /// </summary>
     [HttpPost("admin/modelos-formulario/{id:guid}/pre-visualizacao")]
     [EndpointName("PreVisualizarModeloDeFormulario")]
@@ -163,19 +166,14 @@ public sealed class ModelosFormularioController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> PreVisualizar(Guid id, [FromBody] PreVisualizacaoDoModeloInput simulacao, CancellationToken cancellationToken)
     {
-        Result<PreVisualizacaoDoModeloDto?> resultado = await _queryBus
+        Result<PreVisualizacaoDoModeloDto> resultado = await _queryBus
             .Send(new PreVisualizarModeloFormularioQuery(id, simulacao), cancellationToken).ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        return resultado.Value is { } preVisualizacao ? Ok(preVisualizacao) : NotFound();
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

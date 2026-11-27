@@ -30,6 +30,16 @@ public sealed class FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture 
         Em(fato, "semeadoPeloSistema").GetBoolean().Should().BeFalse();
     }
 
+    [Fact(DisplayName = "GET admin/fatos-candidato/{id} de fato inexistente responde 404 com o código do dado do candidato")]
+    public async Task Obter_Inexistente_Retorna404ComCodigo()
+    {
+        using HttpClient client = Fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}", corpo: null);
+
+        await RespostaDeNaoEncontrado.ConferirAsync(resposta, "uniplus.configuracao.fato_candidato.nao_encontrado");
+    }
+
     [Fact(DisplayName = "Edição, desativação e reativação do fato declarado; a lista filtra por ativo")]
     public async Task CicloDoFatoDeclarado()
     {

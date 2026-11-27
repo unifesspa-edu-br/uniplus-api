@@ -64,7 +64,7 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     }
 
     /// <summary>
-    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
+    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503. Quando o fato não existe, responde 404 com o código de erro de dado do candidato não encontrado.
     /// </summary>
     [HttpGet("admin/fatos-candidato/{id:guid}/protecao/atos")]
     [EndpointName("ListarAtosDaProtecaoDoDadoDoCandidato")]
@@ -76,23 +76,23 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
     {
-        IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
+        Result<IReadOnlyList<AtoDaProtecaoDto>> resultado = await _queryBus
             .Send(new ListarAtosDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
             .ConfigureAwait(false);
 
-        return atos is null ? NotFound() : Ok(atos);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
     /// Todas as manifestações técnicas sobre a proteção de dados do fato do candidato, de todos os ciclos, com o texto, o nome
     /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem consulta o cadastro de fatos do candidato as lê sem poder se manifestar nem decidir; o Gestor de proteção de dados, pela permissão de consultar a proteção de dados.
     /// A leitura é registrada antes da resposta conforme a classe da permissão que a autorizou; sem o registro, é
-    /// recusada com 503.
+    /// recusada com 503. Quando o fato não existe, responde 404 com o código de erro de dado do candidato não encontrado.
     /// </summary>
     [HttpGet("admin/fatos-candidato/{id:guid}/protecao/manifestacoes")]
     [EndpointName("ListarManifestacoesDaProtecaoDoDadoDoCandidato")]
@@ -104,16 +104,16 @@ public sealed class FatosCandidatoProtecaoController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarManifestacoesDaProtecao(Guid id, CancellationToken cancellationToken)
     {
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await _queryBus
             .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
             .ConfigureAwait(false);
 
-        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     private async Task<IActionResult> Enviar(ICommand<Result> command, CancellationToken cancellationToken)

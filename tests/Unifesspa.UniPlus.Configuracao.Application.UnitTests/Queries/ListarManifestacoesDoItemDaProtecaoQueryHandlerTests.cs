@@ -9,8 +9,10 @@ using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>O histórico das manifestações técnicas do item, de todos os ciclos, com a situação de cada uma.</summary>
 public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
@@ -27,9 +29,10 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
         _tipos.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
         _manifestacoes.ListarDoItemAsync(new ItemDaProtecao(CadastroDoCatalogo.TipoDocumento, tipo.Id), Arg.Any<CancellationToken>()).Returns(montagem.Eventos);
 
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? historico = await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, tipo.Id);
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, tipo.Id);
 
-        historico!.Select(m => (m.Parecer, m.Situacao, m.AutorNome, m.Ciclo)).Should().Equal(
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Select(m => (m.Parecer, m.Situacao, m.AutorNome, m.Ciclo)).Should().Equal(
             ("RECOMENDA_NAO_USO", "SUBSTITUIDA", "Kevin Anderson Carvalho", 1),
             ("RECOMENDA_AJUSTE", "VIGENTE", "Kevin Anderson Carvalho", 1));
         typeof(ManifestacaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AutorContaId", "AutorEmissor", "ContaId", "Emissor"]);
@@ -45,20 +48,33 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
         _fatos.ObterPorIdParaLeituraAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
         _manifestacoes.ListarDoItemAsync(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), Arg.Any<CancellationToken>()).Returns(montagem.Eventos);
 
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? historico = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
 
-        historico.Should().ContainSingle().Which.Situacao.Should().Be("ENCERRADA");
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().ContainSingle().Which.Situacao.Should().Be("ENCERRADA");
     }
 
-    [Fact(DisplayName = "O item que não existe responde nulo, sem ler o registro")]
-    public async Task Inexistente_RespondeNulo()
+    [Fact(DisplayName = "O fato que não existe recusa com o erro de dado do candidato não encontrado, sem ler o registro")]
+    public async Task FatoInexistente_RecusaComDadoDoCandidatoNaoEncontrado()
     {
-        (await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid())).Should().BeNull();
-        (await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid())).Should().BeNull();
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaoEncontrado);
         await _manifestacoes.DidNotReceiveWithAnyArgs().ListarDoItemAsync(default, default);
     }
 
-    private Task<IReadOnlyList<ManifestacaoDaProtecaoDto>?> ListarAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
+    [Fact(DisplayName = "O tipo de documento que não existe recusa com o erro de tipo de documento não encontrado, sem ler o registro")]
+    public async Task TipoInexistente_RecusaComTipoDeDocumentoNaoEncontrado()
+    {
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await ListarAsync(CadastroDaProtecaoDoCatalogo.TipoDocumento, Guid.NewGuid());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
+        await _manifestacoes.DidNotReceiveWithAnyArgs().ListarDoItemAsync(default, default);
+    }
+
+    private Task<Result<IReadOnlyList<ManifestacaoDaProtecaoDto>>> ListarAsync(CadastroDaProtecaoDoCatalogo cadastro, Guid id) =>
         ListarManifestacoesDoItemDaProtecaoQueryHandler.Handle(
             new ListarManifestacoesDoItemDaProtecaoQuery(cadastro, id), _tipos, _fatos, _manifestacoes, CancellationToken.None);
 }

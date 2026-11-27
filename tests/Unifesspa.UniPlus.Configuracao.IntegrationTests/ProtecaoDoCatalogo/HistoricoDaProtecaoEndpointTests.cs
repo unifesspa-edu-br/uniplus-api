@@ -85,7 +85,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         (await Enviar(client, HttpMethod.Get, $"{Fatos}/{fato}/protecao/atos", PessoaPaulo)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "Quem mantém ou consulta o cadastro lê o histórico do item, e o item que não existe responde 404")]
+    [Fact(DisplayName = "Quem mantém ou consulta o cadastro lê o histórico do item")]
     public async Task HistoricoDoItem_QuemMantemOuConsultaLe()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -98,8 +98,18 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         doTipo.StatusCode.Should().Be(HttpStatusCode.OK);
         (await doTipo.Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength().Should().Be(0, "o item que nunca foi solicitado não tem ato");
         (await Enviar(client, HttpMethod.Get, $"{Fatos}/{fato}/protecao/atos", PessoaPaulo)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await Enviar(client, HttpMethod.Get, $"{Tipos}/{Guid.NewGuid()}/protecao/atos", Isabella)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await Enviar(client, HttpMethod.Get, $"{Fatos}/{Guid.NewGuid()}/protecao/atos", Isabella)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Theory(DisplayName = "Os atos do item inexistente respondem 404 com o código do cadastro procurado")]
+    [InlineData("admin/tipos-documento", "tipo_documento")]
+    [InlineData("admin/fatos-candidato", "fato_candidato")]
+    public async Task Atos_ItemInexistente_Retorna404(string rota, string assunto)
+    {
+        using HttpClient client = Fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"/api/configuracao/{rota}/{Guid.NewGuid()}/protecao/atos", Isabella);
+
+        await RespostaDeNaoEncontrado.ConferirAsync(resposta, $"uniplus.configuracao.{assunto}.nao_encontrado");
     }
 
     private static Persona PessoaPaulo => new(Paulo, "Paulo");

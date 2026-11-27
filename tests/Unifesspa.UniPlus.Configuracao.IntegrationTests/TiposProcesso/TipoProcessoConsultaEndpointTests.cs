@@ -81,6 +81,16 @@ public sealed class TipoProcessoConsultaEndpointTests
         ids.Should().NotContain(id);
     }
 
+    [Fact(DisplayName = "GET admin/tipos-processo/{id} de tipo inexistente responde 404 com o código do tipo de processo")]
+    public async Task ObterParaManutencao_Inexistente_Retorna404ComCodigo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await EnviarGetAdmin(client, $"/api/configuracao/admin/tipos-processo/{Guid.NewGuid()}");
+
+        await RespostaDeNaoEncontrado.ConferirAsync(resposta, "uniplus.configuracao.tipo_processo.nao_encontrado");
+    }
+
     [Fact(DisplayName = "GET admin/tipos-processo/{id} abre o desativado que a leitura pública por id oculta")]
     public async Task ObterParaManutencao_TipoDesativado_Retorna200EnquantoARotaPublicaDa404()
     {
@@ -93,7 +103,7 @@ public sealed class TipoProcessoConsultaEndpointTests
         HttpResponseMessage publica = await client.GetAsync(new Uri($"/api/configuracao/tipos-processo/{id}", UriKind.Relative));
 
         manutencao.StatusCode.Should().Be(HttpStatusCode.OK);
-        publica.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(publica, "uniplus.configuracao.tipo_processo.nao_encontrado");
         using JsonDocument item = JsonDocument.Parse(await manutencao.Content.ReadAsStringAsync());
         item.RootElement.GetProperty("ativo").GetBoolean().Should().BeFalse();
     }

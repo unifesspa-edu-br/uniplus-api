@@ -83,27 +83,23 @@ public sealed class LocaisOfertaController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um local de oferta pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um local de oferta pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("locais-oferta/{id:guid}")]
     [EndpointName("ObterLocalDeOferta")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "local-oferta", Versions = [1])]
     [ProducesResponseType(typeof(LocalOfertaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        LocalOfertaDto? local = await _queryBus
+        Result<LocalOfertaDto> resultado = await _queryBus
             .Send(new ObterLocalOfertaPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (local is null)
-        {
-            return NotFound();
-        }
-
-        LocalOfertaDto comLinks = local with { Links = _linksBuilder.Build(local) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo local de oferta. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

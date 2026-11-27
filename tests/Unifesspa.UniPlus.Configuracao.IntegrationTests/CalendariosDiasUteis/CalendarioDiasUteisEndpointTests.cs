@@ -49,7 +49,7 @@ public sealed class CalendarioDiasUteisEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"{ColecaoPath}/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.calendario_dias_uteis.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST admin sem autenticação retorna 401")]

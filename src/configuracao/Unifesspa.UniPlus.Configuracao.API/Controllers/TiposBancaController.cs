@@ -84,27 +84,23 @@ public sealed class TiposBancaController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um tipo de banca pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um tipo de banca pelo Id. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("tipos-banca/{id:guid}")]
     [EndpointName("ObterTipoDeBanca")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-banca", Versions = [1])]
     [ProducesResponseType(typeof(TipoBancaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoBancaDto? banca = await _queryBus
+        Result<TipoBancaDto> resultado = await _queryBus
             .Send(new ObterTipoBancaPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (banca is null)
-        {
-            return NotFound();
-        }
-
-        TipoBancaDto comLinks = banca with { Links = _linksBuilder.Build(banca) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo tipo de banca. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

@@ -52,7 +52,7 @@ public sealed class CursoEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/cursos/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.curso.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/cursos sem autenticação retorna 401")]

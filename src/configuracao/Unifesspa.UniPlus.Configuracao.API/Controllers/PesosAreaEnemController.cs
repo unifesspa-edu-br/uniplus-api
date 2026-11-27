@@ -105,27 +105,23 @@ public sealed class PesosAreaEnemController : ControllerBase
         return Ok(areas);
     }
 
-    /// <summary>Obtém uma linha de pesos pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma linha de pesos pelo Id. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("pesos-area-enem/{id:guid}")]
     [EndpointName("ObterPesosPorAreaDoEnem")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "peso-area-enem", Versions = [1])]
     [ProducesResponseType(typeof(PesoAreaEnemDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        PesoAreaEnemDto? peso = await _queryBus
+        Result<PesoAreaEnemDto> resultado = await _queryBus
             .Send(new ObterPesoAreaEnemPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (peso is null)
-        {
-            return NotFound();
-        }
-
-        PesoAreaEnemDto comLinks = peso with { Links = _linksBuilder.Build(peso) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova linha de pesos. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

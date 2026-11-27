@@ -75,21 +75,17 @@ public sealed class BaseLegalDoFadaController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "base-legal-do-fada", Versions = [1])]
     [ProducesResponseType(typeof(BaseLegalDoFadaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        BaseLegalDoFadaDto? entity = await _queryBus
+        Result<BaseLegalDoFadaDto> resultado = await _queryBus
             .Send(new ObterBaseLegalDoFadaPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (entity is null)
-        {
-            return NotFound();
-        }
-
-        BaseLegalDoFadaDto comLinks = entity with { Links = _linksBuilder.Build(entity) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     [HttpPost("admin/bases-legais-fada")]

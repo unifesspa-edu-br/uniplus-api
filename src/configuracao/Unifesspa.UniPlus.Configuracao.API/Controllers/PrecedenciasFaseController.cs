@@ -85,27 +85,23 @@ public sealed class PrecedenciasFaseController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma aresta de precedência pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma aresta de precedência pelo Id. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("precedencias-fase/{id:guid}")]
     [EndpointName("ObterPrecedenciaEntreFases")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "precedencia-fase", Versions = [1])]
     [ProducesResponseType(typeof(PrecedenciaFaseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        PrecedenciaFaseDto? aresta = await _queryBus
+        Result<PrecedenciaFaseDto> resultado = await _queryBus
             .Send(new ObterPrecedenciaFasePorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (aresta is null)
-        {
-            return NotFound();
-        }
-
-        PrecedenciaFaseDto comLinks = aresta with { Links = _linksBuilder.Build(aresta) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova aresta de precedência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
