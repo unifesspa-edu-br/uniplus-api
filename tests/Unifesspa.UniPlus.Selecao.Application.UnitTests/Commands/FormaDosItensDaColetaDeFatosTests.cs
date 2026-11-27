@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -197,6 +198,32 @@ public sealed class FormaDosItensDaColetaDeFatosTests
             ("itens[0].regras.restricoes[0]", "RestricaoValor.LimitesIncoerentes"),
             ("itens[1].regras.restricoes[0]", "ItemFormulario.RestricaoIncoerente"),
         ]);
+    }
+
+    [Fact(DisplayName = "Opções com um grupo nulo e outro com condição inválida recusam os dois, cada um no caminho do seu grupo")]
+    public async Task Handle_OpcoesComGrupoNuloEGrupoRecusado_RecusaOsDoisGrupos()
+    {
+        CondicaoPrecondicaoInput condicaoInvalida = new("MAIOR_IDADE", "OPERADOR_QUE_NAO_EXISTE", JsonSerializer.SerializeToElement(true));
+        RestricaoValorInput opcoes = new("OPCOES_PERMITIDAS", Entradas: [null!, new OpcoesCondicionadasInput([[condicaoInvalida]], ["A"])]);
+
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(),
+            [EntradaDoFatoColetadoDeTeste.Coletando("COR_RACA").ComRotulo("Cor ou raça").DoTipo("ESCOLHA_UNICA").ComRestricoes([opcoes]).Construir()]);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal(
+            "itens[0].regras.restricoes[0].entradas[0]", "itens[0].regras.restricoes[0].entradas[1].quando[0][0].operador");
+    }
+
+    [Fact(DisplayName = "Faixa de data com os dois limites inválidos recusa os dois, o mínimo antes do máximo")]
+    public async Task Handle_FaixaDeDataComOsDoisLimitesInvalidos_RecusaOsDois()
+    {
+        RestricaoValorInput faixa = new("FAIXA_DE_DATA", DataMinima: new LimiteDeDataInput("HOJE"), DataMaxima: new LimiteDeDataInput("HOJE"));
+
+        Result resultado = await DefinirNaHabilitacaoAsync(
+            ProcessoEmRascunho(),
+            [EntradaDoFatoColetadoDeTeste.Coletando("DATA_NASCIMENTO").ComRotulo("Data de nascimento").DoTipo("DATA").ComRestricoes(faixa).Construir()]);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("itens[0].regras.restricoes[0].dataMinima", "itens[0].regras.restricoes[0].dataMaxima");
     }
 
     [Fact(DisplayName = "Opção permitida fora do domínio do próprio fato é recusada no grupo dela")]

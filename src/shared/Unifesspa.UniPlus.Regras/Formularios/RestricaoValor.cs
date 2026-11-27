@@ -238,8 +238,8 @@ public sealed record OpcoesCondicionadas
 
     public IReadOnlySet<string> Valores { get; }
 
-    internal static string? Violacao(IReadOnlyCollection<string> valores) =>
-        valores.Count == 0 || valores.Any(string.IsNullOrWhiteSpace) ? "Um grupo de opções precisa de valores não vazios." : null;
+    internal static string? Violacao(IReadOnlyCollection<string>? valores) =>
+        valores is null || valores.Count == 0 || valores.Any(string.IsNullOrWhiteSpace) ? "Um grupo de opções precisa de valores não vazios." : null;
 }
 
 /// <summary>

@@ -8,181 +8,101 @@ using Unifesspa.UniPlus.Regras.Leituras;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// A definição avaliável de um formulário portável. Cada elemento é conferido onde o construtor dele
-/// o exigiria, por meio da <c>Violacao</c> do próprio tipo, e a recusa sai como texto para quem
-/// importou: o construtor só protege quem monta a definição pelo módulo. A leitura para na primeira
-/// recusa entre elementos, na ordem páginas, termos, derivações, agregados e, por fim, a definição:
-/// a definição só é conferida quando nenhum elemento foi recusado. Só as condições de um mesmo predicado
-/// têm todas as recusas informadas, porque o predicado é lido pela mesma leitura que a API usa para as
-/// regras recebidas em um pedido.
+/// A definição avaliável de um formulário portável. Cada elemento é conferido onde o construtor dele o exigiria,
+/// por meio da <c>Violacao</c> do próprio tipo, e a recusa sai como texto para quem importou: o construtor só protege
+/// quem monta a definição pelo módulo. A leitura acumula: todas as listas são lidas inteiras, na ordem páginas,
+/// termos, derivações e agregados, e cada elemento devolve todas as suas recusas, cada uma no campo do elemento
+/// recusado. Um elemento só é montado sem recusa; só deixa de ser lido o que depende de um dado recusado, como a
+/// forma da obrigatoriedade quando a condição dela foi recusada. A definição do conjunto, que confere códigos
+/// repetidos e referências, só é conferida quando nenhum elemento foi recusado, e a recusa dela não tem campo.
 /// </summary>
 internal static class ConversaoDoPortavel
 {
     internal static Result<DefinicaoFormulario> Converter(FormularioPortavel portavel)
     {
-        List<DefinicaoPagina> paginas = [];
-        List<DefinicaoTermo> termos = [];
-        List<DerivacaoDoFato> derivacoes = [];
-        List<DefinicaoAgregado> agregados = [];
-        IReadOnlyList<FieldError>? erro = Ler(portavel.Paginas, Pagina, paginas) ?? Ler(portavel.Termos, Termo, termos)
-            ?? Ler(portavel.Derivacoes, Derivacao, derivacoes) ?? Ler(portavel.Agregados, Agregado, agregados)
-            ?? Recusa(DefinicaoFormulario.Violacao(paginas, termos, derivacoes, agregados));
+        RecusasDoElemento recusas = new();
+        List<DefinicaoPagina> paginas = recusas.Lista(portavel.Paginas, "paginas", pagina => Pagina(pagina!));
+        List<DefinicaoTermo> termos = recusas.Lista(portavel.Termos, "termos", termo => Termo(termo!));
+        List<DerivacaoDoFato> derivacoes = recusas.Lista(portavel.Derivacoes, "derivacoes", derivacao => ConversaoDaDerivacaoPortavel.Derivacao(derivacao!));
+        List<DefinicaoAgregado> agregados = recusas.Lista(portavel.Agregados, "agregados", agregado => Agregado(agregado!));
 
-        return Montado(erro, () => new DefinicaoFormulario(paginas, termos, derivacoes, agregados));
+        return recusas.ConferidoPor(() => Conjunto(paginas, termos, derivacoes, agregados));
     }
+
+    /// <summary>A recusa de estrutura inválida com o texto da <c>Violacao</c> do tipo; nulo quando não há violação.</summary>
+    internal static DomainError? Estrutura(string? violacao) =>
+        violacao is null ? null : new DomainError(FormularioPortavelErrorCodes.EstruturaInvalida, violacao);
+
+    private static Result<DefinicaoFormulario> Conjunto(
+        List<DefinicaoPagina> paginas, List<DefinicaoTermo> termos, List<DerivacaoDoFato> derivacoes, List<DefinicaoAgregado> agregados) =>
+        Estrutura(DefinicaoFormulario.Violacao(paginas, termos, derivacoes, agregados)) is { } recusa
+            ? Result<DefinicaoFormulario>.Failure(recusa)
+            : Result<DefinicaoFormulario>.Success(new DefinicaoFormulario(paginas, termos, derivacoes, agregados));
 
     private static Result<DefinicaoPagina> Pagina(PaginaPortavel pagina)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(pagina.Exibicao);
-        List<DefinicaoItem> itens = [];
-        List<DefinicaoGrupo> grupos = [];
-        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Ler(pagina.Itens, Item, itens) ?? Ler(pagina.Grupos, Grupo, grupos)
-            ?? Recusa(DefinicaoPagina.Violacao(pagina.Codigo));
+        RecusasDoElemento recusas = new();
+        PredicadoDnf? exibicao = recusas.Parte(RegrasDoPortavel.Predicado(pagina.Exibicao), "exibicao");
+        List<DefinicaoItem> itens = recusas.Lista(pagina.Itens, "itens", item => Item(item!));
+        List<DefinicaoGrupo> grupos = recusas.Lista(pagina.Grupos, "grupos", grupo => Grupo(grupo!));
+        recusas.Recusar(Estrutura(DefinicaoPagina.Violacao(pagina.Codigo)), "codigo");
 
-        return Montado(erro, () => new DefinicaoPagina(pagina.Codigo, exibicao.Value, itens, grupos));
+        return recusas.Montado(() => new DefinicaoPagina(pagina.Codigo, exibicao, itens, grupos));
     }
 
     private static Result<DefinicaoGrupo> Grupo(GrupoPortavel grupo)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(grupo.Regras?.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(grupo.Regras?.Obrigatoriedade, $"grupo '{grupo.Codigo}'");
+        RecusasDoElemento recusas = new();
         OcorrenciasDoGrupoDto ocorrencias = grupo.Ocorrencias;
-        List<DefinicaoItem> subitens = [];
-        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Ler(grupo.Subitens, Item, subitens)
-            ?? Recusa(DefinicaoGrupo.Violacao(grupo.Codigo, ocorrencias.Minimo, ocorrencias.Maximo));
+        PredicadoDnf? exibicao = recusas.Parte(RegrasDoPortavel.Predicado(grupo.Regras?.Exibicao), "regras.exibicao");
+        Obrigatoriedade? obrigatoriedade = recusas.Parte(RegrasDoPortavel.Obrigatoriedade(grupo.Regras?.Obrigatoriedade), "regras.obrigatoriedade");
+        List<DefinicaoItem> subitens = recusas.Lista(grupo.Subitens, "subitens", item => Item(item!));
+        recusas.Recusar(Estrutura(DefinicaoGrupo.Violacao(grupo.Codigo, ocorrencias.Minimo, ocorrencias.Maximo)));
 
-        return Montado(erro, () => new DefinicaoGrupo(
-            grupo.Codigo, exibicao.Value, obrigatoriedade.Value!, ocorrencias.Minimo, ocorrencias.Maximo, subitens, ocorrencias.IncluiCandidato));
+        return recusas.Montado(() => new DefinicaoGrupo(
+            grupo.Codigo, exibicao, obrigatoriedade!, ocorrencias.Minimo, ocorrencias.Maximo, subitens, ocorrencias.IncluiCandidato));
     }
 
     private static Result<DefinicaoItem> Item(ItemPortavel item)
     {
+        RecusasDoElemento recusas = new();
         RegrasDoCampoDto? regras = item.Regras;
-        Result<PredicadoDnf?> exibicao = DoFio(regras?.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(regras?.Obrigatoriedade, $"campo '{item.FatoCodigo}'");
-        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(LeituraDeRegras.ParaEntrada(regras?.Impedimento));
-        List<RestricaoValor> restricoes = [];
-        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Falhas(impedimento)
-            ?? Ler(regras?.Restricoes, Restricao, restricoes) ?? Recusa(DefinicaoItem.Violacao(item.FatoCodigo, item.Formato));
+        PredicadoDnf? exibicao = recusas.Parte(RegrasDoPortavel.Predicado(regras?.Exibicao), "regras.exibicao");
+        Obrigatoriedade? obrigatoriedade = recusas.Parte(RegrasDoPortavel.Obrigatoriedade(regras?.Obrigatoriedade), "regras.obrigatoriedade");
+        Impedimento? impedimento = recusas.Parte(
+            EntradaDeRegras.Impedimento(LeituraDeRegras.ParaEntrada(regras?.Impedimento)), "regras.impedimento.quando");
+        List<RestricaoValor> restricoes = recusas.Lista(regras?.Restricoes, "regras.restricoes", Restricao);
+        recusas.Recusar(Estrutura(DefinicaoItem.Violacao(item.FatoCodigo, item.Formato)));
 
-        return Montado(erro, () => new DefinicaoItem(
-            item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value, item.Formato));
+        return recusas.Montado(() => new DefinicaoItem(item.FatoCodigo, exibicao, obrigatoriedade!, restricoes, impedimento, item.Formato));
     }
 
-    private static Result<RestricaoValor> Restricao(RestricaoValorDto restricao) =>
-        EntradaDeRegras.Restricao(LeituraDeRegras.ParaEntrada(restricao));
+    private static Result<RestricaoValor> Restricao(RestricaoValorDto? restricao) =>
+        EntradaDeRegras.Restricao(LeituraDeRegras.ParaEntrada(restricao!));
 
     private static Result<DefinicaoTermo> Termo(TermoPortavel termo)
     {
-        Result<PredicadoDnf?> exibicao = DoFio(termo.Regras?.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(termo.Regras?.Obrigatoriedade, $"termo '{termo.Codigo}'");
-        IReadOnlyList<FieldError>? erro = Falhas(exibicao) ?? Falhas(obrigatoriedade) ?? Recusa(DefinicaoTermo.Violacao(termo.Codigo));
+        RecusasDoElemento recusas = new();
+        PredicadoDnf? exibicao = recusas.Parte(RegrasDoPortavel.Predicado(termo.Regras?.Exibicao), "regras.exibicao");
+        Obrigatoriedade? obrigatoriedade = recusas.Parte(RegrasDoPortavel.Obrigatoriedade(termo.Regras?.Obrigatoriedade), "regras.obrigatoriedade");
+        recusas.Recusar(Estrutura(DefinicaoTermo.Violacao(termo.Codigo)), "codigo");
 
-        return Montado(erro, () => new DefinicaoTermo(termo.Codigo, exibicao.Value, obrigatoriedade.Value!));
+        return recusas.Montado(() => new DefinicaoTermo(termo.Codigo, exibicao, obrigatoriedade!));
     }
 
     private static Result<DefinicaoAgregado> Agregado(AgregadoPortavel agregado)
     {
+        RecusasDoElemento recusas = new();
         bool conhecida = CatalogoDe<OperacaoAgregado>.TentarObter(agregado.Operacao, out OperacaoAgregado operacao);
-        IReadOnlyList<FieldError>? erro = !conhecida
-            ? Recusa(FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida, $"A operação do agregado '{agregado.Codigo}' é {string.Join(" ou ", CatalogoDe<OperacaoAgregado>.Todos().Select(static d => d.Codigo))}.")
-            : Recusa(DefinicaoAgregado.Violacao(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro));
-
-        return Montado(erro, () => new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));
-    }
-
-    private static Result<DerivacaoDoFato> Derivacao(DerivacaoPortavel derivacao)
-    {
-        List<RegraDerivacao> regras = [];
-        IReadOnlyList<FieldError>? erro = Ler(derivacao.Regras, regra => Regra(derivacao, regra), regras) ?? Recusa(DerivacaoDoFato.Violacao(derivacao.FatoCodigo));
-
-        return erro is not null ? Result<DerivacaoDoFato>.ValidationFailure(erro) : DerivacaoDeRegras(derivacao, regras);
-    }
-
-    private static Result<RegraDerivacao> Regra(DerivacaoPortavel derivacao, RegraDerivacaoPortavel regra)
-    {
-        if (regra.Quando is null)
+        if (!conhecida)
         {
-            return Result<RegraDerivacao>.Failure(new DomainError(
-                FormularioPortavelErrorCodes.DerivacaoInvalida,
-                $"Uma regra de '{derivacao.FatoCodigo}' não diz quando ativa; a regra sempre ativa tem a lista vazia."));
+            recusas.Recusar(new DomainError(
+                FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida,
+                $"A operação do agregado '{agregado.Codigo}' é {string.Join(" ou ", CatalogoDe<OperacaoAgregado>.Todos().Select(static d => d.Codigo))}."), "operacao");
         }
 
-        Result<PredicadoDnf?> quando = DoFio(regra.Quando);
-        return quando.IsFailure
-            ? Result<RegraDerivacao>.ValidationFailure(quando.Errors)
-            : derivacao.Booleano
-                ? Result<RegraDerivacao>.Success(RegraDerivacao.CriarBooleana(quando.Value!))
-                : RegraDerivacao.Criar(quando.Value!, regra.Contribui ?? string.Empty);
+        recusas.Recusar(Estrutura(DefinicaoAgregado.Violacao(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro)));
+
+        return recusas.Montado(() => new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));
     }
-
-    /// <summary>
-    /// As dependências são as que as regras citam, e o domínio do categórico é o que elas contribuem: o
-    /// avaliador não usa mais que isso do derivado.
-    /// </summary>
-    private static Result<DerivacaoDoFato> DerivacaoDeRegras(DerivacaoPortavel derivacao, List<RegraDerivacao> regras)
-    {
-        string[] dependencias = [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-        Result<DerivacaoDoFato> lida = derivacao.Booleano
-            ? DerivacaoDoFato.CriarBooleana(derivacao.FatoCodigo, regras, dependencias)
-            : DerivacaoDoFato.Criar(
-                derivacao.FatoCodigo, regras, dependencias, [.. regras.Select(static r => r.Contribui!).Distinct(StringComparer.Ordinal)]);
-        return lida.IsSuccess
-            ? lida
-            : Result<DerivacaoDoFato>.Failure(new DomainError(FormularioPortavelErrorCodes.DerivacaoInvalida, lida.Error!.Message));
-    }
-
-    private static Result<Obrigatoriedade> Obrigatoriedade(ObrigatoriedadeDto? obrigatoriedade, string dono)
-    {
-        Result<PredicadoDnf?> quando = DoFio(obrigatoriedade?.Predicado);
-        if (quando.IsFailure)
-        {
-            return Result<Obrigatoriedade>.ValidationFailure(quando.Errors);
-        }
-
-        return EntradaDeRegras.Obrigatoriedade(obrigatoriedade?.Tipo, quando.Value) is { } valida
-            ? Result<Obrigatoriedade>.Success(valida)
-            : Result<Obrigatoriedade>.Failure(new DomainError(
-                FormularioPortavelErrorCodes.ObrigatoriedadeInvalida,
-                $"A obrigatoriedade do {dono} é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele."));
-    }
-
-    /// <summary>O predicado do fio: nulo é sem condição, e a lista vazia é o predicado sem cláusula.</summary>
-    private static Result<PredicadoDnf?> DoFio(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? clausulas)
-    {
-        if (clausulas is { Count: 0 })
-        {
-            Result<PredicadoDnf> semClausula = PredicadoDnf.CriarDeCondicoesAgrupadas([]);
-            return Result<PredicadoDnf?>.Success(semClausula.Value);
-        }
-
-        return EntradaDeRegras.Predicado(LeituraDeRegras.ParaEntrada(clausulas));
-    }
-
-    /// <summary>Converte cada elemento para o destino, na ordem, e devolve a primeira recusa; lista nula é lista vazia.</summary>
-    private static IReadOnlyList<FieldError>? Ler<TEntrada, TSaida>(IEnumerable<TEntrada>? origem, Func<TEntrada, Result<TSaida>> converter, List<TSaida> destino)
-    {
-        foreach (TEntrada elemento in origem ?? [])
-        {
-            Result<TSaida> lido = converter(elemento);
-            if (lido.IsFailure)
-            {
-                return lido.Errors;
-            }
-
-            destino.Add(lido.Value!);
-        }
-
-        return null;
-    }
-
-    private static Result<T> Montado<T>(IReadOnlyList<FieldError>? recusa, Func<T> criar) =>
-        recusa is null ? Result<T>.Success(criar()) : Result<T>.ValidationFailure(recusa);
-
-    private static IReadOnlyList<FieldError>? Recusa(string? violacao) =>
-        violacao is null ? null : Recusa(FormularioPortavelErrorCodes.EstruturaInvalida, violacao);
-
-    private static IReadOnlyList<FieldError> Recusa(string codigo, string mensagem) => [new(null, new DomainError(codigo, mensagem))];
-
-    private static IReadOnlyList<FieldError>? Falhas<T>(Result<T> resultado) => resultado.IsFailure ? resultado.Errors : null;
 }
