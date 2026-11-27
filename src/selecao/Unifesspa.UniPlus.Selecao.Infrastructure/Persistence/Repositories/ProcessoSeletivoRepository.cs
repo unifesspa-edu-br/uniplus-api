@@ -239,7 +239,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
         // Vigente é a versão de maior vigente_a_partir_de ≤ instante, desempatada pelo número (ADR-0075/0076/0104).
         // Ordena o relógio do sistema, não a data declarada no ato; o empate de instante é permitido, porque
-        // Suceder ancora a sucessora no instante da anterior quando o relógio regride, e o número elege a mais nova.
+        // Suceder fixa a sucessora no instante da anterior quando o relógio regride, e o número elege a mais nova.
         return await _context.Vigentes(processoSeletivoId, instanteUtc)
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken)
@@ -326,7 +326,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<(IReadOnlyList<ProcessoSeletivo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ProcessoSeletivo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -342,10 +343,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
                     && _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id))
                 || unidadesDoRascunho.Contains(p.UnidadeAdministradoraOrigemId));
 
-        CursorKeysetPage<ProcessoSeletivo> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<ProcessoSeletivo> page = await CursorKeyset
+            .ApplyAsync(query, CondicoesDoFiltro.De(ParteDoFiltro.Conjunto(unidadesDoRascunho)), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 }

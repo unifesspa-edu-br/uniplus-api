@@ -22,11 +22,11 @@ public sealed class UnidadeRepositorioContado(UnidadeRepository real, ConsultasA
         return real.ObterPorIdParaLeituraAsync(id, cancellationToken);
     }
 
-    public Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        Guid? afterId, int limit, PaginationDirection direction, FiltroListagemUnidades filtro, CancellationToken cancellationToken)
+    public Task<(IReadOnlyList<Unidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, FiltroListagemUnidades filtro, CancellationToken cancellationToken)
     {
         contagem.Registrar();
-        return real.ListarPaginadoAsync(afterId, limit, direction, filtro, cancellationToken);
+        return real.ListarPaginadoAsync(afterSortKey, afterId, limit, direction, filtro, cancellationToken);
     }
 
     public Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken)

@@ -132,9 +132,7 @@ public sealed class CertamePublicadoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> ListarVitrine(
-        // RequireSortKey: a posição de continuação é o par (SortKey, Id). Sem a exigência, cursor sem a chave
-        // degrada em silêncio para primeira página em vez de ser recusado.
-        [FromCursor(ResourceDaVitrine, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceDaVitrine)] PageRequest page,
         [FromQuery(Name = "situacao"), AceitaCodigosDe<SituacaoDoCertame>] string? situacao,
         [FromQuery(Name = "modalidade")]
         [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não filtra.")]
@@ -173,7 +171,7 @@ public sealed class CertamePublicadoController : ControllerBase
 
         ListarCertamesPublicadosResult resultado = saida.Value!;
         AplicarCabecalhosDaVitrine(resultado);
-        return await this.OkPaginatedOrdenadoAsync(
+        return await this.OkPaginatedAsync(
             resultado.Items, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }

@@ -73,13 +73,13 @@ public sealed class LocaisOfertaController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarLocaisOfertaResult resultado = await _queryBus
-            .Send(new ListarLocaisOfertaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarLocaisOfertaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         LocalOfertaDto[] comLinks = [.. resultado.Items.Select(l => l with { Links = _linksBuilder.Build(l) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

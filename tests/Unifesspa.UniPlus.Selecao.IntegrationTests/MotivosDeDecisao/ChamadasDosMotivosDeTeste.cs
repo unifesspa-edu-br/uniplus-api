@@ -24,7 +24,19 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// <summary>As chamadas HTTP e o cadastro de motivos que os testes da escolha dos motivos nos lugares compartilham.</summary>
 internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string prefixoDoCodigo)
 {
+    private readonly List<Guid> _semeados = [];
+
     internal IServiceProvider Services => fixture.Factory.Services;
+
+    /// <summary>Remove os motivos que esta instância semeou, para o teste não deixar dado no banco compartilhado.</summary>
+    internal async Task RemoverSemeadosAsync()
+    {
+        await using AsyncServiceScope escopo = Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        Guid[] ids = [.. _semeados];
+        await db.MotivosDeDecisao.IgnoreQueryFilters().Where(m => ids.Contains(m.Id)).ExecuteDeleteAsync();
+        _semeados.Clear();
+    }
 
     internal async Task<MotivoDeDecisao> SemearMotivoAsync(SentidoDoMotivo sentido = SentidoDoMotivo.Desfavoravel)
     {
@@ -38,6 +50,7 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.MotivosDeDecisao.Add(motivo);
         await db.SaveChangesAsync();
+        _semeados.Add(motivo.Id);
 
         return motivo;
     }
@@ -55,6 +68,7 @@ internal sealed class ChamadasDosMotivosDeTeste(CascadingFixture fixture, string
         UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.MotivosDeDecisao.Add(motivo);
         await db.SaveChangesAsync();
+        _semeados.Add(motivo.Id);
 
         return motivo;
     }

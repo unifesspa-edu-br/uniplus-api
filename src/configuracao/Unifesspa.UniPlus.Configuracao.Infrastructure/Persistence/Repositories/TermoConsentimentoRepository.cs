@@ -9,10 +9,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
 {
     private readonly UniPlusDbContext _dbContext;
@@ -38,57 +34,41 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<TermoConsentimento> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         string? searchTerm,
         CancellationToken cancellationToken)
     {
-        // Sem Include de Versoes — a listagem projeta só o cabeçalho do termo.
-        IQueryable<TermoConsentimento> query = FiltrarPorNome(_dbContext.TermosConsentimento.AsNoTracking(), searchTerm);
-
-        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032),
-        // aplicado sobre a query JÁ FILTRADA — os EXISTS internos do helper herdam
-        // o mesmo filtro de busca.
-        CursorKeysetPage<TermoConsentimento> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        string? termo = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm.Trim();
+        OrderedKeysetPage<TermoConsentimento> page = await CursorKeyset
+            .ApplyAsync(
+                FiltrarPorNome(_dbContext.TermosConsentimento.AsNoTracking(), termo),
+                CondicoesDoFiltro.De(ParteDoFiltro.De(termo)),
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
-    // Busca indexada via pg_trgm (issue #1105): ILIKE '%termo%' acelerado
-    // pelo índice GIN de expressão ix_termos_de_consentimento_nome_trgm sobre
-    // lower(nome) (script 003_busca_por_proximidade_do_termo.sql) — o
-    // opclass gin_trgm_ops também acelera LIKE/ILIKE, não só os operadores
-    // de similaridade. Preferido a word_similarity/<%: abaixo do threshold
-    // padrão (0.6) esse operador não garante casar substrings internas
-    // curtas (ex.: "lat" não bate com "Plataforma", mesmo com termo válido
-    // e presente) — ILIKE dá semântica de "contains" exata, sem depender de
-    // limiar algum, para qualquer tamanho de termo. lower() nos dois lados
-    // mantém a busca caixa-insensível e casa com o índice; sem
-    // acento-insensibilidade (fora de escopo da issue). Curingas do LIKE
-    // (% _ \) são escapados para virarem texto literal.
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1304:Specify CultureInfo",
-        Justification = "t.Nome.ToLower() vive dentro de uma expression tree traduzida pelo EF Core " +
-            "para SQL lower(nome) — roda no Postgres, sem CurrentCulture do processo .NET envolvida.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1311:Specify a culture or use an invariant version",
-        Justification = "Mesma razão de CA1304 — chamada traduzida para SQL, não executada em CLR.")]
-    private static IQueryable<TermoConsentimento> FiltrarPorNome(IQueryable<TermoConsentimento> query, string? searchTerm)
+    // Busca contida e insensível a caixa por ILIKE, acelerada pelo índice GIN ix_termos_de_consentimento_nome_trgm sobre
+    // nome (script 003_busca_por_proximidade_do_termo.sql). Sensível a acento. Os curingas do LIKE são escapados.
+    private static IQueryable<TermoConsentimento> FiltrarPorNome(IQueryable<TermoConsentimento> query, string? termo)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        if (termo is null)
         {
             return query;
         }
 
-        string pattern = "%" + EscapeLikeWildcards(searchTerm.Trim()) + "%";
+        string pattern = "%" + EscapeLikeWildcards(termo) + "%";
         const string escape = @"\";
-        return query.Where(t => EF.Functions.ILike(t.Nome.ToLower(), pattern, escape));
+        return query.Where(t => EF.Functions.ILike(t.Nome, pattern, escape));
     }
 
     // Escapa os curingas do LIKE/ILIKE (\ % _) para que metacaracteres digitados

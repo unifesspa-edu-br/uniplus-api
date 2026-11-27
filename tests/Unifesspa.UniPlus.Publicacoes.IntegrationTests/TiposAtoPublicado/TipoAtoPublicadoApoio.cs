@@ -7,6 +7,10 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
@@ -73,6 +77,17 @@ internal sealed class TipoAtoPublicadoApoio(PublicacoesEndpointFixture fixture)
         return await CadastrarAsync(
             client,
             new CorpoDoTipoDeAto(codigo) { VigenciaInicio = inicio, VigenciaFim = fim, CongelaConfiguracao = congela });
+    }
+
+    /// <summary>Apaga de vez os tipos de ato com os códigos informados, que o teste cadastrou.</summary>
+    internal async Task RemoverPorCodigosAsync(IReadOnlyCollection<string> codigos)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        string[] apagar = [.. codigos];
+        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.Database.ExecuteSqlAsync($"DELETE FROM publicacoes.tipos_de_ato_publicado WHERE codigo = ANY({apagar})");
     }
 
     /// <summary>Código único no formato UPPER_SNAKE, para não colidir entre testes.</summary>

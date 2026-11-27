@@ -54,7 +54,6 @@ internal static class ErrosDoPedido
     private static KeyValuePair<string, DomainErrorMapping>[] Consulta() =>
     [
         new(PedidoErrorCodes.FilaInvalida, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.pedido.fila_invalida", "Fila de pedidos inválida")),
-        new(PedidoErrorCodes.CursorInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.pedido.cursor_invalido", "Cursor de paginação dos pedidos inválido")),
         new(PedidoErrorCodes.FiltroDeSituacaoInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.pedido.filtro_de_situacao_invalido", "Situação do filtro de pedidos inválida")),
     ];
 

@@ -8,11 +8,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Lista as revisões paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
 /// <param name="Situacao">A situação pedida; sem ela, as revisões em qualquer situação.</param>
-public sealed record ListarRevisoesQuery(Guid? AfterId, int Limit, PaginationDirection Direction, SituacaoDaRevisao? Situacao = null)
+public sealed record ListarRevisoesQuery(string? AfterSortKey, Guid? AfterId, int Limit, PaginationDirection Direction, SituacaoDaRevisao? Situacao = null)
     : IQuery<Result<ListarRevisoesResult>>;
 
-/// <summary>Resultado paginado: as âncoras são os <c>Id</c> de fronteira da janela.</summary>
+/// <summary>Resultado paginado: os pontos de continuação são os <c>Id</c> de fronteira da página.</summary>
 public sealed record ListarRevisoesResult(
     IReadOnlyList<RevisaoResumoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

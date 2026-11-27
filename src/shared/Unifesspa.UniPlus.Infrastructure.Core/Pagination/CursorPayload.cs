@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// recurso — nunca PII (CPF, nome, e-mail, número de inscrição), conforme
 /// ADR-0019.
 /// </summary>
-/// <param name="After">Chave de continuação (id ou sort key serializada do item de fronteira da página anterior).</param>
+/// <param name="After"><c>Id</c> do item de fronteira da página anterior.</param>
 /// <param name="Limit">Tamanho de página efetivamente solicitado.</param>
 /// <param name="ResourceTag">Identificador do recurso paginado (ex.: <c>editais</c>); previne reuso cross-resource.</param>
 /// <param name="ExpiresAt">Instante UTC após o qual o cursor é rejeitado com 410.</param>
@@ -19,20 +19,18 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// como adulteração (400). O sistema não está em produção — não há cursores
 /// legados sem o campo a preservar.
 /// </param>
-/// <param name="UserId">
-/// Identificador da conta (claim do JWT) de quem emitiu o cursor. <c>null</c> em recursos públicos
-/// (ex.: <c>/api/editais</c>); obrigatório em recursos user-scoped
-/// (<c>/api/inscricoes/minhas</c>) — <see cref="FromCursorAttribute.RequireUserBinding"/>
+/// <param name="ResumoDaConta">
+/// Resumo SHA-256 (Base64Url) do par emissor e identificador da conta de quem emitiu o cursor, nunca a claim.
+/// <c>null</c> em recursos públicos; obrigatório em recursos que dependem da conta
+/// (<c>/api/pedidos-de-concessao</c>) — <see cref="FromCursorAttribute.RequireUserBinding"/>
 /// fixa a invariante. Previne metadata leak entre clientes diferentes:
 /// cliente A não consegue replay de cursor emitido para cliente B (ADR-0026
 /// §"User-binding em cursores user-scoped").
 /// </param>
 /// <param name="SortKey">
-/// Chave de ordenação serializada da âncora, para keyset multi-coluna ordenado
-/// (ADR-0094): a continuação é a tupla <c>(SortKey, After)</c> — <see cref="After"/>
-/// permanece o <c>Id</c> de desempate. <c>null</c> em cursores keyset por <c>Id</c>
-/// (a maioria dos recursos) — a ausência é o caminho legado, sem ordenação. Nunca PII
-/// (a sort key é dado público de reference data, ex.: nome de cidade; ADR-0019).
+/// Chave de continuação (<see cref="ChaveDeContinuacao"/>): resumo da consulta, instante congelado e valores das colunas de
+/// ordenação do item de fronteira (ADR-0094); a continuação é a tupla <c>(SortKey, After)</c>. Presente em toda
+/// continuação. Nunca PII: o texto da busca e os filtros só entram no resumo (ADR-0019).
 /// </param>
 public sealed record CursorPayload(
     string After,
@@ -40,5 +38,5 @@ public sealed record CursorPayload(
     string ResourceTag,
     DateTimeOffset ExpiresAt,
     PaginationDirection Direction,
-    string? UserId = null,
+    string? ResumoDaConta = null,
     string? SortKey = null);

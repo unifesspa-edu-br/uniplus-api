@@ -21,10 +21,11 @@ public interface ITipoBancaRepository
 
     /// <summary>
     /// Lista tipos de banca vivos paginados por cursor keyset bidirecional (ADR-0026
-    /// + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras de
+    /// + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve os pontos de continuação de
     /// <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
-    Task<(IReadOnlyList<TipoBanca> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<TipoBanca> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

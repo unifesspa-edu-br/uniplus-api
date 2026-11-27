@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// valida limit/direction antes de despachar.
 /// </summary>
 public sealed record ListarCondicoesAtendimentoQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarCondicoesAtendimentoResult>;

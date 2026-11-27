@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +37,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <b>Somente leitura, e por decisão de governança.</b> O catálogo é seed-governado e
 /// append-only (ADR-0112): evoluir uma regra é publicar uma versão nova por migration, junto
 /// da mudança de comportamento que ela descreve. Não há rota de escrita aqui, e não é
-/// pendência — um CRUD permitiria criar uma regra que nenhum motor sabe executar.
+/// pendência — um CRUD permitiria criar uma regra que nenhuma execução sabe tratar.
 /// </para>
 /// <para>
 /// A leitura exige a permissão de consultar o catálogo ou a de configurar o processo seletivo em
@@ -55,10 +54,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
     PermissaoSelecao.RegrasCatalogoConsultar,
     OuEmAlgumaUnidade = PermissaoSelecao.ProcessosConfigurar,
     ResourceTipo = ResourceTiposSelecao.RegraCatalogo)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe.")]
 public sealed class RegrasCatalogoController : ControllerBase
 {
     private const string ResourceTag = "regras-catalogo";
@@ -108,7 +103,7 @@ public sealed class RegrasCatalogoController : ControllerBase
         }
 
         ListarRegrasCatalogoResult resultado = await _queryBus.Send(
-            new ListarRegrasCatalogoQuery(filtro.Value, page.AfterId, page.Limit, page.Direction),
+            new ListarRegrasCatalogoQuery(filtro.Value, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
         return await MontarPaginaAsync(resultado, page, cancellationToken).ConfigureAwait(false);
     }
@@ -118,7 +113,7 @@ public sealed class RegrasCatalogoController : ControllerBase
     {
         RegraCatalogoDto[] comLinks = [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

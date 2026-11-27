@@ -31,10 +31,12 @@ public sealed class PageResponseWriterTests
         ListagemController controller = ControllerDaAcao(services, AcaoDeUsuario);
         Guid proximo = Guid.NewGuid();
 
-        await controller.OkPaginatedAsync(Array.Empty<string>(), null, proximo, PaginaDeVinteItens);
+        await controller.OkPaginatedAsync(Array.Empty<string>(), null, PontoDeContinuacao(proximo), PaginaDeVinteItens);
 
         ModelBindingContext context = await BindAsync(QueryWithCursor(CursorDaProximaPagina(controller)), AcaoDeUsuario, services);
-        AssertPage(context).AfterId.Should().Be(proximo);
+        PageRequest pagina = AssertPage(context);
+        pagina.AfterId.Should().Be(proximo);
+        pagina.AfterSortKey.Should().Be(ChaveDeTeste);
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public sealed class PageResponseWriterTests
         ServiceProvider services = CreateCursorServices().WithUser(false, null, new ResolutionCounter()).BuildServiceProvider();
         ListagemController controller = ControllerDaAcao(services, AcaoDeUsuario);
 
-        Func<Task> emitir = () => controller.OkPaginatedAsync(Array.Empty<string>(), null, Guid.NewGuid(), PaginaDeVinteItens);
+        Func<Task> emitir = () => controller.OkPaginatedAsync(Array.Empty<string>(), null, PontoDeContinuacao(Guid.NewGuid()), PaginaDeVinteItens);
 
         await emitir.Should().ThrowAsync<InvalidOperationException>().WithMessage("*RequireUserBinding = true*");
     }
@@ -88,7 +90,7 @@ public sealed class PageResponseWriterTests
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
         ListagemController controller = new() { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { RequestServices = services } } };
 
-        Func<Task> emitir = () => controller.OkPaginatedAsync(Array.Empty<string>(), null, Guid.NewGuid(), PaginaDeVinteItens);
+        Func<Task> emitir = () => controller.OkPaginatedAsync(Array.Empty<string>(), null, PontoDeContinuacao(Guid.NewGuid()), PaginaDeVinteItens);
 
         await emitir.Should().ThrowAsync<InvalidOperationException>().WithMessage("*[FromCursor*");
     }
@@ -100,7 +102,7 @@ public sealed class PageResponseWriterTests
     {
         ListagemController controller = ControllerDaAcao(services, AcaoEscopada, rota);
 
-        await controller.OkPaginatedAsync(Array.Empty<string>(), null, proximo, PaginaDeVinteItens);
+        await controller.OkPaginatedAsync(Array.Empty<string>(), null, PontoDeContinuacao(proximo), PaginaDeVinteItens);
 
         return CursorDaProximaPagina(controller);
     }

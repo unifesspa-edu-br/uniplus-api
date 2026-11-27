@@ -15,11 +15,11 @@ public static class ListarPrecedenciasFaseQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<PrecedenciaFase> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<PrecedenciaFase> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         PrecedenciaFaseDto[] items = [.. itens.Select(p => p.ToDto())];
-        return new ListarPrecedenciasFaseResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarPrecedenciasFaseResult(items, anterior, proximo);
     }
 }

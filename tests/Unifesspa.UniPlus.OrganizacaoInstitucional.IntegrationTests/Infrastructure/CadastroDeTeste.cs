@@ -63,6 +63,18 @@ internal static class CadastroDeTeste
         await contexto.Database.ExecuteSqlRawAsync("DELETE FROM organizacao.instituicoes");
     }
 
+    /// <summary>Apaga as unidades cuja sigla começa pela marca e os identificadores delas.</summary>
+    public static async Task RemoverUnidadesDaMarcaAsync(this OrganizacaoEndpointFixture fixture, string marca)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(marca);
+
+        using IServiceScope escopo = fixture.Factory.Services.CreateScope();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await contexto.Database.ExecuteSqlAsync(
+            $"DELETE FROM organizacao.identificadores_da_unidade WHERE unidade_id IN (SELECT id FROM organizacao.unidades WHERE starts_with(sigla, {marca}))");
+        await contexto.Database.ExecuteSqlAsync($"DELETE FROM organizacao.unidades WHERE starts_with(sigla, {marca})");
+    }
+
     private static Unidade NovaUnidade(string? sigla, TipoUnidade tipo)
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8];

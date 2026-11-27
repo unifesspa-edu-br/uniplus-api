@@ -27,7 +27,7 @@ public sealed class ListarObrigatoriedadesLegaisComRotuloTests
     public async Task Handle_PaginaComTiposRepetidos_ConsultaCodigosDistintosSemReservado()
     {
         IReadOnlyList<ObrigatoriedadeLegal> pagina = [Regra("TIPO_A"), Regra("TIPO_A"), Regra(TodosOsTiposDeProcesso.Codigo)];
-        _regras.ListarPaginadoAsync(default, 10, PaginationDirection.Next, null, null, DiaEmBelem, default)
+        _regras.ListarPaginadoAsync(null, null, 10, PaginationDirection.Next, new FiltroDasObrigatoriedadesLegais(null, null, DiaEmBelem), default)
             .Returns((pagina, null, null));
         _tipos.ObterNomesPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), default)
             .Returns(new Dictionary<string, string> { ["TIPO_A"] = "Tipo A" });
@@ -44,21 +44,21 @@ public sealed class ListarObrigatoriedadesLegaisComRotuloTests
     [InlineData(23, 59)]
     public async Task Handle_NoFimDoDiaEmBelem_FiltraPeloDiaCivilLocal(int hora, int minuto)
     {
-        _regras.ListarPaginadoAsync(default, 10, PaginationDirection.Next, null, null, Arg.Any<DateOnly?>(), default)
+        _regras.ListarPaginadoAsync(null, null, 10, PaginationDirection.Next, Arg.Any<FiltroDasObrigatoriedadesLegais>(), default)
             .Returns((Array.Empty<ObrigatoriedadeLegal>(), null, null));
 
         Result<ListarObrigatoriedadesLegaisResult> resultado = await ListarAsync(
             true, new ResolvedorFusoDeTeste(), InstanteEmBelem.Em(2026, 6, 15, hora, minuto));
 
         resultado.IsSuccess.Should().BeTrue();
-        await _regras.Received(1).ListarPaginadoAsync(default, 10, PaginationDirection.Next, null, null, DiaEmBelem, default);
+        await _regras.Received(1).ListarPaginadoAsync(null, null, 10, PaginationDirection.Next, new FiltroDasObrigatoriedadesLegais(null, null, DiaEmBelem), default);
     }
 
     [Fact(DisplayName = "Sem o filtro de vigência o repositório recebe nenhum dia e o fuso não é consultado")]
     public async Task Handle_SemVigentes_NaoConsultaOFuso()
     {
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
-        _regras.ListarPaginadoAsync(default, 10, PaginationDirection.Next, null, null, null, default)
+        _regras.ListarPaginadoAsync(null, null, 10, PaginationDirection.Next, new FiltroDasObrigatoriedadesLegais(null, null, null), default)
             .Returns((Array.Empty<ObrigatoriedadeLegal>(), null, null));
 
         Result<ListarObrigatoriedadesLegaisResult> resultado = await ListarAsync(false, fuso, InstanteEmBelem.Em(2026, 6, 15, 23, 59));
@@ -81,7 +81,7 @@ public sealed class ListarObrigatoriedadesLegaisComRotuloTests
     private Task<Result<ListarObrigatoriedadesLegaisResult>> ListarAsync(
         bool vigentes, IResolvedorFusoInstitucional fuso, DateTimeOffset agora) =>
         ListarObrigatoriedadesLegaisQueryHandler.Handle(
-            new(null, 10, PaginationDirection.Next, null, null, vigentes), _regras, _tipos, fuso, new RelogioFixo(agora), default);
+            new(null, null, 10, PaginationDirection.Next, null, null, vigentes), _regras, _tipos, fuso, new RelogioFixo(agora), default);
 
     private static ObrigatoriedadeLegal Regra(string codigo) => ObrigatoriedadeLegal.Criar(
         codigo, CategoriaObrigatoriedade.Outros, "REGRA", new ConcorrenciaDuplaObrigatoria(),

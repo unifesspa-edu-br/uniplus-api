@@ -64,7 +64,7 @@ O `docker compose up` já sobe com uma base pronta, restaurada na primeira subid
 e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
 
 - **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas) e `psm-2027` (Medicina, sem inscrições). A inscrição de `psm-2027` vai de
-  25/11/2026 às 00:00 até 26/12/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 13/11/2026 às 00:00 até 26/11/2026 às 20:13 (aproximado), horário de Belém.
+  26/11/2026 às 00:00 até 27/12/2026 às 23:59:59, e a de `psm-teste-multicurso-2027`, de 14/11/2026 às 00:00 até 27/11/2026 às 08:59 (aproximado), horário de Belém.
 - **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
   senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
   `betina.neves` e `caroline.jesus`; Gestor de proteção de dados: `marlene.martins`.

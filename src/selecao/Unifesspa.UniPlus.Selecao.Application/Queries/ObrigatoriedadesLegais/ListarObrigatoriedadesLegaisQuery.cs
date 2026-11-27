@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <see langword="false"/> para incluir regras com <c>VigenciaFim</c> passada.
 /// </summary>
 public sealed record ListarObrigatoriedadesLegaisQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

@@ -84,7 +84,7 @@ public sealed class OrganizacaoQueriesNoBusTests
 
     private static Task<Result<ListarUnidadesAtivasResult>> ListarAsync(IQueryBus queryBus, string busca, int tipo) =>
         queryBus.Send(
-            new ListarUnidadesAtivasQuery(null, 20, PaginationDirection.Next, busca, [tipo]),
+            new ListarUnidadesAtivasQuery(null, null, 20, PaginationDirection.Next, busca, [tipo]),
             CancellationToken.None);
 
     private static CriarUnidadeCommand NovaUnidade(string identificador) =>

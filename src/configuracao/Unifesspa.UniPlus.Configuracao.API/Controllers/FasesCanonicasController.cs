@@ -73,14 +73,14 @@ public sealed class FasesCanonicasController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarFasesCanonicasResult resultado = await _queryBus
-            .Send(new ListarFasesCanonicasQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarFasesCanonicasQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         FaseCanonicaDto[] comLinks =
             [.. resultado.Items.Select(f => f with { Links = _linksBuilder.Build(f) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

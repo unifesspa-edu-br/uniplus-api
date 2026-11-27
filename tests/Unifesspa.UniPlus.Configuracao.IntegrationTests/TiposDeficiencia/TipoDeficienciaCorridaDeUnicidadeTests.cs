@@ -146,9 +146,9 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
         public Task<IReadOnlyList<TipoDeficiencia>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken) =>
             _interno.ListarVivosParaLeituraAsync(cancellationToken);
 
-        public Task<(IReadOnlyList<TipoDeficiencia> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-            Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken) =>
-            _interno.ListarPaginadoAsync(afterId, limit, direction, cancellationToken);
+        public Task<(IReadOnlyList<TipoDeficiencia> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+            string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken) =>
+            _interno.ListarPaginadoAsync(afterSortKey, afterId, limit, direction, cancellationToken);
 
         public Task AdicionarAsync(TipoDeficiencia tipo, CancellationToken cancellationToken) =>
             _interno.AdicionarAsync(tipo, cancellationToken);

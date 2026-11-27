@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// de despachar.
 /// </summary>
 public sealed record ListarFasesCanonicasQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarFasesCanonicasResult>;

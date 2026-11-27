@@ -24,7 +24,7 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstal
 
 public sealed class OfertaDePerfisTests
 {
-    private static readonly ListarPerfisParaPedirQuery Consulta = new(null, 20, PaginationDirection.Next);
+    private static readonly ListarPerfisParaPedirQuery Consulta = new(null, null, 20, PaginationDirection.Next);
 
     private static readonly PessoaNoToken Institucional = new(Executor, "Betina", "betina@uniplus-test.local", true);
 
@@ -34,12 +34,12 @@ public sealed class OfertaDePerfisTests
     public async Task Listar_Institucional_NaoConsultaPermissao()
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
-        Guid proximo = Guid.CreateVersion7();
+        (string SortKey, Guid Id) proximo = ("chave", Guid.CreateVersion7());
 
         Result<ListarPerfisParaPedirResult> resultado = await Oferta(proximo).ListarAsync(Consulta, Institucional, verificador, CancellationToken.None);
 
         resultado.Value!.Items.Should().ContainSingle().Which.Nome.Should().Be("Análise de atendimento");
-        resultado.Value.ProximoAfterId.Should().Be(proximo);
+        resultado.Value.Proximo.Should().Be(proximo);
         await verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
     }
 
@@ -80,7 +80,7 @@ public sealed class OfertaDePerfisTests
             Consulta, Oferta(perfis, null, Comum()), verificador, new DoublesDePerfis.Usuario(null), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PedidoErrorCodes.IdentidadeIncompleta);
-        await perfis.DidNotReceiveWithAnyArgs().ListarPediveisPaginadoAsync(default, default, default, default);
+        await perfis.DidNotReceiveWithAnyArgs().ListarPediveisPaginadoAsync(default, default, default, default, default);
         await verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
     }
 
@@ -88,13 +88,13 @@ public sealed class OfertaDePerfisTests
     public async Task Listar_PerfilMisto_NaoEOferecido()
     {
         IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
-        Guid ancora = Guid.CreateVersion7();
+        Guid pontoDeContinuacao = Guid.CreateVersion7();
 
         Result<ListarPerfisParaPedirResult> resultado = await Oferta(perfis, null, MisturaUnidadeEInstituicao(), Comum())
-            .ListarAsync(new ListarPerfisParaPedirQuery(ancora, 5, PaginationDirection.Prev), Institucional, Substitute.For<IVerificadorDeAcesso>(), CancellationToken.None);
+            .ListarAsync(new ListarPerfisParaPedirQuery("chave", pontoDeContinuacao, 5, PaginationDirection.Prev), Institucional, Substitute.For<IVerificadorDeAcesso>(), CancellationToken.None);
 
         resultado.Value!.Items.Should().ContainSingle().Which.Nome.Should().Be("Análise de atendimento");
-        await perfis.Received(1).ListarPediveisPaginadoAsync(ancora, 5, PaginationDirection.Prev, Arg.Any<CancellationToken>());
+        await perfis.Received(1).ListarPediveisPaginadoAsync("chave", pontoDeContinuacao, 5, PaginationDirection.Prev, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O perfil comum da instituição sai com o escopo em código e rótulo e sem governança")]
@@ -128,13 +128,13 @@ public sealed class OfertaDePerfisTests
         return verificador;
     }
 
-    private static OfertaDePerfis Oferta(Guid? proximo = null) =>
+    private static OfertaDePerfis Oferta((string SortKey, Guid Id)? proximo = null) =>
         Oferta(Substitute.For<IPerfilRepository>(), proximo, Comum());
 
-    private static OfertaDePerfis Oferta(IPerfilRepository perfis, Guid? proximo, params Perfil[] pediveis)
+    private static OfertaDePerfis Oferta(IPerfilRepository perfis, (string SortKey, Guid Id)? proximo, params Perfil[] pediveis)
     {
-        perfis.ListarPediveisPaginadoAsync(default, default, default, default)
-            .ReturnsForAnyArgs((pediveis, (Guid?)null, proximo));
+        perfis.ListarPediveisPaginadoAsync(default, default, default, default, default)
+            .ReturnsForAnyArgs((pediveis, ((string SortKey, Guid Id)?)null, proximo));
 
         return new OfertaDePerfis(perfis, new DominiosDeTeste(), new CatalogoComUnidade(), new CatalogoDaAplicacao([]));
     }

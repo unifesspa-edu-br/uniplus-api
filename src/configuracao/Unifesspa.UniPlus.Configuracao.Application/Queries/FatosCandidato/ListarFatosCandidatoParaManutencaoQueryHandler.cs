@@ -24,8 +24,8 @@ public static class ListarFatosCandidatoParaManutencaoQueryHandler
             return Result<ListarFatosCandidatoParaManutencaoResult>.Failure(origem.Error!);
         }
 
-        (IReadOnlyList<FatoCandidato> itens, Guid? anterior, Guid? proximo) = await repository.ListarPaginadoAsync(
-            query.AfterId, query.Limit, query.Direction, origem.Value, query.Ativo, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<FatoCandidato> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository.ListarPaginadoAsync(
+            query.AfterSortKey, query.AfterId, query.Limit, query.Direction, origem.Value, query.Ativo, cancellationToken).ConfigureAwait(false);
         return Result<ListarFatosCandidatoParaManutencaoResult>.Success(new([.. itens.Select(static f => f.ToDto())], anterior, proximo));
     }
 }

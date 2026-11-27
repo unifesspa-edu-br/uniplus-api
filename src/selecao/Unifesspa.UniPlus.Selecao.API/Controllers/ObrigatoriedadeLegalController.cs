@@ -81,7 +81,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
         }
 
         string? codigo = Request.Query.TryGetValue("tipoProcesso", out StringValues valores) ? valores.ToString() : tipoProcesso;
-        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, codigo, filtroDeCategoria.Value, vigentes);
+        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, codigo, filtroDeCategoria.Value, vigentes);
 
         return await ListarPaginadoAsync(consulta, page, cancellationToken).ConfigureAwait(false);
     }
@@ -97,8 +97,8 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 
         return await this.OkPaginatedAsync(
             resultado.Value!.Items,
-            resultado.Value.AnteriorAfterId,
-            resultado.Value.ProximoAfterId,
+            resultado.Value.Anterior,
+            resultado.Value.Proximo,
             page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// (ADR-0026 + ADR-0089). Sem as versões promovidas — use
 /// <c>ObterTermoConsentimentoPorIdQuery</c> para o termo completo.
 /// </summary>
-/// <param name="AfterId">Âncora da página anterior; <c>null</c> retorna a primeira janela.</param>
+/// <param name="AfterId">Ponto de continuação da página anterior; <c>null</c> retorna a primeira página.</param>
 /// <param name="Limit">Tamanho máximo da página a retornar.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>, ADR-0089).</param>
 /// <param name="SearchTerm">
@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// ao seguir prev/next (os links já o preservam automaticamente).
 /// </param>
 public sealed record ListarTermosConsentimentoQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

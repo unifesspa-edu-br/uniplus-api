@@ -15,11 +15,11 @@ public static class ListarCalendariosDiasUteisQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<CalendarioDiasUteis> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<CalendarioDiasUteis> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         CalendarioDiasUteisResumoDto[] items = [.. itens.Select(c => c.ToResumoDto())];
-        return new ListarCalendariosDiasUteisResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarCalendariosDiasUteisResult(items, anterior, proximo);
     }
 }

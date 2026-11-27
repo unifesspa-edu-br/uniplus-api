@@ -40,18 +40,19 @@ public sealed class RecursoAcessibilidadeRepository : IRecursoAcessibilidadeRepo
     public async Task<IReadOnlyList<RecursoAcessibilidade>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken) =>
         await _dbContext.RecursosAcessibilidade.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<RecursoAcessibilidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<RecursoAcessibilidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        CursorKeysetPage<RecursoAcessibilidade> page = await CursorKeyset
-            .ApplyAsync(_dbContext.RecursosAcessibilidade.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<RecursoAcessibilidade> page = await CursorKeyset
+            .ApplyAsync(_dbContext.RecursosAcessibilidade.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(RecursoAcessibilidade recurso, CancellationToken cancellationToken)

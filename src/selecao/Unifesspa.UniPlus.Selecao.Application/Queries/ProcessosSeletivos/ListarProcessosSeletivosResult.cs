@@ -8,5 +8,5 @@ using DTOs;
 /// </summary>
 public sealed record ListarProcessosSeletivosResult(
     IReadOnlyList<ProcessoSeletivoResumoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

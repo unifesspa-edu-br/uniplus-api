@@ -236,13 +236,13 @@ public sealed class InstalacaoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarTentativasSemPendenciaResult resultado = await _queryBus.Send(
-            new ListarTentativasSemPendenciaQuery(page.AfterId, page.Limit, page.Direction),
+            new ListarTentativasSemPendenciaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
             resultado.Items,
-            resultado.AnteriorAfterId,
-            resultado.ProximoAfterId,
+            resultado.Anterior,
+            resultado.Proximo,
             page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }

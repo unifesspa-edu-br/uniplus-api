@@ -43,12 +43,12 @@ public static class ListarProcessosSeletivosQueryHandler
 
         Guid[] unidadesDoRascunho = await UnidadesDoRascunhoAsync(concessoes, verificador, userContext, cancellationToken).ConfigureAwait(false);
 
-        (IReadOnlyList<ProcessoSeletivo> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await processoSeletivoRepository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, unidadesDoRascunho, cancellationToken)
+        (IReadOnlyList<ProcessoSeletivo> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await processoSeletivoRepository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, unidadesDoRascunho, cancellationToken)
             .ConfigureAwait(false);
 
         ProcessoSeletivoResumoDto[] items = [.. itens.Select(Project)];
-        return new ListarProcessosSeletivosResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarProcessosSeletivosResult(items, anterior, proximo);
     }
 
     private static ProcessoSeletivoResumoDto Project(ProcessoSeletivo processo) => new(

@@ -9,5 +9,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// canônico) e pelo estado ativo.
 /// </summary>
 public sealed record ListarFatosCandidatoParaManutencaoQuery(
+    string? AfterSortKey,
     Guid? AfterId, int Limit, PaginationDirection Direction, string? Origem, bool? Ativo)
     : IQuery<Result<ListarFatosCandidatoParaManutencaoResult>>;

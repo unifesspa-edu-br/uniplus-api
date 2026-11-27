@@ -73,14 +73,14 @@ public sealed class ModalidadesController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarModalidadesResult resultado = await _queryBus
-            .Send(new ListarModalidadesQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarModalidadesQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         ModalidadeDto[] comLinks =
             [.. resultado.Items.Select(m => m with { Links = _linksBuilder.Build(m) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

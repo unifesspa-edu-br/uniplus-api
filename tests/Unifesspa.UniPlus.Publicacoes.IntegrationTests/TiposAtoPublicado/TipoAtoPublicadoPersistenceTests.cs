@@ -338,7 +338,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
 
         (IReadOnlyList<TipoAtoPublicado> itens, _, _) = await new TipoAtoPublicadoRepository(contexto)
-            .ListarPaginadoAsync(null, 100, PaginationDirection.Next, vigentesEm, default);
+            .ListarPaginadoAsync(null, null, 100, PaginationDirection.Next, vigentesEm, default);
 
         return [.. itens.Select(tipo => tipo.Id)];
     }

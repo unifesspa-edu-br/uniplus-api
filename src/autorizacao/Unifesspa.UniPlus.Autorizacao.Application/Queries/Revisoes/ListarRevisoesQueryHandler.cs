@@ -47,8 +47,8 @@ public static class ListarRevisoesQueryHandler
         DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
-        (IReadOnlyList<ResumoDaRevisao> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(new FiltroDeRevisoes(agora, query.Situacao), query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<ResumoDaRevisao> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(new FiltroDeRevisoes(agora, query.Situacao), query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         if (itens.Count > 0)

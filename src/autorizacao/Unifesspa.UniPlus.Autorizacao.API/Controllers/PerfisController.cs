@@ -70,7 +70,7 @@ public sealed class PerfisController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         Result<ListarPerfisResult> resultado = await _queryBus.Send(
-            new ListarPerfisQuery(page.AfterId, page.Limit, page.Direction),
+            new ListarPerfisQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
 
         return resultado.IsFailure
@@ -79,7 +79,7 @@ public sealed class PerfisController : ControllerBase
     }
 
     private Task<IActionResult> PaginaAsync(ListarPerfisResult pagina, PageRequest page, CancellationToken cancellationToken) =>
-        this.OkPaginatedAsync(pagina.Items, pagina.AnteriorAfterId, pagina.ProximoAfterId, page, cancellationToken: cancellationToken);
+        this.OkPaginatedAsync(pagina.Items, pagina.Anterior, pagina.Proximo, page, cancellationToken: cancellationToken);
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]

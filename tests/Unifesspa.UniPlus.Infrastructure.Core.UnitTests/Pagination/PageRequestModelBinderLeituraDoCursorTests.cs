@@ -68,31 +68,32 @@ public sealed class PageRequestModelBinderLeituraDoCursorTests
         page.Limit.Should().Be(50);
     }
 
-    [Fact]
-    public async Task BindModelAsync_RequireSortKey_CursorSemSortKey_RetornaCursorInvalido()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task BindModelAsync_CursorSemChaveDeContinuacao_RetornaCursorInvalido(string? chave)
     {
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload("cidades") with { Limit = 20 });
+        string cursor = await EncodeAsync(services, ValidPayload("editais") with { SortKey = chave });
 
-        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
+        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
 
-        context.Result.IsModelSet.Should().BeFalse();
-        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
-            .Should().Be(CursorBindingErrorCodes.Invalido);
+        AssertInvalidCursor(context);
     }
 
     [Fact]
-    public async Task BindModelAsync_RequireSortKey_CursorComSortKey_RetornaPageRequest()
+    public async Task BindModelAsync_CursorComChaveDeContinuacao_DevolveAChaveNaPagina()
     {
         Guid expectedAfter = Guid.NewGuid();
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload("cidades") with { After = expectedAfter.ToString(), Limit = 20, SortKey = "maraba" });
+        string cursor = await EncodeAsync(services, ValidPayload("editais") with { After = expectedAfter.ToString(), Limit = 20, SortKey = "chave-x" });
 
-        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
+        ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
 
-        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        PageRequest page = AssertPage(context);
         page.AfterId.Should().Be(expectedAfter);
-        page.AfterSortKey.Should().Be("maraba");
+        page.AfterSortKey.Should().Be("chave-x");
     }
 
     [Fact]

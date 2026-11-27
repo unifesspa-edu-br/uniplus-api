@@ -43,17 +43,18 @@ public sealed class BaseLegalDoFadaRepository : IBaseLegalDoFadaRepository
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<BaseLegalDoFada> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<BaseLegalDoFada> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
-        CursorKeysetPage<BaseLegalDoFada> page = await CursorKeyset
-            .ApplyAsync(_dbContext.BasesLegaisDoFada.AsNoTracking().Include(x => x.Municipios), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<BaseLegalDoFada> page = await CursorKeyset
+            .ApplyAsync(_dbContext.BasesLegaisDoFada.AsNoTracking().Include(x => x.Municipios), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(BaseLegalDoFada entity, CancellationToken cancellationToken)

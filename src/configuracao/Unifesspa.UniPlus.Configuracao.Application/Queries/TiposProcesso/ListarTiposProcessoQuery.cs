@@ -8,5 +8,5 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// cadastro só expõe tipo ativo (UNI-REQ-0098). Somente a rota de manutenção o
 /// desliga, para que quem consulta tipos de processo encontre o tipo desativado que quer reativar.
 /// </summary>
-public sealed record ListarTiposProcessoQuery(Guid? AfterId, int Limit, PaginationDirection Direction, bool ApenasAtivos = true)
+public sealed record ListarTiposProcessoQuery(string? AfterSortKey, Guid? AfterId, int Limit, PaginationDirection Direction, bool ApenasAtivos = true)
     : IQuery<ListarTiposProcessoResult>;

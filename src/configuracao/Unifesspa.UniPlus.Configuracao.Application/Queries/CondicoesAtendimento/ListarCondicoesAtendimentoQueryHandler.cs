@@ -15,11 +15,11 @@ public static class ListarCondicoesAtendimentoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<CondicaoAtendimentoEspecializado> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<CondicaoAtendimentoEspecializado> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         CondicaoAtendimentoDto[] items = [.. itens.Select(c => c.ToDto())];
-        return new ListarCondicoesAtendimentoResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarCondicoesAtendimentoResult(items, anterior, proximo);
     }
 }

@@ -58,6 +58,11 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    private static readonly KeysetSort<VersaoDoTermo> OrdemDasVersoes = new(
+        [KeysetSortColumn<VersaoDoTermo>.For("numero", v => v.Numero, v => v.Numero.ToString(CultureInfo.InvariantCulture))],
+        static (partes, id) => new { Numero = NumeroDaChave(partes[0]), Id = id },
+        CondicoesDoFiltro.Nenhuma);
+
     public async Task<VersaoDoTermo?> ObterVersaoAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.VersoesDoTermo.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id, cancellationToken).ConfigureAwait(false);
 
@@ -67,16 +72,7 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
         string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default)
     {
         OrderedKeysetPage<VersaoDoTermo> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                _context.VersoesDoTermo.AsNoTracking(),
-                static b => b.Ascending(v => v.Numero).Ascending(v => v.Id),
-                static v => v.Numero.ToString(CultureInfo.InvariantCulture),
-                static (sortKey, id) => new { Numero = NumeroDaSortKey(sortKey), Id = id },
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
+            .ApplyAsync(_context.VersoesDoTermo.AsNoTracking(), OrdemDasVersoes, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.Previous, page.Next);
@@ -97,8 +93,8 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
     public async Task<TermoNaInstalacao?> ObterExcecaoDaInstalacaoAsync(Guid instalacaoId, CancellationToken cancellationToken = default) =>
         await _context.TermosNaInstalacao.AsNoTracking().SingleOrDefaultAsync(t => t.InstalacaoId == instalacaoId, cancellationToken).ConfigureAwait(false);
 
-    private static int NumeroDaSortKey(string sortKey) =>
-        int.TryParse(sortKey, NumberStyles.None, CultureInfo.InvariantCulture, out int numero) ? numero : throw new CursorAnchorMismatchException();
+    private static int NumeroDaChave(string chave) =>
+        int.TryParse(chave, NumberStyles.None, CultureInfo.InvariantCulture, out int numero) ? numero : throw new CursorAnchorMismatchException();
 
     private Task<int> TravarAsync(string sql, CancellationToken cancellationToken) =>
         _context.Database.ExecuteSqlRawAsync(sql, [TermoDeResponsabilidade.RegistroUnicoId], cancellationToken);

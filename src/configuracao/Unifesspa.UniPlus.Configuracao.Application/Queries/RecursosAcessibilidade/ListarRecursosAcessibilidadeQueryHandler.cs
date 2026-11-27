@@ -15,11 +15,11 @@ public static class ListarRecursosAcessibilidadeQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<RecursoAcessibilidade> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<RecursoAcessibilidade> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         RecursoAcessibilidadeDto[] items = [.. itens.Select(r => r.ToDto())];
-        return new ListarRecursosAcessibilidadeResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarRecursosAcessibilidadeResult(items, anterior, proximo);
     }
 }

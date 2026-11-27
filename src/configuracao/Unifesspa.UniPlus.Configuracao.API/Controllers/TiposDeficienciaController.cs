@@ -73,14 +73,14 @@ public sealed class TiposDeficienciaController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarTiposDeficienciaResult resultado = await _queryBus
-            .Send(new ListarTiposDeficienciaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarTiposDeficienciaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         TipoDeficienciaDto[] comLinks =
             [.. resultado.Items.Select(t => t with { Links = _linksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

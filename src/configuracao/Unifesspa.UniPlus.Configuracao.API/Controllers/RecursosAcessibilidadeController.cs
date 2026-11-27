@@ -73,14 +73,14 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarRecursosAcessibilidadeResult resultado = await _queryBus
-            .Send(new ListarRecursosAcessibilidadeQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarRecursosAcessibilidadeQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         RecursoAcessibilidadeDto[] comLinks =
             [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -27,7 +27,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     {
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(authenticated, currentUser, counter).BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload("inscricoes") with { UserId = cursorUser });
+        string cursor = await EncodeAsync(services, ValidPayload("inscricoes") with { ResumoDaConta = ResumoDaContaDe(cursorUser) });
 
         ModelBindingContext context = await BindAsync(
             QueryWithCursor(cursor), nameof(CursorDeTesteController.UserInscricoes), services);
@@ -40,7 +40,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     {
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(true, "alice", counter).BuildServiceProvider();
-        CursorPayload payload = ValidPayload("inscricoes") with { UserId = "alice" };
+        CursorPayload payload = ValidPayload("inscricoes") with { ResumoDaConta = ResumoDaContaDe("alice") };
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
@@ -54,7 +54,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     {
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(false, null, counter).BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload() with { UserId = "alice" });
+        string cursor = await EncodeAsync(services, ValidPayload() with { ResumoDaConta = ResumoDaContaDe("alice") });
 
         ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
 
@@ -67,7 +67,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     {
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(true, "user-anyone", counter).BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload() with { UserId = "user-someoneelse" });
+        string cursor = await EncodeAsync(services, ValidPayload() with { ResumoDaConta = ResumoDaContaDe("user-someoneelse") });
 
         ModelBindingContext context = await BindAsync(QueryWithCursor(cursor), services: services);
 
@@ -91,7 +91,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
         CursorPayload payload = ValidPayload("inscricoes") with
         {
             ExpiresAt = InstanteDaConsulta.AddMinutes(-1),
-            UserId = "alice",
+            ResumoDaConta = ResumoDaContaDe("alice"),
         };
 
         int resolutions = await CountUserResolutionsAsync(payload, string.Empty);
@@ -102,7 +102,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     [Fact]
     public async Task BindModelAsync_EtiquetaDeOutroRecursoEmEndpointComVinculo_NaoResolveOUsuario()
     {
-        CursorPayload payload = ValidPayload("editais") with { UserId = "alice" };
+        CursorPayload payload = ValidPayload("editais") with { ResumoDaConta = ResumoDaContaDe("alice") };
 
         int resolutions = await CountUserResolutionsAsync(payload, string.Empty);
 
@@ -112,7 +112,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     [Fact]
     public async Task BindModelAsync_DirecaoTrocadaEmEndpointComVinculo_NaoResolveOUsuario()
     {
-        CursorPayload payload = ValidPayload("inscricoes") with { UserId = "alice" };
+        CursorPayload payload = ValidPayload("inscricoes") with { ResumoDaConta = ResumoDaContaDe("alice") };
 
         int resolutions = await CountUserResolutionsAsync(payload, "&direction=prev");
 
@@ -122,7 +122,7 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     [Fact]
     public async Task BindModelAsync_AfterQueNaoEGuidEmEndpointComVinculo_NaoResolveOUsuario()
     {
-        CursorPayload payload = ValidPayload("inscricoes") with { After = "nao-e-guid", UserId = "alice" };
+        CursorPayload payload = ValidPayload("inscricoes") with { After = "nao-e-guid", ResumoDaConta = ResumoDaContaDe("alice") };
 
         int resolutions = await CountUserResolutionsAsync(payload, string.Empty);
 
@@ -130,16 +130,29 @@ public sealed class PageRequestModelBinderVinculoDeUsuarioTests
     }
 
     [Fact]
-    public async Task BindModelAsync_VinculoDeUsuarioEChaveDeOrdenacaoAusente_ResolveOUsuarioAntesDeRecusar()
+    public async Task BindModelAsync_MesmaContaEmOutroEmissor_RecusaSemDizerQualFalhou()
     {
-        CursorPayload payload = ValidPayload("cidades") with { UserId = "alice" };
+        ResolutionCounter counter = new();
+        ServiceProvider services = CreateCursorServices().WithUser(true, "alice", counter, "https://outro-emissor.exemplo").BuildServiceProvider();
+        string cursor = await EncodeAsync(services, ValidPayload("inscricoes") with { ResumoDaConta = ResumoDaContaDe("alice") });
+
+        ModelBindingContext context = await BindAsync(
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserInscricoes), services);
+
+        AssertInvalidCursor(context);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_VinculoDeUsuarioEChaveDeContinuacaoAusente_ResolveOUsuarioAntesDeRecusar()
+    {
+        CursorPayload payload = ValidPayload("inscricoes") with { ResumoDaConta = ResumoDaContaDe("alice"), SortKey = null };
 
         ResolutionCounter counter = new();
         ServiceProvider services = CreateCursorServices().WithUser(true, "alice", counter).BuildServiceProvider();
         string cursor = await EncodeAsync(services, payload);
 
         ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserSortedCidades), services);
+            QueryWithCursor(cursor), nameof(CursorDeTesteController.UserInscricoes), services);
 
         AssertInvalidCursor(context);
         counter.Total.Should().Be(1);

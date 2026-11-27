@@ -85,12 +85,11 @@ public sealed class CursoRepository : ICursoRepository
     }
 
     /// <summary>
-    /// O que reduziu a coleção antes da paginação. Entra na assinatura do cursor
-    /// para que a continuação de uma busca não retome dentro de outra: o ponto de continuação é
-    /// uma posição num conjunto, e trocar o conjunto a torna sem sentido.
+    /// O que reduziu a coleção antes da paginação. Entra no resumo do cursor para que a continuação de uma busca não
+    /// retome dentro de outra: o ponto de continuação é uma posição num conjunto, e trocar o conjunto a torna sem sentido.
     /// </summary>
-    private static IReadOnlyList<string> CondicoesDoFiltroDeCursos(string? termo) =>
-        [termo ?? string.Empty];
+    private static CondicoesDoFiltro CondicoesDoFiltroDeCursos(string? termo) =>
+        CondicoesDoFiltro.De(ParteDoFiltro.De(termo));
 
     public async Task AdicionarAsync(Curso curso, CancellationToken cancellationToken)
     {

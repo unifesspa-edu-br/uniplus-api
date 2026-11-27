@@ -15,11 +15,11 @@ public static class ListarAtosNormativosQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<AtoNormativo> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<AtoNormativo> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         AtoNormativoDto[] items = [.. itens.Select(a => a.ToDto())];
-        return new ListarAtosNormativosResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarAtosNormativosResult(items, anterior, proximo);
     }
 }

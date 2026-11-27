@@ -54,9 +54,9 @@ public sealed class TiposProcessoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
         ListarTiposProcessoResult resultado = await _queryBus.Send(
-            new ListarTiposProcessoQuery(page.AfterId, page.Limit, page.Direction), cancellationToken).ConfigureAwait(false);
+            new ListarTiposProcessoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken).ConfigureAwait(false);
         TipoProcessoDto[] items = [.. resultado.Items.Select(tipo => tipo with { Links = _linksBuilder.Build(tipo) })];
-        return await this.OkPaginatedAsync(items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await this.OkPaginatedAsync(items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     [HttpGet("tipos-processo/{id:guid}")]
@@ -95,9 +95,9 @@ public sealed class TiposProcessoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
         ListarTiposProcessoResult resultado = await _queryBus.Send(
-            new ListarTiposProcessoQuery(page.AfterId, page.Limit, page.Direction, apenasAtivos), cancellationToken).ConfigureAwait(false);
+            new ListarTiposProcessoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, apenasAtivos), cancellationToken).ConfigureAwait(false);
         TipoProcessoDto[] items = [.. resultado.Items.Select(tipo => tipo with { Links = LinksDeManutencao(tipo) })];
-        return await this.OkPaginatedAsync(items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await this.OkPaginatedAsync(items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

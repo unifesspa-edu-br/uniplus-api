@@ -24,7 +24,8 @@ public sealed class TipoProcessoRepository : ITipoProcessoRepository
     public Task<TipoProcesso?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
         _dbContext.TiposProcesso.AsNoTracking().FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<TipoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<TipoProcesso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, bool apenasAtivos, CancellationToken cancellationToken)
     {
         IQueryable<TipoProcesso> consulta = _dbContext.TiposProcesso.AsNoTracking();
@@ -33,10 +34,10 @@ public sealed class TipoProcessoRepository : ITipoProcessoRepository
             consulta = consulta.Where(tipo => tipo.Ativo);
         }
 
-        CursorKeysetPage<TipoProcesso> page = await CursorKeyset
-            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<TipoProcesso> page = await CursorKeyset
+            .ApplyAsync(consulta, CondicoesDoFiltro.De(ParteDoFiltro.De(apenasAtivos)), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(TipoProcesso tipo, CancellationToken cancellationToken)

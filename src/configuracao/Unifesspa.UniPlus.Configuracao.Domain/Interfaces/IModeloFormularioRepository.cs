@@ -3,6 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
+/// <summary>
+/// Filtros opcionais da lista de manutenção dos modelos. O filtro de tipo de processo traz os modelos que servem a ele:
+/// os do próprio tipo e os que servem a todos. O de declaração separa os que servem à fase de inscrição dos que servem a
+/// outra fase.
+/// </summary>
+public sealed record FiltroDosModelosDeFormulario(string? TipoProcessoCodigo, bool? ServeAFaseDeInscricao, bool? Ativo);
+
 /// <summary>Escrita e leitura de manutenção dos modelos de formulário (UNI-REQ-0144).</summary>
 public interface IModeloFormularioRepository
 {
@@ -11,18 +18,13 @@ public interface IModeloFormularioRepository
 
     Task<ModeloFormulario?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Lista paginada por cursor, com filtros opcionais. O filtro de tipo de processo traz os modelos
-    /// que servem a ele: os do próprio tipo e os que servem a todos. O filtro de declaração separa os modelos
-    /// que servem à fase de inscrição dos que servem a outra fase.
-    /// </summary>
-    Task<(IReadOnlyList<ModeloFormulario> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    /// <summary>Lista paginada por cursor, com os filtros opcionais informados.</summary>
+    Task<(IReadOnlyList<ModeloFormulario> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoProcessoCodigo,
-        bool? serveAFaseDeInscricao,
-        bool? ativo,
+        FiltroDosModelosDeFormulario filtro,
         CancellationToken cancellationToken);
 
     /// <summary>

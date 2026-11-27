@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
-
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -57,7 +55,7 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
         AtoDaProtecao[] atos = AtosConsideradosPor(filtro);
         string? termo = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca);
         IQueryable<DecisaoOrdenada> linhas = DecisoesDoRecorte(filtro, atos, termo);
-        KeysetSort<DecisaoOrdenada> ordenacao = OrdenacaoDasDecisoesDaProtecao.Montar(RecorteDe(filtro, atos, termo));
+        KeysetSort<DecisaoOrdenada> ordenacao = OrdenacaoDasDecisoesDaProtecao.Montar(CondicoesDe(filtro, atos, termo));
 
         OrderedKeysetPage<DecisaoOrdenada> page = await OrderedKeysetCursor
             .ApplyAsync(linhas, ordenacao, afterSortKey, afterId, limit, direction, cancellationToken)
@@ -87,7 +85,6 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
         IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro) =>
         filtro.Cadastro is { } cadastro ? query.Where(a => a.Cadastro == cadastro) : query;
 
-    // A data máxima não tem dia seguinte: vale como sem limite superior.
     private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorPeriodo(
         IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro)
     {
@@ -97,7 +94,7 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
             query = query.Where(a => a.Instante >= inicio);
         }
 
-        if (filtro.Ate is { } ate && ate != DateOnly.MaxValue)
+        if (LimiteSuperior(filtro) is { } ate)
         {
             DateTimeOffset fim = InicioDoDia(ate.AddDays(1));
             query = query.Where(a => a.Instante < fim);
@@ -129,16 +126,20 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
         new DateTimeOffset(dia.ToDateTime(TimeOnly.MinValue), FusoInstitucional).ToUniversalTime();
 
     /// <summary>
-    /// O que reduziu a coleção antes da paginação. Entra na assinatura do cursor para que a continuação de um
-    /// recorte não retome dentro de outro: a âncora é uma posição num conjunto, e trocar o conjunto a torna sem sentido.
+    /// O que reduziu a coleção antes da paginação. Entra no resumo do cursor para que a continuação de um recorte não
+    /// retome dentro de outro: o ponto de continuação é uma posição num conjunto, e trocar o conjunto a torna sem sentido.
     /// </summary>
-    private static List<string> RecorteDe(FiltroDasDecisoesDaProtecao filtro, AtoDaProtecao[] atos, string? termo) =>
-    [
-        string.Join(',', atos.Order().Select(static a => a.ToString())),
-        filtro.Cadastro?.ToString() ?? string.Empty,
-        filtro.De?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
-        filtro.Ate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
-        termo ?? string.Empty,
-        filtro.Autor is { } autor ? $"{autor.Emissor}\u001f{autor.ContaId}" : string.Empty,
-    ];
+    private static CondicoesDoFiltro CondicoesDe(FiltroDasDecisoesDaProtecao filtro, AtoDaProtecao[] atos, string? termo) =>
+        CondicoesDoFiltro.De(
+            ParteDoFiltro.Conjunto(atos.Select(AtosDaProtecao.ParaTokenCanonico)),
+            ParteDoFiltro.De(filtro.Cadastro is { } cadastro ? CadastrosDoCatalogo.ParaTokenCanonico(cadastro) : null),
+            ParteDoFiltro.De(filtro.De),
+            ParteDoFiltro.De(LimiteSuperior(filtro)),
+            ParteDoFiltro.De(termo),
+            ParteDoFiltro.De(filtro.Autor?.Emissor),
+            ParteDoFiltro.De(filtro.Autor?.ContaId));
+
+    // A data máxima não tem dia seguinte: vale como sem limite superior.
+    private static DateOnly? LimiteSuperior(FiltroDasDecisoesDaProtecao filtro) =>
+        filtro.Ate is { } ate && ate != DateOnly.MaxValue ? ate : null;
 }

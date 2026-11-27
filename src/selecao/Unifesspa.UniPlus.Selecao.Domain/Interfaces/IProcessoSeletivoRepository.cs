@@ -62,12 +62,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// Lista processos paginados por cursor keyset bidirecional (ADR-0026 +
     /// ADR-0089): ordena por <c>Id</c> e retorna até <paramref name="limit"/>
     /// itens na direção <paramref name="direction"/> a partir de
-    /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>),
-    /// sempre em ordem ascendente, junto das âncoras de <c>prev</c>/<c>next</c>
+    /// <paramref name="afterId"/> (ou a primeira página quando <c>null</c>),
+    /// sempre em ordem ascendente, junto dos pontos de continuação de <c>prev</c>/<c>next</c>
     /// (nulas quando não há aquele lado). Implementações aplicam <c>AsNoTracking</c>.
     /// Entram os processos publicados ou encerrados e, dos demais, só os das <paramref name="unidadesDoRascunho"/>.
     /// </summary>
-    Task<(IReadOnlyList<ProcessoSeletivo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ProcessoSeletivo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

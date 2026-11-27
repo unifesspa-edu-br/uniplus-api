@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.AtosNormativos;
 
-using System.Globalization;
 using System.Net;
 
 using AwesomeAssertions;
@@ -17,7 +16,7 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// As recusas da fronteira de <c>GET /entidades/{entidadeTipo}/{entidadeId}/atos</c> e a ordem em que
-/// saem: o binder do cursor e do limite primeiro, depois o tipo da entidade, depois a âncora do cursor,
+/// saem: o binder do cursor e do limite primeiro, depois o tipo da entidade, depois a chave de continuação do cursor,
 /// e só então a consulta.
 /// </summary>
 [Collection(PublicacoesEndpointCollection.Name)]
@@ -41,12 +40,14 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
     private const string DirecaoInvalida = "uniplus.cursor.direcao_invalida";
     private const string TituloDaDirecaoInvalida = "Direção de paginação inválida";
     private const string DetalheDaDirecaoInvalida = "O parâmetro 'direction' deve ser 'next' ou 'prev'.";
-    private const string AncoraQueNaoEhInstante = "nao-e-instante";
+    private const string ChaveQueNaoEhDaConsulta = "nao-e-chave-da-consulta";
+    private const string CursorDeOutraConsulta = "uniplus.paginacao.cursor_invalido";
+    private const string TituloDoCursorDeOutraConsulta = "Cursor inválido";
+    private const string DetalheDoCursorDeOutraConsulta = "O cursor informado não continua esta consulta. Refaça a listagem sem cursor.";
     private const string CursorAdulterado = "nao-e-um-cursor";
 
     private static readonly DateTimeOffset ValidoAte = new(2999, 12, 31, 0, 0, 0, TimeSpan.Zero);
-    private static readonly string AncoraValida =
-        new DateTimeOffset(2026, 3, 13, 12, 0, 0, TimeSpan.Zero).ToString("O", CultureInfo.InvariantCulture);
+    private const string ChaveDeTeste = "chave-de-continuacao";
 
     private readonly PublicacoesEndpointFixture _fixture;
 
@@ -95,43 +96,43 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
         await ConferirTipoDeEntidadeInvalidoAsync(resposta);
     }
 
-    [Fact(DisplayName = "Âncora do cursor que não é instante é recusada com 400 antes de consultar os atos")]
-    public async Task AncoraQueNaoEhInstante_Retorna400SemConsultar()
-    {
-        ConsultasAnotadas consultas = new();
-        await using WebApplicationFactory<HostAssemblyMarker> host = consultas.SubstituirNoHost(_fixture.Factory);
-        using HttpClient client = host.CreateClient();
-        Guid entidade = Guid.CreateVersion7();
-        string cursor = await CursorDaEntidadeAsync(host.Services, EntidadeValida, entidade, AncoraQueNaoEhInstante);
-
-        HttpResponseMessage resposta = await ListarAsync(client, EntidadeValida, entidade, ComCursor(cursor));
-
-        await ConferirCursorInvalidoAsync(resposta);
-        consultas.Enviadas.OfType<ListarAtosDaEntidadeQuery>().Should().BeEmpty("a recusa da fronteira sai antes da consulta");
-    }
-
-    [Theory(DisplayName = "Âncora do cursor com texto de dado pessoal é recusada sem devolver o texto na resposta")]
-    [InlineData("000.000.000-00")]
-    [InlineData("pessoa.ficticia@exemplo.invalido")]
-    public async Task AncoraComTextoDeDadoPessoal_NaoVoltaNaResposta(string ancora)
+    [Theory(DisplayName = "Chave de continuação que não é a da consulta, ainda que seja só um instante, é recusada com 400 pela conferência")]
+    [InlineData(ChaveQueNaoEhDaConsulta)]
+    [InlineData("2026-03-13T12:00:00.0000000+00:00")]
+    public async Task ChaveQueNaoEhDaConsulta_Retorna400PelaConferencia(string chave)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid entidade = Guid.CreateVersion7();
-        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeValida, entidade, ancora);
+        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeValida, entidade, chave);
+
+        HttpResponseMessage resposta = await ListarAsync(client, EntidadeValida, entidade, ComCursor(cursor));
+
+        await ProblemaRegistrado.ConferirAsync(
+            resposta, HttpStatusCode.BadRequest, CursorDeOutraConsulta, TituloDoCursorDeOutraConsulta, DetalheDoCursorDeOutraConsulta);
+    }
+
+    [Theory(DisplayName = "Chave de continuação com texto de dado pessoal é recusada sem devolver o texto na resposta")]
+    [InlineData("000.000.000-00")]
+    [InlineData("pessoa.ficticia@exemplo.invalido")]
+    public async Task ChaveComTextoDeDadoPessoal_NaoVoltaNaResposta(string chave)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid entidade = Guid.CreateVersion7();
+        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeValida, entidade, chave);
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeValida, entidade, ComCursor(cursor));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(ancora);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(chave);
         await resposta.AssertNoPiiAsync();
     }
 
-    [Fact(DisplayName = "Com tipo de entidade e âncora inválidos, prevalece a recusa do tipo de entidade")]
-    public async Task TipoEAncoraInvalidos_PrevaleceOTipoDeEntidade()
+    [Fact(DisplayName = "Com tipo de entidade e chave de continuação inválidos, prevalece a recusa do tipo de entidade")]
+    public async Task TipoEChaveInvalidos_PrevaleceOTipoDeEntidade()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid entidade = Guid.CreateVersion7();
-        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeInvalida, entidade, AncoraQueNaoEhInstante);
+        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeInvalida, entidade, ChaveQueNaoEhDaConsulta);
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeInvalida, entidade, ComCursor(cursor));
 
@@ -161,18 +162,6 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
             client, EntidadeValida, Guid.CreateVersion7(), ComCursor(CursorAdulterado));
 
         await ConferirCursorInvalidoAsync(resposta);
-    }
-
-    [Fact(DisplayName = "Âncora no formato de instante é aceita e a consulta responde 200")]
-    public async Task AncoraInstante_Retorna200()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        Guid entidade = Guid.CreateVersion7();
-        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeValida, entidade, AncoraValida);
-
-        HttpResponseMessage resposta = await ListarAsync(client, EntidadeValida, entidade, ComCursor(cursor));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact(DisplayName = "Limite fora da faixa com tipo de entidade inválido: prevalece a recusa do limite")]
@@ -215,7 +204,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid entidade = Guid.CreateVersion7();
         string cursor = await CursorDaEntidadeAsync(
-            _fixture.Factory.Services, EntidadeInvalida, entidade, AncoraValida, DateTimeOffset.UnixEpoch);
+            _fixture.Factory.Services, EntidadeInvalida, entidade, ChaveDeTeste, DateTimeOffset.UnixEpoch);
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeInvalida, entidade, ComCursor(cursor));
 
@@ -228,7 +217,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         string cursor = await CursorDaEntidadeAsync(
-            _fixture.Factory.Services, EntidadeInvalida, Guid.CreateVersion7(), AncoraValida);
+            _fixture.Factory.Services, EntidadeInvalida, Guid.CreateVersion7(), ChaveDeTeste);
 
         HttpResponseMessage resposta = await ListarAsync(
             client, EntidadeInvalida, Guid.CreateVersion7(), ComCursor(cursor));
@@ -236,15 +225,15 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
         await ConferirCursorInvalidoAsync(resposta);
     }
 
-    [Theory(DisplayName = "Cursor sem âncora ou com âncora em branco, com tipo de entidade inválido: prevalece a recusa do cursor")]
+    [Theory(DisplayName = "Cursor sem chave de continuação ou com ela em branco, com tipo de entidade inválido: prevalece a recusa do cursor")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task CursorSemAncoraETipoInvalido_PrevaleceOBinder(string? ancora)
+    public async Task CursorSemChaveETipoInvalido_PrevaleceOBinder(string? chave)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid entidade = Guid.CreateVersion7();
-        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeInvalida, entidade, ancora);
+        string cursor = await CursorDaEntidadeAsync(_fixture.Factory.Services, EntidadeInvalida, entidade, chave);
 
         HttpResponseMessage resposta = await ListarAsync(client, EntidadeInvalida, entidade, ComCursor(cursor));
 
@@ -252,7 +241,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
     }
 
     private static async Task<string> CursorDaEntidadeAsync(
-        IServiceProvider servicos, string entidadeTipo, Guid entidadeId, string? ancora, DateTimeOffset? expiraEm = null)
+        IServiceProvider servicos, string entidadeTipo, Guid entidadeId, string? chave, DateTimeOffset? expiraEm = null)
     {
         CursorEncoder encoder = servicos.GetRequiredService<CursorEncoder>();
 
@@ -262,7 +251,7 @@ public sealed class AtosDaEntidadeRecusasEndpointTests
             ResourceTag: CursorResourceTag.Compose("entidade-atos", [entidadeTipo, entidadeId.ToString()]),
             ExpiresAt: expiraEm ?? ValidoAte,
             Direction: PaginationDirection.Next,
-            SortKey: ancora));
+            SortKey: chave));
     }
 
     private static string ComCursor(string cursor) => $"?cursor={Uri.EscapeDataString(cursor)}";

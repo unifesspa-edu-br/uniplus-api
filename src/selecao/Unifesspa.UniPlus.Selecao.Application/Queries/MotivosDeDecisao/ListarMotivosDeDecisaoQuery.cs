@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// filtro opcional por tipo, por subclassificação e por situação.
 /// </summary>
 public sealed record ListarMotivosDeDecisaoQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

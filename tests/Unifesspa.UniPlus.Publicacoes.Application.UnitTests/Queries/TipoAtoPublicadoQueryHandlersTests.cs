@@ -59,22 +59,22 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);
     }
 
-    [Fact(DisplayName = "Listar com vigência repassa cursor, limite, direção e o dia civil de Belém, e devolve as âncoras")]
-    public async Task Listar_ComVigencia_RepassaCursorEDiaCivilDeBelemEDevolveAncoras()
+    [Fact(DisplayName = "Listar com vigência repassa cursor, limite, direção e o dia civil de Belém, e devolve os pontos de continuação")]
+    public async Task Listar_ComVigencia_RepassaCursorEDiaCivilDeBelemEDevolvePontosDeContinuacao()
     {
         Guid after = Guid.NewGuid();
-        Guid prev = Guid.NewGuid();
-        Guid next = Guid.NewGuid();
-        _repository.ListarPaginadoAsync(after, 25, PaginationDirection.Next, DiaEmBelem, Arg.Any<CancellationToken>())
+        (string SortKey, Guid Id) prev = ("anterior", Guid.NewGuid());
+        (string SortKey, Guid Id) next = ("proximo", Guid.NewGuid());
+        _repository.ListarPaginadoAsync("chave", after, 25, PaginationDirection.Next, DiaEmBelem, Arg.Any<CancellationToken>())
             .Returns((new[] { Novo("AVISO") }, prev, next));
 
         Result<ListarTiposAtoPublicadoResult> resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
-            new ListarTiposAtoPublicadoQuery(after, 25, PaginationDirection.Next),
+            new ListarTiposAtoPublicadoQuery("chave", after, 25, PaginationDirection.Next),
             _repository, _fuso, _relogioDeBelem, CancellationToken.None);
 
         resultado.Value!.Items.Should().ContainSingle().Which.Codigo.Should().Be("AVISO");
-        resultado.Value.AnteriorAfterId.Should().Be(prev);
-        resultado.Value.ProximoAfterId.Should().Be(next);
+        resultado.Value.Anterior.Should().Be(prev);
+        resultado.Value.Proximo.Should().Be(next);
     }
 
     [Fact(DisplayName = "Listar sem filtro de vigência repassa nulo e não consulta o fuso")]
@@ -82,15 +82,15 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
     {
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
         _repository.ListarPaginadoAsync(
-            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<DateOnly?>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<TipoAtoPublicado>(), (Guid?)null, (Guid?)null));
+            Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<DateOnly?>(), Arg.Any<CancellationToken>())
+            .Returns((Array.Empty<TipoAtoPublicado>(), ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
 
         await ListarTiposAtoPublicadoQueryHandler.Handle(
-            new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next, Vigentes: false),
+            new ListarTiposAtoPublicadoQuery(null, null, 25, PaginationDirection.Next, Vigentes: false),
             _repository, fuso, _relogioDeBelem, CancellationToken.None);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            null, 25, PaginationDirection.Next, null, Arg.Any<CancellationToken>());
+            null, null, 25, PaginationDirection.Next, null, Arg.Any<CancellationToken>());
         fuso.DidNotReceive().Resolver();
     }
 
@@ -98,12 +98,12 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
     public async Task Listar_ComVigenciaEFusoNaoReconhecido_FalhaSemLerORepositorio()
     {
         Result<ListarTiposAtoPublicadoResult> resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
-            new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next),
+            new ListarTiposAtoPublicadoQuery(null, null, 25, PaginationDirection.Next),
             _repository, new ResolvedorFusoIndisponivelDeTeste(), _relogioDeBelem, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(FusoNaoReconhecido);
         await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(
-            default, default, default, default, CancellationToken.None);
+            default, default, default, default, default, CancellationToken.None);
     }
 
     [Fact(DisplayName = "ObterVigente sem data consulta o dia civil de Belém, e não o dia em UTC")]

@@ -119,7 +119,7 @@ internal sealed class PageRequestReader
     private PageRequest? Accept(CursorPayload payload, PaginationDirection direction)
     {
         string resourceTag = _attribute.ResourceTagFor(_context.ActionContext.RouteData);
-        if (!Guid.TryParse(payload.After, out Guid anchor) || !CursorMatches(payload, resourceTag, direction))
+        if (!Guid.TryParse(payload.After, out Guid pontoDeContinuacao) || !CursorMatches(payload, resourceTag, direction))
         {
             RejectAsInvalid();
             return null;
@@ -127,27 +127,26 @@ internal sealed class PageRequestReader
 
         // O limite do cursor é a memória do tamanho da página: ajustado se a configuração apertou o intervalo.
         int limit = Math.Clamp(payload.Limit, _options.LimitMin, _options.LimitMax);
-        return new PageRequest(anchor, limit, direction, payload.SortKey);
+        return new PageRequest(pontoDeContinuacao, limit, direction, payload.SortKey);
     }
 
     /// <summary>
     /// A ordem das conferências é a da recusa: etiqueta da coleção (ADR-0026), direção emitida (ADR-0089),
-    /// usuário do cursor e chave de ordenação (ADR-0094). O usuário só é resolvido depois de etiqueta e
-    /// direção certas. Direção diferente da emitida é tratada como adulteração; um cursor só com o
-    /// identificador não pode cair em silêncio para a primeira página quando a ordenação exige o ponto de continuação completo.
+    /// vínculo à conta e chave de continuação (ADR-0094). A conta só é resolvida depois de etiqueta e direção certas.
+    /// Direção diferente da emitida é tratada como adulteração; um cursor só com o identificador não pode cair em
+    /// silêncio para a primeira página, porque toda continuação exige o ponto completo.
     /// </summary>
     private bool CursorMatches(CursorPayload payload, string resourceTag, PaginationDirection direction) =>
         string.Equals(payload.ResourceTag, resourceTag, StringComparison.Ordinal)
         && payload.Direction == direction
-        && UserMatches(payload)
-        && (!_attribute.RequireSortKey || !string.IsNullOrWhiteSpace(payload.SortKey));
+        && AccountMatches(payload)
+        && !string.IsNullOrWhiteSpace(payload.SortKey);
 
     /// <summary>
-    /// Vínculo ao usuário (ADR-0026): usuário autenticado e com identificador; cursor com identificador de
-    /// usuário; e identificadores iguais. As três falhas dão a mesma recusa, para não revelar ao atacante
-    /// qual delas ocorreu.
+    /// Vínculo à conta (ADR-0026): conta autenticada com emissor e identificador; cursor com resumo da conta; e resumos
+    /// iguais. As três falhas dão a mesma recusa, para não revelar ao atacante qual delas ocorreu.
     /// </summary>
-    private bool UserMatches(CursorPayload payload)
+    private bool AccountMatches(CursorPayload payload)
     {
         if (!_attribute.RequireUserBinding)
         {
@@ -155,10 +154,9 @@ internal sealed class PageRequestReader
         }
 
         IUserContext user = _context.HttpContext.RequestServices.GetRequiredService<IUserContext>();
-        return user.IsAuthenticated
-            && !string.IsNullOrEmpty(user.UserId)
-            && !string.IsNullOrEmpty(payload.UserId)
-            && string.Equals(payload.UserId, user.UserId, StringComparison.Ordinal);
+        string? summary = ContaDeQuemConsulta.Resumir(user);
+        return summary is not null
+            && string.Equals(payload.ResumoDaConta, summary, StringComparison.Ordinal);
     }
 
     private void RejectLimitOutOfRange() => Reject(

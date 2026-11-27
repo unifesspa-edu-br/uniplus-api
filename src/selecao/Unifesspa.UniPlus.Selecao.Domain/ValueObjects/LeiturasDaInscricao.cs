@@ -32,6 +32,11 @@ public sealed record ResumoDaInscricaoDoProcesso(
     DateTimeOffset? EnviadaEm);
 
 /// <summary>
+/// Quais dados pessoais a listagem das inscrições do processo lê: o nome e o CPF, que só se decifra para ser mascarado.
+/// </summary>
+public sealed record DadosPessoaisLidosNaListagem(bool Nome, bool Cpf);
+
+/// <summary>
 /// A resposta cifrada de um campo identificador, localizada sem decifrar: a identidade da linha.
 /// </summary>
 /// <param name="RespostaId">A linha da resposta cifrada.</param>

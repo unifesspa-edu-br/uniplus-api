@@ -59,14 +59,14 @@ public sealed class BaseLegalDoFadaController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarBasesLegaisDoFadaResult resultado = await _queryBus
-            .Send(new ListarBasesLegaisDoFadaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarBasesLegaisDoFadaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         BaseLegalDoFadaDto[] comLinks =
             [.. resultado.Itens.Select(t => t with { Links = _linksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

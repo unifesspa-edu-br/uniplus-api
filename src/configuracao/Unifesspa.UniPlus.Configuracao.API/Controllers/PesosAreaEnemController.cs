@@ -74,14 +74,14 @@ public sealed class PesosAreaEnemController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarPesosAreaEnemResult resultado = await _queryBus
-            .Send(new ListarPesosAreaEnemQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarPesosAreaEnemQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         PesoAreaEnemDto[] comLinks =
             [.. resultado.Items.Select(p => p with { Links = _linksBuilder.Build(p) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

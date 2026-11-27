@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
 /// Extensões de <see cref="ControllerBase"/> para responder coleções
-/// paginadas com cursor (ADR-0026): encoda o cursor da próxima página,
+/// paginadas com cursor (ADR-0026): encoda o cursor das páginas vizinhas,
 /// monta o header <c>Link</c> (RFC 5988/8288) e o header <c>X-Page-Size</c>,
 /// e devolve o body como array JSON puro (ADR-0025). Quem informa o total da
 /// consulta ganha também <c>X-Total-Count</c>, que só aparece na resposta de
@@ -15,40 +15,20 @@ using Microsoft.AspNetCore.Mvc;
 public static class PaginationControllerExtensions
 {
     /// <summary>
-    /// Devolve <see cref="StatusCodes.Status200OK"/> com os <paramref name="items"/>
-    /// como array JSON; encoda o cursor da próxima página quando
-    /// <paramref name="nextAfterId"/> não é <c>null</c>; popula
-    /// <c>Link</c> e <c>X-Page-Size</c>. Variante keyset por <c>Id</c> (a maioria dos
-    /// recursos) — o ponto de continuação do cursor é só o <c>Id</c>.
-    /// </summary>
-    public static Task<IActionResult> OkPaginatedAsync<T>(
-        this ControllerBase controller,
-        IReadOnlyList<T> items,
-        Guid? prevAfterId,
-        Guid? nextAfterId,
-        PageRequest page,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(page);
-
-        return PageResponseWriter.For(controller, page.Limit)
-            .WriteAsync(items, PontoDeContinuacao.PorId(prevAfterId), PontoDeContinuacao.PorId(nextAfterId), cancellationToken);
-    }
-
-    /// <summary>
-    /// Variante para keyset multi-coluna ordenado (ADR-0094): cada ponto de continuação carrega a
-    /// chave de ordenação <strong>e</strong> o <c>Id</c> de desempate, serializados no
-    /// payload opaco. A camada de cursor (AES-GCM, TTL, user-binding, Link) é a mesma.
+    /// Devolve <see cref="StatusCodes.Status200OK"/> com os <paramref name="items"/> como array JSON; encoda o cursor
+    /// de cada lado em que há página (<paramref name="previous"/> e <paramref name="next"/> não nulos) e popula
+    /// <c>Link</c> e <c>X-Page-Size</c>. Cada ponto de continuação carrega a chave de continuação <strong>e</strong> o
+    /// <c>Id</c> de desempate, serializados no payload opaco.
     /// </summary>
     /// <param name="total">
     /// Total de registros da consulta que produziu a página, quando o endpoint oferece
     /// a contagem e o cliente a pediu. Responde em <c>X-Total-Count</c>; <c>null</c>
     /// não emite o header (ADR-0026).
     /// </param>
-    public static Task<IActionResult> OkPaginatedOrdenadoAsync<T>(
+    public static Task<IActionResult> OkPaginatedAsync<T>(
         this ControllerBase controller,
         IReadOnlyList<T> items,
-        (string SortKey, Guid Id)? prev,
+        (string SortKey, Guid Id)? previous,
         (string SortKey, Guid Id)? next,
         PageRequest page,
         int? total = null,
@@ -60,6 +40,6 @@ public static class PaginationControllerExtensions
         if (total is { } contagem)
             writer.WriteTotalCount(contagem);
 
-        return writer.WriteAsync(items, PontoDeContinuacao.Ordenada(prev), PontoDeContinuacao.Ordenada(next), cancellationToken);
+        return writer.WriteAsync(items, PontoDeContinuacao.De(previous), PontoDeContinuacao.De(next), cancellationToken);
     }
 }

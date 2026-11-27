@@ -29,14 +29,15 @@ public interface IUnidadeRepository
     /// Lista unidades ativas paginadas por cursor keyset bidirecional (ADR-0026
     /// + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e retorna até
     /// <paramref name="limit"/> itens na direção <paramref name="direction"/> a
-    /// partir de <paramref name="afterId"/> (ou a primeira janela quando
-    /// <c>null</c>), sempre em ordem ascendente. Devolve também as âncoras de
+    /// partir de <paramref name="afterId"/> (ou a primeira página quando
+    /// <c>null</c>), sempre em ordem ascendente. Devolve também os pontos de continuação de
     /// <c>prev</c>/<c>next</c> (nulas quando não há aquele lado). Os critérios de
     /// <paramref name="filtro"/> (busca textual + tipos) são aplicados no
-    /// read-side antes do keyset, mantendo a janela coerente sobre o conjunto
+    /// read-side antes do keyset, mantendo a página coerente sobre o conjunto
     /// filtrado (issue #640).
     /// </summary>
-    Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<Unidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

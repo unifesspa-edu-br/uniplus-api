@@ -36,11 +36,11 @@ public static class ListarUnidadesAtivasQueryHandler
         IUnidadeRepository repository,
         CancellationToken cancellationToken)
     {
-        (IReadOnlyList<Unidade> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, filtro, cancellationToken)
+        (IReadOnlyList<Unidade> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, filtro, cancellationToken)
             .ConfigureAwait(false);
 
         List<UnidadeDto> unidades = [.. itens.Select(u => u.ToDto())];
-        return new ListarUnidadesAtivasResult(unidades, anteriorAfterId, proximoAfterId);
+        return new ListarUnidadesAtivasResult(unidades, anterior, proximo);
     }
 }

@@ -31,6 +31,9 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     /// <summary>Emissor do token. O sujeito da decisão é o par emissor + contaId.</summary>
     public const string DefaultIssuer = "https://idp.test/realms/unifesspa";
 
+    /// <summary>Emissor do token; sem o header vale <see cref="DefaultIssuer"/>.</summary>
+    public const string IssuerHeader = "X-Test-Issuer";
+
     /// <summary>
     /// Presente, omite o <c>jti</c> do token. Reproduz o token que a validação
     /// JWT aceita mas do qual o sujeito da decisão não se monta — o caso em que
@@ -89,11 +92,9 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
         return Task.FromResult(CreateTicket(claims));
     }
 
-    // O emissor e o identificador de sessão não são opcionais para o
-    // ponto de decisão: sem eles o sujeito não se monta e toda decisão
-    // responde "identidade incompleta", que a borda traduz em 401. Vêm
-    // com valor fixo porque nenhum teste precisa variá-los para
-    // exercitar autorização — quem precisar cobre o caso ausente
+    // O emissor e o identificador de sessão não são opcionais para o ponto de decisão: sem eles o sujeito não se
+    // monta e toda decisão responde "identidade incompleta", que a borda traduz em 401. O emissor tem valor padrão e
+    // pode ser trocado pelo header, para exercitar o vínculo do cursor ao par emissor e conta; o caso ausente se cobre
     // montando o principal à mão, como fazem os testes do resolver.
     private List<Claim> CreateIdentityClaims()
     {
@@ -104,7 +105,7 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             new("email", GetHeaderValue(EmailHeader, "test@unifesspa.edu.br")),
             new("email_verified", GetHeaderValue(EmailVerifiedHeader, "true")),
 
-            new("iss", DefaultIssuer),
+            new("iss", GetHeaderValue(IssuerHeader, DefaultIssuer)),
         ];
 
         AddSessionClaim(claims);

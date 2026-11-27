@@ -35,20 +35,21 @@ public sealed class CampusRepository : ICampusRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<Campus> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Campus> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
-        // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão e
+        // Keyset bidirecional (ADR-0089): ordenação, ponto de continuação, probe n+1, reversão e
         // flags ficam no helper. Npgsql traduz Guid.CompareTo para o operador uuid
         // nativo do PG (ADR-0026 + ADR-0032).
-        CursorKeysetPage<Campus> page = await CursorKeyset
-            .ApplyAsync(_dbContext.Campi.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<Campus> page = await CursorKeyset
+            .ApplyAsync(_dbContext.Campi.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(Campus campus, CancellationToken cancellationToken)

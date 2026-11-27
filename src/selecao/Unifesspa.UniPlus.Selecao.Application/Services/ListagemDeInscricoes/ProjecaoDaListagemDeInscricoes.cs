@@ -29,6 +29,7 @@ public sealed class ProjecaoDaListagemDeInscricoes
 
     public bool SaiONome => _versoes.NomeEntraNosPares && _decisoes.ItemSai(_modeloDoNome);
     public bool SaiOCpf => Permite(nameof(InscricaoDoProcessoDto.Cpf));
+    public DadosPessoaisLidosNaListagem DadosPessoaisLidos => new(SaiONome, SaiOCpf);
     internal DecisaoDeAcesso? DecisaoExercida => _classes.Select(par => _decisoes.DecisaoDo(par.Item1, par.Item2))
         .FirstOrDefault(static decisao => decisao is not null);
 

@@ -110,25 +110,25 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<TentativaDeInstalacao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarTentativasSemPendenciaAsync(
+    public async Task<(IReadOnlyList<TentativaDeInstalacao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarTentativasSemPendenciaAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
-        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
-        CursorKeysetPage<TentativaDeInstalacao> page = await CursorKeyset
+        OrderedKeysetPage<TentativaDeInstalacao> page = await CursorKeyset
             .ApplyAsync(
                 _context.TentativasDeInstalacao.AsNoTracking().Where(t => t.InstalacaoId == null),
+                CondicoesDoFiltro.Nenhuma,
+                afterSortKey,
                 afterId,
                 limit,
                 direction,
                 cancellationToken)
             .ConfigureAwait(false);
 
-        IReadOnlyList<TentativaDeInstalacao> itens = page.Items;
-
-        return (itens, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     private async Task<Guid?> IdAguardandoCodigoDoExecutorAsync(Identidade executor, CancellationToken cancellationToken) =>

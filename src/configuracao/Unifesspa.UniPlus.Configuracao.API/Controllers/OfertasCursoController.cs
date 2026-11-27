@@ -83,7 +83,7 @@ public sealed class OfertasCursoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery(Name = "cursoId")] Guid? cursoId,
         [FromQuery(Name = BuscaPedida.NomeDoParametro)]
         [Description("Texto pesquisado. Insensível a caixa e a acentuação. Até 200 caracteres, sem contar os espaços das pontas.")]
@@ -124,7 +124,7 @@ public sealed class OfertasCursoController : ControllerBase
         OfertaCursoDto[] comLinks =
             [.. resultado.Items.Select(o => o with { Links = _linksBuilder.Build(o) })];
 
-        return await this.OkPaginatedOrdenadoAsync(
+        return await this.OkPaginatedAsync(
             comLinks, resultado.Anterior, resultado.Proximo,
             page, total: resultado.Total,
             cancellationToken: cancellationToken).ConfigureAwait(false);

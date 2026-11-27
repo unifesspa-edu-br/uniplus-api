@@ -14,8 +14,8 @@ public static class ListarTiposConceitoQueryHandler
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
-        (IReadOnlyList<TipoConceito> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<TipoConceito> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
         TipoConceitoDto[] items = [.. itens.Select(tipo => tipo.ToDto())];
         return new ListarTiposConceitoResult(items, anterior, proximo);
     }

@@ -15,11 +15,11 @@ public static class ListarTiposDocumentoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<TipoDocumento> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<TipoDocumento> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         TipoDocumentoDto[] items = [.. itens.Select(t => t.ToDto())];
-        return new ListarTiposDocumentoResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarTiposDocumentoResult(items, anterior, proximo);
     }
 }

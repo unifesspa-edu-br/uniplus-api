@@ -48,9 +48,9 @@ public static class ListarInscricoesDoProcessoQueryHandler
     {
         ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(processo.UnidadeId, query.ProcessoSeletivoId, inscricaoId: null);
         ProjecaoDaListagemDeInscricoes projecao = await projetor.DecidirAsync(query.ProcessoSeletivoId, resource, cancellationToken).ConfigureAwait(false);
-        (IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes, Guid? anterior, Guid? proximo) = await inscricoesRepository
-            .ListarEnviadasDoProcessoAsync(query.ProcessoSeletivoId, query.AfterId, query.Limit, query.Direction,
-                projecao.SaiONome, projecao.SaiOCpf, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await inscricoesRepository
+            .ListarEnviadasDoProcessoAsync(query.ProcessoSeletivoId, query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
+                projecao.DadosPessoaisLidos, cancellationToken).ConfigureAwait(false);
         await projetor.RegistrarCadaInscricaoAsync(projecao, resource, inscricoes, cancellationToken).ConfigureAwait(false);
         ProcessoDaInscricaoDto daListagem = new(query.ProcessoSeletivoId, processo.Nome);
         return new([.. inscricoes.Select(i => projecao.Projetar(i, daListagem))], anterior, proximo);

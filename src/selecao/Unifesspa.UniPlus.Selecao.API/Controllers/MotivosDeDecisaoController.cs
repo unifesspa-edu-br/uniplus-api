@@ -104,11 +104,11 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     private async Task<IActionResult> ListarFiltradosAsync(PageRequest page, FiltroDosMotivos filtro, CancellationToken cancellationToken)
     {
         ListarMotivosDeDecisaoResult resultado = await _queryBus
-            .Send(new ListarMotivosDeDecisaoQuery(page.AfterId, page.Limit, page.Direction, filtro), cancellationToken)
+            .Send(new ListarMotivosDeDecisaoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, filtro), cancellationToken)
             .ConfigureAwait(false);
 
         MotivoDeDecisaoDto[] comLinks = [.. resultado.Items.Select(m => m with { Links = _linksBuilder.Build(m) })];
-        return await this.OkPaginatedAsync(comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken)
+        return await this.OkPaginatedAsync(comLinks, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

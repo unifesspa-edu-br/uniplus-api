@@ -20,7 +20,8 @@ public interface IMotivoDeDecisaoRepository : IRepository<MotivoDeDecisao>
     /// Quando verdadeiro, devolve só os motivos que ainda entram em novas publicações. Quem monta
     /// uma publicação usa esta visão; quem administra o cadastro precisa ver os desativados.
     /// </param>
-    Task<(IReadOnlyList<MotivoDeDecisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<MotivoDeDecisao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

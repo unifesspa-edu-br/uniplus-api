@@ -27,14 +27,15 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
         _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados)
             .FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<FatoCandidato> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<FatoCandidato> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, OrigemFato? origem, bool? ativo, CancellationToken cancellationToken)
     {
         IQueryable<FatoCandidato> consulta = _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados);
-        CursorKeysetPage<FatoCandidato> page = await CursorKeyset
-            .ApplyAsync(Filtrar(consulta, origem, ativo), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<FatoCandidato> page = await CursorKeyset
+            .ApplyAsync(Filtrar(consulta, origem, ativo), CondicoesDoFiltro.De(ParteDoFiltro.De(origem), ParteDoFiltro.De(ativo)), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     private static IQueryable<FatoCandidato> Filtrar(IQueryable<FatoCandidato> consulta, OrigemFato? origem, bool? ativo)

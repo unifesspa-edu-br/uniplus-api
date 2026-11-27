@@ -101,10 +101,10 @@ public sealed class ProcessoSeletivoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarProcessosSeletivosResult resultado = await _queryBus.Send(
-            new ListarProcessosSeletivosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken);
+            new ListarProcessosSeletivosQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            resultado.Items, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken);
     }
 

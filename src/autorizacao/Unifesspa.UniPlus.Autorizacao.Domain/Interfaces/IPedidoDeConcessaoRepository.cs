@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -10,15 +11,19 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 public enum FilaDePedidos
 {
     /// <summary>Os pedidos em que a pessoa é solicitante ou beneficiária.</summary>
+    [CodigoDeContrato("MEUS", "Meus pedidos")]
     Meus = 1,
 
     /// <summary>Os pedidos que aguardam a primeira aprovação, a do gestor de acessos.</summary>
+    [CodigoDeContrato("GESTOR", "Fila do gestor de acessos")]
     Gestor = 2,
 
     /// <summary>Os pedidos que aguardam a segunda aprovação, a da proteção de dados.</summary>
+    [CodigoDeContrato("PROTECAO_DE_DADOS", "Fila da proteção de dados")]
     ProtecaoDeDados = 3,
 
     /// <summary>Os pedidos em qualquer situação, para o aprovador reencontrar o que já decidiu ou viu encerrar.</summary>
+    [CodigoDeContrato("TODOS", "Todos os pedidos")]
     Todos = 4,
 }
 
@@ -68,7 +73,7 @@ public interface IPedidoDeConcessaoRepository : IRepository<PedidoDeConcessao>
 
     /// <summary>
     /// Lista os pedidos paginados por cursor keyset bidirecional ordenado (ADR-0026 + ADR-0094), do mais recente ao mais
-    /// antigo (<c>CriadoEm</c> decrescente, <c>Id</c> de desempate), sem rastreamento. A âncora é o par (instante, Id).
+    /// antigo (<c>CriadoEm</c> decrescente, <c>Id</c> de desempate), sem rastreamento. O ponto de continuação é o par (instante, Id).
     /// </summary>
     Task<(IReadOnlyList<PedidoComPerfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDePedidos filtro,

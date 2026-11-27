@@ -86,11 +86,11 @@ public sealed class AtoNormativoQueryHandlersTests
     public async Task Listar_SemAvisos()
     {
         AtoNormativo ato = NovoAto();
-        _atos.ListarPaginadoAsync(null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>())
-            .Returns(([ato], (Guid?)null, (Guid?)null));
+        _atos.ListarPaginadoAsync(null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>())
+            .Returns(([ato], ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
 
         ListarAtosNormativosResult resultado = await ListarAtosNormativosQueryHandler.Handle(
-            new ListarAtosNormativosQuery(null, 20, PaginationDirection.Next), _atos, CancellationToken.None);
+            new ListarAtosNormativosQuery(null, null, 20, PaginationDirection.Next), _atos, CancellationToken.None);
 
         resultado.Items.Should().ContainSingle();
         resultado.Items[0].Avisos.Should().BeNull();

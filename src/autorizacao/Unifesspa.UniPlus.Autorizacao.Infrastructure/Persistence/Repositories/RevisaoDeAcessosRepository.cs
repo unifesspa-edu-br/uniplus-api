@@ -68,8 +68,9 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
         return revisao is null ? null : new RevisaoDetalhada(revisao, await ItensComConcessaoAsync(revisao, agora, cancellationToken).ConfigureAwait(false));
     }
 
-    public async Task<(IReadOnlyList<ResumoDaRevisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ResumoDaRevisao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeRevisoes filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -78,15 +79,15 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
         ArgumentNullException.ThrowIfNull(filtro);
 
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia o que o filtro da situação deixou.
-        CursorKeysetPage<RevisaoDeAcessos> page = await CursorKeyset
-            .ApplyAsync(NaSituacao(filtro), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<RevisaoDeAcessos> page = await CursorKeyset
+            .ApplyAsync(NaSituacao(filtro), CondicoesDe(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
         Dictionary<Guid, (int Total, int Pendentes)> contagens = await ContarItensAsync([.. page.Items.Select(r => r.Id)], filtro.Agora, cancellationToken).ConfigureAwait(false);
 
         IReadOnlyList<ResumoDaRevisao> resumos =
             [.. page.Items.Select(r => contagens.TryGetValue(r.Id, out (int Total, int Pendentes) c) ? new ResumoDaRevisao(r, c.Total, c.Pendentes) : new ResumoDaRevisao(r, 0, 0))];
 
-        return (resumos, page.PrevAfterId, page.NextAfterId);
+        return (resumos, page.Previous, page.Next);
     }
 
     public Task<bool> ExisteEmAndamentoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
@@ -134,6 +135,9 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
             .ConfigureAwait(false);
 
     // A revisão em andamento tem item pendente; a concluída, nenhum.
+    private static CondicoesDoFiltro CondicoesDe(FiltroDeRevisoes filtro) =>
+        CondicoesDoFiltro.De(ParteDoFiltro.De(filtro.Situacao));
+
     private IQueryable<RevisaoDeAcessos> NaSituacao(FiltroDeRevisoes filtro)
     {
         IQueryable<RevisaoDeAcessos> revisoes = _context.Revisoes.AsNoTracking();

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// limit/direction antes de despachar.
 /// </summary>
 public sealed record ListarTiposDeficienciaQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarTiposDeficienciaResult>;

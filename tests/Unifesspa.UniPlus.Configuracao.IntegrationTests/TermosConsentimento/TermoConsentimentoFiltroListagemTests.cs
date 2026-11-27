@@ -138,14 +138,14 @@ public sealed class TermoConsentimentoFiltroListagemTests
     private async Task<List<Guid>> PercorrerPaginasAsync(string iso, int quantidadeEsperada)
     {
         List<Guid> acumulado = [];
-        Guid? cursor = null;
+        (string SortKey, Guid Id)? ponto = null;
         do
         {
-            (IReadOnlyList<TermoConsentimento> pagina, _, _) = await PaginarAsync(iso, take: 2, afterId: cursor);
+            (IReadOnlyList<TermoConsentimento> pagina, _, (string SortKey, Guid Id)? proximo) = await PaginarAsync(iso, take: 2, ponto: ponto);
             acumulado.AddRange(pagina.Select(t => t.Id));
-            cursor = pagina.Count == 2 ? pagina[^1].Id : null;
+            ponto = pagina.Count == 2 ? proximo : null;
         }
-        while (cursor is not null && acumulado.Count < quantidadeEsperada);
+        while (ponto is not null && acumulado.Count < quantidadeEsperada);
         return acumulado;
     }
 
@@ -171,26 +171,27 @@ public sealed class TermoConsentimentoFiltroListagemTests
 
     private async Task ConferirNavegacaoBidirecionalAsync(string iso, IReadOnlyList<Guid> ordenados)
     {
-        (IReadOnlyList<TermoConsentimento> p1, Guid? p1Ant, Guid? p1Prox) =
-            await PaginarAsync(iso, take: 2, afterId: null, PaginationDirection.Next);
+        (IReadOnlyList<TermoConsentimento> p1, (string SortKey, Guid Id)? p1Ant, (string SortKey, Guid Id)? p1Prox) =
+            await PaginarAsync(iso, take: 2, ponto: null, PaginationDirection.Next);
         p1.Select(t => t.Id).Should().Equal(ordenados[0], ordenados[1]);
         p1Ant.Should().BeNull();
-        p1Prox.Should().Be(ordenados[1]);
-        Guid? anterior = await ConferirUltimaPaginaAsync(iso, p1Prox, ordenados);
-        (IReadOnlyList<TermoConsentimento> volta, Guid? voltaAnt, Guid? voltaProx) =
-            await PaginarAsync(iso, take: 2, afterId: anterior, PaginationDirection.Prev);
+        p1Prox!.Value.Id.Should().Be(ordenados[1]);
+        (string SortKey, Guid Id)? anterior = await ConferirUltimaPaginaAsync(iso, p1Prox, ordenados);
+        (IReadOnlyList<TermoConsentimento> volta, (string SortKey, Guid Id)? voltaAnt, (string SortKey, Guid Id)? voltaProx) =
+            await PaginarAsync(iso, take: 2, ponto: anterior, PaginationDirection.Prev);
         volta.Select(t => t.Id).Should().Equal(ordenados[0], ordenados[1]);
         voltaAnt.Should().BeNull();
-        voltaProx.Should().Be(ordenados[1]);
+        voltaProx!.Value.Id.Should().Be(ordenados[1]);
     }
 
-    private async Task<Guid?> ConferirUltimaPaginaAsync(string iso, Guid? cursor, IReadOnlyList<Guid> ordenados)
+    private async Task<(string SortKey, Guid Id)?> ConferirUltimaPaginaAsync(
+        string iso, (string SortKey, Guid Id)? ponto, IReadOnlyList<Guid> ordenados)
     {
-        (IReadOnlyList<TermoConsentimento> ultima, Guid? ultAnt, Guid? ultProx) =
-            await PaginarAsync(iso, take: 2, afterId: cursor, PaginationDirection.Next);
+        (IReadOnlyList<TermoConsentimento> ultima, (string SortKey, Guid Id)? ultAnt, (string SortKey, Guid Id)? ultProx) =
+            await PaginarAsync(iso, take: 2, ponto: ponto, PaginationDirection.Next);
         ultima.Select(t => t.Id).Should().Equal(ordenados[2]);
         ultProx.Should().BeNull();
-        ultAnt.Should().Be(ordenados[2]);
+        ultAnt!.Value.Id.Should().Be(ordenados[2]);
         return ultAnt;
     }
 
@@ -218,20 +219,20 @@ public sealed class TermoConsentimentoFiltroListagemTests
         return termo.Id;
     }
 
-    private async Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
+    private async Task<(IReadOnlyList<TermoConsentimento> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> PaginarAsync(
         string? searchTerm,
         int take,
-        Guid? afterId,
+        (string SortKey, Guid Id)? ponto,
         PaginationDirection direction = PaginationDirection.Next)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoRepository repository = new(ctx);
-        return await repository.ListarPaginadoAsync(afterId, take, direction, searchTerm, CancellationToken.None);
+        return await repository.ListarPaginadoAsync(ponto?.SortKey, ponto?.Id, take, direction, searchTerm, CancellationToken.None);
     }
 
     private async Task<IReadOnlyList<Guid>> ListarIdsAsync(string? searchTerm, int take = TakeAlto)
     {
-        (IReadOnlyList<TermoConsentimento> itens, _, _) = await PaginarAsync(searchTerm, take, afterId: null);
+        (IReadOnlyList<TermoConsentimento> itens, _, _) = await PaginarAsync(searchTerm, take, ponto: null);
         return [.. itens.Select(t => t.Id)];
     }
 

@@ -44,7 +44,7 @@ O cursor recebido pelo cliente é uma string base64-url-safe sem padding. Seu co
 - **`sort_key`** — coluna ou expressão de ordenação aplicada (ex.: `created_at_desc`, `numero_edital_asc`). Endpoint declara qual valor é válido; cliente não escolhe.
 - **`expiry`** — timestamp absoluto após o qual o cursor não é mais aceito.
 - **`scope`** — escopo de tenant/contexto quando aplicável (multi-tenancy futuro). Garante que cursor emitido em um contexto não é replicável noutro.
-- **`user_id`** (opcional) — sub claim do principal autenticado quando o recurso é user-scoped (ver "User-binding em cursores user-scoped" abaixo). `null` em recursos públicos (`/api/editais`).
+- **`resumo_da_conta`** (opcional) — resumo SHA-256 do par emissor e conta do principal autenticado quando o recurso é user-scoped (ver "User-binding em cursores user-scoped" e a emenda abaixo). `null` em recursos públicos (`/api/editais`). Substitui o `user_id` com a claim `sub`.
 
 ### User-binding em cursores user-scoped
 
@@ -53,11 +53,26 @@ O cursor recebido pelo cliente é uma string base64-url-safe sem padding. Seu co
 A mitigação:
 
 - Endpoint user-scoped declara `[FromCursor(resource, RequireUserBinding = true)]`. Default `false` (recurso público).
-- Binder popula `user_id` no payload com o identificador da conta do principal corrente quando `RequireUserBinding == true`.
-- No decode, valida `payload.user_id == currentUser.UserId`. Mismatch → 400 com `code: uniplus.cursor.invalido` (não `uniplus.cursor.proibido` para não vazar status: cursor de outro user é tratado como cursor adulterado).
+- Binder popula `resumo_da_conta` no payload com o resumo do par emissor e conta do principal corrente quando `RequireUserBinding == true`.
+- No decode, compara o resumo do payload com o resumo do principal corrente. Mismatch → 400 com `code: uniplus.cursor.invalido` (não `uniplus.cursor.proibido` para não vazar status: cursor de outro user é tratado como cursor adulterado).
 - Anonymous request em endpoint marcado → 400 `uniplus.cursor.invalido` (consistente com a política do filter de Idempotency-Key — endpoints user-scoped exigem auth).
 
-Recursos públicos (`/api/editais`) **não** populam `user_id` mesmo se o request for autenticado — `user_id` aplicado a recurso público fragmentaria o cache por usuário sem benefício. O default `RequireUserBinding = false` preserva comportamento legacy.
+Recursos públicos (`/api/editais`) **não** populam `resumo_da_conta` mesmo se o request for autenticado — o vínculo aplicado a recurso público fragmentaria o cache por usuário sem benefício. O default `RequireUserBinding = false` preserva comportamento legacy.
+
+### Emenda: continuação amarrada à consulta e vínculo por resumo
+
+**Contexto.** O ponto de continuação do cursor é uma posição dentro do conjunto que os filtros, a busca e o recorte da consulta escolheram. Continuar com outro conjunto pula ou repete itens sem aviso. Algumas listagens recusavam e outras aceitavam; a paginação por `Id` não levava nada que identificasse a consulta.
+
+**Decisão.**
+
+- Toda continuação de cursor carrega, em `SortKey`, o resumo SHA-256 da ordenação e das condições efetivas da consulta (filtros, busca e recorte que dependam de quem consulta), sem o texto informado. O relógio fica fora por tolerância.
+- Cursor sem chave, ou reapresentado sob outra ordenação, filtro, busca ou recorte, é recusado com 400. A recusa vem depois da validação do filtro e antes da consulta que busca a página.
+- Recurso cujo conjunto depende da conta declara o vínculo ao usuário. O cursor leva só o resumo SHA-256 do par emissor e conta (`ResumoDaConta`), nunca a claim da conta, e a conferência compara resumos. O `user_id` com a claim `sub` deixa de existir.
+- **Risco aceito (decisão do LT, 26/11/2026).** O resumo da conta é SHA-256 sem chave própria; quem tiver o payload decifrado poderia, em tese, testar candidatos de identificador e comparar resumos. O risco é aceito porque decifrar o payload exige a chave do servidor, guardada no Vault, e porque o identificador da conta é o código que o Keycloak gera, não CPF nem outro dado previsível. A proibição de derivar dado pessoal do cursor registra esta exceção.
+- Os códigos são `uniplus.cursor.invalido` (400) e `uniplus.cursor.expirado` (410) no binder, e `uniplus.paginacao.cursor_invalido` (400) para cursor de outra consulta.
+- O resumo não usa chave própria, porque o payload já é cifrado e autenticado.
+
+**Consequências.** Uma regra só em todas as listagens; listagem nova não compila sem declarar as condições. Seguir o link `next` ou `prev` continua igual; a mudança de unidades autorizadas ou do e-mail verificado recomeça a listagem.
 
 A cifragem usa **AES-GCM** com chave gerenciada por infraestrutura externa de gerenciamento de chaves (em produção: HashiCorp Vault transit engine; em desenvolvimento e CI: fixture local equivalente). A chave nunca sai do gerenciador; cifragem e decifragem ocorrem via API. Rotação periódica é responsabilidade do gerenciador — cursors emitidos com chave anterior continuam válidos até expirarem por TTL, sem revogação retroativa.
 
@@ -97,8 +112,9 @@ A ordenação **não** é parametrizável por query no V1 — cada endpoint decl
 
 ### Erros específicos da paginação
 
-- **Cursor inválido / tampered / não decifrável** → 400 Bad Request com `code: uniplus.pagination.cursor_invalido`. Cliente deve reiniciar a paginação a partir do início.
-- **Cursor expirado** → 410 Gone com `code: uniplus.pagination.cursor_expirado`. Mesma resolução: reiniciar.
+- **Cursor inválido / tampered / não decifrável** → 400 Bad Request com `code: uniplus.cursor.invalido`. Cliente deve reiniciar a paginação a partir do início.
+- **Cursor expirado** → 410 Gone com `code: uniplus.cursor.expirado`. Mesma resolução: reiniciar.
+- **Cursor de outra consulta** (ordenação, filtro, busca ou recorte diferentes) → 400 Bad Request com `code: uniplus.paginacao.cursor_invalido`. Ver a emenda abaixo.
 - **`limit` negativo ou não-numérico** → 422 Unprocessable Entity com erro de validação por campo (ADR-0023, extension `errors[]`).
 
 ### Esta ADR não decide
@@ -132,7 +148,7 @@ A ordenação **não** é parametrizável por query no V1 — cada endpoint decl
 ## Confirmação
 
 1. **Spectral rule no CI** — endpoints de coleção declarados no spec OpenAPI devem (i) aceitar parâmetro `cursor` opcional + `limit` com default e máximo; (ii) declarar `Link` header em respostas 200; (iii) **não** declarar campo `total`, `count`, `has_more`, `cursor_next` ou similar como propriedade de body. Falha indica reintrodução acidental de paginação por offset ou metadado em body.
-2. **Smoke E2E (Postman/Newman) no CI** — cenários cobrem (a) primeira página retorna `Link rel="next"`; (b) navegação via cursor preserva ordenação e não duplica/omite rows; (c) cursor adulterado retorna 400 com `code: uniplus.pagination.cursor_invalido`; (d) cursor expirado retorna 410 com `code: uniplus.pagination.cursor_expirado`.
+2. **Smoke E2E (Postman/Newman) no CI** — cenários cobrem (a) primeira página retorna `Link rel="next"`; (b) navegação via cursor preserva ordenação e não duplica/omite rows; (c) cursor adulterado retorna 400 com `code: uniplus.cursor.invalido`; (d) cursor expirado retorna 410 com `code: uniplus.cursor.expirado`.
 3. **Teste de performance regressivo** — endpoint pilot (`/editais` ou um endpoint de listagem mais alto-volume) tem teste de carga que mede latência da N-ésima página com volume sintético; regressão dispara alerta no CI.
 4. **Inspeção manual de cursor.** Ferramenta interna (CLI ou endpoint admin protegido) decifra cursor para suporte/debug, com auditoria de uso. Garante que opacidade do cliente não vire opacidade interna.
 

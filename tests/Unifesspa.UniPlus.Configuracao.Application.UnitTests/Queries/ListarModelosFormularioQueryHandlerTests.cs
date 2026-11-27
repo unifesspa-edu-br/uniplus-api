@@ -24,8 +24,8 @@ public sealed class ListarModelosFormularioQueryHandlerTests
 
     public ListarModelosFormularioQueryHandlerTests()
     {
-        _repository.ListarPaginadoAsync(default, default, default, default, default, default, default).ReturnsForAnyArgs(
-            ((IReadOnlyList<ModeloFormulario>)[], (Guid?)null, (Guid?)null));
+        _repository.ListarPaginadoAsync(default, default, default, default, default!, default).ReturnsForAnyArgs(
+            ((IReadOnlyList<ModeloFormulario>)[], ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
     }
 
     [Theory(DisplayName = "O filtro de servir à fase de inscrição vai ao repositório como veio, e ausente não filtra")]
@@ -37,16 +37,16 @@ public sealed class ListarModelosFormularioQueryHandlerTests
         await ListarAsync(serveAFaseDeInscricao: serveAFaseDeInscricao);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            null, 20, PaginationDirection.Next, null, serveAFaseDeInscricao, null, Arg.Any<CancellationToken>());
+            null, null, 20, PaginationDirection.Next, new FiltroDosModelosDeFormulario(null, serveAFaseDeInscricao, null), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Tipo de processo que o banco não grava não é de nenhum modelo: a página é vazia")]
-    public async Task Handle_TipoDeProcessoNaoGravavel_DevolvePaginaVaziaSemConsultar()
+    [Fact(DisplayName = "Tipo de processo que o banco não grava vai ao repositório, que confere o cursor antes de devolver a página vazia")]
+    public async Task Handle_TipoDeProcessoNaoGravavel_ConsultaORepositorio()
     {
-        ListarModelosFormularioResult resultado = await ListarAsync(tipoProcesso: "TIPO\0");
+        await ListarAsync(tipoProcesso: "TIPO\0");
 
-        resultado.Items.Should().BeEmpty();
-        await _repository.DidNotReceiveWithAnyArgs().ListarPaginadoAsync(default, default, default, default, default, default, default);
+        await _repository.Received(1).ListarPaginadoAsync(
+            null, null, 20, PaginationDirection.Next, new FiltroDosModelosDeFormulario("TIPO\0", null, null), Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "O tipo de processo é aparado")]
@@ -61,42 +61,43 @@ public sealed class ListarModelosFormularioQueryHandlerTests
         await ListarAsync(tipoProcesso: informado);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            null, 20, PaginationDirection.Next, esperado, null, null, Arg.Any<CancellationToken>());
+            null, null, 20, PaginationDirection.Next, new FiltroDosModelosDeFormulario(esperado, null, null), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O filtro de inscrição, o estado e a posição da página vão ao repositório")]
     public async Task Handle_FiltrosEPagina_VaoAoRepositorio()
     {
-        Guid ancora = Guid.NewGuid();
+        Guid pontoDeContinuacao = Guid.NewGuid();
 
-        await ListarAsync(serveAFaseDeInscricao: false, ativo: false, afterId: ancora, direction: PaginationDirection.Prev);
+        await ListarAsync(serveAFaseDeInscricao: false, ativo: false, afterSortKey: "chave", afterId: pontoDeContinuacao, direction: PaginationDirection.Prev);
 
         await _repository.Received(1).ListarPaginadoAsync(
-            ancora, 20, PaginationDirection.Prev, null, false, false, Arg.Any<CancellationToken>());
+            "chave", pontoDeContinuacao, 20, PaginationDirection.Prev, new FiltroDosModelosDeFormulario(null, false, false), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Os modelos da página saem para manutenção, com os cursores do repositório")]
     public async Task Handle_Pagina_ProjetaOsModelosEOsCursores()
     {
         ModeloFormulario modelo = Modelo();
-        (Guid anterior, Guid proximo) = (Guid.NewGuid(), Guid.NewGuid());
-        _repository.ListarPaginadoAsync(default, default, default, default, default, default, default).ReturnsForAnyArgs(
-            ((IReadOnlyList<ModeloFormulario>)[modelo], (Guid?)anterior, (Guid?)proximo));
+        ((string SortKey, Guid Id) anterior, (string SortKey, Guid Id) proximo) = (("a", Guid.NewGuid()), ("b", Guid.NewGuid()));
+        _repository.ListarPaginadoAsync(default, default, default, default, default!, default).ReturnsForAnyArgs(
+            ((IReadOnlyList<ModeloFormulario>)[modelo], ((string SortKey, Guid Id)?)anterior, ((string SortKey, Guid Id)?)proximo));
 
         ListarModelosFormularioResult resultado = await ListarAsync();
 
         resultado.Items.Select(static m => (m.Id, m.Codigo, m.Declaracao)).Should().Equal((modelo.Id, "MODELO_DE_TESTE", new DeclaracaoDoModeloDto(false, true)));
-        (resultado.AnteriorAfterId, resultado.ProximoAfterId).Should().Be((anterior, proximo));
+        (resultado.Anterior, resultado.Proximo).Should().Be((anterior, proximo));
     }
 
     private Task<ListarModelosFormularioResult> ListarAsync(
         string? tipoProcesso = null,
         bool? serveAFaseDeInscricao = null,
         bool? ativo = null,
+        string? afterSortKey = null,
         Guid? afterId = null,
         PaginationDirection direction = PaginationDirection.Next) =>
         ListarModelosFormularioQueryHandler.Handle(
-            new ListarModelosFormularioQuery(afterId, 20, direction, tipoProcesso, serveAFaseDeInscricao, ativo), _repository, CancellationToken.None);
+            new ListarModelosFormularioQuery(afterSortKey, afterId, 20, direction, tipoProcesso, serveAFaseDeInscricao, ativo), _repository, CancellationToken.None);
 
     private static ModeloFormulario Modelo()
     {

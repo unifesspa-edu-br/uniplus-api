@@ -15,11 +15,11 @@ public static class ListarTiposDeficienciaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<TipoDeficiencia> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<TipoDeficiencia> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         TipoDeficienciaDto[] items = [.. itens.Select(t => t.ToDto())];
-        return new ListarTiposDeficienciaResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarTiposDeficienciaResult(items, anterior, proximo);
     }
 }

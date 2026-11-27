@@ -53,9 +53,9 @@ public sealed class TiposEtapaController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
         ListarTiposEtapaResult resultado = await _queryBus.Send(
-            new ListarTiposEtapaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken).ConfigureAwait(false);
+            new ListarTiposEtapaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken).ConfigureAwait(false);
         TipoEtapaDto[] items = [.. resultado.Items.Select(tipo => tipo with { Links = _linksBuilder.Build(tipo) })];
-        return await this.OkPaginatedAsync(items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await this.OkPaginatedAsync(items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     [HttpGet("tipos-etapa/{id:guid}")]
