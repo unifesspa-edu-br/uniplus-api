@@ -19,7 +19,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-O Uni+ precisa de um catálogo nacional de localidades (país, unidade federativa, município) e, no futuro, de endereçamento e georreferência (CEP, bairro, logradouro, coordenadas), para suportar cidades de prova, campi, bônus regional e demais usos que cruzam vários módulos. Esses dados são **reference data** de origem externa (IBGE, DNE dos Correios), de leitura intensa e baixa escrita.
+O Uni+ precisa de um catálogo nacional de localidades (país, unidade federativa, município) e, no futuro, de endereçamento e georreferência (CEP, bairro, logradouro, coordenadas), para suportar cidades de prova, campi, o Fator de Atenuação das Desigualdades de Acesso (FADA) e demais usos que cruzam vários módulos. Esses dados são **reference data** de origem externa (IBGE, DNE dos Correios), de leitura intensa e baixa escrita.
 
 A [ADR-0054](0054-naming-convention-e-strategy-migrations.md) estabeleceu bancos PostgreSQL **isolados por módulo**, sem chave estrangeira cruzando o limite entre contextos. A questão é **onde** as localidades vivem: dentro de um módulo de negócio existente (ex.: Configuração), espalhadas, ou em um contexto próprio. Localidade não pertence a nenhum módulo de negócio específico — é consumida por todos.
 

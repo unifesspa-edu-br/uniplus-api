@@ -42,7 +42,7 @@ O Geo (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md))
 
 ## Resultado da decisão
 
-**Escolhida:** "Opção C — endereço estruturado opcional + cidade como referência independente coerente", porque preserva a cidade garantida mesmo sem CEP (necessária para bônus regional e cidade de prova) e, ao mesmo tempo, estrutura o endereço quando há CEP, com coerência verificável entre ambos.
+**Escolhida:** "Opção C — endereço estruturado opcional + cidade como referência independente coerente", porque preserva a cidade garantida mesmo sem CEP (necessária para o Fator de Atenuação das Desigualdades de Acesso (FADA) e a cidade de prova) e, ao mesmo tempo, estrutura o endereço quando há CEP, com coerência verificável entre ambos.
 
 > Decisão de **engenharia** aprovada pelo Tech Lead — não envolve negócio (mesmos dados entregues, melhor estruturados). Os **detalhes de implementação** ao final desta seção são resolvidos na story de implementação (#726), dentro da opção escolhida.
 
@@ -107,7 +107,7 @@ São escolhas técnicas internas à opção aprovada — não reabrem a decisão
 ### Opção B — cidade dentro do endereço
 
 - Bom: modelo mais enxuto; o CEP determina tudo, sem duplicar cidade.
-- Ruim: quebra o caso "cidade sem CEP" (campus sem logradouro no DNE / sem endereço cadastrado); perde a cidade como referência garantida usada por bônus regional e cidade de prova.
+- Ruim: quebra o caso "cidade sem CEP" (campus sem logradouro no DNE / sem endereço cadastrado); perde a cidade como referência garantida usada pela FADA e pela cidade de prova.
 
 ### Opção C — endereço opcional + cidade independente coerente (recomendada)
 
@@ -116,7 +116,7 @@ São escolhas técnicas internas à opção aprovada — não reabrem a decisão
 
 ## Mais informações
 
-- **Emendada pela ADR-0136:** o endereço do candidato usa `ReferenciaEnderecoGeo`, mas decide elegibilidade (bônus regional por município); por isso o CEP e a cidade dele são conferidos no servidor contra o Geo, e não aceitos como retrato enviado pelo frontend.
+- **Emendada pela ADR-0136:** o endereço do candidato usa `ReferenciaEnderecoGeo`, mas decide elegibilidade (FADA por município); por isso o CEP e a cidade dele são conferidos no servidor contra o Geo, e não aceitos como retrato enviado pelo frontend.
 - ADR-0090 (módulo Geo como bounded context; composição no cliente; display cache) — este ADR **evolui** o padrão de referência de cidade para referência de endereço.
 - ADR-0092 (ETL de carga do DNE) — fonte do endereçamento estruturado.
 - ADR-0056 (isolamento de leitura cross-módulo) — preservado.

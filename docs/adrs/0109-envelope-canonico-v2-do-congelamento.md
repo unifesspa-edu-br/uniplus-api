@@ -91,7 +91,7 @@ Onde a coleção não tem chave de negócio (as regras de eliminação: cardinal
 
 - **Não bumpar `schema_version` ao preencher um stub** (o conjunto de 17 chaves não muda). Rejeitada: o campo é devolvido ao consumidor em `SnapshotVigenteDto` como discriminante, e dois envelopes estruturalmente diferentes carregariam o mesmo `"1.0"` — dentro da mesma cadeia do mesmo certame.
 - **Corrigir o canonicalizador para omitir `null`, cumprindo o item 4 da ADR-0100 à letra.** Rejeitada: exigiria bumpar `algoritmo_hash` e, se aplicada ao utilitário compartilhado, mudaria os hashes de `ObrigatoriedadeLegal` já gravados. Delimitar o item 4 é mais barato e mais honesto — são dois caminhos com duas semânticas, e sempre foram.
-- **Um "registro único de dimensões" com teste de reflexão**, para forçar cada story a declarar a dimensão nova num só lugar. Rejeitada: é abstração falsa. Três blocos (`distribuicao`, `modalidades`, `ofertas`) derivam da mesma coleção; período e hashes vêm de parâmetros externos; bônus e classificação são navegações singulares. Reflexão sobre coleções não garantiria `Include`, obrigatoriedade nem canonicalização — daria a sensação de proteção sem a proteção.
+- **Um "registro único de dimensões" com teste de reflexão**, para forçar cada story a declarar a dimensão nova num só lugar. Rejeitada: é abstração falsa. Três blocos (`distribuicao`, `modalidades`, `ofertas`) derivam da mesma coleção; período e hashes vêm de parâmetros externos; o Fator de Atenuação das Desigualdades de Acesso (FADA) e a classificação são navegações singulares. Reflexão sobre coleções não garantiria `Include`, obrigatoriedade nem canonicalização — daria a sensação de proteção sem a proteção.
 
 ## Consequências
 

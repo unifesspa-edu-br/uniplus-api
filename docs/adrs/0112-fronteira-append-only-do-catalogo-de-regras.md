@@ -96,12 +96,10 @@ por instância, e inicia a contagem do prazo na publicação de um ato.
 
 ## Confirmação
 
-- Teste de integração `RegraCatalogoSeed_SubstituirRegraReferenciada_Falha`:
-  falha se alguma `VersaoConfiguracao` referenciar a regra que o seed substitui —
-  a trava que torna esta fronteira executável, e não conselho.
-- Fitness test `Migrations_NaoCriamGatilhoSobreRolDeRegras`: o append-only é por
-  convenção, sem gatilho de banco (coerente com o XML-doc corrigido de
-  `RegraCatalogo` e com `RegraCatalogoConfiguration`).
+- A verificação falha se o seed substituir uma regra que alguma
+  `VersaoConfiguracao` já referencia: é a trava que torna esta fronteira
+  executável, e não conselho.
+- O catálogo não tem gatilho no banco: o append-only é por convenção.
 
 ## Prós e contras das opções
 
@@ -166,3 +164,7 @@ Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre
 ## Emenda 3 (2026-11-20) — a regra de prazo deixa de registrar efeito suspensivo por instância
 
 A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-instancia-e-guarda-da-vaga.md) tira da regra `RECURSO_PRAZO_CONTADO_DA_PUBLICACAO_DO_ATO` o prazo de efeito suspensivo por instância, que o sistema não usava para calcular quanto dura o bloqueio e só comparava ao conferir a retificação; ao sair o campo, essa parte da comparação deixa de existir, e a forma de comparar, na retificação, as novas declarações da configuração do recurso fica para o detalhamento da issue que as cria. Em seu lugar, a configuração do recurso declara a escolha do efeito suspensivo e a guarda da vaga, e o prazo de interposição da 2ª instância. A decisão desta ADR sobre o caso concreto permanece como registro. A correção da regra segue a fronteira desta ADR e foi conferida: nenhuma versão publicada da configuração a referencia. A migration inicial só semeia a linha da regra no catálogo, nenhuma versão de configuração é semeada, e testes e exemplos citam o código sem serem versão publicada. A regra é, portanto, corrigida por substituição, com o mesmo código e a mesma versão. A partir da primeira versão publicada que a referenciar, vale o append-only estrito.
+
+## Emenda 4 (2026-11-27) — o nome FADA no catálogo
+
+A troca do nome "bônus regional" por FADA (Fator de Atenuação das Desigualdades de Acesso) cabe na fronteira desta ADR. A linha `FADA_MULTIPLICATIVO`, na versão `v1`, continua no catálogo com o mesmo código, a mesma versão, o mesmo tipo gravado (`REGRA_FADA`) e o mesmo esquema de argumentos (vazio), e nenhuma configuração congelada a referencia. Só mudam os nomes no código.

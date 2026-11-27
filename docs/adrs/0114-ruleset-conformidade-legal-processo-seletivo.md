@@ -35,7 +35,7 @@ essas responsabilidades pertencem à #853.
 - Reproduzir a seleção das regras em qualquer momento, sem depender de relógio.
 - Não aceitar cadastro para um tipo de processo que não existe.
 - Preservar o catálogo como dado configurável: não codificar suposições sobre
-  cotas, bônus ou modalidades por tipo de processo.
+  cotas, Fator de Atenuação das Desigualdades de Acesso (FADA) ou modalidades por tipo de processo.
 - Manter o canonicalizador uma projeção pura de entrada única, conforme ADR-0109
   D6.
 
