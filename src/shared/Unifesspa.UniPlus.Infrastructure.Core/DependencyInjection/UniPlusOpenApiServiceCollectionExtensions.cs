@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -27,6 +28,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         return services
             .AddOpcoesDoOpenApi(configuration)
             .AddTransformersDoOpenApi()
+            .AddRestricaoDoNomeDoDocumentoNaRota()
             .AddOpenApi(documentName, ConfigurarDocumento);
     }
 
@@ -57,6 +59,12 @@ public static class UniPlusOpenApiServiceCollectionExtensions
 
         return services;
     }
+
+    // O nome que não é de um documento publicado não casa com a rota: a resposta do caminho inexistente é a do serviço,
+    // não a do pacote, que repetiria o nome recebido.
+    private static IServiceCollection AddRestricaoDoNomeDoDocumentoNaRota(this IServiceCollection services) =>
+        services.Configure<RouteOptions>(static opcoes =>
+            opcoes.SetParameterPolicy<DocumentoDoContratoPublicado>(DocumentoDoContratoPublicado.Restricao));
 
     private static bool ContatoEServidoresSaoUrisUtilizaveis(UniPlusOpenApiOptions opcoes) =>
         UriAbsoluta(opcoes.ContactUrl)
