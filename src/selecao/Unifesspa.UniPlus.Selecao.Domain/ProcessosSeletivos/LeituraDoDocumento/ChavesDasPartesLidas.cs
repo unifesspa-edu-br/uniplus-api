@@ -6,15 +6,17 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento
 /// </summary>
 internal static class ChavesDasPartesLidas
 {
-    internal static Dictionary<string, Guid> IdPelaChave(IEnumerable<(string Chave, Guid Id)> adotadas)
+    internal static Dictionary<string, Guid> IdPelaChave(IEnumerable<(string Chave, Guid Id)> adotadas) => PelaChave(adotadas);
+
+    internal static Dictionary<string, T> PelaChave<T>(IEnumerable<(string Chave, T Valor)> adotadas)
     {
-        Dictionary<string, Guid> idPelaChave = new(StringComparer.Ordinal);
-        foreach ((string chave, Guid id) in adotadas)
+        Dictionary<string, T> pelaChave = new(StringComparer.Ordinal);
+        foreach ((string chave, T valor) in adotadas)
         {
-            idPelaChave.TryAdd(chave, id);
+            pelaChave.TryAdd(chave, valor);
         }
 
-        return idPelaChave;
+        return pelaChave;
     }
 
     internal static HashSet<string> Recusadas(IEnumerable<string> chavesDasRecusadas) => chavesDasRecusadas.ToHashSet(StringComparer.Ordinal);

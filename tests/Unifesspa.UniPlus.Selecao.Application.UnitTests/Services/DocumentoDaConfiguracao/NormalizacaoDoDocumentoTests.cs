@@ -108,6 +108,15 @@ public sealed class NormalizacaoDoDocumentoTests
         repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/1/chave", "/etapas/3/chave");
     }
 
+    [Fact(DisplayName = "A chave repetida nas exigências é apontada só na posterior, no ponteiro da chave da exigência")]
+    public void ChaveRepetidaNasExigencias_ApontaSoAPosterior()
+    {
+        _ = Normalizar("""{ "documentosExigidos": { "exigencias": [ { "chave": "identidade" }, { "chave": "residencia" }, { "chave": "identidade" } ] } }""", out IReadOnlyList<FieldError> repetidas);
+
+        repetidas.Select(static causa => causa.Field).Should().Equal("/documentosExigidos/exigencias/2/chave");
+        repetidas.Should().OnlyContain(static causa => causa.Error.Code == DocumentoDaConfiguracaoErrorCodes.ChaveRepetida);
+    }
+
     [Fact(DisplayName = "Cada chave repetida tem a primeira parte por dona, e as posteriores são apontadas pela posição na lista enviada")]
     public void ChavesRepetidasDistintas_CadaUmaTemADona()
     {
