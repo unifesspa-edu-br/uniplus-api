@@ -177,15 +177,44 @@ public sealed class RegraDeDeliberacaoTests
             Votacao(quorum: 2, encerramento: EncerramentoDaVotacao.TodosOsTitulares), "quorum", "Banca.QuorumIncoerente");
     }
 
-    [Fact(DisplayName = "A recusa do quórum incoerente diz o quórum exigido e não repete o quórum declarado")]
-    public void QuorumIncoerente_DizOExigidoENaoRepeteODeclarado()
+    [Fact(DisplayName = "A recusa do quórum incoerente diz a regra e não repete os números recebidos")]
+    public void QuorumIncoerente_DizARegraENaoRepeteOsNumerosRecebidos()
     {
         Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(
-            Votacao(quorum: 2, encerramento: EncerramentoDaVotacao.TodosOsTitulares));
+            Votacao(integrantes: 7919, quorum: 7901, encerramento: EncerramentoDaVotacao.TodosOsTitulares));
 
-        string mensagem = regra.Errors.Single(static e => e.Error.Code == "Banca.QuorumIncoerente").Error.Message;
-        mensagem.Should().Contain("igual ao número de integrantes (3)").And.NotContain("declarado");
+        FieldError recusa = regra.Errors.Single(static e => e.Error.Code == "Banca.QuorumIncoerente");
+        recusa.Error.Message.Should().Be("Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes da banca.");
+        NenhumNumeroRecebidoAparece(regra);
     }
+
+    [Fact(DisplayName = "As recusas de integrantes e de suplentes voltam juntas sem repetir os números recebidos")]
+    public void ComposicaoInvalida_RecusaJuntasSemRepetirOsNumeros()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(Votacao(integrantes: -7919, suplentes: -7907, quorum: null));
+
+        regra.Errors.Should().Contain(e => e.Field == "integrantes" && e.Error.Code == "Banca.IntegrantesInvalidos"
+            && e.Error.Message == "A banca deve ter no mínimo 1 integrante.");
+        regra.Errors.Should().Contain(e => e.Field == "suplentes" && e.Error.Code == "Banca.SuplentesInvalidos"
+            && e.Error.Message == "Os suplentes da banca não podem ser negativos.");
+        NenhumNumeroRecebidoAparece(regra);
+    }
+
+    [Fact(DisplayName = "A recusa do quórum fora do intervalo diz a regra e não repete os números recebidos")]
+    public void QuorumForaDoIntervalo_NaoRepeteOsNumerosRecebidos()
+    {
+        Result<RegraDeDeliberacao> regra = RegraDeDeliberacao.Criar(Votacao(integrantes: 7919, quorum: 7927));
+
+        FieldError recusa = regra.Errors.Single(static e => e.Error.Code == "Banca.QuorumForaDoIntervalo");
+        recusa.Error.Message.Should().Be("O quórum deve ficar entre 1 e o número de integrantes da banca.");
+        NenhumNumeroRecebidoAparece(regra);
+    }
+
+    // Todos os números recebidos nestes testes começam por 79; nenhuma mensagem nem campo pode conter esse trecho.
+    private static void NenhumNumeroRecebidoAparece(Result<RegraDeDeliberacao> regra) =>
+        regra.Errors.Should().OnlyContain(static e =>
+            !(e.Field ?? string.Empty).Contains("79", StringComparison.Ordinal)
+            && !e.Error.Message.Contains("79", StringComparison.Ordinal));
 
     [Fact(DisplayName = "Todos os titulares com quórum igual aos integrantes é aceito")]
     public void TodosOsTitulares_ComQuorumIgual_Aceita()

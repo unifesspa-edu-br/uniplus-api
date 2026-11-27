@@ -169,7 +169,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
 
         Result<GrupoAreaEnemSnapshot> criado = GrupoAreaEnemSnapshot.Criar(grupo.Codigo, grupo.Rotulo);
         return criado.IsFailure
-            ? Result<GrupoAreaEnemSnapshot?>.ValidationFailure([new FieldError("grupoAreaEnem", criado.Error!)])
+            ? Result<GrupoAreaEnemSnapshot?>.ValidationFailure(criado.Errors)
             : Result<GrupoAreaEnemSnapshot?>.Success(criado.Value);
     }
 

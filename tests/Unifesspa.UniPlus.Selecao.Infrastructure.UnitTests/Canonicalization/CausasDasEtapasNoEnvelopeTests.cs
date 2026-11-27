@@ -14,19 +14,7 @@ public sealed class CausasDasEtapasNoEnvelopeTests
     [Fact]
     public void LerTipoDaEtapa_SemCarater_SituaCausaNoTipo()
     {
-        JsonObject etapa = new()
-        {
-            ["tipoEtapa"] = new JsonObject
-            {
-                ["origemId"] = Guid.NewGuid().ToString(),
-                ["codigo"] = "TIPO",
-                ["nome"] = "Tipo fictício",
-                ["admitePontuacao"] = false,
-                ["admiteEliminacao"] = false,
-                ["notaDeOrigemNoEnem"] = false,
-                ["exigeCorrecaoIndependente"] = false,
-            }
-        };
+        JsonObject etapa = new() { ["tipoEtapa"] = TipoDeEtapaSemNenhumCaraterAdmitido() };
         JsonObject documento = new() { ["etapa"] = etapa };
         LeitorEnvelope leitor = new();
         LeituraDoTipoDaEtapa.Ler(leitor, etapa, "etapa");
@@ -80,11 +68,22 @@ public sealed class CausasDasEtapasNoEnvelopeTests
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(3);
         ConferirCausaNoDocumento.Conferir(documento, causas[0], "banca.regraDeDeliberacao.modo", "Banca.ModoDeDeliberacaoInvalido", "O modo de deliberação não é uma das opções disponíveis: colegiada com votação ou ato individual.");
-        ConferirCausaNoDocumento.Conferir(documento, causas[1], "banca.regraDeDeliberacao.integrantes", "Banca.IntegrantesInvalidos", "A banca deve ter no mínimo 1 integrante; foram declarados 0.");
-        ConferirCausaNoDocumento.Conferir(documento, causas[2], "banca.regraDeDeliberacao.suplentes", "Banca.SuplentesInvalidos", "Os suplentes da banca não podem ser negativos; foram declarados -1.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[1], "banca.regraDeDeliberacao.integrantes", "Banca.IntegrantesInvalidos", "A banca deve ter no mínimo 1 integrante.");
+        ConferirCausaNoDocumento.Conferir(documento, causas[2], "banca.regraDeDeliberacao.suplentes", "Banca.SuplentesInvalidos", "Os suplentes da banca não podem ser negativos.");
         causas[0].Error.Message.Should().NotContain("VALOR_FICTICIO_X");
         causas.Should().OnlyContain(causa => !causa.Field!.Contains("VALOR_FICTICIO_X"));
     }
+
+    private static JsonObject TipoDeEtapaSemNenhumCaraterAdmitido() => new()
+    {
+        ["origemId"] = Guid.NewGuid().ToString(),
+        ["codigo"] = "TIPO",
+        ["nome"] = "Tipo fictício",
+        ["admitePontuacao"] = false,
+        ["admiteEliminacao"] = false,
+        ["notaDeOrigemNoEnem"] = false,
+        ["exigeCorrecaoIndependente"] = false,
+    };
 
     private static JsonObject BancaComModoInvalido() => new()
     {

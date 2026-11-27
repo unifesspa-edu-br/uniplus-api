@@ -56,26 +56,49 @@ public sealed class CausasDaClassificacaoNoEnvelopeTests
     [Fact]
     public void LerQuadroPesoAreaEnem_PesoECorteInvalidos_PropagaAmbas()
     {
-        JsonObject bloco = JsonNode.Parse("""
+        (JsonObject documento, IReadOnlyList<FieldError> causas) = LerQuadro("""
             {"quadroPesoAreaEnem":[{"grupoAreaEnem":{"codigo":"GRUPO","rotulo":"Grupo"},"baseLegal":"Base fictícia",
-            "areas":[{"codigo":"AREA","rotulo":"Matemática","peso":"-1.0000","corte":"-1.0000"}]}]}
-            """)!.AsObject();
-        JsonObject documento = new() { ["classificacao"] = bloco };
+            "areas":[{"codigo":"AREA","rotulo":"VALOR_FICTICIO_X","peso":"-1.0000","corte":"-1.0000"}]}]}
+            """);
+
+        causas.Select(causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("classificacao.quadroPesoAreaEnem[0].areas[0].peso", "GrupoPesoAreaEnemCongelado.PesoNegativo"),
+            ("classificacao.quadroPesoAreaEnem[0].areas[0].corte", "GrupoPesoAreaEnemCongelado.CorteForaDaFaixa"));
+        ConferirCaminhosSemOValor(documento, causas, "VALOR_FICTICIO_X");
+    }
+
+    [Fact(DisplayName = "Grupo, código da área e rótulo da área inválidos no documento voltam juntos, cada um no seu caminho, sem repetir o valor escrito")]
+    public void LerQuadroPesoAreaEnem_GrupoEAreaInvalidos_PropagaTodasSemRepetirOValor()
+    {
+        (JsonObject documento, IReadOnlyList<FieldError> causas) = LerQuadro("""
+            {"quadroPesoAreaEnem":[{"grupoAreaEnem":{"codigo":"GRUPO-FICTICIO-\u0000-X","rotulo":"ROTULO-FICTICIO-\u0000-X"},"baseLegal":"Base fictícia",
+            "areas":[{"codigo":"AREA-FICTICIA-\u0000-X","rotulo":"AREA-FICTICIA-\u0000-Y","peso":"1.0000","corte":null}]}]}
+            """);
+
+        causas.Select(causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("classificacao.quadroPesoAreaEnem[0].grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CaractereInvalido"),
+            ("classificacao.quadroPesoAreaEnem[0].grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.CaractereInvalido"),
+            ("classificacao.quadroPesoAreaEnem[0].areas[0].codigo", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
+            ("classificacao.quadroPesoAreaEnem[0].areas[0].rotulo", "GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido"));
+        ConferirCaminhosSemOValor(documento, causas, "FICTICI");
+    }
+
+    private static (JsonObject Documento, IReadOnlyList<FieldError> Causas) LerQuadro(string classificacao)
+    {
+        JsonObject bloco = JsonNode.Parse(classificacao)!.AsObject();
         LeitorEnvelope leitor = new();
         LeituraDaClassificacao.LerQuadroPesoAreaEnem(leitor, bloco);
-        IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
-        causas.Should().HaveCount(2);
-        causas[0].Field.Should().Be("classificacao.quadroPesoAreaEnem[0].areas[0].peso");
-        causas[0].Error.Code.Should().Be("GrupoPesoAreaEnemCongelado.PesoNegativo");
-        causas[1].Field.Should().Be("classificacao.quadroPesoAreaEnem[0].areas[0].corte");
-        causas[1].Error.Code.Should().Be("GrupoPesoAreaEnemCongelado.CorteForaDaFaixa");
-        // A mensagem do domínio repete o rótulo; a correção está na api#2843.
+        return (new JsonObject { ["classificacao"] = bloco }, leitor.Falha<object>().Errors);
+    }
+
+    private static void ConferirCaminhosSemOValor(JsonObject documento, IReadOnlyList<FieldError> causas, string valor)
+    {
         foreach (FieldError causa in causas)
         {
             CaminhoNoDocumento.Existe(documento, causa.Field!).Should().BeTrue();
-            causa.Field.Should().NotContain("VALOR_FICTICIO_X");
-            causa.Error.Code.Should().NotContain("VALOR_FICTICIO_X");
-            causa.Error.Message.Should().NotContain("VALOR_FICTICIO_X");
+            causa.Field.Should().NotContain(valor);
+            causa.Error.Code.Should().NotContain(valor);
+            causa.Error.Message.Should().NotContain(valor);
         }
     }
 

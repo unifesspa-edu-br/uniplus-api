@@ -61,11 +61,11 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         (resultado.Value.GrupoAreaEnem is null).Should().Be(codigo is null);
     }
 
-    [Theory(DisplayName = "Criar recusa grupo de área do ENEM inválido no campo grupoAreaEnem, acumulado com as demais checagens de forma")]
-    [InlineData("", "Tecnológica", "GrupoAreaEnemSnapshot.CodigoObrigatorio")]
-    [InlineData("TECNOLOGICA", "   ", "GrupoAreaEnemSnapshot.RotuloObrigatorio")]
-    [InlineData("CODIGO_LONGO_DEMAIS_PARA_A_COLUNA", "Tecnológica", "GrupoAreaEnemSnapshot.TamanhoInvalido")]
-    public void Criar_GrupoAreaEnemInvalido_RecusaNoCampoAcumulado(string codigo, string rotulo, string codigoDeErro)
+    [Theory(DisplayName = "Criar recusa grupo de área do ENEM inválido no campo do código ou do rótulo, acumulado com as demais checagens de forma")]
+    [InlineData("", "Tecnológica", "grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CodigoObrigatorio")]
+    [InlineData("TECNOLOGICA", "   ", "grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.RotuloObrigatorio")]
+    [InlineData("CODIGO_LONGO_DEMAIS_PARA_A_COLUNA", "Tecnológica", "grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.TamanhoInvalido")]
+    public void Criar_GrupoAreaEnemInvalido_RecusaNoCampoAcumulado(string codigo, string rotulo, string campo, string codigoDeErro)
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -77,9 +77,28 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = (codigo, rotulo), OfertaCurso = OfertaCursoDeTeste.Medicina });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().Contain(e => e.Field == "grupoAreaEnem" && e.Error.Code == codigoDeErro);
+        resultado.Errors.Should().Contain(e => e.Field == campo && e.Error.Code == codigoDeErro);
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseInvalido",
             "a recusa do grupo se acumula com as demais checagens de forma (ADR-0125)");
+    }
+
+    [Fact(DisplayName = "Criar recusa código e rótulo do grupo inválidos juntos, cada um no seu campo, sem repetir o valor recebido")]
+    public void Criar_GrupoAreaEnemComCodigoERotuloInvalidos_AcumulaSemRepetirOValor()
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60),
+        ];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraInstitucional(), Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = ("CODIGO-FICTICIO-\0-RECONHECIVEL", "ROTULO-FICTICIO-\0-RECONHECIVEL"), OfertaCurso = OfertaCursoDeTeste.Medicina });
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CaractereInvalido"),
+            ("grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.CaractereInvalido"));
+        resultado.Errors.SelectMany(e => new[] { e.Error.Message, e.Field })
+            .Should().OnlyContain(texto => !texto!.Contains("FICTICIO", StringComparison.OrdinalIgnoreCase));
     }
 
     [Theory(DisplayName = "Criar com PR fora de [0,5; 1] falha")]

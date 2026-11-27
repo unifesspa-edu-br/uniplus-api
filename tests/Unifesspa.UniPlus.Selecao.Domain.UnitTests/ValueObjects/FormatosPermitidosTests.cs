@@ -110,6 +110,18 @@ public sealed class FormatosPermitidosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.FormatoDuplicado");
+        resultado.Error.Message.Should().Be("O formato aparece mais de uma vez na lista.");
+    }
+
+    [Fact(DisplayName = "A recusa do formato duplicado não repete o código do formato recebido")]
+    public void Criar_FormatoDuplicado_NaoRepeteOCodigoRecebido()
+    {
+        Result<FormatosPermitidos> resultado = FormatosPermitidos.Criar(
+            qualquer: false,
+            entradas: [("JPEG", null), ("JPEG", 1_000)]);
+
+        resultado.Error!.Code.Should().Be("FormatosPermitidos.FormatoDuplicado");
+        resultado.Error.Message.Should().NotContainEquivalentOf("JPEG");
     }
 
     [Theory(DisplayName = "Teto por formato zero ou negativo é recusado")]
