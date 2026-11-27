@@ -44,7 +44,7 @@ A configuração do acréscimo tinha a regra, o fator, o teto e o retrato da bas
 
 O predicado próprio duplicaria as conferências e o editor que as derivações já têm, sem regra padrão no catálogo. O fato de sistema amarraria a classificação dos candidatos a um critério só.
 
-A renomeação do bônus regional para o termo do PO nos nomes técnicos é trabalho próprio. O campo novo já nasce no termo do PO.
+Os nomes técnicos do Fator de Atenuação das Desigualdades de Acesso usam a sigla FADA, inclusive no campo novo.
 
 ## Consequências
 

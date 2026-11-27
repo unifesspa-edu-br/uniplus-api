@@ -84,7 +84,7 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 
 ### Estratégia de migration: **H + J — migration por Story, forward-only**
 
-- **H**: Cada Story que altera schema gera sua própria migration nomeada semanticamente (`AdicionaCampoBonusRegional`, `RenomeiaTabelaXyz`). Sem squash inicial — histórico curto, baixa entropia.
+- **H**: Cada Story que altera schema gera sua própria migration nomeada semanticamente (`AdicionaCampoFada`, `RenomeiaTabelaXyz`). Sem squash inicial — histórico curto, baixa entropia.
 - **J**: Revert = nova migration `Reverte_xxx`. Migrations `Down()` ficam vazias ou lançam `InvalidOperationException` em produção. Justificativa: `Down()` em produção é fonte de erros (perda de dados sem audit), e a alternativa "nova migration que reverte" deixa rastro em `__EFMigrationsHistory` + audit trail.
 
 ### Aplicação no startup: já resolvido em ADRs anteriores

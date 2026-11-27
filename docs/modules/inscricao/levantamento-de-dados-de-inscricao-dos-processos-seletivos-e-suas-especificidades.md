@@ -157,7 +157,7 @@
 |-----|-----------|------|--------|------------------|
 |PSE-24| **Modalidades** | String |**[AZaz]** ||
 |PSE-25| **Autodenominação** | String |**Agricultores familiares<br>Extrativistas<br>Pescadores artesanais<br>Ribeirinhos<br>Assentados da Reforma Agrária<br>Quilombolas<br>Caiçaras<br>Indígenas<br>Quebradeiras de côco babaçu<br>Outros povos tradicionais<br>Acampados da Reforma Agrária<br>** ||
-|PSE-26| **Deseja optar pela utilização do bônus?** | Bool |**[Sim / Não]** |<div class="alert alert-warning small"><i class="fa fa-info-circle fa-2x mr-2"></i><span class="font-weight-bold">LEIA COM ATENÇÃO!</span><hr /><p>Os candidatos que optarem pela utilização do bônus deverão estar cientes e cumprir todas as regras para sua concessão, conforme determina o edital deste processo de seleção e deverão, obrigatoriamente, apresentar toda a documentação comprobatória para concessão do bônus. Em caso de não comprovação serão reclassificados sem o bônus.</p></div>|
+|PSE-26| **Deseja optar pela utilização do Fator de Atenuação das Desigualdades de Acesso (FADA)?** | Bool |**[Sim / Não]** |<div class="alert alert-warning small"><i class="fa fa-info-circle fa-2x mr-2"></i><span class="font-weight-bold">LEIA COM ATENÇÃO!</span><hr /><p>Os candidatos que optarem pela utilização do Fator de Atenuação das Desigualdades de Acesso (FADA) deverão estar cientes e cumprir todas as regras para sua concessão, conforme determina o edital deste processo de seleção e deverão, obrigatoriamente, apresentar toda a documentação comprobatória para concessão do Fator de Atenuação das Desigualdades de Acesso. Em caso de não comprovação serão reclassificados sem o Fator de Atenuação das Desigualdades de Acesso.</p></div>|
 |PSE-27| **Anexos da Inscrição** | Blob |**[Arquivos]** |<div class="alert alert-info small"><i class="fa fa-comment  fa-2x"></i><span class="font-weight-bold m-2">ATENÇÃO!</span><p>Antes de inserir anexos, verifique se os mesmos estão em conformidade com as orientações-do edital do processo Clique no botão abaixo para acessar o edital ou a página do CEPS.</p><div class=" w-100 text-center"><a class="btn-sm btn btn-info" target="_blank" href="#"> Abrir Edital</a> / <a class="btn-sm btn btn-info" target="_blank" href="https://ceps.unifesspa.edu.br">Página do CEPS</a></div></div>|
 
 
@@ -170,7 +170,7 @@
 - Não possui segunda opção de curso.
 - Confirmação de interesse na fase de habilitação.
 - Modalidades habituais: AC e PcD.
-- Atualmente não possui bônus.
+- Atualmente não possui o Fator de Atenuação das Desigualdades de Acesso (FADA).
 
 <br>
 

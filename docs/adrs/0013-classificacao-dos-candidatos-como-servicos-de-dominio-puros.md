@@ -12,7 +12,7 @@ decision-makers:
 
 A classificação dos candidatos é a atividade mais sensível do `uniplus-api` do ponto de vista legal e institucional. Ela calcula notas finais, ordena candidatos por modalidade, aplica desempate e executa o remanejamento de vagas de cotas. Erros têm consequências diretas — alocação errada de candidatos, violação da Lei de Cotas, judicialização e dano reputacional.
 
-O sistema precisa cobrir cinco tipos atuais de processo seletivo (PSIQ, PSE Educação do Campo, PS Convênios, PSVR, SiSU), cada um com fórmula, eliminações, desempate, bônus e regime de cotas próprios. Adicionalmente, UNI-REQ-0019 (congelamento de parâmetros por edital) exige que o resultado de qualquer execução seja reproduzível anos depois com o snapshot da configuração vinculada ao edital.
+O sistema precisa cobrir cinco tipos atuais de processo seletivo (PSIQ, PSE Educação do Campo, PS Convênios, PSVR, SiSU), cada um com fórmula, eliminações, desempate, Fator de Atenuação das Desigualdades de Acesso (FADA) e regime de cotas próprios. Adicionalmente, UNI-REQ-0019 (congelamento de parâmetros por edital) exige que o resultado de qualquer execução seja reproduzível anos depois com o snapshot da configuração vinculada ao edital.
 
 ## Drivers da decisão
 
@@ -36,7 +36,7 @@ O sistema precisa cobrir cinco tipos atuais de processo seletivo (PSIQ, PSE Educ
 
 Dois serviços de domínio principais:
 
-- **Serviço de classificação** — recebe `ConfiguracaoCalculo` declarativa congelada por edital (UNI-REQ-0019) e a interpreta. Aplica fórmula de agregação configurada, regra de precisão, bônus, regras de eliminação, ordem de desempate e — quando o edital exige — o passo de concorrência dupla. **Não conhece** "PSIQ", "SiSU" ou qualquer tipo de processo — conhece apenas o catálogo de primitivas.
+- **Serviço de classificação** — recebe `ConfiguracaoCalculo` declarativa congelada por edital (UNI-REQ-0019) e a interpreta. Aplica fórmula de agregação configurada, regra de precisão, FADA, regras de eliminação, ordem de desempate e — quando o edital exige — o passo de concorrência dupla. **Não conhece** "PSIQ", "SiSU" ou qualquer tipo de processo — conhece apenas o catálogo de primitivas.
 - **Serviço de remanejamento** — executa a cascata de remanejamento conforme `CascataRemanejamento` configurada. Produz audit log passo-a-passo (qual vaga, qual modalidade origem, qual destino, qual candidato beneficiado, qual regra aplicada).
 
 Configuração declarativa (snapshot UNI-REQ-0019 por edital):
