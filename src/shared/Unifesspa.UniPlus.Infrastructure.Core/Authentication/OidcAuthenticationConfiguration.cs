@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -14,6 +13,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+
+using Middleware;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
@@ -110,12 +111,12 @@ public static class OidcAuthenticationConfiguration
                 tags: ["auth"]);
 
         // Rota sem atributo de autorização exige pessoa autenticada; o que é público declara AllowAnonymous. Sem rota
-        // (404) ou com método não aceito (405, endpoint que não é RouteEndpoint), a requisição segue para a própria
+        // (404) ou com método não aceito (405), a requisição segue para a própria
         // resposta, sem pedir login.
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder()
                 .RequireAssertion(static contexto => contexto.User.Identities.Any(static i => i.IsAuthenticated)
-                    || (contexto.Resource is HttpContext requisicao && requisicao.GetEndpoint() is not RouteEndpoint))
+                    || (contexto.Resource is HttpContext requisicao && !requisicao.ChegouAUmaOperacao()))
                 .Build())
             // "Instalacao": a única exceção a "o token não concede acesso" — o papel de realm só habilita
             // a instalação dos primeiros gestores de acessos, que o segundo fator por e-mail confirma.

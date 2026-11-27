@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 /// <summary>
 /// As respostas de erro que a fronteira HTTP emite sozinha, sem passar por um <c>DomainError</c>:
 /// o middleware de exceção, a camada de autenticação, a negociação de versão de mídia, a recusa
-/// de contrato dos controllers e o caminho que nenhuma operação atende. Cada emissor lê o status, o código e o título daqui, e o
+/// de contrato dos controllers e o caminho que nenhuma operação atende e o método que o caminho não aceita. Cada emissor lê o status, o código e o título daqui, e o
 /// catálogo público de códigos de erro lê o mesmo conjunto por
 /// <see cref="ErrosDaFronteiraHttpDomainErrorRegistration"/>.
 /// </summary>
@@ -45,6 +45,9 @@ public static class ErrosDaFronteiraHttp
 
     public static readonly DomainErrorMapping CaminhoInexistente = new(
         StatusCodes.Status404NotFound, "uniplus.requisicao.caminho_inexistente", "A requisição pede um caminho que a API não oferece");
+
+    public static readonly DomainErrorMapping MetodoNaoAceito = new(
+        StatusCodes.Status405MethodNotAllowed, "uniplus.requisicao.metodo_nao_aceito", "A requisição usa um método que o caminho não aceita");
 
     public static readonly DomainErrorMapping ErroInesperado = new(
         StatusCodes.Status500InternalServerError, "uniplus.internal.unexpected", "Erro interno do servidor");

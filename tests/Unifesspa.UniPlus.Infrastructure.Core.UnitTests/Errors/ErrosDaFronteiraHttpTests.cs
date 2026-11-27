@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -114,6 +115,17 @@ public sealed class ErrosDaFronteiraHttpTests
 
         ProblemDetails problema = contexto.Result.Should().BeOfType<ObjectResult>().Which.Value.Should().BeOfType<ProblemDetails>().Subject;
         AssertEstaNoRegistro(problema.Status!.Value, (string?)problema.Extensions["code"], problema.Title);
+    }
+
+    [Theory(DisplayName = "A resposta da requisição sem operação escreve a definição do registro da fronteira")]
+    [InlineData(StatusCodes.Status404NotFound)]
+    [InlineData(StatusCodes.Status405MethodNotAllowed)]
+    public async Task RequisicaoSemOperacao_EscreveDefinicaoDoRegistro(int status)
+    {
+        DefaultHttpContext contexto = await PipelineDaRequisicaoSemOperacao.ExecutarAsync(status, endpoint: null);
+
+        using JsonDocument corpo = await LerCorpoAsync(contexto);
+        AssertEstaNoRegistro(contexto.Response.StatusCode, corpo.RootElement.GetProperty("code").GetString(), corpo.RootElement.GetProperty("title").GetString());
     }
 
     [Fact(DisplayName = "O código de domínio não mapeado responde com a definição do registro da fronteira")]
