@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class OrigensCanonicasDeTeste
@@ -28,8 +29,25 @@ internal static class OrigensCanonicasDeTeste
         ["CHAMADA"] = "Chamada",
     };
 
-    internal static OrigemCanonicaDaFase ComNome(OrigemCanonicaDaFase origem) =>
-        origem with { Nome = string.IsNullOrWhiteSpace(origem.Nome) ? NomeDoCodigo(origem.Codigo) : origem.Nome };
+    /// <summary>
+    /// A origem canônica de uma fase de teste. O nome é o que o cadastro daria ao código (por exemplo, "Inscrição"
+    /// para INSCRICAO), sempre diferente do código; <see cref="ComNome"/> o troca.
+    /// </summary>
+    internal static OrigemCanonicaDaFase Da(
+        Guid origemId,
+        string codigo,
+        OrigemDataFase origemData,
+        bool agrupaEtapas,
+        bool permiteComplementacao,
+        bool coletaInscricao,
+        bool coletaSolicitacaoIsencao) =>
+        new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao)
+        {
+            Nome = NomeDoCodigo(codigo),
+        };
+
+    internal static OrigemCanonicaDaFase ComNome(this OrigemCanonicaDaFase origem, string nome) =>
+        origem with { Nome = nome };
 
     private static string NomeDoCodigo(string codigo) =>
         string.IsNullOrWhiteSpace(codigo) ? "Fase de teste" :

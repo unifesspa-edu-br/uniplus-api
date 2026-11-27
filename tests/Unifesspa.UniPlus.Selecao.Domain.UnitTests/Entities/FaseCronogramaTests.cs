@@ -145,9 +145,9 @@ public sealed class FaseCronogramaTests
 
     private static FaseCronograma FaseReidratadaComJanelaEmBelem(DateTimeOffset instanteUtc) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)), Fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

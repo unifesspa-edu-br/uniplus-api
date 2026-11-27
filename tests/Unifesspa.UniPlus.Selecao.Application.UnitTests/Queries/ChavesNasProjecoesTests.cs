@@ -15,7 +15,7 @@ public sealed class ChavesNasProjecoesTests
     {
         FaseCronograma fase = FaseCronograma.Reidratar(
             ChaveLocal.Criar("fase_avaliacao_2").Value!, Guid.NewGuid(),
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "AVALIACAO", OrigemDataFase.NoEdital, true, false, false, false)),
+            OrigensCanonicasDeTeste.Da(Guid.NewGuid(), "AVALIACAO", OrigemDataFase.NoEdital, true, false, false, false),
             new DecisoesDeCronogramaDaFase(1, null, null, null),
             new PublicacoesDaFase([], false, null), []);
 

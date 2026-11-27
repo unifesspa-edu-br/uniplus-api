@@ -27,14 +27,14 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
     private static readonly DateTimeOffset Inicio = new(2027, 2, 1, 3, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Fim = new(2027, 2, 11, 2, 59, 59, TimeSpan.Zero);
 
-    private static OrigemCanonicaDaFase Origem(bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao, bool coletaIsencao) => OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-        OrigemId: OrigemId,
-        Codigo: "RESULTADO_PRELIMINAR",
-        OrigemData: OrigemDataFase.NoEdital,
-        AgrupaEtapas: agrupaEtapas,
-        PermiteComplementacao: permiteComplementacao,
-        ColetaInscricao: coletaInscricao,
-        ColetaSolicitacaoIsencao: coletaIsencao));
+    private static OrigemCanonicaDaFase Origem(bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao, bool coletaIsencao) => OrigensCanonicasDeTeste.Da(
+        origemId: OrigemId,
+        codigo: "RESULTADO_PRELIMINAR",
+        origemData: OrigemDataFase.NoEdital,
+        agrupaEtapas: agrupaEtapas,
+        permiteComplementacao: permiteComplementacao,
+        coletaInscricao: coletaInscricao,
+        coletaSolicitacaoIsencao: coletaIsencao);
 
     private static DecisoesDeCronogramaDaFase Cronograma(UnidadeResponsavelSnapshot? unidade, bool noMesmoMomentoDaAnterior = false) => new(
         Ordem: 3,

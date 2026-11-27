@@ -134,9 +134,9 @@ public sealed class CandidatosAtendidosPersistenciaTests : IClassFixture<Process
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<BancaRequerida> bancas) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: faseCanonicaOrigemId, Codigo: "ANALISE_DOCUMENTAL", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                origemId: faseCanonicaOrigemId, codigo: "ANALISE_DOCUMENTAL", origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: bancas).Value!;

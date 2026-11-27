@@ -19,9 +19,9 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
 {
     private static FaseCronograma FaseComComplementacao(
         int ordem, string codigo, bool permiteComplementacao, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: permiteComplementacao, ColetaInscricao: false,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: permiteComplementacao, coletaInscricao: false,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

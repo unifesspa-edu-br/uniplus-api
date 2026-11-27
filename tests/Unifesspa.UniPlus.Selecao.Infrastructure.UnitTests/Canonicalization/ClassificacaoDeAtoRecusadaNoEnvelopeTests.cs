@@ -29,7 +29,7 @@ public sealed class ClassificacaoDeAtoRecusadaNoEnvelopeTests
 
     private static JsonObject Documento(string valor)
     {
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false)) with { Nome = "Seleção" };
+        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false) with { Nome = "Seleção" };
         FaseCronograma fase = FaseCronograma.Reidratar(ChaveLocal.Criar("fase_selecao").Value!, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([ProdutoDaFase.Criar(valor, null)], false, null), []);
         return new JsonObject

@@ -33,7 +33,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
 
     private static FaseCronograma FaseComJanelaInvertida() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         Guid.CreateVersion7(),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "FASE_DA_JANELA", OrigemDataFase.NoEdital, false, false, false, false)),
+        OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), "FASE_DA_JANELA", OrigemDataFase.NoEdital, false, false, false, false),
         new DecisoesDeCronogramaDaFase(99, Agora, Agora.AddDays(-1), UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([], false, null),
         []);

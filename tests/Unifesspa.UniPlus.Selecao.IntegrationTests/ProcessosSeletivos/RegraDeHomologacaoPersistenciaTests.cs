@@ -137,7 +137,7 @@ public sealed class RegraDeHomologacaoPersistenciaTests(ProcessoSeletivoDbFixtur
         IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma NovaFase(Guid origemId, RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(origemId, "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(origemId, "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: ProdutosDoResultado(regra), EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: [], RegraDeHomologacao: regra),
         bancasRequeridas: []).Value!;

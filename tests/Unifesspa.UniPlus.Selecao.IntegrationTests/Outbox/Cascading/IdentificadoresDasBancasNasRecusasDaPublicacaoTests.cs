@@ -175,7 +175,7 @@ public sealed partial class IdentificadoresDasBancasNasRecusasDaPublicacaoTests
     private static FaseCronograma FaseComBancasSemRegra()
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), CodigoDaFaseComBancas, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), CodigoDaFaseComBancas, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(2, new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: [BancaDaFase(Heteroidentificacao), BancaDaFase(AnaliseDocumental, "RENDA"), BancaDaFase(AnaliseDocumental, "PCD")]);

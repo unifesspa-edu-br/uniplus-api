@@ -99,9 +99,9 @@ internal static class CenarioDeConformidadeLegal
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
     {
         FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "ENVIO_DOCUMENTOS", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "ENVIO_DOCUMENTOS", origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

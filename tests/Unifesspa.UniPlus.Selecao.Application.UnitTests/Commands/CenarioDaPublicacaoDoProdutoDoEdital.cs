@@ -135,8 +135,8 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
 
     public static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;

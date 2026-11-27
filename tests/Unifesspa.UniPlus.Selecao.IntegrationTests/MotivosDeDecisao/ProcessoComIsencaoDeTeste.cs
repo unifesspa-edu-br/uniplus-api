@@ -43,9 +43,9 @@ internal static class ProcessoComIsencaoDeTeste
     internal static void Habilitar(ProcessoSeletivo processo, string[] tiposDeDecisao)
     {
         FaseCronograma isencao = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: CodigoDaFase, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: true)),
+            OrigensCanonicasDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: CodigoDaFase, origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: true),
             new DecisoesDeCronogramaDaFase(
                 Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(

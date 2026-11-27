@@ -100,8 +100,8 @@ internal static class ProcessoComDuasExigenciasDeTeste
     private static FaseCronograma DefinirCronograma(ProcessoSeletivo processo)
     {
         FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
             bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;

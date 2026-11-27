@@ -23,9 +23,9 @@ internal static class LigacaoAoFormulario
 
     /// <summary>A fase do cronograma que coleta a inscrição, na ordem dada.</summary>
     public static FaseCronograma FaseQueColetaAInscricao(int ordem = 1) => FaseCronograma.Criar(ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             ordem, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),

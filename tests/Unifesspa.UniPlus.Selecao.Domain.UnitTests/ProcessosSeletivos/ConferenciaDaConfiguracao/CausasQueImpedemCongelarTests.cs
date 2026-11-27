@@ -29,8 +29,8 @@ public sealed class CausasQueImpedemCongelarTests
     private static readonly DateTimeOffset Abertura = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private static FaseCronograma FaseDeColeta(RegraDeHomologacaoDasInscricoes? regra) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(30), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)],
@@ -41,8 +41,8 @@ public sealed class CausasQueImpedemCongelarTests
         bancasRequeridas: []).Value!;
 
     private static FaseCronograma FaseSemColeta() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase([ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

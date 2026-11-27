@@ -129,9 +129,9 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
     public void MesmoTipoNaFaseENaEtapa_EAceito()
     {
         FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
+            OrigensCanonicasDeTeste.Da(
                 Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-                AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+                agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, null, null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], false, null, [Classificacao]),
             []).Value!;

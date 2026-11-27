@@ -33,7 +33,7 @@ internal static class FaseDeTesteDaAtualizacao
     }
 
     internal static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao)),
+        OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, agrupaEtapas: false, permiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);
@@ -42,7 +42,7 @@ internal static class FaseDeTesteDaAtualizacao
 
     internal static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao)),
+        OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, agrupaEtapas: false, permiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.Unidade),
         new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
         dados.Bancas);

@@ -65,7 +65,7 @@ public sealed class CausasDoCronogramaNoEnvelopeTests
         TipoDeBancaCopiado tipo = new(Guid.NewGuid(), TipoDeBanca.AnaliseDocumental, "Banca", PapelDaBanca.AvaliaOMerito, false, false, []);
         CategoriaJulgada categoria = CategoriaJulgada.Criar(Guid.NewGuid(), "VALOR_FICTICIO_X", "Categoria fictícia");
         BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, tipo, [categoria]);
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false));
+        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false);
         FaseCronograma fase = FaseCronograma.Reidratar(ChaveLocal.Criar("fase_selecao").Value, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([], false, null), [banca]);
         return JsonNode.Parse(SerializacaoDoCronograma.SerializarFase(fase).ToJsonString())!.AsObject();

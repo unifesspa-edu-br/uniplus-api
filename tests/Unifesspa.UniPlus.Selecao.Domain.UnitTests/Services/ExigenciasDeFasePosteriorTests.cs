@@ -206,8 +206,8 @@ public sealed class ExigenciasDeFasePosteriorTests
     private static FaseCronograma FaseReidratada(Guid id, int ordem) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             id,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), $"FASE_{ordem}", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                Guid.CreateVersion7(), $"FASE_{ordem}", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: ordem == 1, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
             []);

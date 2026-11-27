@@ -25,9 +25,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 {
     private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(1),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "ALFA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: "ALFA_FASE", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -35,9 +35,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 
     private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         id: IdFixo(2),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "ZETA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: "ZETA_FASE", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -111,9 +111,9 @@ public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
     }
 
     private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: codigo, origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),

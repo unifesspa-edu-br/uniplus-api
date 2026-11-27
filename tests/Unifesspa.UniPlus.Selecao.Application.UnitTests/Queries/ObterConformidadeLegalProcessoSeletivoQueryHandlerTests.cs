@@ -196,8 +196,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     }
 
     private static FaseCronograma FaseDeInscricaoComJanelaParcial(bool temInicio, bool temFim) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             1, Inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null, Fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -224,8 +224,8 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     }
 
     private static FaseCronograma FaseDeInscricaoNaOrdem1() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

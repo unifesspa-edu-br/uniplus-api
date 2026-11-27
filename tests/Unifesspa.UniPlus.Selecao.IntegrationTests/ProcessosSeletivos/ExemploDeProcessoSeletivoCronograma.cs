@@ -47,9 +47,9 @@ internal static class ExemploDeProcessoSeletivoCronograma
     /// </summary>
     internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_inscricao").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
-            ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: new Guid("4444dddd-0000-4000-8000-000000000001"), codigo: "INSCRICAO", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: true,
+            coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: FimDasInscricoes, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -69,9 +69,9 @@ internal static class ExemploDeProcessoSeletivoCronograma
     internal static FaseCronograma FaseResultadoPreliminarComRecurso(
         int variante = 0, bool permutar = false, RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null, bool comBancasExigidasNaPublicacao = false) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_resultado_preliminar").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: new Guid("4444dddd-0000-4000-8000-000000000002"), codigo: "RESULTADO_PRELIMINAR", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps)
         { NoMesmoMomentoDaAnterior = true },
@@ -191,9 +191,9 @@ internal static class ExemploDeProcessoSeletivoCronograma
     /// </summary>
     internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(ChaveLocal.Criar("fase_resultado_final").Value!,
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: new Guid("4444dddd-0000-4000-8000-000000000003"), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero).AddTicks(1_234_560), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
@@ -214,9 +214,9 @@ internal static class ExemploDeProcessoSeletivoCronograma
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     internal static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            origemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),

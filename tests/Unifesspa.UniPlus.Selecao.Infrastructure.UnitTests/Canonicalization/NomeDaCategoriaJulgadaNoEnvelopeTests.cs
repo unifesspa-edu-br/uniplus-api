@@ -31,7 +31,7 @@ public sealed class NomeDaCategoriaJulgadaNoEnvelopeTests
         TipoDeBancaCopiado tipo = new(Guid.NewGuid(), TipoDeBanca.AnaliseDocumental, "Banca", PapelDaBanca.AvaliaOMerito, false, false, []);
         CategoriaJulgada categoria = CategoriaJulgada.Criar(Guid.NewGuid(), "RENDA", "Selec\u0327a\u0303o");
         BancaRequerida banca = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, tipo, [categoria]);
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false)) with { Nome = "Seleção" };
+        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false) with { Nome = "Seleção" };
         return FaseCronograma.Reidratar(ChaveLocal.Criar("fase_selecao").Value, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([], false, null), [banca]);
     }

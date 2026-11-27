@@ -102,9 +102,9 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
     internal static void DefinirCronogramaDoSplitQuery(ProcessoSeletivo processo)
     {
         FaseCronograma fase = FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),

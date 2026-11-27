@@ -156,7 +156,7 @@ public sealed class NomesDeOrigemNoEnvelopeTests
 
     private static JsonObject SerializarFase(string nome)
     {
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false)) with { Nome = nome };
+        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false) with { Nome = nome };
         FaseCronograma fase = FaseCronograma.Reidratar(ChaveLocal.Criar("fase_selecao").Value!, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([], false, null), []);
         return JsonNode.Parse(SerializacaoDoCronograma.SerializarFase(fase).ToJsonString())!.AsObject();

@@ -28,7 +28,7 @@ internal static class FaseDaRetificacaoDeTeste
         bool noMesmoMomentoDaAnterior = false,
         params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaIsencao)),
+            OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: coletaIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: janela?.Inicio ?? Instante.AddDays(ordem), Fim: janela?.Fim ?? Instante.AddDays(ordem + 5), UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
@@ -37,7 +37,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A fase de data definida na execução, que começa no instante dado e ainda não tem data final.</summary>
     internal static FaseCronograma SemDataFinal(int ordem, string codigo, DateTimeOffset inicio) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
@@ -45,7 +45,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A mesma fase, com a mesma origem canônica, com a janela trocada: a fase como a retificação a propõe.</summary>
     internal static FaseCronograma ComJanela(FaseCronograma fase, DateTimeOffset? inicio, DateTimeOffset? fim) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao)),
+            OrigensCanonicasDeTeste.Da(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: inicio, Fim: fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -54,7 +54,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A mesma fase, com a mesma origem canônica e os mesmos dados, com a marca "no mesmo momento da anterior" trocada.</summary>
     internal static FaseCronograma ComMarca(FaseCronograma fase, bool noMesmoMomentoDaAnterior) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao)),
+            OrigensCanonicasDeTeste.Da(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = noMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -63,7 +63,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A mesma fase, com a mesma origem canônica e a mesma janela, declarando os tipos de decisão dados.</summary>
     internal static FaseCronograma ComTiposDeDecisao(FaseCronograma fase, params string[] tipos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao)),
+            OrigensCanonicasDeTeste.Da(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tipos),
@@ -72,7 +72,7 @@ internal static class FaseDaRetificacaoDeTeste
     /// <summary>A mesma fase, com a mesma origem canônica, com outro código, outra ordem e outros produtos: o que não entra no preliminar.</summary>
     internal static FaseCronograma Renomeada(FaseCronograma fase, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao)),
+            OrigensCanonicasDeTeste.Da(fase.FaseCanonicaOrigemId, codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: fase.Inicio, Fim: fase.Fim, UnidadeResponsavel: UnidadesDeTeste.Ceps)
             { NoMesmoMomentoDaAnterior = fase.NoMesmoMomentoDaAnterior },
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),

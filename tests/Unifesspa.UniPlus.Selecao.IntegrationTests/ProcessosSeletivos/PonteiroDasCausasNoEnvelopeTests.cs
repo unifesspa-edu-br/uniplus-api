@@ -59,8 +59,8 @@ public sealed class PonteiroDasCausasNoEnvelopeTests
         ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)));
 
     private static FaseCronograma Fase(string codigo, int ordem) => FaseCronograma.Criar(FormacaoDeChaveLocal.Formar("fase", codigo, new ChavesEmUso()),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensCanonicasDeTeste.Da(
+            Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             ordem, new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 2, ordem, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),

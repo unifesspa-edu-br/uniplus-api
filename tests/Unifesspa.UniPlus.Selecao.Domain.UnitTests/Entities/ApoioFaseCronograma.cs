@@ -30,9 +30,9 @@ internal static class ApoioFaseCronograma
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensCanonicasDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR", origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
             bancasRequeridas ?? []);
