@@ -233,30 +233,21 @@ public static class RestricaoValorJson
         return lido.IsFailure ? Result<PredicadoDnf?>.ValidationFailure(lido.Errors) : Result<PredicadoDnf?>.Success(lido.Value);
     }
 
-    private static Result<RestricaoValor> LerFaixaDeData(JsonElement json)
-    {
-        Result<LimiteDeData?> minima = LimiteDeJson(json, "dataMinima");
-        Result<LimiteDeData?> maxima = LimiteDeJson(json, "dataMaxima");
-        if (minima.IsFailure || maxima.IsFailure)
-        {
-            return Result<RestricaoValor>.ValidationFailure([.. minima.Errors, .. maxima.Errors]);
-        }
-
-        return RestricoesDeValor.FaixaDeData(minima.Value, maxima.Value);
-    }
+    private static Result<RestricaoValor> LerFaixaDeData(JsonElement json) =>
+        RestricoesDeValor.FaixaDeDataLida(LimiteDeJson(json, "dataMinima"), LimiteDeJson(json, "dataMaxima"));
 
     /// <summary>O limite da faixa de data guardado na chave; nulo quando a chave falta ou é nula.</summary>
-    private static Result<LimiteDeData?> LimiteDeJson(JsonElement json, string chave)
+    private static Result<LimiteDeData>? LimiteDeJson(JsonElement json, string chave)
     {
         if (!json.TryGetProperty(chave, out JsonElement limite) || limite.ValueKind == JsonValueKind.Null)
         {
-            return Result<LimiteDeData?>.Success(null);
+            return null;
         }
 
         return LerLimiteDeData(limite, chave);
     }
 
-    private static Result<LimiteDeData?> LerLimiteDeData(JsonElement limite, string chave)
+    private static Result<LimiteDeData> LerLimiteDeData(JsonElement limite, string chave)
     {
         if (limite.ValueKind != JsonValueKind.Object
             || !Texto(limite, "referenciaDaData", out string? ancora)
@@ -264,24 +255,18 @@ public static class RestricaoValorJson
             || !InteiroOpcional(limite, "anos", out int? anos)
             || !InteiroOpcional(limite, "dias", out int? dias))
         {
-            return Result<LimiteDeData?>.Failure(Erro($"O limite '{chave}' da faixa de data tem a âncora e a data ou o deslocamento."));
+            return Result<LimiteDeData>.Failure(Erro($"O limite '{chave}' da faixa de data tem a âncora e a data ou o deslocamento."));
         }
 
         return ConstruirLimiteDeData(chave, ancora, data, anos, dias);
     }
 
-    private static Result<LimiteDeData?> ConstruirLimiteDeData(string chave, string? ancora, string? data, int? anos, int? dias)
+    private static Result<LimiteDeData> ConstruirLimiteDeData(string chave, string? ancora, string? data, int? anos, int? dias)
     {
         DateOnly? dia = DiaDoCalendario.Ler(data);
-        if (data is not null && dia is null)
-        {
-            return Result<LimiteDeData?>.Failure(Erro($"A data do limite '{chave}' da faixa de data está em aaaa-mm-dd."));
-        }
-
-        Result<LimiteDeData> lidoDoLimite = RestricoesDeValor.Limite(ancora, dia, anos, dias);
-        return lidoDoLimite.IsSuccess
-            ? Result<LimiteDeData?>.Success(lidoDoLimite.Value)
-            : Result<LimiteDeData?>.ValidationFailure(lidoDoLimite.Errors);
+        return data is not null && dia is null
+            ? Result<LimiteDeData>.Failure(Erro($"A data do limite '{chave}' da faixa de data está em aaaa-mm-dd."))
+            : RestricoesDeValor.Limite(ancora, dia, anos, dias);
     }
 
     private static bool Texto(JsonElement json, string chave, out string? texto)

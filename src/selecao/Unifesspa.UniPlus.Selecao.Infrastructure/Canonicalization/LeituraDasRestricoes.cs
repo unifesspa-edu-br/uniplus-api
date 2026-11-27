@@ -102,23 +102,7 @@ internal static class LeituraDasRestricoes
             return null;
         }
 
-        return MontarFaixaDeData(minima, maxima);
-    }
-
-    private static Result<RestricaoValor> MontarFaixaDeData(Result<LimiteDeData>? minima, Result<LimiteDeData>? maxima)
-    {
-        List<FieldError> causas = [];
-        AcrescentarCausasDoLimite(causas, minima, "dataMinima");
-        AcrescentarCausasDoLimite(causas, maxima, "dataMaxima");
-        return causas.Count > 0 ? Result<RestricaoValor>.ValidationFailure(causas) : RestricoesDeValor.FaixaDeData(minima?.Value, maxima?.Value);
-    }
-
-    private static void AcrescentarCausasDoLimite(List<FieldError> causas, Result<LimiteDeData>? limite, string caminho)
-    {
-        if (limite is { IsFailure: true })
-        {
-            causas.AddRange(limite.Errors.Select(causa => causa.NoCaminhoDoItem(caminho)));
-        }
+        return RestricoesDeValor.FaixaDeDataLida(minima, maxima);
     }
 
     /// <summary>O limite da faixa de data, com exatamente as chaves da âncora; nulo quando o limite falta.</summary>

@@ -36,6 +36,20 @@ public sealed class CausasDasRestricoesNoEnvelopeTests
         ConferirLimite(new JsonObject { ["item"] = item.DeepClone() }, causas[1], "item.restricoes[0].dataMaxima");
     }
 
+    [Fact]
+    public void LerRestricoes_DoisGruposDeOpcoesSemValores_SituaUmaCausaEmCadaGrupo()
+    {
+        JsonObject restricao = new() { ["tipo"] = "OPCOES_PERMITIDAS", ["entradas"] = new JsonArray(GrupoSemValores(), GrupoSemValores()) };
+        JsonObject item = new() { ["restricoes"] = new JsonArray(restricao) };
+        LeitorEnvelope leitor = new();
+        LeituraDasRestricoes.LerRestricoes(leitor, item, "item");
+        IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
+        causas.Select(static c => c.Field).Should().Equal("item.restricoes[0].entradas[0].valores", "item.restricoes[0].entradas[1].valores");
+        causas.Should().OnlyContain(static c => c.Error.Code == "RestricaoValor.OpcoesVazias");
+    }
+
+    private static JsonObject GrupoSemValores() => new() { ["quando"] = null, ["valores"] = new JsonArray() };
+
     private static JsonObject Limite() => new() { ["referenciaDaData"] = "ENVIO", ["anos"] = 151, ["dias"] = 0 };
 
     private static void ConferirLimite(JsonObject documento, FieldError causa, string campo)

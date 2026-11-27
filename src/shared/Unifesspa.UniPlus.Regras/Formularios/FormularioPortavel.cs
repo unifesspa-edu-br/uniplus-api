@@ -55,81 +55,8 @@ public sealed record FormularioPortavel(
     /// </summary>
     public Result<DefinicaoFormulario> ParaDefinicao()
     {
-        if (CaminhoDoPrimeiroNulo() is { } nulo)
-        {
-            return Result<DefinicaoFormulario>.Failure(new DomainError(
-                FormularioPortavelErrorCodes.EstruturaInvalida, $"O elemento '{nulo}' das regras é nulo."));
-        }
-
-        if (CaminhoDasOcorrenciasAusentes() is { } caminho)
-        {
-            return Result<DefinicaoFormulario>.ValidationFailure([new FieldError(caminho, new DomainError(
-                GrupoFormularioErrorCodes.OcorrenciasObrigatorias, "As ocorrências do grupo são obrigatórias."))]);
-        }
-
-        return ConversaoDoPortavel.Converter(this);
-    }
-
-    private string? CaminhoDasOcorrenciasAusentes() =>
-        (Paginas ?? []).SelectMany((pagina, i) => (pagina.Grupos ?? []).Select((grupo, j) => (grupo, i, j)))
-            .Where(static x => x.grupo.Ocorrencias is null)
-            .Select(static x => $"paginas[{x.i}].grupos[{x.j}].ocorrencias").FirstOrDefault();
-
-    /// <summary>
-    /// O caminho do primeiro elemento nulo dentro das regras, como <c>paginas[0].itens[2]</c>; nulo
-    /// quando não há. O arquivo importado chega pelo fio, e a lista com elemento nulo não forma
-    /// definição.
-    /// </summary>
-    private string? CaminhoDoPrimeiroNulo() =>
-        Lista(Paginas, "paginas", NuloNaPagina)
-        ?? Lista(Termos, "termos", static (termo, caminho) => NuloNaExibicaoEObrigatoriedade(termo.Regras, $"{caminho}.regras"))
-        ?? Lista(Derivacoes, "derivacoes", static (derivacao, caminho) =>
-            Lista(derivacao.Regras, $"{caminho}.regras", static (regra, daRegra) => Predicado(regra.Quando, $"{daRegra}.quando")))
-        ?? Lista(Agregados, "agregados", static (_, _) => null);
-
-    private static string? NuloNaPagina(PaginaPortavel pagina, string caminho) =>
-        Predicado(pagina.Exibicao, $"{caminho}.exibicao")
-        ?? Lista(pagina.Itens, $"{caminho}.itens", NuloNoItem)
-        ?? Lista(pagina.Grupos, $"{caminho}.grupos", NuloNoGrupo);
-
-    private static string? NuloNoGrupo(GrupoPortavel grupo, string caminho) =>
-        NuloNaExibicaoEObrigatoriedade(grupo.Regras, $"{caminho}.regras")
-        ?? Lista(grupo.Subitens, $"{caminho}.subitens", NuloNoItem);
-
-    private static string? NuloNoItem(ItemPortavel item, string caminho) =>
-        NuloNasRegrasDoCampo(item.Regras, $"{caminho}.regras") ?? Lista(item.Oferta, $"{caminho}.oferta", static (_, _) => null);
-
-    private static string? NuloNaExibicaoEObrigatoriedade(ExibicaoEObrigatoriedadeDto? regras, string caminho) =>
-        Predicado(regras?.Exibicao, $"{caminho}.exibicao")
-        ?? Predicado(regras?.Obrigatoriedade?.Predicado, $"{caminho}.obrigatoriedade.predicado");
-
-    private static string? NuloNasRegrasDoCampo(RegrasDoCampoDto? regras, string caminho) =>
-        Predicado(regras?.Exibicao, $"{caminho}.exibicao")
-        ?? Predicado(regras?.Obrigatoriedade?.Predicado, $"{caminho}.obrigatoriedade.predicado")
-        ?? Lista(regras?.Restricoes, $"{caminho}.restricoes", NuloNaRestricao)
-        ?? (regras?.Impedimento is { } impedimento ? Predicado(impedimento.Quando, $"{caminho}.impedimento.quando") : null);
-
-    private static string? NuloNaRestricao(RestricaoValorDto restricao, string caminho) =>
-        Lista(restricao.Entradas, $"{caminho}.entradas", static (entrada, daEntrada) =>
-            Predicado(entrada.Quando, $"{daEntrada}.quando") ?? Lista(entrada.Valores, $"{daEntrada}.valores", static (_, _) => null))
-        ?? Lista(restricao.Fatos, $"{caminho}.fatos", static (_, _) => null);
-
-    private static string? Predicado(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? predicado, string caminho) =>
-        Lista(predicado, caminho, static (clausula, daClausula) => Lista(clausula, daClausula, static (_, _) => null));
-
-    private static string? Lista<T>(IReadOnlyList<T>? lista, string caminho, Func<T, string, string?> dentro)
-        where T : class
-    {
-        for (int i = 0; i < (lista?.Count ?? 0); i++)
-        {
-            string doElemento = $"{caminho}[{i}]";
-            if ((lista![i] is { } elemento ? dentro(elemento, doElemento) : doElemento) is { } nulo)
-            {
-                return nulo;
-            }
-        }
-
-        return null;
+        IReadOnlyList<FieldError> forma = FormaDoPortavel.Recusas(this);
+        return forma.Count > 0 ? Result<DefinicaoFormulario>.ValidationFailure(forma) : ConversaoDoPortavel.Converter(this);
     }
 
     /// <summary>
