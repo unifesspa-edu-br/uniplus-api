@@ -80,7 +80,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -564,7 +564,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1195,7 +1195,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2095,7 +2095,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2605,7 +2605,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3099,7 +3099,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3680,7 +3680,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5750,7 +5750,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6244,7 +6244,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6759,7 +6759,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -7724,7 +7724,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -8215,7 +8215,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -8732,7 +8732,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -9478,7 +9478,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -10090,7 +10090,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -10574,7 +10574,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -11066,7 +11066,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -11772,7 +11772,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -12256,7 +12256,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -12740,7 +12740,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -13224,7 +13224,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -13991,7 +13991,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -14485,7 +14485,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -14655,7 +14655,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "description": "Tamanho m\u00E1ximo da p\u00E1gina de resultados. Limites configurados em CursorPaginationOptions; valores fora do intervalo retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
               "type": "integer",
               "format": "int32"

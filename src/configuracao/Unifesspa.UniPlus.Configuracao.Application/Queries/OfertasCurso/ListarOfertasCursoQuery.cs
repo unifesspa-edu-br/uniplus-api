@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Chave de ordenação da âncora de continuação (ADR-0094), que acompanha o
 /// <paramref name="AfterId"/>; <c>null</c> na primeira página.
 /// </param>
-/// <param name="AfterId">Âncora da página anterior; <c>null</c> retorna a primeira janela.</param>
+/// <param name="AfterId">Âncora da página anterior; <c>null</c> retorna a primeira página.</param>
 /// <param name="Limit">Tamanho máximo da página a retornar.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>, ADR-0089).</param>
 /// <param name="CursoId">

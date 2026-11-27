@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>
 /// Configuração global de cursor pagination (ADR-0026): TTL do cursor e
-/// range aceitável de <c>limit</c>. Bind a partir da seção
+/// intervalo aceitável de <c>limit</c>. Bind a partir da seção
 /// <c>UniPlus:Pagination:Cursor</c>; defaults sensatos garantem que
 /// projetos sem configuração explícita rodam imediatamente.
 /// </summary>
