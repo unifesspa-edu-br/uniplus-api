@@ -30,13 +30,13 @@ internal static class ConjuntoDasEtapas
         "ProcessoSeletivo.NenhumaEtapaComponeNota",
         "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final.");
 
-    internal static DomainError NotaDoEnemDuplicada(IReadOnlyList<string> nomes) => new(
+    internal static DomainError NotaDoEnemDuplicada() => new(
         "ProcessoSeletivo.EtapaNotaEnemDuplicada",
-        $"O processo admite uma única etapa de nota do ENEM, e declara {nomes.Count}: {string.Join(", ", nomes.Select(static nome => $"\"{nome}\""))}.");
+        "O processo admite uma única etapa de nota do ENEM, e mais de uma foi declarada.");
 
-    internal static DomainError NotaDoEnemNaoCompoeNota(string nome) => new(
+    internal static DomainError NotaDoEnemNaoCompoeNota() => new(
         "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota",
-        $"A etapa \"{nome}\" tem a nota vinda do ENEM e precisa compor a média: declare caráter classificatória ou ambas e um peso.");
+        "A etapa com a nota vinda do ENEM precisa compor a média: declare caráter classificatória ou ambas e um peso.");
 
     internal static DomainError NotaDoEnemComBanca(int posicao) => new(
         "ProcessoSeletivo.EtapaNotaEnemComBanca",
@@ -71,14 +71,14 @@ internal static class ConjuntoDasEtapas
         (int Posicao, EtapaDeclarada Etapa)[] doEnem = [.. DoEnem(etapas)];
 
         return doEnem.Length > 1
-            ? [EtapasDoProcesso.NaEtapa(doEnem[1].Posicao, null, NotaDoEnemDuplicada([.. doEnem.Select(static par => par.Etapa.Nome)]))]
+            ? [EtapasDoProcesso.NaEtapa(doEnem[1].Posicao, null, NotaDoEnemDuplicada())]
             : [];
     }
 
     private static IEnumerable<FieldError> EtapasDoEnemQueNaoComponhamANota(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)
             .Where(static par => par.Etapa.ComposicaoDaMediaDeterminada && !par.Etapa.ComponeNota)
-            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, "peso", NotaDoEnemNaoCompoeNota(par.Etapa.Nome)));
+            .Select(static par => EtapasDoProcesso.NaEtapa(par.Posicao, "peso", NotaDoEnemNaoCompoeNota()));
 
     private static IEnumerable<FieldError> EtapasDoEnemComBanca(IReadOnlyList<EtapaDeclarada> etapas) =>
         DoEnem(etapas)

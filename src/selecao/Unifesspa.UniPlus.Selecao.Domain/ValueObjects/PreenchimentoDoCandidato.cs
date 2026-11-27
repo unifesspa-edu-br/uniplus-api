@@ -301,10 +301,10 @@ public sealed class PreenchimentoDoCandidato : IEquatable<PreenchimentoDoCandida
         string campo = $"aceites[{indice}]";
         TermoNoFormulario termoAceito = new(aceite.FormularioCodigo, aceite.Codigo);
         if (!vistos.Add(termoAceito)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteRepetido,
-            $"O termo '{aceite.Codigo}' foi aceito mais de uma vez. Envie um único aceite para cada termo."));
+            "O termo foi aceito mais de uma vez. Envie um único aceite para cada termo."));
         if (!termos.TryGetValue(termoAceito, out TermoAdmitido? termo)) return new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteForaDoFormulario,
-            $"O termo '{aceite.Codigo}' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
+            "O termo não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
         return aceite.ValeParaAVersao(termo) ? null : new FieldError(campo, new DomainError(InscricaoErrorCodes.AceiteDeOutraVersao,
-            $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));
+            "O aceite do termo não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));
     }
 }

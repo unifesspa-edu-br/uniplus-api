@@ -54,7 +54,7 @@ public static class ValidadorVinculoDaExigencia
         {
             return new DomainError(
                 "DocumentoExigido.FaseNaoPertenceAoProcesso",
-                $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo.");
+                "A fase da exigência não pertence ao cronograma deste processo.");
         }
 
         return item.ExigidoNaEtapaId is { } exigidoNaEtapaId ? VinculoInvalidoDaEtapa(exigidoNaEtapaId, faseDaExigencia, etapas) : null;
@@ -65,11 +65,11 @@ public static class ValidadorVinculoDaExigencia
         EtapaProcesso? etapa = etapas.FirstOrDefault(candidata => candidata.Id == etapaId);
         if (etapa is null)
         {
-            return new DomainError("DocumentoExigido.EtapaNaoPertenceAoProcesso", $"A etapa {etapaId} não pertence a este processo.");
+            return new DomainError("DocumentoExigido.EtapaNaoPertenceAoProcesso", "A etapa da exigência não pertence a este processo.");
         }
 
         return string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal)
             ? null
-            : new DomainError("DocumentoExigido.EtapaNaoPertenceAFase", $"A etapa {etapaId} não acontece na fase {fase.Codigo}.");
+            : new DomainError("DocumentoExigido.EtapaNaoPertenceAFase", $"A etapa da exigência não acontece na fase {fase.Codigo}.");
     }
 }

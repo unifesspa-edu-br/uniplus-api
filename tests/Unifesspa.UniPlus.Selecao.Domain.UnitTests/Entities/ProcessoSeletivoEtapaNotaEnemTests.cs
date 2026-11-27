@@ -138,7 +138,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
-        result.Error.Message.Should().Contain("caráter").And.Contain("peso");
+        result.Error.Message.Should().Contain("caráter").And.Contain("peso").And.NotContain("Nota do ENEM");
     }
 
     [Fact(DisplayName = "Só com a etapa do ENEM fora da média, a recusa é a dela, não a de nenhuma etapa compor a nota")]
@@ -269,6 +269,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
+        result.Error.Message.Should().Contain("exige classificação baseada em ENEM").And.NotContain("Nota do ENEM");
     }
 
     [Fact(DisplayName = "Sob classificação que não é ENEM, a banca da etapa do ENEM é recusada antes da classificação, que só é apontada quando é a única causa")]
@@ -296,8 +297,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
-    [Fact(DisplayName = "A recusa por duplicidade nomeia as etapas de nota do ENEM declaradas")]
-    public void DefinirEtapas_DuasEtapasNotaEnem_MensagemNomeiaAsEtapas()
+    [Fact(DisplayName = "A recusa por duplicidade não repete os nomes das etapas de nota do ENEM")]
+    public void DefinirEtapas_DuasEtapasNotaEnem_MensagemNaoRepeteOsNomes()
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso primeira = EtapaProcesso.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("etapa").Value!,
@@ -310,7 +311,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         Result result = processo.DefinirEtapas([primeira, segunda]);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Message.Should().Contain("\"ENEM 2024\"").And.Contain("\"ENEM 2025\"");
+        result.Error!.Message.Should().Contain("mais de uma").And.NotContain("ENEM 2024").And.NotContain("ENEM 2025");
     }
 
     [Fact(DisplayName = "Classificação ENEM importada não admite etapa de nota do ENEM — não há fórmula que a componha")]

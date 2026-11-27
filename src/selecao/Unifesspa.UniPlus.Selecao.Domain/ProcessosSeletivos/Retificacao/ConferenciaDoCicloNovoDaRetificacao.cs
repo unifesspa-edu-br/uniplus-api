@@ -69,11 +69,11 @@ public static class ConferenciaDoCicloNovoDaRetificacao
 
     private static IEnumerable<FieldError> RecusasDosDeclaradosSemCicloAberto(
         IReadOnlySet<IdentidadeDoItemDoEdital> declarados, HashSet<IdentidadeDoItemDoEdital> abertos) =>
-        EmOrdem(declarados.Where(item => !abertos.Contains(item))).Select(static item => new FieldError(
+        EmOrdem(declarados.Where(item => !abertos.Contains(item))).Select(static _ => new FieldError(
             null,
             new DomainError(
                 RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto,
-                $"O ciclo novo declarado no pedido para '{item.AtoCodigo}' não tem resultado preliminar publicado com o ciclo aberto: "
+                "O ciclo novo declarado no pedido não tem resultado preliminar publicado com o ciclo aberto: "
                 + "o preliminar não foi publicado, o definitivo já o fechou ou o item não existe na versão publicada. Retire o item dos ciclos novos.")));
 
     private static IOrderedEnumerable<IdentidadeDoItemDoEdital> EmOrdem(IEnumerable<IdentidadeDoItemDoEdital> itens) =>

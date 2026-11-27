@@ -83,7 +83,7 @@ public static class NiveisDeAtendimento
         {
             yield return new($"{campo}.rotulo", new DomainError(
                 NivelDuplicado,
-                $"O nível '{rotulo}' aparece mais de uma vez na escala de atendimento."));
+                "Há nível de atendimento repetido na escala: cada rótulo aparece uma só vez."));
         }
     }
 

@@ -23,12 +23,12 @@ internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
     private readonly ConferenciaDoProdutoDeclarado _conferencia = new(atos);
 
     public async Task<Result<ProdutosConferidos<ProdutoDaFase>>> MontarAsync(
-        FaseCronogramaInput fase, int indice, string faseCodigo, CancellationToken cancellationToken)
+        FaseCronogramaInput fase, int indice, CancellationToken cancellationToken)
     {
         Result<ProdutosConferidos<ProdutoDaFase>> conferidos = await _conferencia
             .ConferirTodosAsync(
                 [.. fase.Produtos.Select(static p => (p.AtoCodigo, p.Papel))],
-                RotuloDoDonoDoProduto.DaFase(faseCodigo),
+                RotuloDoDonoDoProduto.DaFase(),
                 NenhumJaDeclarado,
                 ProdutoDaFase.Criar,
                 cancellationToken)

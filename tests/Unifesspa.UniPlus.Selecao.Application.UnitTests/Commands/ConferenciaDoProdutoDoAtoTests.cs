@@ -16,6 +16,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.Cenario
 public sealed class ConferenciaDoProdutoDoAtoTests
 {
     private const string PapelRecusado = "TESTE";
+    private const string NomeFicticioDaEtapa = "Etapa fictícia zeta";
 
     [Fact]
     public async Task Handle_PapelDesconhecidoNaFase_ListaOsPapeisAceitosSemRepetirOValor()
@@ -31,7 +32,7 @@ public sealed class ConferenciaDoProdutoDoAtoTests
     [Fact]
     public async Task Handle_PapelDesconhecidoNaEtapa_ListaOsPapeisAceitosSemRepetirOValor()
     {
-        EtapaProcessoInput etapa = EtapaInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1) with
+        EtapaProcessoInput etapa = EtapaInput(NomeFicticioDaEtapa, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1) with
         {
             Produtos = [new ProdutoDaEtapaInput(AtoDaClassificacao, PapelRecusado)],
         };
@@ -39,6 +40,20 @@ public sealed class ConferenciaDoProdutoDoAtoTests
         Result resultado = await ExecutarSobre(ProcessoSemEtapas(), null, etapa);
 
         ConferirRecusaDoPapel(resultado, "ProdutoDaEtapa.PapelDesconhecido");
+        resultado.Errors.Single(e => e.Error.Code == "ProdutoDaEtapa.PapelDesconhecido").Error.Message
+            .Should().NotContainEquivalentOf("zeta");
+    }
+
+    [Fact]
+    public async Task Handle_PapelEmAtoQueNaoEhResultado_RecusaSemRepetirOCodigoDoAto()
+    {
+        CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDoComunicado());
+        FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Produtos = [ProdutoDoComunicado("DEFINITIVO")] };
+
+        Result resultado = await cenario.DefinirFasesAsync(fase);
+
+        DomainError erro = resultado.Errors.Single(e => e.Error.Code == "ProdutoDaFase.PapelEmAtoQueNaoEhResultado").Error;
+        erro.Message.Should().Be("O tipo de ato declarado não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.");
     }
 
     private static void ConferirRecusaDoPapel(Result resultado, string codigo)

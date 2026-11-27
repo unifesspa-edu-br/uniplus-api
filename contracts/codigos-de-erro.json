@@ -4907,6 +4907,11 @@
       "titulo": "A ampla concorrência resultaria negativa — ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas"
     },
     {
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide",
+      "status": 422,
+      "titulo": "Uma retirada ou um suplemento não pode ter o código de uma reserva federal nem da ampla concorrência"
+    },
+    {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas acima do total da oferta"
@@ -8230,6 +8235,16 @@
       "codigo": "uniplus.selecao.regras_de_nome_abreviado.nome_em_branco",
       "status": 422,
       "titulo": "O nome a abreviar não pode ser vazio ou só espaços"
+    },
+    {
+      "codigo": "uniplus.selecao.retificacao.ciclo_novo_de_item_sem_preliminar_aberto",
+      "status": 422,
+      "titulo": "O ciclo novo declarado não tem resultado preliminar publicado com o ciclo aberto"
+    },
+    {
+      "codigo": "uniplus.selecao.retificacao.ciclo_novo_nao_declarado",
+      "status": 422,
+      "titulo": "A retificação exige declarar o novo ciclo do resultado preliminar já publicado"
     },
     {
       "codigo": "uniplus.selecao.retificacao.eixo_do_fato_ja_coletado_alterado",

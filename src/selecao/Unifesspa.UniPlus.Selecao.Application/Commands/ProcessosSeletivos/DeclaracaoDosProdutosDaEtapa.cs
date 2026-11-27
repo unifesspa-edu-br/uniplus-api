@@ -24,7 +24,7 @@ internal sealed class DeclaracaoDosProdutosDaEtapa(AtosConsultadosNaEdicao atos)
         Result<ProdutosConferidos<ProdutoDaEtapa>> conferidos = await _conferencia
             .ConferirTodosAsync(
                 [.. input.Produtos.Select(static p => (p.AtoCodigo, p.Papel))],
-                RotuloDoDonoDoProduto.DaEtapa(input.Nome),
+                RotuloDoDonoDoProduto.DaEtapa(),
                 JaDeclarados(etapa),
                 ProdutoDaEtapa.Criar,
                 cancellationToken)

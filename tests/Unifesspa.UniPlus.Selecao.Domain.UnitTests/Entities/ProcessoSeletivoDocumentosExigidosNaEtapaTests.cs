@@ -56,10 +56,13 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         FaseCronograma fase = Fase(1, "HABILITACAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
-        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(fase.Id, Guid.CreateVersion7(), PapelDoFormularioDeTeste.Habilitacao));
+        Guid etapaDoPedido = Guid.Parse("e7a9a000-0000-7000-8000-00000000e7a9");
+
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(fase.Id, etapaDoPedido, PapelDoFormularioDeTeste.Habilitacao));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
+        resultado.Error.Message.Should().NotContainEquivalentOf(etapaDoPedido.ToString()).And.NotContainEquivalentOf("e7a9a000");
     }
 
     /// <summary>
@@ -78,6 +81,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
+        resultado.Error.Message.Should().NotContainEquivalentOf(prova.Id.ToString()).And.NotContain("Prova objetiva");
     }
 
     /// <summary>

@@ -29,18 +29,18 @@ public sealed class GrafoDependenciaConjunta
         ArgumentNullException.ThrowIfNull(formularios);
         ArgumentNullException.ThrowIfNull(termos);
         MontagemDasDependencias montagem = MontagemDasDependencias.Montar(fatosColetados, regrasDerivacao, documentosExigidos, formularios, termos, grupos ?? []);
-        if (montagem.PrimeiroCiclo() is { } ciclo)
+        if (montagem.PrimeiroCiclo() is not null)
         {
-            return Result<GrafoDependenciaConjunta>.Failure(ErroDeCiclo(ciclo));
+            return Result<GrafoDependenciaConjunta>.Failure(ErroDeCiclo());
         }
 
         OrdemDasDependencias ordem = new(montagem);
         return Result<GrafoDependenciaConjunta>.Success(new(ordem.PartesEmOrdem(), ordem.DependenciasEmOrdem(), ordem.OrdemDeColeta()));
     }
 
-    private static DomainError ErroDeCiclo(IReadOnlyList<ParteDaConfiguracao> ciclo) => new(
+    private static DomainError ErroDeCiclo() => new(
         GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo,
-        $"As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo; cada um depende do seguinte: {string.Join(" → ", ciclo.Select(static parte => parte.Rotulo))}.");
+        "As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo: há partes que dependem umas das outras.");
 }
 
 /// <summary>Códigos de erro das dependências da configuração.</summary>

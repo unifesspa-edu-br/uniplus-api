@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEt
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
+
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
@@ -66,12 +68,26 @@ public sealed class EtapasNoCronogramaTests
             ("etapas[0].fim", "ProcessoSeletivo.EtapaTerminaDepoisDaFase"));
     }
 
-    [Fact(DisplayName = "A mensagem da janela cita a etapa, a fase e os instantes em UTC")]
-    public void Janela_Mensagem_CitaEtapaFaseEInstantes()
+    [Theory(DisplayName = "A mensagem da janela descreve a regra sem o nome da etapa, o código da fase nem os instantes")]
+    [InlineData(-1, null)]
+    [InlineData(11, null)]
+    [InlineData(null, 11)]
+    [InlineData(null, -1)]
+    public void Janela_Mensagem_NaoRepeteValorRecebido(int? inicioEmDias, int? fimEmDias)
     {
-        string mensagem = EtapasNoCronograma.ConferirJanelaDasEtapas(Fases(Avaliacao()), Etapas(Datada(Abertura.AddDays(-1), null))).Single().Error.Message;
+        const string NomeInformado = "Etapa Fictícia Reconhecível 7731";
+        ModeloDeEtapa etapa = new ModeloDeEtapa(NomeInformado) with
+        {
+            FaseCodigo = "AVALIACAO",
+            Inicio = inicioEmDias is { } i ? Abertura.AddDays(i) : null,
+            Fim = fimEmDias is { } f ? Abertura.AddDays(f) : null,
+        };
 
-        mensagem.Should().Contain("\"Prova\"").And.Contain("2026-03-01T12:00:00.0000000+00:00").And.Contain("AVALIACAO");
+        FieldError causa = EtapasNoCronograma.ConferirJanelaDasEtapas(Fases(Avaliacao()), Etapas(etapa)).Single();
+
+        causa.Error.Message.Should().Contain("período da fase")
+            .And.NotContain(NomeInformado).And.NotContain("AVALIACAO").And.NotContain("2026");
+        causa.Field.Should().NotContain(NomeInformado);
     }
 
     [Fact(DisplayName = "A fase sem extremo não limita a etapa, e a etapa sem janela acontece na da fase")]
@@ -155,7 +171,8 @@ public sealed class EtapasNoCronogramaTests
         EtapasDoProcesso etapas = Etapas(EtapaNaFase("ENTREVISTA") with { Inicio = Abertura.AddDays(-30) });
 
         Causas(EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas)).Should().Equal(("etapas[0].faseCodigo", "ProcessoSeletivo.EtapaSemFaseNoCronograma"));
-        EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Single().Error.Message.Should().Be("A etapa \"Prova\" declara uma fase que não está no cronograma deste processo.");
+        EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Single().Error.Message
+            .Should().Be("Há etapa que declara uma fase que não está no cronograma deste processo.");
         EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, etapas).Should().BeEmpty();
         EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas).Ok.Should().BeFalse();
     }
@@ -180,7 +197,7 @@ public sealed class EtapasNoCronogramaTests
         Causas(EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas))
             .Should().Equal(("fases[1].faseCanonicaId", "ProcessoSeletivo.AvaliacaoSemEtapa"));
         EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas).Single().Error.Message
-            .Should().Be("A fase 'ENTREVISTAS' agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
+            .Should().Be("Fase que agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
     }
 
     [Fact(DisplayName = "Com etapa sem fase declarada a regra da fase que agrupa etapas é cortada: nenhuma recusa, o item da agrupadora e o da fase declarada ficam vermelhos")]
@@ -272,5 +289,24 @@ public sealed class EtapasNoCronogramaTests
 
         etapas.ConferirCompletude().Should().BeEmpty();
         EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas).Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "A etapa sem fase no cronograma e a fase agrupadora sem etapa não repetem o nome da etapa nem o código da fase")]
+    public void MensagensDeFaseEEtapaSemLigacao_NaoRepetemValorRecebido()
+    {
+        const string NomeInformado = "Etapa Fictícia Reconhecível 7731";
+        const string CodigoInformado = "FASE_FICTICIA_4408";
+        CronogramaDoProcesso cronograma = Fases(new ModeloDeFase(CodigoInformado, 1) with { AgrupaEtapas = true });
+        EtapasDoProcesso etapas = Etapas(new ModeloDeEtapa(NomeInformado) with { FaseCodigo = "OUTRA_FASE_FICTICIA_9902" });
+
+        string[] mensagens =
+        [
+            .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Select(static causa => causa.Error.Message),
+            .. EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas).Select(static causa => causa.Error.Message),
+        ];
+
+        mensagens.Should().HaveCount(2);
+        mensagens.Should().AllSatisfy(mensagem => mensagem.Should()
+            .NotContain(NomeInformado).And.NotContain(CodigoInformado).And.NotContain("OUTRA_FASE_FICTICIA_9902"));
     }
 }

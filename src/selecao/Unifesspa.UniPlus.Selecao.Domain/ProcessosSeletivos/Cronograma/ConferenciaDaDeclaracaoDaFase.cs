@@ -90,7 +90,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. JanelaDaFase.Violacoes(origem.OrigemData, cronograma),
         .. ViolacoesDasPublicacoes(publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
-        .. ResultadoDaRegraDeHomologacao(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
+        .. ResultadoDaRegraDeHomologacao(publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. ConsequenciaDaAusenciaNaBanca.Violacoes(bancasRequeridas.Select(static banca => (banca.Tipo, banca.ConsequenciaDaAusencia)), FaseDeclarada.ListaDasBancasRequeridas),
         .. CandidatosAtendidosPelasBancas.Violacoes(bancasRequeridas),
         .. CandidatosAtendidosEmBancaDeRecursos(bancasRequeridas),
@@ -99,10 +99,10 @@ internal static class ConferenciaDaDeclaracaoDaFase
 
     // A falta do resultado sai sempre; o resultado que não é produto da fase só é julgado contra a lista de produtos íntegra.
     private static IEnumerable<FieldError> ResultadoDaRegraDeHomologacao(
-        string codigoDaFase, PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
+        PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
     {
-        FieldError? recusa = ConferenciaDaRegraDeHomologacao.ResultadoAusente(codigoDaFase, publicacoes.RegraDeHomologacao)
-            ?? (produtosComParteRecusada ? null : ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(codigoDaFase, publicacoes));
+        FieldError? recusa = ConferenciaDaRegraDeHomologacao.ResultadoAusente(publicacoes.RegraDeHomologacao)
+            ?? (produtosComParteRecusada ? null : ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(publicacoes));
         return recusa is null ? [] : [recusa];
     }
 
@@ -145,15 +145,15 @@ internal static class ConferenciaDaDeclaracaoDaFase
     // ciclo recursal, e como definitivo, que o encerra.
     private static IEnumerable<FieldError> AtosDuplicados(IReadOnlyList<ProdutoDaFase> produtos) =>
         ProdutosPublicados.PosicoesRepetidas(produtos, static ato => ato)
-            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(produtos[posicao].AtoCodigo)));
+            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado()));
 
     /// <summary>A recusa do par ato e papel repetido, que a leitura do documento reconhece para recusar a lista inteira.</summary>
     internal static bool EhAtoDuplicado(FieldError recusa) => recusa.Error.Code == CodigoDoAtoDuplicado;
 
-    private static DomainError AtoDuplicado(string atoCodigo) =>
+    private static DomainError AtoDuplicado() =>
         new(
             CodigoDoAtoDuplicado,
-            $"Na fase, o ato '{atoCodigo}' é declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
+            "Na fase, há ato declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
 
     // O parecer individual é o fundamento do recurso: sem publicação de resultado não há decisão a
     // contestar, e a promessa ficaria sem objeto.

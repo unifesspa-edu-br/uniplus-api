@@ -287,7 +287,7 @@ public sealed class FatosDasVersoesPublicadas
     private TrocaDeEixo? TrocaDaOperacao(string agregado, string novo) =>
         _operacoesDosAgregados.TryGetValue(agregado, out HashSet<string>? publicadas)
         && publicadas.FirstOrDefault(publicada => !string.Equals(publicada, novo, StringComparison.Ordinal)) is { } diferente
-            ? new TrocaDeEixo(agregado, "operação do agregado", diferente, novo, DeAgregado: true)
+            ? new TrocaDeEixo(agregado, "operação do agregado", diferente, DeAgregado: true)
             : null;
 
     /// <summary>Os itens, os grupos e os campos de grupo que o formulário coleta na versão.</summary>

@@ -33,7 +33,7 @@ internal sealed class DerivacaoInformada
         bool daOferta = entrada.CodigoFato is { } codigo && DerivacoesDaOferta.Deriva(codigo);
         if (daOferta)
         {
-            _recusasDeForma.Add(new("codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao(entrada.CodigoFato)));
+            _recusasDeForma.Add(new("codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao()));
         }
 
         _fatoAlvoBemFormado = !string.IsNullOrWhiteSpace(entrada.CodigoFato) && !daOferta;

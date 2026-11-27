@@ -74,7 +74,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
     [Fact(DisplayName = "Unidade responsável que não existe no cadastro é recusada no campo da fase, citando a fase")]
     public async Task Handle_UnidadeResponsavelNaoEncontrada_RecusaNoCampoDaFase()
     {
-        Guid unidadeExcluida = Guid.CreateVersion7();
+        Guid unidadeExcluida = Guid.Parse("a1d0ec10-0000-7000-8000-00000000ffff");
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().SemAUnidadeNoCadastro(unidadeExcluida);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
@@ -84,7 +84,7 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("fases[0].unidadeResponsavelId");
         recusa.Error.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
-        recusa.Error.Message.Should().Contain("RESULTADO_FINAL");
+        recusa.Error.Message.Should().Contain("RESULTADO_FINAL").And.NotContainEquivalentOf("a1d0ec10").And.NotContainEquivalentOf(unidadeExcluida.ToString());
         cenario.Processo.CronogramaFases.Should().BeEmpty("a recusa não grava o cronograma");
     }
 

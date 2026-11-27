@@ -257,6 +257,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         Result resultado = processo.DefinirRegrasDerivacao([derivacao]);
 
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado);
+        resultado.Error.Message.Should().NotContain(codigo);
     }
 
     [Fact]

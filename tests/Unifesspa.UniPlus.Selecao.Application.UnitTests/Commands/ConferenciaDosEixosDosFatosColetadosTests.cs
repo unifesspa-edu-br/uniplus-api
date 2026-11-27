@@ -50,7 +50,7 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
         IReadOnlyList<FieldError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(
             publicadas, [], null, [new DefinicaoAgregado("RENDA_FAMILIAR", "G", "M", OperacaoAgregado.ValoresPresentes)]);
 
-        erros.Should().ContainSingle().Which.Error.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("'EXISTE' para 'VALORES_PRESENTES'").And.NotContain("O fato");
+        erros.Should().ContainSingle().Which.Error.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("valor publicado 'EXISTE'").And.NotContain("VALORES_PRESENTES").And.NotContain("O fato");
     }
 
     [Fact(DisplayName = "A origem dos valores congelada no item é o código do enum, não o nome do membro")]

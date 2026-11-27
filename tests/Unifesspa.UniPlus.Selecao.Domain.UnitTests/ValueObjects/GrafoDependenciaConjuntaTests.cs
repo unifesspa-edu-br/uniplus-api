@@ -352,11 +352,13 @@ public sealed class GrafoDependenciaConjuntaTests
         construir.Should().Throw<InvalidOperationException>();
     }
 
-    [Fact]
-    public void Ciclo_Mensagem_DescreveCadaDependencia()
+    [Fact(DisplayName = "A recusa do ciclo diz a regra violada sem citar os códigos das partes")]
+    public void Ciclo_Mensagem_NaoCitaOsCodigosDasPartes()
     {
-        Result<GrafoDependenciaConjunta> resultado = Construir([Declarado("A", 0, "MODALIDADE")], [Derivado("MODALIDADE", "A")]);
-        resultado.Error!.Message.Should().Be("As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo; cada um depende do seguinte: Campo do formulário A → Dado do candidato MODALIDADE → Dado do candidato A → Campo do formulário A.");
+        Result<GrafoDependenciaConjunta> resultado = Construir([Declarado("CAMPO_FICTICIO_ALFA", 0, "DADO_FICTICIO_BETA")], [Derivado("DADO_FICTICIO_BETA", "CAMPO_FICTICIO_ALFA")]);
+
+        resultado.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
+        resultado.Error.Message.Should().Be("As dependências entre campos, dados, exigências, seções e termos da configuração formam um ciclo: há partes que dependem umas das outras.");
     }
 
 }

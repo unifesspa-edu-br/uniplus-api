@@ -30,6 +30,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
         resultado.IsFailure.Should().BeTrue(
             "reduzir o que se pode e devolver um quadro ainda estourado entregaria como reconciliado o que não fecha");
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso");
+        resultado.Error.Message.Should().NotContain("AC_PCD");
     }
 
     [Fact(DisplayName = "Ajuste que nomeia modalidade fora do quadro é recusado")]
@@ -40,6 +41,7 @@ public sealed class ReconciliadorQuadroInstitucionalTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteReferenciaModalidadeForaDoQuadro");
+        resultado.Error.Message.Should().NotContain("LB_PPI");
     }
 
     [Fact(DisplayName = "REDUZIR_PROPORCIONAL_EM reparte o excesso na proporção do declarado")]
@@ -80,6 +82,40 @@ public sealed class ReconciliadorQuadroInstitucionalTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso");
+        resultado.Error.Message.Should().NotContain("AC_I");
+    }
+
+    [Fact(DisplayName = "A recusa do excesso não absorvido por uma modalidade não repete o código nem as quantidades enviados")]
+    public void ReduzirDe_SemSaldo_MensagemSemValorRecebido()
+    {
+        Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
+            ["AC", "MODALIDADE_FICTICIA_ZETA"], [38, 7137], excesso: 90210, new ParametrosReduzirDe("MODALIDADE_FICTICIA_ZETA"));
+
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso");
+        resultado.Error.Message.Should().Be("A modalidade do ajuste não tem vagas suficientes para absorver o excesso.");
+    }
+
+    [Fact(DisplayName = "A recusa do excesso não absorvido pelo conjunto não repete as quantidades enviadas")]
+    public void ReduzirProporcional_SemSaldo_MensagemSemValorRecebido()
+    {
+        Result<Reconciliado> resultado = ReconciliadorQuadroInstitucional.Reduzir(
+            ["AC", "MODALIDADE_FICTICIA_ZETA"], [40, 7137], excesso: 90210, new ParametrosReduzirProporcionalEm(["MODALIDADE_FICTICIA_ZETA"]));
+
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.AjusteNaoAbsorveOExcesso");
+        resultado.Error.Message.Should().Be("As modalidades do ajuste somam menos vagas do que o excesso a absorver.");
+    }
+
+    [Fact(DisplayName = "A recusa de modalidade fora do quadro não repete o código enviado, em REDUZIR_DE e em REDUZIR_PROPORCIONAL_EM")]
+    public void ModalidadeForaDoQuadro_MensagemSemOCodigoEnviado()
+    {
+        Result<Reconciliado> deUma = ReconciliadorQuadroInstitucional.Reduzir(
+            ["AC"], [42], excesso: 2, new ParametrosReduzirDe("MODALIDADE_FICTICIA_ZETA"));
+        Result<Reconciliado> proporcional = ReconciliadorQuadroInstitucional.Reduzir(
+            ["AC"], [42], excesso: 2, new ParametrosReduzirProporcionalEm(["AC", "MODALIDADE_FICTICIA_ZETA"]));
+
+        new[] { deUma, proporcional }.Select(static r => (r.Error!.Code, r.Error.Message)).Should().OnlyContain(static erro =>
+            erro.Code == "ConfiguracaoDistribuicaoVagas.AjusteReferenciaModalidadeForaDoQuadro"
+            && erro.Message == "O ajuste reduz de modalidade que não está entre as modalidades selecionadas.");
     }
 
     [Fact(DisplayName = "Sem excesso o quadro atravessa intacto")]

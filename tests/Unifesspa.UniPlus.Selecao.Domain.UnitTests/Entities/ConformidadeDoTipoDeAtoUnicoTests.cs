@@ -67,7 +67,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         return processo;
     }
 
-    [Fact(DisplayName = "Tipo único declarado em duas fases reprova a publicação e a mensagem nomeia o tipo e as duas fases")]
+    [Fact(DisplayName = "Tipo único declarado em duas fases reprova a publicação e a mensagem nomeia o tipo sem citar os lugares")]
     public void TipoUnico_EmDuasFases_ReprovaNomeandoOTipoEAsFases()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
@@ -79,7 +79,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
         resultado.Error.Message.Should().Be(
-            "O tipo de ato 'Resultado da classificação' só pode ser publicado uma vez por processo e está declarado na fase 'CLASSIFICACAO' e na fase 'HABILITACAO'.");
+            "O tipo de ato 'Resultado da classificação' só pode ser publicado uma vez por processo e está declarado mais de uma vez.");
     }
 
     [Fact(DisplayName = "Tipo único declarado como preliminar e como definitivo reprova")]
@@ -94,7 +94,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
 
         pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("Homologação das inscrições").And.Contain("na fase 'HOMOLOGACAO_INSCRICOES' (2 vezes)");
+        pendencia!.Message.Should().Contain("Homologação das inscrições").And.EndWith("está declarado mais de uma vez.");
     }
 
     [Fact(DisplayName = "Tipo único declarado sem papel e com papel reprova")]
@@ -137,7 +137,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
         pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("na fase 'CLASSIFICACAO' e na etapa 'Prova Objetiva' (ordem 1)");
+        pendencia!.Message.Should().EndWith("está declarado mais de uma vez.").And.NotContain("CLASSIFICACAO").And.NotContain("Prova Objetiva");
     }
 
     [Fact(DisplayName = "Tipo não único declarado como preliminar e como definitivo é aceito e publica")]
@@ -180,7 +180,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
-        resultado.Error.Message.Should().Contain("na fase 'ABERTURA' e no ato que está sendo registrado");
+        resultado.Error.Message.Should().EndWith("está declarado mais de uma vez.").And.NotContain("ABERTURA");
     }
 
     private static EtapaProcesso EtapaDeProvaComResultadoDefinitivo(int ordem)
@@ -202,7 +202,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         DomainError? pendencia = PendenciaDoTipoDeAtoUnico(processo.Declaracao(), Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
         pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("na etapa 'Prova' (ordem 1) e na etapa 'Prova' (ordem 2)");
+        pendencia!.Message.Should().EndWith("está declarado mais de uma vez.").And.NotContain("Prova");
     }
 
     [Fact(DisplayName = "Retificação: o cronograma que passa a declarar o tipo único já ocupado por ato registrado do processo reprova")]
@@ -215,7 +215,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "RETIFICACAO_EDITAL", vagaOcupada: true));
 
         pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("na fase 'ABERTURA' e no ato já registrado do processo");
+        pendencia!.Message.Should().EndWith("está declarado mais de uma vez.").And.NotContain("ABERTURA");
     }
 
     [Fact(DisplayName = "Retificação com ato do mesmo tipo único da própria linhagem não conta duas vezes a mesma vaga")]

@@ -137,7 +137,7 @@ public sealed class ProcessoSeletivoCascataTests
             "sem EhRegraFederal cobrindo a variação, OfertaForaDoRegimeFederal recusaria com CascataForaDoRegimeFederal");
     }
 
-    [Fact(DisplayName = "CausasDaCascata com oferta federal e SEM cascata configurada recusa com CascataOrigemAusente, nomeando oferta e modalidade")]
+    [Fact(DisplayName = "CausasDaCascata com oferta federal e SEM cascata configurada recusa com CascataOrigemAusente, sem o identificador da oferta")]
     public void CausasDaCascata_OfertaFederalSemCascata_RecusaComOrigemAusente()
     {
         ConfiguracaoDistribuicaoVagas oferta = OfertaFederalCompleta();
@@ -147,7 +147,7 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataOrigemAusente");
-        pendencia.Message.Should().Contain(oferta.OfertaCursoOrigemId.ToString());
+        pendencia.Message.Should().NotContain(oferta.OfertaCursoOrigemId.ToString());
     }
 
     [Fact(DisplayName = "CausasDaCascata com SegueCascata fora do regime federal (institucional) recusa com CascataForaDoRegimeFederal")]
@@ -165,6 +165,7 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataForaDoRegimeFederal");
+        pendencia.Message.Should().NotContain(ModalidadesFederaisLei12711.LbPpi).And.NotContain(ofertaInstitucional.OfertaCursoOrigemId.ToString());
     }
 
     [Fact(DisplayName = "CausasDaCascata com fallback da cascata fora das modalidades da oferta recusa com CascataFallbackNaoSelecionadoNaOferta")]
@@ -180,24 +181,33 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta");
+        pendencia.Message.Should().NotContain("FALLBACK_INEXISTENTE");
     }
 
     [Fact(DisplayName = "CausasDaCascata acumula o fallback fora da oferta, as origens sem destino e o destino desconhecido, nessa ordem")]
     public void CausasDaCascata_DefeitosIndependentes_AcumulamNaOrdem()
     {
-        ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
+        ConfiguracaoDistribuicaoVagas oferta = OfertaFederalCompleta();
+        ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
         processo.DefinirCascataRemanejamento(CascataComFallbackEDestinoForaDaOferta()).IsSuccess.Should().BeTrue();
 
-        string[] codigos = [.. CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Select(static causa => causa.Error.Code)];
+        IReadOnlyList<FieldError> causas = [.. CoberturaDaCascata.CausasDaCascata(processo.Declaracao())];
 
-        codigos.Should().Equal(
+        causas.Select(static causa => causa.Error.Code).Should().Equal(
             [
                 "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
                 .. Enumerable.Repeat("ProcessoSeletivo.CascataOrigemAusente", 7),
                 "ProcessoSeletivo.CascataDestinoDesconhecido",
             ],
             "o fallback é da oferta, as sete origens sem destino vêm depois, e o destino desconhecido é conferido por último, sobre a cascata");
+        ConferirMensagemDasOrigensSemDestino(causas, oferta);
     }
+
+    private static void ConferirMensagemDasOrigensSemDestino(IReadOnlyList<FieldError> causas, ConfiguracaoDistribuicaoVagas oferta) =>
+        causas.Where(static causa => causa.Error.Code == "ProcessoSeletivo.CascataOrigemAusente").Select(static causa => causa.Error.Message)
+            .Should().OnlyContain(mensagem => mensagem == "A oferta tem modalidade com SegueCascata, mas a cascata não declara nenhum destino para ela."
+                && !mensagem.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal)
+                && !mensagem.Contains(oferta.OfertaCursoOrigemId.ToString(), StringComparison.OrdinalIgnoreCase));
 
     [Fact(DisplayName = "CausasDaCascata com destino da origem fora das modalidades da oferta recusa com CascataFallbackNaoSelecionadoNaOferta")]
     public void CausasDaCascata_DestinoDaOrigemNaoResolvivelNaOferta_Recusa()
@@ -213,6 +223,7 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta");
+        pendencia.Message.Should().NotContain(ModalidadesFederaisLei12711.LbPpi);
     }
 
     private static ConfiguracaoDistribuicaoVagas OfertaSoDeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(
@@ -260,18 +271,19 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataOrigemNaoSegueCascata");
+        pendencia.Message.Should().NotContain(ModalidadesFederaisLei12711.LbPpi);
     }
 
+    // LB_PPI mantém os 7 destinos legais (todos resolvíveis nesta oferta — o
+    // per-oferta loop não recusa) e ganha um 8º destino apontando para um código
+    // que não é modalidade de NENHUMA oferta do processo — só a checagem GLOBAL
+    // (que roda depois de todas as ofertas passarem) alcança esse caso. LB_Q perde
+    // um destino legal (fica com 6, ainda contíguo a partir de 1) para abrir espaço
+    // sob o teto de 56 destinos (7×6 + 6 + 8 = 56) sem comprometer a resolubilidade
+    // de LB_Q nesta oferta (os 6 restantes continuam todos selecionados).
     [Fact(DisplayName = "CausasDaCascata com destino que não é modalidade de nenhuma oferta recusa com CascataDestinoDesconhecido")]
     public void CausasDaCascata_DestinoDesconhecidoEmTodoOProcesso_Recusa()
     {
-        // LB_PPI mantém os 7 destinos legais (todos resolvíveis nesta oferta — o
-        // per-oferta loop não recusa) e ganha um 8º destino apontando para um código
-        // que não é modalidade de NENHUMA oferta do processo — só a checagem GLOBAL
-        // (que roda depois de todas as ofertas passarem) alcança esse caso. LB_Q perde
-        // um destino legal (fica com 6, ainda contíguo a partir de 1) para abrir espaço
-        // sob o teto de 56 destinos (7×6 + 6 + 8 = 56) sem comprometer a resolubilidade
-        // de LB_Q nesta oferta (os 6 restantes continuam todos selecionados).
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
         processo.DefinirCascataRemanejamento(CascataComUmDestinoQueNenhumaOfertaTem()).IsSuccess.Should().BeTrue();
 
@@ -279,6 +291,7 @@ public sealed class ProcessoSeletivoCascataTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataDestinoDesconhecido");
+        pendencia.Message.Should().NotContain("DESTINO_QUE_NAO_EXISTE");
     }
 
     [Fact(DisplayName = "AvaliarConformidade com processo só de ampla concorrência (sem SegueCascata) tem o item Ok, sem cascata")]
