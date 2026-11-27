@@ -19,8 +19,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// O veredito de submissão: diferente da validação estrutural do rascunho
 /// (<c>SalvarInscricaoCommandHandler</c>), aqui a ausência de resposta a um item visível e
 /// obrigatório, um impedimento verdadeiro, um grupo fora do mínimo/máximo ou sem o candidato, e um
-/// termo obrigatório não aceito (ou aceito com versão/hash diferente da versão fixada) TODOS
-/// recusam a submissão — nada disso é tolerado no rascunho.
+/// termo obrigatório sem aceite TODOS recusam a submissão — nada disso é tolerado no rascunho.
+/// O aceite de outra versão ou com outro hash tem recusa própria no domínio (<c>PreenchimentoDoCandidato</c>)
+/// e não é repetido aqui como termo não aceito.
 /// </summary>
 /// <remarks>
 /// Recebe a avaliação já pronta: a da definição inteira da versão fixada, feita pela
@@ -117,7 +118,7 @@ public static class VeredictoDeSubmissao
             if (termo.Visivel != Ternario.Verdadeiro || termo.Obrigatorio != Ternario.Verdadeiro)
                 continue;
             TermoNoFormulario? exigido = TermoExigidoDaAvaliacao(termo, termosExigidos.Keys);
-            if (exigido is null || !AceitoNaVersaoFixada(exigido, termosExigidos[exigido], aceites))
+            if (exigido is null || !TemAceiteDoTermo(exigido, aceites))
             {
                 yield return Independente(RecusaDoTermo(termo, exigido));
             }
@@ -146,12 +147,9 @@ public static class VeredictoDeSubmissao
             CodigoDoFormulario.Criar(t.FormularioCodigo) is { IsSuccess: true } formulario
             && string.Equals(DefinicaoDoProcesso.CodigoDoTermo(formulario.Value!, t.Codigo), termo.Codigo, StringComparison.Ordinal));
 
-    private static bool AceitoNaVersaoFixada(TermoNoFormulario exigido, TermoAdmitido admitido, IReadOnlyList<AceiteDeTermo> aceites)
-    {
-        AceiteDeTermo? aceite = aceites.FirstOrDefault(a =>
+    private static bool TemAceiteDoTermo(TermoNoFormulario exigido, IReadOnlyList<AceiteDeTermo> aceites) =>
+        aceites.Any(a =>
             string.Equals(a.FormularioCodigo, exigido.FormularioCodigo, StringComparison.Ordinal) && string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
-        return aceite is not null && aceite.ValeParaAVersao(admitido);
-    }
 
     /// <summary>
     /// A <see cref="AvaliacaoDaInscricao"/> descarta em silêncio, via <c>RespostaDeCampo.DentroDaOferta</c>,

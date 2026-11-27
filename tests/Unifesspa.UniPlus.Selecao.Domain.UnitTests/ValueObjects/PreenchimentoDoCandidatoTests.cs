@@ -208,6 +208,16 @@ public sealed class PreenchimentoDoCandidatoTests
             ("aceites[3]", InscricaoErrorCodes.AceiteDeOutraVersao));
     }
 
+    [Fact(DisplayName = "Aceite de outra versão seguido do aceite certo do mesmo termo recusa só o primeiro, como outra versão, e o segundo, como repetido")]
+    public void RecusasDosAceites_OutraVersaoSeguidaDoAceiteCerto_RecusaOPrimeiroEORepetido()
+    {
+        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.NewGuid(), "abc"), new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "abc")]);
+
+        valor.RecusasDosAceites(TermosAdmitidosDaInscricao("A")).Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+            ("aceites[0]", InscricaoErrorCodes.AceiteDeOutraVersao),
+            ("aceites[1]", InscricaoErrorCodes.AceiteRepetido));
+    }
+
     [Fact]
     public void RecusasDoEndereco_SemCepEComplementoLongo_AcumulaNaOrdem()
     {

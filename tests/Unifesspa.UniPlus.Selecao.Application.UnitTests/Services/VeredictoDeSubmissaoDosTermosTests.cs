@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Services.ApoioDoVeredictoDeSubmissao;
 
 /// <summary>
-/// Os termos no resultado da submissão: o termo obrigatório não aceito, ou aceito em outra versão ou com outro
-/// hash, recusa; a recusa cita o formulário que exige o termo.
+/// Os termos no resultado da submissão: o termo obrigatório sem aceite recusa; o aceite de outra versão ou com outro
+/// hash não recusa o termo aqui, porque tem recusa própria no domínio; a recusa cita o formulário que exige o termo.
 /// </summary>
 public sealed class VeredictoDeSubmissaoDosTermosTests
 {
@@ -31,8 +31,8 @@ public sealed class VeredictoDeSubmissaoDosTermosTests
         recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
 
-    [Fact(DisplayName = "Termo aceito com hash diferente do da versão fixada recusa a submissão")]
-    public void Avaliar_TermoAceitoComHashDiferente_Recusa()
+    [Fact(DisplayName = "Termo aceito com hash diferente do da versão fixada não recusa o termo")]
+    public void Avaliar_TermoAceitoComHashDiferente_NaoRecusaOTermo()
     {
         AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
@@ -42,7 +42,20 @@ public sealed class VeredictoDeSubmissaoDosTermosTests
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, exigido, [aceite], DiaDoEnvio);
 
-        recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Termo aceito em outra versão não recusa o termo")]
+    public void Avaliar_TermoAceitoEmOutraVersao_NaoRecusaOTermo()
+    {
+        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
+        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
+        IReadOnlyDictionary<TermoNoFormulario, TermoAdmitido> exigido = TermoExigido("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+        AceiteDeTermo aceiteDeOutraVersao = new(FormularioDeTeste.CodigoDaInscricao, "DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, exigido, [aceiteDeOutraVersao], DiaDoEnvio);
+
+        recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Termo aceito com a mesma versão e o mesmo hash da versão fixada não recusa")]
