@@ -33,7 +33,7 @@ internal static class EtapasLidasDeTeste
         },
         Regras = new Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>(Cadastros().Regras)
         {
-            [(RegraDeApuracao, "v1")] = new(TipoRegra.RegraApuracaoAvaliacao, ReferenciaRegra.De(RegraDeApuracao, "v1", Hash)),
+            [(RegraDeApuracao, "v1")] = new(TipoRegra.RegraApuracaoAvaliacao, ReferenciaRegra.De(RegraDeApuracao, "v1", Hash), default),
         },
         TiposDeAto = Cadastros().TiposDeAto,
     };

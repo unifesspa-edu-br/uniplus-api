@@ -133,7 +133,7 @@ internal static class ResolucaoDaCascataRemanejamento
             return Result<ConfiguracaoCascataRemanejamento?>.ValidationFailure(resultado.Errors);
         }
 
-        if (!ConformidadeDaCascataComARegra.Conferir(resultado.Value!, regra))
+        if (!ConformidadeDaCascataComARegra.Conferir(resultado.Value!, regra.DeclaracaoDaRegra))
         {
             return MatrizDivergente();
         }

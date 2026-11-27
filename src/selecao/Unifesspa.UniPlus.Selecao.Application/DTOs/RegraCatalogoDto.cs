@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </para>
 /// <para>
 /// <see cref="ModalidadesAdmitidas"/> é projeção pura de
-/// <c>declaracao_da_regra.modalidades_admitidas</c> (<see cref="Application.Services.ModalidadesAdmitidasDaDeclaracaoDaRegra"/>),
+/// <c>declaracao_da_regra.modalidades_admitidas</c> (<see cref="Domain.ProcessosSeletivos.Vagas.ModalidadesAdmitidasDaDeclaracaoDaRegra"/>),
 /// não campo novo do agregado — o rol continua na declaração porque ele já compõe o hash da
 /// definição, e um campo próprio em <c>RegraCatalogo</c> mudaria a fórmula do hash das versões já
 /// publicadas. O campo tipado poupa o cliente de ler uma chave nomeada de dentro da declaração.

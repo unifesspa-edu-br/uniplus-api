@@ -107,5 +107,5 @@ internal static class DocumentoLidoDeTeste
     private static OrigemCanonicaDaFase FaseCanonica(string codigo) =>
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
 
-    private static RegraDoCatalogoCitada Regra(TipoRegra tipo, string codigo) => new(tipo, ReferenciaRegra.De(codigo, "v1", Hash));
+    private static RegraDoCatalogoCitada Regra(TipoRegra tipo, string codigo) => new(tipo, ReferenciaRegra.De(codigo, "v1", Hash), default);
 }

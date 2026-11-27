@@ -246,7 +246,7 @@ internal sealed class ResolucaoDaDistribuicao(
     private FatosDaOfertaNoCadastro FatosDoCadastro() => new()
     {
         VagasAnuaisAutorizadas = _oferta?.VagasAnuaisAutorizadas,
-        ModalidadesAdmitidas = _regra is null ? null : ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(_regra),
+        ModalidadesAdmitidas = _regra is null ? null : ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(_regra.DeclaracaoDaRegra),
         GrupoAreaEnem = _oferta?.GrupoAreaEnem is { } grupo ? (grupo.Codigo, grupo.Rotulo) : null,
         OfertaCurso = _nomeDaOferta,
     };
