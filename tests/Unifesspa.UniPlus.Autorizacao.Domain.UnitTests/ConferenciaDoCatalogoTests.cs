@@ -111,8 +111,10 @@ public sealed class ConferenciaDoCatalogoTests
 
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = ConferenciaDaGovernanca.DoCatalogo(Catalogo, anterior, novo, Agora);
 
-        divergencias.Should().Contain(d => d.Tipo == TipoDeDivergencia.Classificacao && d.De == "INTERNO" && d.Para == "SENSIVEL");
-        divergencias.Should().Contain(d => d.Tipo == TipoDeDivergencia.Escopo && d.De == "False" && d.Para == "True");
+        MudancaDaClassificacao classificacao = new(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Sensivel);
+        MudancaDoEscopo escopo = new(false, true);
+        divergencias.Where(d => d.Tipo == TipoDeDivergencia.Classificacao).Should().OnlyContain(d => d.MudancaDaClassificacao == classificacao && d.MudancaDoEscopo == null).And.NotBeEmpty();
+        divergencias.Where(d => d.Tipo == TipoDeDivergencia.Escopo).Should().OnlyContain(d => d.MudancaDoEscopo == escopo && d.MudancaDaClassificacao == null).And.NotBeEmpty();
     }
 
     [Fact(DisplayName = "A permissão de governança sem mudança no catálogo não gera divergência")]

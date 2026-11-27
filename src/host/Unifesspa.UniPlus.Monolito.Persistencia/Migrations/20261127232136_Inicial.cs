@@ -2012,8 +2012,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     tipo = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Códigos: COMPOSICAO_FALTANTE, COMPOSICAO_EXCEDENTE, CLASSIFICACAO, ESCOPO."),
-                    de = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
-                    para = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
+                    classificacao_anterior = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Classificação de proteção da permissão antes da troca de catálogo; nula fora da divergência de classificação. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
+                    classificacao_nova = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Classificação de proteção da permissão depois da troca de catálogo; nula fora da divergência de classificação. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
+                    de_unidade_anterior = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se a permissão valia por unidade antes da troca de catálogo; nula fora da divergência de escopo."),
+                    de_unidade_novo = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se a permissão vale por unidade depois da troca de catálogo; nula fora da divergência de escopo."),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ordem_no_historico = table.Column<long>(type: "bigint", nullable: false)
                 },
@@ -2021,6 +2023,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_divergencias_da_governanca", x => x.id);
                     table.CheckConstraint("ck_divergencias_da_governanca_tipo", "tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE', 'CLASSIFICACAO', 'ESCOPO')");
+                    table.CheckConstraint("ck_divergencias_da_governanca_valores", "(tipo IN ('COMPOSICAO_FALTANTE', 'COMPOSICAO_EXCEDENTE') AND classificacao_anterior IS NULL AND classificacao_nova IS NULL AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'CLASSIFICACAO' AND classificacao_anterior IS NOT NULL AND classificacao_nova IS NOT NULL AND classificacao_anterior <> classificacao_nova AND de_unidade_anterior IS NULL AND de_unidade_novo IS NULL) OR (tipo = 'ESCOPO' AND de_unidade_anterior IS NOT NULL AND de_unidade_novo IS NOT NULL AND de_unidade_anterior <> de_unidade_novo AND classificacao_anterior IS NULL AND classificacao_nova IS NULL)");
                     table.ForeignKey(
                         name: "fk_divergencias_da_governanca_implantacao",
                         column: x => x.implantacao_id,

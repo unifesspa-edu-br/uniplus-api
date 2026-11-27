@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
@@ -13,6 +14,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
@@ -126,6 +129,61 @@ public sealed class ReclassificacoesRecusadasTests
         Result<IReadOnlyList<DivergenciaDaGovernancaDto>> divergencias = await ListarDivergencias(verificador, repositorio);
 
         divergencias.Value!.Should().ContainSingle().Which.Tipo.EmPar().Should().Be(("COMPOSICAO_EXCEDENTE", "Composição excedente"));
+    }
+
+    [Fact(DisplayName = "A divergência de classificação sai só com o par de classificações, com código e rótulo")]
+    public async Task Divergencias_Classificacao_SaiComOParDeClassificacoes()
+    {
+        ReclassificacoesNaMemoria repositorio = new();
+        repositorio.Divergencias.Add(DivergenciaDaGovernanca.DaClassificacao(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "selecao:processos:consultar",
+            new MudancaDaClassificacao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Sensivel), PerfisDeTeste.Instante, 0));
+
+        DivergenciaDaGovernancaDto dto = await UmaDivergenciaAsync(repositorio);
+
+        dto.ClassificacaoAnterior.Should().Be(CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Interno));
+        dto.ClassificacaoNova.Should().Be(CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Sensivel));
+        dto.DeUnidadeAnterior.Should().BeNull();
+        dto.DeUnidadeNovo.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A divergência de escopo sai só com o par lógico de por unidade")]
+    public async Task Divergencias_Escopo_SaiComOParLogico()
+    {
+        ReclassificacoesNaMemoria repositorio = new();
+        repositorio.Divergencias.Add(DivergenciaDaGovernanca.DoEscopo(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "selecao:processos:consultar", new MudancaDoEscopo(true, false), PerfisDeTeste.Instante, 0));
+
+        DivergenciaDaGovernancaDto dto = await UmaDivergenciaAsync(repositorio);
+
+        dto.DeUnidadeAnterior.Should().BeTrue();
+        dto.DeUnidadeNovo.Should().BeFalse();
+        dto.ClassificacaoAnterior.Should().BeNull();
+        dto.ClassificacaoNova.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A divergência de composição sai sem nenhum dos pares de valores")]
+    public async Task Divergencias_Composicao_SaiSemValores()
+    {
+        ReclassificacoesNaMemoria repositorio = new();
+        repositorio.Divergencias.Add(DivergenciaDaGovernanca.DaComposicao(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "selecao:processos:consultar", TipoDeDivergencia.ComposicaoFaltante, PerfisDeTeste.Instante, 0));
+
+        DivergenciaDaGovernancaDto dto = await UmaDivergenciaAsync(repositorio);
+
+        dto.ClassificacaoAnterior.Should().BeNull();
+        dto.ClassificacaoNova.Should().BeNull();
+        dto.DeUnidadeAnterior.Should().BeNull();
+        dto.DeUnidadeNovo.Should().BeNull();
+    }
+
+    private static async Task<DivergenciaDaGovernancaDto> UmaDivergenciaAsync(ReclassificacoesNaMemoria repositorio)
+    {
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Protecao]);
+
+        Result<IReadOnlyList<DivergenciaDaGovernancaDto>> divergencias = await ListarDivergencias(verificador, repositorio);
+
+        return divergencias.Value!.Should().ContainSingle().Which;
     }
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>

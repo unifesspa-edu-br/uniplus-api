@@ -142,13 +142,15 @@ autorizacao.desativacoes_do_perfil.reativada_por_conta_id: Pessoal
 autorizacao.desativacoes_do_perfil.reativada_por_emissor: Pessoal
 autorizacao.desativacoes_do_perfil.reativada_por_nome: Pessoal
 autorizacao.desativacoes_do_perfil.updated_at: Pessoal
+autorizacao.divergencias_da_governanca.classificacao_anterior: Interno
+autorizacao.divergencias_da_governanca.classificacao_nova: Interno
 autorizacao.divergencias_da_governanca.codigo: Interno
-autorizacao.divergencias_da_governanca.de: Interno
+autorizacao.divergencias_da_governanca.de_unidade_anterior: Interno
+autorizacao.divergencias_da_governanca.de_unidade_novo: Interno
 autorizacao.divergencias_da_governanca.id: Interno
 autorizacao.divergencias_da_governanca.implantacao_id: Interno
 autorizacao.divergencias_da_governanca.instante: Interno
 autorizacao.divergencias_da_governanca.ordem_no_historico: Interno
-autorizacao.divergencias_da_governanca.para: Interno
 autorizacao.divergencias_da_governanca.perfil_id: Interno
 autorizacao.divergencias_da_governanca.tipo: Interno
 autorizacao.documentos_da_versao.created_at: Interno
