@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -144,112 +142,24 @@ public sealed record ConteudoDoModelo(
 
     private IEnumerable<(string Campo, string? Texto)> TextosDoConteudo() =>
         new (string, string?)[] { ("titulo", Titulo) }
-            .Concat(Paginas.SelectMany(TextosDaPagina))
+            .Concat(Paginas.SelectMany(static (p, i) => TextosDoConteudoDoModelo.DaPagina($"paginas[{i}]", p.Titulo, p.Descricao, p.Aviso, p.Exibicao)))
             .Concat(Itens.SelectMany(static (item, i) => TextosDoCampo($"itens[{i}]", item)))
-            .Concat(Grupos.SelectMany(TextosDoGrupo))
-            .Concat(Termos.SelectMany(TextosDoTermo))
-            .Concat(Documentos.ComCaminho().SelectMany(static c => TextosDoDocumento(c.Documento, c.Caminho)))
-            .Concat(Documentos.GruposDeDocumentos.SelectMany(TextosDoGrupoDeDocumentos))
+            .Concat(Grupos.SelectMany(static (grupo, i) => TextosDoGrupo($"grupos[{i}]", grupo)))
+            .Concat(Termos.SelectMany(static (t, i) => TextosDoConteudoDoModelo.DoTermo($"termos[{i}]", t.Regras.Exibicao, t.Regras.Obrigatoriedade.Predicado)))
+            .Concat(Documentos.ComCaminho().SelectMany(static c => TextosDoConteudoDoModelo.DoDocumentoLido(c.Caminho, c.Documento)))
+            .Concat(Documentos.GruposDeDocumentos.SelectMany(static (g, i) => TextosDoGrupoDeDocumentos(ConjuntoDeDocumentosDoModelo.CaminhoDoGrupo(i), g)))
             .Concat(Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
 
-    private static IEnumerable<(string Campo, string? Texto)> TextosDaPagina(PaginaDoModelo pagina, int indice) =>
-        new (string, string?)[]
-        {
-            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.titulo", pagina.Titulo),
-            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.descricao", pagina.Descricao),
-            ($"paginas[{indice}].{PaginaDoFormularioInput.CaminhoDaApresentacao}.aviso", pagina.Aviso),
-        }
-        .Concat(TextosDosPredicados($"paginas[{indice}]", pagina.Predicados()));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupo(GrupoDoModelo grupo, int indice) =>
-        new (string, string?)[]
-        {
-            ($"grupos[{indice}].paginaCodigo", grupo.PaginaCodigo), ($"grupos[{indice}].rotulo", grupo.Rotulo),
-        }
-        .Concat(TextosDosPredicados($"grupos[{indice}]", grupo.Predicados()))
-        .Concat(grupo.Subitens.SelectMany((s, j) => TextosDoCampo($"grupos[{indice}].subitens[{j}]", s)));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoTermo(TermoDoModelo termo, int indice) =>
-        TextosDosPredicados($"termos[{indice}]", termo.Predicados());
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupoDeDocumentos(GrupoDeDocumentosDoModelo grupo, int indice) =>
-        grupo.Indeferimento is { } indeferimento
-            ? TextosDoIndeferimentoDoGrupo($"{ConjuntoDeDocumentosDoModelo.CaminhoDoGrupo(indice)}.indeferimento", indeferimento)
-            : [];
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoIndeferimentoDoGrupo(string caminho, IndeferimentoDoGrupoDeDocumentosDoModelo indeferimento) =>
-        indeferimento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.basesLegais[{j}]", b))
-            .Prepend(($"{caminho}.consequenciaDoDescumprimento", (string?)indeferimento.ConsequenciaDoDescumprimento));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoDocumento(DocumentoExigidoDoModelo documento, string caminho) =>
-        new (string, string?)[]
-        {
-            ($"{caminho}.faseCodigo", documento.FaseCodigo), ($"{caminho}.tipoDocumentoCodigo", documento.TipoDocumentoCodigo),
-            ($"{caminho}.indeferimento.consequenciaDoDescumprimento", documento.Indeferimento.ConsequenciaDoDescumprimento),
-        }
-        .Concat(TextosDosPredicados(caminho, documento.Predicados()))
-        .Concat(documento.Requisitos.TextosDasReferencias(caminho))
-        .Concat(TextosDaExigenciaPorOpcao($"{caminho}.porOpcao", documento.PorOpcao))
-        .Concat(documento.Indeferimento.BasesLegais.SelectMany((b, j) => TextosDaBaseLegal($"{caminho}.indeferimento.basesLegais[{j}]", b)));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDaExigenciaPorOpcao(string caminho, ExigenciaPorOpcao? porOpcao)
-    {
-        if (porOpcao is null)
-        {
-            return [];
-        }
-
-        return porOpcao.Exceto.Select((v, j) => ($"{caminho}.exceto[{j}]", (string?)v))
-            .Prepend(($"{caminho}.fatoCodigo", porOpcao.FatoCodigo));
-    }
-
-    private static (string Campo, string? Texto)[] TextosDaBaseLegal(string caminho, BaseLegalDoModelo baseLegal) =>
-        new (string, string?)[]
-        {
-            ($"{caminho}.referencia", baseLegal.Referencia), ($"{caminho}.abrangencia", baseLegal.Abrangencia),
-            ($"{caminho}.situacao", baseLegal.Situacao), ($"{caminho}.observacao", baseLegal.Observacao),
-        };
-
     private static IEnumerable<(string Campo, string? Texto)> TextosDoCampo(string caminho, ItemDoModelo campo) =>
-        new (string, string?)[]
-        {
-            ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.paginaCodigo", campo.PaginaCodigo),
-            ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.rotulo", campo.Apresentacao.Rotulo), ($"{caminho}.formato", campo.Formato),
-            ($"{caminho}.{FatoColetadoInput.CaminhoDaApresentacao}.ajuda", campo.Apresentacao.Ajuda),
-        }
-        .Concat(TextosDosPredicados(caminho, campo.Predicados()))
-        .Concat(TextosDasRegrasSemPredicados($"{caminho}.{FatoColetadoInput.CaminhoDasRegras}", campo.Regras));
+        TextosDoConteudoDoModelo.DoCampo(
+            caminho, campo.FatoCodigo, campo.PaginaCodigo, campo.Apresentacao.Rotulo, campo.Apresentacao.Ajuda, campo.Formato, RegrasLidasDoCampo.De(campo.Regras));
 
-    private static IEnumerable<(string Campo, string? Texto)> TextosDasRegrasSemPredicados(string caminho, RegrasDoCampo regras) =>
-        regras.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r))
-            .Concat(TextosDoImpedimento(caminho, regras.Impedimento));
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupo(string caminho, GrupoDoModelo grupo) =>
+        TextosDoConteudoDoModelo.DoGrupo(caminho, grupo.PaginaCodigo, grupo.Rotulo, grupo.Regras.Exibicao, grupo.Regras.Obrigatoriedade.Predicado)
+            .Concat(grupo.Subitens.SelectMany((s, j) => TextosDoCampo($"{caminho}.subitens[{j}]", s)));
 
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoImpedimento(string caminho, Impedimento? impedimento) =>
-        impedimento is null
-            ? []
-            : TextosDoPredicado($"{caminho}.impedimento.quando", impedimento.Quando).Append(($"{caminho}.impedimento.mensagem", impedimento.Mensagem));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDaRestricao(string campo, RestricaoValor restricao) => restricao switch
-    {
-        OpcoesPermitidas opcoes => opcoes.Entradas.SelectMany((e, k) => e.Valores.Select(v => ($"{campo}.entradas[{k}].valores", (string?)v))
-            .Concat(TextosDoPredicado($"{campo}.entradas[{k}].quando", e.Quando))),
-        OpcoesDasRespostas respostas => respostas.Fatos.Select(f => ($"{campo}.fatos", (string?)f)),
-        MunicipiosDaUf daUf => [($"{campo}.fatos", daUf.FatoUf)],
-        _ => [],
-    };
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDosPredicados(string caminho, IEnumerable<PredicadoNaEntrada> predicados) =>
-        predicados.SelectMany(p => TextosDoPredicado($"{caminho}.{p.Caminho}", p.Predicado));
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoPredicado(string campo, PredicadoDnf? predicado) =>
-        (predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
-            .SelectMany(c => new[] { (campo, (string?)c.Fato) }.Concat(TextosDoValor(c.Valor).Select(v => (campo, (string?)v))));
-
-    private static IEnumerable<string> TextosDoValor(JsonElement valor) => valor.ValueKind switch
-    {
-        JsonValueKind.String => [valor.GetString()!],
-        JsonValueKind.Array => valor.EnumerateArray().SelectMany(TextosDoValor),
-        JsonValueKind.Object => valor.EnumerateObject().SelectMany(static p => TextosDoValor(p.Value).Prepend(p.Name)),
-        _ => [],
-    };
+    private static IEnumerable<(string Campo, string? Texto)> TextosDoGrupoDeDocumentos(string caminho, GrupoDeDocumentosDoModelo grupo) =>
+        grupo.Indeferimento is { } indeferimento
+            ? TextosDoConteudoDoModelo.DoIndeferimento(caminho, indeferimento.ConsequenciaDoDescumprimento, indeferimento.BasesLegais)
+            : [];
 }

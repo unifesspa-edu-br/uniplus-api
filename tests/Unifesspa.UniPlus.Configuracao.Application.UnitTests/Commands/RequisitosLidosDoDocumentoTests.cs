@@ -169,4 +169,30 @@ public sealed class RequisitosLidosDoDocumentoTests
             ("requisitos.validade.efeitoDoVencimento", EfeitoNaAnaliseDoDocumentoErrorCodes.Invalido));
         lidos.Declarados.Should().BeNull();
     }
+
+    [Fact(DisplayName = "A escolha do prazo desconhecida não impede guardar o código de fase da referência no caminho do prazo")]
+    public void Ler_EscolhaDoPrazoDesconhecidaComReferencia_GuardaOCodigoDeFase()
+    {
+        PrazoDeEmissaoDoModeloInput prazo = new(CodigoDesconhecido, 90, "DIAS", new DataDeReferenciaDoDocumentoDoModeloInput("INICIO_DA_FASE", null, "FASE_DO_PRAZO"), null);
+
+        RequisitosLidosDoDocumento lidos = RequisitosLidosDoDocumento.Ler(new RequisitosDoDocumentoDoModeloInput(prazo, null));
+
+        lidos.ReferenciasInformadas.Should().Equal(("requisitos.prazoDeEmissao.referencia.faseCodigo", "FASE_DO_PRAZO"));
+        lidos.Declarados.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O tipo da referência da validade desconhecido não impede guardar o código de fase dela")]
+    public void Ler_TipoDaReferenciaDesconhecido_GuardaOCodigoDeFase()
+    {
+        ValidadeDoDocumentoDoModeloInput validade = new("EXIGE_DOCUMENTO_VALIDO", new DataDeReferenciaDoDocumentoDoModeloInput(CodigoDesconhecido, null, "FASE_DA_VALIDADE"), null);
+
+        RequisitosLidosDoDocumento lidos = RequisitosLidosDoDocumento.Ler(new RequisitosDoDocumentoDoModeloInput(null, validade));
+
+        lidos.ReferenciasInformadas.Should().Equal(("requisitos.validade.referencia.faseCodigo", "FASE_DA_VALIDADE"));
+    }
+
+    [Fact(DisplayName = "Sem referência no pedido, nenhum código de fase é guardado")]
+    public void Ler_SemReferencia_NaoGuardaCodigoDeFase() =>
+        RequisitosLidosDoDocumento.Ler(new RequisitosDoDocumentoDoModeloInput(new PrazoDeEmissaoDoModeloInput("SEM_PRAZO", null, null, null, null), null))
+            .ReferenciasInformadas.Should().BeEmpty();
 }

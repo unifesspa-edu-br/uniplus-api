@@ -73,40 +73,6 @@ public sealed class RegrasDoCampoTests
         regras.Restricoes.Select(static r => r.Tipo).Should().Equal(TipoRestricaoValor.MunicipiosDaUf, TipoRestricaoValor.TamanhoTexto);
     }
 
-    [Fact(DisplayName = "Regras que não citam o próprio campo e cabem no tipo não são recusadas")]
-    public void ConferirNoCampo_RegrasCoerentes_SemRecusa() =>
-        new RegrasDoCampo(Predicado(("ANTERIOR", true)), Obrigatoriedade.Sempre, []).ConferirNoCampo("CAMPO", TipoDeCampo.SimOuNao).Should().BeEmpty();
-
-    [Fact(DisplayName = "A exibição e a obrigatoriedade que citam o próprio campo são recusadas, nessa ordem")]
-    public void ConferirNoCampo_ExibicaoEObrigatoriedadeAutorreferentes_RecusaAsDuas()
-    {
-        RegrasDoCampo regras = new(Predicado(("CAMPO", true)), Obrigatoriedade.Quando(Predicado(("CAMPO", true))), []);
-
-        regras.ConferirNoCampo("CAMPO", TipoDeCampo.SimOuNao).Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("exibicao", ItemFormularioErrorCodes.RegraAutorreferente),
-            ("obrigatoriedade.predicado", ItemFormularioErrorCodes.RegraAutorreferente));
-    }
-
-    [Fact(DisplayName = "A restrição fora do tipo do campo é recusada na posição dela")]
-    public void ConferirNoCampo_RestricaoForaDoTipo_RecusaNaPosicao()
-    {
-        RegrasDoCampo regras = new(null, Obrigatoriedade.Nunca, [new TamanhoTexto(1, 10)]);
-
-        FieldError erro = regras.ConferirNoCampo("CAMPO", TipoDeCampo.SimOuNao).Should().ContainSingle().Subject;
-
-        erro.Field.Should().Be("restricoes[0]");
-        erro.Error.Code.Should().Be(ItemFormularioErrorCodes.RestricaoIncoerente);
-    }
-
-    [Fact(DisplayName = "O impedimento num campo que não cabe é recusado")]
-    public void ConferirNoCampo_ImpedimentoEmCampoDeTexto_Recusa()
-    {
-        RegrasDoCampo regras = new(null, Obrigatoriedade.Nunca, [], new Impedimento(Predicado(("CAMPO", true)), Mensagem));
-
-        regras.ConferirNoCampo("CAMPO", TipoDeCampo.Texto).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ImpedimentoNaoCabeNoCampo);
-    }
-
     private static PredicadoDnf Predicado(params (string Fato, object Valor)[] condicoes) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [.. condicoes.Select(static c => (0, CondicaoDnf.Criar(c.Fato, Operador.Igual, JsonSerializer.SerializeToElement(c.Valor)).Value!))]).Value!;
