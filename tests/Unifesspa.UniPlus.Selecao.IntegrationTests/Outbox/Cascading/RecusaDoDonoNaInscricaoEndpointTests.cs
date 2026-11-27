@@ -36,7 +36,7 @@ public sealed class RecusaDoDonoNaInscricaoEndpointTests
 
     public static TheoryData<string> Operacoes { get; } = new()
     {
-        "cancelar", "descartar", "avaliar", "obter", "formulario", "submeter",
+        "cancelar", "descartar", "avaliar", "obter", "formularios", "submeter",
     };
 
     [Theory(DisplayName = "A inscrição de outro CPF responde 404 inscrição não encontrada, sem CPF nem nome")]
@@ -114,7 +114,7 @@ public sealed class RecusaDoDonoNaInscricaoEndpointTests
         "descartar" => (HttpMethod.Delete, RaizDaInscricao(processoId), "application/json", null),
         "avaliar" => (HttpMethod.Post, $"{RaizDaInscricao(processoId)}/avaliacoes", "application/vnd.uniplus.avaliacao-da-inscricao.v1+json", "{}"),
         "obter" => (HttpMethod.Get, RaizDaInscricao(processoId), "application/vnd.uniplus.inscricao.v1+json", null),
-        "formulario" => (HttpMethod.Get, $"{RaizDaInscricao(processoId)}/formulario", "application/vnd.uniplus.formulario-inscricao.v1+json", null),
+        "formularios" => (HttpMethod.Get, $"{RaizDaInscricao(processoId)}/formularios", "application/vnd.uniplus.formularios-inscricao.v1+json", null),
         "submeter" => (HttpMethod.Post, $"{RaizDaInscricao(processoId)}/envio", "application/vnd.uniplus.recibo-da-inscricao.v1+json",
             JsonSerializer.Serialize(new { ofertaCursoId = Guid.CreateVersion7(), respostas = new { } })),
         _ => throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "Operação desconhecida."),

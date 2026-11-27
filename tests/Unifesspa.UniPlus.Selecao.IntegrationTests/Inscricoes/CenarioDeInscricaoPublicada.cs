@@ -95,9 +95,9 @@ internal sealed class CenarioDeInscricaoPublicada
             new DocumentosEnviadosDaInscricao(Substitute.For<IDocumentoDaInscricaoRepository>()),
             new PreparacaoDaAvaliacaoDaInscricao(geo ?? Substitute.For<IConferenciaEnderecoGeo>()), EnderecosSemCopia(), Fuso(), DentroDoPeriodo);
 
-    public async Task<Result<FormularioApresentadoDoProcessoDto>> ObterFormularioAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
-        await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(processoId), new InscricaoDoDono(NovoRepositorioDeInscricao(db), usuario),
+    public async Task<Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>>> ObterFormulariosAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
+        await ObterFormulariosDaInscricaoQueryHandler.Handle(
+            new ObterFormulariosDaInscricaoQuery(processoId), new InscricaoDoDono(NovoRepositorioDeInscricao(db), usuario),
             new VersaoDaInscricaoResolver(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs), RegistroCodecs,
             CancellationToken.None);
 

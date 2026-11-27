@@ -96,6 +96,24 @@ internal static class ProcessosDeInscricaoDeTeste
             nome, camposAdicionais: [PerguntaSobreConcorrerPcd(), CampoTextualObrigatorio(fato, 2)], modalidades: [AmplaAplicavelSoQuemConcorrePcd()]);
     }
 
+    /// <summary>
+    /// O processo cuja inscrição responde, além do formulário de inscrição, um formulário obrigatório na mesma fase
+    /// para cada par de <paramref name="complementos"/>, cada um com o campo textual obrigatório dado.
+    /// </summary>
+    internal static ProcessoSeletivo ProcessoComFormulariosObrigatorios(string nome, params (string Formulario, string Fato)[] complementos)
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nome);
+        Guid faseDaInscricao = processo.FormularioDe(PapelDoFormularioDeTeste.Inscricao)!.FaseId!.Value;
+        foreach ((string formulario, string fato) in complementos)
+        {
+            processo.DefinirFormularioSemConjuntoBasico(formulario, faseDaInscricao, obrigatorio: true);
+            processo.DefinirFatosColetados(FormulariosDoProcessoDeTeste.Codigo(formulario), [CampoTextualObrigatorio(fato, 0)])
+                .IsSuccess.Should().BeTrue();
+        }
+
+        return processo;
+    }
+
     private static FatoColetado PerguntaSobreConcorrerPcd() => FatoColetadoDeTeste.Coletando("CONCORRER_PCD", 1)
         .ComRotulo("Você quer concorrer às vagas para pessoa com deficiência?")
         .ComObrigatoriedade(Obrigatoriedade.Sempre)

@@ -275,7 +275,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
     private async Task AvaliarSalvarEEnviarAsync(string rota, JsonElement rascunho, object pedido)
     {
         (await EnviarAsync(HttpMethod.Get, rota, "inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await EnviarAsync(HttpMethod.Get, $"{rota}/formulario", "formulario-inscricao", null, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        await ConferirFormulariosDaInscricaoAsync(rota);
         (await EnviarAsync(HttpMethod.Post, $"{rota}/avaliacoes", "avaliacao-da-inscricao", pedido, null, null)).StatusCode.Should().Be(HttpStatusCode.OK);
         JsonElement salvo = await LerAsync(await EnviarAsync(HttpMethod.Put, rota, "inscricao", pedido, rascunho.GetProperty("eTag").GetString(), null));
         using HttpResponseMessage semPrecondicao = await EnviarAsync(HttpMethod.Post, $"{rota}/envio", "recibo-da-inscricao", pedido, null, null);
@@ -283,6 +283,15 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         (await EnviarAsync(HttpMethod.Post, $"{rota}/envio", "recibo-da-inscricao", pedido, salvo.GetProperty("eTag").GetString(), null))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
+    }
+
+    private async Task ConferirFormulariosDaInscricaoAsync(string rota)
+    {
+        using HttpResponseMessage resposta = await EnviarAsync(HttpMethod.Get, $"{rota}/formularios", "formularios-inscricao", null, null, null);
+        JsonElement formularios = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, formularios.ToString());
+        formularios.ValueKind.Should().Be(JsonValueKind.Array);
+        formularios.EnumerateArray().Select(static f => f.GetProperty("codigo").GetString()).Should().Equal("INSCRICAO");
     }
 
     private static void PrepararRequest(HttpRequestMessage request, string recurso)
