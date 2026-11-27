@@ -21,6 +21,12 @@ public sealed record GrupoAreaEnemSnapshot
     /// <summary>Tamanho máximo do rótulo congelado — o mesmo da coluna do cadastro de cursos.</summary>
     public const int RotuloMaxLength = 60;
 
+    private const string CampoDoGrupoNoPedido = "grupoAreaEnem";
+
+    private static readonly CampoDoGrupo DoCodigo = new("codigo", "O código do grupo de área do ENEM", CodigoMaxLength, "CodigoObrigatorio");
+
+    private static readonly CampoDoGrupo DoRotulo = new("rotulo", "O rótulo do grupo de área do ENEM", RotuloMaxLength, "RotuloObrigatorio");
+
     // EF Core materialization
     private GrupoAreaEnemSnapshot() { }
 
@@ -34,46 +40,43 @@ public sealed record GrupoAreaEnemSnapshot
 
     public string Rotulo { get; private set; } = string.Empty;
 
+    /// <summary>Acumula a recusa do código e a do rótulo, cada uma no seu campo dentro de <c>grupoAreaEnem</c>.</summary>
     public static Result<GrupoAreaEnemSnapshot> Criar(string? codigo, string? rotulo)
     {
-        SituacaoDoTexto? situacaoCodigo = SituacaoDoCampo(codigo, CodigoMaxLength, out string codigoCongelado);
-        SituacaoDoTexto? situacaoRotulo = SituacaoDoCampo(rotulo, RotuloMaxLength, out string rotuloCongelado);
-        DomainError? recusa = RecusaDoGrupo(situacaoCodigo, situacaoRotulo);
-        return recusa is not null
-            ? Result<GrupoAreaEnemSnapshot>.Failure(recusa)
+        (string codigoCongelado, FieldError? recusaDoCodigo) = ConferirCampo(codigo, DoCodigo);
+        (string rotuloCongelado, FieldError? recusaDoRotulo) = ConferirCampo(rotulo, DoRotulo);
+        FieldError[] recusas = [.. new[] { recusaDoCodigo, recusaDoRotulo }.OfType<FieldError>()];
+        return recusas.Length > 0
+            ? Result<GrupoAreaEnemSnapshot>.ValidationFailure(recusas)
             : Result<GrupoAreaEnemSnapshot>.Success(new GrupoAreaEnemSnapshot(codigoCongelado, rotuloCongelado));
     }
 
     public override string ToString() => Codigo;
 
-    private static SituacaoDoTexto? SituacaoDoCampo(string? texto, int tamanhoMaximo, out string congelado)
+    private static (string Congelado, FieldError? Recusa) ConferirCampo(string? texto, CampoDoGrupo campo)
     {
-        congelado = string.Empty;
         if (string.IsNullOrWhiteSpace(texto))
         {
-            return null;
+            return (string.Empty, campo.Recusar(campo.CausaObrigatoria, $"{campo.Nome} é obrigatório."));
         }
         // NFC no envelope evita mudanças após retificação; o texto decodificado pode não estar nessa forma.
         string? normalizado = TextoCongelado.Normalizar(texto);
         // Defesa contra envelope adulterado antes da constraint do Postgres.
-        if (normalizado is null || TextoCongelado.TemCaractereInvalido(normalizado))
-        {
-            return SituacaoDoTexto.CaractereInvalido;
-        }
-        congelado = normalizado;
-        return congelado.Length > tamanhoMaximo ? SituacaoDoTexto.TamanhoExcedido : SituacaoDoTexto.Valido;
+        return normalizado is null || TextoCongelado.TemCaractereInvalido(normalizado)
+            ? (string.Empty, campo.Recusar(
+                "CaractereInvalido",
+                $"{campo.Nome} não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto."))
+            : ConferirTamanho(normalizado, campo);
     }
 
-    private static DomainError? RecusaDoGrupo(SituacaoDoTexto? codigo, SituacaoDoTexto? rotulo) => (codigo, rotulo) switch
+    private static (string Congelado, FieldError? Recusa) ConferirTamanho(string normalizado, CampoDoGrupo campo) =>
+        normalizado.Length > campo.Maximo
+            ? (normalizado, campo.Recusar("TamanhoInvalido", $"{campo.Nome} deve ter até {campo.Maximo} caracteres."))
+            : (normalizado, null);
+
+    private sealed record CampoDoGrupo(string Campo, string Nome, int Maximo, string CausaObrigatoria)
     {
-        (null, _) => new("GrupoAreaEnemSnapshot.CodigoObrigatorio", "Código do grupo de área do ENEM é obrigatório."),
-        (_, null) => new("GrupoAreaEnemSnapshot.RotuloObrigatorio", "Rótulo do grupo de área do ENEM é obrigatório."),
-        (SituacaoDoTexto.CaractereInvalido, _) or (_, SituacaoDoTexto.CaractereInvalido) => new(
-            "GrupoAreaEnemSnapshot.CaractereInvalido",
-            "Grupo de área do ENEM não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto."),
-        (SituacaoDoTexto.TamanhoExcedido, _) or (_, SituacaoDoTexto.TamanhoExcedido) => new(
-            "GrupoAreaEnemSnapshot.TamanhoInvalido",
-            $"Grupo de área do ENEM excede o tamanho permitido (código até {CodigoMaxLength} e rótulo até {RotuloMaxLength} caracteres)."),
-        _ => null,
-    };
+        public FieldError Recusar(string causa, string mensagem) =>
+            new FieldError(Campo, new DomainError($"GrupoAreaEnemSnapshot.{causa}", mensagem)).NoCaminhoDe(CampoDoGrupoNoPedido);
+    }
 }

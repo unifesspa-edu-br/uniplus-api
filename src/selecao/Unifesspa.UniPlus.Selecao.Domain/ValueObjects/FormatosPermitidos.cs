@@ -120,6 +120,6 @@ public sealed record FormatosPermitidos
         return vistos.Add(formato)
             ? FormatoPermitidoEntry.Criar(formato, tamanho)
             : Result<FormatoPermitidoEntry>.Failure(new DomainError(
-                "FormatosPermitidos.FormatoDuplicado", $"O formato '{codigo}' aparece mais de uma vez na lista."));
+                "FormatosPermitidos.FormatoDuplicado", "O formato aparece mais de uma vez na lista."));
     }
 }

@@ -87,9 +87,9 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ((string?)"grupoAreaEnem", "GrupoAreaEnemSnapshot.CodigoObrigatorio"),
+            ((string?)"grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CodigoObrigatorio"),
             ((string?)"baseLegal", "GrupoPesoAreaEnemCongelado.BaseLegalObrigatoria"),
-            ((string?)"areas[0]", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
+            ((string?)"areas[0].codigo", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
             ((string?)"areas[1].peso", "GrupoPesoAreaEnemCongelado.PesoNegativo"),
         ]);
     }
@@ -118,7 +118,7 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
         Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
             "TECNOLOGICA", "Tecnológica", baseLegal, [("REDACAO", rotulo, 2.00m, null)]);
 
-        string esperado = baseLegalLonga ? "GrupoPesoAreaEnemCongelado.BaseLegalInvalida" : "GrupoPesoAreaEnemCongelado.AreaInvalida";
+        string esperado = baseLegalLonga ? "GrupoPesoAreaEnemCongelado.BaseLegalInvalida" : "GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido";
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == esperado);
     }
 
@@ -132,7 +132,7 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
         GrupoPesoAreaEnemCongelado.Criar("TECNOLOGICA", "Tecnológica", BaseLegal + naoCaractere, Areas())
             .Errors.Should().ContainSingle(e => e.Error.Code == "GrupoPesoAreaEnemCongelado.BaseLegalInvalida");
         GrupoPesoAreaEnemCongelado.Criar("TECNOLOGICA", "Tecnológica", BaseLegal, [("REDACAO", "Redação" + naoCaractere, 2m, null)])
-            .Errors.Should().ContainSingle(e => e.Error.Code == "GrupoPesoAreaEnemCongelado.AreaInvalida");
+            .Errors.Should().ContainSingle(e => e.Field == "areas[0].rotulo" && e.Error.Code == "GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido");
     }
 
     [Fact(DisplayName = "ADR-0125: área inválida ou repetida ainda tem o peso e o corte conferidos")]
@@ -144,26 +144,71 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ((string?)"areas[0]", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
+            ((string?)"areas[0].codigo", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
             ((string?)"areas[0].peso", "GrupoPesoAreaEnemCongelado.PesoNegativo"),
             ((string?)"areas[2]", "GrupoPesoAreaEnemCongelado.AreaRepetida"),
             ((string?)"areas[2].corte", "GrupoPesoAreaEnemCongelado.CorteForaDaFaixa"),
         ]);
     }
 
-    [Fact(DisplayName = "O rótulo ecoado nas recusas sai limitado e sem caractere invisível, e o rótulo recusado não é ecoado")]
-    public void Criar_RecusasNaoEcoamORotuloCru()
+    [Fact(DisplayName = "Código e rótulo da área inválidos voltam juntos, cada um no seu campo, sem repetir o valor recebido")]
+    public void Criar_AreaComCodigoERotuloInvalidos_AcumulaSemRepetirOValor()
     {
-        string comBidi = "Reda\u202Eção";
-        string grande = new string('R', GrupoPesoAreaEnemCongelado.AreaRotuloMaxLength + 1);
+        string codigoLongo = "CODIGO-FICTICIO-RECONHECIVEL-" + new string('X', GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength);
 
         Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
-            "TECNOLOGICA", "Tecnológica", BaseLegal,
-            [("REDACAO", comBidi, 2m, null), ("REDACAO", comBidi, 2m, null), ("MATEMATICA", grande, -1m, null)]);
+            "TECNOLOGICA", "Tecnológica", BaseLegal, [(codigoLongo, "ROTULO-FICTICIO-\0-RECONHECIVEL", 2m, null)]);
 
-        string repetida = resultado.Errors.Single(e => e.Error.Code == "GrupoPesoAreaEnemCongelado.AreaRepetida").Error.Message;
-        repetida.Should().Contain("Reda?ção").And.NotContain("\u202E");
-        string pesoNegativo = resultado.Errors.Single(e => e.Error.Code == "GrupoPesoAreaEnemCongelado.PesoNegativo").Error.Message;
-        pesoNegativo.Should().NotContain(grande[..10], "o rótulo recusado não volta na mensagem");
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("areas[0].codigo", "GrupoPesoAreaEnemCongelado.AreaInvalida"),
+            ("areas[0].rotulo", "GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido"));
+        NenhumTextoRepeteOValorRecebido(resultado);
     }
+
+    [Fact(DisplayName = "Código e rótulo do grupo inválidos voltam juntos, antes da base legal e das áreas, sem repetir o valor recebido")]
+    public void Criar_GrupoComCodigoERotuloInvalidos_AcumulaNaOrdemSemRepetirOValor()
+    {
+        Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
+            "GRUPO-FICTICIO-\0-RECONHECIVEL", "   ", "   ", []);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CaractereInvalido"),
+            ("grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.RotuloObrigatorio"),
+            ("baseLegal", "GrupoPesoAreaEnemCongelado.BaseLegalObrigatoria"),
+            ("areas", "GrupoPesoAreaEnemCongelado.SemAreas"));
+        NenhumTextoRepeteOValorRecebido(resultado);
+    }
+
+    [Fact(DisplayName = "Área repetida é conferida pelo código mesmo com o rótulo inválido, e não repete o rótulo recebido")]
+    public void Criar_AreaRepetidaComRotuloInvalido_RecusaOCodigoERotuloSemRepetirOValor()
+    {
+        Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
+            "TECNOLOGICA", "Tecnológica", BaseLegal,
+            [("REDACAO", "Redação", 2m, null), ("REDACAO", "ROTULO-FICTICIO-\0-RECONHECIVEL", 1m, null)]);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("areas[1]", "GrupoPesoAreaEnemCongelado.AreaRepetida"),
+            ("areas[1].rotulo", "GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido"));
+        NenhumTextoRepeteOValorRecebido(resultado);
+    }
+
+    [Fact(DisplayName = "Área repetida, peso negativo e corte fora da faixa não citam o rótulo recebido")]
+    public void Criar_AreaRepetidaPesoNegativoECorteForaDaFaixa_NaoCitamORotulo()
+    {
+        Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
+            "TECNOLOGICA", "Tecnológica", BaseLegal,
+            [("REDACAO", "ÁREA FICTÍCIA RECONHECÍVEL", 2m, null), ("REDACAO", "ÁREA FICTÍCIA RECONHECÍVEL", -1m, 1001m)]);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("areas[1]", "GrupoPesoAreaEnemCongelado.AreaRepetida"),
+            ("areas[1].peso", "GrupoPesoAreaEnemCongelado.PesoNegativo"),
+            ("areas[1].corte", "GrupoPesoAreaEnemCongelado.CorteForaDaFaixa"));
+        NenhumTextoRepeteOValorRecebido(resultado);
+    }
+
+    private static void NenhumTextoRepeteOValorRecebido(Result<GrupoPesoAreaEnemCongelado> resultado) =>
+        resultado.Errors.SelectMany(e => new[] { e.Error.Message, e.Field })
+            .Should().OnlyContain(texto => !texto!.Contains("FICTICIO", StringComparison.OrdinalIgnoreCase)
+                && !texto.Contains("FICTÍCIA", StringComparison.OrdinalIgnoreCase)
+                && !texto.Contains("RECONHEC", StringComparison.OrdinalIgnoreCase));
 }

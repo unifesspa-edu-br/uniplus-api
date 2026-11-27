@@ -31,12 +31,12 @@ internal static class ValidacaoDaDeliberacao
     {
         if (declarada.Integrantes < 1)
         {
-            yield return Recusa("integrantes", BancaErrorCodes.IntegrantesInvalidos, $"A banca deve ter no mínimo 1 integrante; foram declarados {declarada.Integrantes}.");
+            yield return Recusa("integrantes", BancaErrorCodes.IntegrantesInvalidos, "A banca deve ter no mínimo 1 integrante.");
         }
 
         if (declarada.Suplentes < 0)
         {
-            yield return Recusa("suplentes", BancaErrorCodes.SuplentesInvalidos, $"Os suplentes da banca não podem ser negativos; foram declarados {declarada.Suplentes}.");
+            yield return Recusa("suplentes", BancaErrorCodes.SuplentesInvalidos, "Os suplentes da banca não podem ser negativos.");
         }
     }
 
@@ -95,11 +95,11 @@ internal static class ValidacaoDaDeliberacao
 
         if (declarada.Votacao.Quorum is not { } quorum || quorum < 1 || quorum > declarada.Integrantes)
         {
-            return [Recusa("quorum", BancaErrorCodes.QuorumForaDoIntervalo, $"O quórum deve ficar entre 1 e {declarada.Integrantes}, o número de integrantes.")];
+            return [Recusa("quorum", BancaErrorCodes.QuorumForaDoIntervalo, "O quórum deve ficar entre 1 e o número de integrantes da banca.")];
         }
 
         return declarada.Votacao.EncerramentoConferido() == EncerramentoDaVotacao.TodosOsTitulares && quorum != declarada.Integrantes
-            ? [Recusa("quorum", BancaErrorCodes.QuorumIncoerente, $"Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes ({declarada.Integrantes}).")]
+            ? [Recusa("quorum", BancaErrorCodes.QuorumIncoerente, "Com o encerramento por todos os titulares, o quórum deve ser igual ao número de integrantes da banca.")]
             : [];
     }
 

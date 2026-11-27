@@ -44,7 +44,7 @@ public static class ConferenciaDasReferenciasEntreModalidades
             ? []
             : Citacoes
                 .Where(citacao => citacao.Citada(modalidade) is { } citada && !codigos.Contains(citada))
-                .Select(citacao => Recusa(citacao.Codigo, $"Modalidade {modalidade.Codigo} referencia {citacao.Rotulo} {citacao.Citada(modalidade)}, que não está selecionado nesta oferta."));
+                .Select(citacao => Recusa(citacao.Codigo, $"Uma modalidade referencia {citacao.Rotulo} que não está entre as modalidades selecionadas nesta oferta."));
 
     // A reciprocidade é exigida aqui, e não no cadastro, porque a primeira modalidade de um par não teria
     // a que apontar quando é criada. O auto-laço satisfaria a comparação — a modalidade aponta para si e
@@ -58,7 +58,7 @@ public static class ConferenciaDasReferenciasEntreModalidades
     private static IEnumerable<FieldError> ConferirPar(
         ModalidadeSelecionada modalidade, string par, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         string.Equals(par, modalidade.Codigo, StringComparison.Ordinal)
-            ? [Recusa(DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, $"Modalidade {modalidade.Codigo} forma par cruzado consigo mesma.")]
+            ? [Recusa(DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, "Uma modalidade não pode formar par cruzado consigo mesma.")]
             : ParQueNaoApontaDeVolta(modalidade, par, modalidades);
 
     private static IEnumerable<FieldError> ParQueNaoApontaDeVolta(
@@ -71,7 +71,7 @@ public static class ConferenciaDasReferenciasEntreModalidades
 
         return apontaDeVolta
             ? []
-            : [Recusa(DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, $"Modalidade {modalidade.Codigo} forma par cruzado com {par}, que não aponta de volta para ela.")];
+            : [Recusa(DistribuicaoDeVagasErrorCodes.ParCruzadoNaoReciproco, "O par cruzado da modalidade deve apontar de volta para ela.")];
     }
 
     private static FieldError Recusa(string codigo, string mensagem) =>
