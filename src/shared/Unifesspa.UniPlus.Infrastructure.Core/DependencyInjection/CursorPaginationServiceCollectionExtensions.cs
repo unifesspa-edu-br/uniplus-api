@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Pagination;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Registra o stack de cursor pagination (ADR-0026 + ADR-0031): options,
 /// <see cref="CursorEncoder"/>, <see cref="PageRequestModelBinder"/> e o
@@ -23,6 +25,7 @@ public static class CursorPaginationServiceCollectionExtensions
 
         RegistrarOpcoes(services, configuration);
         RegistrarCodificadorDoCursor(services);
+        services.AddSingleton<FiltrosDasListagens>();
         RegistrarFalhasDeBindingComoProblema(services);
 
         return services;
@@ -42,6 +45,9 @@ public static class CursorPaginationServiceCollectionExtensions
             .Validate(static o => o.LimitDefault >= o.LimitMin && o.LimitDefault <= o.LimitMax,
                 "CursorPaginationOptions.LimitDefault deve estar entre LimitMin e LimitMax.")
             .Validate(static o => o.CursorTtl > TimeSpan.Zero, "CursorPaginationOptions.CursorTtl deve ser positivo.")
+            .Validate(static o => o.ComprimentoMaximoDoValorNoLink >= TermoDeBusca.ComprimentoMaximo,
+                "CursorPaginationOptions.ComprimentoMaximoDoValorNoLink deve ser >= ao maior termo de busca aceito.")
+            .Validate(static o => o.ComprimentoMaximoDoCabecalhoLink > 0, "CursorPaginationOptions.ComprimentoMaximoDoCabecalhoLink deve ser positivo.")
             .Validate(static o => !string.IsNullOrWhiteSpace(o.KeyName), "CursorPaginationOptions.KeyName é obrigatório.")
             .ValidateOnStart();
     }

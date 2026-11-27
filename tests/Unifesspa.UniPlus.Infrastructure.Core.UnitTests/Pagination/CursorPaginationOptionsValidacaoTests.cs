@@ -39,4 +39,21 @@ public sealed class CursorPaginationOptionsValidacaoTests
         acessar.Should().Throw<OptionsValidationException>()
             .WithMessage("*KeyName é obrigatório*");
     }
+
+    [Theory(DisplayName = "Limites de comprimento do link fora do aceitável são recusados")]
+    [InlineData("ComprimentoMaximoDoValorNoLink", "199", "*ComprimentoMaximoDoValorNoLink*")]
+    [InlineData("ComprimentoMaximoDoCabecalhoLink", "0", "*ComprimentoMaximoDoCabecalhoLink*")]
+    public void LimitesDoLink_ForaDoAceitavel_SaoRecusados(string nome, string valor, string mensagem)
+    {
+        IConfiguration configuracao = new ConfigurationBuilder()
+            .AddInMemoryCollection([new($"{CursorPaginationOptions.SectionName}:{nome}", valor)])
+            .Build();
+        ServiceCollection services = new();
+        services.AddCursorPagination(configuracao);
+        IOptions<CursorPaginationOptions> opcoes = services.BuildServiceProvider().GetRequiredService<IOptions<CursorPaginationOptions>>();
+
+        Action acessar = () => _ = opcoes.Value;
+
+        acessar.Should().Throw<OptionsValidationException>().WithMessage(mensagem);
+    }
 }

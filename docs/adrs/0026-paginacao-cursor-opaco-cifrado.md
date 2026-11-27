@@ -74,6 +74,20 @@ Recursos públicos (`/api/editais`) **não** populam `resumo_da_conta` mesmo se 
 
 **Consequências.** Uma regra só em todas as listagens; listagem nova não compila sem declarar as condições. Seguir o link `next` ou `prev` continua igual; a mudança de unidades autorizadas ou do e-mail verificado recomeça a listagem.
 
+### Emenda: o que o link de navegação repete
+
+**Contexto.** Os links `self`, `next` e `prev` copiavam toda a query da requisição, inclusive parâmetros que a listagem não aceita, valores repetidos sem limite e `cursor` e `direction` em branco. O texto voltava num cabeçalho sem passar por validação, e o cabeçalho podia crescer até o servidor ou o proxy recusá-lo.
+
+**Decisão.**
+
+- O link repete só os parâmetros de consulta que a operação declara, os mesmos que o contrato publicado documenta, com o nome declarado. A lista vem do ApiExplorer, e listagem nova não precisa declarar nada além dos próprios parâmetros.
+- Filtro simples repete um valor, o mesmo que a listagem recebe. Filtro que aceita vários valores repete todos, sem repetição.
+- Valor maior que o limite configurado (`ComprimentoMaximoDoValorNoLink`, 256 por padrão, sem contar os espaços das pontas do texto pesquisado) não é repetido.
+- O cabeçalho `Link` tem tamanho máximo configurado (`ComprimentoMaximoDoCabecalhoLink`, 16384 por padrão). Se passar dele, os links saem só com `cursor`, `limit` e `direction`: `self` continua presente, e `next` e `prev` continuam quando há página.
+- `cursor`, `limit` e `direction` em branco não entram no `self`, e ele usa o primeiro valor de cada um, como a leitura da página.
+
+**Consequências.** Parâmetro desconhecido some dos links. Seguir um link que perdeu um filtro dá a recusa de cursor de outra consulta, nunca uma página errada em silêncio.
+
 A cifragem usa **AES-GCM** com chave gerenciada por infraestrutura externa de gerenciamento de chaves (em produção: HashiCorp Vault transit engine; em desenvolvimento e CI: fixture local equivalente). A chave nunca sai do gerenciador; cifragem e decifragem ocorrem via API. Rotação periódica é responsabilidade do gerenciador — cursors emitidos com chave anterior continuam válidos até expirarem por TTL, sem revogação retroativa.
 
 ### Forma da resposta

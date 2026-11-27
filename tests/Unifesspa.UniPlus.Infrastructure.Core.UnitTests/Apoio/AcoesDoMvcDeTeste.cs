@@ -26,6 +26,8 @@ internal sealed class AcoesDoMvcDeTeste : IDisposable
 
     public IActionDescriptorCollectionProvider Acoes => _provider.GetRequiredService<IActionDescriptorCollectionProvider>();
 
+    public IApiDescriptionGroupCollectionProvider Descricoes => _provider.GetRequiredService<IApiDescriptionGroupCollectionProvider>();
+
     public ControllerActionDescriptor Acao(Type controller, string nome) => Acoes.ActionDescriptors.Items
         .OfType<ControllerActionDescriptor>().Single(a => a.ControllerTypeInfo.AsType() == controller && a.ActionName == nome);
 
