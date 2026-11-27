@@ -86,5 +86,5 @@ internal static class ClassificacaoDoDocumentoDeTeste
 
     private static RegraDoCatalogoCitada Regra<T>(TipoRegra tipo, T regra)
         where T : struct, Enum =>
-        new(tipo, ReferenciaRegra.De(regra.Codigo(), "v1", Hash));
+        new(tipo, ReferenciaRegra.De(regra.Codigo(), "v1", Hash), default);
 }

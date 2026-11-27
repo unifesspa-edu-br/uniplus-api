@@ -176,7 +176,7 @@ public sealed class LeituraDosCadastrosCitadosTests
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Regras = [("CONTAGEM", "v1"), ("OUTRA", "v1")] });
 
         lidos.Value!.Regras.Keys.Should().Equal(("CONTAGEM", "v1"));
-        lidos.Value.Regras[("CONTAGEM", "v1")].Should().Be(new RegraDoCatalogoCitada(TipoRegra.ConvencaoContagemPrazo, regra.Referencia()));
+        lidos.Value.Regras[("CONTAGEM", "v1")].Should().Be(new RegraDoCatalogoCitada(TipoRegra.ConvencaoContagemPrazo, regra.Referencia(), regra.DeclaracaoDaRegra));
         (string Codigo, string Versao)[] pedidas = [("CONTAGEM", "v1"), ("OUTRA", "v1")];
         await _regras.Received(1).ListarPorReferenciasAsync(Arg.Is<IReadOnlyCollection<(string Codigo, string Versao)>>(c => c.SequenceEqual(pedidas)), Arg.Any<CancellationToken>());
         await _regras.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);

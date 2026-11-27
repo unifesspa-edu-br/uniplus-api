@@ -4,17 +4,16 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-/// <summary>Confere a cascata informada contra a declaração da versão da regra.</summary>
+/// <summary>Confere a cascata informada contra a declaração da versão da regra, já lida com o cadastro.</summary>
 public static class ConformidadeDaCascataComARegra
 {
     /// <summary>Compara o destino final, as origens e a ordem dos destinos.</summary>
-    public static bool Conferir(ConfiguracaoCascataRemanejamento cascata, RegraCatalogo regra)
+    public static bool Conferir(ConfiguracaoCascataRemanejamento cascata, JsonElement declaracao)
     {
         ArgumentNullException.ThrowIfNull(cascata);
-        ArgumentNullException.ThrowIfNull(regra);
-        JsonElement declaracao = regra.DeclaracaoDaRegra;
-        return declaracao.TryGetProperty("destinoFinalCodigo", out JsonElement destinoFinal)
-            && string.Equals(destinoFinal.GetString(), cascata.FallbackCodigo, StringComparison.Ordinal)
+        return declaracao.ValueKind == JsonValueKind.Object
+            && declaracao.TryGetProperty("destinoFinalCodigo", out JsonElement destinoFinal)
+            && Texto(destinoFinal) == cascata.FallbackCodigo
             && declaracao.TryGetProperty("ordens", out JsonElement ordens)
             && ordens.ValueKind == JsonValueKind.Array
             && ConferirOrigens(cascata, ordens);
@@ -44,19 +43,22 @@ public static class ConformidadeDaCascataComARegra
     private static bool ConferirOrigem(
         JsonElement item, Dictionary<string, List<string>> destinos, HashSet<string> conferidas)
     {
-        if (!item.TryGetProperty("origem", out JsonElement origemElemento)
+        if (item.ValueKind != JsonValueKind.Object
+            || !item.TryGetProperty("origem", out JsonElement origemElemento)
             || !item.TryGetProperty("destinos", out JsonElement destinosElemento)
             || destinosElemento.ValueKind != JsonValueKind.Array)
         {
             return false;
         }
 
-        string? origem = origemElemento.GetString();
+        string? origem = Texto(origemElemento);
         return origem is not null && conferidas.Add(origem)
             && destinos.TryGetValue(origem, out List<string>? esperados)
             && ConferirDestinos(destinosElemento, esperados);
     }
 
     private static bool ConferirDestinos(JsonElement declarados, List<string> esperados) =>
-        declarados.EnumerateArray().Select(static d => d.GetString()).SequenceEqual(esperados, StringComparer.Ordinal);
+        declarados.EnumerateArray().Select(static d => Texto(d)).SequenceEqual(esperados, StringComparer.Ordinal);
+
+    private static string? Texto(JsonElement elemento) => elemento.ValueKind == JsonValueKind.String ? elemento.GetString() : null;
 }

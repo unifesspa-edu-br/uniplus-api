@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
 /// <summary>
 /// Projeção <c>RegraCatalogo</c> → <c>RegraCatalogoDto</c>.
@@ -24,7 +25,7 @@ public static class RegraCatalogoMapping
             Invariantes: regra.Invariantes,
             BaseLegal: regra.BaseLegal,
             Hash: regra.Hash,
-            ModalidadesAdmitidas: ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(regra),
+            ModalidadesAdmitidas: ModalidadesAdmitidasDaDeclaracaoDaRegra.Extrair(regra.DeclaracaoDaRegra),
             RamoDaDistribuicao: regra.Tipo == TipoRegra.RegraDistribuicaoVagas ? PoliticaDaDistribuicaoDeVagas.ModoDeMontagemDe(regra.Codigo) : null)
         {
             Rotulo = RotuloDaRegra.Obter(regra),

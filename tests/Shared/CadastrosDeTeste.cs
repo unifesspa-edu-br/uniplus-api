@@ -32,7 +32,7 @@ internal static class CadastrosDeTeste
         var regras = ReferenciasDeRegraDaConfiguracao.De(processo.Declaracao()).Select(x => x.Regra)
             .Where(r => r.Codigo != regraAusente)
             .DistinctBy(r => (r.Codigo, r.Versao))
-            .ToDictionary(r => (r.Codigo, r.Versao), r => new RegraDoCatalogoCitada(default, r));
+            .ToDictionary(r => (r.Codigo, r.Versao), r => new RegraDoCatalogoCitada(default, r, default));
         return new CadastrosDaConfiguracao(cadastros.ContagemDePrazos, cadastros.FatosDeModalidade, cadastros.TiposDeAtoUnicos,
             cadastros.Corretores, cadastros.Protecao, cadastros.MotivosEscolhidos, cadastros.FatosDasVersoesPublicadas)
         { Regras = regras, MunicipiosDoGeo = cadastros.MunicipiosDoGeo, Precedencias = cadastros.Precedencias, NomesDasFases = cadastros.NomesDasFases };

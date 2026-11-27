@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Collections.Frozen;
+using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -154,8 +155,11 @@ public sealed record UnidadeCitada(Guid OrigemId, UnidadeAdministradoraSnapshot 
 /// <summary>A categoria de documento que o documento cita nos candidatos atendidos por uma banca.</summary>
 public sealed record CategoriaDeDocumentoCitada(Guid OrigemId, string Codigo, string Nome);
 
-/// <summary>A regra do catálogo que o documento cita: o tipo dela e a referência que o processo congela.</summary>
-public sealed record RegraDoCatalogoCitada(TipoRegra Tipo, ReferenciaRegra Referencia);
+/// <summary>
+/// A regra do catálogo que o documento cita: o tipo dela, a referência que o processo congela e a declaração lida com ela,
+/// com que se confere a configuração sem nova consulta ao catálogo.
+/// </summary>
+public sealed record RegraDoCatalogoCitada(TipoRegra Tipo, ReferenciaRegra Referencia, JsonElement DeclaracaoDaRegra);
 
 /// <summary>
 /// O quadro de pesos por área do ENEM da resolução que o documento cita: os grupos de área cadastrados e os rótulos dos grupos que

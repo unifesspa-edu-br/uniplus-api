@@ -16,7 +16,7 @@ public sealed class CadastrosDaConfiguracaoTests
         CadastrosDaConfiguracao padrao = CadastrosDeTeste.Padrao;
         ReferenciaRegra referencia = ReferenciaRegra.De("REGRA", "v1", new string('a', 64));
         Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> regras =
-            new() { [("REGRA", "v1")] = new(TipoRegra.CriterioDesempate, referencia) };
+            new() { [("REGRA", "v1")] = new(TipoRegra.CriterioDesempate, referencia, default) };
         CadastrosDaConfiguracao cadastros = new(
             padrao.ContagemDePrazos, padrao.FatosDeModalidade, padrao.TiposDeAtoUnicos,
             padrao.Corretores, padrao.Protecao, padrao.MotivosEscolhidos)

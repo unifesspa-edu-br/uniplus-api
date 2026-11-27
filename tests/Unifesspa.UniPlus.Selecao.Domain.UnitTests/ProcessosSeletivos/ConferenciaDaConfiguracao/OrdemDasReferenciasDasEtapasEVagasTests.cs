@@ -187,7 +187,7 @@ public sealed class OrdemDasReferenciasDasEtapasEVagasTests
         ReferenciaRegra atual = divergente
             ? ReferenciaRegra.De(referencia.Codigo, referencia.Versao, new string('f', 64))
             : referencia;
-        catalogo[(referencia.Codigo, referencia.Versao)] = new(TipoRegra.RegraCalculo, atual);
+        catalogo[(referencia.Codigo, referencia.Versao)] = new(TipoRegra.RegraCalculo, atual, default);
     }
 
     private static string[] CamposRecusados() =>

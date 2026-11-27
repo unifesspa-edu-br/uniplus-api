@@ -16,7 +16,7 @@ public sealed class ConferenciaDasReferenciasDeRegraTests
         ReferenciaRegra atual = Regra("A", "v1", 'a');
         Dictionary<(string, string), RegraDoCatalogoCitada> catalogo = new()
         {
-            [("A", "v1")] = new(TipoRegra.RegraCalculo, atual),
+            [("A", "v1")] = new(TipoRegra.RegraCalculo, atual, default),
         };
         (string, ReferenciaRegra)[] referencias = Referencias(atual);
 

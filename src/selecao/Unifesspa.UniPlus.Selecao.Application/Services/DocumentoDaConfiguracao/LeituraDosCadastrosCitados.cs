@@ -148,7 +148,7 @@ public sealed class LeituraDosCadastrosCitados(
         citadas.Count == 0
             ? new Dictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>()
             : (await regras.ListarPorReferenciasAsync(citadas, cancellationToken).ConfigureAwait(false))
-                .ToDictionary(static regra => (regra.Codigo, regra.Versao), static regra => new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia()));
+                .ToDictionary(static regra => (regra.Codigo, regra.Versao), static regra => new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia(), regra.DeclaracaoDaRegra));
 
     // O vocabulário só é lido quando o documento cita o desempate por condição sobre dado; sem a citação, fica vazio.
     private async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> DadosDoDesempateAsync(

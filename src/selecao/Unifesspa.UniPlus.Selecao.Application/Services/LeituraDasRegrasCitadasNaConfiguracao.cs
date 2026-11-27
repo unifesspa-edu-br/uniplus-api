@@ -28,7 +28,7 @@ public sealed class LeituraDasRegrasCitadasNaConfiguracao(IRegraCatalogoReader r
             RegraCatalogo? regra = await regras.ObterAsync(chave.Codigo, chave.Versao, cancellationToken).ConfigureAwait(false);
             if (regra is not null)
             {
-                encontradas[chave] = new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia());
+                encontradas[chave] = new RegraDoCatalogoCitada(regra.Tipo, regra.Referencia(), regra.DeclaracaoDaRegra);
                 AdicionarCorretores(regra, corretores);
             }
         }
