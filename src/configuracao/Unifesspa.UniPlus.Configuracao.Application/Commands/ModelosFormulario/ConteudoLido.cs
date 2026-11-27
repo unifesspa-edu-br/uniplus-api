@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// conferência contra o catálogo apontam o índice que veio. A parte que não se leu fica de fora; a
 /// recusa dela está em <see cref="LeituraDoConteudo.Recusas"/>.
 /// </summary>
+/// <param name="PartesNaoLidas">O dado que cada campo e cada documento recusados coletam ou multiplicam, como veio no pedido.</param>
 /// <param name="PorInteiro">Se a leitura não recusou nada: o conteúdo lido é o enviado, sem parte de fora.</param>
 internal sealed record ConteudoLido(
     string? Titulo,
@@ -18,6 +19,7 @@ internal sealed record ConteudoLido(
     IReadOnlyList<string> Pressupostos,
     GruposLidos Grupos,
     ConjuntoLidoDeDocumentos Documentos,
+    PartesNaoLidas PartesNaoLidas,
     bool PorInteiro)
 {
     public ConteudoDoModelo ParaConteudo() => new(
@@ -61,4 +63,19 @@ internal sealed record GruposLidos(
 internal sealed record CampoDeGrupoNaoLido(int Grupo, int Posicao, ItemDoModelo Campo)
 {
     public string Caminho => $"grupos[{Grupo}].subitens[{Posicao}]";
+}
+
+/// <summary>
+/// O que a leitura guarda das partes que recusou, para que as recusas do catálogo saiam junto das da leitura: o campo que
+/// ela recusou, pelo dado que coleta, e o dado das opções de cada documento recusado, como vieram no pedido.
+/// </summary>
+internal sealed record PartesNaoLidas(IReadOnlyList<CampoNaoLido> Campos, IReadOnlyList<string> FatosPorOpcaoDeDocumentos);
+
+/// <summary>Onde está um campo no pedido: a posição na lista de itens, ou a do campo e a do grupo que o contém.</summary>
+internal readonly record struct LugarDoCampo(int Posicao, int? NoGrupo = null);
+
+/// <summary>Um campo que a leitura recusou, com o caminho, o dado que coleta e o lugar no pedido.</summary>
+internal sealed record CampoNaoLido(string Caminho, string FatoCodigo, LugarDoCampo Lugar)
+{
+    public bool DeGrupo => Lugar.NoGrupo is not null;
 }

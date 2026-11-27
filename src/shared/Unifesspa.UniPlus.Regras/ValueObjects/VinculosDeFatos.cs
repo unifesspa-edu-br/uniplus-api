@@ -11,6 +11,15 @@ using System.Text.Json;
 /// </summary>
 public sealed record VinculosDeFatos(IReadOnlySet<string> Fatos, IReadOnlySet<(string Fato, string Valor)> Valores)
 {
+    public static VinculosDeFatos Unir(IEnumerable<VinculosDeFatos> partes)
+    {
+        ArgumentNullException.ThrowIfNull(partes);
+        VinculosDeFatos[] todas = [.. partes];
+        return new VinculosDeFatos(
+            todas.SelectMany(static p => p.Fatos).ToHashSet(StringComparer.Ordinal),
+            todas.SelectMany(static p => p.Valores).ToHashSet());
+    }
+
     /// <summary>
     /// Os vínculos dos fatos dados, das condições e dos valores contribuídos: cada condição vincula
     /// o fato que cita e o valor (ou cada valor da lista) que compara; cada contribuição de regra de

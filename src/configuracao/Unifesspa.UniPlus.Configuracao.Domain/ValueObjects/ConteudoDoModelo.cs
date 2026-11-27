@@ -70,7 +70,7 @@ public sealed record ConteudoDoModelo(
         PredicadosDasRegras().SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes);
 
     private IEnumerable<PredicadoDnf> PredicadosDasRegras() =>
-        Campos().SelectMany(static i => SemCaminho(i.Predicados()).Append(i.Regras.Impedimento?.Quando).Concat(PredicadosDasOpcoesPermitidas(i)))
+        Campos().SelectMany(static i => i.PredicadosDasRegras().Cast<PredicadoDnf?>())
             .Concat(Grupos.SelectMany(static g => SemCaminho(g.Predicados())))
             .Concat(Paginas.SelectMany(static e => SemCaminho(e.Predicados())))
             .Concat(Termos.SelectMany(static t => SemCaminho(t.Predicados())))
@@ -78,9 +78,6 @@ public sealed record ConteudoDoModelo(
             .OfType<PredicadoDnf>();
 
     private static IEnumerable<PredicadoDnf?> SemCaminho(IEnumerable<PredicadoNaEntrada> predicados) => predicados.Select(static p => p.Predicado);
-
-    private static IEnumerable<PredicadoDnf?> PredicadosDasOpcoesPermitidas(ItemDoModelo campo) =>
-        campo.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando));
 
     /// <summary>
     /// O conteúdo na forma em que é conferido e gravado: textos aparados, ausente como

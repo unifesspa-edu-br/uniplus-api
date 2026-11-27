@@ -16,13 +16,16 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <param name="formatos">O formato do campo de texto de cada fato, pelo código na forma gravada.</param>
 internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas, IReadOnlyDictionary<string, string> formatos)
 {
-    public ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo)
+    /// <summary>O dado que cada campo recusado coleta, como veio no pedido: não depende do que a leitura recusou nele.</summary>
+    public List<CampoNaoLido> CamposNaoLidos { get; } = [];
+
+    public ItemDoModelo? LerItem(FatoColetadoInput entrada, string campo, LugarDoCampo lugar)
     {
         int recusasAntes = recusas.Recusas.Count;
         TipoDeCampo? tipo = LerTipoDeCampo(entrada.Apresentacao?.TipoDeCampo, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}");
         RegrasLidasDoCampo regras = LerRegrasDoCampo(entrada.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}");
         return recusas.RecusouDesde(recusasAntes)
-            ? RecusarItemNaoLido(entrada, campo, tipo, regras)
+            ? RecusarItemNaoLido(entrada, (campo, lugar), tipo, regras)
             : new ItemDoModelo(
                 entrada.FatoCodigo,
                 entrada.Ordem,
@@ -36,13 +39,13 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
     /// Lê os campos do grupo e guarda, na ordem da entrada, as recusas de cada um: as da leitura, dos textos e da forma, se não se
     /// leu, ou as dos textos e da forma, se se leu.
     /// </summary>
-    public SubitensLidos LerSubitens(GrupoColetadoInput entrada, string campo)
+    public SubitensLidos LerSubitens(GrupoColetadoInput entrada, string campo, int posicaoDoGrupo)
     {
         List<(int Indice, ItemDoModelo Parte)> lidos = [];
         List<FieldError> recusasNaOrdem = [];
         foreach ((int indice, FatoColetadoInput? subitem) in (entrada.Subitens ?? []).Index())
         {
-            (ItemDoModelo? item, List<FieldError> doSubitem) = LerSubitem(subitem, $"{campo}.subitens[{indice}]");
+            (ItemDoModelo? item, List<FieldError> doSubitem) = LerSubitem(subitem, $"{campo}.subitens[{indice}]", new LugarDoCampo(posicaoDoGrupo, indice));
             if (item is not null)
             {
                 lidos.Add((indice, item));
@@ -54,10 +57,10 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
         return new SubitensLidos(lidos, recusasNaOrdem);
     }
 
-    private (ItemDoModelo? Item, List<FieldError> Recusas) LerSubitem(FatoColetadoInput? subitem, string caminho)
+    private (ItemDoModelo? Item, List<FieldError> Recusas) LerSubitem(FatoColetadoInput? subitem, string caminho, LugarDoCampo lugar)
     {
         int antes = recusas.Recusas.Count;
-        ItemDoModelo? item = recusas.LerPresente(subitem, caminho, LerItem);
+        ItemDoModelo? item = recusas.LerPresente(subitem, caminho, (presente, campo) => LerItem(presente, campo, lugar));
         return (item, item is null ? recusas.Recusas.GetRange(antes, recusas.Recusas.Count - antes) : [.. RecusasDoSubitemLido(item, caminho)]);
     }
 
@@ -67,9 +70,16 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
             .Concat(FormaDoItem.Conferir(item.FatoCodigo, item.Ordem, item.Apresentacao, item.Formato, item.Regras).Select(erro => erro.NoCaminhoDoItem(caminho)));
 
     /// <summary>Recusa os textos e a forma do item que a leitura recusou, para as recusas dele saírem juntas; devolve nulo, o item não lido.</summary>
-    private ItemDoModelo? RecusarItemNaoLido(FatoColetadoInput entrada, string campo, TipoDeCampo? tipo, RegrasLidasDoCampo regras)
+    private ItemDoModelo? RecusarItemNaoLido(
+        FatoColetadoInput entrada, (string Caminho, LugarDoCampo Lugar) onde, TipoDeCampo? tipo, RegrasLidasDoCampo regras)
     {
+        string campo = onde.Caminho;
         string? formato = FormatoDoCatalogo(entrada.FatoCodigo);
+        if (CodigoFatoCandidato.EhValido(entrada.FatoCodigo))
+        {
+            CamposNaoLidos.Add(new CampoNaoLido(campo, entrada.FatoCodigo, onde.Lugar));
+        }
+
         recusas.Recusas.AddRange(RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoCampo(
             campo, entrada.FatoCodigo, entrada.PaginaCodigo, entrada.Apresentacao?.Rotulo, entrada.Apresentacao?.Ajuda, formato, regras)));
         recusas.Recusas.AddRange(FormaDoItemNaEntrada.Conferir(entrada, tipo, formato, regras).Select(erro => erro.NoCaminhoDoItem(campo)));
