@@ -22,4 +22,14 @@ public interface ITipoDeficienciaReader
     Task<TipoDeficienciaView?> ObterPorIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os tipos de deficiência vivos (não soft-deleted) dos <paramref name="codigos"/>, numa só leitura, ordenados por
+    /// <c>Codigo</c> ascendente. O código sem cadastro vivo — fora do formato, inexistente ou removido — não aparece
+    /// no resultado, e um código repetido no lote devolve o cadastro uma só vez. A comparação usa os códigos exatos,
+    /// sem aparar nem normalizar.
+    /// </summary>
+    Task<IReadOnlyList<TipoDeficienciaView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
 }

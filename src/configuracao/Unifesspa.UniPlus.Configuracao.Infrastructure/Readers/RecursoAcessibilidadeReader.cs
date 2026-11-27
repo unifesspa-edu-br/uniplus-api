@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -50,6 +51,23 @@ internal sealed class RecursoAcessibilidadeReader : IRecursoAcessibilidadeReader
             .ConfigureAwait(false);
 
         return entidade is null ? null : ParaView(entidade);
+    }
+
+    public async Task<IReadOnlyList<RecursoAcessibilidadeView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoRecursoAcessibilidade> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoRecursoAcessibilidade.Criar);
+        List<RecursoAcessibilidade> entidades = await _dbContext.RecursosAcessibilidade
+            .AsNoTracking()
+            .Where(e => codigosDoLote.Contains(e.Codigo))
+            .OrderBy(e => e.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
     }
 
     private static RecursoAcessibilidadeView ParaView(RecursoAcessibilidade r) =>
