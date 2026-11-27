@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -29,6 +30,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 public sealed class DefinirRegrasDerivacaoEndpointTests
 {
     private const string Derivado = "EGRESSO_ESCOLA_PUBLICA";
+    private const string CampoDoFatoDaCondicao = "[0].regras[0].quando[0][0].fato";
 
     private readonly CascadingFixture _fixture;
 
@@ -49,6 +51,27 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await VerificarDerivacaoGravadaAsync(ctx);
+    }
+
+    [Fact(DisplayName = "Fato omitido na condição da regra é recusado com 400 no envelope e o ponteiro com os índices")]
+    public async Task Rascunho_FatoOmitidoNaCondicao_400NoEnvelope()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoOmitidoNaCondicao_400NoEnvelope));
+
+        HttpResponseMessage resposta = await ctx.PutRegrasAsync(RegrasComCondicao(new { operador = "IGUAL", valor = "PRETA" }));
+
+        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, CampoDoFatoDaCondicao);
+    }
+
+    [Fact(DisplayName = "Fato null na condição da regra dá a mesma resposta do omitido")]
+    public async Task Rascunho_FatoNullNaCondicao_MesmaRespostaDoOmitido()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoNullNaCondicao_MesmaRespostaDoOmitido));
+
+        HttpResponseMessage resposta = await ctx.PutRegrasAsync(
+            RegrasComCondicao(new { fato = (string?)null, operador = "IGUAL", valor = "PRETA" }));
+
+        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, CampoDoFatoDaCondicao);
     }
 
     [Fact(DisplayName = "A modalidade do candidato, que sai das modalidades ofertadas, é recusada com 422")]
@@ -133,6 +156,15 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    private static object[] RegrasComCondicao(object condicao) =>
+    [
+        new
+        {
+            codigoFato = Derivado,
+            regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = new[] { new[] { condicao } } } },
+        },
+    ];
 
     private static object[] RegrasComCondicaoDeCorRaca() =>
     [

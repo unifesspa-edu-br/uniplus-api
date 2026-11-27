@@ -13000,14 +13000,15 @@
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
       "requisitos": [],
       "oQueAconteceu": [
-        "A requisição não trouxe um campo exigido pela operação. O campo `detail` da resposta informa o nome do que falta.",
+        "A requisição não trouxe um campo exigido pela operação. O campo `detail` da resposta informa o nome do que falta, e cada campo recusado vira um item de `errors[]`, cujo `field` o aponta.",
         "A ausência tem duas origens, e as duas caem aqui:",
-        "1. **Campo obrigatório do corpo.** O documento chegou e foi lido, mas não contém uma propriedade obrigatória.\n2. **Parâmetro fora do corpo.** A requisição não trouxe um valor exigido na consulta, no cabeçalho ou no formulário.",
+        "1. **Campo obrigatório do corpo.** O documento chegou e foi lido, mas não contém uma propriedade obrigatória, ou traz nela o valor `null`. Omitir a propriedade e enviá-la com `null` dão a mesma resposta.\n2. **Parâmetro fora do corpo.** A requisição não trouxe um valor exigido na consulta, no cabeçalho ou no formulário.",
+        "O `field` de cada item de `errors[]` aponta o campo como o cliente o escreve no documento, em camelCase e com o índice de cada lista, por exemplo `[0].documento.aplicabilidade.condicoes[0].fato`.",
         "O `detail` traz apenas os nomes dos campos, e nada do texto que o framework\nproduziu ao recusar. Essa mensagem carrega o nome completo do tipo interno que\nreceberia o documento — namespace e camada da aplicação —, e repassá-la\npublicaria estrutura interna a qualquer cliente que mandasse uma carga\nincompleta.",
         "Quando há campo nomeável faltando, esta causa prevalece sobre as demais recusas\nde leitura da requisição: dizer o que falta é a orientação mais útil que a\nresposta consegue dar."
       ],
       "comoResolver": [
-        "Acrescente à requisição os campos indicados em `detail` e repita a chamada. A referência de API do módulo informa os campos obrigatórios e seus nomes para cada operação.",
+        "Acrescente à requisição os campos indicados em `detail` e em `errors[].field`, com um valor que não seja `null`, e repita a chamada. A referência de API do módulo informa os campos obrigatórios e seus nomes para cada operação.",
         "Se o campo foi declarado e ainda assim a requisição é recusada, a causa é\noutra:",
         "- Um valor do documento incompatível com o tipo esperado recebe [requisição malformada](/erros/uniplus.requisicao.malformada).\n- Um parâmetro fora do corpo — no caminho, na consulta, no cabeçalho ou no formulário — com tipo incompatível recebe [valor inválido](/erros/uniplus.requisicao.valor_invalido).\n- Uma requisição sem documento recebe [corpo ausente](/erros/uniplus.requisicao.corpo_ausente)."
       ],

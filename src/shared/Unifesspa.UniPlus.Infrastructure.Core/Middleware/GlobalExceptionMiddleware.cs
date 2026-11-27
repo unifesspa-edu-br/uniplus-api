@@ -77,7 +77,17 @@ public sealed partial class GlobalExceptionMiddleware
 
         context.Response.StatusCode = status;
 
-        Dictionary<string, object?> body = new()
+        await context.Response
+            .WriteAsJsonAsync(
+                CorpoDaRespostaValidacao(exception, domainErrorMapper, status, type, title, code),
+                WebJsonOptions,
+                contentType: "application/problem+json")
+            .ConfigureAwait(false);
+    }
+
+    private static Dictionary<string, object?> CorpoDaRespostaValidacao(
+        ValidationException exception, IDomainErrorMapper domainErrorMapper, int status, string type, string title, string code) =>
+        new()
         {
             ["type"] = type,
             ["title"] = title,
@@ -85,47 +95,21 @@ public sealed partial class GlobalExceptionMiddleware
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
             ["code"] = code,
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
-            // Invariante: e.ErrorMessage não deve conter PII nem o valor rejeitado.
-            // Usar {PropertyValue} em templates FluentValidation viola essa restrição.
-            ["errors"] = exception.Errors
-                .Select(e => new
-                {
-                    field = NomeDeCampoNoPayload(e.PropertyName),
-                    // O ErrorCode já chega na taxonomia (ValidationErrorCodes.Resolve, ou
-                    // .WithErrorCode explícito); o mapper publica o código de wire dele.
-                    code = DomainErrorProblemDetailsFactory.Resolve(
-                        new DomainError(e.ErrorCode ?? ValidationErrorCodes.Regra, e.ErrorMessage), domainErrorMapper).Code,
-                    message = e.ErrorMessage,
-                })
-                .ToArray(),
+            ["errors"] = ErrosDeValidacao(exception, domainErrorMapper),
         };
 
-        await context.Response
-            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
-            .ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Traduz o caminho de propriedade do FluentValidation (PascalCase, nome C#) para o casing
-    /// do payload JSON — o mesmo que o caminho de validação do domínio já emite (ADR-0125) e
-    /// que o frontend usa para achar o controle do formulário. A conversão é por segmento,
-    /// preservando o índice: <c>Quadro[0].Quantidade</c> vira <c>quadro[0].quantidade</c>.
-    /// </summary>
-    private static string NomeDeCampoNoPayload(string? propertyName)
-    {
-        if (string.IsNullOrEmpty(propertyName))
+    // Invariante: e.ErrorMessage não deve conter PII nem o valor rejeitado.
+    // Usar {PropertyValue} em templates FluentValidation viola essa restrição.
+    // O ErrorCode já chega na taxonomia (ValidationErrorCodes.Resolve, ou .WithErrorCode explícito);
+    // o mapper publica o código de wire dele.
+    private static object[] ErrosDeValidacao(ValidationException exception, IDomainErrorMapper domainErrorMapper) =>
+        [.. exception.Errors.Select(e => new
         {
-            return string.Empty;
-        }
-
-        return string.Join('.', propertyName.Split('.').Select(static segmento =>
-        {
-            int indice = segmento.IndexOf('[', StringComparison.Ordinal);
-            return indice < 0
-                ? JsonNamingPolicy.CamelCase.ConvertName(segmento)
-                : JsonNamingPolicy.CamelCase.ConvertName(segmento[..indice]) + segmento[indice..];
-        }));
-    }
+            field = NomeDeCampoNoPayload.De(e.PropertyName),
+            code = DomainErrorProblemDetailsFactory.Resolve(
+                new DomainError(e.ErrorCode ?? ValidationErrorCodes.Regra, e.ErrorMessage), domainErrorMapper).Code,
+            message = e.ErrorMessage,
+        })];
 
     private static Task EscreverRespostaConflitoDeConcorrencia(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
         ProblemaNaResposta.EscreverAsync(

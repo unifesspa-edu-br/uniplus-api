@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -26,13 +27,16 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// O formulário a que o documento exigido pertence, citado pelo código, pelo HTTP: na fase que divide a
 /// inscrição e a isenção, o gatilho do documento entregue pela inscrição não cita o fato que só o pedido de
-/// isenção, facultativo, coleta; o documento entregue pelo próprio pedido o cita.
+/// isenção, facultativo, coleta; o documento entregue pelo próprio pedido o cita. A condição do gatilho sem fato
+/// é recusada no envelope dos erros.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
 public sealed class FormularioDaExigenciaEndpointTests
 {
+    private const string CampoDoFatoDaCondicao = "[0].documento.aplicabilidade.condicoes[0].fato";
+
     private readonly CascadingFixture _fixture;
 
     public FormularioDaExigenciaEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -103,6 +107,33 @@ public sealed class FormularioDaExigenciaEndpointTests
         problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente");
     }
 
+    [Fact(DisplayName = "Fato omitido na condição do gatilho é recusado com 400 no envelope e o ponteiro com os índices")]
+    public async Task DefinirDocumentosExigidos_FatoOmitidoNaCondicao_Retorna400NoEnvelope()
+    {
+        (ProcessoSeletivo processo, Guid tipoDocumentoId, string _) = await SemearCenarioAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
+            client, processo.Id, [RegraDoDocumentoComCondicao(new { clausula = 0, operador = "IGUAL", valor = "true" }, tipoDocumentoId, processo)]);
+
+        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, CampoDoFatoDaCondicao);
+    }
+
+    [Fact(DisplayName = "Fato null na condição do gatilho dá a mesma resposta do omitido")]
+    public async Task DefinirDocumentosExigidos_FatoNullNaCondicao_DaAMesmaRespostaDoOmitido()
+    {
+        (ProcessoSeletivo processo, Guid tipoDocumentoId, string _) = await SemearCenarioAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
+            client, processo.Id, [RegraDoDocumentoComCondicao(new { clausula = 0, fato = (string?)null, operador = "IGUAL", valor = "true" }, tipoDocumentoId, processo)]);
+
+        await RecusaDeCampoObrigatorioAusente.ConferirAsync(resposta, CampoDoFatoDaCondicao);
+    }
+
+    private static object RegraDoDocumentoComCondicao(object condicao, Guid tipoDocumentoId, ProcessoSeletivo processo) =>
+        RegraDoDocumento(new[] { condicao }, tipoDocumentoId, processo.CronogramaFases.Single().Id, FormulariosDoProcessoDeTeste.PedidoDeIsencao);
+
     private async Task<(ProcessoSeletivo Processo, Guid TipoDocumentoId, string Bolsista)> SemearCenarioAsync()
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
@@ -125,18 +156,20 @@ public sealed class FormularioDaExigenciaEndpointTests
     private static object RegraDoDocumentoCondicionadaA(string fato, Guid tipoDocumentoId, Guid faseId, string? formularioCodigo) =>
         RegraDoDocumentoComMomento(fato, tipoDocumentoId, new { faseId, formularioCodigo });
 
-    private static object RegraDoDocumentoComMomento(string fato, Guid tipoDocumentoId, object momento) => new
+    private static object RegraDoDocumentoComMomento(string fato, Guid tipoDocumentoId, object momento) =>
+        RegraDoDocumento(new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } }, tipoDocumentoId, momento);
+
+    private static object RegraDoDocumento(object[] condicoes, Guid tipoDocumentoId, Guid faseId, string? formularioCodigo) =>
+        RegraDoDocumento(condicoes, tipoDocumentoId, new { faseId, formularioCodigo });
+
+    private static object RegraDoDocumento(object[] condicoes, Guid tipoDocumentoId, object momento) => new
     {
         forma = "DOCUMENTO",
         documento = new
         {
             tipoDocumento = new { id = tipoDocumentoId },
             momento,
-            aplicabilidade = new
-            {
-                tipo = "CONDICIONAL",
-                condicoes = new[] { new { clausula = 0, fato, operador = "IGUAL", valor = "true" } },
-            },
+            aplicabilidade = new { tipo = "CONDICIONAL", condicoes },
             indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() },
             requisitos = new { formatosPermitidos = "QUALQUER" },
         },

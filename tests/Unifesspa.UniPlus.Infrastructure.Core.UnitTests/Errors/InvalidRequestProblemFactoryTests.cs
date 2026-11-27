@@ -7,11 +7,10 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+
+using static ApoioDaRecusaDeRequisicao;
 
 /// <summary>
 /// A recusa de binding se divide em duas, e confundir as duas orienta o cliente para o lado
@@ -20,8 +19,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 /// </summary>
 public sealed class InvalidRequestProblemFactoryTests
 {
-    private const string BaseDoCatalogo = "https://exemplo.invalid/erros/";
-
     [Fact(DisplayName = "Parâmetro que a requisição não traz é ausência: o code diz isso e o detail o nomeia")]
     public void TryBuild_CampoNaoFornecido_EhAusencia()
     {
@@ -116,11 +113,8 @@ public sealed class InvalidRequestProblemFactoryTests
         problema.Extensions["code"].Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
         problema.Detail.Should().Contain("produtos").And.Contain("bancas").And.Contain("recursos");
 
-        // O nome do tipo vem ANTES de `including:` na mensagem, e entre as mesmas aspas simples
-        // dos nomes de campo. É por isso que o recorte começa depois daquela palavra.
-        problema.Detail.Should().NotContain("Unifesspa.UniPlus",
-            "o envelope de erro não expõe nome de tipo, namespace nem caminho de arquivo (ADR-0023)");
-        problema.Detail.Should().NotContain("EtapaProcessoInput");
+        // O nome do tipo vem antes de `including:`, entre as mesmas aspas dos nomes de campo.
+        problema.Detail.Should().NotContain("Unifesspa.UniPlus").And.NotContain("EtapaProcessoInput");
     }
 
     /// <summary>
@@ -166,25 +160,19 @@ public sealed class InvalidRequestProblemFactoryTests
     }
 
     /// <summary>
-    /// Propriedade de dentro do corpo reprovada DEPOIS da desserialização não é ausência, ainda
-    /// que pareça: o input formatter não preenche valor tentado nem valor cru para o modelo,
-    /// nem quando a chave veio com <c>null</c>.
+    /// Propriedade de dentro do corpo reprovada DEPOIS da desserialização, só pela obrigatoriedade
+    /// implícita do tipo não anulável, é recusa de campo obrigatório: o input formatter não preenche
+    /// valor tentado nem valor cru para o modelo, nem quando a chave veio com <c>null</c>.
     /// </summary>
-    /// <remarks>
-    /// Chamar isso de campo não declarado diria ao cliente que ele não mandou o que mandou, e
-    /// descartaria a mensagem de quem de fato reprovou — que é justamente o que este factory
-    /// deixa passar de propósito.
-    /// </remarks>
-    [Fact(DisplayName = "Propriedade do corpo reprovada após a desserialização não vira campo ausente")]
-    public void TryBuild_PropriedadeDoCorpoReprovadaAposDesserializar_Delega()
+    [Fact(DisplayName = "Propriedade do corpo reprovada só pela obrigatoriedade implícita responde no envelope")]
+    public void TryBuild_PropriedadeDoCorpoReprovadaAposDesserializar_RespondeNoEnvelope()
     {
-        ActionContext contexto = Contexto();
-        // É o que o MVC produz para `"orgao": null` num campo declarado não-anulável: entrada
-        // inválida, sem valor tentado e sem valor cru, e nenhuma posição de documento apontada.
+        ActionContext contexto = Contexto(ParametroDeCorpo("comando", typeof(ItemDoCorpo)));
         contexto.ModelState.AddModelError("Orgao", "The Orgao field is required.");
 
-        InvalidRequestProblemFactory.TryBuild(contexto).Should().BeNull(
-            "a chave não é de parâmetro do binder, então o sinal de ausência não vale ali");
+        ProblemDetails problema = Executar(contexto);
+
+        problema.Extensions["code"].Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
     }
 
     /// <summary>
@@ -323,57 +311,9 @@ public sealed class InvalidRequestProblemFactoryTests
             "A requisição não pôde ser lida: o corpo não está no formato que o contrato declara.");
     }
 
-    private static ProblemDetails Executar(ActionContext contexto)
-    {
-        IActionResult resultado = InvalidRequestProblemFactory.TryBuild(contexto)
-            .Should().NotBeNull("este caso é de leitura da requisição e o factory tem de responder por ele").And.Subject as IActionResult
-            ?? throw new InvalidOperationException();
-        return (ProblemDetails)((ObjectResult)resultado).Value!;
-    }
-
-    private static ParameterDescriptor ParametroDeQuery(string nome) => new()
-    {
-        Name = nome,
-        BindingInfo = new BindingInfo { BindingSource = BindingSource.Query },
-    };
-
-    private static ParameterDescriptor ParametroDeCorpo(string nome) => new()
-    {
-        Name = nome,
-        BindingInfo = new BindingInfo { BindingSource = BindingSource.Body },
-    };
-
-    private static ActionContext Contexto(params ParameterDescriptor[] parametros)
-    {
-        ServiceCollection servicos = new();
-        servicos.AddSingleton<IProblemTypeUriFactory>(
-            new ProblemTypeUriFactory(Options.Create(new ProblemTypeOptions { BaseUri = BaseDoCatalogo })));
-        servicos.AddSingleton<IDomainErrorRegistration, RegistroDeTeste>();
-        servicos.AddSingleton<IDomainErrorMapper>(sp => new DomainErrorMappingRegistry(
-            sp.GetServices<IDomainErrorRegistration>(),
-            sp.GetRequiredService<IProblemTypeUriFactory>()));
-
-        DefaultHttpContext http = new() { RequestServices = servicos.BuildServiceProvider() };
-        return new ActionContext(http, new RouteData(), new ActionDescriptor { Parameters = parametros });
-    }
-
     /// <summary>O sinal que o servidor dá sobre caber corpo nesta requisição.</summary>
     private sealed class DeteccaoDeCorpo(bool podeTerCorpo) : IHttpRequestBodyDetectionFeature
     {
         public bool CanHaveBody => podeTerCorpo;
-    }
-
-    /// <summary>Só os dois códigos que este factory emite — o resto do catálogo não importa aqui.</summary>
-    private sealed class RegistroDeTeste : IDomainErrorRegistration
-    {
-        public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
-        [
-            new(InvalidRequestErrorCodes.MissingRequiredField,
-                new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente", "Campo obrigatório ausente")),
-            new(InvalidRequestErrorCodes.Malformed,
-                new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.malformada", "Requisição malformada")),
-            new(InvalidRequestErrorCodes.MissingBody,
-                new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.requisicao.corpo_ausente", "Requisição sem corpo")),
-        ];
     }
 }
