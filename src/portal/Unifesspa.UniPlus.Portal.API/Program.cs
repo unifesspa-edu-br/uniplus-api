@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Kernel.Tempo;
@@ -131,7 +132,7 @@ app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+app.MapOpenApi(DocumentoDoContratoPublicado.Rota).AllowAnonymous();
 // Na Portal, a prontidão agrega só o provedor de identidade (ver o registro acima).
 app.MapUniPlusHealthChecks();
 

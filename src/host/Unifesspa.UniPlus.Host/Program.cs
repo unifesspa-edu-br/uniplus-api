@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Ingresso.API;
@@ -187,7 +188,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapSharedProfileEndpoints();
 app.MapControllers();
-app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+app.MapOpenApi(DocumentoDoContratoPublicado.Rota).AllowAnonymous();
 
 app.MapUniPlusHealthChecks();
 
