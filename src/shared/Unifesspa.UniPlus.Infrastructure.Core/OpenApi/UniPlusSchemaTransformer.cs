@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Schema transformer que aplica invariantes de domínio Uni+ a propriedades
@@ -49,6 +50,7 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
             AplicarVocabularioFechado(schema, context);
             AplicarTokenDeClassificacao(schema, context);
             AplicarObrigatorioNoContrato(schema, context);
+            AplicarFormatoDoCodigo(schema, context);
             AplicarInvariantesDaPropriedade(schema, propertyName);
         }
     }
@@ -150,6 +152,29 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
             schema.Type &= ~JsonSchemaType.Null;
         }
     }
+
+    /// <summary>Publica o padrão e o limite do código do campo de texto marcado com <see cref="NoFormatoDoCodigoAttribute"/>.</summary>
+    /// <exception cref="InvalidOperationException">O campo não é texto, ou também aceita códigos de um enum.</exception>
+    private static void AplicarFormatoDoCodigo(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        if (context.JsonPropertyInfo is not { } propriedade || FormatoDoCodigoDe(propriedade) is not { } formato)
+        {
+            return;
+        }
+
+        if (propriedade.PropertyType != typeof(string) || CampoQueAceitaCodigos.De(propriedade) is not null)
+        {
+            throw new InvalidOperationException(
+                $"O campo {propriedade.DeclaringType.Name}.{propriedade.Name} declara NoFormatoDoCodigo, que vale só para texto que não aceita códigos de um enum.");
+        }
+
+        schema.Pattern = FormatoDoCodigo.ExpressaoNoBanco;
+        schema.MaxLength = formato.Maximo;
+    }
+
+    private static NoFormatoDoCodigoAttribute? FormatoDoCodigoDe(JsonPropertyInfo propriedade) =>
+        propriedade.AttributeProvider?.GetCustomAttributes(typeof(NoFormatoDoCodigoAttribute), inherit: true).FirstOrDefault()
+            as NoFormatoDoCodigoAttribute;
 
     /// <summary>Publica o token de classificação como texto não anulável, com o vocabulário fechado dos cinco valores.</summary>
     private static void AplicarTokenDeClassificacao(OpenApiSchema schema, OpenApiSchemaTransformerContext context)

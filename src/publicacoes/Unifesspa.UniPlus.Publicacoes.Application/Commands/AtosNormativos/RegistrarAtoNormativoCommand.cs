@@ -3,8 +3,11 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Registra um ato publicado. <paramref name="DataDoAto"/> é a data que o documento declara e não
@@ -53,7 +56,7 @@ public sealed record RegistrarAtoNormativoCommand(
     string Serie,
     int Ano,
     string? Numero,
-    string TipoCodigo,
+    [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string TipoCodigo,
     DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
@@ -74,7 +77,9 @@ public sealed record RegistrarAtoNormativoCommand(
 /// (só forma canônica UPPER_SNAKE), e <paramref name="EntidadeId"/> não tem chave
 /// estrangeira — o módulo não conhece, e não deve conhecer, o que há do outro lado.
 /// </summary>
-public sealed record VinculoEntidadeInput(string EntidadeTipo, Guid EntidadeId);
+public sealed record VinculoEntidadeInput(
+    [property: NoFormatoDoCodigo(TipoDaEntidadeVinculada.TamanhoMaximo)] string EntidadeTipo,
+    Guid EntidadeId);
 
 /// <summary>
 /// Arquivo anexo ao documento principal do ato: nome, tipo de mídia e hash SHA-256

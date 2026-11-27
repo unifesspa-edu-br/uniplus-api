@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
@@ -12,7 +14,7 @@ internal static class AtoNormativoRegras
     public const int OrgaoMaxLength = 200;
     public const int SerieMaxLength = 100;
     public const int NumeroMaxLength = 60;
-    public const int TipoCodigoMaxLength = 60;
+    public const int TipoCodigoMaxLength = TipoAtoPublicado.TamanhoMaximoDoCodigo;
     public const int AssinanteMaxLength = 200;
     public const int MotivoRetificacaoMaxLength = 1000;
     public const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
@@ -31,6 +33,7 @@ internal static class AtoNormativoRegras
     public const string NumeroTamanho = "Número deve ter no máximo 60 caracteres.";
     public const string TipoCodigoObrigatorio = "Código do tipo de ato é obrigatório.";
     public const string TipoCodigoTamanho = "Código do tipo de ato deve ter no máximo 60 caracteres.";
+    public const string TipoCodigoFormato = "Código do tipo de ato deve começar com letra maiúscula e conter letras maiúsculas sem acento, algarismos e sublinhado entre palavras, sem espaços.";
     public const string DocumentoHashObrigatorio = "Hash do documento é obrigatório.";
     public const string DocumentoHashFormato = "Hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).";
     public const string AssinanteObrigatorio = "Assinante é obrigatório.";
@@ -51,6 +54,10 @@ internal static class AtoNormativoRegras
 
     /// <summary>Código do aviso de número duplicado.</summary>
     public const string AvisoNumeroDuplicado = "NumeroDuplicado";
+
+    /// <summary>Em branco passa: a obrigatoriedade tem regra e mensagem próprias.</summary>
+    public static bool EstaEmBrancoOuNoFormatoDeCodigo(string? codigo) =>
+        string.IsNullOrWhiteSpace(codigo) || FormatoDoCodigo.TemFormatoValido(codigo);
 
     public static string? Normalizar(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();

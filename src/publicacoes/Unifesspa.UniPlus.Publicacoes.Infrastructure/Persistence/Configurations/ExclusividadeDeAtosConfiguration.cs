@@ -18,7 +18,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 public sealed class ExclusividadeDeAtosConfiguration : IEntityTypeConfiguration<VagaDeLinhagem>
 {
     private const int EntidadeTipoMaxLength = TipoDaEntidadeVinculada.TamanhoMaximo;
-    private const int TipoCodigoMaxLength = 60;
 
     public void Configure(EntityTypeBuilder<VagaDeLinhagem> builder)
     {
@@ -53,7 +52,7 @@ public sealed class ExclusividadeDeAtosConfiguration : IEntityTypeConfiguration<
             .HasComment("Tipo da entidade tratada, opaco para o módulo (por exemplo, PROCESSO_SELETIVO).");
         builder.Property(l => l.EntidadeId).IsRequired()
             .HasComment("Identificador da entidade tratada, opaco para o módulo.");
-        builder.Property(l => l.TipoCodigo).HasMaxLength(TipoCodigoMaxLength).IsRequired()
+        builder.Property(l => l.TipoCodigo).HasMaxLength(TipoAtoPublicado.TamanhoMaximoDoCodigo).IsRequired()
             .HasComment("Código do tipo de ato, copiado do ato que abriu a exclusividade.");
         builder.Property(l => l.RaizId).HasColumnName("ato_inicial_id").IsRequired()
             .HasComment("Ato inicial da cadeia de retificação que detém a exclusividade: identifica a cadeia inteira.");

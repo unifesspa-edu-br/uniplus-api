@@ -41,6 +41,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// </remarks>
 public sealed class TipoAtoPublicado : SoftDeletableEntity, IAuditableEntity
 {
+    public const int TamanhoMaximoDoCodigo = 60;
+
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
 

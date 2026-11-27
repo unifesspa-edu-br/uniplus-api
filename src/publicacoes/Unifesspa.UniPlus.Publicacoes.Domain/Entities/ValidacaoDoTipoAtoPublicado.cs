@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 internal sealed class ValidacaoDoTipoAtoPublicado(DeclaracaoDoTipoAtoPublicado declaracao)
 {
     private static readonly CampoDeCodigo CampoCodigo = new(
-        "Código do tipo de ato", 60, TipoAtoPublicadoErrorCodes.CodigoObrigatorio, TipoAtoPublicadoErrorCodes.CodigoFormato);
+        "Código do tipo de ato", TipoAtoPublicado.TamanhoMaximoDoCodigo, TipoAtoPublicadoErrorCodes.CodigoObrigatorio, TipoAtoPublicadoErrorCodes.CodigoFormato);
     private readonly List<FieldError> _erros = [];
     private string? _nome;
     private string? _baseLegal;
