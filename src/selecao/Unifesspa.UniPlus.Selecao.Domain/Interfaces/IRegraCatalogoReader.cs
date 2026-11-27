@@ -20,6 +20,14 @@ public interface IRegraCatalogoReader
     Task<RegraCatalogo?> ObterAsync(string codigo, string versao, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Resolve numa só leitura as regras das <paramref name="referencias"/> (<c>codigo</c>, <c>versao</c>). O par sem regra no
+    /// catálogo não aparece no resultado, e um par repetido no lote devolve a regra uma só vez.
+    /// </summary>
+    Task<IReadOnlyList<RegraCatalogo>> ListarPorReferenciasAsync(
+        IReadOnlyCollection<(string Codigo, string Versao)> referencias,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lista as regras de um <paramref name="tipo"/> (ex.: as regras de
     /// desempate disponíveis para o admin escolher), ordenadas por
     /// <c>codigo</c>+<c>versao</c>.
