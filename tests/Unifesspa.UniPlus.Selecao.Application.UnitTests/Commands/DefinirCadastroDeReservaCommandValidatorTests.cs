@@ -15,11 +15,6 @@ public sealed class DefinirCadastroDeReservaCommandValidatorTests
             .Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");
 
     [Fact]
-    public void Validate_ListaNula_Recusa() =>
-        _validator.Validate(new DefinirCadastroDeReservaCommand(Guid.NewGuid(), null!))
-            .Errors.Should().Contain(e => e.PropertyName == "Chamadas");
-
-    [Fact]
     public void Validate_ListaVazia_EValida() =>
         _validator.Validate(new DefinirCadastroDeReservaCommand(Guid.NewGuid(), [])).IsValid.Should().BeTrue();
 

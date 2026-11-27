@@ -55,10 +55,9 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// </para>
 /// <para>
 /// A chave OMITIDA não desserializa: 400 na borda, antes de existir comando. A chave PRESENTE com
-/// <c>null</c> desserializa normalmente, porque o host não liga <c>RespectNullableAnnotations</c>, e quem a
-/// recusa é a exigência implícita do ASP.NET para tipo de referência não anulável, que alcança também a
-/// propriedade de item de lista: 400 com o mesmo código da omitida, <c>campo_obrigatorio_ausente</c>, e o
-/// campo nomeado. A regra <c>NotNull</c> do validador só vale para quem monta o comando fora do HTTP.
+/// <c>null</c> desserializa normalmente, porque o host não liga <c>RespectNullableAnnotations</c>, e a
+/// exigência implícita do ASP.NET não a alcança nestas três coleções, que têm o valor padrão <c>null!</c>:
+/// quem a recusa é a regra <c>NotNull</c> do validador, com 422.
 /// </para>
 /// <para>
 /// O que ele NÃO cobre é a construção em C#: o default deixa o compilador aceitar, em

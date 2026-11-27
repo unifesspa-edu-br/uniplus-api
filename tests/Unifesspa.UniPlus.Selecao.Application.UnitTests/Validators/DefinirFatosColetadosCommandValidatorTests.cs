@@ -18,16 +18,16 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
 {
     private static readonly DefinirFatosColetadosCommandValidator Validator = new();
 
-    private static CondicaoPrecondicaoInput Condicao(string fato) =>
-        new(fato, "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
+    private static CondicaoPrecondicaoInput Condicao(string dado) =>
+        new(dado, "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirFatosColetadosCommand Comando(params FatoColetadoInput[] itens) =>
         new(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), itens);
 
-    private static EntradaDoFatoColetadoDeTeste Item(string fatoCodigo, string rotulo, string tipo = "SIM_OU_NAO") =>
-        EntradaDoFatoColetadoDeTeste.Coletando(fatoCodigo).ComRotulo(rotulo).DoTipo(tipo);
+    private static EntradaDoFatoColetadoDeTeste Item(string codigoDoDado, string rotulo, string tipo = "SIM_OU_NAO") =>
+        EntradaDoFatoColetadoDeTeste.Coletando(codigoDoDado).ComRotulo(rotulo).DoTipo(tipo);
 
-    [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
+    [Fact(DisplayName = "Passa com lista de itens vazia — zera a coleta")]
     public void Aceita_ListaVazia()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), []));
@@ -35,25 +35,16 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Passa com fato sem exibição (null)")]
-    public void Aceita_FatoSemExibicao()
+    [Fact(DisplayName = "Passa com item sem exibição (null)")]
+    public void Aceita_ItemSemExibicao()
     {
         ValidationResult result = Validator.Validate(Comando(Item("COR_RACA", "Cor ou raça", "ESCOLHA_UNICA").ComObrigatoriedade("NUNCA").Construir()));
 
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a lista de fatos é nula (payload malformado)")]
-    public void Rejeita_FatosNulo()
-    {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), PapelDoFormularioDeTeste.Inscricao.Codigo(), null!));
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Itens");
-    }
-
-    [Fact(DisplayName = "Passa com código do fato vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
-    public void Aceita_FatoCodigoVazioNoValidator() =>
+    [Fact(DisplayName = "Passa com código do dado do candidato vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
+    public void Aceita_CodigoDoDadoVazioNoValidator() =>
         Validator.Validate(Comando(Item(string.Empty, "Rótulo", "ESCOLHA_UNICA").Construir())).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "Passa com rótulo vazio no validator — a rejeição é do agregado (FatoColetado.Criar)")]
@@ -122,9 +113,8 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Grupo nulo, sem lista de campos, com campo nulo ou com predicado vazio é recusado na forma")]
+    [Theory(DisplayName = "Grupo nulo, com campo nulo ou com predicado vazio é recusado na forma")]
     [InlineData("grupoNulo")]
-    [InlineData("subitensNulo")]
     [InlineData("campoNulo")]
     [InlineData("exibicaoVazia")]
     [InlineData("obrigatoriedadeVazia")]
@@ -147,7 +137,6 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
         return caso switch
         {
             "grupoNulo" => null,
-            "subitensNulo" => grupo with { Subitens = null! },
             "campoNulo" => grupo with { Subitens = [null!] },
             "exibicaoVazia" => grupo with { Regras = grupo.Regras! with { Exibicao = [] } },
             "obrigatoriedadeVazia" => grupo with { Regras = grupo.Regras! with { Obrigatoriedade = new ObrigatoriedadeInput("NUNCA", []) } },

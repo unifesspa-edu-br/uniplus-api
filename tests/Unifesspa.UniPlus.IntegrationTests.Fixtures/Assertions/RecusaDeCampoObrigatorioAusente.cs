@@ -14,7 +14,15 @@ public static class RecusaDeCampoObrigatorioAusente
 {
     public const string Code = "uniplus.requisicao.campo_obrigatorio_ausente";
 
-    public static async Task ConferirAsync(HttpResponseMessage resposta, string campo)
+    /// <summary>O campo enviado com <c>null</c>: "não traz valor".</summary>
+    public static Task ConferirAsync(HttpResponseMessage resposta, string campo) =>
+        ConferirComDetalheAsync(resposta, campo, $"A requisição não traz valor para o campo obrigatório '{campo}'.");
+
+    /// <summary>O campo que o corpo nem declara: "não declara".</summary>
+    public static Task ConferirOmitidoAsync(HttpResponseMessage resposta, string campo) =>
+        ConferirComDetalheAsync(resposta, campo, $"A requisição não declara o campo obrigatório '{campo}'.");
+
+    private static async Task ConferirComDetalheAsync(HttpResponseMessage resposta, string campo, string detalhe)
     {
         ArgumentNullException.ThrowIfNull(resposta);
 
@@ -23,7 +31,7 @@ public static class RecusaDeCampoObrigatorioAusente
             HttpStatusCode.BadRequest,
             Code,
             "A requisição não declara campo obrigatório do contrato",
-            $"A requisição não traz valor para o campo obrigatório '{campo}'.");
+            detalhe);
 
         await ConferirItemDeErroAsync(resposta, campo);
     }

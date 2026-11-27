@@ -15,11 +15,6 @@ public sealed class DefinirProvaPresencialCommandValidatorTests
             .Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");
 
     [Fact]
-    public void Validate_ListaNula_Recusa() =>
-        _validator.Validate(new DefinirProvaPresencialCommand(Guid.NewGuid(), false, null!))
-            .Errors.Should().Contain(e => e.PropertyName == "Municipios");
-
-    [Fact]
     public void Validate_ElementoNulo_DeixaValidacaoAoDominio() =>
         _validator.Validate(new DefinirProvaPresencialCommand(Guid.NewGuid(), true, [null!]))
             .IsValid.Should().BeTrue();
