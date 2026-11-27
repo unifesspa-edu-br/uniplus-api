@@ -61,6 +61,7 @@ internal sealed class LeituraDoConteudo
             [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)],
             new GruposLidos(_recusas.ListaComPosicao(entrada?.Grupos, "grupos", LerGrupo), _camposDeGruposNaoLidos),
             documentos.Ler(entrada?.ConjuntoDeDocumentos),
+            new PartesNaoLidas(_campos.CamposNaoLidos, documentos.FatosPorOpcaoNaoLidos),
             false);
     }
 
@@ -68,7 +69,7 @@ internal sealed class LeituraDoConteudo
     {
         _recusas.Recusas.AddRange(FormaDoItem.ValidarQuantidade(FormaDoItem.QuantidadeNoTeto(
             entrada?.Itens?.Count ?? 0, (entrada?.Grupos ?? []).Select(static g => g?.Subitens?.Count ?? 0))));
-        return _recusas.Lista(entrada?.Itens, "itens", _campos.LerItem);
+        return _recusas.ListaComPosicao(entrada?.Itens, "itens", (item, posicao, campo) => _campos.LerItem(item, campo, new LugarDoCampo(posicao)));
     }
 
     private PaginaDoModelo? LerPagina(PaginaDoFormularioInput entrada, string campo)
@@ -152,7 +153,7 @@ internal sealed class LeituraDoConteudo
         _recusas.Recusas.AddRange(ocorrencias.Recusas.Select(recusa => recusa.NoCaminhoDoItem(campo)));
         (PredicadoDnf? exibicao, Obrigatoriedade? obrigatoriedade) = LerExibicaoEObrigatoriedadePorPartes(entrada.Regras, $"{campo}.{GrupoColetadoInput.CaminhoDasRegras}");
         int antesDosSubitens = _recusas.Recusas.Count;
-        SubitensLidos subitens = _campos.LerSubitens(entrada, campo);
+        SubitensLidos subitens = _campos.LerSubitens(entrada, campo, posicao);
         return _recusas.RecusouDesde(recusasAntes)
             ? RecusarGrupoNaoLido(entrada, posicao, ocorrencias, (exibicao, obrigatoriedade), subitens, antesDosSubitens)
             : new GrupoDoModelo(
