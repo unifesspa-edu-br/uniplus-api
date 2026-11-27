@@ -221,7 +221,6 @@
     "destinos": [
       {
         "modalidadeOrigemCodigo": "LB_PPI",
-        "ordem": 1,
         "modalidadeDestinoCodigo": "AC"
       }
     ]

@@ -29,13 +29,11 @@ internal static class ProjecaoDeCascataRemanejamento
 
     private static void AdicionarDestinos(JsonArray resultado, JsonObject origem)
     {
-        int posicao = 0;
         foreach (JsonNode? destino in (origem["destinos"] as JsonArray ?? []))
         {
             resultado.Add(new JsonObject
             {
                 ["modalidadeOrigemCodigo"] = origem["origem"]?.DeepClone(),
-                ["ordem"] = ++posicao,
                 ["modalidadeDestinoCodigo"] = destino?.DeepClone()
             });
         }
