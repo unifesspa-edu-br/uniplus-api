@@ -58,6 +58,18 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
         "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.");
 
+    /// <summary>Recusa de uma condição de atendimento que o cadastro não tem ou não está mais viva.</summary>
+    public static DomainError CondicaoNaoEncontrada() => new(
+        "AtendimentoEspecializado.CondicaoNaoEncontrada", "Condição de atendimento não encontrada ou não está mais viva.");
+
+    /// <summary>Recusa de um recurso de acessibilidade que o cadastro não tem ou não está mais vivo.</summary>
+    public static DomainError RecursoNaoEncontrado() => new(
+        "AtendimentoEspecializado.RecursoNaoEncontrado", "Recurso de acessibilidade não encontrado ou não está mais vivo.");
+
+    /// <summary>Recusa de um tipo de deficiência que o cadastro não tem ou não está mais vivo.</summary>
+    public static DomainError TipoDeficienciaNaoEncontrado() => new(
+        "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado", "Tipo de deficiência não encontrado ou não está mais vivo.");
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     private readonly List<CondicaoOfertada> _condicoes = [];
