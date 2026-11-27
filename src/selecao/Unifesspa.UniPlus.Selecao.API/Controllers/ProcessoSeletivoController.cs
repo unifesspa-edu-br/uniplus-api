@@ -115,15 +115,17 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ProcessoSeletivoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        ProcessoSeletivoDto? processo = await _queryBus.Send(new LerProcessoSeletivoQuery(id), cancellationToken);
-        if (processo is null)
+        Result<ProcessoSeletivoDto> resultado = await _queryBus.Send(new LerProcessoSeletivoQuery(id), cancellationToken);
+        if (resultado.IsFailure)
         {
-            return NotFound();
+            return resultado.ToActionResult(_mapper);
         }
+
+        ProcessoSeletivoDto processo = resultado.Value!;
 
         // HATEOAS Level 1 — ver ADR-0029 para a justificativa completa.
         ProcessoSeletivoDto processoComLinks = processo with { Links = _linksBuilder.Build(processo) };

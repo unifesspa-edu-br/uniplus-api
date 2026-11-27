@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.Errors;
 using Domain.Interfaces;
 
 using DTOs;
+
+using Kernel.Results;
 
 /// <summary>
 /// Handler da <see cref="ObterConformidadeProcessoSeletivoQuery"/>: leitura pura (sem side effects) que carrega o
@@ -19,7 +22,7 @@ using DTOs;
 /// </remarks>
 public static class ObterConformidadeProcessoSeletivoQueryHandler
 {
-    public static async Task<ConformidadeProcessoSeletivoDto?> Handle(
+    public static async Task<Result<ConformidadeProcessoSeletivoDto>> Handle(
         ObterConformidadeProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
         AvaliacaoDaConformidade avaliacao,
@@ -34,7 +37,9 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
             .ConfigureAwait(false);
 
         return processo is null
-            ? null
-            : await avaliacao.AvaliarAsync(processo, cancellationToken).ConfigureAwait(false);
+            ? Result<ConformidadeProcessoSeletivoDto>.Failure(
+                new DomainError(ProcessoSeletivoErrorCodes.NaoEncontrado, "Processo seletivo não encontrado."))
+            : Result<ConformidadeProcessoSeletivoDto>.Success(
+                await avaliacao.AvaliarAsync(processo, cancellationToken).ConfigureAwait(false));
     }
 }

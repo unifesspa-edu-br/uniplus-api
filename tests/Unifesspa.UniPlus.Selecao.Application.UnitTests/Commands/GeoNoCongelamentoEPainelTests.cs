@@ -59,7 +59,7 @@ public sealed class GeoNoCongelamentoEPainelTests
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
         GeoIndisponivel(servicos);
         servicos.Repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ConformidadeProcessoSeletivoDto? painel = await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ConformidadeProcessoSeletivoDto? painel = (await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
         painel!.Itens.Should().ContainSingle(item => item.Codigo == "prova_presencial").Which.Ok.Should().BeFalse();
     }
 
@@ -71,7 +71,7 @@ public sealed class GeoNoCongelamentoEPainelTests
         servicos.Geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>())
             .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município não encontrado")));
         servicos.Repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ConformidadeProcessoSeletivoDto? painel = await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ConformidadeProcessoSeletivoDto? painel = (await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
         painel!.Itens.Should().ContainSingle(item => item.Codigo == "prova_presencial").Which.Ok.Should().BeFalse();
     }
 
@@ -86,7 +86,7 @@ public sealed class GeoNoCongelamentoEPainelTests
             .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "Município não encontrado")));
         servicos.Geo.ConferirMunicipioAsync("1508159", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Xinguara"));
         servicos.Repositorio.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ConformidadeProcessoSeletivoDto? painel = await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+        ConformidadeProcessoSeletivoDto? painel = (await servicos.ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
         (Result resposta, IEnumerable<object> eventos) = await servicos.PublicarAsync(processo.Id);
         painel!.Itens.Should().ContainSingle(item => item.Codigo == "prova_presencial").Which.Ok.Should().BeFalse();
         resposta.Errors.Select(erro => erro.Error.Code).Should().Contain(

@@ -64,19 +64,15 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     [EndpointName("VerificarConformidadeDoProcesso")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeProcessoSeletivoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterConformidade(Guid id, CancellationToken cancellationToken)
     {
-        ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
+        Result<ConformidadeProcessoSeletivoDto> resultado = await _queryBus
             .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
             .ConfigureAwait(false);
-        if (conformidade is null)
-        {
-            return NotFound();
-        }
 
-        return Ok(conformidade);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

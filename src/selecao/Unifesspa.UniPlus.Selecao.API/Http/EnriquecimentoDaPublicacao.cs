@@ -29,14 +29,14 @@ internal static class EnriquecimentoDaPublicacao
             return actionResult;
         }
 
-        ConformidadeProcessoSeletivoDto? conformidade = await queryBus
+        Result<ConformidadeProcessoSeletivoDto> conformidade = await queryBus
             .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
         // As pendências saem com a MESMA identidade que o checklist publica — quem recebeu o
         // preview aprovado e depois este 422 compara código e dimensão, não frases. Levar só o
         // texto obrigaria o cliente a manter uma tabela de mensagens para saber onde corrigir.
-        PendenciaEstruturalDto[] pendencias = conformidade?.Itens
+        PendenciaEstruturalDto[] pendencias = conformidade.Value?.Itens
             .Where(item => !item.Ok)
             .Select(item => new PendenciaEstruturalDto(item.Codigo, item.Dimensao, item.Mensagem))
             .ToArray() ?? [];

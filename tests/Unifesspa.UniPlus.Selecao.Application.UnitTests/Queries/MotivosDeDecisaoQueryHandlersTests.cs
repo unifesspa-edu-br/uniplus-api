@@ -7,11 +7,13 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
@@ -39,13 +41,14 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
         });
     }
 
-    [Fact(DisplayName = "A leitura por Id devolve nulo para motivo inexistente")]
-    public async Task Obter_Inexistente_Nulo()
+    [Fact(DisplayName = "A leitura por Id recusa com o código de motivo não encontrado para motivo inexistente")]
+    public async Task Obter_Inexistente_RecusaComMotivoNaoEncontrado()
     {
-        MotivoDeDecisaoDto? lido = await ObterMotivoDeDecisaoQueryHandler.Handle(
+        Result<MotivoDeDecisaoDto> lido = await ObterMotivoDeDecisaoQueryHandler.Handle(
             new ObterMotivoDeDecisaoQuery(Guid.CreateVersion7()), _repository, CancellationToken.None);
 
-        lido.Should().BeNull();
+        lido.IsFailure.Should().BeTrue();
+        lido.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "A leitura por Id projeta o motivo")]
@@ -54,10 +57,11 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
         MotivoDeDecisao motivo = Motivo();
         _repository.ObterPorIdAsync(motivo.Id, Arg.Any<CancellationToken>()).Returns(motivo);
 
-        MotivoDeDecisaoDto? lido = await ObterMotivoDeDecisaoQueryHandler.Handle(
+        Result<MotivoDeDecisaoDto> resultado = await ObterMotivoDeDecisaoQueryHandler.Handle(
             new ObterMotivoDeDecisaoQuery(motivo.Id), _repository, CancellationToken.None);
 
-        lido!.Codigo.Should().Be("RENDA_ACIMA_DO_LIMITE");
+        MotivoDeDecisaoDto lido = resultado.Value!;
+        lido.Codigo.Should().Be("RENDA_ACIMA_DO_LIMITE");
         lido.Tipo.Should().Be(CodigoComRotulo<TipoMotivoDeDecisao>.De(TipoMotivoDeDecisao.IsencaoDaTaxa));
     }
 

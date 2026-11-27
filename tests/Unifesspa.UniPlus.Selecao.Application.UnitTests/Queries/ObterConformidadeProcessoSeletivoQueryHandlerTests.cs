@@ -28,17 +28,18 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ProcessosDo
 
 public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 {
-    [Fact(DisplayName = "Handle com processo inexistente retorna null (mapeado a 404 pelo controller)")]
-    public async Task Handle_ProcessoInexistente_RetornaNull()
+    [Fact(DisplayName = "Handle com processo inexistente recusa com o código de processo seletivo não encontrado")]
+    public async Task Handle_ProcessoInexistente_RecusaComProcessoNaoEncontrado()
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((ProcessoSeletivo?)null);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(repository)
+        Result<ConformidadeProcessoSeletivoDto> result = await ServicosNeutros(repository)
             .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()));
 
-        result.Should().BeNull();
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
     [Fact(DisplayName = "Handle marca vermelho o tipo de ato único do cronograma que o ato da linhagem, ainda pendente em Publicações, já ocupa")]
@@ -49,10 +50,10 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         IProcessoSeletivoRepository repository = RepositorioDo(processo);
         repository.ObterAtosCriadoresAsync(processo.Id, Arg.Any<CancellationToken>()).Returns([atoDaLinhagem]);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(repository)
+        ConformidadeProcessoSeletivoDto? result = (await ServicosNeutros(repository)
             .ComAtos(AtosQueRegistramOTipo(atoDaLinhagem, "ATO_UNICO"))
             .ComTiposDeAto(CatalogoQueDeclaraUnico("ATO_UNICO"))
-            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
         result!.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
     }
@@ -97,9 +98,9 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false };
         ProcessoSeletivo processo = QueExigeODocumento("PS painel da proteção", tipo);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
+        ConformidadeProcessoSeletivoDto? result = (await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComTiposDocumento(TiposVivos(tipo))
-            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
         result!.Itens.Should().ContainSingle(i => i.Codigo == "ProcessoSeletivo.TipoDocumentoComProtecaoPendente:documentosExigidos.LAUDO_MEDICO" && !i.Ok);
     }
@@ -110,10 +111,10 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
         ProcessoSeletivo processo = QueExigeODocumento("PS painel do derivado", tipo, ["RENDA_PER_CAPITA"]);
 
-        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
+        ConformidadeProcessoSeletivoDto? result = (await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes("RENDA_PER_CAPITA"))
             .ComTiposDocumento(TiposVivos(tipo))
-            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
         result!.Itens.Where(static i => i.Codigo.Contains("Fato", StringComparison.Ordinal) || i.Codigo.Contains("fato", StringComparison.Ordinal))
             .Where(static i => !i.Ok).Select(static i => i.Codigo).Should().Equal("ProcessoSeletivo.FatoComProtecaoPendente:fatos.RENDA_PER_CAPITA");
@@ -210,8 +211,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             && i.Mensagem == "A versão do envelope não é suportada.");
     }
 
-    private static Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ProcessoSeletivo processo) =>
-        ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+    private static async Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ProcessoSeletivo processo) =>
+        (await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
 
     private static void AfirmarQueSoOCronogramaFicouVermelho(ConformidadeProcessoSeletivoDto result) =>
         // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
@@ -249,10 +250,10 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = QueExigeODocumento("PS painel dos fatos", tipo, fatos);
 
-        return await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
+        return (await ServicosNeutros(RepositorioDo(processo)).ComMotivosDeDecisaoDoProcesso(processo)
             .ComCatalogoDeFatos(CatalogoComDerivadosPendentes(fatos))
             .ComTiposDocumento(TiposVivos(tipo))
-            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id))).Value;
     }
 
     private static IFatoCandidatoReader CatalogoComDerivadosPendentes(params string[] codigos)
@@ -272,7 +273,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .ComCodecs(Substitute.For<IRegistroCodecsEnvelope>())
             .ComRelogio(TimeProvider.System);
 
-    private static Task<ConformidadeProcessoSeletivoDto?> ChecklistAsyncBruto(
+    private static Task<Result<ConformidadeProcessoSeletivoDto>> ChecklistAsyncBruto(
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje)
     {
         ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
@@ -286,7 +287,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
     private static async Task<ConformidadeProcessoSeletivoDto> ChecklistAsync(
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje) =>
-        (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
+        (await ChecklistAsyncBruto(processo, repository, codecs, hoje)).Value!;
 
     private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
