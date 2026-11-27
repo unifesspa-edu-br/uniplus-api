@@ -29,6 +29,8 @@ internal static class CursorBinderTestSupport
 
     public static readonly DateTimeOffset InstanteDaConsulta = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
+    public const string EmissorDeTeste = "https://emissor.exemplo/realms/uniplus";
+
     public const string InvalidCursorMessage = "O cursor informado é inválido.";
 
     public static ServiceCollection CreateCursorServices()
@@ -48,7 +50,8 @@ internal static class CursorBinderTestSupport
         this ServiceCollection services,
         bool authenticated,
         string? userId,
-        ResolutionCounter counter)
+        ResolutionCounter counter,
+        string issuer = EmissorDeTeste)
     {
         services.AddSingleton(_ =>
         {
@@ -56,6 +59,7 @@ internal static class CursorBinderTestSupport
             IUserContext user = Substitute.For<IUserContext>();
             user.IsAuthenticated.Returns(authenticated);
             user.UserId.Returns(userId);
+            user.Issuer.Returns(issuer);
             return user;
         });
         return services;
@@ -66,7 +70,15 @@ internal static class CursorBinderTestSupport
         Limit: 10,
         ResourceTag: resource,
         ExpiresAt: InstanteDaConsulta.AddMinutes(10),
-        Direction: PaginationDirection.Next);
+        Direction: PaginationDirection.Next,
+        SortKey: ChaveDeTeste);
+
+    public const string ChaveDeTeste = "chave-de-continuacao";
+
+    public static (string SortKey, Guid Id) PontoDeContinuacao(Guid id) => (ChaveDeTeste, id);
+
+    public static string? ResumoDaContaDe(string? conta, string emissor = EmissorDeTeste) =>
+        conta is null ? null : ResumoCanonico.De(emissor, conta);
 
     public static async Task<string> EncodeAsync(IServiceProvider services, CursorPayload payload)
     {

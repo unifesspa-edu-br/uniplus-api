@@ -107,7 +107,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ListarVersoes([FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListarVersoes([FromCursor(ResourceTag)] PageRequest page, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
@@ -117,7 +117,7 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
 
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
-            : await this.OkPaginatedOrdenadoAsync(
+            : await this.OkPaginatedAsync(
                 resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }

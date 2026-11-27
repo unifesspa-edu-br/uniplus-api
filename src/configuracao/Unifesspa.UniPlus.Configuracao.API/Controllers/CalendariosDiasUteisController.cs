@@ -76,14 +76,14 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarCalendariosDiasUteisResult resultado = await _queryBus
-            .Send(new ListarCalendariosDiasUteisQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarCalendariosDiasUteisQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         CalendarioDiasUteisResumoDto[] comLinks =
             [.. resultado.Items.Select(c => c with { Links = _resumoLinksBuilder.Build(c) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.API.Controllers;
 
-using System.Globalization;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -80,11 +78,11 @@ public sealed class AtosNormativosController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarAtosNormativosResult resultado = await _queryBus
-            .Send(new ListarAtosNormativosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarAtosNormativosQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            ComLinks(resultado.Items), resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            ComLinks(resultado.Items), resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -116,12 +114,12 @@ public sealed class AtosNormativosController : ControllerBase
     public async Task<IActionResult> ListarDaEntidade(
         string entidadeTipo,
         Guid entidadeId,
-        [FromCursor(ResourceTagEntidade, RouteEntidadeTipo, RouteEntidadeId, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceTagEntidade, RouteEntidadeTipo, RouteEntidadeId)] PageRequest page,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (RecusaDaListagem(entidadeTipo, page) is { } recusa)
+        if (RecusaDaListagem(entidadeTipo) is { } recusa)
         {
             return recusa;
         }
@@ -130,7 +128,7 @@ public sealed class AtosNormativosController : ControllerBase
             .Send(new ListarAtosDaEntidadeQuery(new EntidadeVinculada(entidadeTipo, entidadeId), page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
-        return await this.OkPaginatedOrdenadoAsync(
+        return await this.OkPaginatedAsync(
             ComLinks(resultado.Items), resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
@@ -203,34 +201,19 @@ public sealed class AtosNormativosController : ControllerBase
         [.. atos.Select(a => a with { Links = _linksBuilder.Build(a) })];
 
     /// <summary>
-    /// A recusa que a fronteira dá a uma consulta dos atos de uma entidade antes de enviá-la, ou
-    /// <c>null</c>: primeiro o tipo de entidade, depois a chave de ordenação do cursor.
+    /// A recusa que a fronteira dá a uma consulta dos atos de uma entidade antes de enviá-la, ou <c>null</c>: o tipo de
+    /// entidade fora da grafia canônica.
     /// </summary>
     /// <remarks>
     /// A forma do rótulo é conferida, o valor jamais: sem a recusa, um rótulo fora da grafia canônica
     /// (minúsculo, com hífen) devolveria a mesma coleção vazia de uma entidade sem atos, e o erro de
-    /// digitação passaria por resultado legítimo. O ponto de continuação do cursor é o par (instante da divulgação, Id) e o
-    /// instante chega como texto: decodificar o wire é da fronteira (ADR-0031); sem a recusa, o cursor
-    /// adulterado viraria 500. O código é o que o binder dá ao cursor que não decodifica.
+    /// digitação passaria por resultado legítimo.
     /// </remarks>
-    private IActionResult? RecusaDaListagem(string entidadeTipo, PageRequest page)
-    {
-        if (!TipoDaEntidadeVinculada.TemFormaCanonica(entidadeTipo))
-        {
-            return Result.Failure(new DomainError(
+    private IActionResult? RecusaDaListagem(string entidadeTipo) =>
+        TipoDaEntidadeVinculada.TemFormaCanonica(entidadeTipo)
+            ? null
+            : Result.Failure(new DomainError(
                     AtoNormativoErrorCodes.TipoDeEntidadeInvalido,
                     "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado."))
                 .ToActionResult(_mapper);
-        }
-
-        return ChaveEhInstante(page.AfterSortKey)
-            ? null
-            : Result.Failure(new DomainError(CursorBindingErrorCodes.Invalido, "O cursor informado é inválido."))
-                .ToActionResult(_mapper);
-    }
-
-    /// <summary>A chave de ordenação desta coleção é o instante da divulgação no formato <c>O</c>; sem chave, é a primeira página.</summary>
-    private static bool ChaveEhInstante(string? chaveDeOrdenacao) =>
-        chaveDeOrdenacao is null
-        || DateTimeOffset.TryParseExact(chaveDeOrdenacao, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
 }

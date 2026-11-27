@@ -25,7 +25,8 @@ public sealed class PerfilRepository : IPerfilRepository
     public async Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.Perfis.ComComposicao().FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPediveisPaginadoAsync(
+    public async Task<(IReadOnlyList<Perfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPediveisPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -38,11 +39,11 @@ public sealed class PerfilRepository : IPerfilRepository
             .Where(p => p.Ativo
                 && (p.Governanca != null || _context.Set<VigenciaDoPerfil>().Any(v => v.PerfilId == p.Id && v.Ate == null)));
 
-        CursorKeysetPage<Perfil> page = await CursorKeyset
-            .ApplyAsync(pediveis, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<Perfil> page = await CursorKeyset
+            .ApplyAsync(pediveis, CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(
@@ -120,18 +121,19 @@ public sealed class PerfilRepository : IPerfilRepository
         throw new NotSupportedException("Perfil de acesso não é removido — a retirada é a desativação.");
     }
 
-    public async Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Perfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
-        CursorKeysetPage<Perfil> page = await CursorKeyset
-            .ApplyAsync(_context.Perfis.AsNoTracking().ComComposicao(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<Perfil> page = await CursorKeyset
+            .ApplyAsync(_context.Perfis.AsNoTracking().ComComposicao(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task<TrilhaDaContencao?> ObterTrilhaDaContencaoAsync(Guid perfilId, CancellationToken cancellationToken = default)

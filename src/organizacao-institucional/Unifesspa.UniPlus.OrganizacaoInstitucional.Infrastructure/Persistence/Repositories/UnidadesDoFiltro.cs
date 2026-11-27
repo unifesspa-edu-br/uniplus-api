@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -23,6 +24,19 @@ internal static class UnidadesDoFiltro
         string? termoPreparado = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Termo);
         IQueryable<Unidade> comBusca = termoPreparado is null ? unidades : unidades.ComBusca(termoPreparado);
         return filtro.TemTipos ? comBusca.ComTipos(filtro.Tipos) : comBusca;
+    }
+
+    /// <summary>
+    /// As condições efetivas do filtro, as mesmas que o recorte aplica: o termo já normalizado e o conjunto de tipos, que
+    /// o cursor amarra à consulta.
+    /// </summary>
+    public static CondicoesDoFiltro Condicoes(FiltroListagemUnidades filtro)
+    {
+        ArgumentNullException.ThrowIfNull(filtro);
+
+        return CondicoesDoFiltro.De(
+            ParteDoFiltro.De(NormalizacaoTextual.PrepararTermoDeBusca(filtro.Termo)),
+            ParteDoFiltro.Conjunto(filtro.Tipos));
     }
 
     /// <summary>

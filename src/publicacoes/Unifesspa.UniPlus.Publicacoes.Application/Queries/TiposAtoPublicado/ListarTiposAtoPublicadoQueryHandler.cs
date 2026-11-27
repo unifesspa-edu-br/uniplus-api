@@ -34,13 +34,13 @@ public static class ListarTiposAtoPublicadoQueryHandler
         ITipoAtoPublicadoRepository repository,
         CancellationToken cancellationToken)
     {
-        (IReadOnlyList<TipoAtoPublicado> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, vigentesEm, cancellationToken)
+        (IReadOnlyList<TipoAtoPublicado> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, vigentesEm, cancellationToken)
             .ConfigureAwait(false);
 
         TipoAtoPublicadoDto[] items = [.. itens.Select(tipo => tipo.ToDto())];
         return Result<ListarTiposAtoPublicadoResult>.Success(
-            new ListarTiposAtoPublicadoResult(items, anteriorAfterId, proximoAfterId));
+            new ListarTiposAtoPublicadoResult(items, anterior, proximo));
     }
 
     /// <summary>

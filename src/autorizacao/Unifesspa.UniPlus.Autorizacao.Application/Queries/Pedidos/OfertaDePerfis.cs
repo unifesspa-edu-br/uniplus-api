@@ -76,8 +76,8 @@ public sealed class OfertaDePerfis
 
     private async Task<ListarPerfisParaPedirResult> OfertarAsync(ListarPerfisParaPedirQuery query, CancellationToken cancellationToken)
     {
-        (IReadOnlyList<Perfil> pediveis, Guid? anterior, Guid? proximo) = await _perfis
-            .ListarPediveisPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<Perfil> pediveis, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await _perfis
+            .ListarPediveisPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         return new ListarPerfisParaPedirResult([.. pediveis.Select(Oferta).OfType<PerfilParaPedidoDto>()], anterior, proximo);

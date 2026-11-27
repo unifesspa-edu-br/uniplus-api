@@ -200,8 +200,8 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         public Task AdicionarTentativaAsync(TentativaDeInstalacao tentativa, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<TentativaDeInstalacao>> ListarTentativasAsync(Guid instalacaoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
-        public Task<(IReadOnlyList<TentativaDeInstalacao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarTentativasSemPendenciaAsync(
-            Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<(IReadOnlyList<TentativaDeInstalacao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarTentativasSemPendenciaAsync(
+            string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     private sealed class PedidosQueNaoDevemSerConsultados : PedidosComAnexo

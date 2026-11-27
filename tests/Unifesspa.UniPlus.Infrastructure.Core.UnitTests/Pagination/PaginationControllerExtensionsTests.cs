@@ -117,12 +117,12 @@ public sealed class PaginationControllerExtensionsTests
     }
 
     private static Task<string> LinkDaListagemAsync(string consulta, bool proximaPagina) =>
-        LinkDaListagemAsync(consulta, anterior: null, proximaPagina ? Guid.NewGuid() : null);
+        LinkDaListagemAsync(consulta, anterior: null, proximaPagina ? PontoDeContinuacao(Guid.NewGuid()) : null);
 
     private static Task<string> LinkComPaginaAnteriorAsync(string consulta) =>
-        LinkDaListagemAsync(consulta, Guid.NewGuid(), seguinte: null);
+        LinkDaListagemAsync(consulta, PontoDeContinuacao(Guid.NewGuid()), seguinte: null);
 
-    private static async Task<string> LinkDaListagemAsync(string consulta, Guid? anterior, Guid? seguinte)
+    private static async Task<string> LinkDaListagemAsync(string consulta, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? seguinte)
     {
         DefaultHttpContext contexto = ContextoDaRequisicao(consulta);
         ListagemController controller = new()

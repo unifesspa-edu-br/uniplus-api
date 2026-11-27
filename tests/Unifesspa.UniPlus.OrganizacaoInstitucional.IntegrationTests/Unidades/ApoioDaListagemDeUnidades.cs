@@ -103,14 +103,15 @@ internal sealed class ApoioDaListagemDeUnidades
         return acumulado;
     }
 
-    internal async Task<(IReadOnlyList<Unidade> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
+    internal async Task<(IReadOnlyList<Unidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> PaginarAsync(
         FiltroListagemUnidades filtro,
         Guid? afterId,
         PaginationDirection direction)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
-        return await repository.ListarPaginadoAsync(afterId, limit: 2, direction, filtro, CancellationToken.None);
+        string? chave = afterId is null ? null : UnidadesDoFiltro.Condicoes(filtro).EmitirChave();
+        return await repository.ListarPaginadoAsync(chave, afterId, limit: 2, direction, filtro, CancellationToken.None);
     }
 
     internal async Task<IReadOnlyList<Unidade>> ListarAsync(FiltroListagemUnidades filtro)
@@ -118,7 +119,7 @@ internal sealed class ApoioDaListagemDeUnidades
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
         (IReadOnlyList<Unidade> itens, _, _) = await repository
-            .ListarPaginadoAsync(null, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
+            .ListarPaginadoAsync(null, null, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
         return itens;
     }
 
@@ -126,16 +127,16 @@ internal sealed class ApoioDaListagemDeUnidades
     internal async Task<IReadOnlyList<Guid>> ListarTodasAsync(FiltroListagemUnidades filtro)
     {
         List<Guid> ids = [];
-        Guid? cursor = null;
+        (string SortKey, Guid Id)? ponto = null;
         do
         {
             await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
             var repository = new UnidadeRepository(ctx);
-            (IReadOnlyList<Unidade> pagina, _, cursor) = await repository
-                .ListarPaginadoAsync(cursor, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
+            (IReadOnlyList<Unidade> pagina, _, ponto) = await repository
+                .ListarPaginadoAsync(ponto?.SortKey, ponto?.Id, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
             ids.AddRange(pagina.Select(u => u.Id));
         }
-        while (cursor is not null);
+        while (ponto is not null);
 
         return ids;
     }

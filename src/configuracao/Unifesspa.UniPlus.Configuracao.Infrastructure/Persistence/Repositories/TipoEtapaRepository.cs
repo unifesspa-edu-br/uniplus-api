@@ -25,14 +25,15 @@ public sealed class TipoEtapaRepository : ITipoEtapaRepository
         _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos)
             .FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<TipoEtapa> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<TipoEtapa> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken)
     {
-        CursorKeysetPage<TipoEtapa> page = await CursorKeyset
+        OrderedKeysetPage<TipoEtapa> page = await CursorKeyset
             .ApplyAsync(
-                _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos).Where(tipo => tipo.Ativo), afterId, limit, direction, cancellationToken)
+                _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos).Where(tipo => tipo.Ativo), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(TipoEtapa tipo, CancellationToken cancellationToken)

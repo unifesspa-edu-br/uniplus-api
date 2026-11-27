@@ -37,18 +37,19 @@ public sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<PesoAreaEnem> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<PesoAreaEnem> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        CursorKeysetPage<PesoAreaEnem> page = await CursorKeyset
-            .ApplyAsync(_dbContext.PesosAreaEnem.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<PesoAreaEnem> page = await CursorKeyset
+            .ApplyAsync(_dbContext.PesosAreaEnem.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(PesoAreaEnem peso, CancellationToken cancellationToken)

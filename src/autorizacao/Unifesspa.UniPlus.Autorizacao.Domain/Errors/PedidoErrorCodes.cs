@@ -33,7 +33,6 @@ public static class PedidoErrorCodes
     public const string IdentidadeIncompleta = "Pedido.IdentidadeIncompleta";
     public const string ConflitoDeConcorrencia = "Pedido.ConflitoDeConcorrencia";
     public const string FilaInvalida = "Pedido.FilaInvalida";
-    public const string CursorInvalido = "Pedido.CursorInvalido";
     public const string FiltroDeSituacaoInvalido = "Pedido.FiltroDeSituacaoInvalido";
     public const string PerfilSemVersaoEmVigor = "Pedido.PerfilSemVersaoEmVigor";
     public const string PerfilEmRevisaoDasConcessoes = "Pedido.PerfilEmRevisaoDasConcessoes";

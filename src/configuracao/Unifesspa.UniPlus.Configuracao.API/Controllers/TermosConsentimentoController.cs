@@ -69,9 +69,9 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <param name="page">Cursor decodificado (<c>cursor</c>/<c>limit</c>/<c>direction</c> da wire).</param>
     /// <param name="q">
     /// Termo de busca livre (caixa-insensível) sobre o <c>Nome</c> do termo;
-    /// ausente/vazio = sem filtro. Trocar o termo entre páginas de uma mesma
-    /// navegação produz resultados inconsistentes — o cursor não vincula o
-    /// filtro (ADR-0026), então mantenha <c>q</c> fixo ao seguir prev/next.
+    /// ausente/vazio = sem filtro. O cursor só continua com a mesma busca (ADR-0026):
+    /// outro <c>q</c> é recusado com 400 (<c>uniplus.paginacao.cursor_invalido</c>),
+    /// então mantenha <c>q</c> fixo ao seguir prev/next.
     /// </param>
     /// <param name="cancellationToken">Token de cancelamento da requisição.</param>
     [HttpGet("termos-consentimento")]
@@ -87,7 +87,7 @@ public sealed class TermosConsentimentoController : ControllerBase
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery(Name = BuscaPedida.NomeDoParametro)] [Description(
             "Termo de busca livre (caixa-insensível) sobre o Nome do termo de consentimento; " +
-            "ausente/vazio = sem filtro. Até 200 caracteres, sem contar os espaços das pontas. Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
+            "ausente/vazio = sem filtro. Até 200 caracteres, sem contar os espaços das pontas. O cursor só continua com a mesma busca: outro termo é recusado com 400. Mantenha fixo ao navegar prev/next.")]
         string? q,
         CancellationToken cancellationToken)
     {
@@ -101,7 +101,7 @@ public sealed class TermosConsentimentoController : ControllerBase
         }
 
         ListarTermosConsentimentoResult resultado = await _queryBus
-            .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction, searchTerm), cancellationToken)
+            .Send(new ListarTermosConsentimentoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, searchTerm), cancellationToken)
             .ConfigureAwait(false);
 
         return await MontarPaginaAsync(resultado, page, cancellationToken).ConfigureAwait(false);
@@ -114,7 +114,7 @@ public sealed class TermosConsentimentoController : ControllerBase
             [.. resultado.Items.Select(t => t with { Links = _resumoLinksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -37,9 +37,9 @@ A pergunta é **construir** o seek SQL multi-coluna à mão (estender o `CursorK
 **Escolhida:** "B — biblioteca de keyset para paginação por chave, sob o nosso cursor opaco", porque delega o seek SQL multi-coluna provado a uma biblioteca de paginação por chave mantida e de baixo nível, mantendo a nossa camada de cursor (mais robusta que o padrão de mercado) como dona do contrato.
 
 - A biblioteca gera **apenas** o `WHERE`/`ORDER BY`/Forward-Backward + `HasPrevious`/`HasNext`; a nossa camada (`CursorPayload` + `OkPaginatedOrdenadoAsync`) mantém AES-GCM, TTL, user-binding e `Link`.
-- A chave de ordenação viaja no **payload opaco** (campo `SortKey`); o ponto de continuação é a tupla `(SortKey, Id)`.
+- A chave de ordenação viaja no **payload opaco** (campo `SortKey`); o ponto de continuação é a tupla `(SortKey, Id)`. A chave começa pelo resumo da consulta (ADR-0026, emenda), seguido do valor de cada coluna de ordenação.
 - A integração fica num helper compartilhado reutilizável (`KeysetOrdenadoCursor`, em `Infrastructure.Core/Pagination`): qualquer endpoint futuro ganha ordenação chamando-o.
-- **Só os readers ordenados** (Estado/Cidade) adotam a biblioteca de paginação por chave; os consumidores que paginam por `Id` permanecem no `CursorKeyset` atual (menor raio de explosão).
+- **Só os readers ordenados** (Estado/Cidade) adotam a biblioteca de paginação por chave; os consumidores que paginam por `Id` permanecem no `CursorKeyset`, que também passa a levar e conferir o resumo da consulta (menor raio de explosão).
 
 ## Consequências
 
@@ -56,7 +56,7 @@ A pergunta é **construir** o seek SQL multi-coluna à mão (estender o `CursorK
 
 ### Neutras
 
-- O `CursorPayload` e o `PageRequest` compartilhados ganham um campo opcional de chave de ordenação (`null` no caminho por-`Id`), sem mudar o contrato dos consumidores existentes.
+- O `CursorPayload` e o `PageRequest` compartilhados ganham um campo de chave de ordenação. Deixa de ser nulo no caminho por `Id`: ali a chave traz só o resumo da consulta (ADR-0026, emenda). O contrato wire não muda.
 
 ## Confirmação
 

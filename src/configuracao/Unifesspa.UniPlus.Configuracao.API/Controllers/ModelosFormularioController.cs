@@ -73,11 +73,11 @@ public sealed class ModelosFormularioController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
         ListarModelosFormularioResult resultado = await _queryBus.Send(
-            new ListarModelosFormularioQuery(page.AfterId, page.Limit, page.Direction, tipoProcesso, serveAFaseDeInscricao, ativo), cancellationToken)
+            new ListarModelosFormularioQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, tipoProcesso, serveAFaseDeInscricao, ativo), cancellationToken)
             .ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken)
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

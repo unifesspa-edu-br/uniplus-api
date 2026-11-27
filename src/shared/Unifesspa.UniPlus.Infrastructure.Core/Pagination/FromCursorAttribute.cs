@@ -34,20 +34,12 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
     public string Resource { get; }
 
     /// <summary>
-    /// Quando <c>true</c>, o binder popula <see cref="CursorPayload.UserId"/>
-    /// com a conta do principal autenticado na emissão do cursor e valida
-    /// igualdade no decode — cursor de Alice não é navegável por Bob mesmo
-    /// que decoda corretamente (gap LGPD em metadata de recursos user-scoped,
-    /// ADR-0026). Default <c>false</c> (recurso público).
+    /// Quando <c>true</c>, o cursor leva <see cref="CursorPayload.ResumoDaConta"/>, o resumo do par emissor e
+    /// conta de quem o recebeu, e o binder confere o mesmo resumo na volta — cursor de Alice não é navegável por Bob
+    /// mesmo que decifre corretamente (gap LGPD em metadata de recursos user-scoped, ADR-0026). Default
+    /// <c>false</c> (recurso público).
     /// </summary>
     public bool RequireUserBinding { get; init; }
-
-    /// <summary>
-    /// Quando <c>true</c>, cursores de continuação precisam trazer
-    /// <see cref="CursorPayload.SortKey"/>. Use em recursos com keyset ordenado
-    /// multi-coluna, nos quais o ponto de continuação é o par <c>(SortKey, Id)</c>.
-    /// </summary>
-    public bool RequireSortKey { get; init; }
 
     /// <summary>
     /// Nomes dos valores de rota que escopam a coleção (ex.:

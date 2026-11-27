@@ -51,8 +51,9 @@ public interface IRegraCatalogoReader
     /// lexical de <c>v2</c> contra <c>v10</c> não responde essa pergunta.
     /// </para>
     /// </remarks>
-    Task<(IReadOnlyList<RegraCatalogo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<RegraCatalogo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         TipoRegra? tipo,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

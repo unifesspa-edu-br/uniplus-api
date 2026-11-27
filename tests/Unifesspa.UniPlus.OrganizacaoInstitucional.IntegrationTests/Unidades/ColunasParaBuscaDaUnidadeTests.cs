@@ -234,7 +234,7 @@ public sealed class ColunasParaBuscaDaUnidadeTests : IClassFixture<UnidadeDbFixt
         FiltroListagemUnidades filtro = new(TermoDeBusca.Criar(texto).Value, []);
         await using UniPlusDbContext contexto = _fixture.CreateDbContext(userId: null);
         (IReadOnlyList<Unidade> itens, _, _) = await new UnidadeRepository(contexto)
-            .ListarPaginadoAsync(null, 100, PaginationDirection.Next, filtro, CancellationToken.None);
+            .ListarPaginadoAsync(null, null, 100, PaginationDirection.Next, filtro, CancellationToken.None);
         return [.. itens.Select(u => u.Id)];
     }
 

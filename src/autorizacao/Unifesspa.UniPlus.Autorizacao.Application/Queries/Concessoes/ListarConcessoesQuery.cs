@@ -12,12 +12,13 @@ public sealed record ListarConcessoesQuery(
     Guid? UnidadeId,
     Guid? PerfilId,
     SituacaoDaConcessao? Situacao,
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarConcessoesResult>;
 
-/// <summary>Resultado paginado: as âncoras são os <c>Id</c> de fronteira da janela.</summary>
+/// <summary>Resultado paginado: os pontos de continuação são os <c>Id</c> de fronteira da página.</summary>
 public sealed record ListarConcessoesResult(
     IReadOnlyList<ConcessaoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

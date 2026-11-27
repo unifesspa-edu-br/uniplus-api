@@ -9,10 +9,6 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
 public sealed class UnidadeRepository : IUnidadeRepository
 {
     private readonly UniPlusDbContext _dbContext;
@@ -37,7 +33,8 @@ public sealed class UnidadeRepository : IUnidadeRepository
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Unidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -48,15 +45,15 @@ public sealed class UnidadeRepository : IUnidadeRepository
 
         IQueryable<Unidade> query = _dbContext.Unidades.AsNoTracking().Filtradas(filtro);
 
-        // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
+        // Keyset bidirecional (ADR-0089): ordenação, ponto de continuação, probe n+1, reversão
         // e flags ficam no helper, que opera sobre a query JÁ FILTRADA — os
         // EXISTS do helper herdam os mesmos filtros (busca/tipos). Npgsql traduz
         // Guid.CompareTo para o operador uuid nativo do PG (ADR-0026 + ADR-0032).
-        CursorKeysetPage<Unidade> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<Unidade> page = await CursorKeyset
+            .ApplyAsync(query, UnidadesDoFiltro.Condicoes(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken)

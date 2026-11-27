@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// ADR-0089), espelhando <c>ListarEditaisQuery</c>.
 /// </summary>
 public sealed record ListarProcessosSeletivosQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarProcessosSeletivosResult>;

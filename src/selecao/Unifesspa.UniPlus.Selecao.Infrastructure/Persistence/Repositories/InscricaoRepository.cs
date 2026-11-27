@@ -143,26 +143,28 @@ public sealed class InscricaoRepository : IInscricaoRepository
         };
     }
 
-    public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
+    public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarEnviadasDoProcessoAsync(
         Guid processoSeletivoId,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        bool lerNome,
-        bool lerCpf,
+        DadosPessoaisLidosNaListagem dadosPessoais,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(dadosPessoais);
+
         IQueryable<InscricaoRecord> enviadas = _dbContext.Inscricoes
             .AsNoTracking()
             .Where(r => r.ProcessoSeletivoId == processoSeletivoId && r.Situacao != SituacaoInscricao.Rascunho);
 
-        CursorKeysetPage<InscricaoRecord> pagina = await CursorKeyset
-            .ApplyAsync(enviadas, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<InscricaoRecord> pagina = await CursorKeyset
+            .ApplyAsync(enviadas, CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        List<ResumoDaInscricaoDoProcesso> resumos = await ResumosAsync(pagina.Items, lerNome, lerCpf, cancellationToken).ConfigureAwait(false);
+        List<ResumoDaInscricaoDoProcesso> resumos = await ResumosAsync(pagina.Items, dadosPessoais, cancellationToken).ConfigureAwait(false);
 
-        return (resumos, pagina.PrevAfterId, pagina.NextAfterId);
+        return (resumos, pagina.Previous, pagina.Next);
     }
 
     public async Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default)
@@ -261,24 +263,24 @@ public sealed class InscricaoRepository : IInscricaoRepository
     }
 
     private async Task<List<ResumoDaInscricaoDoProcesso>> ResumosAsync(
-        IReadOnlyList<InscricaoRecord> itens, bool lerNome, bool lerCpf, CancellationToken cancellationToken)
+        IReadOnlyList<InscricaoRecord> itens, DadosPessoaisLidosNaListagem dadosPessoais, CancellationToken cancellationToken)
     {
         Guid[] ids = [.. itens.Select(static r => r.Id)];
 
-        Dictionary<Guid, string> nomes = await NomesAsync(ids, lerNome, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, string> nomes = await NomesAsync(ids, dadosPessoais, cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = await _comprovantes.ObterPrimeirosEnviosAsync(ids, cancellationToken).ConfigureAwait(false);
-        Dictionary<Guid, string> cpfs = await CpfsAsync(ids, lerCpf, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, string> cpfs = await CpfsAsync(ids, dadosPessoais, cancellationToken).ConfigureAwait(false);
 
-        return [.. itens.Select(r => ResumoDe(r, nomes, cpfs, primeirosEnvios, lerCpf))];
+        return [.. itens.Select(r => ResumoDe(r, nomes, cpfs, primeirosEnvios, dadosPessoais))];
     }
 
-    private async Task<Dictionary<Guid, string>> NomesAsync(Guid[] ids, bool lerNome, CancellationToken cancellationToken) =>
-        lerNome
+    private async Task<Dictionary<Guid, string>> NomesAsync(Guid[] ids, DadosPessoaisLidosNaListagem dadosPessoais, CancellationToken cancellationToken) =>
+        dadosPessoais.Nome
             ? await NomeDeExibicaoDaInscricao.LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken).ConfigureAwait(false)
             : [];
 
-    private async Task<Dictionary<Guid, string>> CpfsAsync(Guid[] ids, bool lerCpf, CancellationToken cancellationToken) =>
-        lerCpf
+    private async Task<Dictionary<Guid, string>> CpfsAsync(Guid[] ids, DadosPessoaisLidosNaListagem dadosPessoais, CancellationToken cancellationToken) =>
+        dadosPessoais.Cpf
             ? await CpfDaInscricao
                 .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
                 .ConfigureAwait(false)
@@ -289,7 +291,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         Dictionary<Guid, string> nomes,
         Dictionary<Guid, string> cpfs,
         IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios,
-        bool lerCpf) =>
+        DadosPessoaisLidosNaListagem dadosPessoais) =>
         new(
             record.Id,
             record.NumeroInscricao,
@@ -298,7 +300,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
             record.OfertaCursoId,
             record.OfertaCursoSegundaOpcaoId,
             nomes.GetValueOrDefault(record.Id),
-            lerCpf ? CpfDaInscricao.Revalidar(CpfDaInscricao.Exigir(cpfs, record.Id)) : null,
+            dadosPessoais.Cpf ? CpfDaInscricao.Revalidar(CpfDaInscricao.Exigir(cpfs, record.Id)) : null,
             primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null);
 
     private async Task<List<Inscricao>> ParaDominioAsync(List<InscricaoRecord> records, CancellationToken cancellationToken)

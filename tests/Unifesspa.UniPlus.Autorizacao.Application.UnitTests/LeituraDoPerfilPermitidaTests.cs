@@ -104,7 +104,7 @@ public sealed class LeituraDoPerfilPermitidaTests
     }
 
     private static Task<Result<ListarPerfisResult>> Listar(IVerificadorDeAcesso verificador, IPerfilRepository perfis) =>
-        ListarPerfisQueryHandler.Handle(new ListarPerfisQuery(null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
+        ListarPerfisQueryHandler.Handle(new ListarPerfisQuery(null, null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
 
     private static Task<Result<PerfilDto>> Obter(Guid perfilId, IVerificadorDeAcesso verificador, IPerfilRepository perfis)
     {

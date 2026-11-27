@@ -24,13 +24,14 @@ public sealed class TipoConceitoRepository : ITipoConceitoRepository
     public Task<TipoConceito?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
         _dbContext.TiposConceito.AsNoTracking().FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<TipoConceito> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<TipoConceito> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken)
     {
-        CursorKeysetPage<TipoConceito> page = await CursorKeyset
-            .ApplyAsync(_dbContext.TiposConceito.AsNoTracking().Where(tipo => tipo.Ativo), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<TipoConceito> page = await CursorKeyset
+            .ApplyAsync(_dbContext.TiposConceito.AsNoTracking().Where(tipo => tipo.Ativo), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(TipoConceito tipo, CancellationToken cancellationToken)

@@ -73,14 +73,14 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarReferenciasReservaDemograficaResult resultado = await _queryBus
-            .Send(new ListarReferenciasReservaDemograficaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarReferenciasReservaDemograficaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         ReferenciaReservaDemograficaDto[] comLinks =
             [.. resultado.Items.Select(r => r with { Links = _linksBuilder.Build(r) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

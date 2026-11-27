@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <c>ObterCalendarioDiasUteisPorIdQuery</c> para o calendário completo.
 /// </summary>
 public sealed record ListarCalendariosDiasUteisQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarCalendariosDiasUteisResult>;

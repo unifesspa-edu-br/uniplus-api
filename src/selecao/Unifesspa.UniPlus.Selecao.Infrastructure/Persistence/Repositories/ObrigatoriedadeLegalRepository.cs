@@ -73,37 +73,46 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         _context.ObrigatoriedadesLegais.Remove(entity);
     }
 
-    public async Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade? categoria,
-        DateOnly? vigentesEm,
+        FiltroDasObrigatoriedadesLegais filtro,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<ObrigatoriedadeLegal> query = Filtrar(tipoProcessoCodigo, categoria, vigentesEm);
+        ArgumentNullException.ThrowIfNull(filtro);
 
-        CursorKeysetPage<ObrigatoriedadeLegal> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<ObrigatoriedadeLegal> page = await CursorKeyset
+            .ApplyAsync(Filtrar(filtro), CondicoesDe(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
-    private IQueryable<ObrigatoriedadeLegal> Filtrar(string? tipoProcessoCodigo, CategoriaObrigatoriedade? categoria, DateOnly? vigentesEm)
+    private IQueryable<ObrigatoriedadeLegal> Filtrar(FiltroDasObrigatoriedadesLegais filtro)
     {
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais.AsNoTracking();
-        if (!string.IsNullOrEmpty(tipoProcessoCodigo))
+        if (TipoDeProcessoFiltrado(filtro) is { } tipoProcessoCodigo)
         {
             query = query.Where(o => o.TipoProcessoCodigo == tipoProcessoCodigo);
         }
-        if (categoria is { } valor)
+        if (filtro.Categoria is { } categoria)
         {
-            query = query.Where(o => o.Categoria == valor);
+            query = query.Where(o => o.Categoria == categoria);
         }
-        return vigentesEm is { } dia ? FiltrarVigentes(query, dia) : query;
+        return filtro.VigentesEm is { } dia ? FiltrarVigentes(query, dia) : query;
     }
+
+    // O código vazio não recorta.
+    private static string? TipoDeProcessoFiltrado(FiltroDasObrigatoriedadesLegais filtro) =>
+        string.IsNullOrEmpty(filtro.TipoProcessoCodigo) ? null : filtro.TipoProcessoCodigo;
+
+    private static CondicoesDoFiltro CondicoesDe(FiltroDasObrigatoriedadesLegais filtro) =>
+        CondicoesDoFiltro.De(
+            ParteDoFiltro.De(TipoDeProcessoFiltrado(filtro)),
+            ParteDoFiltro.De(filtro.Categoria),
+            ParteDoFiltro.De(filtro.VigentesEm is not null));
 
     private static IQueryable<ObrigatoriedadeLegal> FiltrarVigentes(IQueryable<ObrigatoriedadeLegal> query, DateOnly dia) =>
         query.Where(o => o.VigenciaInicio <= dia && (o.VigenciaFim == null || o.VigenciaFim > dia));

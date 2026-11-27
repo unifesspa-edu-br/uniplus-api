@@ -60,7 +60,8 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
     /// Sem <c>OrderBy</c> aqui: o helper keyset (ADR-0089) ordena e fatia. Só os filtros se
     /// aplicam, e os <c>EXISTS</c> de flag do helper herdam a mesma consulta base.
     /// </remarks>
-    public async Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<TipoAtoPublicado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -74,11 +75,11 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
             consulta = consulta.Where(TipoAtoPublicado.VigenteEm(dia));
         }
 
-        CursorKeysetPage<TipoAtoPublicado> pagina = await CursorKeyset
-            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<TipoAtoPublicado> pagina = await CursorKeyset
+            .ApplyAsync(consulta, CondicoesDoFiltro.De(ParteDoFiltro.De(vigentesEm is not null)), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (pagina.Items, pagina.PrevAfterId, pagina.NextAfterId);
+        return (pagina.Items, pagina.Previous, pagina.Next);
     }
 
     public async Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken cancellationToken)

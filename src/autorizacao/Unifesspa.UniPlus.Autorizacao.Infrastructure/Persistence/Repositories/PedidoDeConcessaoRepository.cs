@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
 using System.Linq.Expressions;
 
 using Microsoft.EntityFrameworkCore;
@@ -119,7 +118,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
 
         IQueryable<PedidoDeConcessao> consulta = FiltrarPorSituacao(FiltrarPorFila(_context.Pedidos.AsNoTracking(), filtro), filtro.Situacao);
         OrderedKeysetPage<PedidoDeConcessao> page = await OrderedKeysetCursor
-            .ApplyAsync(consulta, b => b.Descending(p => p.CriadoEm).Descending(p => p.Id), SortKeyDoInstante, ChaveDaPagina, afterSortKey, afterId, limit, direction, cancellationToken)
+            .ApplyAsync(consulta, OrdenacaoDosPedidos.Montar(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (await ComPerfilAsync(page.Items, cancellationToken).ConfigureAwait(false), page.Previous, page.Next);
@@ -150,8 +149,6 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
 
     private static IQueryable<PedidoDeConcessao> FiltrarPorSituacao(IQueryable<PedidoDeConcessao> consulta, SituacaoDoPedido? situacao) =>
         situacao is { } escolhida ? consulta.Where(p => p.Andamento.Situacao == escolhida) : consulta;
-
-    private static object ChaveDaPagina(string sortKey, Guid id) => new { CriadoEm = InstanteDaSortKey(sortKey), Id = id };
 
     private async Task<IReadOnlyList<PedidoComPerfil>> ComPerfilAsync(
         IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
@@ -189,12 +186,4 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     private static IIncludableQueryable<PedidoDeConcessao, IEnumerable<DecisaoDoPedido>> ComDecisoesEmOrdem(
         IQueryable<PedidoDeConcessao> pedidos) =>
         pedidos.Include(p => p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.OrdemDeRegistro));
-
-    // A sort key é o instante em ISO-8601 de ida e volta: ordem lexicográfica e cronológica coincidem e ele é estável entre
-    // culturas. Nunca nula (ADR-0095): criado_em é coluna obrigatória.
-    private static string SortKeyDoInstante(PedidoDeConcessao pedido) =>
-        pedido.CriadoEm.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
-
-    private static DateTimeOffset InstanteDaSortKey(string sortKey) =>
-        DateTimeOffset.Parse(sortKey, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 }

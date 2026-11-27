@@ -44,12 +44,12 @@ public sealed class RevisoesDoLeitorEFiltroTests
     public async Task Listar_LevaASituacaoAoRepositorio(SituacaoDaRevisao? situacao)
     {
         IRevisaoDeAcessosRepository revisoes = Substitute.For<IRevisaoDeAcessosRepository>();
-        revisoes.ListarPaginadoAsync(default!, default, default, default, default).ReturnsForAnyArgs(([], null, null));
+        revisoes.ListarPaginadoAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(([], null, null));
 
         await ListarRevisoesQueryHandler.Handle(
-            new ListarRevisoesQuery(null, 10, PaginationDirection.Next, situacao), revisoes, new VerificadorDeTeste("marlene.martins", ["autorizacao:revisoes:conduzir"]), TimeProvider.System, CancellationToken.None);
+            new ListarRevisoesQuery(null, null, 10, PaginationDirection.Next, situacao), revisoes, new VerificadorDeTeste("marlene.martins", ["autorizacao:revisoes:conduzir"]), TimeProvider.System, CancellationToken.None);
 
-        await revisoes.Received(1).ListarPaginadoAsync(Arg.Is<FiltroDeRevisoes>(f => f.Situacao == situacao), null, 10, PaginationDirection.Next, Arg.Any<CancellationToken>());
+        await revisoes.Received(1).ListarPaginadoAsync(Arg.Is<FiltroDeRevisoes>(f => f.Situacao == situacao), null, null, 10, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "O código exato da situação da revisão é lido, e os demais não viram situação")]

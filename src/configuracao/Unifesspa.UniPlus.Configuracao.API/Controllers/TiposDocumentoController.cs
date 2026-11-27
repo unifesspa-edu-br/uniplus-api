@@ -73,14 +73,14 @@ public sealed class TiposDocumentoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarTiposDocumentoResult resultado = await _queryBus
-            .Send(new ListarTiposDocumentoQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarTiposDocumentoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         TipoDocumentoDto[] comLinks =
             [.. resultado.Items.Select(t => t with { Links = _linksBuilder.Build(t) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

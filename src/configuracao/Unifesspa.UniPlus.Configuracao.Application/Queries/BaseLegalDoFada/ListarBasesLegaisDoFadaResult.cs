@@ -5,5 +5,5 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed record ListarBasesLegaisDoFadaResult(
     IReadOnlyList<BaseLegalDoFadaDto> Itens,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -32,7 +33,7 @@ public sealed class VigenciaNaListagemDeObrigatoriedadesLegaisTests(Obrigatoried
         ObrigatoriedadeLegalRepository repositorio = new(contexto);
 
         (IReadOnlyList<ObrigatoriedadeLegal> itens, _, _) = await repositorio.ListarPaginadoAsync(
-            null, 20, PaginationDirection.Next, codigo, null, hoje);
+            null, null, 20, PaginationDirection.Next, new FiltroDasObrigatoriedadesLegais(codigo, null, hoje));
 
         itens.Select(regra => regra.RegraCodigo).Should().Equal(apareceHoje ? [codigo] : []);
 

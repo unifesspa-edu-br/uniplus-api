@@ -1,11 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 
-using System.Globalization;
 using System.Linq;
 
 using Microsoft.EntityFrameworkCore;
 
-using MR.EntityFrameworkCore.KeysetPagination;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -123,21 +121,22 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<(IReadOnlyList<AtoNormativo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena por Id (Guid v7) e
-        // fatia, devolvendo as âncoras de prev/next.
+        // fatia, devolvendo os pontos de continuação de prev/next.
         IQueryable<AtoNormativo> query = _dbContext.AtosNormativos.AsNoTracking().Include(a => a.Anexos);
 
-        CursorKeysetPage<AtoNormativo> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<AtoNormativo> page = await CursorKeyset
+            .ApplyAsync(query, CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task<Guid> ObterRaizDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken)
@@ -219,15 +218,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
     {
         OrderedKeysetPage<AtoNormativo> page = await OrderedKeysetCursor
             .ApplyAsync(
-                VinculadosA(entidade).Include(a => a.Anexos),
-                OrdemDaDivulgacao,
-                SortKeyDoInstante,
-                AncoraDaDivulgacao,
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
+                VinculadosA(entidade).Include(a => a.Anexos), OrdemDaDivulgacao, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.Previous, page.Next);
@@ -245,20 +236,9 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
                 .Any(v => v.AtoId == a.Id && v.EntidadeTipo == entidade.Tipo && v.EntidadeId == entidade.Id));
     }
 
-    private static void OrdemDaDivulgacao(KeysetPaginationBuilder<AtoNormativo> ordem) =>
-        ordem.Ascending(a => a.PublicadoEm).Ascending(a => a.Id);
-
-    private static object AncoraDaDivulgacao(string sortKey, Guid id) =>
-        new { PublicadoEm = InstanteDaSortKey(sortKey), Id = id };
-
-    /// <summary>
-    /// Sort key da âncora: o instante da divulgação em ISO-8601 com deslocamento zero
-    /// (formato <c>O</c>). Ordem lexicográfica e ordem cronológica coincidem nesse formato, e
-    /// ele é estável entre culturas. Nunca nula (ADR-0095): <c>publicado_em</c> é coluna obrigatória.
-    /// </summary>
-    private static string SortKeyDoInstante(AtoNormativo ato) =>
-        ato.PublicadoEm.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-
-    private static DateTimeOffset InstanteDaSortKey(string sortKey) =>
-        DateTimeOffset.ParseExact(sortKey, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+    // Nunca nula (ADR-0095): publicado_em é coluna obrigatória.
+    private static readonly KeysetSort<AtoNormativo> OrdemDaDivulgacao = new(
+        [KeysetSortColumn<AtoNormativo>.For("publicado_em", a => a.PublicadoEm, a => InstanteDoCursor.Escrever(a.PublicadoEm))],
+        static (partes, id) => new { PublicadoEm = InstanteDoCursor.Ler(partes[0]), Id = id },
+        CondicoesDoFiltro.Nenhuma);
 }

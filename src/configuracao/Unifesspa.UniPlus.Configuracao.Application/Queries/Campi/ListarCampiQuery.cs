@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// despachar, mantendo a Application independente de Infrastructure.Core.
 /// </summary>
 public sealed record ListarCampiQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarCampiResult>;

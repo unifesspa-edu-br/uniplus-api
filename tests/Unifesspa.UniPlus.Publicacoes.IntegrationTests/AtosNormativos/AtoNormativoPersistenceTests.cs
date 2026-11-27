@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -249,7 +250,7 @@ public sealed class AtoNormativoPersistenceTests
         var repo = new AtoNormativoRepository(ctx);
 
         (IReadOnlyList<AtoNormativo> itens, _, _) = await repo.ListarPaginadoAsync(
-            afterId: null, limit: 100, PaginationDirection.Next, default);
+            afterSortKey: null, afterId: null, limit: 100, PaginationDirection.Next, default);
 
         itens.Select(a => a.Id).Should().ContainInOrder(
             new[] { a1.Id, a2.Id }.OrderBy(id => id));
@@ -257,7 +258,7 @@ public sealed class AtoNormativoPersistenceTests
 
     /// <remarks>
     /// A entidade forense não é <c>EntityBase</c>; a paginação keyset (relaxada para <c>IIdentificavel</c>)
-    /// precisa ordená-la e fatiá-la corretamente também no sentido Prev. Ancorado no maior dos três, Prev
+    /// precisa ordená-la e fatiá-la corretamente também no sentido Prev. Partindo do maior dos três, Prev
     /// traz os anteriores em ordem ascendente (o probe é cortado ainda em DESC e a lista revertida). O limite
     /// é alto e as asserções são relativas porque o container é compartilhado entre os testes.
     /// </remarks>
@@ -272,10 +273,10 @@ public sealed class AtoNormativoPersistenceTests
         var repo = new AtoNormativoRepository(ctx);
 
         (IReadOnlyList<AtoNormativo> anteriores, _, _) = await repo.ListarPaginadoAsync(
-            afterId: ordenados[2], limit: 100, PaginationDirection.Prev, default);
+            afterSortKey: CondicoesDoFiltro.Nenhuma.EmitirChave(), afterId: ordenados[2], limit: 100, PaginationDirection.Prev, default);
 
         IReadOnlyList<Guid> ids = [.. anteriores.Select(a => a.Id)];
-        ids.Should().NotContain(ordenados[2], "Prev exclui a âncora");
+        ids.Should().NotContain(ordenados[2], "Prev exclui o ponto de continuação");
         ids.Should().ContainInOrder(ordenados[0], ordenados[1]);
         ids.Should().BeInAscendingOrder();
     }

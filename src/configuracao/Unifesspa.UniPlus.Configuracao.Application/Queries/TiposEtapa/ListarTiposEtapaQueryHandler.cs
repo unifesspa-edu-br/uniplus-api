@@ -14,8 +14,8 @@ public static class ListarTiposEtapaQueryHandler
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
-        (IReadOnlyList<TipoEtapa> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<TipoEtapa> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
         TipoEtapaDto[] items = [.. itens.Select(tipo => tipo.ToDto())];
         return new ListarTiposEtapaResult(items, anterior, proximo);
     }

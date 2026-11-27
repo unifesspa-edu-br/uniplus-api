@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -19,11 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// snapshot, ADR-0061) dispensa releitura quente (mesmo padrão dos readers de
 /// reference data do módulo Configuração).
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI na registration de Infrastructure do módulo Seleção.")]
-internal sealed class RegraCatalogoReader : IRegraCatalogoReader
+public sealed class RegraCatalogoReader : IRegraCatalogoReader
 {
     private readonly UniPlusDbContext _dbContext;
 
@@ -75,14 +70,27 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
     private static bool TemCaractereNulo(string codigo, string versao) =>
         codigo.Contains('\0', StringComparison.Ordinal) || versao.Contains('\0', StringComparison.Ordinal);
 
-    public async Task<(IReadOnlyList<RegraCatalogo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<RegraCatalogo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         TipoRegra? tipo,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
+        CondicoesDoFiltro condicoes = CondicoesDoFiltro.De(ParteDoFiltro.De(tipo));
+        if (afterId is not null)
+        {
+            condicoes.ConferirChave(afterSortKey);
+        }
+
         List<RegraCatalogo> ordenadas = await ListarOrdenadasAsync(tipo, cancellationToken).ConfigureAwait(false);
+        return PaginaDe(ordenadas, afterId, limit, direction, condicoes.EmitirChave());
+    }
+
+    private static (IReadOnlyList<RegraCatalogo>, (string SortKey, Guid Id)?, (string SortKey, Guid Id)?) PaginaDe(
+        List<RegraCatalogo> ordenadas, Guid? afterId, int limit, PaginationDirection direction, string chave)
+    {
         int posicao = afterId is { } id ? ordenadas.FindIndex(r => r.Id == id) : 0;
         if (posicao < 0)
         {
@@ -90,7 +98,7 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
         }
 
         (List<RegraCatalogo> pagina, int inicio) = RecortarPagina(ordenadas, afterId, posicao, limit, direction);
-        return CursoresDaPagina(ordenadas, pagina, inicio);
+        return PontosDaPagina(ordenadas, pagina, inicio, chave);
     }
 
     private async Task<List<RegraCatalogo>> ListarOrdenadasAsync(TipoRegra? tipo, CancellationToken cancellationToken)
@@ -126,8 +134,8 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
         return ([.. ordenadas.Skip(inicio).Take(limit)], inicio);
     }
 
-    private static (IReadOnlyList<RegraCatalogo>, Guid?, Guid?) CursoresDaPagina(
-        List<RegraCatalogo> ordenadas, List<RegraCatalogo> pagina, int inicio)
+    private static (IReadOnlyList<RegraCatalogo>, (string SortKey, Guid Id)?, (string SortKey, Guid Id)?) PontosDaPagina(
+        List<RegraCatalogo> ordenadas, List<RegraCatalogo> pagina, int inicio, string chave)
     {
         if (pagina.Count == 0)
         {
@@ -136,7 +144,7 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
 
         bool haAnterior = inicio > 0;
         bool haProxima = inicio + pagina.Count < ordenadas.Count;
-        return (pagina, haAnterior ? pagina[0].Id : null, haProxima ? pagina[^1].Id : null);
+        return (pagina, haAnterior ? (chave, pagina[0].Id) : null, haProxima ? (chave, pagina[^1].Id) : null);
     }
 
     /// <summary>

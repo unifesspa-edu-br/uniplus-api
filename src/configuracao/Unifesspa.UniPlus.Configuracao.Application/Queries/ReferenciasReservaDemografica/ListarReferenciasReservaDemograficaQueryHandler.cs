@@ -15,11 +15,11 @@ public static class ListarReferenciasReservaDemograficaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<ReferenciaReservaDemografica> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<ReferenciaReservaDemografica> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         ReferenciaReservaDemograficaDto[] items = [.. itens.Select(r => r.ToDto())];
-        return new ListarReferenciasReservaDemograficaResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarReferenciasReservaDemograficaResult(items, anterior, proximo);
     }
 }

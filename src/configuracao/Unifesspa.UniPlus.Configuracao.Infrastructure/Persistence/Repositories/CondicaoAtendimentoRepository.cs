@@ -40,18 +40,19 @@ public sealed class CondicaoAtendimentoRepository : ICondicaoAtendimentoReposito
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<CondicaoAtendimentoEspecializado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<CondicaoAtendimentoEspecializado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
-        CursorKeysetPage<CondicaoAtendimentoEspecializado> page = await CursorKeyset
-            .ApplyAsync(_dbContext.CondicoesAtendimento.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<CondicaoAtendimentoEspecializado> page = await CursorKeyset
+            .ApplyAsync(_dbContext.CondicoesAtendimento.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(CondicaoAtendimentoEspecializado condicao, CancellationToken cancellationToken)

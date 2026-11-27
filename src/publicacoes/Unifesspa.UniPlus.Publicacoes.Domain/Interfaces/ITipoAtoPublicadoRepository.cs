@@ -30,7 +30,7 @@ public interface ITipoAtoPublicadoRepository
     /// <summary>
     /// Lista versões vivas paginadas por cursor keyset bidirecional
     /// (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve
-    /// as âncoras de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
+    /// os pontos de continuação de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
     /// <param name="vigentesEm">
     /// Quando informado, devolve apenas as versões cuja janela contém o dia. Nulo não filtra. É
@@ -38,7 +38,8 @@ public interface ITipoAtoPublicadoRepository
     /// ainda não anunciado, e listá-la a qualquer cliente o divulgaria antes do ato que a
     /// institui. Quem chama decide o dia, no fuso institucional.
     /// </param>
-    Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<TipoAtoPublicado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

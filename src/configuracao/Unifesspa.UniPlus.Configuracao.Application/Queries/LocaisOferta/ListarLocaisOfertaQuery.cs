@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// antes de despachar.
 /// </summary>
 public sealed record ListarLocaisOfertaQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarLocaisOfertaResult>;

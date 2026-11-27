@@ -35,17 +35,18 @@ public sealed class LocalOfertaRepository : ILocalOfertaRepository
             .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<LocalOferta> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<LocalOferta> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken)
     {
-        CursorKeysetPage<LocalOferta> page = await CursorKeyset
-            .ApplyAsync(_dbContext.LocaisOferta.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<LocalOferta> page = await CursorKeyset
+            .ApplyAsync(_dbContext.LocaisOferta.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarAsync(LocalOferta localOferta, CancellationToken cancellationToken)

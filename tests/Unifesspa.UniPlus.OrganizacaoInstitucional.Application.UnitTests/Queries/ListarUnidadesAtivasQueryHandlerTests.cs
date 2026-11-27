@@ -21,13 +21,13 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
     public ListarUnidadesAtivasQueryHandlerTests()
     {
         _repositorio
-            .ListarPaginadoAsync(Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<FiltroListagemUnidades>(), Arg.Any<CancellationToken>())
+            .ListarPaginadoAsync(Arg.Any<string?>(), Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<FiltroListagemUnidades>(), Arg.Any<CancellationToken>())
             .Returns(([], null, null));
     }
 
     private Task<Result<ListarUnidadesAtivasResult>> ListarAsync(string? busca, IReadOnlyList<int>? tipos) =>
         ListarUnidadesAtivasQueryHandler.Handle(
-            new ListarUnidadesAtivasQuery(null, 20, PaginationDirection.Next, busca, tipos),
+            new ListarUnidadesAtivasQuery(null, null, 20, PaginationDirection.Next, busca, tipos),
             _repositorio,
             CancellationToken.None);
 
@@ -53,16 +53,16 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
     public async Task FiltroValido_ProjetaAPaginaEmDto()
     {
         Unidade ceps = UnidadeDeTeste.Criar().Value!;
-        Guid proxima = Guid.NewGuid();
+        (string SortKey, Guid Id) proxima = ("chave", Guid.NewGuid());
         _repositorio
-            .ListarPaginadoAsync(null, 20, PaginationDirection.Next, Arg.Any<FiltroListagemUnidades>(), Arg.Any<CancellationToken>())
+            .ListarPaginadoAsync(null, null, 20, PaginationDirection.Next, Arg.Any<FiltroListagemUnidades>(), Arg.Any<CancellationToken>())
             .Returns(([ceps], null, proxima));
 
         Result<ListarUnidadesAtivasResult> resultado = await ListarAsync("ceps", [(int)TipoUnidade.Centro]);
 
         resultado.Value!.Items.Should().ContainSingle().Which.Id.Should().Be(ceps.Id);
-        resultado.Value.ProximoAfterId.Should().Be(proxima);
-        resultado.Value.AnteriorAfterId.Should().BeNull();
+        resultado.Value.Proximo.Should().Be(proxima);
+        resultado.Value.Anterior.Should().BeNull();
     }
 
     [Fact(DisplayName = "O repositório recebe o filtro resolvido: o termo normalizado e os tipos pedidos")]
@@ -71,6 +71,7 @@ public sealed class ListarUnidadesAtivasQueryHandlerTests
         await ListarAsync("ceps", [(int)TipoUnidade.Centro]);
 
         await _repositorio.Received(1).ListarPaginadoAsync(
+            null,
             null,
             20,
             PaginationDirection.Next,

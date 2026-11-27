@@ -13,8 +13,8 @@ public static class ListarBasesLegaisDoFadaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<Domain.Entities.BaseLegalDoFada> itens, Guid? anterior, Guid? proximo) = await repository.ListarPaginadoAsync(
-            query.AfterId,
+        (IReadOnlyList<Domain.Entities.BaseLegalDoFada> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository.ListarPaginadoAsync(
+            query.AfterSortKey, query.AfterId,
             query.Limit,
             query.Direction,
             cancellationToken).ConfigureAwait(false);

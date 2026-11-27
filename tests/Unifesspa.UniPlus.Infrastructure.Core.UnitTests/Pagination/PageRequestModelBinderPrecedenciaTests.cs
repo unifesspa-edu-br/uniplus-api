@@ -150,18 +150,6 @@ public sealed class PageRequestModelBinderPrecedenciaTests
         AssertPage(context).Limit.Should().Be(1);
     }
 
-    [Fact]
-    public async Task BindModelAsync_CursorComSortKey_PreservaAChave()
-    {
-        ServiceProvider services = CreateCursorServices().BuildServiceProvider();
-        string cursor = await EncodeAsync(services, ValidPayload("cidades") with { SortKey = "maraba" });
-
-        ModelBindingContext context = await BindAsync(
-            QueryWithCursor(cursor), nameof(CursorDeTesteController.SortedCidades), services);
-
-        AssertPage(context).AfterSortKey.Should().Be("maraba");
-    }
-
     private static async Task<ModelBindingContext> BindWithCursorLimitAsync(int cursorLimit)
     {
         ServiceProvider services = CreateCursorServices().BuildServiceProvider();

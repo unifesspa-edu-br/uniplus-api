@@ -22,9 +22,10 @@ public interface ITipoDeficienciaRepository
     /// <summary>
     /// Lista tipos de deficiência vivos paginados por cursor keyset bidirecional
     /// (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve
-    /// as âncoras de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
+    /// os pontos de continuação de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
-    Task<(IReadOnlyList<TipoDeficiencia> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<TipoDeficiencia> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

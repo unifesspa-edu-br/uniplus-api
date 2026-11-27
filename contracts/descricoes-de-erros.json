@@ -533,19 +533,6 @@
       ]
     },
     {
-      "codigo": "uniplus.autorizacao.pedido.cursor_invalido",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "A lista de pedidos é entregue em páginas, e cada página traz um cursor que marca onde a seguinte começa. O cursor recebido foi alterado ou não foi gerado por esta lista, e por isso não dá para saber de onde continuar. Nenhum pedido foi listado."
-      ],
-      "comoResolver": [
-        "Volte à primeira página da lista, sem cursor, e navegue pelos botões de página, que usam sempre o cursor devolvido pelo próprio sistema. Não monte nem edite o cursor à mão, e não o reaproveite em outra fila ou outro filtro."
-      ],
-      "ondeAparece": [
-        "Listagem de pedidos de concessão de acesso"
-      ]
-    },
-    {
       "codigo": "uniplus.autorizacao.pedido.decisor_e_parte",
       "requisitos": [
         "UNI-REQ-0184"
@@ -9957,7 +9944,7 @@
       "oQueAconteceu": [
         "O **cursor** informado no parâmetro `cursor` da listagem paginada é inválido.",
         "O cursor é opaco por design: um valor cifrado que carrega, entre outros\ndados, o identificador do último item visto na página e uma\netiqueta que identifica a que coleção ele pertence. O servidor nunca espera\nque o cliente monte ou interprete esse valor — ele só o devolve intacto,\ncomo recebeu na página anterior, para pedir a próxima.",
-        "Esta causa cobre qualquer motivo pelo qual o cursor não é aceitável nesta\nrequisição, deliberadamente sem distinguir qual: cifra corrompida ou\nadulterada, etiqueta de recurso que não corresponde à coleção sendo\npercorrida (um cursor emitido para editais não decodifica como cursor de\ninscrições), direção (`next`/`prev`) diferente da que o cursor foi emitido, ou\n— em coleções vinculadas ao usuário autenticado — um cursor sem vínculo de\nusuário, vinculado a outro usuário, ou usado por requisição anônima. Separar\nesses motivos em causas distintas vazaria informação a quem tenta adulterar um\ncursor: \"cursor existe mas é de outro usuário\" responde a uma pergunta que um\natacante não deveria conseguir fazer."
+        "Esta causa cobre qualquer motivo pelo qual o cursor não é aceitável nesta\nrequisição, deliberadamente sem distinguir qual: cifra corrompida ou\nadulterada, etiqueta de recurso que não corresponde à coleção sendo\npercorrida (um cursor emitido para editais não decodifica como cursor de\ninscrições), direção (`next`/`prev`) diferente da que o cursor foi emitido, ou\n— em coleções vinculadas ao usuário autenticado — um cursor sem vínculo de\nusuário, vinculado a outro usuário, ou usado por requisição anônima, ou um cursor de continuação sem a chave da consulta que o emitiu. Separar\nesses motivos em causas distintas vazaria informação a quem tenta adulterar um\ncursor: \"cursor existe mas é de outro usuário\" responde a uma pergunta que um\natacante não deveria conseguir fazer."
       ],
       "comoResolver": [
         "Não construa nem edite um cursor manualmente. Use sempre o valor exatamente\ncomo o servidor o devolveu na resposta anterior (`next`/`prev` no header\n`Link`), na mesma direção em que foi emitido e para a mesma listagem.",
@@ -12261,7 +12248,8 @@
       "codigo": "uniplus.paginacao.cursor_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada página de uma listagem traz um cursor que marca de onde a seguinte continua. Nas listagens que aceitam ordenação, filtro ou busca, essa marca é uma posição **dentro de um conjunto já recortado e ordenado**. O cursor recebido foi emitido pelo próprio sistema e é íntegro, mas pertence a outra consulta: a ordenação (`sort`), um filtro (como a situação, a concessão, o curso, a modalidade, o cadastro, o período ou a opção de ver só as próprias decisões) ou o texto de busca (`q`, `busca`) mudou entre a página anterior e esta. Retomar de uma posição que não existe no novo conjunto faria a página pular ou repetir registros sem aviso, e por isso a continuação é recusada. A resposta traz o detalhe: «O cursor informado não continua esta consulta. Refaça a listagem sem cursor.» Nenhum item é devolvido.",
+        "Cada página de uma listagem traz um cursor que marca de onde a seguinte continua. Nas listagens que aceitam ordenação, filtro ou busca, essa marca é uma posição **dentro de um conjunto já recortado e ordenado**. O cursor recebido foi emitido pelo próprio sistema e é íntegro, mas pertence a outra consulta: a ordenação (`sort`), um filtro (como a situação, a concessão, o curso, a modalidade, o cadastro, o tipo, a origem, o período, a opção de ver só as vigentes ou só as ativas ou a opção de ver só as próprias decisões) ou o texto de busca (`q`, `busca`) mudou entre a página anterior e esta. O texto de busca só difere quando muda de fato: espaços no começo e no fim não contam. Retomar de uma posição que não existe no novo conjunto faria a página pular ou repetir registros sem aviso, e por isso a continuação é recusada. A resposta traz o detalhe: «O cursor informado não continua esta consulta. Refaça a listagem sem cursor.» Nenhum item é devolvido.",
+        "Nos processos seletivos, o conjunto de unidades em que a pessoa pode configurar entra no recorte: se uma concessão for dada ou retirada no meio da navegação, o cursor emitido antes deixa de valer. Na fila de pedidos de concessão, a situação do e-mail verificado da pessoa entra do mesmo modo.",
         "Na vitrine de certames publicados a recusa também acontece quando a coleção avança no meio da navegação: se uma publicação ou retificação feita depois da página anterior altera o recorte que está sendo percorrido, o conjunto que o cursor marcava já não é o mesmo.",
         "A ordem das recusas é fixa: primeiro vêm o tamanho de página e a direção (veja [tamanho de página inválido](/erros/uniplus.cursor.limit_invalido) e [direção de paginação inválida](/erros/uniplus.cursor.direcao_invalida)); depois o cursor em si, que pode não decodificar, ter expirado ou pertencer a outra listagem (veja [cursor de paginação inválido](/erros/uniplus.cursor.invalido) e [cursor de paginação expirado](/erros/uniplus.cursor.expirado)); em seguida a forma e os campos aceitos da ordenação e dos filtros. Só então o cursor é conferido contra a consulta pedida, e é aí que esta causa aparece. A permissão para listar, nas listagens que a exigem, é conferida antes de tudo isso.",
         "Esta causa é distinta da de [cursor de paginação inválido](/erros/uniplus.cursor.invalido), que trata do cursor que não decodifica ou que é de outra coleção. Aqui o cursor é da coleção certa, mas de outra consulta."
@@ -12272,7 +12260,20 @@
       "ondeAparece": [
         "Listagem de cursos",
         "Listagem de ofertas de curso",
+        "Listagem de unidades",
+        "Listagem de concessões de acesso",
+        "Listagem das revisões de acessos",
         "Listagem da fila de providências de acesso",
+        "Listagem dos pedidos de concessão",
+        "Listagem de termos de consentimento",
+        "Listagem de modelos de formulário",
+        "Listagem de dados do candidato",
+        "Listagem de tipos de processo",
+        "Listagem de tipos de ato publicado",
+        "Listagem de obrigatoriedades legais",
+        "Listagem de motivos de decisão",
+        "Listagem de processos seletivos",
+        "Listagem de regras do catálogo",
         "Listagem das decisões da proteção de dados do catálogo",
         "Listagem da vitrine de certames publicados"
       ]

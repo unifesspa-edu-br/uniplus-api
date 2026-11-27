@@ -105,12 +105,12 @@ public sealed class UnidadeFiltroPorTipoEPaginacaoTests : IClassFixture<UnidadeD
     {
         (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await _apoio.SemearCincoNaOrdemDaPaginacaoAsync();
 
-        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+        (IReadOnlyList<Unidade> pagina, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await _apoio.PaginarAsync(filtro, afterId: null, PaginationDirection.Next);
 
         pagina.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
         anterior.Should().BeNull();
-        proximo.Should().Be(ordenados[1]);
+        proximo!.Value.Id.Should().Be(ordenados[1]);
     }
 
     [Fact(DisplayName = "Segunda página para frente tem anterior e próximo")]
@@ -118,12 +118,12 @@ public sealed class UnidadeFiltroPorTipoEPaginacaoTests : IClassFixture<UnidadeD
     {
         (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await _apoio.SemearCincoNaOrdemDaPaginacaoAsync();
 
-        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+        (IReadOnlyList<Unidade> pagina, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await _apoio.PaginarAsync(filtro, afterId: ordenados[1], PaginationDirection.Next);
 
         pagina.Select(u => u.Id).Should().Equal(ordenados[2], ordenados[3]);
-        anterior.Should().Be(ordenados[2]);
-        proximo.Should().Be(ordenados[3]);
+        anterior!.Value.Id.Should().Be(ordenados[2]);
+        proximo!.Value.Id.Should().Be(ordenados[3]);
     }
 
     [Fact(DisplayName = "Para trás a partir da segunda página volta à primeira, em ordem ascendente, sem anterior e com próximo")]
@@ -131,12 +131,12 @@ public sealed class UnidadeFiltroPorTipoEPaginacaoTests : IClassFixture<UnidadeD
     {
         (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await _apoio.SemearCincoNaOrdemDaPaginacaoAsync();
 
-        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+        (IReadOnlyList<Unidade> pagina, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await _apoio.PaginarAsync(filtro, afterId: ordenados[2], PaginationDirection.Prev);
 
         pagina.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
         anterior.Should().BeNull();
-        proximo.Should().Be(ordenados[1]);
+        proximo!.Value.Id.Should().Be(ordenados[1]);
     }
 
     [Fact(DisplayName = "Última página para frente tem anterior e não tem próximo")]
@@ -144,11 +144,11 @@ public sealed class UnidadeFiltroPorTipoEPaginacaoTests : IClassFixture<UnidadeD
     {
         (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await _apoio.SemearCincoNaOrdemDaPaginacaoAsync();
 
-        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+        (IReadOnlyList<Unidade> pagina, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await _apoio.PaginarAsync(filtro, afterId: ordenados[3], PaginationDirection.Next);
 
         pagina.Select(u => u.Id).Should().Equal(ordenados[4]);
-        anterior.Should().Be(ordenados[4]);
+        anterior!.Value.Id.Should().Be(ordenados[4]);
         proximo.Should().BeNull();
     }
 

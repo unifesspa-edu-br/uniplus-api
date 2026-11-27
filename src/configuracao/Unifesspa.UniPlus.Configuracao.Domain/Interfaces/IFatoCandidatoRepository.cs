@@ -14,7 +14,8 @@ public interface IFatoCandidatoRepository
     Task<FatoCandidato?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Lista paginada por cursor, com filtro opcional por origem e por ativo.</summary>
-    Task<(IReadOnlyList<FatoCandidato> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<FatoCandidato> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, OrigemFato? origem, bool? ativo, CancellationToken cancellationToken);
 
     Task AdicionarAsync(FatoCandidato fato, CancellationToken cancellationToken);

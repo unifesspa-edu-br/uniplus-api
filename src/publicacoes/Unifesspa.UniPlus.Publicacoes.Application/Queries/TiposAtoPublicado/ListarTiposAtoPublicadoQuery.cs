@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Quando verdadeiro (o default do endpoint), restringe às versões vigentes hoje no fuso institucional.
 /// </param>
 public sealed record ListarTiposAtoPublicadoQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

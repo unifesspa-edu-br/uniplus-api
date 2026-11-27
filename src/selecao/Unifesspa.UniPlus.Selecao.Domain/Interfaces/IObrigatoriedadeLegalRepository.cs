@@ -8,6 +8,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
+/// Filtros admin da listagem de regras. <c>VigentesEm</c>, quando presente, exclui as regras não vigentes nesse dia;
+/// o dia não entra no resumo do cursor, só o fato de filtrar. O código do tipo de processo vazio equivale a não filtrar.
+/// </summary>
+public sealed record FiltroDasObrigatoriedadesLegais(string? TipoProcessoCodigo, CategoriaObrigatoriedade? Categoria, DateOnly? VigentesEm);
+
+/// <summary>
 /// Repositório de <see cref="ObrigatoriedadeLegal"/>.
 /// </summary>
 /// <remarks>
@@ -23,17 +29,15 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
     /// ADR-0089) com filtros admin. Ordenação estável por <c>Id</c> (Guid v7
     /// cronológico); retorna até <paramref name="limit"/> itens na direção
     /// <paramref name="direction"/> a partir de <paramref name="afterId"/>,
-    /// sempre em ordem ascendente, com as âncoras de <c>prev</c>/<c>next</c>.
-    /// Com <paramref name="vigentesEm"/>, só as regras vigentes nesse dia civil (início inclusivo, fim
-    /// exclusivo); sem ele, todas.
+    /// sempre em ordem ascendente, com os pontos de continuação de <c>prev</c>/<c>next</c>.
+    /// Com <c>VigentesEm</c> no filtro, só as regras vigentes nesse dia civil (início inclusivo, fim exclusivo).
     /// </summary>
-    Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoProcessoCodigo,
-        CategoriaObrigatoriedade? categoria,
-        DateOnly? vigentesEm,
+        FiltroDasObrigatoriedadesLegais filtro,
         CancellationToken cancellationToken = default);
 
     /// <summary>

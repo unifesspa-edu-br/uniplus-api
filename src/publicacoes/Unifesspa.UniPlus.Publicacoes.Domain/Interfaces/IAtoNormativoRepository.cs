@@ -51,10 +51,11 @@ public interface IAtoNormativoRepository
 
     /// <summary>
     /// Lista atos paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089):
-    /// ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras de
+    /// ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve os pontos de continuação de
     /// <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
-    Task<(IReadOnlyList<AtoNormativo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -118,7 +119,7 @@ public interface IAtoNormativoRepository
     /// <summary>
     /// Lista os atos vinculados a uma entidade, ordenados pelo instante da divulgação
     /// ascendente, com o <c>Id</c> (Guid v7) de desempate para o mesmo microssegundo.
-    /// Keyset ordenado (ADR-0094) sob cursor opaco; as âncoras são o par <c>(instante, id)</c>.
+    /// Keyset ordenado (ADR-0094) sob cursor opaco; os pontos de continuação são o par <c>(instante, id)</c>.
     /// </summary>
     Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPorEntidadeAsync(

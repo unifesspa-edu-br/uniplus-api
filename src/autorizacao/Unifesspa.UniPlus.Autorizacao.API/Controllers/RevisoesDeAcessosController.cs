@@ -102,7 +102,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedAsync(
-                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page,
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -179,6 +179,6 @@ public sealed class RevisoesDeAcessosController : ControllerBase
             new DomainError(RevisaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use um dos códigos publicados para a situação da revisão."));
         return filtro.IsFailure
             ? Result<ListarRevisoesQuery>.ValidationFailure(filtro.Errors)
-            : Result<ListarRevisoesQuery>.Success(new ListarRevisoesQuery(page.AfterId, page.Limit, page.Direction, filtro.Value));
+            : Result<ListarRevisoesQuery>.Success(new ListarRevisoesQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, filtro.Value));
     }
 }

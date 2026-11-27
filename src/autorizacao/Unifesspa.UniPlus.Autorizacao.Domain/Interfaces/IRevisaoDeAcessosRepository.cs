@@ -36,8 +36,9 @@ public interface IRevisaoDeAcessosRepository : IRepository<RevisaoDeAcessos>
     /// Lista as revisões paginadas por cursor keyset bidirecional (ADR-0026 + ADR-0089), ordenadas por <c>Id</c>, sem
     /// rastreamento. A situação pedida filtra antes da paginação, para a página ter só revisões dela.
     /// </summary>
-    Task<(IReadOnlyList<ResumoDaRevisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ResumoDaRevisao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeRevisoes filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

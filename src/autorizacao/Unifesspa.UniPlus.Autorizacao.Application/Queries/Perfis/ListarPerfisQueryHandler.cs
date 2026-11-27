@@ -29,8 +29,8 @@ public static class ListarPerfisQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        (IReadOnlyList<Perfil> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<Perfil> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         return new ListarPerfisResult([.. itens.Select(p => PerfilMapping.ToListadoDto(p, catalogo))], anterior, proximo);

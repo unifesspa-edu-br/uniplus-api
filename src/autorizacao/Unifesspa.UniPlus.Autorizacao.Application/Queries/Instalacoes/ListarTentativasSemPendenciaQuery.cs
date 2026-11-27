@@ -9,12 +9,13 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// instalação aguardando código: o que a trilha de uma instalação não alcança.
 /// </summary>
 public sealed record ListarTentativasSemPendenciaQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarTentativasSemPendenciaResult>;
 
-/// <summary>Resultado paginado: as âncoras são os <c>Id</c> de fronteira da janela.</summary>
+/// <summary>Resultado paginado: os pontos de continuação são os <c>Id</c> de fronteira da página.</summary>
 public sealed record ListarTentativasSemPendenciaResult(
     IReadOnlyList<TentativaDeInstalacaoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

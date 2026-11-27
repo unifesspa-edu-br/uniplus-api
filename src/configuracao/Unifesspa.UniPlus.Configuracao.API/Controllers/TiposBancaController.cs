@@ -73,14 +73,14 @@ public sealed class TiposBancaController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarTiposBancaResult resultado = await _queryBus
-            .Send(new ListarTiposBancaQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarTiposBancaQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         TipoBancaDto[] comLinks =
             [.. resultado.Items.Select(b => b with { Links = _linksBuilder.Build(b) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

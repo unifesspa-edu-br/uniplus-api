@@ -13,7 +13,8 @@ public interface IBaseLegalDoFadaRepository
     /// <summary>As bases legais vivas com os municípios, para leitura, sem paginação: o cadastro é curto.</summary>
     Task<IReadOnlyList<BaseLegalDoFada>> ListarVivasParaLeituraAsync(CancellationToken cancellationToken);
 
-    Task<(IReadOnlyList<BaseLegalDoFada> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<BaseLegalDoFada> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

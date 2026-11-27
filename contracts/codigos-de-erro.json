@@ -172,11 +172,6 @@
       "titulo": "Beneficiário sem nome na sessão"
     },
     {
-      "codigo": "uniplus.autorizacao.pedido.cursor_invalido",
-      "status": 400,
-      "titulo": "Cursor de paginação dos pedidos inválido"
-    },
-    {
       "codigo": "uniplus.autorizacao.pedido.decisor_e_parte",
       "status": 422,
       "titulo": "Ninguém decide pedido em que é solicitante ou beneficiário"

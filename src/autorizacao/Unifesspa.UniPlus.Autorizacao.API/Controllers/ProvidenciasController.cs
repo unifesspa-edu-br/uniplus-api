@@ -165,7 +165,7 @@ public sealed class ProvidenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery, AceitaCodigosDe<SituacaoDaProvidencia>] string? situacao = null,
         [FromQuery] Guid? concessao = null,
         CancellationToken cancellationToken = default)
@@ -181,7 +181,7 @@ public sealed class ProvidenciasController : ControllerBase
         ListarProvidenciasQuery consulta = new(filtro.Value, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction);
         ListarProvidenciasResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
-        return await this.OkPaginatedOrdenadoAsync(
+        return await this.OkPaginatedAsync(
             resultado.Items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

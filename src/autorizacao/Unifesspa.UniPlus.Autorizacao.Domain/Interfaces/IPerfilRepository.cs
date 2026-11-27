@@ -12,7 +12,8 @@ public interface IPerfilRepository : IRepository<Perfil>
     /// Lista os perfis paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089),
     /// ordenados por <c>Id</c> (Guid v7 cronológico), sem rastreamento.
     /// </summary>
-    Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<Perfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -22,7 +23,8 @@ public interface IPerfilRepository : IRepository<Perfil>
     /// Lista os perfis que se podem pedir, paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089), sem
     /// rastreamento: os ativos que são de governança ou têm uma versão em vigor. O filtro vem antes da paginação.
     /// </summary>
-    Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPediveisPaginadoAsync(
+    Task<(IReadOnlyList<Perfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPediveisPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

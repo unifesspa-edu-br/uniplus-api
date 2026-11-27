@@ -67,11 +67,11 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
 
     private async Task<ListarMotivosDeDecisaoResult> ListarAsync(FiltroDosMotivos filtro, MotivoDeDecisao motivo)
     {
-        _repository.ListarPaginadoAsync(null, 20, PaginationDirection.Next, filtro, Arg.Any<CancellationToken>())
-            .Returns(([motivo], (Guid?)null, (Guid?)null));
+        _repository.ListarPaginadoAsync(null, null, 20, PaginationDirection.Next, filtro, Arg.Any<CancellationToken>())
+            .Returns(([motivo], ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
 
         return await ListarMotivosDeDecisaoQueryHandler.Handle(
-            new ListarMotivosDeDecisaoQuery(null, 20, PaginationDirection.Next, filtro), _repository, CancellationToken.None);
+            new ListarMotivosDeDecisaoQuery(null, null, 20, PaginationDirection.Next, filtro), _repository, CancellationToken.None);
     }
 
     private static MotivoDeDecisao Motivo() =>

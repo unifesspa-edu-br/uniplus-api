@@ -12,7 +12,8 @@ public interface ITipoProcessoRepository
     /// leitura pública (só ativos, UNI-REQ-0098) da visão de manutenção, que precisa
     /// enxergar o desativado para poder reativá-lo.
     /// </summary>
-    Task<(IReadOnlyList<TipoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<TipoProcesso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId, int limit, PaginationDirection direction, bool apenasAtivos, CancellationToken cancellationToken);
     Task AdicionarAsync(TipoProcesso tipo, CancellationToken cancellationToken);
     Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken);

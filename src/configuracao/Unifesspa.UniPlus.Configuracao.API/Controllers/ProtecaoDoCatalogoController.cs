@@ -91,7 +91,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "Texto pesquisado com mais de 200 caracteres, sem contar os espaços das pontas (uniplus.consulta.busca_muito_longa), ou outro parâmetro de consulta inválido.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarDecisoes(
-        [FromCursor(DecisoesResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromCursor(DecisoesResourceTag)] PageRequest page,
         [FromQuery] FiltroDasDecisoesDaProtecaoRequest filtro,
         CancellationToken cancellationToken = default)
     {
@@ -102,7 +102,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
-            : await this.OkPaginatedOrdenadoAsync(
+            : await this.OkPaginatedAsync(
                 resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }

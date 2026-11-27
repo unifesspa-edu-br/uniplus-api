@@ -31,8 +31,8 @@ public sealed class ListagemDasInscricoesEnviadasTests
         await using UniPlusDbContext contexto = _cenario.CriarDbContext();
         InscricaoRepository repositorio = _cenario.Repositorio(contexto);
 
-        (IReadOnlyList<ResumoDaInscricaoDoProcesso> comNome, _, _) = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, 10, PaginationDirection.Next, lerNome: true, lerCpf: false);
-        (IReadOnlyList<ResumoDaInscricaoDoProcesso> semNome, _, _) = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, 10, PaginationDirection.Next, lerNome: false, lerCpf: false);
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> comNome, _, _) = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, null, 10, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(Nome: true, Cpf: false));
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> semNome, _, _) = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, null, 10, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(Nome: false, Cpf: false));
 
         comNome.Single().Nome.Should().Be("Ariel Drumond");
         semNome.Single().Nome.Should().BeNull();

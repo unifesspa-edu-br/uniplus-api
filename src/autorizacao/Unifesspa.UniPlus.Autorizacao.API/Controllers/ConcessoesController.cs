@@ -95,7 +95,7 @@ public sealed class ConcessoesController : ControllerBase
         ListarConcessoesResult resultado = await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, cancellationToken: cancellationToken).ConfigureAwait(false);
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Obtém uma concessão pelo Id. Retorna 404 quando inexistente.</summary>
@@ -188,7 +188,7 @@ public sealed class ConcessoesController : ControllerBase
                 "Situação inválida. Use um dos códigos publicados para a situação da concessão."));
         return filtro.IsFailure
             ? Result<ListarConcessoesQuery>.Failure(filtro.Error!)
-            : Result<ListarConcessoesQuery>.Success(new(emissor, contaId, unidade, perfil, filtro.Value, page.AfterId, page.Limit, page.Direction));
+            : Result<ListarConcessoesQuery>.Success(new(emissor, contaId, unidade, perfil, filtro.Value, page.AfterSortKey, page.AfterId, page.Limit, page.Direction));
     }
 
     private static string? Aparado(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();

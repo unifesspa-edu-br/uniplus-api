@@ -12,7 +12,7 @@ using System.Globalization;
 /// Na maioria dos recursos a etiqueta é uma constante (<c>"atos"</c>, <c>"editais"</c>).
 /// Ela deixa de bastar quando a coleção é <b>escopada por um segmento da rota</b>: os
 /// atos de um certame e os de outro são coleções distintas sob a mesma etiqueta, e um
-/// cursor emitido numa retomaria a paginação da outra — na âncora errada, com resultados
+/// cursor emitido numa retomaria a paginação da outra — no ponto de continuação errado, com resultados
 /// que o cliente não pediu. Acrescentar os valores de rota ao escopo fecha isso.
 /// </para>
 /// <para>

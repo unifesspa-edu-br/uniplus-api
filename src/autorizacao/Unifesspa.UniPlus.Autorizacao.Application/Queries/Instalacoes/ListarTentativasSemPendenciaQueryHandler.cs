@@ -16,8 +16,8 @@ public static class ListarTentativasSemPendenciaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<TentativaDeInstalacao> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarTentativasSemPendenciaAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<TentativaDeInstalacao> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarTentativasSemPendenciaAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         TentativaDeInstalacaoDto[] dtos = [.. itens.Select(InstalacaoMapping.ToDto)];

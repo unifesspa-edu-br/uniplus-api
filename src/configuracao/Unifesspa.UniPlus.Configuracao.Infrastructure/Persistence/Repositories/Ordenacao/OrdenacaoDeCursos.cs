@@ -102,23 +102,23 @@ internal static class OrdenacaoDeCursos
         new(CamposOrdenacaoOfertaCurso.CursoCodigo, SortDirection.Ascending),
     ];
 
-    /// <summary>Monta a ordenação de Cursos para os campos pedidos, sobre os filtros da listagem informados.</summary>
+    /// <summary>Monta a ordenação de Cursos para os campos pedidos, sobre as condições da listagem informadas.</summary>
     public static KeysetSort<CursoOrdenado> DeCursos(
         IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> filtrosDaListagem) =>
+        CondicoesDoFiltro condicoes) =>
         new(
             [.. campos.Select(ColunaDeCurso)],
             (partes, id) => CursoLidoDoCursor(ValoresPorCampo(campos, partes), id),
-            filtrosDaListagem);
+            condicoes);
 
-    /// <summary>Monta a ordenação de Ofertas de Curso para os campos pedidos, sobre os filtros da listagem informados.</summary>
+    /// <summary>Monta a ordenação de Ofertas de Curso para os campos pedidos, sobre as condições da listagem informadas.</summary>
     public static KeysetSort<OfertaCursoOrdenada> DeOfertas(
         IReadOnlyList<SortField> campos,
-        IReadOnlyList<string> filtrosDaListagem) =>
+        CondicoesDoFiltro condicoes) =>
         new(
             [.. campos.Select(ColunaDeOferta)],
             (partes, id) => OfertaLidaDoCursor(campos, partes, id),
-            filtrosDaListagem);
+            condicoes);
 
     private static readonly Dictionary<string, Func<SortDirection, KeysetSortColumn<CursoOrdenado>>> CamposDeCurso =
         new(StringComparer.Ordinal)
@@ -132,7 +132,7 @@ internal static class OrdenacaoDeCursos
             [CamposOrdenacaoCurso.NivelEnsino] = d => KeysetSortColumn<CursoOrdenado>.For(
                 CamposOrdenacaoCurso.NivelEnsino, c => c.NivelEnsino, c => c.NivelEnsino, d),
             [CamposOrdenacaoCurso.CriadoEm] = d => KeysetSortColumn<CursoOrdenado>.For(
-                CamposOrdenacaoCurso.CriadoEm, c => c.CriadoEm, c => ChaveDeInstante(c.CriadoEm), d),
+                CamposOrdenacaoCurso.CriadoEm, c => c.CriadoEm, c => InstanteDoCursor.Escrever(c.CriadoEm), d),
         };
 
     private sealed record CampoOrdenavelDaOferta(
@@ -157,29 +157,29 @@ internal static class OrdenacaoDeCursos
             [CamposOrdenacaoOfertaCurso.ProgramaDeOferta] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.ProgramaDeOferta, o => o.ProgramaDeOferta, o => o.ProgramaDeOferta.Codigo(), d),
-                (oferta, parte) => oferta with { ProgramaDeOferta = CatalogoDe<ProgramaDeOferta>.Obter(parte) }),
+                (oferta, parte) => oferta with { ProgramaDeOferta = CodigoDoCursor.Ler<ProgramaDeOferta>(parte) }),
             [CamposOrdenacaoOfertaCurso.FormatoPedagogico] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.FormatoPedagogico, o => o.FormatoPedagogico, o => o.FormatoPedagogico.Codigo(), d),
-                (oferta, parte) => oferta with { FormatoPedagogico = CatalogoDe<FormatoPedagogico>.Obter(parte) }),
+                (oferta, parte) => oferta with { FormatoPedagogico = CodigoDoCursor.Ler<FormatoPedagogico>(parte) }),
             [CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.RegimeDeFuncionamento,
                     o => o.RegimeDeFuncionamento,
                     o => o.RegimeDeFuncionamento.Codigo(),
                     d),
-                (oferta, parte) => oferta with { RegimeDeFuncionamento = CatalogoDe<RegimeDeFuncionamento>.Obter(parte) }),
+                (oferta, parte) => oferta with { RegimeDeFuncionamento = CodigoDoCursor.Ler<RegimeDeFuncionamento>(parte) }),
             [CamposOrdenacaoOfertaCurso.RegimeDeTurno] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
                     CamposOrdenacaoOfertaCurso.RegimeDeTurno,
                     o => o.RegimeDeTurno,
                     o => o.RegimeDeTurno.Codigo(),
                     d),
-                (oferta, parte) => oferta with { RegimeDeTurno = CatalogoDe<RegimeDeTurno>.Obter(parte) }),
+                (oferta, parte) => oferta with { RegimeDeTurno = CodigoDoCursor.Ler<RegimeDeTurno>(parte) }),
             [CamposOrdenacaoOfertaCurso.CriadoEm] = new(
                 d => KeysetSortColumn<OfertaCursoOrdenada>.For(
-                    CamposOrdenacaoOfertaCurso.CriadoEm, o => o.CriadoEm, o => ChaveDeInstante(o.CriadoEm), d),
-                (oferta, parte) => oferta with { CriadoEm = InstanteDaChave(parte) }),
+                    CamposOrdenacaoOfertaCurso.CriadoEm, o => o.CriadoEm, o => InstanteDoCursor.Escrever(o.CriadoEm), d),
+                (oferta, parte) => oferta with { CriadoEm = InstanteDoCursor.Ler(parte) }),
         };
 
     /// <summary>Nomes de campo que a listagem de Cursos sabe ordenar.</summary>
@@ -196,14 +196,6 @@ internal static class OrdenacaoDeCursos
     private static KeysetSortColumn<OfertaCursoOrdenada> ColunaDeOferta(SortField campo) =>
         CamposDeOferta[campo.Campo].Coluna(campo.Direcao);
 
-    /// <summary>
-    /// Instante em ISO-8601 com precisão de milissegundo e deslocamento zero. A
-    /// ordem lexicográfica desse formato coincide com a cronológica, que é o que o
-    /// cursor precisa para comparar como o banco compara.
-    /// </summary>
-    private static string ChaveDeInstante(DateTimeOffset instante) =>
-        instante.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-
     private static CursoOrdenado CursoLidoDoCursor(Dictionary<string, string> valores, Guid id) =>
         new()
         {
@@ -212,7 +204,7 @@ internal static class OrdenacaoDeCursos
             Codigo = valores.GetValueOrDefault(CamposOrdenacaoCurso.Codigo, string.Empty),
             Grau = valores.GetValueOrDefault(CamposOrdenacaoCurso.Grau, string.Empty),
             NivelEnsino = valores.GetValueOrDefault(CamposOrdenacaoCurso.NivelEnsino, string.Empty),
-            CriadoEm = InstanteDaChave(valores.GetValueOrDefault(CamposOrdenacaoCurso.CriadoEm)),
+            CriadoEm = valores.TryGetValue(CamposOrdenacaoCurso.CriadoEm, out string? instante) ? InstanteDoCursor.Ler(instante) : default,
         };
 
     // A linha só leva as colunas da ordenação pedida e o Id: a paginação por chave não lê as outras.
@@ -239,13 +231,4 @@ internal static class OrdenacaoDeCursos
 
         return valores;
     }
-
-    private static DateTimeOffset InstanteDaChave(string? bruto) =>
-        DateTimeOffset.TryParse(
-            bruto,
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.RoundtripKind,
-            out DateTimeOffset instante)
-            ? instante
-            : default;
 }

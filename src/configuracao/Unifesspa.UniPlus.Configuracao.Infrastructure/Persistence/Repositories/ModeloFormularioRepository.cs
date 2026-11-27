@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -24,21 +25,20 @@ public sealed class ModeloFormularioRepository : IModeloFormularioRepository
     public Task<ModeloFormulario?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
         _dbContext.ModelosFormulario.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<ModeloFormulario> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ModeloFormulario> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoProcessoCodigo,
-        bool? serveAFaseDeInscricao,
-        bool? ativo,
+        FiltroDosModelosDeFormulario filtro,
         CancellationToken cancellationToken)
     {
-        IQueryable<ModeloFormulario> consulta = Filtrar(_dbContext.ModelosFormulario.AsNoTracking(), tipoProcessoCodigo, serveAFaseDeInscricao, ativo);
+        ArgumentNullException.ThrowIfNull(filtro);
 
-        CursorKeysetPage<ModeloFormulario> page = await CursorKeyset
-            .ApplyAsync(consulta, afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<ModeloFormulario> page = await CursorKeyset
+            .ApplyAsync(Filtrar(_dbContext.ModelosFormulario.AsNoTracking(), filtro), CondicoesDe(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task<IReadOnlyList<ModeloFormulario>> ListarTodosAsync(CancellationToken cancellationToken) =>
@@ -56,13 +56,30 @@ public sealed class ModeloFormularioRepository : IModeloFormularioRepository
         return _dbContext.ModelosFormulario.AsNoTracking().AnyAsync(m => m.Codigo == codigo, cancellationToken);
     }
 
-    private static IQueryable<ModeloFormulario> Filtrar(
-        IQueryable<ModeloFormulario> consulta, string? tipoProcessoCodigo, bool? serveAFaseDeInscricao, bool? ativo)
+    private static IQueryable<ModeloFormulario> Filtrar(IQueryable<ModeloFormulario> consulta, FiltroDosModelosDeFormulario filtro)
     {
-        IQueryable<ModeloFormulario> filtrada = tipoProcessoCodigo is null
-            ? consulta
-            : consulta.Where(m => m.TipoProcessoCodigo == null || m.TipoProcessoCodigo == tipoProcessoCodigo);
-        filtrada = serveAFaseDeInscricao is { } serve ? filtrada.Where(m => m.ServeAFaseDeInscricao == serve) : filtrada;
-        return ativo is { } ativoFiltro ? filtrada.Where(m => m.Ativo == ativoFiltro) : filtrada;
+        IQueryable<ModeloFormulario> filtrada = FiltrarPorTipoDeProcesso(consulta, filtro.TipoProcessoCodigo);
+        filtrada = filtro.ServeAFaseDeInscricao is { } serve ? filtrada.Where(m => m.ServeAFaseDeInscricao == serve) : filtrada;
+        return filtro.Ativo is { } ativo ? filtrada.Where(m => m.Ativo == ativo) : filtrada;
     }
+
+    // O tipo de processo que o banco não grava não é de nenhum modelo: a consulta não traz nada e nem chega ao banco com o
+    // texto, mas o resumo do cursor já foi conferido com ele.
+    private static IQueryable<ModeloFormulario> FiltrarPorTipoDeProcesso(IQueryable<ModeloFormulario> consulta, string? tipoProcessoCodigo)
+    {
+        if (tipoProcessoCodigo is null)
+        {
+            return consulta;
+        }
+
+        return TextoGravavel.EhGravavel(tipoProcessoCodigo)
+            ? consulta.Where(m => m.TipoProcessoCodigo == null || m.TipoProcessoCodigo == tipoProcessoCodigo)
+            : consulta.Where(static _ => false);
+    }
+
+    private static CondicoesDoFiltro CondicoesDe(FiltroDosModelosDeFormulario filtro) =>
+        CondicoesDoFiltro.De(
+            ParteDoFiltro.De(filtro.TipoProcessoCodigo),
+            ParteDoFiltro.De(filtro.ServeAFaseDeInscricao),
+            ParteDoFiltro.De(filtro.Ativo));
 }

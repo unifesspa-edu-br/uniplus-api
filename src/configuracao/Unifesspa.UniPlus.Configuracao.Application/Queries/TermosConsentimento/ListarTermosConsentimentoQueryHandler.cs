@@ -17,11 +17,11 @@ public static class ListarTermosConsentimentoQueryHandler
 
         string? searchTerm = string.IsNullOrWhiteSpace(query.SearchTerm) ? null : query.SearchTerm;
 
-        (IReadOnlyList<TermoConsentimento> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, searchTerm, cancellationToken)
+        (IReadOnlyList<TermoConsentimento> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, searchTerm, cancellationToken)
             .ConfigureAwait(false);
 
         TermoConsentimentoResumoDto[] items = [.. itens.Select(t => t.ToResumoDto())];
-        return new ListarTermosConsentimentoResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarTermosConsentimentoResult(items, anterior, proximo);
     }
 }

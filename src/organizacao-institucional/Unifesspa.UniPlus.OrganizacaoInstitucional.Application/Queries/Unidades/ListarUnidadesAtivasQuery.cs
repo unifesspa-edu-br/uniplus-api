@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="Busca">Termo de busca livre (acento/caixa-insensível) sobre sigla, nome, código, slug e alias; <c>null</c>/em branco = sem filtro textual; acima de 200 caracteres, sem contar os espaços das pontas, a consulta é recusada.</param>
 /// <param name="Tipos">Valores numéricos de tipo de unidade a incluir (OR entre si), como chegaram; <c>null</c> ou vazio = sem filtro por tipo; valor que não é tipo filtrável recusa a consulta.</param>
 public sealed record ListarUnidadesAtivasQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

@@ -54,7 +54,8 @@ public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
         throw new NotSupportedException("Motivo de decisão não é removido — a retirada do cadastro é a desativação.");
     }
 
-    public async Task<(IReadOnlyList<MotivoDeDecisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<MotivoDeDecisao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -64,11 +65,11 @@ public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
         ArgumentNullException.ThrowIfNull(filtro);
 
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
-        CursorKeysetPage<MotivoDeDecisao> page = await CursorKeyset
-            .ApplyAsync(Filtrar(_context.MotivosDeDecisao.AsNoTracking(), filtro), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<MotivoDeDecisao> page = await CursorKeyset
+            .ApplyAsync(Filtrar(_context.MotivosDeDecisao.AsNoTracking(), filtro), CondicoesDe(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task<IReadOnlyList<MotivoDeDecisao>> ListarVivosPorCodigosAsync(
@@ -121,4 +122,10 @@ public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
 
         return filtro.ApenasAtivos ? query.Where(m => m.Ativo) : query;
     }
+
+    private static CondicoesDoFiltro CondicoesDe(FiltroDosMotivos filtro) =>
+        CondicoesDoFiltro.De(
+            ParteDoFiltro.De(filtro.Tipo),
+            ParteDoFiltro.De(filtro.Subclassificacao),
+            ParteDoFiltro.De(filtro.ApenasAtivos));
 }

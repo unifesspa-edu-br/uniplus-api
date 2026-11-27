@@ -18,10 +18,11 @@ public interface IPrecedenciaFaseRepository
 
     /// <summary>
     /// Lista arestas vivas paginadas por cursor keyset bidirecional (ADR-0026 +
-    /// ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras de
+    /// ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve os pontos de continuação de
     /// <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
-    Task<(IReadOnlyList<PrecedenciaFase> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<PrecedenciaFase> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

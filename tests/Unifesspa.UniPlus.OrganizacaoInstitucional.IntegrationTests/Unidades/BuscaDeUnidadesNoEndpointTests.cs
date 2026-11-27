@@ -128,7 +128,7 @@ public sealed class BuscaDeUnidadesNoEndpointTests
         pagina.Corpo.Should().Contain(CodigoDaRecusa);
     }
 
-    [Theory(DisplayName = "O cursor da próxima página só carrega o ponto de continuação, qualquer que seja o q")]
+    [Theory(DisplayName = "O cursor da próxima página só carrega o ponto de continuação e o resumo da consulta, qualquer que seja o q")]
     [InlineData("q=&")]
     [InlineData("")]
     [InlineData("q=a%25b&")]
@@ -142,7 +142,8 @@ public sealed class BuscaDeUnidadesNoEndpointTests
 
         payload.After.Should().Be(pagina.Ids.Single().ToString());
         payload.Should().BeEquivalentTo(
-            new { Limit = 1, ResourceTag = "unidades", Direction = PaginationDirection.Next, UserId = (string?)null, SortKey = (string?)null });
+            new { Limit = 1, ResourceTag = "unidades", Direction = PaginationDirection.Next, ResumoDaConta = (string?)null });
+        payload.SortKey.Should().NotBeNullOrWhiteSpace().And.NotContain("a%b").And.NotContain("Núcleo");
     }
 
     private static string NovoToken() => Guid.NewGuid().ToString("N")[..10];

@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using System.Data;
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -18,8 +17,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.Ordenaca
 
 internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICertameDivulgadoRepository
 {
-    private const int PartesDaConsultaNaAssinatura = 5;
-
     /// <summary>Quantas colunas a ordem canônica por urgência tem, antes do identificador.</summary>
     private const int ColunasDaOrdemCanonica = 2;
 
@@ -54,7 +51,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         PaginationDirection direction, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(consulta);
-        DateTimeOffset instanteUtc = (InstanteDoPontoDeContinuacao(afterSortKey, consulta.Ordenacao.Count)
+        DateTimeOffset instanteUtc = (ChaveDeContinuacao.InstanteCongelado(afterSortKey, ColunasDaOrdem(consulta))
             ?? consulta.InstanteSeForAPrimeiraPagina).ToUniversalTime();
         IDbContextTransaction instantaneo = await _context.Database
             .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken).ConfigureAwait(false);
@@ -72,7 +69,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
         string revisao = await RevisaoDosCertamesAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
         OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor.ApplyAsync(
             LinhasParaOrdenar(consulta, instanteUtc),
-            OrdenacaoDaListaPublica.Montar(consulta.Ordenacao, AssinaturaDaConsulta(consulta.Filtro, instanteUtc, revisao)),
+            OrdenacaoDaListaPublica.Montar(consulta.Ordenacao, CondicoesDe(consulta.Filtro, instanteUtc, revisao)),
             afterSortKey, afterId, limit, direction, cancellationToken).ConfigureAwait(false);
         ContadoresDaVitrine? contadores = await ContadoresSePedidosAsync(consulta, instanteUtc, cancellationToken).ConfigureAwait(false);
         return new PaginaDaVitrine([.. page.Items.Select(static linha => linha.Entidade)],
@@ -133,55 +130,16 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
     private static string ResumoDaRevisao(string texto) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(texto)).AsSpan(0, 16));
 
-    private static IReadOnlyList<string> AssinaturaDaConsulta(FiltroDosCertamesPublicados filtro, DateTimeOffset instanteUtc, string revisao) =>
-        [Instante(instanteUtc), filtro.Situacao?.ToString() ?? string.Empty, filtro.Modalidade ?? string.Empty,
-            NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca) ?? string.Empty, revisao];
+    // A situação, a modalidade e a busca vêm do cliente; a revisão amarra o cursor ao conteúdo do recorte no instante congelado.
+    private static CondicoesDoFiltro CondicoesDe(FiltroDosCertamesPublicados filtro, DateTimeOffset instanteUtc, string revisao) =>
+        CondicoesDoFiltro.De(
+                ParteDoFiltro.De(filtro.Situacao),
+                ParteDoFiltro.De(string.IsNullOrEmpty(filtro.Modalidade) ? null : filtro.Modalidade),
+                ParteDoFiltro.De(NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca)),
+                ParteDoFiltro.De(revisao))
+            .CongeladasEm(instanteUtc);
 
-    private static string Instante(DateTimeOffset valor) =>
-        valor.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// Lê o instante congelado de dentro da chave que veio no cursor.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A chave é o serializado de <c>[assinatura, ...valores das colunas]</c>, e a assinatura é, por
-    /// sua vez, o serializado de <c>[campo, sentido, ...] + filtro</c>. O instante é a primeira
-    /// parte do filtro, e chegar até ele é desembrulhar duas vezes — as duas com a contagem exata,
-    /// que é o que torna a leitura estrita.
-    /// </para>
-    /// <para>
-    /// Devolve nulo quando a chave não tem essa forma, e a consulta parte do instante de agora.
-    /// Isso NÃO abre porta para paginar do lugar errado: o ponto de continuação é reconstruída em seguida pela
-    /// própria ordenação, que confere a assinatura inteira e recusa o que não bater.
-    /// </para>
-    /// </remarks>
-    private static DateTimeOffset? InstanteDoPontoDeContinuacao(string? sortKey, int colunasPedidas)
-    {
-        int colunas = colunasPedidas == 0 ? ColunasDaOrdemCanonica : colunasPedidas;
-
-        if (!CompositeSortKey.TryDeserialize(sortKey, colunas + 1, out IReadOnlyList<string> partes)
-            || !CompositeSortKey.TryDeserialize(partes[0], (colunas * 2) + PartesDaConsultaNaAssinatura, out IReadOnlyList<string> assinatura)
-            || !TentarLerInstante(assinatura[colunas * 2], out DateTimeOffset instante))
-        {
-            return null;
-        }
-
-        return instante;
-    }
-
-    /// <summary>
-    /// Lê um instante do ponto de continuação assumindo UTC na ausência de designador de fuso.
-    /// </summary>
-    /// <remarks>
-    /// Sem <see cref="DateTimeStyles.AssumeUniversal"/>, um texto sem o <c>Z</c> receberia o fuso
-    /// LOCAL do processo que lê, e a mesmo ponto de continuação retomaria de posições diferentes conforme a
-    /// máquina que serve a requisição.
-    /// </remarks>
-    private static bool TentarLerInstante(string texto, out DateTimeOffset valor) =>
-        DateTimeOffset.TryParse(
-            texto,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-            out valor);
+    /// <summary>Quantas colunas a ordenação pedida tem; a ordem canônica por urgência tem duas, antes do identificador.</summary>
+    private static int ColunasDaOrdem(ConsultaDosCertamesPublicados consulta) =>
+        consulta.Ordenacao.Count == 0 ? ColunasDaOrdemCanonica : consulta.Ordenacao.Count;
 }

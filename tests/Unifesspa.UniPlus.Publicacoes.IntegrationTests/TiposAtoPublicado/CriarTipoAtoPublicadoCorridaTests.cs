@@ -141,13 +141,14 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         public Task<TipoAtoPublicado?> ObterVigenteAsync(string codigo, DateOnly data, CancellationToken cancellationToken) =>
             _real.ObterVigenteAsync(codigo, data, cancellationToken);
 
-        public Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+        public Task<(IReadOnlyList<TipoAtoPublicado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+            string? afterSortKey,
             Guid? afterId,
             int limit,
             PaginationDirection direction,
             DateOnly? vigentesEm,
             CancellationToken cancellationToken) =>
-            _real.ListarPaginadoAsync(afterId, limit, direction, vigentesEm, cancellationToken);
+            _real.ListarPaginadoAsync(afterSortKey, afterId, limit, direction, vigentesEm, cancellationToken);
 
         public Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken cancellationToken) =>
             _real.AdicionarAsync(tipo, cancellationToken);

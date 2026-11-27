@@ -31,7 +31,7 @@ public sealed class LeituraDoPerfilRecusadaTests
         VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.ContaId, []);
 
         Result<ListarPerfisResult> resultado = await ListarPerfisQueryHandler.Handle(
-            new ListarPerfisQuery(null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
+            new ListarPerfisQuery(null, null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.LeituraNegada);
         perfis.ReceivedCalls().Should().BeEmpty();

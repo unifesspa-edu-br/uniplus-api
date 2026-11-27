@@ -117,12 +117,12 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
         return [.. itens.Select(i => i.Id)];
     }
 
-    private async Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? Anterior, Guid? Proximo)> ListarAsync(
-        FiltroDeConcessoes filtro, Guid? depoisDe, int limite, PaginationDirection direcao)
+    private async Task<(IReadOnlyList<ConcessaoComPerfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarAsync(
+        FiltroDeConcessoes filtro, (string SortKey, Guid Id)? depoisDe, int limite, PaginationDirection direcao)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().ListarPaginadoAsync(filtro, depoisDe, limite, direcao);
+        return await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().ListarPaginadoAsync(filtro, depoisDe?.SortKey, depoisDe?.Id, limite, direcao);
     }
 
     private async Task<List<Pagina>> PercorrerAsync(FiltroDeConcessoes filtro)
@@ -136,12 +136,12 @@ public sealed class ListagemDasConcessoesTests : ConcessoesEmVigenciaTestBase
         return paginas;
     }
 
-    private async Task<Pagina> PaginaAsync(FiltroDeConcessoes filtro, Guid? depoisDe, PaginationDirection direcao)
+    private async Task<Pagina> PaginaAsync(FiltroDeConcessoes filtro, (string SortKey, Guid Id)? depoisDe, PaginationDirection direcao)
     {
-        (IReadOnlyList<ConcessaoComPerfil> itens, Guid? anterior, Guid? proximo) = await ListarAsync(filtro, depoisDe, 2, direcao);
+        (IReadOnlyList<ConcessaoComPerfil> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await ListarAsync(filtro, depoisDe, 2, direcao);
 
         return new Pagina([.. itens.Select(i => i.Id)], anterior, proximo);
     }
 
-    private sealed record Pagina(Guid[] Ids, Guid? Anterior, Guid? Proximo);
+    private sealed record Pagina(Guid[] Ids, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo);
 }

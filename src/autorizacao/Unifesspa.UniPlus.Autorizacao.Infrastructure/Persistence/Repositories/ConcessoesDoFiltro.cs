@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 /// <summary>O recorte das concessões pelos critérios da listagem: pessoa, unidade, perfil e situação.</summary>
 internal static class ConcessoesDoFiltro
@@ -20,10 +21,26 @@ internal static class ConcessoesDoFiltro
             .NaSituacao(filtro.Situacao, filtro.Agora);
     }
 
+    /// <summary>As condições efetivas do filtro, as mesmas que o recorte aplica, que o cursor amarra à consulta.</summary>
+    public static CondicoesDoFiltro Condicoes(FiltroDeConcessoes filtro)
+    {
+        ArgumentNullException.ThrowIfNull(filtro);
+
+        bool pessoaIdentificada = PessoaIdentificada(filtro.PessoaEmissor, filtro.PessoaContaId);
+        return CondicoesDoFiltro.De(
+            ParteDoFiltro.De(pessoaIdentificada ? filtro.PessoaEmissor : null),
+            ParteDoFiltro.De(pessoaIdentificada ? filtro.PessoaContaId : null),
+            ParteDoFiltro.De(filtro.UnidadeId),
+            ParteDoFiltro.De(filtro.PerfilId),
+            ParteDoFiltro.De(filtro.Situacao));
+    }
+
     // Só recorta com o emissor e a conta informados: um dos dois sozinho não identifica a pessoa. O texto vazio conta como
     // informado.
+    private static bool PessoaIdentificada(string? emissor, string? contaId) => emissor is not null && contaId is not null;
+
     private static IQueryable<Concessao> DaPessoa(this IQueryable<Concessao> concessoes, string? emissor, string? contaId) =>
-        emissor is not null && contaId is not null
+        PessoaIdentificada(emissor, contaId)
             ? concessoes.Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioContaId == contaId)
             : concessoes;
 

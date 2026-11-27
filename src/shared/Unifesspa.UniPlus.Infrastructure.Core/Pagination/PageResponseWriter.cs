@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>
 /// Escreve a resposta de uma página (ADR-0026): emite os cursores anterior e seguinte, preenche
 /// <c>Link</c>, <c>X-Page-Size</c> e <c>X-Total-Count</c> e devolve o corpo como array JSON puro. A coleção, o
-/// vínculo ao usuário e a ordenação obrigatória vêm do <see cref="FromCursorAttribute"/> da própria ação, o
+/// vínculo à conta vêm do <see cref="FromCursorAttribute"/> da própria ação, o
 /// mesmo que o <see cref="PageRequestModelBinder"/> usa para conferir o cursor na volta. Vive uma requisição.
 /// </summary>
 internal sealed class PageResponseWriter
@@ -76,9 +76,9 @@ internal sealed class PageResponseWriter
     {
         ArgumentNullException.ThrowIfNull(items);
 
-        string? userId = (previous is null && next is null) || !_declaration.RequireUserBinding ? null : UserIdForBinding();
-        string? previousCursor = await EncodeAsync(previous, PaginationDirection.Prev, userId, cancellationToken).ConfigureAwait(false);
-        string? nextCursor = await EncodeAsync(next, PaginationDirection.Next, userId, cancellationToken).ConfigureAwait(false);
+        string? account = (previous is null && next is null) || !_declaration.RequireUserBinding ? null : AccountForBinding();
+        string? previousCursor = await EncodeAsync(previous, PaginationDirection.Prev, account, cancellationToken).ConfigureAwait(false);
+        string? nextCursor = await EncodeAsync(next, PaginationDirection.Next, account, cancellationToken).ConfigureAwait(false);
 
         PageLinks links = PageLinks.ForRequest(_controller.Request, previousCursor, nextCursor);
         _controller.Response.Headers[LinkHeader] = LinkHeaderBuilder.Build(links);
@@ -87,35 +87,31 @@ internal sealed class PageResponseWriter
     }
 
     /// <summary>
-    /// Vínculo ao usuário (ADR-0026, "User-binding em cursores user-scoped"): a conta do principal corrente
-    /// entra no cursor, e o binder confere a mesma conta na volta.
+    /// Vínculo à conta (ADR-0026, "User-binding em cursores user-scoped"): o resumo da conta do principal corrente
+    /// entra no cursor, e o binder confere o mesmo resumo na volta.
     /// </summary>
-    private string UserIdForBinding()
+    private string AccountForBinding()
     {
         IUserContext user = _controller.HttpContext.RequestServices.GetRequiredService<IUserContext>();
-        if (!user.IsAuthenticated || string.IsNullOrEmpty(user.UserId))
-        {
-            throw new InvalidOperationException(
+        return ContaDeQuemConsulta.Resumir(user)
+            ?? throw new InvalidOperationException(
                 "Cursor de [FromCursor(RequireUserBinding = true)] exige principal autenticado. " +
                 "Verifique se o endpoint tem [Authorize] e se o middleware de auth está antes do MVC.");
-        }
-
-        return user.UserId;
     }
 
     /// <summary>
     /// O cursor vincula sua direção (ADR-0089): o do lado anterior cifra o ponto de continuação com <c>Prev</c> e o do seguinte, com
-    /// <c>Next</c>, e o binder rejeita reuso com a direção trocada. <c>SortKey</c> só viaja no keyset ordenado (ADR-0094).
+    /// <c>Next</c>, e o binder rejeita reuso com a direção trocada.
     /// </summary>
-    private async Task<string?> EncodeAsync(PontoDeContinuacao? anchor, PaginationDirection direction, string? userId, CancellationToken cancellationToken)
+    private async Task<string?> EncodeAsync(PontoDeContinuacao? point, PaginationDirection direction, string? account, CancellationToken cancellationToken)
     {
-        if (anchor is not { } value)
+        if (point is not { } value)
         {
             return null;
         }
 
         string resourceTag = _declaration.ResourceTagFor(_controller.RouteData);
-        CursorPayload payload = new(value.After, _limit, resourceTag, _expiresAt, direction, userId, value.SortKey);
+        CursorPayload payload = new(value.After, _limit, resourceTag, _expiresAt, direction, account, value.SortKey);
         return await _encoder.EncodeAsync(payload, cancellationToken).ConfigureAwait(false);
     }
 }

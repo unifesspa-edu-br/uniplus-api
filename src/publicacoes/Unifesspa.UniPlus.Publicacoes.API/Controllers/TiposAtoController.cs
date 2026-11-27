@@ -84,7 +84,7 @@ public sealed class TiposAtoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         Result<ListarTiposAtoPublicadoResult> resultado = await _queryBus
-            .Send(new ListarTiposAtoPublicadoQuery(page.AfterId, page.Limit, page.Direction, vigentes), cancellationToken)
+            .Send(new ListarTiposAtoPublicadoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, vigentes), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess
@@ -156,7 +156,7 @@ public sealed class TiposAtoController : ControllerBase
             [.. resultado.Items.Select(tipo => tipo with { Links = _linksBuilder.Build(tipo) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -103,7 +103,7 @@ public sealed class FatosCandidatoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
         Result<ListarFatosCandidatoParaManutencaoResult> resultado = await _queryBus.Send(
-            new ListarFatosCandidatoParaManutencaoQuery(page.AfterId, page.Limit, page.Direction, origem, ativo), cancellationToken)
+            new ListarFatosCandidatoParaManutencaoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, origem, ativo), cancellationToken)
             .ConfigureAwait(false);
         if (resultado.IsFailure)
         {
@@ -111,7 +111,7 @@ public sealed class FatosCandidatoController : ControllerBase
         }
 
         return await this.OkPaginatedAsync(
-            resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, cancellationToken: cancellationToken)
+            resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

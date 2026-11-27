@@ -130,7 +130,8 @@ public static class ConcessoesDeTeste
         IServiceProvider services, string contaId, TipoDeGovernanca governanca, string? email = null) =>
         ConcederAsync(services, contaId, PerfilDe(governanca), email: email);
 
-    private static Guid PerfilDe(TipoDeGovernanca governanca) => governanca switch
+    /// <summary>Identificador do perfil de governança da carga inicial.</summary>
+    public static Guid PerfilDe(TipoDeGovernanca governanca) => governanca switch
     {
         TipoDeGovernanca.GestorDeAcessos => PerfisDeSistema.GestorDeAcessosId,
         TipoDeGovernanca.RepresentanteDoControlador => PerfisDeSistema.RepresentanteDoControladorId,

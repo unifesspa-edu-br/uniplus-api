@@ -73,13 +73,13 @@ public sealed class CampiController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarCampiResult resultado = await _queryBus
-            .Send(new ListarCampiQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarCampiQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         CampusDto[] comLinks = [.. resultado.Items.Select(c => c with { Links = _linksBuilder.Build(c) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -37,7 +37,8 @@ public sealed class CalendarioDiasUteisRepository : ICalendarioDiasUteisReposito
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<CalendarioDiasUteis> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<CalendarioDiasUteis> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -45,11 +46,11 @@ public sealed class CalendarioDiasUteisRepository : ICalendarioDiasUteisReposito
     {
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
         // Sem Include de DiasNaoUteis — a listagem projeta só o cabeçalho do calendário.
-        CursorKeysetPage<CalendarioDiasUteis> page = await CursorKeyset
-            .ApplyAsync(_dbContext.CalendariosDiasUteis.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<CalendarioDiasUteis> page = await CursorKeyset
+            .ApplyAsync(_dbContext.CalendariosDiasUteis.AsNoTracking(), CondicoesDoFiltro.Nenhuma, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public Task<CalendarioDiasUteis?> ObterVigenteAsync(CancellationToken cancellationToken)

@@ -99,7 +99,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         resultado.Items.Single().Cpf.Should().Be(new CpfMascaradoDto(PersonasDeTeste.FernandaDrumond.Mascarado, PodeRevelar: false));
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, false, true, Arg.Any<CancellationToken>());
+            ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(false, true), Arg.Any<CancellationToken>());
         await isabella.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoIdentificadores),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
@@ -201,7 +201,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         await Listar(leandro);
 
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, false, false, Arg.Any<CancellationToken>());
+            ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(false, false), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Se o processo congelou o nome como sensível, dados pessoais não bastam para ver o nome")]
@@ -260,7 +260,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         resultado.Items.Single().Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, true, false, Arg.Any<CancellationToken>());
+            ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(true, false), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Nome sensível sem versão resolvida não tem base legal: não sai, não é lido nem registra dados sensíveis, ainda que a pessoa os tenha")]
@@ -275,7 +275,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         resultado.Items.Single().Nome.Should().BeNull();
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, false, true, Arg.Any<CancellationToken>());
+            ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(false, true), Arg.Any<CancellationToken>());
         await persona.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoIdentificadores),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
@@ -293,7 +293,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         resultado.Items.Single().Nome.Should().BeNull();
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-            ProcessoId, null, 100, PaginationDirection.Next, false, false, Arg.Any<CancellationToken>());
+            ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(false, false), Arg.Any<CancellationToken>());
         await persona.Verificador.DidNotReceive().RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoRevelar),
             Arg.Any<string>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
@@ -415,12 +415,12 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     }
 
     private void PaginarComNomeLido(string nome) => _inscricoes.ListarEnviadasDoProcessoAsync(
-        ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-        .Returns(chamada => ((IReadOnlyList<ResumoDaInscricaoDoProcesso>)[Resumo(1) with { Nome = chamada.ArgAt<bool>(4) ? nome : null }],
-            (Guid?)null, (Guid?)null));
+        ProcessoId, null, null, 100, PaginationDirection.Next, Arg.Any<DadosPessoaisLidosNaListagem>(), Arg.Any<CancellationToken>())
+        .Returns(chamada => ((IReadOnlyList<ResumoDaInscricaoDoProcesso>)[Resumo(1) with { Nome = chamada.ArgAt<DadosPessoaisLidosNaListagem>(5).Nome ? nome : null }],
+            ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
 
     private async Task LeuAPaginaAsync(bool lerNome, bool lerCpf) => await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
-        ProcessoId, null, 100, PaginationDirection.Next, lerNome, lerCpf, Arg.Any<CancellationToken>());
+        ProcessoId, null, null, 100, PaginationDirection.Next, new DadosPessoaisLidosNaListagem(lerNome, lerCpf), Arg.Any<CancellationToken>());
 
     private (IProcessoSeletivoRepository, IRegistroCodecsEnvelope) DuasVersoesComOfertas()
     {
@@ -442,14 +442,14 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     private Task<ListarInscricoesDoProcessoResult> Listar(
         DecisoesDeAcessoDeTeste persona, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) =>
         ListarInscricoesDoProcessoQueryHandler.Handle(
-            new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
+            new ListarInscricoesDoProcessoQuery(ProcessoId, null, null, 100, PaginationDirection.Next),
             new ProjetorDaListagemDeInscricoes(persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao),
                 new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, codecs), processos, _inscricoes, CancellationToken.None);
 
     private void Paginar(IReadOnlyList<ResumoDaInscricaoDoProcesso> pagina) =>
         _inscricoes.ListarEnviadasDoProcessoAsync(
-                ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns((pagina, (Guid?)null, (Guid?)null));
+                ProcessoId, null, null, 100, PaginationDirection.Next, Arg.Any<DadosPessoaisLidosNaListagem>(), Arg.Any<CancellationToken>())
+            .Returns((pagina, ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)null));
 
     private static ResumoDaInscricaoDoProcesso Resumo(int numero) => new(
         Guid.CreateVersion7(), $"{numero:000000}", SituacaoInscricao.Enviada, VersaoDoProcesso, Curso, null,

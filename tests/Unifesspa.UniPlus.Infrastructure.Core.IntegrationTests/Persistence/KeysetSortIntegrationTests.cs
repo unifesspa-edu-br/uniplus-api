@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
-/// O motor de ordenação keyset contra Postgres real: várias columns na ordem de
+/// A ordenação keyset contra Postgres real: várias columns na ordem de
 /// prioridade, cada uma com o próprio sentido, e a travessia que retoma
 /// exatamente de onde parou.
 /// </summary>
@@ -53,8 +53,8 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         pagina.Items.Select(l => l.Codigo).Should().Equal("c1", "b1", "a1");
     }
 
-    [Fact(DisplayName = "A travessia retoma da âncora sem repetir nem pular, e volta pela âncora anterior")]
-    public async Task Travessia_RetomaDaAncoraNosDoisSentidos()
+    [Fact(DisplayName = "A travessia retoma do ponto de continuação sem repetir nem pular, e volta pelo ponto anterior")]
+    public async Task Travessia_RetomaDoPontoDeContinuacaoNosDoisSentidos()
     {
         await using TestDbContext contexto = await ComDadosAsync(
             ("Alves", "a1"), ("Alves", "a2"), ("Barros", "b1"), ("Castro", "c1"), ("Dias", "d1"));
@@ -65,10 +65,10 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         primeira.Items.Select(l => l.Codigo).Should().Equal("a1", "a2");
         primeira.Previous.Should().BeNull("é a primeira página");
 
-        OrderedKeysetPage<Linha> segunda = await PaginaDaAncoraAsync(contexto, sort, primeira.Next!.Value, PaginationDirection.Next);
+        OrderedKeysetPage<Linha> segunda = await PaginaDoPontoAsync(contexto, sort, primeira.Next!.Value, PaginationDirection.Next);
         segunda.Items.Select(l => l.Codigo).Should().Equal("b1", "c1");
 
-        OrderedKeysetPage<Linha> volta = await PaginaDaAncoraAsync(contexto, sort, segunda.Previous!.Value, PaginationDirection.Prev);
+        OrderedKeysetPage<Linha> volta = await PaginaDoPontoAsync(contexto, sort, segunda.Previous!.Value, PaginationDirection.Prev);
         volta.Items.Select(l => l.Codigo).Should().Equal("a1", "a2");
     }
 
@@ -99,10 +99,10 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         // valores certos na direção errada, pulando ou repetindo linhas.
         OrderedKeysetPage<Linha> ascendente = await PrimeiraPaginaAsync(contexto);
 
-        (string SortKey, Guid Id) ancora = ascendente.Next!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = ascendente.Next!.Value;
 
         Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(), PorSobrenomeECodigo(SortDirection.Descending), ancora.SortKey, ancora.Id, 1, PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), PorSobrenomeECodigo(SortDirection.Descending), pontoDeContinuacao.SortKey, pontoDeContinuacao.Id, 1, PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -114,12 +114,12 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
 
         OrderedKeysetPage<Linha> porSobrenome = await PrimeiraPaginaAsync(contexto);
 
-        (string SortKey, Guid Id) ancora = porSobrenome.Next!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = porSobrenome.Next!.Value;
 
         KeysetSort<Linha> porCodigoESobrenome = PorCodigoESobrenome();
 
         Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
-            contexto.Linhas.AsNoTracking(), porCodigoESobrenome, ancora.SortKey, ancora.Id, 1, PaginationDirection.Next);
+            contexto.Linhas.AsNoTracking(), porCodigoESobrenome, pontoDeContinuacao.SortKey, pontoDeContinuacao.Id, 1, PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
@@ -138,17 +138,68 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
         OrderedKeysetPage<Linha> pagina = await OrderedKeysetCursor.ApplyAsync(
             context.Linhas.AsNoTracking(), primeira, null, null, 1, PaginationDirection.Next);
 
-        (string SortKey, Guid Id) anchor = pagina.Next!.Value;
+        (string SortKey, Guid Id) pontoDeContinuacao = pagina.Next!.Value;
 
         Func<Task> act = async () => await OrderedKeysetCursor.ApplyAsync(
-            context.Linhas.AsNoTracking(), segunda, anchor.SortKey, anchor.Id, 1, PaginationDirection.Next);
+            context.Linhas.AsNoTracking(), segunda, pontoDeContinuacao.SortKey, pontoDeContinuacao.Id, 1, PaginationDirection.Next);
 
         await act.Should().ThrowAsync<CursorAnchorMismatchException>();
     }
 
-    private static Task<OrderedKeysetPage<Linha>> PaginaDaAncoraAsync(
-        TestDbContext contexto, KeysetSort<Linha> sort, (string SortKey, Guid Id) ancora, PaginationDirection direction) =>
-        OrderedKeysetCursor.ApplyAsync(contexto.Linhas.AsNoTracking(), sort, ancora.SortKey, ancora.Id, 2, direction);
+    [Fact(DisplayName = "Continuar com outra condição de filtro é recusado, e com a mesma continua")]
+    public async Task CondicaoDeFiltroTrocada_EhRecusada()
+    {
+        await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"), ("Castro", "c1"));
+        OrderedKeysetPage<Linha> primeira = await ComBuscaAsync(contexto, "alves", null);
+        (string SortKey, Guid Id) ponto = primeira.Next!.Value;
+
+        Func<Task> outraBusca = () => ComBuscaAsync(contexto, "barros", ponto);
+        Func<Task> mesmaBusca = () => ComBuscaAsync(contexto, "alves", ponto);
+
+        await outraBusca.Should().ThrowAsync<CursorAnchorMismatchException>();
+        await mesmaBusca.Should().NotThrowAsync();
+    }
+
+    [Fact(DisplayName = "Continuar a ordenação sem chave de continuação é recusado")]
+    public async Task ContinuacaoSemChave_EhRecusada()
+    {
+        await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"));
+
+        Func<Task> act = () => OrderedKeysetCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(), PorSobrenomeECodigo(SortDirection.Ascending), null, Guid.CreateVersion7(), 1, PaginationDirection.Next);
+
+        await act.Should().ThrowAsync<CursorAnchorMismatchException>();
+    }
+
+    [Fact(DisplayName = "A listagem por identificador confere a chave antes de consultar e continua com as mesmas condições")]
+    public async Task ListagemPorId_ConfereAChaveDasCondicoes()
+    {
+        await using TestDbContext contexto = await ComDadosAsync(("Alves", "a1"), ("Barros", "b1"), ("Castro", "c1"));
+        CondicoesDoFiltro condicoes = CondicoesDoFiltro.De(ParteDoFiltro.De("filtro-a"));
+        OrderedKeysetPage<Linha> primeira = await CursorKeyset.ApplyAsync(
+            contexto.Linhas.AsNoTracking(), condicoes, null, null, 2, PaginationDirection.Next);
+        (string SortKey, Guid Id) ponto = primeira.Next!.Value;
+
+        OrderedKeysetPage<Linha> segunda = await CursorKeyset.ApplyAsync(
+            contexto.Linhas.AsNoTracking(), condicoes, ponto.SortKey, ponto.Id, 2, PaginationDirection.Next);
+        Func<Task> outroFiltro = () => CursorKeyset.ApplyAsync(
+            contexto.Linhas.AsNoTracking(), CondicoesDoFiltro.De(ParteDoFiltro.De("filtro-b")), ponto.SortKey, ponto.Id, 2, PaginationDirection.Next);
+
+        primeira.Items.Should().HaveCount(2);
+        segunda.Items.Should().ContainSingle().Which.Id.Should().NotBe(primeira.Items[0].Id).And.NotBe(primeira.Items[1].Id);
+        await outroFiltro.Should().ThrowAsync<CursorAnchorMismatchException>();
+    }
+
+    private static Task<OrderedKeysetPage<Linha>> ComBuscaAsync(
+        TestDbContext contexto, string busca, (string SortKey, Guid Id)? ponto) =>
+        OrderedKeysetCursor.ApplyAsync(
+            contexto.Linhas.AsNoTracking(),
+            PorSobrenomeECodigo(SortDirection.Ascending, CondicoesDoFiltro.De(ParteDoFiltro.De(busca))),
+            ponto?.SortKey, ponto?.Id, 1, PaginationDirection.Next);
+
+    private static Task<OrderedKeysetPage<Linha>> PaginaDoPontoAsync(
+        TestDbContext contexto, KeysetSort<Linha> sort, (string SortKey, Guid Id) ponto, PaginationDirection direction) =>
+        OrderedKeysetCursor.ApplyAsync(contexto.Linhas.AsNoTracking(), sort, ponto.SortKey, ponto.Id, 2, direction);
 
     private static Task<OrderedKeysetPage<Linha>> PrimeiraPaginaAsync(TestDbContext contexto, int limite = 1) =>
         OrderedKeysetCursor.ApplyAsync(contexto.Linhas.AsNoTracking(),
@@ -157,28 +208,35 @@ public sealed class KeysetSortIntegrationTests : IAsyncLifetime
     private static KeysetSort<Linha> PorSobrenomeECodigoInvertido() => new(
         [.. PorSobrenomeECodigo(SortDirection.Ascending).Columns
             .Select(c => c.With(SortDirection.Descending))],
-        (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id });
+        (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id },
+        CondicoesDoFiltro.Nenhuma);
 
     private static KeysetSort<Linha> PorCodigoESobrenome() => new(
         [
             KeysetSortColumn<Linha>.For("codigo", l => l.Codigo, l => l.Codigo),
             KeysetSortColumn<Linha>.For("sobrenome", l => l.Sobrenome, l => l.Sobrenome),
         ],
-        (partes, id) => new Linha { Codigo = partes[0], Sobrenome = partes[1], Id = id });
+        (partes, id) => new Linha { Codigo = partes[0], Sobrenome = partes[1], Id = id },
+        CondicoesDoFiltro.Nenhuma);
 
     private static KeysetSort<Linha> ComTokens(string tokenA, string tokenB) => new(
         [
             KeysetSortColumn<Linha>.For(tokenA, l => l.Sobrenome, l => l.Sobrenome),
             KeysetSortColumn<Linha>.For(tokenB, l => l.Codigo, l => l.Codigo),
         ],
-        (parts, id) => new Linha { Sobrenome = parts[0], Codigo = parts[1], Id = id });
+        (parts, id) => new Linha { Sobrenome = parts[0], Codigo = parts[1], Id = id },
+        CondicoesDoFiltro.Nenhuma);
 
-    private static KeysetSort<Linha> PorSobrenomeECodigo(SortDirection direction) => new(
+    private static KeysetSort<Linha> PorSobrenomeECodigo(SortDirection direction) =>
+        PorSobrenomeECodigo(direction, CondicoesDoFiltro.Nenhuma);
+
+    private static KeysetSort<Linha> PorSobrenomeECodigo(SortDirection direction, CondicoesDoFiltro condicoes) => new(
         [
             KeysetSortColumn<Linha>.For("sobrenome", l => l.Sobrenome, l => l.Sobrenome, direction),
             KeysetSortColumn<Linha>.For("codigo", l => l.Codigo, l => l.Codigo, direction),
         ],
-        (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id });
+        (partes, id) => new Linha { Sobrenome = partes[0], Codigo = partes[1], Id = id },
+        condicoes);
 
     private async Task<TestDbContext> ComDadosAsync(params (string Sobrenome, string Codigo)[] linhas)
     {

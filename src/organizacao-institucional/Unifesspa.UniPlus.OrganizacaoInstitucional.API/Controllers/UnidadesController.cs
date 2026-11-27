@@ -86,7 +86,7 @@ public sealed class UnidadesController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         Result<ListarUnidadesAtivasResult> resultado = await _queryBus
-            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, page.Direction, q, tipo), cancellationToken)
+            .Send(new ListarUnidadesAtivasQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, q, tipo), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess
@@ -104,7 +104,7 @@ public sealed class UnidadesController : ControllerBase
         UnidadeDto[] comLinks = [.. resultado.Items.Select(unidade => unidade with { Links = _linksBuilder.Build(unidade) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

@@ -18,16 +18,16 @@ public sealed class TipoConceitoQueryHandlerTests
     [Fact(DisplayName = "Listar devolve os tipos como DTO, com os cursores de página")]
     public async Task Listar_DevolveOsDtosEOsCursores()
     {
-        Guid proximo = Guid.NewGuid();
+        (string SortKey, Guid Id) proximo = ("chave", Guid.NewGuid());
         IReadOnlyList<TipoConceito> itens = [TiposConceitoDeTeste.Numerico(), TiposConceitoDeTeste.Categorico()];
-        _repository.ListarPaginadoAsync(null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>())
-            .Returns((itens, (Guid?)null, (Guid?)proximo));
+        _repository.ListarPaginadoAsync(null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>())
+            .Returns((itens, ((string SortKey, Guid Id)?)null, ((string SortKey, Guid Id)?)proximo));
 
         ListarTiposConceitoResult resultado = await ListarTiposConceitoQueryHandler.Handle(
-            new ListarTiposConceitoQuery(null, 20, PaginationDirection.Next), _repository, CancellationToken.None);
+            new ListarTiposConceitoQuery(null, null, 20, PaginationDirection.Next), _repository, CancellationToken.None);
 
         resultado.Items.Select(i => i.Codigo).Should().Equal("NOTA_ENTREVISTA", "PARECER_ANALISE");
-        resultado.ProximoAfterId.Should().Be(proximo);
+        resultado.Proximo.Should().Be(proximo);
     }
 
     [Fact(DisplayName = "Obter devolve o tipo ativo como DTO")]

@@ -140,12 +140,12 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
 
     /// <summary>
     /// O que reduziu a coleção antes da paginação — termo pesquisado e curso
-    /// filtrado. Entra na assinatura do cursor para que a continuação de um filtro
+    /// filtrado. Entra no resumo do cursor para que a continuação de um filtro
     /// não retome dentro de outro: sem isso, o cursor emitido para um curso
     /// retomaria na listagem de outro, a partir de uma posição que lá não existe.
     /// </summary>
-    private static IReadOnlyList<string> CondicoesDoFiltroDeOfertas(string? termo, Guid? cursoId) =>
-        [termo ?? string.Empty, cursoId?.ToString() ?? string.Empty];
+    private static CondicoesDoFiltro CondicoesDoFiltroDeOfertas(string? termo, Guid? cursoId) =>
+        CondicoesDoFiltro.De(ParteDoFiltro.De(termo), ParteDoFiltro.De(cursoId));
 
     public async Task AdicionarAsync(OfertaCurso ofertaCurso, CancellationToken cancellationToken)
     {

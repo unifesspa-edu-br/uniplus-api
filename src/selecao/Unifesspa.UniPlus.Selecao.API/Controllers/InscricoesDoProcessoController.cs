@@ -74,11 +74,11 @@ public sealed class InscricoesDoProcessoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarInscricoesDoProcessoResult resultado = await _queryBus
-            .Send(new ListarInscricoesDoProcessoQuery(id, page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarInscricoesDoProcessoQuery(id, page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            resultado.Items, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken);
     }
 

@@ -49,16 +49,16 @@ public static class ListarObrigatoriedadesLegaisQueryHandler
         ITipoProcessoReader tipos,
         CancellationToken cancellationToken)
     {
-        (IReadOnlyList<ObrigatoriedadeLegal> itens, Guid? anteriorAfterId, Guid? proximoAfterId) =
+        (IReadOnlyList<ObrigatoriedadeLegal> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await repository.ListarPaginadoAsync(
-                query.AfterId, query.Limit, query.Direction,
-                query.TipoProcessoCodigo, query.Categoria, vigentesEm,
+                query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
+                new FiltroDasObrigatoriedadesLegais(query.TipoProcessoCodigo, query.Categoria, vigentesEm),
                 cancellationToken).ConfigureAwait(false);
         string[] codigos = [.. itens.Select(item => item.TipoProcessoCodigo)
             .Where(codigo => codigo != TodosOsTiposDeProcesso.Codigo).Distinct()];
         IReadOnlyDictionary<string, string> nomes = await tipos.ObterNomesPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false);
         return new ListarObrigatoriedadesLegaisResult(
-            [.. itens.Select(item => ObrigatoriedadeLegalMapping.ToDto(item, nomes))], anteriorAfterId, proximoAfterId);
+            [.. itens.Select(item => ObrigatoriedadeLegalMapping.ToDto(item, nomes))], anterior, proximo);
     }
 
     /// <summary>

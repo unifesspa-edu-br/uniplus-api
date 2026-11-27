@@ -23,16 +23,16 @@ public static class ListarRegrasCatalogoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(reader);
 
-        (IReadOnlyList<RegraCatalogo> itens, Guid? anteriorAfterId, Guid? proximoAfterId) =
+        (IReadOnlyList<RegraCatalogo> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) =
             await reader.ListarPaginadoAsync(
                 query.Tipo,
-                query.AfterId,
+                query.AfterSortKey, query.AfterId,
                 query.Limit,
                 query.Direction,
                 cancellationToken).ConfigureAwait(false);
 
         RegraCatalogoDto[] items = [.. itens.Select(RegraCatalogoMapping.ToDto)];
 
-        return new ListarRegrasCatalogoResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarRegrasCatalogoResult(items, anterior, proximo);
     }
 }

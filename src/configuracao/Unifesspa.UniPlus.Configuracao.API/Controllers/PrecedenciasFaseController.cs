@@ -74,14 +74,14 @@ public sealed class PrecedenciasFaseController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarPrecedenciasFaseResult resultado = await _queryBus
-            .Send(new ListarPrecedenciasFaseQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarPrecedenciasFaseQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         PrecedenciaFaseDto[] comLinks =
             [.. resultado.Items.Select(p => p with { Links = _linksBuilder.Build(p) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page,
+            comLinks, resultado.Anterior, resultado.Proximo, page,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

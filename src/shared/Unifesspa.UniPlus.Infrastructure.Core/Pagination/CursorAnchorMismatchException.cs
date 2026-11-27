@@ -1,20 +1,19 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 /// <summary>
-/// A âncora que veio no cursor não corresponde à ordenação da consulta: a chave
-/// tem um número de colunas diferente do pedido, ou não está no formato que a
-/// ordenação serializa.
+/// O ponto de continuação que veio no cursor não corresponde à consulta: a chave
+/// está ausente, malformada ou é de outra ordenação, filtro, busca ou recorte.
 /// </summary>
 /// <remarks>
-/// O caso que se espera na prática é reapresentar um cursor sob uma ordenação
-/// diferente daquela em que foi emitido — a página seguinte de uma listagem
-/// ordenada por um critério não continua uma listagem ordenada por outro. Vira
+/// O caso que se espera na prática é reapresentar um cursor sob outra consulta
+/// que não aquela em que foi emitido — a página seguinte de uma listagem
+/// com um filtro não continua a listagem com outro. Vira
 /// 400 na borda, e não 500: quem escolheu a combinação foi o cliente.
 /// </remarks>
 public sealed class CursorAnchorMismatchException : Exception
 {
     public CursorAnchorMismatchException()
-        : base("A âncora do cursor não corresponde à ordenação pedida.")
+        : base("O ponto de continuação do cursor não corresponde à consulta pedida.")
     {
     }
 

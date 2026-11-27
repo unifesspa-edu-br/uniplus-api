@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public sealed record ListarRegrasCatalogoQuery(
     TipoRegra? Tipo,
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarRegrasCatalogoResult>;

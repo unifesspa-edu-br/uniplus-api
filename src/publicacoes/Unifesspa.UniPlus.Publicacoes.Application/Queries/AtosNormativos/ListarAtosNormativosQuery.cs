@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// esses são recomputados só no detalhe, para evitar N+1.
 /// </summary>
 public sealed record ListarAtosNormativosQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction) : IQuery<ListarAtosNormativosResult>;

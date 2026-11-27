@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.API.Controllers;
 
-using System.Globalization;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -100,7 +98,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceTag, RequireUserBinding = true)] PageRequest page,
         [FromQuery] string? fila = null,
         [FromQuery, AceitaCodigosDe<SituacaoDoPedido>] string? situacao = null,
         CancellationToken cancellationToken = default)
@@ -116,7 +114,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         Result<ListarPedidosDeConcessaoResult> resultado = await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
-            : await this.OkPaginatedOrdenadoAsync(
+            : await this.OkPaginatedAsync(
                 resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -141,13 +139,13 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         Result<ListarPerfisParaPedirResult> resultado = await _queryBus
-            .Send(new ListarPerfisParaPedirQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarPerfisParaPedirQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
             : await this.OkPaginatedAsync(
-                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page,
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -291,27 +289,13 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     private static FilaDePedidos? LerFila(string? texto) =>
         string.IsNullOrWhiteSpace(texto)
             ? FilaDePedidos.Meus
-            : texto.Trim().ToLowerInvariant() switch
-            {
-                "meus" => FilaDePedidos.Meus,
-                "gestor" => FilaDePedidos.Gestor,
-                "protecao_de_dados" => FilaDePedidos.ProtecaoDeDados,
-                "todos" => FilaDePedidos.Todos,
-                _ => null,
-            };
+            : CatalogoDe<FilaDePedidos>.TentarObter(texto.Trim().ToUpperInvariant(), out FilaDePedidos fila) ? fila : null;
 
-    // O ponto de continuação do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
-    // cursor adulterado vira 400 em vez de 500.
     private static Result<ListarPedidosDeConcessaoQuery> Consulta(PageRequest page, string? fila, string? situacao)
     {
         if (LerFila(fila) is not { } filaLida)
         {
             return Recusa(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, protecao_de_dados ou todos.");
-        }
-
-        if (page.AfterSortKey is { } chaveDeOrdenacao && !DateTimeOffset.TryParse(chaveDeOrdenacao, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-        {
-            return Recusa(PedidoErrorCodes.CursorInvalido, "O cursor informado é inválido.");
         }
 
         Result<SituacaoDoPedido?> filtro = LerSituacao(situacao);

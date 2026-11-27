@@ -29,9 +29,9 @@ public sealed class UnidadeComConsultaObsoleta(UnidadeRepository real, Consultas
     public Task<Unidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
         real.ObterPorIdParaLeituraAsync(id, cancellationToken);
 
-    public Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        Guid? afterId, int limit, PaginationDirection direction, FiltroListagemUnidades filtro, CancellationToken cancellationToken) =>
-        real.ListarPaginadoAsync(afterId, limit, direction, filtro, cancellationToken);
+    public Task<(IReadOnlyList<Unidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, FiltroListagemUnidades filtro, CancellationToken cancellationToken) =>
+        real.ListarPaginadoAsync(afterSortKey, afterId, limit, direction, filtro, cancellationToken);
 
     public Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken) =>
         real.AdicionarAsync(unidade, cancellationToken);

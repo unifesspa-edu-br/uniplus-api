@@ -15,11 +15,11 @@ public static class ListarFasesCanonicasQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<FaseCanonica> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<FaseCanonica> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         FaseCanonicaDto[] items = [.. itens.Select(f => f.ToDto())];
-        return new ListarFasesCanonicasResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarFasesCanonicasResult(items, anterior, proximo);
     }
 }

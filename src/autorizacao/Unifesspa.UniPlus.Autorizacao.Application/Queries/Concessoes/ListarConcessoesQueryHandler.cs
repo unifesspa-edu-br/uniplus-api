@@ -35,8 +35,8 @@ public static class ListarConcessoesQueryHandler
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
         FiltroDeConcessoes filtro = new(query.PessoaEmissor, query.PessoaContaId, query.UnidadeId, query.PerfilId, query.Situacao, agora);
-        (IReadOnlyList<ConcessaoComPerfil> itens, Guid? anterior, Guid? proximo) = await repository
-            .ListarPaginadoAsync(filtro, query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<ConcessaoComPerfil> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         await RegistrarCadaConcessaoAsync(verificador, itens, cancellationToken).ConfigureAwait(false);

@@ -56,8 +56,9 @@ public interface IConcessaoRepository : IRepository<Concessao>
     /// Lista as concessões paginadas por cursor keyset bidirecional (ADR-0026 + ADR-0089),
     /// ordenadas por <c>Id</c>, sem rastreamento.
     /// </summary>
-    Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ConcessaoComPerfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeConcessoes filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

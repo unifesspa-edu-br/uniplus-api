@@ -29,7 +29,8 @@ public interface IInstalacaoRepository : IRepository<Instalacao>
     /// As tentativas de quem não tinha instalação aguardando código, paginadas por cursor keyset
     /// bidirecional (ADR-0026 + ADR-0089), sem rastreamento.
     /// </summary>
-    Task<(IReadOnlyList<TentativaDeInstalacao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarTentativasSemPendenciaAsync(
+    Task<(IReadOnlyList<TentativaDeInstalacao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarTentativasSemPendenciaAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

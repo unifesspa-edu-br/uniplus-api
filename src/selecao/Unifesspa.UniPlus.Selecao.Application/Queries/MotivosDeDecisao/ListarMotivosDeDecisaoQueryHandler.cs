@@ -19,11 +19,11 @@ public static class ListarMotivosDeDecisaoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        (IReadOnlyList<MotivoDeDecisao> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, query.Filtro, cancellationToken)
+        (IReadOnlyList<MotivoDeDecisao> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, query.Filtro, cancellationToken)
             .ConfigureAwait(false);
 
         MotivoDeDecisaoDto[] items = [.. itens.Select(MotivoDeDecisaoMapping.ToDto)];
-        return new ListarMotivosDeDecisaoResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarMotivosDeDecisaoResult(items, anterior, proximo);
     }
 }

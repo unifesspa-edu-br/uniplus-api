@@ -131,8 +131,9 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ConcessaoComPerfil> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeConcessoes filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -143,13 +144,13 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         IQueryable<Concessao> consulta = _context.Concessoes.AsNoTracking().Filtradas(filtro);
 
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
-        CursorKeysetPage<ConcessaoComPerfil> page = await CursorKeyset
-            .ApplyAsync(ComPerfil(consulta), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<ConcessaoComPerfil> page = await CursorKeyset
+            .ApplyAsync(ComPerfil(consulta), ConcessoesDoFiltro.Condicoes(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         IReadOnlyList<ConcessaoComPerfil> itens = page.Items;
 
-        return (itens, page.PrevAfterId, page.NextAfterId);
+        return (itens, page.Previous, page.Next);
     }
 
     public async Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
