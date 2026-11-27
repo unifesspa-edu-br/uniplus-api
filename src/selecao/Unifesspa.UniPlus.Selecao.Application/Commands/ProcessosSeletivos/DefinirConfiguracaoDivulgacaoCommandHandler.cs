@@ -25,42 +25,27 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
+        Result definido = obtido.IsFailure ? Result.Failure(obtido.Error!) : Definir(obtido.Value!, command);
+        if (definido.IsSuccess)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        if (processo.MutacaoBloqueada() is { } bloqueio)
+        return definido;
+    }
+
+    private static Result Definir(ProcessoSeletivo processo, DefinirConfiguracaoDivulgacaoCommand command)
+    {
+        if (command.CamposPublicos is null)
         {
-            return Result.Failure(bloqueio);
+            return processo.DefinirConfiguracaoDivulgacao(null);
         }
 
-        ConfiguracaoDivulgacao? configuracao = null;
-        if (command.CamposPublicos is not null)
-        {
-            Result<ConfiguracaoDivulgacao> configuracaoResult =
-                ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
-            if (configuracaoResult.IsFailure)
-            {
-                return Result.ValidationFailure(configuracaoResult.Errors);
-            }
-
-            configuracao = configuracaoResult.Value!;
-        }
-
-        Result definirResult = processo.DefinirConfiguracaoDivulgacao(configuracao);
-        if (definirResult.IsFailure)
-        {
-            return Result.Failure(definirResult.Error!);
-        }
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result.Success();
+        Result<ConfiguracaoDivulgacao> criada = ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
+        return criada.IsFailure
+            ? Result.ValidationFailure(criada.Errors)
+            : processo.DefinirConfiguracaoDivulgacao(criada.Value!);
     }
 }
