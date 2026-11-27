@@ -41,7 +41,7 @@ internal static class ObrigatoriedadeLegalNaoAtendidaSeeder
             new DateOnly(2020, 1, 1),
             null).Value!;
 
-        ObrigatoriedadeLegalRepository repository = new(db, TimeProvider.System);
+        ObrigatoriedadeLegalRepository repository = new(db);
         await repository.AdicionarAsync(regra, CancellationToken.None);
         await db.SaveChangesAsync();
 

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Listagem paginada por chave (ADR-0026) com filtros admin
-/// (<c>tipoProcessoCodigo</c>, <c>categoria</c>, <c>vigentes</c>). Consultas
+/// (<c>tipoProcessoCodigo</c>, <c>categoria</c>, dia de vigência). Consultas
 /// para a conferência (<c>ObterVigentesParaTipoProcessoAsync</c>)
 /// carregam regras para todos os tipos (<c>TODOS_OS_TIPOS</c>) + específicas do tipo.
 /// </remarks>
@@ -24,6 +24,8 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
     /// cronológico); retorna até <paramref name="limit"/> itens na direção
     /// <paramref name="direction"/> a partir de <paramref name="afterId"/>,
     /// sempre em ordem ascendente, com as âncoras de <c>prev</c>/<c>next</c>.
+    /// Com <paramref name="vigentesEm"/>, só as regras vigentes nesse dia civil (início inclusivo, fim
+    /// exclusivo); sem ele, todas.
     /// </summary>
     Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
@@ -31,7 +33,7 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
         PaginationDirection direction,
         string? tipoProcessoCodigo,
         CategoriaObrigatoriedade? categoria,
-        bool vigentes,
+        DateOnly? vigentesEm,
         CancellationToken cancellationToken = default);
 
     /// <summary>

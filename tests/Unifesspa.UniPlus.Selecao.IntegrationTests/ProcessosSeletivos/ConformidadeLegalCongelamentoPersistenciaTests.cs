@@ -124,7 +124,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     {
         ObrigatoriedadeLegal regra = NovaRegraVigente(regraCodigo);
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ObrigatoriedadeLegalRepository repository = new(context, TimeProvider.System);
+        ObrigatoriedadeLegalRepository repository = new(context);
         await repository.AdicionarAsync(regra, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
         return regra.Id;
@@ -158,7 +158,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         // real + AvaliadorConformidadeLegal.Avaliar — a Application injeta isto no handler;
         // aqui, como as demais integrações desta suíte, a orquestração é feita inline.
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext, TimeProvider.System);
+        ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(processo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
         ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.TipoProcesso.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
@@ -247,7 +247,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     {
         await using UniPlusDbContext freshReadContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(freshReadContext);
-        ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext, TimeProvider.System);
+        ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext);
 
         ProcessoSeletivo processoVivo = (await processoRepository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
         IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
@@ -294,7 +294,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         // Uma reavaliação AO VIVO, na MESMA data de corte, já não veria a regra — prova que a
         // desativação teve efeito real no cadastro, e não que o teste está inerte.
         await using UniPlusDbContext posContext = _fixture.CreateDbContext();
-        ObrigatoriedadeLegalRepository posRepository = new(posContext, TimeProvider.System);
+        ObrigatoriedadeLegalRepository posRepository = new(posContext);
         IReadOnlyList<ObrigatoriedadeLegal> vigentesDepoisDaDesativacao = await posRepository
             .ObterVigentesParaTipoProcessoAsync(TiposDeProcessoDeTeste.Sisu.Codigo, DataDeCorte, CancellationToken.None);
         vigentesDepoisDaDesativacao.Should().BeEmpty(

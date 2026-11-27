@@ -216,7 +216,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     private async Task<IReadOnlyList<string>> CodigosVigentesAsync(string tipoProcesso, DateOnly data)
     {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext(userId: null);
-        ObrigatoriedadeLegalRepository repository = new(readContext, TimeProvider.System);
+        ObrigatoriedadeLegalRepository repository = new(readContext);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await repository.ObterVigentesParaTipoProcessoAsync(tipoProcesso, data);
         return [.. vigentes.Select(static regra => regra.RegraCodigo)];
     }
