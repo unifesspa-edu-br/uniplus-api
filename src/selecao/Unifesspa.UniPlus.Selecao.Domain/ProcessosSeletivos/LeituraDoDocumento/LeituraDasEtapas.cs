@@ -73,20 +73,9 @@ internal static class LeituraDasEtapas
 
         return new(
             [.. OrdemDaConfiguracao.Etapas(adotadas.Select(static par => par.Etapa))],
-            IdPelaChave(adotadas),
-            lidas.Where(static lida => lida.Etapa is null).Select(static lida => lida.Chave).ToHashSet(StringComparer.Ordinal),
+            ChavesDasPartesLidas.IdPelaChave(adotadas.Select(static par => (par.Etapa.Chave.Valor, par.Etapa.Id))),
+            ChavesDasPartesLidas.Recusadas(lidas.Where(static lida => lida.Etapa is null).Select(static lida => lida.Chave)),
             [.. lidas.SelectMany(static lida => lida.Recusas)],
             [posicoes, partesRecusadas, .. ListasDasEtapas.Origens(lidas, posicoes)]);
-    }
-
-    private static Dictionary<string, Guid> IdPelaChave(IEnumerable<(EtapaProcesso Etapa, int Posicao)> adotadas)
-    {
-        Dictionary<string, Guid> idPelaChave = new(StringComparer.Ordinal);
-        foreach ((EtapaProcesso etapa, _) in adotadas)
-        {
-            idPelaChave.TryAdd(etapa.Chave.Valor, etapa.Id);
-        }
-
-        return idPelaChave;
     }
 }

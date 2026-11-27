@@ -64,7 +64,12 @@ internal static class LeituraDasFases
 
         Dictionary<string, string> codigoPelaChave = CodigoPelaChave(adotadas);
 
-        return new([.. OrdemDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))], codigoPelaChave, ChavesRecusadas(lidas, codigoPelaChave), origem);
+        return new(
+            [.. OrdemDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))],
+            codigoPelaChave,
+            ChavesDasPartesLidas.IdPelaChave(adotadas.Select(static par => (par.Fase.Chave.Valor, par.Fase.Id))),
+            ChavesRecusadas(lidas, codigoPelaChave),
+            origem);
     }
 
     private static Dictionary<string, string> CodigoPelaChave(IEnumerable<(FaseCronograma Fase, int Posicao)> adotadas)

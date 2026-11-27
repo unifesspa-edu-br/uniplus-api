@@ -42,13 +42,25 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
         CadastrosDeTeste();
         _leitura = new(new(
             _unidades,
-            tiposDeAto,
-            Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<IConferenciaEnderecoGeo>(),
-            Substitute.For<IFatoCandidatoReader>(),
-            new(Substitute.For<ITipoProcessoReader>(), _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>()),
+            new(Substitute.For<IRegraCatalogoReader>(), tiposDeAto, Substitute.For<IFatoCandidatoReader>()),
+            CadastrosDaConfiguracao(),
+            CadastrosDasVagas(),
             new(new RelogioFixo(new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)), CenarioDeInscricaoPublicada.Fuso())));
     }
+
+    private LeituraDosCadastrosDaConfiguracaoCitados CadastrosDaConfiguracao() =>
+        new(Substitute.For<ITipoProcessoReader>(), _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<ITipoDocumentoReader>());
+
+    private static LeituraDosCadastrosDasVagasCitados CadastrosDasVagas() =>
+        new(
+                Substitute.For<IOfertaCursoReader>(),
+                Substitute.For<IModalidadeReader>(),
+                Substitute.For<IReferenciaReservaDemograficaReader>(),
+                Substitute.For<ICondicaoAtendimentoReader>(),
+                Substitute.For<IRecursoAcessibilidadeReader>(),
+                Substitute.For<ITipoDeficienciaReader>(),
+                Substitute.For<IBaseLegalDoFadaReader>());
 
     private void CadastrosDeTeste()
     {

@@ -21,6 +21,30 @@ internal sealed record CodigosCitadosPorCadastro(
 
     /// <summary>A resolução dos pesos por área do ENEM que a classificação cita; ausente é nulo.</summary>
     public string? ResolucaoDePesos { get; init; }
+
+    /// <summary>Os códigos das ofertas de curso que a distribuição de vagas cita.</summary>
+    public IReadOnlyList<string> OfertasDeCurso { get; init; } = [];
+
+    /// <summary>Os códigos das modalidades que a distribuição, o ajuste do quadro e a cascata de remanejamento citam.</summary>
+    public IReadOnlyList<string> Modalidades { get; init; } = [];
+
+    /// <summary>Os códigos das referências demográficas que a distribuição cita.</summary>
+    public IReadOnlyList<string> ReferenciasDemograficas { get; init; } = [];
+
+    /// <summary>Os códigos das condições de atendimento que o atendimento especializado cita.</summary>
+    public IReadOnlyList<string> CondicoesDeAtendimento { get; init; } = [];
+
+    /// <summary>Os códigos dos recursos de acessibilidade que o atendimento especializado cita.</summary>
+    public IReadOnlyList<string> RecursosDeAcessibilidade { get; init; } = [];
+
+    /// <summary>Os códigos dos tipos de deficiência que o atendimento especializado cita.</summary>
+    public IReadOnlyList<string> TiposDeDeficiencia { get; init; } = [];
+
+    /// <summary>Os códigos dos tipos de documento que as exigências citam.</summary>
+    public IReadOnlyList<string> TiposDeDocumento { get; init; } = [];
+
+    /// <summary>O código da base legal do FADA que a declaração cita; ausente é nulo.</summary>
+    public string? BaseLegalDoFada { get; init; }
 }
 
 /// <summary>
@@ -32,17 +56,26 @@ internal sealed record CodigosCitadosPorCadastro(
 internal static class CodigosCitadosNoDocumento
 {
     internal static CodigosCitadosPorCadastro Em(DeclaracoesDoDocumento declaracoes) =>
-        Unir(DaIdentificacaoEDasFases(declaracoes), CodigosCitadosNaAvaliacao.Em(declaracoes));
+        Unir(DaIdentificacaoEDasFases(declaracoes), CodigosCitadosNaAvaliacao.Em(declaracoes), CodigosCitadosNasVagasENasExigencias.Em(declaracoes));
 
-    // A avaliação cita tipos de banca, atos e regras dos mesmos cadastros que as fases, e cada código vale uma vez.
-    private static CodigosCitadosPorCadastro Unir(CodigosCitadosPorCadastro dasFases, CodigosDaAvaliacaoCitados avaliacao) => dasFases with
-    {
-        TiposDeBanca = CodigosDistintos.De([.. dasFases.TiposDeBanca, .. avaliacao.TiposDeBanca]),
-        Regras = [.. dasFases.Regras.Concat(avaliacao.Regras).Distinct()],
-        TiposDeAto = CodigosDistintos.De([.. dasFases.TiposDeAto, .. avaliacao.TiposDeAto]),
-        TiposDeEtapa = avaliacao.TiposDeEtapa,
-        ResolucaoDePesos = avaliacao.ResolucaoDePesos,
-    };
+    // A avaliação, as vagas e as exigências citam regras e outros códigos dos mesmos cadastros que as fases, e cada código vale uma vez.
+    private static CodigosCitadosPorCadastro Unir(
+        CodigosCitadosPorCadastro dasFases, CodigosDaAvaliacaoCitados avaliacao, CodigosDasVagasEDasExigenciasCitados dasVagas) => dasFases with
+        {
+            TiposDeBanca = CodigosDistintos.De([.. dasFases.TiposDeBanca, .. avaliacao.TiposDeBanca]),
+            Regras = [.. dasFases.Regras.Concat(avaliacao.Regras).Concat(dasVagas.Regras).Distinct()],
+            TiposDeAto = CodigosDistintos.De([.. dasFases.TiposDeAto, .. avaliacao.TiposDeAto]),
+            TiposDeEtapa = avaliacao.TiposDeEtapa,
+            ResolucaoDePesos = avaliacao.ResolucaoDePesos,
+            OfertasDeCurso = dasVagas.OfertasDeCurso,
+            Modalidades = dasVagas.Modalidades,
+            ReferenciasDemograficas = dasVagas.ReferenciasDemograficas,
+            CondicoesDeAtendimento = dasVagas.CondicoesDeAtendimento,
+            RecursosDeAcessibilidade = dasVagas.RecursosDeAcessibilidade,
+            TiposDeDeficiencia = dasVagas.TiposDeDeficiencia,
+            TiposDeDocumento = dasVagas.TiposDeDocumento,
+            BaseLegalDoFada = dasVagas.BaseLegalDoFada,
+        };
 
     private static CodigosCitadosPorCadastro DaIdentificacaoEDasFases(DeclaracoesDoDocumento declaracoes)
     {

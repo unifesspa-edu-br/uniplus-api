@@ -38,7 +38,7 @@ internal static class LeituraDosCriteriosDeDesempate
             return Recusa(criterio, new FieldError("regraCodigo", foraDoCatalogo));
         }
 
-        EtapaCitadaNoDocumento? etapa = criterio.Parametros.EtapaChave is { } chave ? EtapaCitadaNoDocumento.De(chave, etapas) : null;
+        ParteCitadaNoDocumento? etapa = criterio.Parametros.EtapaChave is { } chave ? ParteCitadaNoDocumento.De(chave, etapas) : null;
         return etapa switch
         {
             { RecusadaNaLeitura: true } => null,

@@ -56,19 +56,53 @@ public static class PonteiroNoDocumento
         ["classificacao.criterios[].parametros.fato"] = "classificacao.criteriosDeDesempate[].parametros.codigoDoDado",
         ["formularios[].itens[].fatoCodigo"] = "formularios[].itens[].codigoDoDado",
         ["formularios[].grupos[].subitens[].fatoCodigo"] = "formularios[].grupos[].subitens[].codigoDoDado",
+
+        // A distribuição de vagas: o corpo do pedido cita cadastro por id e o documento, pelo código; a regra é um objeto no documento.
+        ["distribuicaoVagas[].ofertaCursoId"] = "distribuicaoVagas[].ofertaCursoCodigo",
+        ["distribuicaoVagas[].referenciaReservaDemograficaId"] = "distribuicaoVagas[].referenciaDemograficaCodigo",
+        ["distribuicaoVagas[].regraDistribuicaoCodigo"] = "distribuicaoVagas[].regraDistribuicao.codigo",
+        ["distribuicaoVagas[].regraDistribuicaoVersao"] = "distribuicaoVagas[].regraDistribuicao.versao",
+        ["distribuicaoVagas[].regraAjusteCodigo"] = "distribuicaoVagas[].regraAjuste.codigo",
+        ["distribuicaoVagas[].regraAjusteVersao"] = "distribuicaoVagas[].regraAjuste.versao",
+        ["distribuicaoVagas[].modalidadeIds"] = "distribuicaoVagas[].modalidades",
+        ["distribuicaoVagas[].modalidadeIds[]"] = "distribuicaoVagas[].modalidades[].codigo",
+
+        // A cascata: o destino final tem outro nome, e a ordem do destino não está no documento: a posição do destino na lista a define.
+        ["ordemDeRemanejamento.fallbackCodigo"] = "ordemDeRemanejamento.destinoFinalCodigo",
+        ["ordemDeRemanejamento.ordens[].ordem"] = "ordemDeRemanejamento.destinos[]",
+
+        // O FADA e o atendimento: o dado de elegibilidade e a base legal vão pelo código, e cada lista de ids vira a lista de códigos.
+        ["fada.fatoElegibilidadeCodigo"] = "fada.codigoDoDadoDeElegibilidade",
+        ["fada.baseLegalId"] = "fada.baseLegalCodigo",
+        ["atendimento.condicaoIds"] = "atendimento.condicoes",
+        ["atendimento.condicaoIds[]"] = "atendimento.condicoes[].condicaoCodigo",
+        ["atendimento.recursoIds"] = "atendimento.recursos",
+        ["atendimento.recursoIds[]"] = "atendimento.recursos[].recursoCodigo",
+        ["atendimento.tipoDeficienciaIds"] = "atendimento.tiposDeficiencia",
+        ["atendimento.tipoDeficienciaIds[]"] = "atendimento.tiposDeficiencia[].tipoDeficienciaCodigo",
+
+        // As exigências: o tipo de documento, a fase e a etapa vão pelo código ou pela chave, e os dados que o documento comprova
+        // têm o nome do documento.
+        ["documentosExigidos.exigencias[].tipoDocumentoId"] = "documentosExigidos.exigencias[].tipoDocumentoCodigo",
+        ["documentosExigidos.exigencias[].faseId"] = "documentosExigidos.exigencias[].faseChave",
+        ["documentosExigidos.exigencias[].etapaId"] = "documentosExigidos.exigencias[].etapaChave",
+        ["documentosExigidos.exigencias[].fatosComprovados"] = "documentosExigidos.exigencias[].dadosComprovados",
+        ["documentosExigidos.exigencias[].fatosComprovados[]"] = "documentosExigidos.exigencias[].dadosComprovados[]",
     };
 
-    // A lista que o documento chama por outro nome: o nome do corpo do pedido vale para a lista e para tudo o que está dentro dela.
-    private const string ProdutosDaFase = "fases[].produtos";
-    private const string ProdutosDaFaseNoDocumento = "fases[].publicacoesPrevistas";
-    private const string ProdutosDaEtapa = "etapas[].produtos";
-    private const string ProdutosDaEtapaNoDocumento = "etapas[].publicacoesPrevistas";
-    private const string ProcedimentosDaFase = "fases[]." + FaseDeclarada.ListaDosProcedimentosDeRecurso;
-    private const string ProcedimentosDaFaseNoDocumento = "fases[].regraRecurso.procedimentosDeRecurso";
-    private const string ProcedimentosDaEtapa = "etapas[].recursos[].procedimentos";
-    private const string ProcedimentosDaEtapaNoDocumento = "etapas[].recursos[].procedimentosDeRecurso";
-    private const string CriteriosDeDesempate = "classificacao.criterios";
-    private const string CriteriosDeDesempateNoDocumento = "classificacao.criteriosDeDesempate";
+    // A lista que o documento chama por outro nome, ou guarda dentro do bloco das exigências: o nome do corpo do pedido vale para a
+    // lista e para tudo o que está dentro dela.
+    private static readonly (string Pedido, string Documento)[] ListasRenomeadas =
+    [
+        ("fases[]." + FaseDeclarada.ListaDosProcedimentosDeRecurso, "fases[].regraRecurso.procedimentosDeRecurso"),
+        ("etapas[].recursos[].procedimentos", "etapas[].recursos[].procedimentosDeRecurso"),
+        ("classificacao.criterios", "classificacao.criteriosDeDesempate"),
+        ("fases[].produtos", "fases[].publicacoesPrevistas"),
+        ("etapas[].produtos", "etapas[].publicacoesPrevistas"),
+        ("ordemDeRemanejamento.ordens", "ordemDeRemanejamento.destinos"),
+        ("exigencias", "documentosExigidos.exigencias"),
+        ("regrasDeComprovacao", "documentosExigidos.regrasDeComprovacao"),
+    ];
 
     /// <summary>O ponteiro do campo, que fica nulo quando a causa não aponta o documento.</summary>
     public static string? Converter(string? campo, OrigemNoDocumento origem)
@@ -96,13 +130,18 @@ public static class PonteiroNoDocumento
         return semIndices.StartsWith(CronogramaDoProcesso.ListaDasFases, StringComparison.Ordinal) ? BlocoDoCronograma + comIndices : comIndices;
     }
 
-    private static string NomeDaListaRenomeada(string semIndices) =>
-        TraduzirPrefixo(semIndices, ProcedimentosDaFase, ProcedimentosDaFaseNoDocumento)
-        ?? TraduzirPrefixo(semIndices, ProcedimentosDaEtapa, ProcedimentosDaEtapaNoDocumento)
-        ?? TraduzirPrefixo(semIndices, CriteriosDeDesempate, CriteriosDeDesempateNoDocumento)
-        ?? TraduzirPrefixo(semIndices, ProdutosDaFase, ProdutosDaFaseNoDocumento)
-        ?? TraduzirPrefixo(semIndices, ProdutosDaEtapa, ProdutosDaEtapaNoDocumento)
-        ?? semIndices;
+    private static string NomeDaListaRenomeada(string semIndices)
+    {
+        foreach ((string pedido, string documento) in ListasRenomeadas)
+        {
+            if (TraduzirPrefixo(semIndices, pedido, documento) is { } traduzido)
+            {
+                return traduzido;
+            }
+        }
+
+        return semIndices;
+    }
 
     private static string? TraduzirPrefixo(string semIndices, string origem, string destino) =>
         semIndices.StartsWith(origem, StringComparison.Ordinal)

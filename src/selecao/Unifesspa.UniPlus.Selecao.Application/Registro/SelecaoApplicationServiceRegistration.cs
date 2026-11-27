@@ -211,6 +211,8 @@ public static class SelecaoApplicationServiceRegistration
     private static void AddRascunhoDoProcessoSeletivo(IServiceCollection services)
     {
         services.AddScoped<LeituraDosCadastrosDaConfiguracaoCitados>();
+        services.AddScoped<LeituraDosCadastrosDasVagasCitados>();
+        services.AddScoped<LeituraDosCadastrosDoCatalogoCitados>();
         services.AddScoped<LeituraDosCadastrosCitados>();
         services.AddScoped<LeituraDaIdentificacaoEDoCronograma>();
         services.AddSingleton<LeituraDoDocumentoDaConfiguracao>();

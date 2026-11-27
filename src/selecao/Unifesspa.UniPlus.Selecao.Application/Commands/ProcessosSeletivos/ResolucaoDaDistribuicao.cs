@@ -9,6 +9,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Services;
+using Services.DocumentoDaConfiguracao;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
@@ -155,8 +156,7 @@ internal sealed class ResolucaoDaDistribuicao(
 
     private DomainError? CongelarReferenciaDemografica(ReferenciaReservaDemograficaView view)
     {
-        Result<ReferenciaReservaDemograficaSnapshot> snapshot = ReferenciaReservaDemograficaSnapshot.Criar(
-            view.Id, view.CensoReferencia, view.PpiPercentual, view.QuilombolaPercentual, view.PcdPercentual, view.BaseLegal);
+        Result<ReferenciaReservaDemograficaSnapshot> snapshot = CopiaDosCadastrosDasVagas.ReferenciaDemografica(view);
         _demografica = snapshot.Value;
         return snapshot.Error;
     }
@@ -190,28 +190,8 @@ internal sealed class ResolucaoDaDistribuicao(
         ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(modalidadeId, cancellationToken).ConfigureAwait(false);
         return view is null
             ? Result<ModalidadeSelecionada>.Failure(RecusasDaResolucaoDeVagas.ModalidadeNaoEncontrada(modalidadeId))
-            : ModalidadeSelecionada.Criar(NoCadastro(view), pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
+            : ModalidadeSelecionada.Criar(CopiaDosCadastrosDasVagas.Modalidade(view), pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
     }
-
-    private static ModalidadeNoCadastro NoCadastro(ModalidadeView view) => new()
-    {
-        Id = view.Id,
-        Codigo = view.Codigo,
-        Descricao = view.Descricao,
-        NaturezaLegal = CodigoReconhecido<NaturezaLegalModalidade>(view.NaturezaLegal),
-        ComposicaoVagas = CodigoReconhecido<ComposicaoVagasModalidade>(view.ComposicaoVagas),
-        ComposicaoOrigemCodigo = view.ComposicaoOrigem,
-        RegraRemanejamento = view.RegraRemanejamento is { } regra ? CatalogoDe<RegraRemanejamentoModalidade>.Obter(regra) : null,
-        RemanejamentoDestino = view.RemanejamentoDestino,
-        RemanejamentoPar = view.RemanejamentoPar,
-        RemanejamentoFallback = view.RemanejamentoFallback,
-        RegraDeAplicabilidade = view.RegraDeAplicabilidade,
-        AcaoQuandoIndeferido = view.AcaoQuandoIndeferido,
-        BaseLegal = view.BaseLegal ?? string.Empty,
-    };
-
-    private static TEnum? CodigoReconhecido<TEnum>(string codigo) where TEnum : struct, Enum =>
-        CatalogoDe<TEnum>.TentarObter(codigo, out TEnum valor) ? valor : null;
 
     // A forma do pedido é do domínio; o quadro que traz uma modalidade fora das selecionadas é reconciliação
     // de ids crus, e é da aplicação.

@@ -74,4 +74,48 @@ public sealed class CadastrosCitadosNoDocumentoTests
         vazios.TiposDeEtapa.Should().BeEmpty();
         vazios.QuadrosDePesos.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "Os cadastros das vagas e das exigências nascem vazios, e o código ausente não é achado em nenhum deles")]
+    public void CadastrosDasVagasEDasExigencias_SemEntrada_NascemVazios()
+    {
+        CadastrosCitadosNoDocumento vazios = new(LidoEm);
+
+        vazios.VagasEExigencias.OfertasDeCurso.Should().BeEmpty();
+        vazios.OfertaDeCurso("OFERTA").Should().BeNull();
+        vazios.Modalidade("AMPLA").Should().BeNull();
+        vazios.ReferenciaDemografica("CENSO_2022").Should().BeNull();
+        vazios.CondicaoDeAtendimento("PCD").Should().BeNull();
+        vazios.RecursoDeAcessibilidade("LIBRAS").Should().BeNull();
+        vazios.TipoDeDeficiencia("VISUAL").Should().BeNull();
+        vazios.TipoDeDocumento("RG").Should().BeNull();
+        vazios.BaseLegalDoFada("PORTARIA").Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Cada cadastro das vagas devolve só o que foi citado e achado, pelo código como foi escrito")]
+    public void CadastrosDasVagasEDasExigencias_DevolvemOQueFoiAchado()
+    {
+        OpcaoDeAtendimentoCitada condicao = new(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        OfertaDeCursoCitada oferta = new(Guid.CreateVersion7(), "OFERTA", "Curso", "BACHARELADO", "Unidade", ["NOTURNO"], 40, null, null);
+        CadastrosCitadosNoDocumento cadastros = new(LidoEm)
+        {
+            VagasEExigencias = new()
+            {
+                OfertasDeCurso = new Dictionary<string, OfertaDeCursoCitada> { ["OFERTA"] = oferta },
+                CondicoesDeAtendimento = new Dictionary<string, OpcaoDeAtendimentoCitada> { ["PCD"] = condicao },
+            },
+        };
+
+        cadastros.OfertaDeCurso("OFERTA").Should().BeSameAs(oferta);
+        cadastros.OfertaDeCurso("oferta").Should().BeNull();
+        cadastros.CondicaoDeAtendimento("PCD").Should().BeSameAs(condicao);
+        cadastros.RecursoDeAcessibilidade("PCD").Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O cadastro das vagas nulo é defeito de quem monta e não vira cadastro vazio")]
+    public void CadastroDasVagas_Nulo_Lanca()
+    {
+        Action montar = () => _ = new CadastrosCitadosNoDocumento(LidoEm) { VagasEExigencias = null! };
+
+        montar.Should().Throw<ArgumentNullException>();
+    }
 }
