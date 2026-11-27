@@ -84,27 +84,23 @@ public sealed class CondicoesAtendimentoController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma condição pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma condição pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("condicoes-atendimento/{id:guid}")]
     [EndpointName("ObterCondicaoDeAtendimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "condicao-atendimento", Versions = [1])]
     [ProducesResponseType(typeof(CondicaoAtendimentoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        CondicaoAtendimentoDto? condicao = await _queryBus
+        Result<CondicaoAtendimentoDto> resultado = await _queryBus
             .Send(new ObterCondicaoAtendimentoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (condicao is null)
-        {
-            return NotFound();
-        }
-
-        CondicaoAtendimentoDto comLinks = condicao with { Links = _linksBuilder.Build(condicao) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova condição. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

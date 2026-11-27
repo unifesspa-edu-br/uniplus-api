@@ -25,7 +25,7 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "O apresentado do modelo traz a apresentação e as regras no formato do formulário; modelo inexistente é 404")]
+    [Fact(DisplayName = "O apresentado do modelo traz a apresentação e as regras no formato do formulário")]
     public async Task ObterFormularioApresentado_DevolveOFormulario()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -37,7 +37,6 @@ public sealed class ModeloFormularioApresentacaoEndpointTests
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.formulario.v2+json");
         Textos(formulario["coleta"]!["itens"]!, "fatoCodigo").Should().Contain("BAIXA_RENDA");
         DasPaginasDasRegras(formulario, "itens", "fatoCodigo").Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
-        (await StatusAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/apresentacao")).Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact(DisplayName = "O apresentado do modelo de habilitação semeado traz o grupo repetível com os campos de cada ocorrência")]

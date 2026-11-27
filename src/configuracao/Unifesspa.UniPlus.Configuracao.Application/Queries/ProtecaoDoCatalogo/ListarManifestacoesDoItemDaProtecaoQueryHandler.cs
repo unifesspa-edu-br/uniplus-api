@@ -6,11 +6,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>O histórico das manifestações do item, contra o ciclo em que o item está.</summary>
 public static class ListarManifestacoesDoItemDaProtecaoQueryHandler
 {
-    public static async Task<IReadOnlyList<ManifestacaoDaProtecaoDto>?> Handle(
+    public static async Task<Result<IReadOnlyList<ManifestacaoDaProtecaoDto>>> Handle(
         ListarManifestacoesDoItemDaProtecaoQuery query,
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
@@ -23,12 +24,12 @@ public static class ListarManifestacoesDoItemDaProtecaoQueryHandler
         AprovacaoDaProtecao? circuito = await CircuitoAsync(query, tipos, fatos, cancellationToken).ConfigureAwait(false);
         if (circuito is null)
         {
-            return null;
+            return Result<IReadOnlyList<ManifestacaoDaProtecaoDto>>.Failure(ItemDaProtecaoNaoEncontrado.Do(query.Cadastro));
         }
 
         ItemDaProtecao item = new(query.Cadastro == CadastroDaProtecaoDoCatalogo.Fato ? CadastroDoCatalogo.Fato : CadastroDoCatalogo.TipoDocumento, query.Id);
         IReadOnlyList<ManifestacaoDaProtecaoDoCatalogo> eventos = await manifestacoes.ListarDoItemAsync(item, cancellationToken).ConfigureAwait(false);
-        return HistoricoDasManifestacoes.De(eventos, circuito.Ciclo).ToDto();
+        return Result<IReadOnlyList<ManifestacaoDaProtecaoDto>>.Success(HistoricoDasManifestacoes.De(eventos, circuito.Ciclo).ToDto());
     }
 
     // O circuito do item vivo, de onde vem o ciclo corrente; nulo quando o item não existe ou foi removido.

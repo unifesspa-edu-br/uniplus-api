@@ -3,11 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.CondicoesAtendiment
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterCondicaoAtendimentoPorIdQueryHandler
 {
-    public static async Task<CondicaoAtendimentoDto?> Handle(
+    public static async Task<Result<CondicaoAtendimentoDto>> Handle(
         ObterCondicaoAtendimentoPorIdQuery query,
         ICondicaoAtendimentoRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +21,8 @@ public static class ObterCondicaoAtendimentoPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return condicao?.ToDto();
+        return condicao is null
+            ? Result<CondicaoAtendimentoDto>.Failure(new DomainError(CondicaoAtendimentoErrorCodes.NaoEncontrada, "Condição de atendimento não encontrada."))
+            : Result<CondicaoAtendimentoDto>.Success(condicao.ToDto());
     }
 }

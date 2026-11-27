@@ -84,27 +84,23 @@ public sealed class FasesCanonicasController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma fase canônica pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma fase canônica pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("fases-canonicas/{id:guid}")]
     [EndpointName("ObterTipoDeFase")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fase-canonica", Versions = [1])]
     [ProducesResponseType(typeof(FaseCanonicaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        FaseCanonicaDto? fase = await _queryBus
+        Result<FaseCanonicaDto> resultado = await _queryBus
             .Send(new ObterFaseCanonicaPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (fase is null)
-        {
-            return NotFound();
-        }
-
-        FaseCanonicaDto comLinks = fase with { Links = _linksBuilder.Build(fase) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova fase canônica. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

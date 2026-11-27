@@ -3,11 +3,17 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.PesosAreaEnem;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterPesoAreaEnemPorIdQueryHandler
 {
-    public static async Task<PesoAreaEnemDto?> Handle(
+    private static readonly DomainError NaoEncontrado = new(
+        PesoAreaEnemErrorCodes.NaoEncontrado,
+        "Linha de pesos do ENEM não encontrada.");
+
+    public static async Task<Result<PesoAreaEnemDto>> Handle(
         ObterPesoAreaEnemPorIdQuery query,
         IPesoAreaEnemRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +25,8 @@ public static class ObterPesoAreaEnemPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return peso?.ToDto();
+        return peso is null
+            ? Result<PesoAreaEnemDto>.Failure(NaoEncontrado)
+            : Result<PesoAreaEnemDto>.Success(peso.ToDto());
     }
 }

@@ -46,7 +46,7 @@ public sealed class CampusEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/campi/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.campus.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/campi sem autenticação retorna 401")]

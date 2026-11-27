@@ -30,11 +30,11 @@ public sealed record PreVisualizacaoDoModeloInput(
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? Grupos = null);
 
 /// <summary>
-/// Avalia o modelo contra as respostas simuladas (UNI-REQ-0145, UNI-REQ-0146); sucesso nulo quando o
-/// modelo não existe, e recusa quando uma ocorrência não tem identidade própria no grupo.
+/// Avalia o modelo contra as respostas simuladas (UNI-REQ-0145, UNI-REQ-0146); recusa com o erro de modelo não
+/// encontrado quando o modelo não existe, e quando uma ocorrência não tem identidade própria no grupo.
 /// </summary>
 public sealed record PreVisualizarModeloFormularioQuery(Guid Id, PreVisualizacaoDoModeloInput Simulacao)
-    : IQuery<Result<PreVisualizacaoDoModeloDto?>>;
+    : IQuery<Result<PreVisualizacaoDoModeloDto>>;
 
 /// <summary>
 /// A pré-visualização usa o mesmo avaliador da execução da inscrição (<see cref="AvaliadorFormulario"/>):
@@ -43,7 +43,7 @@ public sealed record PreVisualizarModeloFormularioQuery(Guid Id, PreVisualizacao
 /// </summary>
 public static class PreVisualizarModeloFormularioQueryHandler
 {
-    public static async Task<Result<PreVisualizacaoDoModeloDto?>> Handle(
+    public static async Task<Result<PreVisualizacaoDoModeloDto>> Handle(
         PreVisualizarModeloFormularioQuery query,
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
@@ -57,11 +57,11 @@ public static class PreVisualizarModeloFormularioQueryHandler
 
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
         return modelo is null
-            ? Result<PreVisualizacaoDoModeloDto?>.Success(null)
+            ? Result<PreVisualizacaoDoModeloDto>.Failure(new DomainError(ModeloFormularioErrorCodes.NaoEncontrado, "Modelo de formulário não encontrado."))
             : await PreVisualizarAsync(modelo, query.Simulacao ?? new(null, null, null), fatoRepository, cadastro, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<PreVisualizacaoDoModeloDto?>> PreVisualizarAsync(
+    private static async Task<Result<PreVisualizacaoDoModeloDto>> PreVisualizarAsync(
         ModeloFormulario modelo,
         PreVisualizacaoDoModeloInput entrada,
         IFatoCandidatoRepository fatoRepository,
@@ -72,12 +72,12 @@ public static class PreVisualizarModeloFormularioQueryHandler
             OcorrenciasRecebidas.Ler(entrada.Grupos, ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida);
         if (erros.Count > 0)
         {
-            return Result<PreVisualizacaoDoModeloDto?>.ValidationFailure(erros);
+            return Result<PreVisualizacaoDoModeloDto>.ValidationFailure(erros);
         }
 
         IReadOnlyList<FatoCandidato> fatos = await fatoRepository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         SimulacaoDoModelo simulacao = await SimulacaoDoModelo.MontarAsync(modelo, fatos, cadastro, cancellationToken).ConfigureAwait(false);
-        return Result<PreVisualizacaoDoModeloDto?>.Success(Projetar(Avaliar(simulacao, entrada, ocorrencias), simulacao.Conteudo));
+        return Result<PreVisualizacaoDoModeloDto>.Success(Projetar(Avaliar(simulacao, entrada, ocorrencias), simulacao.Conteudo));
     }
 
     private static AvaliacaoFormulario Avaliar(

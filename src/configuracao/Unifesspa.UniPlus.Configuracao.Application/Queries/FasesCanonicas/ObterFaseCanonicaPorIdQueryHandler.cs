@@ -3,11 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.FasesCanonicas;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterFaseCanonicaPorIdQueryHandler
 {
-    public static async Task<FaseCanonicaDto?> Handle(
+    public static async Task<Result<FaseCanonicaDto>> Handle(
         ObterFaseCanonicaPorIdQuery query,
         IFaseCanonicaRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +21,8 @@ public static class ObterFaseCanonicaPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return fase?.ToDto();
+        return fase is null
+            ? Result<FaseCanonicaDto>.Failure(new DomainError(FaseCanonicaErrorCodes.NaoEncontrada, "Fase canônica não encontrada."))
+            : Result<FaseCanonicaDto>.Success(fase.ToDto());
     }
 }

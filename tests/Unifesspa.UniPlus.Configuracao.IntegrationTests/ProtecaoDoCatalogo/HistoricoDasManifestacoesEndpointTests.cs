@@ -83,7 +83,8 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         HttpResponseMessage inexistente = await Enviar(client, HttpMethod.Get, $"{Base}/fatos/{Guid.NewGuid()}/manifestacoes", Betina);
         HttpResponseMessage mantenedora = await Enviar(client, HttpMethod.Get, $"{Base}/fatos/{Guid.NewGuid()}/manifestacoes", Isabella);
 
-        (inexistente.StatusCode, mantenedora.StatusCode).Should().Be((HttpStatusCode.NotFound, HttpStatusCode.Forbidden));
+        await RespostaDeNaoEncontrado.ConferirAsync(inexistente, "uniplus.configuracao.fato_candidato.nao_encontrado");
+        mantenedora.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     // Ciclo 1: Kevin recomenda não uso e Betina devolve; Isabella corrige e solicita de novo. Ciclo 2: Kevin recomenda

@@ -118,27 +118,23 @@ public sealed class TermosConsentimentoController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um termo pelo Id, com a lista completa de versões promovidas. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um termo pelo Id, com a lista completa de versões promovidas. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("termos-consentimento/{id:guid}")]
     [EndpointName("ObterTermoDeConsentimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "termo-consentimento", Versions = [1])]
     [ProducesResponseType(typeof(TermoConsentimentoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TermoConsentimentoDto? termo = await _queryBus
+        Result<TermoConsentimentoDto> resultado = await _queryBus
             .Send(new ObterTermoConsentimentoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (termo is null)
-        {
-            return NotFound();
-        }
-
-        TermoConsentimentoDto comLinks = termo with { Links = _linksBuilder.Build(termo) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo termo (rascunho vazio ou com campos iniciais). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

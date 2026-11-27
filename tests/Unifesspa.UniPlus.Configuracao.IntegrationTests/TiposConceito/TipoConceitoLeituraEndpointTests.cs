@@ -127,6 +127,6 @@ public sealed class TipoConceitoLeituraEndpointTests
 
         using HttpResponseMessage resposta = await ObterAsync(client, Guid.CreateVersion7());
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(resposta, "uniplus.configuracao.tipo_conceito.nao_encontrado");
     }
 }

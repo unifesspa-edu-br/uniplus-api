@@ -84,27 +84,23 @@ public sealed class TiposDocumentoController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém um tipo de documento pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém um tipo de documento pelo Id. Responde 404 com o código do cadastro não encontrado quando inexistente.</summary>
     [HttpGet("tipos-documento/{id:guid}")]
     [EndpointName("ObterTipoDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-documento", Versions = [1])]
     [ProducesResponseType(typeof(TipoDocumentoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoDocumentoDto? tipo = await _queryBus
+        Result<TipoDocumentoDto> resultado = await _queryBus
             .Send(new ObterTipoDocumentoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (tipo is null)
-        {
-            return NotFound();
-        }
-
-        TipoDocumentoDto comLinks = tipo with { Links = _linksBuilder.Build(tipo) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria um novo tipo de documento. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
@@ -201,16 +197,16 @@ public sealed class TiposDocumentoController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
     {
-        IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
+        Result<IReadOnlyList<AtoDaProtecaoDto>> resultado = await _queryBus
             .Send(new ListarAtosDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.TipoDocumento, id), cancellationToken)
             .ConfigureAwait(false);
 
-        return atos is null ? NotFound() : Ok(atos);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -229,16 +225,16 @@ public sealed class TiposDocumentoController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarManifestacoesDaProtecao(Guid id, CancellationToken cancellationToken)
     {
-        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+        Result<IReadOnlyList<ManifestacaoDaProtecaoDto>> resultado = await _queryBus
             .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.TipoDocumento, id), cancellationToken)
             .ConfigureAwait(false);
 
-        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Remove (soft-delete) um tipo de documento. Exige a permissão de manutenção.</summary>

@@ -73,27 +73,23 @@ public sealed class CategoriasDocumentoController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Obtém uma categoria pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma categoria pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("categorias-documento/{id:guid}")]
     [EndpointName("ObterCategoriaDeDocumento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "categoria-documento", Versions = [1])]
     [ProducesResponseType(typeof(CategoriaDocumentoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        CategoriaDocumentoDto? categoria = await _queryBus
+        Result<CategoriaDocumentoDto> resultado = await _queryBus
             .Send(new ObterCategoriaDocumentoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (categoria is null)
-        {
-            return NotFound();
-        }
-
-        CategoriaDocumentoDto comLinks = categoria with { Links = _linksBuilder.Build(categoria) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova categoria. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

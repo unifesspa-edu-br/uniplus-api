@@ -48,12 +48,13 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => []);
     }
 
-    [Fact(DisplayName = "Modelo inexistente não tem apresentado nem consulta o catálogo")]
-    public async Task Handle_ModeloInexistente_DevolveNuloSemConsultarOCatalogo()
+    [Fact(DisplayName = "Modelo inexistente é recusado como não encontrado e não consulta o catálogo")]
+    public async Task Handle_ModeloInexistente_RecusaNaoEncontradoSemConsultarOCatalogo()
     {
-        FormularioApresentado? resultado = await ObterAsync(Guid.NewGuid());
+        Kernel.Results.Result<FormularioApresentado> resultado = await ObterAsync(Guid.NewGuid());
 
-        resultado.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ModeloFormulario.NaoEncontrado");
         await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
     }
 
@@ -62,7 +63,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(itens: [Item("SEGUNDO", 1), Item("PRIMEIRO", 0)]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Titulo.Should().Be("Habilitação");
         resultado.Coleta.Itens.Select(static c => (c.FatoCodigo, c.Ordem, c.PaginaCodigo)).Should().Equal(("PRIMEIRO", 0, "DADOS"), ("SEGUNDO", 1, "DADOS"));
@@ -79,7 +80,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [cor, Fato("MODALIDADE", FonteValoresFato.OpcoesDoProcesso)]);
 
-        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("COR_RACA", 0), Item("MODALIDADE", 1)]))).Value!;
 
         resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "COR_RACA").ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("PRETA", "Preta", 0));
         resultado.Coleta.Itens.Single(static c => c.FatoCodigo == "MODALIDADE").ValoresSelecionaveis.Should().BeNull();
@@ -91,7 +92,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         _condicoes.ListarVivosParaLeituraAsync(Arg.Any<CancellationToken>()).Returns([CondicaoAtendimentoEspecializado.Criar("TEA", "Autismo", null).Value!]);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [Fato("CONDICAO_ATENDIMENTO", FonteValoresFato.OpcoesDoProcesso)]);
 
-        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(itens: [Item("CONDICAO_ATENDIMENTO", 0)]))).Value!;
 
         resultado.Coleta.Itens.Single().ValoresSelecionaveis.Should().Equal(new ValorSelecionavel("TEA", "Autismo", 0));
     }
@@ -103,7 +104,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         _termos.ObterPorIdParaLeituraAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
         ModeloFormulario modelo = Modelo(termos: [new("ACEITE_DADOS", 3, termo.Id, versao.Id, new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre))]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Termos.Should().ContainSingle().Which.Should().Be(new TermoApresentado(
             "ACEITE_DADOS",
@@ -143,7 +144,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
             "FAMILIA", 1, "DADOS", "Composição familiar", new OcorrenciasDoGrupo(1, 3, IncluiCandidato: false), new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre),
             [Subitem("SEGUNDO", 1), Subitem("PRIMEIRO", 0)]);
 
-        FormularioApresentado resultado = (await ObterAsync(Modelo(grupos: [familia])))!;
+        FormularioApresentado resultado = (await ObterAsync(Modelo(grupos: [familia]))).Value!;
 
         GrupoApresentado grupo = resultado.Coleta.Grupos.Should().ContainSingle().Which;
         (grupo.Codigo, grupo.Ordem, grupo.PaginaCodigo, grupo.Rotulo, grupo.Ocorrencias)
@@ -156,7 +157,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: true, Obrigatorio: false), itens: [Item("CERTIFICADO", 100)]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
     }
@@ -166,7 +167,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(new DeclaracaoDoFormulario(ServeAFaseDeInscricao: false, Obrigatorio: false), itens: [Item("CERTIFICADO", 0)]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Coleta.Itens.Select(static c => c.FatoCodigo).Should().Equal("CERTIFICADO");
     }
@@ -176,7 +177,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(DaInscricao, itens: [Item("CERTIFICADO", 100)]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Coleta.Itens.Should().Contain(static c => c.FatoCodigo == "CERTIFICADO").And.HaveCountGreaterThan(1);
     }
@@ -186,20 +187,20 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo(itens: [Item("CERTIFICADO", 0).ComExibicao(Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
-        FormularioApresentado resultado = (await ObterAsync(modelo))!;
+        FormularioApresentado resultado = (await ObterAsync(modelo)).Value!;
 
         resultado.Pressupostos.Fatos.Select(static p => p.FatoCodigo).Should().Equal("CONCLUSAO_REGULAR");
         resultado.Pressupostos.DataReferenciaFatos.Should().BeNull();
         resultado.Pressupostos.FusoDoEnvio.Should().BeNull();
     }
 
-    private Task<FormularioApresentado?> ObterAsync(ModeloFormulario modelo)
+    private Task<Kernel.Results.Result<FormularioApresentado>> ObterAsync(ModeloFormulario modelo)
     {
         _repository.ObterPorIdParaLeituraAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
         return ObterAsync(modelo.Id);
     }
 
-    private Task<FormularioApresentado?> ObterAsync(Guid id) =>
+    private Task<Kernel.Results.Result<FormularioApresentado>> ObterAsync(Guid id) =>
         ObterFormularioApresentadoDoModeloQueryHandler.Handle(
             new ObterFormularioApresentadoDoModeloQuery(id), _repository, _fatos, _cadastro, _termos, CancellationToken.None);
 

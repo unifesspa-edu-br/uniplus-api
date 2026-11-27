@@ -58,7 +58,7 @@ public sealed class TipoDeficienciaEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/tipos-deficiencia/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.tipo_deficiencia.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/tipos-deficiencia sem autenticação retorna 401")]

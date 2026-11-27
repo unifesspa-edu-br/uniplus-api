@@ -52,7 +52,7 @@ public sealed class BaseLegalDoFadaEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/bases-legais-fada/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.base_legal_do_fada.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST admin sem autenticação retorna 401")]

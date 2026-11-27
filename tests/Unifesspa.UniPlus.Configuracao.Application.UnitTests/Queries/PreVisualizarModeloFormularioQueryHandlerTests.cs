@@ -55,8 +55,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0, exibicao: Quando("CONCLUSAO_REGULAR", true))], pressupostos: ["CONCLUSAO_REGULAR"]);
 
-        PreVisualizacaoDoModeloDto com = (await PreVisualizarAsync(modelo, pressupostos: new() { ["CONCLUSAO_REGULAR"] = true }))!;
-        PreVisualizacaoDoModeloDto sem = (await PreVisualizarAsync(modelo))!;
+        PreVisualizacaoDoModeloDto com = await PreVisualizarAsync(modelo, pressupostos: new() { ["CONCLUSAO_REGULAR"] = true });
+        PreVisualizacaoDoModeloDto sem = await PreVisualizarAsync(modelo);
 
         com.Itens.Single().Should().BeEquivalentTo(new { FatoCodigo = "CERTIFICADO", PaginaCodigo = "DADOS", Visivel = "VERDADEIRO", Obrigatorio = "VERDADEIRO" });
         sem.Itens.Single().Visivel.Should().Be("INDETERMINADO");
@@ -69,7 +69,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             [(0, CondicaoDnf.Criar("FORMA_CONCLUSAO", Operador.Diferente, JsonSerializer.SerializeToElement("REGULAR")).Value!)]).Value!;
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0, exibicao: diferente)], pressupostos: ["FORMA_CONCLUSAO"]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, pressupostos: new() { ["FORMA_CONCLUSAO"] = "  " }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, pressupostos: new() { ["FORMA_CONCLUSAO"] = "  " });
 
         resultado.Itens.Single().Visivel.Should().Be("FALSO");
     }
@@ -79,7 +79,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         ItemDoModelo idade = Item("IDADE", 0, TipoDeCampo.Numero).ComRestricoes([RestricoesDeValor.Faixa(0, 10).Value!]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(Modelo([idade]), respostas: new() { ["IDADE"] = 20 }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(Modelo([idade]), respostas: new() { ["IDADE"] = 20 });
 
         resultado.Itens.Single().RestricoesVioladas.Should().Equal("FAIXA_NUMERICA");
     }
@@ -97,7 +97,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             [Item("CERTIFICADO", 0), Item("DECLARACAO", 1, exibicao: Quando("PERFIL", true))],
             derivacoes: new(StringComparer.Ordinal) { ["PERFIL"] = ["CERTIFICADO"] });
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true });
 
         resultado.Itens.Single(static i => i.FatoCodigo == "DECLARACAO").Visivel.Should().Be("VERDADEIRO");
     }
@@ -109,18 +109,19 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             "BANCO_CENTRAL", 0, Guid.NewGuid(), Guid.NewGuid(), new ExibicaoEObrigatoriedade(Quando("CERTIFICADO", true), Obrigatoriedade.Sempre));
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], termos: [termo]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = false }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = false });
 
         resultado.Termos.Single().Should().BeEquivalentTo(new { Codigo = "BANCO_CENTRAL", Visivel = "FALSO" });
     }
 
-    [Fact(DisplayName = "Modelo inexistente não tem pré-visualização")]
-    public async Task Handle_ModeloInexistente_DevolveNulo()
+    [Fact(DisplayName = "Modelo inexistente é recusado como não encontrado")]
+    public async Task Handle_ModeloInexistente_RecusaNaoEncontrado()
     {
-        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto> resultado = await PreVisualizarModeloFormularioQueryHandler.Handle(
             new PreVisualizarModeloFormularioQuery(Guid.NewGuid(), new(null, null, null)), _repository, _fatos, _cadastro, CancellationToken.None);
 
-        resultado.Value.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ModeloFormulario.NaoEncontrado");
     }
 
     [Fact(DisplayName = "A pré-visualização avalia o grupo repetível: a exibição de cada campo em cada ocorrência e a contagem")]
@@ -128,7 +129,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     {
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [ComposicaoFamiliar(minimo: 1, maximo: 2)]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, grupos: new() { ["COMPOSICAO_FAMILIAR"] = TrabalhaNoCampoEDeixaDeTrabalhar() }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, grupos: new() { ["COMPOSICAO_FAMILIAR"] = TrabalhaNoCampoEDeixaDeTrabalhar() });
 
         GrupoPreVisualizadoDto grupo = resultado.Grupos.Should().ContainSingle().Which;
         grupo.ContagemValida.Should().BeTrue();
@@ -145,7 +146,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             Item("CERTIFICADO", 1, exibicao: Quando("COR_RACA", "AMARELA")),
         ]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["COR_RACA"] = "AMARELA" }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, respostas: new() { ["COR_RACA"] = "AMARELA" });
 
         resultado.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().NotBe(
             "VERDADEIRO", "o valor desativado no catálogo não é ofertado, e a resposta com ele é descartada");
@@ -161,8 +162,8 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             Item("CERTIFICADO", 1, exibicao: Quando("CONDICAO_ATENDIMENTO", "TEA")),
         ]);
 
-        PreVisualizacaoDoModeloDto dentro = (await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "TEA" }))!;
-        PreVisualizacaoDoModeloDto fora = (await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "OUTRA" }))!;
+        PreVisualizacaoDoModeloDto dentro = await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "TEA" });
+        PreVisualizacaoDoModeloDto fora = await PreVisualizarAsync(modelo, respostas: new() { ["CONDICAO_ATENDIMENTO"] = "OUTRA" });
 
         dentro.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().Be("VERDADEIRO");
         fora.Itens.Single(static i => i.FatoCodigo == "CERTIFICADO").Visivel.Should().NotBe("VERDADEIRO");
@@ -177,7 +178,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             Item("SITUACAO", 1, TipoDeCampo.EscolhaUnica).ComObrigatoriedade(Obrigatoriedade.Nunca).ComRestricoes([filtro]),
         ]);
 
-        PreVisualizacaoDoModeloDto resultado = (await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true }))!;
+        PreVisualizacaoDoModeloDto resultado = await PreVisualizarAsync(modelo, respostas: new() { ["CERTIFICADO"] = true });
 
         resultado.Secoes.Should().ContainSingle().Which.Should().Be(new SecaoPreVisualizadaDto("DADOS", "VERDADEIRO"));
         resultado.Itens.Single(static i => i.FatoCodigo == "SITUACAO").Opcoes.Should().BeEquivalentTo(
@@ -192,7 +193,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
             new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Nunca), [Subitem("TRABALHA_NO_CAMPO", 0)]);
         ModeloFormulario modelo = Modelo([Item("CERTIFICADO", 0)], grupos: [familia]);
 
-        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await ResultadoDaPreVisualizacaoAsync(
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto> resultado = await ResultadoDaPreVisualizacaoAsync(
             modelo, grupos: new() { ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaRecebida("m1", null), new OcorrenciaRecebida("m1", null)] });
 
         resultado.IsFailure.Should().BeTrue();
@@ -200,18 +201,18 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         await _fatos.DidNotReceiveWithAnyArgs().ListarTodosAsync(default);
     }
 
-    private async Task<PreVisualizacaoDoModeloDto?> PreVisualizarAsync(
+    private async Task<PreVisualizacaoDoModeloDto> PreVisualizarAsync(
         ModeloFormulario modelo,
         Dictionary<string, object>? respostas = null,
         Dictionary<string, object>? pressupostos = null,
         Dictionary<string, IReadOnlyList<OcorrenciaRecebida>?>? grupos = null)
     {
-        Kernel.Results.Result<PreVisualizacaoDoModeloDto?> resultado = await ResultadoDaPreVisualizacaoAsync(modelo, respostas, pressupostos, grupos);
+        Kernel.Results.Result<PreVisualizacaoDoModeloDto> resultado = await ResultadoDaPreVisualizacaoAsync(modelo, respostas, pressupostos, grupos);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        return resultado.Value;
+        return resultado.Value!;
     }
 
-    private Task<Kernel.Results.Result<PreVisualizacaoDoModeloDto?>> ResultadoDaPreVisualizacaoAsync(
+    private Task<Kernel.Results.Result<PreVisualizacaoDoModeloDto>> ResultadoDaPreVisualizacaoAsync(
         ModeloFormulario modelo,
         Dictionary<string, object>? respostas = null,
         Dictionary<string, object>? pressupostos = null,

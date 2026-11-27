@@ -3,11 +3,13 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.CategoriasDocumento
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterCategoriaDocumentoPorIdQueryHandler
 {
-    public static async Task<CategoriaDocumentoDto?> Handle(
+    public static async Task<Result<CategoriaDocumentoDto>> Handle(
         ObterCategoriaDocumentoPorIdQuery query,
         ICategoriaDocumentoRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +21,8 @@ public static class ObterCategoriaDocumentoPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return categoria?.ToDto();
+        return categoria is null
+            ? Result<CategoriaDocumentoDto>.Failure(new DomainError(CategoriaDocumentoErrorCodes.NaoEncontrada, "Categoria de documento não encontrada."))
+            : Result<CategoriaDocumentoDto>.Success(categoria.ToDto());
     }
 }

@@ -61,12 +61,14 @@ public sealed class TiposConceitoController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-conceito", Versions = [1])]
     [ProducesResponseType(typeof(TipoConceitoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoConceitoDto? tipo = await _queryBus.Send(new ObterTipoConceitoPorIdQuery(id), cancellationToken).ConfigureAwait(false);
-        return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
+        Result<TipoConceitoDto> resultado = await _queryBus.Send(new ObterTipoConceitoPorIdQuery(id), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

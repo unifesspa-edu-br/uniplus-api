@@ -47,7 +47,7 @@ public sealed class TipoBancaEndpointTests
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/configuracao/tipos-banca/{Guid.NewGuid()}", UriKind.Relative));
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.tipo_banca.nao_encontrado");
     }
 
     [Fact(DisplayName = "POST /api/configuracao/admin/tipos-banca sem autenticação retorna 401")]

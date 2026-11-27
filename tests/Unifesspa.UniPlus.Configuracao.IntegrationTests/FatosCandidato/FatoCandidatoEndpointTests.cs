@@ -87,7 +87,7 @@ public sealed class FatoCandidatoEndpointTests
     {
         using HttpResponseMessage response = await GetAsync("/api/configuracao/fatos-candidato/NAO_EXISTE");
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.fato_candidato.nao_encontrado");
     }
 
     private static readonly JsonSerializerOptions OpcoesDaResposta = new(JsonSerializerOptions.Web)

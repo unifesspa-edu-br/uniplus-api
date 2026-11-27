@@ -169,7 +169,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         lista.RootElement.GetArrayLength().Should().Be(0);
     }
 
-    [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas; modelo inexistente é 404")]
+    [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas")]
     public async Task PreVisualizar_RespostasSimuladas_AvaliaOModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -181,7 +181,6 @@ public sealed class ModeloFormularioAdminEndpointTests
         JsonObject resultado = await LerAsync(resposta);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.pre-visualizacao-modelo-formulario.v1+json");
         Item(resultado["itens"]!.AsArray(), "BAIXA_RENDA")["visivel"]!.GetValue<string>().Should().Be("FALSO");
-        (await StatusAsync(client, HttpMethod.Post, $"{Base}/{Guid.NewGuid()}/pre-visualizacao", new { respostas })).Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]

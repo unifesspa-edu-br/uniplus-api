@@ -37,6 +37,17 @@ public sealed class LocalOfertaEndpointTests
             .Should().Be("application/vnd.uniplus.local-oferta.v1+json");
     }
 
+    [Fact(DisplayName = "GET /api/configuracao/locais-oferta/{id} retorna 404 com o código do local quando inexistente")]
+    public async Task ObterPorId_NaoExiste_Retorna404ComCodigo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/configuracao/locais-oferta/{Guid.NewGuid()}", UriKind.Relative));
+
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.local_oferta.nao_encontrado");
+    }
+
     [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {

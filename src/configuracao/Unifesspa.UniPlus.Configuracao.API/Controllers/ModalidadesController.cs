@@ -84,27 +84,23 @@ public sealed class ModalidadesController : ControllerBase
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Obtém uma modalidade pelo Id. Retorna 404 quando inexistente.</summary>
+    /// <summary>Obtém uma modalidade pelo Id. Quando inexistente, responde 404 com o código de erro de não encontrado.</summary>
     [HttpGet("modalidades/{id:guid}")]
     [EndpointName("ObterModalidade")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "modalidade", Versions = [1])]
     [ProducesResponseType(typeof(ModalidadeDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        ModalidadeDto? modalidade = await _queryBus
+        Result<ModalidadeDto> resultado = await _queryBus
             .Send(new ObterModalidadePorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (modalidade is null)
-        {
-            return NotFound();
-        }
-
-        ModalidadeDto comLinks = modalidade with { Links = _linksBuilder.Build(modalidade) };
-        return Ok(comLinks);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Cria uma nova modalidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>

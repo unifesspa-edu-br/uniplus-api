@@ -113,16 +113,26 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
         (tipo.GetProperty("categoria").GetString(), tipo.GetProperty("formatosAceitos").GetString(), tipo.GetProperty("tamanhoMaximoMb").GetInt32()).Should().Be(("SAUDE", "PDF", 5));
     }
 
-    [Theory(DisplayName = "O detalhe de item inexistente, ou de cadastro que não é da fila, responde 404")]
-    [InlineData("tipos-documento")]
-    [InlineData("fatos")]
-    [InlineData("outro-cadastro")]
-    public async Task Detalhe_Inexistente_Retorna404(string cadastro)
+    [Theory(DisplayName = "O detalhe de item inexistente responde 404 com o código do cadastro procurado")]
+    [InlineData("tipos-documento", "tipo_documento")]
+    [InlineData("fatos", "fato_candidato")]
+    public async Task Detalhe_Inexistente_Retorna404(string cadastro, string assunto)
     {
         await TornarCarolineRepresentanteAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
 
-        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{cadastro}/{Guid.NewGuid()}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        using HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{cadastro}/{Guid.NewGuid()}");
+
+        await RespostaDeNaoEncontrado.ConferirAsync(resposta, $"uniplus.configuracao.{assunto}.nao_encontrado");
+    }
+
+    [Fact(DisplayName = "O detalhe de cadastro que não é da fila responde 404")]
+    public async Task Detalhe_CadastroForaDaFila_Retorna404()
+    {
+        await TornarCarolineRepresentanteAsync();
+        using HttpClient client = Fixture.Factory.CreateClient();
+
+        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/outro-cadastro/{Guid.NewGuid()}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact(DisplayName = "Quem mantém os cadastros, mas não é Representante do controlador, recebe 403 no detalhe")]

@@ -65,22 +65,22 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>
     /// Obtém um fato pela sua chave natural — o código (ex.: <c>COR_RACA</c>).
-    /// Retorna 404 quando o código não existe no vocabulário.
+    /// Quando o código não existe no vocabulário, responde 404 com o código de erro de dado do candidato não encontrado.
     /// </summary>
     [HttpGet("fatos-candidato/{codigo}")]
     [EndpointName("ObterDadoDoCandidato")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(FatoDoCatalogoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorCodigo(string codigo, CancellationToken cancellationToken)
     {
-        FatoDoCatalogoDto? fato = await _queryBus
+        Result<FatoDoCatalogoDto> resultado = await _queryBus
             .Send(new ObterFatoCandidatoPorCodigoQuery(codigo), cancellationToken)
             .ConfigureAwait(false);
 
-        return fato is null ? NotFound() : Ok(fato);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Lista de manutenção, paginada, com filtro opcional por origem e por estado ativo.</summary>
@@ -115,7 +115,7 @@ public sealed class FatosCandidatoController : ControllerBase
             .ConfigureAwait(false);
     }
 
-    /// <summary>O fato para manutenção, ativo ou desativado.</summary>
+    /// <summary>O fato para manutenção, ativo ou desativado. Quando inexistente, responde 404 com o código de erro de dado do candidato não encontrado.</summary>
     [HttpGet("admin/fatos-candidato/{id:guid}")]
     [EndpointName("ObterDadoDoCandidatoParaManutencao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
@@ -123,13 +123,13 @@ public sealed class FatosCandidatoController : ControllerBase
     [ProducesResponseType(typeof(FatoDeManutencaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterParaManutencao(Guid id, CancellationToken cancellationToken)
     {
-        FatoDeManutencaoDto? fato = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
+        Result<FatoDeManutencaoDto> resultado = await _queryBus.Send(new ObterFatoCandidatoParaManutencaoQuery(id), cancellationToken)
             .ConfigureAwait(false);
-        return fato is null ? NotFound() : Ok(fato);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

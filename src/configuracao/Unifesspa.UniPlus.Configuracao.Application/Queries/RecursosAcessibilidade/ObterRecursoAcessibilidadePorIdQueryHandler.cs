@@ -3,11 +3,17 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Queries.RecursosAcessibilid
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public static class ObterRecursoAcessibilidadePorIdQueryHandler
 {
-    public static async Task<RecursoAcessibilidadeDto?> Handle(
+    private static readonly DomainError NaoEncontrado = new(
+        RecursoAcessibilidadeErrorCodes.NaoEncontrado,
+        "Recurso de acessibilidade não encontrado.");
+
+    public static async Task<Result<RecursoAcessibilidadeDto>> Handle(
         ObterRecursoAcessibilidadePorIdQuery query,
         IRecursoAcessibilidadeRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +25,8 @@ public static class ObterRecursoAcessibilidadePorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return recurso?.ToDto();
+        return recurso is null
+            ? Result<RecursoAcessibilidadeDto>.Failure(NaoEncontrado)
+            : Result<RecursoAcessibilidadeDto>.Success(recurso.ToDto());
     }
 }

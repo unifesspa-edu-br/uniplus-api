@@ -6,11 +6,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>O detalhe do item com os atos registrados e as manifestações vigentes do ciclo corrente.</summary>
 public static class ObterDetalheDaProtecaoDoCatalogoQueryHandler
 {
-    public static async Task<DetalheDaProtecaoDoCatalogoDto?> Handle(
+    public static async Task<Result<DetalheDaProtecaoDoCatalogoDto>> Handle(
         ObterDetalheDaProtecaoDoCatalogoQuery query,
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
@@ -32,32 +33,32 @@ public static class ObterDetalheDaProtecaoDoCatalogoQueryHandler
         };
     }
 
-    private static async Task<DetalheDaProtecaoDoCatalogoDto?> DoTipoAsync(
+    private static async Task<Result<DetalheDaProtecaoDoCatalogoDto>> DoTipoAsync(
         TipoDocumento? tipo, IAtoDaProtecaoDoCatalogoRepository atos, IManifestacaoDaProtecaoRepository manifestacoes, CancellationToken cancellationToken)
     {
         if (tipo is null)
         {
-            return null;
+            return Result<DetalheDaProtecaoDoCatalogoDto>.Failure(ItemDaProtecaoNaoEncontrado.Do(CadastroDaProtecaoDoCatalogo.TipoDocumento));
         }
 
         ItemDaProtecao item = new(CadastroDoCatalogo.TipoDocumento, tipo.Id);
         (IReadOnlyList<AtoDaProtecaoDoCatalogo> registrados, ManifestacoesDoCiclo vigentes) =
             await LerRegistrosAsync(item, tipo.Aprovacao.Ciclo, atos, manifestacoes, cancellationToken).ConfigureAwait(false);
-        return tipo.ToDetalheDaProtecao(registrados, vigentes);
+        return Result<DetalheDaProtecaoDoCatalogoDto>.Success(tipo.ToDetalheDaProtecao(registrados, vigentes));
     }
 
-    private static async Task<DetalheDaProtecaoDoCatalogoDto?> DoFatoAsync(
+    private static async Task<Result<DetalheDaProtecaoDoCatalogoDto>> DoFatoAsync(
         FatoCandidato? fato, IAtoDaProtecaoDoCatalogoRepository atos, IManifestacaoDaProtecaoRepository manifestacoes, CancellationToken cancellationToken)
     {
         if (fato is null)
         {
-            return null;
+            return Result<DetalheDaProtecaoDoCatalogoDto>.Failure(ItemDaProtecaoNaoEncontrado.Do(CadastroDaProtecaoDoCatalogo.Fato));
         }
 
         ItemDaProtecao item = new(CadastroDoCatalogo.Fato, fato.Id);
         (IReadOnlyList<AtoDaProtecaoDoCatalogo> registrados, ManifestacoesDoCiclo vigentes) =
             await LerRegistrosAsync(item, fato.Aprovacao.Ciclo, atos, manifestacoes, cancellationToken).ConfigureAwait(false);
-        return fato.ToDetalheDaProtecao(registrados, vigentes);
+        return Result<DetalheDaProtecaoDoCatalogoDto>.Success(fato.ToDetalheDaProtecao(registrados, vigentes));
     }
 
     // Os dois registros só acrescentados do item: os atos, de todos os ciclos, e as manifestações do ciclo corrente.

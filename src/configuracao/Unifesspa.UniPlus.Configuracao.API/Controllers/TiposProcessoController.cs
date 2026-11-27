@@ -64,12 +64,14 @@ public sealed class TiposProcessoController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        TipoProcessoDto? tipo = await _queryBus.Send(new ObterTipoProcessoPorIdQuery(id), cancellationToken).ConfigureAwait(false);
-        return tipo is null ? NotFound() : Ok(tipo with { Links = _linksBuilder.Build(tipo) });
+        Result<TipoProcessoDto> resultado = await _queryBus.Send(new ObterTipoProcessoPorIdQuery(id), cancellationToken).ConfigureAwait(false);
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -111,13 +113,15 @@ public sealed class TiposProcessoController : ControllerBase
     [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorIdParaManutencao(Guid id, CancellationToken cancellationToken)
     {
-        TipoProcessoDto? tipo = await _queryBus.Send(
+        Result<TipoProcessoDto> resultado = await _queryBus.Send(
             new ObterTipoProcessoPorIdQuery(id, ApenasAtivos: false), cancellationToken).ConfigureAwait(false);
-        return tipo is null ? NotFound() : Ok(tipo with { Links = LinksDeManutencao(tipo) });
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = LinksDeManutencao(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     [HttpPost("admin/tipos-processo")]

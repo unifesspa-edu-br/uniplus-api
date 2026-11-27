@@ -33,6 +33,17 @@ public sealed class TipoEtapaLeituraPublicaEndpointTests
             .Should().Be("application/vnd.uniplus.tipo-etapa.v1+json");
     }
 
+    [Fact(DisplayName = "GET /api/configuracao/tipos-etapa/{id} retorna 404 com o código do tipo de etapa quando inexistente")]
+    public async Task ObterPorId_NaoExiste_Retorna404ComCodigo()
+    {
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/configuracao/tipos-etapa/{Guid.NewGuid()}", UriKind.Relative));
+
+        await RespostaDeNaoEncontrado.ConferirAsync(response, "uniplus.configuracao.tipo_etapa.nao_encontrado");
+    }
+
     /// <summary>
     /// A carga inicial declara o que cada tipo admite, e não um valor permissivo uniforme: sem
     /// isso o wizard voltaria a oferecer peso em toda etapa, e a decisão de quem opera o cadastro

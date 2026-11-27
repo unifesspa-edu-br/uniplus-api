@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
-/// <summary>O modelo para manutenção, ativo ou desativado.</summary>
-public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<ModeloFormularioDto?>;
+/// <summary>O modelo para manutenção, ativo ou desativado; recusa com o erro de modelo não encontrado quando inexistente.</summary>
+public sealed record ObterModeloFormularioQuery(Guid Id) : IQuery<Result<ModeloFormularioDto>>;
 
 /// <summary>
 /// Lista de manutenção dos modelos, paginada, com filtros opcionais: o tipo de processo (traz os
@@ -29,13 +29,15 @@ public sealed record ListarModelosFormularioResult(
 
 public static class ObterModeloFormularioQueryHandler
 {
-    public static async Task<ModeloFormularioDto?> Handle(
+    public static async Task<Result<ModeloFormularioDto>> Handle(
         ObterModeloFormularioQuery query, IModeloFormularioRepository repository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ModeloFormulario? modelo = await repository.ObterPorIdParaLeituraAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        return modelo?.ToDto();
+        return modelo is null
+            ? Result<ModeloFormularioDto>.Failure(new DomainError(ModeloFormularioErrorCodes.NaoEncontrado, "Modelo de formulário não encontrado."))
+            : Result<ModeloFormularioDto>.Success(modelo.ToDto());
     }
 }
 
