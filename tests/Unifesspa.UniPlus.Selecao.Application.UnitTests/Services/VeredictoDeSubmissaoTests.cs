@@ -120,21 +120,6 @@ public sealed class VeredictoDeSubmissaoTests
         recusas.Should().Contain(r => r.Field == "COMPOSICAO_FAMILIAR" && r.Error.Code == "Inscricao.GrupoCandidatoAusente");
     }
 
-    [Fact(DisplayName = "Duas ocorrências do mesmo grupo com o mesmo id recusam por id duplicado")]
-    public void Avaliar_OcorrenciasComIdDuplicado_Recusa()
-    {
-        AvaliacaoOcorrencia ocorrencia1 = new("membro-1", [], new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), EstadoFato.Resolvido);
-        AvaliacaoOcorrencia ocorrencia2 = new("membro-1", [], new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), EstadoFato.Resolvido);
-        AvaliacaoGrupo grupo = new(
-            "COMPOSICAO_FAMILIAR", "DADOS", Ternario.Verdadeiro, Ternario.Falso, EstadoFato.Resolvido,
-            ContagemValida: true, OcorrenciaDoCandidatoValida: true, Ocorrencias: [ocorrencia1, ocorrencia2]);
-        AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), grupos: [grupo]);
-
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
-
-        recusas.Should().ContainSingle(r => r.Field == "COMPOSICAO_FAMILIAR.membro-1" && r.Error.Code == "Inscricao.GrupoIdDuplicado");
-    }
-
     [Fact(DisplayName = "Item obrigatório sem resposta dentro de uma ocorrência de grupo também recusa")]
     public void Avaliar_ItemObrigatorioSemRespostaDentroDoGrupo_Recusa()
     {

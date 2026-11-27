@@ -37,6 +37,38 @@ public sealed class InscricaoFormaDoEnvioTests
         recusas.Should().NotContain(e => e.Error.Code == InscricaoErrorCodes.ValorForaDoTipo);
     }
 
+    [Fact(DisplayName = "As recusas locais do envio não incluem o endereço, que se confere uma vez, antes")]
+    public void RecusasDoEnvio_EnderecoInvalido_NaoIncluiARecusaDeEndereco()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        IReadOnlyList<FieldError> recusas = inscricao.RecusasDoEnvio(Recebido(EnderecoSemCep()), AdmitidasComEndereco, Apuracao());
+
+        recusas.Should().NotContain(e => e.Error.Code == InscricaoErrorCodes.EnderecoSemCep);
+    }
+
+    [Fact(DisplayName = "O envio recusa por conta própria o endereço sem CEP, uma só vez")]
+    public void Submeter_EnderecoSemCep_RecusaUmaVez()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter("000123", Recebido(EnderecoSemCep()), AdmitidasComEndereco, Apuracao(),
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante);
+
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoSemCep && e.Field == "ENDERECO");
+    }
+
+    [Fact(DisplayName = "O endereço do envio se confere sobre o gravado mesclado com o recebido")]
+    public void RecusasDoEnderecoEnviado_GravadoValido_ConfereORecebidoENaoOGravadoSozinho()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> valido = new(StringComparer.Ordinal) { ["ENDERECO"] = JsonSerializer.SerializeToElement(new { cep = "68500000" }) };
+        inscricao.Salvar(Recebido(valido), AdmitidasComEndereco, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+
+        inscricao.RecusasDoEnderecoEnviado(new Dictionary<string, JsonElement>(StringComparer.Ordinal), AdmitidasComEndereco).Should().BeEmpty();
+        inscricao.RecusasDoEnderecoEnviado(EnderecoSemCep(), AdmitidasComEndereco).Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoSemCep);
+    }
+
     [Fact(DisplayName = "O envio recusa por conta própria o valor fora do formato, uma só vez")]
     public void Submeter_ValorForaDoFormato_RecusaUmaVez()
     {
@@ -69,6 +101,18 @@ public sealed class InscricaoFormaDoEnvioTests
         resultado.IsSuccess.Should().BeTrue();
         inscricao.Estado.NumeroInscricao.Should().Be("000123");
     }
+
+    private static RespostasAdmitidas AdmitidasComEndereco => Admitidas with
+    {
+        Definicoes = new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+        {
+            ["ENDERECO"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
+        },
+        DoNivelSuperior = new HashSet<string>(StringComparer.Ordinal) { "ENDERECO" },
+    };
+
+    private static Dictionary<string, JsonElement> EnderecoSemCep() =>
+        new(StringComparer.Ordinal) { ["ENDERECO"] = JsonSerializer.SerializeToElement(new { cep = "", complemento = "Bloco 1" }) };
 
     private static Result<ComprovanteInscricao> Enviar(Inscricao inscricao, PreenchimentoDoCandidato recebido) =>
         inscricao.Submeter("000123", recebido, Admitidas, Apuracao(), PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante);

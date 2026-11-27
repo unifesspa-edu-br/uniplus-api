@@ -33,6 +33,4 @@ public sealed record RespostasDoEnvio(
 {
     public Dictionary<string, JsonElement> Conferiveis =>
         Mescladas.Where(r => !CamposRecusados.Contains(r.Key)).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-
-    public bool TemGrupoComIdRepetido => Recusas.Any(static r => r.Error.Code == InscricaoErrorCodes.GrupoIdDuplicado);
 }

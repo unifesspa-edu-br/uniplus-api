@@ -26,7 +26,11 @@ public sealed class ConferenciaDoEnvioDaInscricao(
     {
         ArgumentNullException.ThrowIfNull(pedido);
         CorpoDoRascunho mesclado = Mesclar(pedido);
-        List<FieldError> recusas = [.. PreenchimentoDoCandidato.RecusasDeForma(pedido.Recebido.Respostas, pedido.Recebido.Grupos, pedido.Contexto.Admitidas), .. pedido.Inscricao.Formulario.Preenchimento.ComRespostas(mesclado.Respostas).RecusasDoEndereco(pedido.Contexto.Admitidas)];
+        List<FieldError> recusas =
+        [
+            .. PreenchimentoDoCandidato.RecusasDeForma(pedido.Recebido.Respostas, pedido.Recebido.Grupos, pedido.Contexto.Admitidas),
+            .. pedido.Inscricao.RecusasDoEnderecoEnviado(pedido.Recebido.Respostas, pedido.Contexto.Admitidas),
+        ];
         if (recusas.Any(static r => r.Error.Code == InscricaoErrorCodes.GrupoIdDuplicado))
         {
             return Result<EnvioConferido>.ValidationFailure(recusas);
@@ -76,7 +80,7 @@ public sealed class ConferenciaDoEnvioDaInscricao(
         recusas.AddRange(RecusasFinais(entrada, arquivos, avaliacao, conferidos, admitidas));
         if (recusas.Count > 0)
         {
-            return Result<EnvioConferido>.ValidationFailure([.. recusas.Distinct()]);
+            return Result<EnvioConferido>.ValidationFailure([.. recusas]);
         }
         return (entrada.Endereco.GeoIndisponivel ?? conferidos.GeoIndisponivel) is { } indisponivel
             ? Result<EnvioConferido>.Failure(indisponivel)
