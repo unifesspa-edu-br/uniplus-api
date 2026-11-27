@@ -15,7 +15,7 @@ public sealed record ObterVersaoDoTermoQuery(Guid Id) : IQuery<Result<VersaoDoTe
 public sealed record ListarVersoesDoTermoQuery(string? AfterSortKey, Guid? AfterId, int Limit, PaginationDirection Direction)
     : IQuery<Result<ListarVersoesDoTermoResult>>;
 
-/// <summary>Resultado paginado: as âncoras são o número da versão e o <c>Id</c> de fronteira da janela.</summary>
+/// <summary>Resultado paginado: as âncoras são o número da versão e o <c>Id</c> de fronteira da página.</summary>
 public sealed record ListarVersoesDoTermoResult(
     IReadOnlyList<VersaoDoTermoResumoDto> Items,
     (string SortKey, Guid Id)? Anterior,

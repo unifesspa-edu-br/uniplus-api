@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// (<see cref="AfterId"/>, ausente na primeira página), tamanho efetivo da
 /// página (<see cref="Limit"/>), direção de navegação
 /// (<see cref="Direction"/>, ADR-0089) e a chave de
-/// continuação (<see cref="AfterSortKey"/>, ADR-0094). Como esses valores chegam via wire é
+/// continuação (<see cref="AfterSortKey"/>, ADR-0094). Como esses valores chegam na requisição é
 /// responsabilidade do binder configurado por atributo (ex.:
 /// <c>[FromCursor]</c> para cursor opaco AES-GCM, ADR-0026); outros
 /// mecanismos podem ser adicionados sem afetar o consumo.

@@ -20,6 +20,6 @@ public sealed record ListarProvidenciasQuery(
     SituacaoDaProvidencia? Situacao, Guid? ConcessaoId, string? AfterSortKey, Guid? AfterId, int Limit, PaginationDirection Direction)
     : IQuery<ListarProvidenciasResult>;
 
-/// <summary>Resultado paginado: as âncoras são os pares (chave de ordenação, <c>Id</c>) de fronteira da janela.</summary>
+/// <summary>Resultado paginado: as âncoras são os pares (chave de ordenação, <c>Id</c>) de fronteira da página.</summary>
 public sealed record ListarProvidenciasResult(
     IReadOnlyList<ProvidenciaResumoDto> Items, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo);

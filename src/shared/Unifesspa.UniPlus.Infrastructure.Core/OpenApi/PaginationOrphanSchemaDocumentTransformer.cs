@@ -6,12 +6,12 @@ using Microsoft.OpenApi;
 /// <summary>
 /// Document transformer que remove o schema órfão <c>PaginationDirection</c>
 /// das <c>components.schemas</c>. O enum <see cref="Pagination.PaginationDirection"/>
-/// é propriedade interna de <c>PageRequest</c>/<c>CursorPayload</c> (pós-decode),
+/// é propriedade interna de <c>PageRequest</c>/<c>CursorPayload</c> (já decodificado),
 /// nunca serializada em corpo de request/response — o ApiExplorer ainda registra
-/// um schema para ela ao descrever o <c>PageRequest</c> como query bag.
+/// um schema para ela ao descrever o <c>PageRequest</c> como conjunto de parâmetros de consulta.
 /// <para>
 /// O <see cref="CursorPaginationOperationTransformer"/> já remove o parâmetro
-/// vazado <c>Direction</c> e declara o wire param <c>direction</c> com schema
+/// vazado <c>Direction</c> e declara o parâmetro <c>direction</c>, como o cliente o envia, com schema
 /// inline (string enum <c>next</c>/<c>prev</c>) — logo o schema de componente
 /// fica sem nenhuma referência (<c>$ref</c>). Schema órfão não só é ruído no
 /// contrato como diverge entre módulos (cada API serializa enums de forma

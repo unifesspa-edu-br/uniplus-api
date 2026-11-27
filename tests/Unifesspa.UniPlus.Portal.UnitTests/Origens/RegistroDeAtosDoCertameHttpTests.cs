@@ -219,7 +219,7 @@ public sealed class RegistroDeAtosDoCertameHttpTests
 
         requisicao.RequestUri!.Host.Should().Be(new Uri(OrigensMontagem.EnderecoPublicacoes).Host);
         consulta["cursor"].Should().Be("c2");
-        consulta["limit"].Should().BeNull("o cursor já carrega a janela");
+        consulta["limit"].Should().BeNull("o cursor já guarda a posição e o tamanho da página");
     }
 
     private static void ConferirPedidoAnonimoNoMediaTypeDaOrigem(HttpRequestMessage requisicao)
