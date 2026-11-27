@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Http;
     Justification = "Instanciada via IServiceProvider em AddIdempotency().")]
 internal sealed class IdempotencyDomainErrorRegistration : IDomainErrorRegistration
 {
-    public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
+    private static readonly KeyValuePair<string, DomainErrorMapping>[] Mapeamentos =
     [
         new(IdempotencyDomainErrorCodes.KeyAusente,
             new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.idempotency.key_ausente",
@@ -32,8 +32,7 @@ internal sealed class IdempotencyDomainErrorRegistration : IDomainErrorRegistrat
         new(IdempotencyDomainErrorCodes.PrincipalRequerido,
             new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.idempotency.principal_requerido",
                 "Endpoint com Idempotency-Key requer principal autenticado")),
-        new(IdempotencyDomainErrorCodes.BodyMuitoGrande,
-            new DomainErrorMapping(StatusCodes.Status413PayloadTooLarge, "uniplus.idempotency.body_muito_grande",
-                "Request body excede o limite aceito por endpoints idempotentes")),
     ];
+
+    public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() => Mapeamentos;
 }

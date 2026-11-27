@@ -22,12 +22,4 @@ public sealed class RequiresIdempotencyKeyAttribute : Attribute
     /// uma válida sem gerar outro registro pendente com nova Idempotency-Key.
     /// </summary>
     public int TtlSeconds { get; init; } = -1;
-
-    /// <summary>
-    /// Override opcional do teto do corpo deste endpoint, em bytes: o corpo com exatamente esse tamanho passa, e um byte a mais
-    /// recusa 413. <c>-1</c> (default) usa <see cref="IdempotencyOptions.MaxBodyBytes"/>, pelo mesmo motivo do sentinel de
-    /// <see cref="TtlSeconds"/>. Existe para o endpoint cujo corpo legítimo é maior que o teto global, como o documento da
-    /// configuração, que o contrato limita por si.
-    /// </summary>
-    public long MaxBodyBytes { get; init; } = -1;
 }

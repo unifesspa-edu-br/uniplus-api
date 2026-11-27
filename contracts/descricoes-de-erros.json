@@ -11099,20 +11099,6 @@
       ]
     },
     {
-      "codigo": "uniplus.idempotency.body_muito_grande",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O corpo da requisição excede o limite de tamanho aceito por operações que exigem `Idempotency-Key`.",
-        "O limite para essas operações é menor que o limite geral de corpo da API e pode variar conforme o ambiente. O campo `detail` da resposta informa o limite em vigor."
-      ],
-      "comoResolver": [
-        "Reduza o tamanho do corpo enviado ou confira se a operação deve exigir `Idempotency-Key`. Operações de importação em lote podem precisar de tratamento diferente."
-      ],
-      "ondeAparece": [
-        "Operações que exigem `Idempotency-Key`"
-      ]
-    },
-    {
       "codigo": "uniplus.idempotency.key_ausente",
       "requisitos": [],
       "oQueAconteceu": [
@@ -13134,6 +13120,23 @@
       ],
       "ondeAparece": [
         "Operações com campo obrigatório ausente na requisição"
+      ]
+    },
+    {
+      "codigo": "uniplus.requisicao.corpo_acima_do_limite",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O corpo da requisição passa do tamanho que a operação aceita. Com o tamanho declarado acima do limite, a recusa vem antes de verificar o acesso e de ler o conteúdo. Sem tamanho declarado, com o conteúdo enviado em partes, a leitura é interrompida ao passar do limite, e a verificação de acesso pode recusar antes disso.",
+        "Cada operação tem um limite: o geral da API, igual para as operações que recebem JSON, ou o próprio da operação, como o do envio do arquivo de retorno do INEP. O campo `detail` da resposta informa o limite em vigor, em bytes.",
+        "A recusa vale tanto quando o tamanho é declarado no cabeçalho da requisição quanto quando o corpo chega em partes, sem tamanho declarado: neste caso a leitura é interrompida ao passar do limite.",
+        "A resposta não repete nenhum trecho do corpo recebido nem o tamanho declarado."
+      ],
+      "comoResolver": [
+        "Reduza o conteúdo enviado para caber no limite informado em `detail` e envie de novo.",
+        "Se o corpo cabe no limite e a recusa continua, confira se o cliente não está enviando o conteúdo mais de uma vez nem acrescentando dados que a operação não pede."
+      ],
+      "ondeAparece": [
+        "Qualquer operação que recebe corpo"
       ]
     },
     {

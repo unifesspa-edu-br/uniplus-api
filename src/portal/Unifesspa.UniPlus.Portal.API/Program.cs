@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.CorpoDaRequisicao;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -96,6 +97,7 @@ builder.Services.AddWolverineMessaging();
 
 builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
+builder.Services.AddLimiteDoCorpoDaRequisicao(builder.Configuration);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 
@@ -129,6 +131,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseRespostaDaRequisicaoSemOperacao();
 app.UseCorsConfiguration();
+app.UseLimiteDoCorpoDaRequisicao();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

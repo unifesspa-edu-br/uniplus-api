@@ -237,7 +237,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         }
     }
 
-    [Fact(DisplayName = "413 em três tamanhos: logo acima do limite, o dobro com Content-Length e o dobro sem Content-Length")]
+    [Fact(DisplayName = "413 em três tamanhos: o arquivo logo acima do limite, o dobro com Content-Length e o dobro sem Content-Length")]
     public async Task Importar_AcimaDoLimite_413EmTresTamanhos()
     {
         Cenario cenario = await _apoio.NovoCenarioAsync(0);
@@ -246,21 +246,30 @@ public sealed class ImportacaoDeNotasEndpointTests
 
         HttpResponseMessage logoAcima = await ImportarAsync(client, cenario, new byte[Limite + 1]);
         HttpResponseMessage dobroComTamanho = await ImportarAsync(client, cenario, new byte[2 * Limite]);
-
         HttpResponseMessage dobroSemTamanho = await ImportarSemTamanhoAsync(client, cenario, 2 * Limite);
-        foreach (HttpResponseMessage resposta in new[] { logoAcima, dobroComTamanho, dobroSemTamanho })
-        {
-            await ConferirArquivoGrandeDemaisAsync(resposta);
-        }
 
+        await ConferirRecusaDeTamanhoAsync(logoAcima, "uniplus.selecao.notas_do_enem.arquivo_grande_demais");
+        await ConferirRecusaDeTamanhoAsync(dobroComTamanho, "uniplus.requisicao.corpo_acima_do_limite");
+        dobroSemTamanho.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
     }
 
-    private static async Task ConferirArquivoGrandeDemaisAsync(HttpResponseMessage resposta)
+    [Fact(DisplayName = "o arquivo de exatamente 10 MiB, com o enquadramento do formulário dentro da folga de 64 KiB, não é recusado pelo tamanho")]
+    public async Task Importar_ArquivoNoLimiteComFolgaDoFormulario_NaoERecusadoPeloTamanho()
+    {
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, new byte[10 * 1024 * 1024]);
+
+        resposta.StatusCode.Should().NotBe(HttpStatusCode.RequestEntityTooLarge);
+    }
+
+    private static async Task ConferirRecusaDeTamanhoAsync(HttpResponseMessage resposta, string codigo)
     {
         resposta.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
-        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.arquivo_grande_demais");
+        (await CodigoAsync(resposta)).Should().Be(codigo);
     }
 
     private static async Task<HttpResponseMessage> ImportarSemTamanhoAsync(HttpClient client, Cenario cenario, int tamanho)

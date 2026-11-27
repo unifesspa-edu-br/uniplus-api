@@ -49,6 +49,9 @@ public static class ErrosDaFronteiraHttp
     public static readonly DomainErrorMapping MetodoNaoAceito = new(
         StatusCodes.Status405MethodNotAllowed, "uniplus.requisicao.metodo_nao_aceito", "A requisição usa um método que o caminho não aceita");
 
+    public static readonly DomainErrorMapping CorpoAcimaDoLimite = new(
+        StatusCodes.Status413PayloadTooLarge, "uniplus.requisicao.corpo_acima_do_limite", "O corpo da requisição passa do tamanho aceito");
+
     public static readonly DomainErrorMapping ErroInesperado = new(
         StatusCodes.Status500InternalServerError, "uniplus.internal.unexpected", "Erro interno do servidor");
 }

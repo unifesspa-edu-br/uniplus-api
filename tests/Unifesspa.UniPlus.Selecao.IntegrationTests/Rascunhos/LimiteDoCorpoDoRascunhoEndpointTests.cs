@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O limite do corpo da criação do rascunho: o filtro de idempotência lê o corpo antes da action e usa o mesmo limite do formato
-/// do documento, 2 MiB, em vez do limite global dos endpoints idempotentes.
+/// O limite do corpo da criação do rascunho: o do formato do documento, 2 MiB, declarado na operação. A recusa vem do limite do
+/// corpo da requisição, antes do filtro de idempotência ler o corpo.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -52,14 +52,14 @@ public sealed class LimiteDoCorpoDoRascunhoEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    [Fact(DisplayName = "Um byte além de 2 MiB recusa 413 com o código do filtro de idempotência")]
-    public async Task UmByteAlemDoLimite_RecusaComOCodigoDoFiltro()
+    [Fact(DisplayName = "Um byte além de 2 MiB recusa 413 com o código do limite do corpo da requisição")]
+    public async Task UmByteAlemDoLimite_RecusaComOCodigoDoLimiteDoCorpo()
     {
         using HttpResponseMessage resposta = await CriarAsync(DocumentoComTamanho(LimitesDoDocumento.TamanhoMaximoEmBytes + 1));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.idempotency.body_muito_grande");
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.corpo_acima_do_limite");
     }
 
     private static string DocumentoComTamanho(int bytes) => DocumentoMinimo + new string(' ', bytes - DocumentoMinimo.Length);

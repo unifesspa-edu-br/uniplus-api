@@ -15,7 +15,7 @@ internal static class IdempotencyRequestKeyReader
 {
     private const string HeaderName = "Idempotency-Key";
 
-    public static async Task<Result<IdempotencyRequestKey>> ReadAsync(HttpContext http, IUserContext user, long bodyLimit)
+    public static async Task<Result<IdempotencyRequestKey>> ReadAsync(HttpContext http, IUserContext user)
     {
         Result<string> key = ReadKeyRequiringPrincipal(http.Request.Headers, user);
         if (key.IsFailure)
@@ -23,10 +23,8 @@ internal static class IdempotencyRequestKeyReader
             return Result<IdempotencyRequestKey>.Failure(key.Error!);
         }
 
-        Result<string> bodyHash = await HashBodyAsync(http, bodyLimit).ConfigureAwait(false);
-        return bodyHash.IsFailure
-            ? Result<IdempotencyRequestKey>.Failure(bodyHash.Error!)
-            : Result<IdempotencyRequestKey>.Success(new IdempotencyRequestKey($"user:{user.UserId}", EndpointOf(http.Request), key.Value!, bodyHash.Value!));
+        string bodyHash = await HashBodyAsync(http).ConfigureAwait(false);
+        return Result<IdempotencyRequestKey>.Success(new IdempotencyRequestKey($"user:{user.UserId}", EndpointOf(http.Request), key.Value!, bodyHash));
     }
 
     private static Result<string> ReadKeyRequiringPrincipal(IHeaderDictionary headers, IUserContext user)
@@ -58,19 +56,10 @@ internal static class IdempotencyRequestKeyReader
             : Failure<string>(IdempotencyDomainErrorCodes.KeyMalformada, "Header Idempotency-Key contém caracteres inválidos ou tamanho fora de [1, 255].");
     }
 
-    private static async Task<Result<string>> HashBodyAsync(HttpContext http, long limit)
+    private static async Task<string> HashBodyAsync(HttpContext http)
     {
-        try
-        {
-            byte[] body = await RequestBodyReader.ReadWithoutConsumingAsync(http.Request, limit, http.RequestAborted).ConfigureAwait(false);
-            return Result<string>.Success(RequestBodyReader.Sha256Hex(body));
-        }
-        catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
-        {
-            // O middleware global trata exceção genérica como 500: devolver o 413 canônico evita o "erro interno" para
-            // um problema de tamanho.
-            return Failure<string>(IdempotencyDomainErrorCodes.BodyMuitoGrande, $"Request body excede o limite de {limit} bytes para endpoints idempotentes.");
-        }
+        byte[] body = await RequestBodyReader.ReadWithoutConsumingAsync(http.Request, http.RequestAborted).ConfigureAwait(false);
+        return RequestBodyReader.Sha256Hex(body);
     }
 
     // O path concreto, e não o template: duas requisições com a mesma chave sobre recursos diferentes precisam de entradas
