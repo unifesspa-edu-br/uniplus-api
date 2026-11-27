@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>Mapeamento <see cref="Instalacao"/> para <see cref="InstalacaoDto"/>, para a trilha e para a auditoria.</summary>
 public static class InstalacaoMapping
@@ -16,7 +16,7 @@ public static class InstalacaoMapping
 
         return new InstalacaoDto(
             i.Id,
-            i.Situacao.Codigo(),
+            CodigoComRotulo<SituacaoDaInstalacao>.De(i.Situacao),
             i.NumeroDoDocumento,
             [.. i.Gestores.Select(g => new IdentidadeDto(g.Emissor, g.ContaId))],
             i.IniciadaEm,
@@ -29,6 +29,7 @@ public static class InstalacaoMapping
         ArgumentNullException.ThrowIfNull(t);
 
         return new TentativaDeInstalacaoDto(
-            t.Id, t.InstalacaoId, new IdentidadeDto(t.AutorEmissor, t.AutorContaId), t.Instante, t.Resultado.Codigo());
+            t.Id, t.InstalacaoId, new IdentidadeDto(t.AutorEmissor, t.AutorContaId), t.Instante,
+            CodigoComRotulo<ResultadoDaTentativaDeInstalacao>.De(t.Resultado));
     }
 }

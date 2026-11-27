@@ -4,12 +4,15 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -92,6 +95,29 @@ public sealed class OfertaDePerfisTests
 
         resultado.Value!.Items.Should().ContainSingle().Which.Nome.Should().Be("Análise de atendimento");
         await perfis.Received(1).ListarPediveisPaginadoAsync(ancora, 5, PaginationDirection.Prev, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O perfil comum da instituição sai com o escopo em código e rótulo e sem governança")]
+    public async Task Listar_PerfilComum_EscopoComCodigoERotuloSemGovernanca()
+    {
+        Result<ListarPerfisParaPedirResult> resultado = await Oferta().ListarAsync(Consulta, Institucional, Substitute.For<IVerificadorDeAcesso>(), CancellationToken.None);
+
+        PerfilParaPedidoDto perfil = resultado.Value!.Items.Should().ContainSingle().Which;
+        (perfil.Escopo.Codigo, perfil.Escopo.Rotulo).Should().Be(("INSTITUICAO", "Instituição"));
+        perfil.Governanca.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O perfil de governança sai com a governança em código e rótulo")]
+    public async Task Listar_PerfilDeGovernanca_GovernancaComCodigoERotulo()
+    {
+        Perfil governanca = PerfisDeTeste.DeGovernanca(
+            "Gestão de acessos", "Governa os acessos.", ["geral:pedidos:consultar"], new CatalogoInstitucional());
+
+        Result<ListarPerfisParaPedirResult> resultado = await Oferta(Substitute.For<IPerfilRepository>(), null, governanca)
+            .ListarAsync(Consulta, Institucional, Substitute.For<IVerificadorDeAcesso>(), CancellationToken.None);
+
+        CodigoComRotulo<TipoDeGovernanca> tipo = resultado.Value!.Items.Should().ContainSingle().Which.Governanca!;
+        (tipo.Codigo, tipo.Rotulo).Should().Be(("GESTOR_DE_ACESSOS", "Gestor de acessos"));
     }
 
     private static IVerificadorDeAcesso Verificador(ResultadoDoAcesso acesso)

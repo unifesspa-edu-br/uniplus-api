@@ -35,7 +35,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
 
         JsonElement perfil = await CorpoAsync(resposta, HttpStatusCode.OK);
         perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("CANCELADA");
+        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("CANCELADA");
     }
 
     [Fact(DisplayName = "Terceiro sem a permissão de manter perfis não cancela a versão")]

@@ -47,7 +47,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
             HttpStatusCode.UnprocessableEntity,
             UltimoRepresentante);
 
-        ItemDe(await LerAsync(g.Marlene, $"{RotaDasRevisoes}/{revisaoId}"), itemId).GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        ItemDe(await LerAsync(g.Marlene, $"{RotaDasRevisoes}/{revisaoId}"), itemId).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("PENDENTE");
         (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 

@@ -164,7 +164,7 @@ reenviar_documento() {
     local detalhe
     detalhe=$(detalhe_do_perfil "$ACCESS_TOKEN" "$1")
     pedir_nova_url_do_documento "$ACCESS_TOKEN" "$1" "$(jq -r '.versaoPendente.versaoId' <<< "$detalhe")" "$2" \
-        "$(jq -r '.versaoPendente.situacaoDoDocumento' <<< "$detalhe")"
+        "$(jq -r '.versaoPendente.situacaoDoDocumento.codigo' <<< "$detalhe")"
 }
 
 # O que falta para cada perfil entrar em vigor, lido da API depois da gravação.
@@ -176,7 +176,7 @@ relatar_pendencias() {
         nome=$(campo_do_perfil "$i" nome)
         detalhe=$(detalhe_do_perfil "$ACCESS_TOKEN" "$(perfil_pelo_nome "$ACCESS_TOKEN" "$nome" | jq -r '.id')")
         jq -r --arg n "$nome" 'if .composicaoEmVigor != null then "    \($n): em vigor"
-            else "    \($n): aguarda \(.versaoPendente.etapaAtual); proteção de dados também aprova: \(.versaoPendente.exigeProtecaoDeDados); documento: \(.versaoPendente.situacaoDoDocumento); prazo até \(.versaoPendente.expiraEm)" end' <<< "$detalhe" >&2
+            else "    \($n): aguarda \(.versaoPendente.etapaAtual.codigo); proteção de dados também aprova: \(.versaoPendente.exigeProtecaoDeDados); documento: \(.versaoPendente.situacaoDoDocumento.codigo); prazo até \(.versaoPendente.expiraEm)" end' <<< "$detalhe" >&2
     done
 }
 
@@ -230,7 +230,7 @@ conferir_perfil() {
     fi
     detalhe=$(detalhe_do_perfil "$ACCESS_TOKEN" "$(jq -r '.id' <<< "$pedivel")")
     situacao=$(situacao_do_perfil "$detalhe" "$(permissoes_do_perfil "$i")")
-    alcance=$(jq -r '.escopo' <<< "$pedivel")
+    alcance=$(jq -r '.escopo.codigo' <<< "$pedivel")
     if [ "$situacao" != VIGENTE_IGUAL ] || [ "$alcance" != "$(campo_do_perfil "$i" alcance)" ]; then
         warn "perfil '$nome' difere do arquivo: situação $situacao; alcance na API '$alcance', esperado '$(campo_do_perfil "$i" alcance)'; permissões $(diferenca_da_situacao "$detalhe" "$(permissoes_do_perfil "$i")" "$situacao")"
         RESULTADO_DO_PERFIL=1

@@ -2,10 +2,12 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Profile;
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -14,9 +16,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal static class PerfisConcedidosDoUsuario
 {
-    internal const string EscopoUnidade = "unidade";
-    internal const string EscopoInstituicao = "instituicao";
-
     private static readonly StringComparer ComparadorDeTexto =
         StringComparer.Create(CultureInfo.GetCultureInfo("pt-BR"), ignoreCase: true);
 
@@ -64,7 +63,7 @@ internal static class PerfisConcedidosDoUsuario
                     x.Concessao.ConcessaoId,
                     x.Concessao.PerfilId,
                     x.Concessao.PerfilNome,
-                    x.Concessao.Institucional ? EscopoInstituicao : EscopoUnidade,
+                    CodigoComRotulo<TipoDeEscopo>.De(x.Concessao.Institucional ? TipoDeEscopo.Instituicao : TipoDeEscopo.Unidade),
                     x.Concessao.UnidadeId,
                     x.Unidade?.Sigla,
                     x.Unidade?.Nome,

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
@@ -9,7 +10,6 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>As divergências da governança, da mais recente para a mais antiga.</summary>
@@ -39,6 +39,13 @@ public static class ListarDivergenciasDaGovernancaQueryHandler
             .ObterNomesDosPerfisAsync([.. divergencias.Select(static d => d.PerfilId).Distinct()], cancellationToken).ConfigureAwait(false);
 
         return [.. divergencias.Select(d => new DivergenciaDaGovernancaDto(
-            d.Id, d.PerfilId, nomes.GetValueOrDefault(d.PerfilId, string.Empty), d.Codigo, d.Tipo.Codigo(), d.De, d.Para, d.Instante))];
+            d.Id,
+            d.PerfilId,
+            nomes.GetValueOrDefault(d.PerfilId, string.Empty),
+            d.Codigo,
+            CodigoComRotulo<TipoDeDivergencia>.De(d.Tipo),
+            d.De,
+            d.Para,
+            d.Instante))];
     }
 }

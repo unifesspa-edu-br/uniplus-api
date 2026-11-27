@@ -130,14 +130,14 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
 
     private static void ConferirPerfilInstitucional(JsonElement perfil)
     {
-        perfil.GetProperty("escopoTipo").GetString().Should().Be("instituicao");
+        perfil.GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("INSTITUICAO");
         perfil.GetProperty("unidadeSigla").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     private static void ConferirPerfilDaUnidade(JsonElement perfil, Guid unidadeId, ConcessaoAtiva concessao)
     {
         perfil.GetProperty("concessaoId").GetGuid().Should().Be(concessao.ConcessaoId);
-        perfil.GetProperty("escopoTipo").GetString().Should().Be("unidade");
+        perfil.GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("UNIDADE");
         perfil.GetProperty("unidadeId").GetGuid().Should().Be(unidadeId);
         perfil.GetProperty("unidadeSigla").GetString().Should().Be("CEPS");
         perfil.GetProperty("unidadeNome").GetString().Should().Be("Centro de Processos Seletivos");

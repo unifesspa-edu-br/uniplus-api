@@ -31,8 +31,8 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
         (await ConsultarCatalogoAsync(Cliente(Leandro))).Should().Be(HttpStatusCode.Forbidden);
         (await ConcessoesAsync(Leandro, perfilId)).Should().ContainSingle().Which.RevogadaEm.Should().BeNull();
         JsonElement suspensao = (await PerfilAsync(diogo, perfilId)).GetProperty("suspensao");
-        suspensao.GetProperty("papelDeQuemSuspendeu").GetString().Should().Be(EtapaGestao);
-        suspensao.GetProperty("etapasExigidasAgora").EnumerateArray().Select(e => e.GetString()).Should().Equal(EtapaGestao);
+        suspensao.GetProperty("papelDeQuemSuspendeu").GetProperty("codigo").GetString().Should().Be(EtapaGestao);
+        suspensao.GetProperty("etapasExigidasAgora").EnumerateArray().Select(e => e.GetProperty("codigo").GetString()).Should().Equal(EtapaGestao);
     }
 
     [Fact(DisplayName = "A retomada da gestão devolve o acesso no perfil comum e encerra a suspensão")]
@@ -61,7 +61,7 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
 
         JsonElement primeira = await RetomarComSucessoAsync(isabella, perfilId, EtapaGestao);
 
-        (primeira.GetProperty("concluida").GetBoolean(), string.Join(",", primeira.GetProperty("etapasPendentes").EnumerateArray().Select(e => e.GetString()))).Should().Be((false, EtapaProtecao));
+        (primeira.GetProperty("concluida").GetBoolean(), string.Join(",", primeira.GetProperty("etapasPendentes").EnumerateArray().Select(e => e.GetProperty("codigo").GetString()))).Should().Be((false, EtapaProtecao));
         (await PermissoesDaConcessaoAsync(perfilId)).Should().BeEmpty();
         (await RetomarComSucessoAsync(marlene, perfilId, EtapaProtecao)).GetProperty("concluida").GetBoolean().Should().BeTrue();
         (await PermissoesDaConcessaoAsync(perfilId)).Should().BeEquivalentTo(Consultar, Sensivel);

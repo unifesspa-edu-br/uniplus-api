@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -72,6 +72,6 @@ public sealed class EmissaoDoEnvioDoAnexo
         return gravado.IsFailure
             ? Result<AnexoParaEnvioDto>.Failure(gravado.Error!)
             : Result<AnexoParaEnvioDto>.Success(new AnexoParaEnvioDto(
-                anexo.Id, SituacaoDoAnexo.AguardandoEnvio.Codigo(), url.Endereco, EnvioDoPdf.TipoDeMidia, url.ExpiraEm));
+                anexo.Id, CodigoComRotulo<SituacaoDoAnexo>.De(SituacaoDoAnexo.AguardandoEnvio), url.Endereco, EnvioDoPdf.TipoDeMidia, url.ExpiraEm));
     }
 }

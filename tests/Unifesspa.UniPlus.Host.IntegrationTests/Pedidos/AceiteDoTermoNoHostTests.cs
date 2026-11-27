@@ -28,7 +28,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
 
         JsonElement pedido = await CorpoAsync(await PedirAsync(betina, perfil, unidade, Vigente!.Id), HttpStatusCode.Created);
 
-        pedido.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
+        pedido.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_GESTOR");
         JsonElement aceite = pedido.GetProperty("termo").GetProperty("aceite");
         aceite.GetProperty("versaoId").GetGuid().Should().Be(Vigente.Id);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);

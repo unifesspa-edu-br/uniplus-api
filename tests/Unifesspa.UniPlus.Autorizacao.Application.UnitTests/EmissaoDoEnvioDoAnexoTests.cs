@@ -10,12 +10,10 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstalacao;
@@ -139,7 +137,7 @@ public sealed class EmissaoDoEnvioDoAnexoTests
             new DoublesDePerfis.Usuario(ApoioDoPedido.Betina.Identidade),
             CancellationToken.None);
 
-        resultado.Value!.Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio.Codigo());
+        (resultado.Value!.Situacao.Codigo, resultado.Value.Situacao.Rotulo).Should().Be(("AGUARDANDO_ENVIO", "Aguardando envio"));
         cenario.Pedido.Anexos.Should().ContainSingle();
     }
 

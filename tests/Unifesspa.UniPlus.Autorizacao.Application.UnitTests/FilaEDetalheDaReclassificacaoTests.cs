@@ -94,6 +94,23 @@ public sealed class FilaEDetalheDaReclassificacaoTests
         detalhe.Value.PerfilId.Should().Be(existente.PerfilId);
     }
 
+    [Fact(DisplayName = "O detalhe traz a mudança de classificação, a versão em uso e a concessão suspensa com o código e o rótulo de cada valor")]
+    public async Task Detalhe_Existente_TrazOsValoresComCodigoERotulo()
+    {
+        Cenario cenario = new(permitidas: [Protecao]);
+        ReclassificacaoDaPermissao existente = cenario.Reclassificar(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal);
+
+        ReclassificacaoDto detalhe = (await cenario.ObterAsync(existente.Id)).Value!;
+
+        detalhe.Mudanca.ClassificacaoAnterior.EmPar().Should().Be(("INTERNO", "Interno"));
+        detalhe.Mudanca.ClassificacaoNova.EmPar().Should().Be(("PESSOAL", "Pessoal"));
+        detalhe.Versoes.Single().Situacao.EmPar().Should().Be(("VIGENTE", "Vigente"));
+        detalhe.Versoes.Single().Permissoes.Single().Classificacao.EmPar().Should().Be(("INTERNO", "Interno"));
+        detalhe.Concessoes.Single().EscopoTipo.EmPar().Should().Be(("INSTITUICAO", "Instituição"));
+        detalhe.Concessoes.Single().EtapasExigidas.Select(static e => (e.Codigo, e.Rotulo)).Should().Equal(("PROTECAO_DE_DADOS", "Proteção de dados"));
+        detalhe.Concessoes.Single().EtapasDecididas.Should().BeEmpty();
+    }
+
     private sealed class Cenario
     {
         private readonly Perfil _perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", [Codigo], new CatalogoDeTeste());
@@ -106,6 +123,7 @@ public sealed class FilaEDetalheDaReclassificacaoTests
         {
             _concessoes = new ConcessoesDaReclassificacao(_reclassificacoes);
             _reclassificacoes.NomesDosPerfis[_perfil.Id] = _perfil.Nome;
+            _reclassificacoes.VersoesEmUso.Add(_perfil.VersaoVigente!.Id);
             _reclassificacoes.ConcessoesComAPermissao.Add(new ConcessaoComAPermissao(
                 ConcessaoBuilder.DoPerfil(_perfil, new CatalogoDeTeste()).Para(new Identidade("https://idp.test/realms/unifesspa", "paulo.ramos", "Paulo Ramos")).Construir(),
                 new BaseDaConcessao(ClassificacaoDeProtecao.Interno, false)));

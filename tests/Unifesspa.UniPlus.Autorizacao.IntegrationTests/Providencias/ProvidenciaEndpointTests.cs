@@ -30,7 +30,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.Created);
         resposta.Headers.Location!.ToString().Should().EndWith($"/providencias/{corpo.GetProperty("id").GetGuid()}");
-        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("fundamento").GetString()).Should().Be(("ABERTA", Fundamento));
+        (corpo.GetProperty("situacao").GetProperty("codigo").GetString(), corpo.GetProperty("fundamento").GetString()).Should().Be(("ABERTA", Fundamento));
         (await FilaAsync(await ClienteDoGestorAsync(Diogo), $"?concessao={concessao}")).Should().Equal(corpo.GetProperty("id").GetGuid());
     }
 
@@ -74,7 +74,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
         (_, Guid providencia) = await ProvidenciaAbertaAsync();
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        (await CorpoAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("RESPONDIDA");
+        (await CorpoAsync(await ResponderAsync(diogo, providencia), HttpStatusCode.OK)).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("RESPONDIDA");
 
         await ConferirRecusaAsync(await ResponderAsync(await ClienteDoGestorAsync(Isabella), providencia), HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.ja_respondida");
     }
@@ -98,7 +98,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         JsonElement corpo = await CorpoAsync(await AtenderAsync(diogo, providencia), HttpStatusCode.OK);
 
-        (corpo.GetProperty("situacao").GetString(), corpo.GetProperty("concessao").GetProperty("ativa").GetBoolean()).Should().Be(("ATENDIDA", false));
+        (corpo.GetProperty("situacao").GetProperty("codigo").GetString(), corpo.GetProperty("concessao").GetProperty("ativa").GetBoolean()).Should().Be(("ATENDIDA", false));
         using JsonDocument trilha = await LerAsync(diogo, $"{Rota}/{concessao}/trilha");
         trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should()
             .Contain(["PROVIDENCIA_SOLICITADA", "REVOGADA", "PROVIDENCIA_ATENDIDA"]);
@@ -129,7 +129,7 @@ public sealed class ProvidenciaEndpointTests : ProvidenciaEndpointTestBase
 
         JsonElement lida = await CorpoAsync(await diogo.GetAsync(new Uri($"{RotaDasProvidencias}/{providencia}", UriKind.Relative)), HttpStatusCode.OK);
 
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
+        (lida.GetProperty("situacao").GetProperty("codigo").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetProperty("codigo").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
         (await FilaAsync(diogo, $"?concessao={concessao}")).Should().Equal(providencia);
         (await FilaAsync(diogo, $"?concessao={concessao}&situacao=ABERTA")).Should().BeEmpty();
         (await FilaAsync(diogo, $"?concessao={concessao}&situacao=PREJUDICADA")).Should().Equal(providencia);

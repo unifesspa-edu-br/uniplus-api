@@ -1,5 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Quem recebe o acesso, como o aprovador precisa conhecê-lo: o e-mail institucional do pedido e, depois do aceite, a
 /// identidade e o nome do token dele. Nunca traz CPF.
@@ -11,27 +15,27 @@ public sealed record BeneficiarioDoPedidoDto(string Email, IdentidadeDto? Identi
 /// <summary>Decisão de um aprovador, com o perfil como ele o avaliou.</summary>
 /// <param name="Dispensa">Motivo da dispensa da segunda aprovação, quando a decisão a dispensou.</param>
 public sealed record DecisaoDoPedidoDto(
-    string Etapa,
+    CodigoComRotulo<EtapaDoPedido> Etapa,
     IdentidadeDto Decisor,
-    string Resultado,
+    CodigoComRotulo<ResultadoDaDecisao> Resultado,
     string? Motivo,
     DateTimeOffset Instante,
     IReadOnlyList<string> PermissoesAvaliadas,
-    string SensibilidadeAvaliada,
+    CodigoComRotulo<ClassificacaoDeProtecao> SensibilidadeAvaliada,
     string? Dispensa);
 
-public sealed record AnexoDoPedidoDto(Guid Id, string Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
+public sealed record AnexoDoPedidoDto(Guid Id, CodigoComRotulo<SituacaoDoAnexo> Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
 
 /// <summary>
 /// Registro de que uma versão nova do perfil entrou em vigor enquanto o pedido estava ativo, e do que isso fez a ele. Os
 /// números são os das versões; o pedido não guarda cópia do perfil.
 /// </summary>
-/// <param name="Desfecho"><c>versao_atualizada</c>, <c>voltou_ao_gestor</c> ou <c>devolvido</c>.</param>
-public sealed record TrocaDeVersaoDoPedidoDto(int VersaoAnterior, int VersaoNova, string Desfecho, DateTimeOffset Instante);
+/// <param name="Desfecho">Como a troca de versão afetou o pedido.</param>
+public sealed record TrocaDeVersaoDoPedidoDto(int VersaoAnterior, int VersaoNova, CodigoComRotulo<DesfechoDaTrocaDeVersao> Desfecho, DateTimeOffset Instante);
 
 /// <summary>Pedido de concessão como a API o expõe a quem pode vê-lo.</summary>
 /// <param name="Versao">Número da versão do perfil que o pedido segue; nulo no perfil de governança, que não tem versão.</param>
-/// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
+/// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador; nula se não aguarda nenhum.</param>
 /// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugeriu; nulo, sem sugestão.</param>
 /// <param name="ValidaAte">Fim de vigência que o gestor definiu ao aprovar; nulo, sem prazo.</param>
 /// <param name="AdmitePrazo">Se a concessão pode ter prazo; falso para os perfis de gestor de acessos e de Representante do controlador.</param>
@@ -40,8 +44,8 @@ public sealed record TrocaDeVersaoDoPedidoDto(int VersaoAnterior, int VersaoNova
 /// <param name="Termo">O termo de responsabilidade fixado no pedido protegido e o aceite dele; nulo no pedido sem termo.</param>
 public sealed record PedidoDeConcessaoDto(
     Guid Id,
-    string Situacao,
-    string? EtapaAtual,
+    CodigoComRotulo<SituacaoDoPedido> Situacao,
+    CodigoComRotulo<EtapaDoPedido>? EtapaAtual,
     IdentidadeDto Solicitante,
     BeneficiarioDoPedidoDto Beneficiario,
     PerfilResumoDto Perfil,
@@ -74,8 +78,8 @@ public sealed record AceiteDoTermoDto(IdentidadeDto Pessoa, DateTimeOffset Aceit
 /// <param name="AguardaAceiteDoTermo">O pedido aguarda, do beneficiário, o aceite do termo de responsabilidade fixado.</param>
 public sealed record PedidoResumoDto(
     Guid Id,
-    string Situacao,
-    string? EtapaAtual,
+    CodigoComRotulo<SituacaoDoPedido> Situacao,
+    CodigoComRotulo<EtapaDoPedido>? EtapaAtual,
     BeneficiarioDoPedidoDto Beneficiario,
     PerfilResumoDto Perfil,
     int? Versao,
@@ -87,7 +91,7 @@ public sealed record PedidoResumoDto(
 /// <summary>Resposta do envio de um anexo: o id e a URL de PUT assinada para o PDF.</summary>
 /// <param name="UrlDeEnvio">URL de PUT assinada; credencial de acesso, de validade curta.</param>
 /// <param name="TipoDeMidia">O <c>Content-Type</c> que o PUT precisa enviar.</param>
-public sealed record AnexoParaEnvioDto(Guid Id, string Situacao, Uri UrlDeEnvio, string TipoDeMidia, DateTimeOffset ExpiraEm);
+public sealed record AnexoParaEnvioDto(Guid Id, CodigoComRotulo<SituacaoDoAnexo> Situacao, Uri UrlDeEnvio, string TipoDeMidia, DateTimeOffset ExpiraEm);
 
 /// <summary>URL assinada de leitura de um anexo verificado, de validade curta.</summary>
 public sealed record LeituraDoAnexoDto(Uri Url, DateTimeOffset ExpiraEm);

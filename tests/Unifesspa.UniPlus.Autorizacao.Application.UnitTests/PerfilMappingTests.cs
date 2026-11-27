@@ -4,13 +4,11 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CatalogoDoMapeamento;
@@ -24,7 +22,7 @@ public sealed class PerfilMappingTests
             CriarPerfil("teste:itens:ler", "teste:itens:manter", "teste:laudos:consultar"),
             Catalogo);
 
-        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
+        (dto.Sensibilidade.Codigo, dto.Sensibilidade.Rotulo).Should().Be(("SENSIVEL", "Sensível"));
     }
 
     [Fact(DisplayName = "A permissão retirada do catálogo conta como sensível")]
@@ -34,7 +32,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, new CatalogoDaAplicacao([]));
 
-        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
+        (dto.Sensibilidade.Codigo, dto.Sensibilidade.Rotulo).Should().Be(("SENSIVEL", "Sensível"));
     }
 
     [Fact(DisplayName = "O perfil de governança expõe o tipo de governança e as permissões próprias como composição")]
@@ -44,7 +42,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
-        dto.Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.Codigo());
+        (dto.Governanca!.Codigo, dto.Governanca.Rotulo).Should().Be(("GESTOR_DE_ACESSOS", "Gestor de acessos"));
         dto.ComposicaoEmVigor!.VersaoId.Should().BeNull();
         dto.ComposicaoEmVigor.Permissoes.Select(static p => p.Codigo).Should().Equal("teste:itens:ler");
     }
@@ -84,9 +82,31 @@ public sealed class PerfilMappingTests
             VersaoId = perfil.VersaoPendente!.Id,
             Numero = 1,
             Protocolo = PerfisDeTeste.Protocolo,
-            EtapaAtual = EtapaDaVersao.GestaoDeAcessos.Codigo(),
+            EtapaAtual = new { Codigo = "GESTAO_DE_ACESSOS", Rotulo = "Gestão de acessos" },
             ExigeProtecaoDeDados = false,
         });
+    }
+
+    [Fact(DisplayName = "A versão pendente que acrescenta só permissão interna exige apenas a etapa da gestão de acessos")]
+    public void ToDto_VersaoPendenteInterna_ExigeSoAGestaoDeAcessos()
+    {
+        Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada(["teste:itens:ler"]);
+
+        VersaoPendenteDto pendente = PerfilMapping.ToDto(perfil, Catalogo).VersaoPendente!;
+
+        pendente.EtapasExigidas.Select(static e => (e.Codigo, e.Rotulo))
+            .Should().Equal(("GESTAO_DE_ACESSOS", "Gestão de acessos"));
+    }
+
+    [Fact(DisplayName = "A versão pendente que acrescenta permissão sensível exige a gestão de acessos e a proteção de dados")]
+    public void ToDto_VersaoPendenteSensivel_ExigeAsDuasEtapas()
+    {
+        Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada(["teste:laudos:consultar"]);
+
+        VersaoPendenteDto pendente = PerfilMapping.ToDto(perfil, Catalogo).VersaoPendente!;
+
+        pendente.EtapasExigidas.Select(static e => (e.Codigo, e.Rotulo))
+            .Should().Equal(("GESTAO_DE_ACESSOS", "Gestão de acessos"), ("PROTECAO_DE_DADOS", "Proteção de dados"));
     }
 
     [Fact(DisplayName = "Sem leitor, a versão pendente não é de quem lê")]
@@ -135,9 +155,9 @@ public sealed class PerfilMappingTests
 
         SuspensaoDoPerfilDto? suspensao = PerfilMapping.ToDto(perfil, Catalogo).Suspensao;
 
-        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.Codigo());
-        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo(), EtapaDaVersao.ProtecaoDeDados.Codigo());
-        suspensao.EtapasDecididas.Should().Equal(EtapaDaVersao.ProtecaoDeDados.Codigo());
+        (suspensao!.PapelDeQuemSuspendeu.Codigo, suspensao.PapelDeQuemSuspendeu.Rotulo).Should().Be(("GESTAO_DE_ACESSOS", "Gestão de acessos"));
+        suspensao.EtapasExigidasAgora.Select(static e => e.Codigo).Should().Equal("GESTAO_DE_ACESSOS", "PROTECAO_DE_DADOS");
+        suspensao.EtapasDecididas.Select(static e => (e.Codigo, e.Rotulo)).Should().Equal(("PROTECAO_DE_DADOS", "Proteção de dados"));
     }
 
     [Fact(DisplayName = "Sem composição em vigor e com pendente protegida, a suspensão mostra a sensibilidade da pendente e as etapas da composição vazia")]
@@ -148,8 +168,8 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
-        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
-        dto.Suspensao!.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo());
+        (dto.Sensibilidade.Codigo, dto.Sensibilidade.Rotulo).Should().Be(("SENSIVEL", "Sensível"));
+        dto.Suspensao!.EtapasExigidasAgora.Select(static e => e.Codigo).Should().Equal("GESTAO_DE_ACESSOS");
     }
 
     [Fact(DisplayName = "O perfil com versão em vigor e pendente é projetado por inteiro, com os blocos das versões vindos do mapeamento de versões")]
@@ -159,7 +179,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo, PerfisDeTeste.Autor);
 
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "INTERNO", SituacaoDoAcessoDoPerfil.EmVigor, PerfisDeTeste.Autor));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, ClassificacaoDeProtecao.Interno, SituacaoDoAcessoDoPerfil.EmVigor, PerfisDeTeste.Autor));
     }
 
     [Fact(DisplayName = "O perfil sem vigente cuja única versão foi cancelada expõe a última versão encerrada sem vigor")]
@@ -171,7 +191,7 @@ public sealed class PerfilMappingTests
         PerfilDto dto = PerfilMapping.ToDto(perfil, Catalogo);
 
         dto.UltimaVersaoEncerradaSemVigor.Should().NotBeNull();
-        dto.Should().BeEquivalentTo(EsperadoDe(perfil, "PUBLICO", SituacaoDoAcessoDoPerfil.SemVersaoEmVigor, null));
+        dto.Should().BeEquivalentTo(EsperadoDe(perfil, ClassificacaoDeProtecao.Publico, SituacaoDoAcessoDoPerfil.SemVersaoEmVigor, null));
     }
 
     internal static Perfil PerfilComVigenteEPendente()
@@ -188,9 +208,9 @@ public sealed class PerfilMappingTests
         return perfil;
     }
 
-    private static PerfilDto EsperadoDe(Perfil perfil, string sensibilidade, SituacaoDoAcessoDoPerfil situacaoDoAcesso, Identidade? leitor) =>
+    private static PerfilDto EsperadoDe(Perfil perfil, ClassificacaoDeProtecao sensibilidade, SituacaoDoAcessoDoPerfil situacaoDoAcesso, Identidade? leitor) =>
         new(
-            perfil.Id, perfil.Nome, perfil.Descricao, true, null, sensibilidade, CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(situacaoDoAcesso),
+            perfil.Id, perfil.Nome, perfil.Descricao, true, null, CodigoComRotulo<ClassificacaoDeProtecao>.De(sensibilidade), CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(situacaoDoAcesso),
             perfil.VersaoVigente is { } vigente ? VersaoMapping.VigenteDe(perfil, vigente, Catalogo) : null,
             VersaoMapping.PendenteDe(perfil, Catalogo, leitor),
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),

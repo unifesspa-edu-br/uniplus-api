@@ -57,7 +57,7 @@ pessoa_tem_perfil() {
     resposta=$(como "a leitura dos perfis da pessoa" "$1" GET "/api/profile/me")
     jq -e '.perfis | type == "array"' >/dev/null <<< "$resposta" || fail "a leitura dos perfis da pessoa não trouxe a lista de perfis."
     jq -e --arg n "$2" --arg u "$3" \
-        'any(.perfis[]; .nome == $n and (if $u == "" then .escopoTipo == "instituicao" else .unidadeId == $u end))' \
+        'any(.perfis[]; .nome == $n and (if $u == "" then .escopoTipo.codigo == "INSTITUICAO" else .unidadeId == $u end))' \
         >/dev/null <<< "$resposta"
 }
 
@@ -65,7 +65,7 @@ pessoa_tem_perfil() {
 # $1=token $2=id do perfil $3=unidade (vazio: instituição)
 pedido_aberto_da_pessoa() {
     como "a lista dos pedidos da pessoa" "$1" GET "/api/autorizacao/pedidos-de-concessao?fila=meus" \
-        | jq -r --arg p "$2" --arg u "$3" 'first(.[] | select(.perfil.id == $p and (.situacao | test("^AGUARDANDO_"))
+        | jq -r --arg p "$2" --arg u "$3" 'first(.[] | select(.perfil.id == $p and (.situacao.codigo | test("^AGUARDANDO_"))
             and (if $u == "" then .escopo.unidadeId == null else .escopo.unidadeId == $u end))) | .id // empty'
 }
 
@@ -115,7 +115,7 @@ conceder_perfil() {
     pedido=$(pedido_aberto_da_pessoa "$token" "${PERFIL_ID[$nome]}" "$unidade")
     [ -n "$pedido" ] || pedido=$(pedir_perfil "$token" "${PERFIL_ID[$nome]}" "$unidade" "$termo")
     for _ in 1 2 3 4 5 6; do
-        situacao=$(como "a leitura do pedido" "$token" GET "/api/autorizacao/pedidos-de-concessao/$pedido" | jq -r '.situacao')
+        situacao=$(como "a leitura do pedido" "$token" GET "/api/autorizacao/pedidos-de-concessao/$pedido" | jq -r '.situacao.codigo')
         if [ "$situacao" = APROVADO ]; then
             ok "$pessoa: '$nome' concedido"
             return 0

@@ -31,7 +31,7 @@ public sealed class AtendimentoDaProvidenciaTests
 
         (Result<ProvidenciaDto> resposta, IEnumerable<object> mensagens) = await AtenderAsync(providencia.Id, ProvidenciaBuilder.Leandro.Email);
 
-        (resposta.Value!.Situacao, resposta.Value.Concessao.Ativa, resposta.Value.EncerramentoDaConcessao).Should().Be(("ATENDIDA", false, (EncerramentoDaConcessaoDto?)null));
+        (resposta.Value!.Situacao.Codigo, resposta.Value.Concessao.Ativa, resposta.Value.EncerramentoDaConcessao).Should().Be(("ATENDIDA", false, (EncerramentoDaConcessaoDto?)null));
         (mensagens.Count(), _construtor.Concessao.MotivoRevogacao).Should().Be((2, ProvidenciaBuilder.Motivo));
         Received.InOrder(() =>
         {
@@ -95,7 +95,7 @@ public sealed class AtendimentoDaProvidenciaTests
 
         (Result<ProvidenciaDto> resposta, _) = await AtenderAsync(providencia.Id, ProvidenciaBuilder.Leandro.Email);
 
-        (resposta.Value!.Situacao, designacao.RevogadaEm is not null).Should().Be(("ATENDIDA", true));
+        (resposta.Value!.Situacao.Codigo, designacao.RevogadaEm is not null).Should().Be(("ATENDIDA", true));
         await _cenario.Unidade.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -1,11 +1,13 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento <see cref="Concessao"/> para <see cref="ConcessaoDto"/> e para a trilha.</summary>
 public static class ConcessaoMapping
@@ -23,8 +25,8 @@ public static class ConcessaoMapping
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, perfilNome),
             versao,
-            new EscopoDto(c.EscopoTipo.Codigo(), c.UnidadeId),
-            new OrigemDto(c.OrigemTipo.Codigo(), c.OrigemId),
+            new EscopoDto(CodigoComRotulo<TipoDeEscopo>.De(c.EscopoTipo), c.UnidadeId),
+            new OrigemDto(CodigoComRotulo<TipoDeOrigem>.De(c.OrigemTipo), c.OrigemId),
             c.ConcedidaEm,
             c.ValidaAte,
             c.RevogadaEm,

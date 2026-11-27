@@ -6,22 +6,22 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <summary>Corpo da suspensão, da desativação e da reativação do perfil: o motivo é obrigatório, de até 500 caracteres.</summary>
 public sealed record MotivoDaContencaoRequest(string? Motivo);
 
-/// <summary>Corpo da decisão de uma etapa da retomada: <c>gestao_de_acessos</c> ou <c>protecao_de_dados</c>, com o motivo obrigatório.</summary>
+/// <summary>Corpo da decisão de uma etapa da retomada: <c>GESTAO_DE_ACESSOS</c> ou <c>PROTECAO_DE_DADOS</c>, com o motivo obrigatório.</summary>
 public sealed record RetomadaDaSuspensaoRequest(string? Etapa, string? Motivo);
 
 /// <summary>O que a decisão de uma etapa deixou: se a suspensão se fechou e as etapas que ainda faltam decidir.</summary>
-public sealed record RetomadaDaSuspensaoDto(bool Concluida, IReadOnlyList<string> EtapasPendentes);
+public sealed record RetomadaDaSuspensaoDto(bool Concluida, IReadOnlyList<CodigoComRotulo<EtapaDaVersao>> EtapasPendentes);
 
 /// <summary>A suspensão aberta do perfil, sem o motivo nem as pessoas, que ficam na trilha da contenção.</summary>
 /// <param name="Desde">Quando o perfil foi suspenso.</param>
-/// <param name="PapelDeQuemSuspendeu">A permissão que governou a suspensão: <c>gestao_de_acessos</c> ou <c>protecao_de_dados</c>.</param>
+/// <param name="PapelDeQuemSuspendeu">A permissão que governou a suspensão: <c>GESTAO_DE_ACESSOS</c> ou <c>PROTECAO_DE_DADOS</c>.</param>
 /// <param name="EtapasExigidasAgora">As etapas que a retomada exige, pelo catálogo atual.</param>
 /// <param name="EtapasDecididas">As etapas já decididas nesta suspensão.</param>
 public sealed record SuspensaoDoPerfilDto(
     DateTimeOffset Desde,
-    string PapelDeQuemSuspendeu,
-    IReadOnlyList<string> EtapasExigidasAgora,
-    IReadOnlyList<string> EtapasDecididas);
+    CodigoComRotulo<EtapaDaVersao> PapelDeQuemSuspendeu,
+    IReadOnlyList<CodigoComRotulo<EtapaDaVersao>> EtapasExigidasAgora,
+    IReadOnlyList<CodigoComRotulo<EtapaDaVersao>> EtapasDecididas);
 
 /// <summary>
 /// Um registro da trilha da contenção: suspensão, decisão de uma etapa da retomada, retomada, desativação ou

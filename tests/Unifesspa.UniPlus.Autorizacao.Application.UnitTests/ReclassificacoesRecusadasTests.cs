@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -111,6 +113,19 @@ public sealed class ReclassificacoesRecusadasTests
 
         divergencias.IsSuccess.Should().BeTrue();
         TrilhaDeAcesso.Do(verificador).Should().Equal(NaOperacao(Protecao, ResultadoDoAcesso.Permitido));
+    }
+
+    [Fact(DisplayName = "O tipo da divergência sai com o código e o rótulo")]
+    public async Task Divergencias_TipoSaiComCodigoERotulo()
+    {
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Protecao]);
+        ReclassificacoesNaMemoria repositorio = new();
+        repositorio.Divergencias.Add(DivergenciaDaGovernanca.DaComposicao(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "selecao:processos:consultar", TipoDeDivergencia.ComposicaoExcedente, PerfisDeTeste.Instante, 0));
+
+        Result<IReadOnlyList<DivergenciaDaGovernancaDto>> divergencias = await ListarDivergencias(verificador, repositorio);
+
+        divergencias.Value!.Should().ContainSingle().Which.Tipo.EmPar().Should().Be(("COMPOSICAO_EXCEDENTE", "Composição excedente"));
     }
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>

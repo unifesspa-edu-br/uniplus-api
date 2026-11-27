@@ -63,7 +63,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         await TrocarComposicaoAsync(perfil, Operar, Laudos);
 
         JsonElement lido = await LerAsync(diogo, $"{Rota}/{pedido}");
-        (lido.GetProperty("situacao").GetString(), lido.GetProperty("versao").GetInt32(), lido.GetProperty("trocasDeVersao").GetArrayLength())
+        (lido.GetProperty("situacao").GetProperty("codigo").GetString(), lido.GetProperty("versao").GetInt32(), lido.GetProperty("trocasDeVersao").GetArrayLength())
             .Should().Be(("APROVADO", 1, 0));
         (await LerAsync(diogo, $"{RotaDasConcessoes}/{concessao}")).GetProperty("versao").GetInt32().Should().Be(1);
     }
@@ -83,7 +83,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         JsonElement criado = await LerAsync(betina, $"{Rota}/{pedido}");
         criado.GetProperty("versao").GetInt32().Should().Be(1);
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes"), HttpStatusCode.OK);
-        aprovado.GetProperty("situacao").GetString().Should().Be("APROVADO");
+        aprovado.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("APROVADO");
         aprovado.GetProperty("versao").GetInt32().Should().Be(1);
     }
 

@@ -115,7 +115,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     private static async Task<string> AprovarAsync(HttpClient decisor, Guid id)
     {
         using HttpResponseMessage resposta = await PedidosDeConcessaoTestBase.EnviarAsync(decisor, HttpMethod.Post, $"{Pedidos}/{id}/aprovacoes");
-        return (await PedidosDeConcessaoTestBase.CorpoAsync(resposta, HttpStatusCode.OK)).GetProperty("situacao").GetString()!;
+        return (await PedidosDeConcessaoTestBase.CorpoAsync(resposta, HttpStatusCode.OK)).GetProperty("situacao").GetProperty("codigo").GetString()!;
     }
 
     // O pedido de designação feito por Leandro, com o documento verificado e aceito pelo beneficiário.

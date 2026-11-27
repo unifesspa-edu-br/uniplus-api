@@ -18,7 +18,8 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
     public void Criar_Valido_DevolveEnvio()
     {
         _cenario.Status.Should().Be(HttpStatusCode.Created);
-        _cenario.RespostaDeEnvio.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_ENVIO");
+        _cenario.RespostaDeEnvio.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_ENVIO");
+        _cenario.RespostaDeEnvio.GetProperty("situacao").GetProperty("rotulo").GetString().Should().Be("Aguardando envio");
         _cenario.RespostaDeEnvio.GetProperty("tipoDeMidia").GetString().Should().Be("application/pdf");
         _cenario.RespostaDeEnvio.GetProperty("urlDeEnvio").GetString().Should().StartWith("http");
     }
@@ -29,7 +30,8 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
         _cenario.Perfil.GetProperty("ativo").GetBoolean().Should().BeTrue();
         _cenario.Perfil.GetProperty("governanca").ValueKind.Should().Be(JsonValueKind.Null);
         _cenario.Perfil.GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
-        _cenario.Perfil.GetProperty("sensibilidade").GetString().Should().Be("INTERNO");
+        _cenario.Perfil.GetProperty("sensibilidade").GetProperty("codigo").GetString().Should().Be("INTERNO");
+        _cenario.Perfil.GetProperty("sensibilidade").GetProperty("rotulo").GetString().Should().Be("Interno");
     }
 
     [Fact(DisplayName = "O perfil criado tem versão pendente com as permissões propostas")]
@@ -37,7 +39,7 @@ public sealed class CriacaoDePerfilEndpointTests : IClassFixture<CenarioDeCriaca
     {
         JsonElement pendente = _cenario.Perfil.GetProperty("versaoPendente");
         pendente.GetProperty("numero").GetInt32().Should().Be(1);
-        pendente.GetProperty("situacaoDoDocumento").GetString().Should().Be("AGUARDANDO_ENVIO");
+        pendente.GetProperty("situacaoDoDocumento").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_ENVIO");
         pendente.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().Equal(PerfilEndpointTestBase.ConsultarCatalogo, PerfilEndpointTestBase.ManterMotivos);

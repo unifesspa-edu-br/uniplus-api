@@ -69,7 +69,7 @@ pedido_de_representante() {
     local token="$1" id termo
     id=$(como "a lista dos pedidos" "$token" GET "/api/autorizacao/pedidos-de-concessao?fila=meus" \
         | jq -r --arg p "$PERFIL_REPRESENTANTE_ID" \
-            'first(.[] | select(.perfil.id == $p and (.situacao | test("^AGUARDANDO_")))) | .id // empty')
+            'first(.[] | select(.perfil.id == $p and (.situacao.codigo | test("^AGUARDANDO_")))) | .id // empty')
     if [ -z "$id" ]; then
         termo=$(como "a leitura do termo vigente" "$token" GET "/api/autorizacao/termos-de-responsabilidade/vigente" | jq -r '.id')
         id=$(como "o pedido de Representante do controlador" "$token" POST "/api/autorizacao/pedidos-de-concessao" \
@@ -97,7 +97,7 @@ anexar_designacao() {
 }
 
 situacao_do_pedido() {
-    como "a leitura do pedido $1" "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" | jq -r '.situacao'
+    como "a leitura do pedido $1" "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" | jq -r '.situacao.codigo'
 }
 
 aceitar_termo_do_pedido() {

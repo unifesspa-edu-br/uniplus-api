@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// </summary>
 public enum SituacaoDaRevisao
 {
-    [CodigoDeContrato("EM_ANDAMENTO", "Em Andamento")]
+    [CodigoDeContrato("EM_ANDAMENTO", "Em andamento")]
     EmAndamento = 1,
     [CodigoDeContrato("CONCLUIDA", "Concluída")]
     Concluida = 2,

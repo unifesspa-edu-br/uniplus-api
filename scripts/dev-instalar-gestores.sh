@@ -116,7 +116,7 @@ aguardar_documento_verificado() {
     local id="$1" token="$2" situacao="" fim=$((SECONDS + ESPERA_VERIFICACAO))
     while [ "$SECONDS" -lt "$fim" ]; do
         situacao=$(curl -s -H "Authorization: Bearer $token" "$API_URL/api/autorizacao/instalacao/$id" \
-            | jq -r '.situacao // empty' 2>/dev/null || true)
+            | jq -r '.situacao.codigo // empty' 2>/dev/null || true)
         [ "$situacao" = "DOCUMENTO_VERIFICADO" ] && return 0
         sleep 3
     done

@@ -194,9 +194,9 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
 
         JsonElement raiz = concessao.RootElement;
-        (raiz.GetProperty("beneficiario").GetProperty("contaId").GetString(), raiz.GetProperty("perfil").GetProperty("id").GetGuid(), raiz.GetProperty("origem").GetProperty("tipo").GetString())
+        (raiz.GetProperty("beneficiario").GetProperty("contaId").GetString(), raiz.GetProperty("perfil").GetProperty("id").GetGuid(), raiz.GetProperty("origem").GetProperty("tipo").GetProperty("codigo").GetString())
             .Should().Be((Leandro.ContaId, perfil, "PEDIDO"));
-        (raiz.GetProperty("escopo").GetProperty("tipo").GetString(), raiz.GetProperty("escopo").GetProperty("unidadeId").GetGuid()).Should().Be(("UNIDADE", unidade));
+        (raiz.GetProperty("escopo").GetProperty("tipo").GetProperty("codigo").GetString(), raiz.GetProperty("escopo").GetProperty("unidadeId").GetGuid()).Should().Be(("UNIDADE", unidade));
         raiz.GetProperty("ativa").GetBoolean().Should().BeTrue();
         raiz.GetProperty("revogadaEm").ValueKind.Should().Be(JsonValueKind.Null);
         raiz.EnumerateObject().Select(p => p.Name).Should().NotContain(["cpf", "nome"]);

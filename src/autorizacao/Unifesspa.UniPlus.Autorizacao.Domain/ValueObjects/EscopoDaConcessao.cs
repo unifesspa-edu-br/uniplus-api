@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Alcance pedido para a concessão. A coerência entre o tipo e a unidade é conferida por

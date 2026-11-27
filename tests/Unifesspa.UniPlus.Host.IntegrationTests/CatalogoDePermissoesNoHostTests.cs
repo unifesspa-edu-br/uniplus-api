@@ -137,7 +137,8 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().BeEquivalentTo("selecao:motivos-de-decisao:manter");
         resource.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
-        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("INTERNO");
+        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetProperty("codigo").GetString().Should().Be("INTERNO");
+        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetProperty("rotulo").GetString().Should().Be("Interno");
     }
 
     private static async Task<JsonElement> LerResourceDaSelecaoAsync(HttpClient client, string resource)

@@ -98,7 +98,7 @@ public sealed class DocumentosDasVersoesTests
             CancellationToken.None);
 
         resposta.IsSuccess.Should().BeTrue();
-        resposta.Value!.Situacao.Should().Be("EM_VERIFICACAO");
+        (resposta.Value!.Situacao.Codigo, resposta.Value.Situacao.Rotulo).Should().Be(("EM_VERIFICACAO", "Em verificação"));
         PedidoDeVerificacaoDeArquivo pedido = mensagens.Should().ContainSingle().Subject.Should().BeOfType<PedidoDeVerificacaoDeArquivo>().Subject;
         DevePedirAVerificacaoDo(pedido, perfil.VersaoPendente.Documento!);
     }

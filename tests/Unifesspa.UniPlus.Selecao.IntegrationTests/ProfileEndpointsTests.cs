@@ -141,10 +141,10 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
     {
         perfis.Select(static p => p.GetProperty("nome").GetString())
             .Should().Equal("Consulta institucional", "Gestor de processo seletivo");
-        perfis[0].GetProperty("escopoTipo").GetString().Should().Be("instituicao");
+        perfis[0].GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("INSTITUICAO");
         perfis[0].GetProperty("unidadeSigla").ValueKind.Should().Be(JsonValueKind.Null);
         perfis[1].GetProperty("concessaoId").GetGuid().Should().Be(daUnidade.ConcessaoId);
-        perfis[1].GetProperty("escopoTipo").GetString().Should().Be("unidade");
+        perfis[1].GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("UNIDADE");
         perfis[1].GetProperty("unidadeId").GetGuid().Should().Be(unidadeId);
         perfis[1].GetProperty("unidadeSigla").GetString().Should().Be("CEPS");
         perfis[1].GetProperty("unidadeNome").GetString().Should().Be("Centro de Processos Seletivos");

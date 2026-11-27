@@ -45,7 +45,7 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
     private protected async Task<HttpResponseMessage> AprovarUltimaEtapaBrutoAsync(HttpClient criador, Envio envio)
     {
         JsonElement pendente = (await PerfilAsync(criador, envio.PerfilId)).GetProperty("versaoPendente");
-        if (pendente.GetProperty("etapaAtual").GetString() != EtapaGestao)
+        if (pendente.GetProperty("etapaAtual").GetProperty("codigo").GetString() != EtapaGestao)
         {
             return await AprovarProtecaoBrutoAsync(envio);
         }

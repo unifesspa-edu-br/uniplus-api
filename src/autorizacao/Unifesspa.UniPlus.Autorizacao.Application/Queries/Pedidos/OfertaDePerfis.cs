@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
@@ -7,10 +8,9 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -89,8 +89,8 @@ public sealed class OfertaDePerfis
                 perfil.Id,
                 perfil.Nome,
                 perfil.Descricao,
-                alcance.Codigo(),
+                CodigoComRotulo<TipoDeEscopo>.De(alcance),
                 PerfilMapping.Avaliar(perfil, _catalogoDaAplicacao).ExigeAprovacaoDeProtecaoDeDados,
-                perfil.Governanca?.Codigo())
+                PerfilMapping.GovernancaDe(perfil))
             : null;
 }

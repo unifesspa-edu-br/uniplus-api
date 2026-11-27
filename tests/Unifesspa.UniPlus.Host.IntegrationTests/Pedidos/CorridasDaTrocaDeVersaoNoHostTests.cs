@@ -54,7 +54,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
 
         using HttpResponseMessage resposta = await aprovacao;
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.OK);
-        corpo.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
+        corpo.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
         corpo.GetProperty("versao").GetInt32().Should().Be(2);
     }
 

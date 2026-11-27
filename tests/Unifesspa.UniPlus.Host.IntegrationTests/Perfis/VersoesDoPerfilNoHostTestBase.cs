@@ -89,7 +89,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         string etag = await EnviarPdfAsync(new Uri(envio.UrlDeEnvio, UriKind.Absolute));
         using HttpResponseMessage confirmacao = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento/confirmacao", new { etag });
-        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("EM_VERIFICACAO");
+        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("EM_VERIFICACAO");
     }
 
     /// <summary>
@@ -226,14 +226,14 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     }
 
     private protected static async Task<string?> SituacaoDoDocumentoAsync(HttpClient gestor, Guid perfilId) =>
-        (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("versaoPendente").GetProperty("situacaoDoDocumento").GetString();
+        (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("versaoPendente").GetProperty("situacaoDoDocumento").GetProperty("codigo").GetString();
 
     /// <summary>A situação da última versão que terminou sem entrar em vigor, ou nulo quando não há.</summary>
     private protected static async Task<string?> SituacaoDaUltimaEncerradaAsync(HttpClient gestor, Guid perfilId)
     {
         JsonElement encerrada = (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("ultimaVersaoEncerradaSemVigor");
 
-        return encerrada.ValueKind == JsonValueKind.Object ? encerrada.GetProperty("situacao").GetString() : null;
+        return encerrada.ValueKind == JsonValueKind.Object ? encerrada.GetProperty("situacao").GetProperty("codigo").GetString() : null;
     }
 
     /// <summary>Todos os perfis que se podem pedir, percorrendo as páginas pelo cursor do cabeçalho Link.</summary>

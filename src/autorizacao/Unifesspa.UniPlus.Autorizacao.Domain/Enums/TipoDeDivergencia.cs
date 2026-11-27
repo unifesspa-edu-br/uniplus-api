@@ -6,11 +6,11 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 public enum TipoDeDivergencia
 {
     /// <summary>O código espera uma permissão que o perfil não reúne.</summary>
-    [CodigoDeContrato("COMPOSICAO_FALTANTE", "Composição Faltante")]
+    [CodigoDeContrato("COMPOSICAO_FALTANTE", "Composição faltante")]
     ComposicaoFaltante = 1,
 
     /// <summary>O perfil reúne uma permissão que o código não espera.</summary>
-    [CodigoDeContrato("COMPOSICAO_EXCEDENTE", "Composição Excedente")]
+    [CodigoDeContrato("COMPOSICAO_EXCEDENTE", "Composição excedente")]
     ComposicaoExcedente = 2,
 
     /// <summary>A classificação de uma permissão do perfil mudou no catálogo.</summary>

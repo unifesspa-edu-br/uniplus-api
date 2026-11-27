@@ -1,9 +1,9 @@
-namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
+namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.Enums;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class TipoDeEscopoCodigosTests
 {
@@ -14,5 +14,14 @@ public sealed class TipoDeEscopoCodigosTests
             {
                 [TipoDeEscopo.Unidade] = "UNIDADE",
                 [TipoDeEscopo.Instituicao] = "INSTITUICAO",
+            });
+
+    [Fact]
+    public void Rotulo_DeCadaValor_EODeclarado() =>
+        Enum.GetValues<TipoDeEscopo>().ToDictionary(static valor => valor, static valor => valor.Rotulo())
+            .Should().Equal(new Dictionary<TipoDeEscopo, string>
+            {
+                [TipoDeEscopo.Unidade] = "Unidade",
+                [TipoDeEscopo.Instituicao] = "Instituição",
             });
 }

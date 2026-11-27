@@ -49,8 +49,20 @@ public sealed class PerfisConcedidosDoUsuarioTests
 
         PerfilConcedidoResponse perfil = (await ListarAsync()).Should().ContainSingle().Subject;
 
-        perfil.Should().Be(new PerfilConcedidoResponse(
-            concessao.ConcessaoId, concessao.PerfilId, Gestor, "unidade", Ceps, "CEPS", "Centro de Processos Seletivos", Agora.AddDays(1)));
+        (perfil.ConcessaoId, perfil.PerfilId, perfil.Nome, perfil.EscopoTipo.Codigo, perfil.UnidadeId, perfil.UnidadeSigla, perfil.UnidadeNome, perfil.ValidaAte)
+            .Should().Be((concessao.ConcessaoId, concessao.PerfilId, Gestor, "UNIDADE", Ceps, "CEPS", "Centro de Processos Seletivos", Agora.AddDays(1)));
+    }
+
+    [Fact]
+    public async Task EscopoDoPerfil_TrazCodigoERotuloPorExtenso()
+    {
+        Dado(Concessao(Gestor, Ceps), Concessao(Gestor, null));
+
+        IReadOnlyList<PerfilConcedidoResponse> perfis = await ListarAsync();
+
+        perfis.Select(static p => (p.EscopoTipo.Codigo, p.EscopoTipo.Rotulo)).Should().Equal(
+            ("INSTITUICAO", "Instituição"),
+            ("UNIDADE", "Unidade"));
     }
 
     [Fact]
@@ -60,7 +72,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
 
         PerfilConcedidoResponse perfil = (await ListarAsync()).Should().ContainSingle().Subject;
 
-        perfil.EscopoTipo.Should().Be("instituicao");
+        perfil.EscopoTipo.Codigo.Should().Be("INSTITUICAO");
         (perfil.UnidadeId, perfil.UnidadeSigla, perfil.UnidadeNome, perfil.ValidaAte).Should().Be((null, null, null, null));
     }
 
@@ -97,7 +109,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
         PerfilConcedidoResponse perfil = (await ListarAsync()).Should().ContainSingle().Subject;
 
         (perfil.UnidadeId, perfil.UnidadeSigla, perfil.UnidadeNome).Should().Be((Extinta, null, null));
-        perfil.EscopoTipo.Should().Be("unidade");
+        perfil.EscopoTipo.Codigo.Should().Be("UNIDADE");
     }
 
     [Fact]

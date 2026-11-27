@@ -3,10 +3,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class CatalogoMappingTests
 {
@@ -24,13 +22,21 @@ public sealed class CatalogoMappingTests
     public void Permissoes_SaemNaOrdemDoCatalogo() =>
         _modulos[1].Resources[0].Permissoes.Select(static p => p.Codigo).Should().Equal("teste:itens:ler", "teste:itens:manter");
 
-    [Fact(DisplayName = "A permissão traz código, nome, descrição e a sensibilidade canônica")]
-    public void Permissao_TrazOsCamposDoCatalogo() =>
-        _modulos[1].Resources[1].Permissoes.Should().ContainSingle().Which.Should().Be(new PermissaoDoCatalogoResponse(
-            "teste:laudos:consultar",
-            "Consultar laudos",
-            "Lista laudos médicos.",
-            ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel)));
+    [Fact(DisplayName = "A permissão traz código, nome e descrição")]
+    public void Permissao_TrazOsCamposDoCatalogo()
+    {
+        PermissaoDoCatalogoResponse permissao = _modulos[1].Resources[1].Permissoes.Should().ContainSingle().Which;
+
+        (permissao.Codigo, permissao.Nome, permissao.Descricao).Should().Be(("teste:laudos:consultar", "Consultar laudos", "Lista laudos médicos."));
+    }
+
+    [Fact(DisplayName = "A sensibilidade da permissão sai com o código e o rótulo")]
+    public void Permissao_TrazASensibilidadeComCodigoERotulo()
+    {
+        PermissaoDoCatalogoResponse permissao = _modulos[1].Resources[1].Permissoes.Should().ContainSingle().Which;
+
+        (permissao.Sensibilidade.Codigo, permissao.Sensibilidade.Rotulo).Should().Be(("SENSIVEL", "Sensível"));
+    }
 
     [Fact(DisplayName = "O outro módulo traz o seu próprio resource e permissão")]
     public void SegundoModulo_TrazOProprioResource() =>

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>O alcance que um conjunto de permissões do catálogo dá ao perfil que o reúne.</summary>
 internal static class AlcanceDasPermissoes

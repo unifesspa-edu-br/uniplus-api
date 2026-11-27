@@ -7,7 +7,6 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o perfil como o aprovador o avalia.</summary>
@@ -23,8 +22,8 @@ public static class PerfilMapping
             perfil.Nome,
             perfil.Descricao,
             perfil.Ativo,
-            perfil.Governanca?.Codigo(),
-            ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
+            GovernancaDe(perfil),
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(SensibilidadeDoPerfil(perfil, catalogo)),
             CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             ComposicaoDe(perfil, catalogo),
             VersaoMapping.PendenteDe(perfil, catalogo, leitor),
@@ -38,8 +37,8 @@ public static class PerfilMapping
             perfil.Nome,
             perfil.Descricao,
             perfil.Ativo,
-            perfil.Governanca?.Codigo(),
-            ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
+            GovernancaDe(perfil),
+            CodigoComRotulo<ClassificacaoDeProtecao>.De(SensibilidadeDoPerfil(perfil, catalogo)),
             CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(perfil.SituacaoDoAcesso),
             perfil.VersaoPendente is not null,
             SuspensaoDe(perfil, catalogo),
@@ -69,9 +68,9 @@ public static class PerfilMapping
         perfil.SuspensaoAberta is { } suspensao
             ? new SuspensaoDoPerfilDto(
                 suspensao.SuspensaEm,
-                suspensao.Papel.Codigo(),
-                [.. SuspensaoDoPerfil.EtapasExigidas(Avaliar(perfil, catalogo).ExigeAprovacaoDeProtecaoDeDados).Select(static e => e.Codigo())],
-                [.. suspensao.Decisoes.Select(static d => d.Etapa.Codigo())])
+                CodigoComRotulo<EtapaDaVersao>.De(suspensao.Papel),
+                [.. SuspensaoDoPerfil.EtapasExigidas(Avaliar(perfil, catalogo).ExigeAprovacaoDeProtecaoDeDados).Select(CodigoComRotulo<EtapaDaVersao>.De)],
+                [.. suspensao.Decisoes.Select(static d => CodigoComRotulo<EtapaDaVersao>.De(d.Etapa))])
             : null;
 
     // Código que o catálogo não conhece (permissão retirada do código) conta como a mais restrita: o perfil não pode
@@ -83,8 +82,11 @@ public static class PerfilMapping
 
     internal static PermissaoDoPerfilDto Descrever(string codigo, CatalogoDaAplicacao catalogo) =>
         catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
-            ? new PermissaoDoPerfilDto(codigo, definicao!.Nome, ValoresCanonicos.De(definicao.Requisito.Sensibilidade))
-            : new PermissaoDoPerfilDto(codigo, codigo, ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
+            ? new PermissaoDoPerfilDto(codigo, definicao!.Nome, CodigoComRotulo<ClassificacaoDeProtecao>.De(definicao.Requisito.Sensibilidade))
+            : new PermissaoDoPerfilDto(codigo, codigo, CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Sensivel));
+
+    internal static CodigoComRotulo<TipoDeGovernanca>? GovernancaDe(Perfil perfil) =>
+        perfil.Governanca is { } governanca ? CodigoComRotulo<TipoDeGovernanca>.De(governanca) : null;
 
     // A sensibilidade nunca se grava: deriva do catálogo. É a das permissões em vigor ou, enquanto o perfil não tem
     // vigente, a das permissões da versão pendente.

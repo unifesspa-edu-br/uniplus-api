@@ -1,12 +1,15 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
 /// <summary>Instalação como a API a expõe a quem a iniciou. Nunca traz o código nem o resumo dele.</summary>
-/// <param name="Situacao">Código textual da situação, ex.: <c>aguardando_codigo</c>.</param>
+/// <param name="Situacao">Em que ponto a instalação está, do envio do documento à confirmação.</param>
 /// <param name="CodigoExpiraEm">Fim do prazo do código; nulo fora da espera do código (antes do envio e em estado terminal).</param>
 /// <param name="TentativasRestantes">Códigos errados que ainda se admitem; nulo fora da espera do código (antes do envio e em estado terminal).</param>
 public sealed record InstalacaoDto(
     Guid Id,
-    string Situacao,
+    CodigoComRotulo<SituacaoDaInstalacao> Situacao,
     string NumeroDoDocumento,
     IReadOnlyList<IdentidadeDto> Gestores,
     DateTimeOffset IniciadaEm,
@@ -19,7 +22,7 @@ public sealed record InstalacaoDto(
 /// <param name="ExpiraEm">Fim da validade da URL.</param>
 public sealed record InstalacaoIniciadaDto(
     Guid Id,
-    string Situacao,
+    CodigoComRotulo<SituacaoDaInstalacao> Situacao,
     Uri UrlDeEnvio,
     string TipoDeMidia,
     DateTimeOffset ExpiraEm);
@@ -30,7 +33,7 @@ public sealed record TentativaDeInstalacaoDto(
     Guid? InstalacaoId,
     IdentidadeDto Autor,
     DateTimeOffset Instante,
-    string Resultado);
+    CodigoComRotulo<ResultadoDaTentativaDeInstalacao> Resultado);
 
 /// <summary>
 /// Gestor como a requisição o informou; campo ausente volta como recusa de gestores inválidos.
