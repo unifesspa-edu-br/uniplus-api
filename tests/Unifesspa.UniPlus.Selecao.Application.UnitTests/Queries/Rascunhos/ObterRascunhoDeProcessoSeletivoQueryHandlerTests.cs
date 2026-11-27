@@ -118,6 +118,31 @@ public sealed class ObterRascunhoDeProcessoSeletivoQueryHandlerTests
         await _cenario.Unidades.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 
+    private const string DocumentoComResolucaoDePesos =
+        """{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "identificacao": { "unidadeAdministradoraCodigo": "CGA" }, "classificacao": { "baseadoEmEnem": true, "resolucaoPesoAreaEnem": "Res. 805/2024" } }""";
+
+    [Fact(DisplayName = "A unidade atual sem permissão recusa 404 antes de consultar o cadastro de pesos por área do ENEM")]
+    public async Task UnidadeAtualSemPermissao_NaoConsultaOsPesosPorArea()
+    {
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Cga, DocumentoComResolucaoDePesos);
+
+        Result<RascunhoExportadoDto> resultado = await Obter(rascunho.Id);
+
+        resultado.IsFailure.Should().BeTrue();
+        await _cenario.Pesos.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "A unidade atual com permissão consulta o cadastro de pesos pela resolução que o documento cita")]
+    public async Task UnidadeAtualComPermissao_ConsultaOsPesosPelaResolucaoCitada()
+    {
+        _cenario.PodeConfigurarEm(CenarioDoRascunho.Cga);
+        RascunhoDeProcessoSeletivo rascunho = _cenario.ExisteUmRascunhoNaRevisao1(CenarioDoRascunho.Cga, DocumentoComResolucaoDePesos);
+
+        await Obter(rascunho.Id);
+
+        await _cenario.Pesos.Received(1).ObterPorResolucaoAsync("Res. 805/2024", Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "A unidade atual onde a pessoa configura entrega o documento, ainda que não seja a da autorização da rota")]
     public async Task UnidadeAtualComPermissao_Exporta()
     {

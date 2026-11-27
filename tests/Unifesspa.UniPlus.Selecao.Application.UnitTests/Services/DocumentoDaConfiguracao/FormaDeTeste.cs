@@ -30,6 +30,29 @@ internal static class FormaDeTeste
         ["provaPresencial"] = Objeto(new() { ["municipios"] = Lista(Objeto(new() { ["codigoIbge"] = Valor(), ["nome"] = Valor(true), ["uf"] = Valor() })) }),
         ["documentosExigidos"] = Objeto(new() { ["exigencias"] = Lista(Exigencia()) }),
         ["cadastroDeReserva"] = Lista(ChamadaDoCadastroDeReserva()),
+        ["classificacao"] = Classificacao(),
+    });
+
+    /// <summary>A classificação com a resolução de pesos citada e o quadro de pesos por área do ENEM, só de leitura.</summary>
+    public static FormaDoNo Classificacao() => Objeto(new()
+    {
+        ["baseadoEmEnem"] = Valor(),
+        ["resolucaoPesoAreaEnem"] = Valor(),
+        ["quadroPesoAreaEnem"] = Lista(GrupoDoQuadroDePesos(), somenteLeitura: true),
+    });
+
+    private static FormaDoNo GrupoDoQuadroDePesos() => Objeto(new()
+    {
+        ["grupoAreaEnemCodigo"] = Valor(),
+        ["grupoAreaEnemRotulo"] = Valor(),
+        ["baseLegal"] = Valor(),
+        ["areas"] = Lista(Objeto(new()
+        {
+            ["codigo"] = Valor(),
+            ["rotulo"] = Valor(),
+            ["peso"] = Valor(false, "number"),
+            ["corte"] = Valor(false, "number"),
+        })),
     });
 
     private static FormaDoNo ChamadaDoCadastroDeReserva() => Objeto(new()
