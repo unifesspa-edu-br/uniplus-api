@@ -5982,6 +5982,11 @@
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.chamadas_sem_formulario_obrigatorio",
+      "status": 422,
+      "titulo": "A fase organizada em chamadas não tem formulário obrigatório"
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.codigo_duplicado",
       "status": 422,
       "titulo": "O código do formulário já identifica outro formulário do processo"

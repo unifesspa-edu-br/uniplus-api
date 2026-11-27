@@ -22,10 +22,19 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
         FaseCanonica.Criar(
             codigo, "Ensalamento", null, null, "NO_EDITAL",
-            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
+            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 
     private Task<Result> Executar(AtualizarFaseCanonicaCommand comando) =>
         AtualizarFaseCanonicaCommandHandler.Handle(comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+
+    [Fact(DisplayName = "Os sinalizadores do comando de atualização levam a marca de organizada em chamadas à fase")]
+    public void Sinalizadores_LevamAMarcaDeOrganizadaEmChamadas()
+    {
+        new AtualizarFaseCanonicaCommand(Guid.NewGuid(), OrganizadaEmChamadas: true).Sinalizadores()
+            .OrganizadaEmChamadas.Should().BeTrue();
+        new AtualizarFaseCanonicaCommand(Guid.NewGuid()).Sinalizadores()
+            .OrganizadaEmChamadas.Should().BeFalse();
+    }
 
     [Fact(DisplayName = "Fase inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()

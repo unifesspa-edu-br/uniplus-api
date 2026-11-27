@@ -186,6 +186,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "formulario_inscricao_sem_edicao_enem",
         "formulario_fase_incoerente",
         "formulario_isencao_sem_taxa",
+        "formulario_chamadas_sem_obrigatorio",
         "formulario_item_fora_de_secao",
         "formulario_itens_em_excesso",
         "modalidade_regra_incoerente_com_a_natureza",

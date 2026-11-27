@@ -123,5 +123,5 @@ public sealed class FaseCanonicaReaderPorCodigosTests : IAsyncLifetime
             codigo, $"Fase {codigo}", null, null, "NO_EDITAL",
             new SinalizadoresDaFase(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)).Value!;
+                ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 }

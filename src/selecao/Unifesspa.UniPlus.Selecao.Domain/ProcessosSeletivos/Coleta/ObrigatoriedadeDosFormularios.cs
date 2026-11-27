@@ -7,7 +7,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// <summary>
 /// A obrigatoriedade dos formulários por fase (UNI-REQ-0144). O processo com inscrição pelo sistema tem ao
 /// menos um formulário obrigatório na fase que coleta inscrição, e o de resultado importado não tem
-/// formulário nela. O obrigatório numa fase da janela de isenção só existe quando ela também coleta
+/// formulário nela. Toda fase organizada em chamadas tem ao menos um formulário obrigatório: a recusa sai
+/// uma por fase, na ordem do cronograma. O obrigatório numa fase da janela de isenção só existe quando ela também coleta
 /// inscrição, e nessa fase as duas recusas não se aplicam uma à outra: o obrigatório é o da inscrição e os
 /// facultativos são os do pedido. O processo que cobra taxa tem ao menos um facultativo na janela, e o que
 /// não cobra não tem nenhum. A primeira fase depois da importação sempre tem o obrigatório dos dados básicos
@@ -32,6 +33,7 @@ public static class ObrigatoriedadeDosFormularios
         [
             .. RecusasDaInscricao(processo, formularios, fasesDeInscricao),
             .. RecusasDaJanelaDeIsencao(processo, formularios, fasesDeInscricao, fasesDaJanela),
+            .. RecusasDasFasesOrganizadasEmChamadas(formularios, cronograma),
             .. RecusaDaPrimeiraFaseDepoisDaImportacao(processo, coletas),
         ];
     }
@@ -89,6 +91,16 @@ public static class ObrigatoriedadeDosFormularios
                 FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao,
                 "O processo que cobra taxa precisa de ao menos um formulário facultativo na fase de solicitação de isenção."))];
     }
+
+    private static IEnumerable<FieldError> RecusasDasFasesOrganizadasEmChamadas(
+        IReadOnlyList<FormularioDeclarado> formularios, IReadOnlyCollection<FaseCronograma> cronograma) =>
+        cronograma
+            .Select(static (fase, posicao) => (fase, posicao))
+            .Where(par => par.fase.OrganizadaEmChamadas && !formularios.Any(formulario => formulario.Obrigatorio && formulario.FaseId == par.fase.Id))
+            .OrderBy(static par => par.fase.Ordem)
+            .Select(static par => new FieldError($"fases[{par.posicao}]", new DomainError(
+                FormularioProcessoErrorCodes.ChamadasSemFormularioObrigatorio,
+                $"A fase '{par.fase.Codigo}' é organizada em chamadas e precisa de ao menos um formulário obrigatório.")));
 
     private static IEnumerable<FieldError> RecusaDaPrimeiraFaseDepoisDaImportacao(ProcessoDosFormularios processo, IReadOnlyList<ColetaDoFormulario> coletas) =>
         processo.PrimeiraFaseDepoisDaImportacaoId is { } faseId && !coletas.Any(coleta => ObrigatorioNaFase(coleta, faseId))

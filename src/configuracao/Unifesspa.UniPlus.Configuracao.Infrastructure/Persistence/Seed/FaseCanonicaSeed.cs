@@ -102,7 +102,7 @@ public static class FaseCanonicaSeed
             "Comprovação documental dos requisitos declarados pelo candidato.",
             OrigemDataFase.NoEdital,
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
-            BaseLegal: null),
+            BaseLegal: null, OrganizadaEmChamadas: true),
 
         new(SeedId(12), "HOMOLOGACAO_RESULTADO_FINAL", "Homologação do resultado final",
             "Ato do conselho que homologa o resultado final do processo seletivo.",
@@ -146,4 +146,5 @@ public sealed record FaseCanonicaSeedItem(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     string? BaseLegal,
-    bool ColetaSolicitacaoIsencao = false);
+    bool ColetaSolicitacaoIsencao = false,
+    bool OrganizadaEmChamadas = false);

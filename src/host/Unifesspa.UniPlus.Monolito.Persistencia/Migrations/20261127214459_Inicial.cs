@@ -1314,6 +1314,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase permite complementação."),
                     coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase coleta inscrições."),
                     coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase coleta solicitações de isenção."),
+                    organizada_em_chamadas = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false, comment: "Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório."),
                     origem_data = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Origem das datas. Códigos: NO_EDITAL, NA_EXECUCAO."),
                     unidade_sugerida_origem_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da unidade sugerida, quando houver."),
                     unidade_sugerida_sigla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Sigla da unidade sugerida, quando houver."),
@@ -2640,6 +2641,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase permite complementar informações."),
                     coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase recebe inscrições."),
                     coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase recebe pedidos de isenção da taxa."),
+                    organizada_em_chamadas = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório."),
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Início do período da fase, quando definido."),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Fim do período da fase, quando definido."),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a fase emite parecer individual para cada candidato."),
@@ -5718,8 +5720,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     { new Guid("f45e0000-0000-7000-8000-000000000006"), null, "CLASSIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Apuração das notas e ordenação dos candidatos por modalidade.", false, "Classificação", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000009"), null, "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Publicação do resultado do processo: o preliminar, o prazo de recurso e o definitivo, na mesma fase.", false, "Resultado final", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000010"), "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018", "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.", false, "Heteroidentificação", "NO_EDITAL", null, null, null, null, null },
-                    { new Guid("f45e0000-0000-7000-8000-000000000011"), null, "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Comprovação documental dos requisitos declarados pelo candidato.", false, "Habilitação", "NO_EDITAL", null, null, null, null, null },
+                    { new Guid("f45e0000-0000-7000-8000-000000000010"), "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018", "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.", false, "Heteroidentificação", "NO_EDITAL", null, null, null, null, null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "organizada_em_chamadas" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000011"), null, "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Comprovação documental dos requisitos declarados pelo candidato.", false, "Habilitação", "NO_EDITAL", null, null, null, null, null, true });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "tipos_de_fase",
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
+                values: new object[,]
+                {
                     { new Guid("f45e0000-0000-7000-8000-000000000012"), null, "HOMOLOGACAO_RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ato do conselho que homologa o resultado final do processo seletivo.", false, "Homologação do resultado final", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000013"), null, "MATRICULA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Efetivação do vínculo do candidato aprovado com a instituição.", false, "Matrícula", "NO_EDITAL", null, null, null, null, null },
                     { new Guid("f45e0000-0000-7000-8000-000000000014"), null, "LISTA_ESPERA", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.", false, "Lista de espera", "NA_EXECUCAO", null, null, null, null, null },

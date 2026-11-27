@@ -45,14 +45,28 @@ public static class PendenciasDosFormularios
     /// resultado importado não tem formulário nela.
     /// </summary>
     internal static IReadOnlyList<DomainError> PendenciasDaInscricao(ConfiguracaoDeclarada configuracao) =>
-        [.. RecusasDaObrigatoriedade(configuracao).Where(static recusa => CodigosDaInscricao.Contains(recusa.Code))];
+        [.. RecusasDe(configuracao, CodigosDaInscricao).Select(static recusa => recusa.Error)];
 
     /// <summary>
     /// A janela do pedido de isenção, conferida como a regra de formulários por fase a declara (UNI-REQ-0144):
     /// o formulário da janela é facultativo, só o processo que cobra taxa o tem e o que cobra taxa tem ao menos um.
     /// </summary>
     internal static IReadOnlyList<DomainError> PendenciasDaIsencao(ConfiguracaoDeclarada configuracao) =>
-        [.. RecusasDaObrigatoriedade(configuracao).Where(static recusa => !CodigosDaInscricao.Contains(recusa.Code))];
+        [.. RecusasDe(configuracao, CodigosDaIsencao).Select(static recusa => recusa.Error)];
+
+    /// <summary>
+    /// Toda fase organizada em chamadas tem ao menos um formulário obrigatório (UNI-REQ-0552): uma pendência por
+    /// fase, na ordem do cronograma, cada uma com o campo da fase no documento.
+    /// </summary>
+    internal static IReadOnlyList<FieldError> PendenciasDasChamadas(ConfiguracaoDeclarada configuracao) =>
+        RecusasDe(configuracao, CodigosDasChamadas);
+
+    /// <summary>
+    /// A primeira fase depois da importação tem o formulário obrigatório dos dados básicos que a importação não traz
+    /// (UNI-REQ-0017).
+    /// </summary>
+    internal static IReadOnlyList<DomainError> PendenciasDaPrimeiraFaseDepoisDaImportacao(ConfiguracaoDeclarada configuracao) =>
+        [.. RecusasDe(configuracao, CodigosDaPosImportacao).Select(static recusa => recusa.Error)];
 
     private static readonly string[] CodigosDaInscricao =
     [
@@ -60,13 +74,27 @@ public static class PendenciasDosFormularios
         FormularioProcessoErrorCodes.InscricaoEmResultadoImportado,
     ];
 
-    private static IEnumerable<DomainError> RecusasDaObrigatoriedade(ConfiguracaoDeclarada configuracao) =>
+    private static readonly string[] CodigosDaIsencao =
+    [
+        FormularioProcessoErrorCodes.FormularioDaIsencaoObrigatorio,
+        FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao,
+        FormularioProcessoErrorCodes.IsencaoSemTaxa,
+    ];
+
+    private static readonly string[] CodigosDasChamadas = [FormularioProcessoErrorCodes.ChamadasSemFormularioObrigatorio];
+
+    private static readonly string[] CodigosDaPosImportacao = [FormularioProcessoErrorCodes.PosImportacaoSemFormularioObrigatorio];
+
+    private static IReadOnlyList<FieldError> RecusasDe(ConfiguracaoDeclarada configuracao, string[] codigos) =>
+        [.. RecusasDaObrigatoriedade(configuracao).Where(recusa => codigos.Contains(recusa.Error.Code))];
+
+    private static IEnumerable<FieldError> RecusasDaObrigatoriedade(ConfiguracaoDeclarada configuracao) =>
         ObrigatoriedadeDosFormularios.Conferir(
             ProcessoDosFormularios.De(configuracao),
             [.. configuracao.Coleta.Formularios
                 .OrderBy(static formulario => formulario.Codigo, CodigoDoFormulario.OrdemOrdinal)
                 .Select(formulario => ColetaDoFormulario.De(configuracao, formulario))],
-            configuracao.Cronograma.CronogramaFases).Select(static recusa => recusa.Error);
+            configuracao.Cronograma.CronogramaFases);
 
     /// <summary>
     /// Os formulários da inscrição coletam, juntos, todo o conjunto básico de dados do candidato, na seção

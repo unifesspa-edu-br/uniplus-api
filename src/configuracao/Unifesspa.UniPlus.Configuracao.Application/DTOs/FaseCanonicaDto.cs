@@ -26,6 +26,7 @@ public sealed record FaseCanonicaDto(
     string? BaseLegal,
     bool ColetaInscricao,
     bool ColetaSolicitacaoIsencao,
+    bool OrganizadaEmChamadas,
     CodigoComRotulo<OrigemDataFase> OrigemData,
     UnidadeSugeridaDto? UnidadeSugerida,
     DateTimeOffset CriadoEm)

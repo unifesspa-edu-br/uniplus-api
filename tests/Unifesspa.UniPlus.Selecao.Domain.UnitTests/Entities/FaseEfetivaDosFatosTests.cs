@@ -74,7 +74,7 @@ public sealed class FaseEfetivaDosFatosTests
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         FaseCronograma isencao = Fase(2, "SOLICITACAO_ISENCAO", coletaIsencao: true);
-        FaseCronograma habilitacao = Fase(3, FormularioProcesso.CodigoFaseHabilitacao);
+        FaseCronograma habilitacao = Fase(3, "HABILITACAO");
         Result cronograma = processo.DefinirCronogramaFases([inscricao, isencao, habilitacao], []);
         cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
         DefinirFormularioComUmFato(processo, PapelDoFormularioDeTeste.Inscricao, inscricao, "TEM_RENDA", []);

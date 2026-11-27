@@ -31,7 +31,8 @@ internal static class OrigensDoTipoDeFaseDeTeste
 
     /// <summary>
     /// A origem do tipo de fase de uma fase de teste. O nome é o que o cadastro daria ao código (por exemplo, "Inscrição"
-    /// para INSCRICAO), sempre diferente do código; <see cref="ComNome"/> o troca.
+    /// para INSCRICAO), sempre diferente do código; <see cref="ComNome"/> o troca. A fase não é organizada em chamadas,
+    /// salvo a HABILITACAO, que já nasce marcada como no cadastro semeado; quem precisa dela sem a marca, ou de outra com a marca, usa <c>with</c>.
     /// </summary>
     internal static OrigemCanonicaDaFase Da(
         Guid origemId,
@@ -41,10 +42,14 @@ internal static class OrigensDoTipoDeFaseDeTeste
         bool permiteComplementacao,
         bool coletaInscricao,
         bool coletaSolicitacaoIsencao) =>
-        new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao)
+        new(origemId, codigo, origemData, agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
+            string.Equals(codigo, "HABILITACAO", StringComparison.Ordinal))
         {
             Nome = NomeDoCodigo(codigo),
         };
+
+    internal static OrigemCanonicaDaFase ComChamadas(this OrigemCanonicaDaFase origem, bool? organizadaEmChamadas) =>
+        organizadaEmChamadas is { } organizada ? origem with { OrganizadaEmChamadas = organizada } : origem;
 
     internal static OrigemCanonicaDaFase ComNome(this OrigemCanonicaDaFase origem, string nome) =>
         origem with { Nome = nome };

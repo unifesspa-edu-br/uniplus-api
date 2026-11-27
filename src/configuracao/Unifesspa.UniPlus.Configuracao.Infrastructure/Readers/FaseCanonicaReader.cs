@@ -79,5 +79,6 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             f.BaseLegal,
             f.Sinalizadores.ColetaInscricao,
             f.Sinalizadores.ColetaSolicitacaoIsencao,
+            f.Sinalizadores.OrganizadaEmChamadas,
             f.OrigemData.Codigo());
 }

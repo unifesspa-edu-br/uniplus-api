@@ -105,7 +105,7 @@ public sealed class DescritivosDosCadastrosNoEsquemaRealTests
     {
         IFaseCanonicaReader fases = Substitute.For<IFaseCanonicaReader>();
         fases.ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
-            .Returns([new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, "NO_EDITAL")]);
+            .Returns([new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, false, "NO_EDITAL")]);
         ITipoAtoPublicadoReader atos = Substitute.For<ITipoAtoPublicadoReader>();
         atos.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns([new TipoAtoPublicadoView("EDITAL_ABERTURA", "Edital de abertura", false, false, false, false)]);

@@ -16,6 +16,7 @@ public static class FaseCanonicaMapping
             fase.Sinalizadores.AgrupaEtapas, fase.Sinalizadores.PermiteComplementacao,
             FaseCanonicaCatalogo.AdmiteAgruparEtapas(fase.Codigo.Valor), FaseCanonicaCatalogo.AdmiteComplementacao(fase.Codigo.Valor),
             fase.BaseLegal, fase.Sinalizadores.ColetaInscricao, fase.Sinalizadores.ColetaSolicitacaoIsencao,
+            fase.Sinalizadores.OrganizadaEmChamadas,
             CodigoComRotulo<OrigemDataFase>.De(fase.OrigemData),
             ParaDto(fase.UnidadeSugerida), fase.CreatedAt);
     }

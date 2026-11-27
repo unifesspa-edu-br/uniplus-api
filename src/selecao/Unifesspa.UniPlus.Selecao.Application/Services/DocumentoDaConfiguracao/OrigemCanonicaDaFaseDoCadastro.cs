@@ -15,6 +15,7 @@ internal static class OrigemCanonicaDaFaseDoCadastro
         canonica.AgrupaEtapas,
         canonica.PermiteComplementacao,
         canonica.ColetaInscricao,
-        canonica.ColetaSolicitacaoIsencao)
+        canonica.ColetaSolicitacaoIsencao,
+        canonica.OrganizadaEmChamadas)
     { Nome = canonica.Nome };
 }

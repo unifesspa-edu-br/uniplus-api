@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
 /// <summary>
 /// A obrigatoriedade dos formulários por fase (UNI-REQ-0144): o processo com inscrição pelo sistema tem
 /// formulário obrigatório na fase que coleta inscrição; o de resultado importado não tem formulário nela; a
-/// janela de isenção tem formulário facultativo quando há taxa e nenhum quando não há; e o obrigatório só
+/// período de isenção tem formulário facultativo quando há taxa e nenhum quando não há; e o obrigatório só
 /// existe na janela que também coleta inscrição.
 /// </summary>
 public sealed class ObrigatoriedadeDosFormulariosTests
@@ -22,7 +22,7 @@ public sealed class ObrigatoriedadeDosFormulariosTests
     private readonly FaseCronograma _inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
     private readonly FaseCronograma _isencao = FaseDeTeste.Criar(2, "ISENCAO", coletaSolicitacaoIsencao: true);
     private readonly FaseCronograma _inscricaoEIsencao = FaseDeTeste.Criar(3, "INSCRICAO_E_ISENCAO", coletaInscricao: true, coletaSolicitacaoIsencao: true);
-    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(5, "HABILITACAO");
+    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(5, "HABILITACAO", organizadaEmChamadas: false);
 
     private IReadOnlyList<string> Codigos(ProcessoDosFormularios processo, params FormularioDeclarado[] formularios) =>
         Codigos(processo, [.. formularios.Select(static formulario => ColetaDeTeste.Coleta(formulario))]);
@@ -50,7 +50,7 @@ public sealed class ObrigatoriedadeDosFormulariosTests
             ColetaDeTeste.Facultativo("EXTRA", _inscricao)).Should().Equal(
                 FormularioProcessoErrorCodes.InscricaoEmResultadoImportado, FormularioProcessoErrorCodes.InscricaoEmResultadoImportado);
 
-    [Fact(DisplayName = "O obrigatório na janela de isenção que não coleta inscrição é recusado")]
+    [Fact(DisplayName = "O obrigatório no período de isenção que não coleta inscrição é recusado")]
     public void ObrigatorioNaJanelaSemInscricao_Recusa() =>
         Codigos(ComTaxa, ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), ColetaDeTeste.Obrigatorio("PEDIDO", _isencao), ColetaDeTeste.Facultativo("PEDIDO_B", _isencao))
             .Should().Equal(FormularioProcessoErrorCodes.FormularioDaIsencaoObrigatorio);
@@ -59,15 +59,15 @@ public sealed class ObrigatoriedadeDosFormulariosTests
     public void FaseDeInscricaoEIsencaoJuntas_Aceita() =>
         Codigos(ComTaxa, ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricaoEIsencao), ColetaDeTeste.Facultativo("PEDIDO", _inscricaoEIsencao)).Should().BeEmpty();
 
-    [Fact(DisplayName = "O processo que cobra taxa sem formulário facultativo na janela de isenção é recusado")]
+    [Fact(DisplayName = "O processo que cobra taxa sem formulário facultativo no período de isenção é recusado")]
     public void TaxaSemFormularioDeIsencao_Recusa() =>
         Codigos(ComTaxa, ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao)).Should().Equal(FormularioProcessoErrorCodes.TaxaSemFormularioDeIsencao);
 
-    [Fact(DisplayName = "O processo que cobra taxa com formulário facultativo na janela de isenção é aceito")]
+    [Fact(DisplayName = "O processo que cobra taxa com formulário facultativo no período de isenção é aceito")]
     public void TaxaComFormularioDeIsencao_Aceita() =>
         Codigos(ComTaxa, ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), ColetaDeTeste.Facultativo("PEDIDO", _isencao)).Should().BeEmpty();
 
-    [Fact(DisplayName = "O formulário facultativo na janela de isenção de processo sem taxa é recusado")]
+    [Fact(DisplayName = "O formulário facultativo no período de isenção de processo sem taxa é recusado")]
     public void IsencaoSemTaxa_Recusa() =>
         Codigos(SemTaxa, ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), ColetaDeTeste.Facultativo("PEDIDO", _isencao))
             .Should().Equal(FormularioProcessoErrorCodes.IsencaoSemTaxa);

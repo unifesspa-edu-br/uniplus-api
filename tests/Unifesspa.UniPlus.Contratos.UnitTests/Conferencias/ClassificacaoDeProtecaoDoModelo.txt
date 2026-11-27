@@ -898,6 +898,7 @@ configuracao.tipos_de_fase.descricao: Interno
 configuracao.tipos_de_fase.id: Interno
 configuracao.tipos_de_fase.is_deleted: Interno
 configuracao.tipos_de_fase.nome: Interno
+configuracao.tipos_de_fase.organizada_em_chamadas: Interno
 configuracao.tipos_de_fase.origem_data: Interno
 configuracao.tipos_de_fase.permite_complementacao: Interno
 configuracao.tipos_de_fase.unidade_sugerida_nome: Interno
@@ -1635,6 +1636,7 @@ selecao.fases_cronograma.id: Interno
 selecao.fases_cronograma.inicio: Interno
 selecao.fases_cronograma.no_mesmo_momento_da_anterior: Interno
 selecao.fases_cronograma.ordem: Interno
+selecao.fases_cronograma.organizada_em_chamadas: Interno
 selecao.fases_cronograma.origem_data: Interno
 selecao.fases_cronograma.permite_complementacao: Interno
 selecao.fases_cronograma.processo_seletivo_id: Interno

@@ -19,7 +19,7 @@ public sealed class LeituraDosNomesDasFasesTests
         FaseCronograma fase = processo.CronogramaFases.Single();
         IFaseCanonicaReader leitor = Substitute.For<IFaseCanonicaReader>();
         leitor.ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
-            .Returns([new FaseCanonicaView(fase.FaseCanonicaOrigemId, fase.Codigo, "Classificação", null, false, false, null, false, false, "NA_EXECUCAO")]);
+            .Returns([new FaseCanonicaView(fase.FaseCanonicaOrigemId, fase.Codigo, "Classificação", null, false, false, null, false, false, false, "NA_EXECUCAO")]);
         ServicosDoCongelamentoDeTeste servicos = new();
         ConferenciaDoCatalogoEDaProtecao catalogos = new(servicos.CatalogoDeFatos, servicos.TiposDocumento, leitor);
 

@@ -50,21 +50,23 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
             _geo,
             new(Substitute.For<IRegraCatalogoReader>(), tiposDeAto, Substitute.For<IFatoCandidatoReader>()),
             new(_tiposDeProcesso, _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<ITipoDocumentoReader>()),
-            new(
-                Substitute.For<IOfertaCursoReader>(),
-                Substitute.For<IModalidadeReader>(),
-                Substitute.For<IReferenciaReservaDemograficaReader>(),
-                Substitute.For<ICondicaoAtendimentoReader>(),
-                Substitute.For<IRecursoAcessibilidadeReader>(),
-                Substitute.For<ITipoDeficienciaReader>(),
-                Substitute.For<IBaseLegalDoFadaReader>()),
+            CadastrosDasVagasSemDados(),
             new(new RelogioFixo(new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)), new ResolvedorFusoDeTeste())));
     }
+
+    private static LeituraDosCadastrosDasVagasCitados CadastrosDasVagasSemDados() => new(
+        Substitute.For<IOfertaCursoReader>(),
+        Substitute.For<IModalidadeReader>(),
+        Substitute.For<IReferenciaReservaDemograficaReader>(),
+        Substitute.For<ICondicaoAtendimentoReader>(),
+        Substitute.For<IRecursoAcessibilidadeReader>(),
+        Substitute.For<ITipoDeficienciaReader>(),
+        Substitute.For<IBaseLegalDoFadaReader>());
 
     private static UnidadeView Unidade(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, codigo.ToLowerInvariant(), $"Unidade {codigo}", null, "ADMINISTRATIVA", false, null);
 
-    private static FaseCanonicaView Fase(string codigo) => new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, false, null, false, false, "NO_EDITAL");
+    private static FaseCanonicaView Fase(string codigo) => new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, false, null, false, false, false, "NO_EDITAL");
 
     private Task<Result<IdentificacaoECronogramaLidos>> Ler(string documento = Documento) =>
         _leitura.LerAsync(JsonNode.Parse(documento)!.AsObject(), CancellationToken.None);
