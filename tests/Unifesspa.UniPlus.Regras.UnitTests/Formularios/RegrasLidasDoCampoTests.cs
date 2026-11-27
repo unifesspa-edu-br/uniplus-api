@@ -129,6 +129,40 @@ public sealed class RegrasLidasDoCampoTests
     public void ConferirNoCampo_ImpedimentoNulo_SemRecusa() =>
         ComImpedimento(null).ConferirNoCampo("CAMPO", TipoDeCampo.Texto).Should().BeEmpty();
 
+    [Fact(DisplayName = "As condições do campo reúnem as das partes lidas e a pertinência do dado às opções")]
+    public void CondicoesDoCampo_PartesLidas_ReunemAsCondicoes()
+    {
+        RestricaoValor opcoes = new OpcoesPermitidas([new OpcoesCondicionadas(Predicado(("ANTERIOR_OPCOES", true)), ["PRETA", "PARDA"])]);
+        RegrasLidasDoCampo regras = new(
+            Predicado(("ANTERIOR_EXIBICAO", true)),
+            Obrigatoriedade.Quando(Predicado(("ANTERIOR_OBRIGATORIEDADE", true))),
+            [opcoes],
+            new Impedimento(Predicado(("CAMPO", true)), Mensagem));
+
+        regras.CondicoesDoCampo("CAMPO").Select(static c => c.Fato).Should().BeEquivalentTo(
+            ["ANTERIOR_EXIBICAO", "ANTERIOR_OBRIGATORIEDADE", "CAMPO", "ANTERIOR_OPCOES", "CAMPO"]);
+    }
+
+    [Fact(DisplayName = "A parte recusada na leitura, nula, não vincula nada")]
+    public void CondicoesDoCampo_PartesNulas_SemCondicoes() =>
+        new RegrasLidasDoCampo(null, null, [null], null).CondicoesDoCampo("CAMPO").Should().BeEmpty();
+
+    [Fact(DisplayName = "Duas restrições de opções permitidas entram as duas, sem lançar")]
+    public void CondicoesDoCampo_DuasOpcoesPermitidas_EntramAsDuas()
+    {
+        RestricaoValor opcoes = new OpcoesPermitidas([new OpcoesCondicionadas(null, ["PRETA"])]);
+
+        new RegrasLidasDoCampo(null, Obrigatoriedade.Nunca, [opcoes, opcoes], null).CondicoesDoCampo("CAMPO").Should().HaveCount(2);
+    }
+
+    [Fact(DisplayName = "O dado em branco não gera a pertinência, sem lançar")]
+    public void CondicoesDoCampo_DadoEmBranco_SemPertinencia()
+    {
+        RestricaoValor opcoes = new OpcoesPermitidas([new OpcoesCondicionadas(null, ["PRETA"])]);
+
+        new RegrasLidasDoCampo(null, Obrigatoriedade.Nunca, [opcoes], null).CondicoesDoCampo(" ").Should().BeEmpty();
+    }
+
     private static RegrasLidasDoCampo Lidas(PredicadoDnf? exibicao, Obrigatoriedade? obrigatoriedade, params RestricaoValor[] restricoes) =>
         new(exibicao, obrigatoriedade, restricoes, null);
 

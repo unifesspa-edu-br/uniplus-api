@@ -89,7 +89,7 @@ internal sealed class SelecaoDoFormularioDoModelo
             }
         }
 
-        (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(EscritaDosItens.Ler(aCopiar), _contexto);
+        (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(LeituraDosItensDoFormulario.Ler(aCopiar, _contexto), _contexto);
         return new ItensSelecionados(itens, indices, aCopiar, [.. errosDosItens.Select(e => PosicaoNoModelo.NoModelo(e, "itens", indices))]);
     }
 
@@ -141,7 +141,7 @@ internal sealed class SelecaoDoFormularioDoModelo
             }
         }
 
-        (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(aCopiar), _contexto);
+        (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(LeituraDosItensDoFormulario.LerGrupos(aCopiar, _contexto), _contexto);
         return new GruposSelecionados(grupos, indices, aCopiar, [.. errosDosGrupos.Select(e => PosicaoNoModelo.NoModelo(e, "grupos", indices))]);
     }
 

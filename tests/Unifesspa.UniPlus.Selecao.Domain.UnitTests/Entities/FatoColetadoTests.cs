@@ -196,6 +196,23 @@ public sealed class FatoColetadoTests
         pertinencia.Valor.EnumerateArray().Select(static v => v.GetString()).Should().Equal("PARDA", "PRETA");
     }
 
+    [Fact(DisplayName = "As condições do item reúnem a exibição, a obrigatoriedade, o impedimento e as opções")]
+    public void Condicoes_TodasAsRegras_ReunemAsCondicoesDeCadaUma()
+    {
+        PredicadoDnf Citando(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar(fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+        RegrasDoCampo regras = new(
+            Citando("ANTERIOR_EXIBICAO"),
+            Obrigatoriedade.Quando(Citando("ANTERIOR_OBRIGATORIEDADE")),
+            [new OpcoesPermitidas([new OpcoesCondicionadas(Citando("ANTERIOR_OPCOES"), ["PRETA"])])],
+            new Impedimento(Citando("COR_RACA"), "Quem responde assim não pode se inscrever."));
+
+        FatoColetado fato = FatoColetado.Criar("COR_RACA", 1, null, Campo("Cor ou raça", TipoDeCampo.EscolhaUnica), regras, CopiaPadrao).Value!;
+
+        fato.Condicoes.Select(static c => c.Fato).Should().BeEquivalentTo(
+            ["ANTERIOR_EXIBICAO", "ANTERIOR_OBRIGATORIEDADE", "COR_RACA", "ANTERIOR_OPCOES", "COR_RACA"]);
+    }
+
     [Fact(DisplayName = "Rótulo com espaços nas bordas é aparado")]
     public void Criar_RotuloComEspacos_EAparado()
     {

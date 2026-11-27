@@ -37,6 +37,5 @@ public sealed record ItemDoModelo(
     /// <summary>O que o item vincula no catálogo: o dado que coleta, os que as restrições e as condições citam, e os valores de cada um.</summary>
     public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
         Regras.Restricoes.SelectMany(static r => r.FatosCitados).Prepend(FatoCodigo),
-        PredicadosDasRegras().SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor)),
-        ValoresPermitidos());
+        RegrasLidasDoCampo.De(Regras).CondicoesDoCampo(FatoCodigo).Select(static c => (c.Fato, c.Valor)));
 }
