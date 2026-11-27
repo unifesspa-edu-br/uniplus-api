@@ -15,6 +15,9 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
 
     private readonly List<DocumentoDeGrupoNaoLido> _documentosDeGruposNaoLidos = [];
 
+    /// <summary>O dado das opções que cada documento recusado multiplica, como veio no pedido.</summary>
+    public List<string> FatosPorOpcaoNaoLidos { get; } = [];
+
     public ConjuntoLidoDeDocumentos Ler(ConjuntoDeDocumentosDoModeloInput? entrada) => new(
         _recusas.Lista(entrada?.DocumentosExigidos, ConjuntoDeDocumentosDoModelo.ListaDosDocumentos, LerDocumento),
         _recusas.ListaComPosicao(entrada?.GruposDeDocumentos, ConjuntoDeDocumentosDoModelo.ListaDosGrupos, LerGrupoDeDocumentos),
@@ -138,6 +141,7 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
         (string? fatoPorOpcao, IReadOnlyList<string?>? exceto) = entrada.PorOpcao is { } porOpcao
             ? (porOpcao.FatoCodigo, porOpcao.Exceto ?? [])
             : (null, null);
+        GuardarFatoPorOpcao(fatoPorOpcao);
         IEnumerable<(string Campo, string? Texto)> opcoes = exceto is null
             ? []
             : TextosDoConteudoDoModelo.DaExigenciaPorOpcao(campo, fatoPorOpcao, exceto);
@@ -147,6 +151,14 @@ internal sealed class LeituraDosDocumentosDoModelo(RecusasDaLeituraDoModelo _rec
             campo, entrada.FaseCodigo, entrada.TipoDocumentoCodigo, quando, referencias, opcoes, indeferimento)));
         _recusas.Recusas.AddRange(FormatoDosCodigosDoConteudo.ConferirCodigosInformados(
             entrada.FaseCodigo, entrada.TipoDocumentoCodigo, referencias, fatoPorOpcao, exceto, campo));
+    }
+
+    private void GuardarFatoPorOpcao(string? fatoPorOpcao)
+    {
+        if (CodigoFatoCandidato.EhValido(fatoPorOpcao))
+        {
+            FatosPorOpcaoNaoLidos.Add(fatoPorOpcao!);
+        }
     }
 
     private IndeferimentoDoDocumentoDoModelo LerIndeferimento(DocumentoExigidoDoModeloInput entrada, string campo)

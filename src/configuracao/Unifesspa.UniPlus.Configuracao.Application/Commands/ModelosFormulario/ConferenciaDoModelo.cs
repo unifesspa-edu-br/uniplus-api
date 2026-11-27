@@ -68,8 +68,8 @@ internal static class ConferenciaDoModelo
         ArgumentNullException.ThrowIfNull(versoes);
         ArgumentNullException.ThrowIfNull(existentes);
         return [
-            .. ConferirItens(conteudo.Itens, catalogo),
-            .. ConferirGrupos(conteudo.Grupos, catalogo),
+            .. ConferirItens(conteudo, catalogo),
+            .. ConferirGrupos(conteudo, catalogo),
             .. ConferirDocumentos(conteudo.Documentos.ComCaminhoNaOrdemDoPedido(), catalogo),
             .. ConferirPaginas(conteudo.Paginas, catalogo),
             .. ConferirTermos(conteudo.Termos, catalogo, versoes, existentes.Termos),
@@ -95,9 +95,7 @@ internal static class ConferenciaDoModelo
         ArgumentNullException.ThrowIfNull(conteudo);
         ItemDoModelo[] campos = [.. conteudo.Campos()];
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = conteudo.CondicoesDasRegras().Select(static c => (c.Fato, c.Valor));
-        IEnumerable<(string Fato, string Valor)> opcoes = campos
-            .SelectMany(static i => i.Regras.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas)
-                .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
+        IEnumerable<(string Fato, string Valor)> opcoes = campos.SelectMany(static i => i.ValoresPermitidos());
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
             .Concat(campos.SelectMany(static i => i.Regras.Restricoes.SelectMany(static r => r.FatosCitados)))
@@ -105,18 +103,36 @@ internal static class ConferenciaDoModelo
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
-    private static IEnumerable<FieldError> ConferirItens(IReadOnlyList<(int Indice, ItemDoModelo Item)> itens, CatalogoDoModelo catalogo) =>
-        itens.SelectMany(item => ConferirCampo(item.Item, $"itens[{item.Indice}]", catalogo, ConferenciaNoCatalogo.FatoDoItem));
+    /// <summary>Os itens lidos e, dos itens que a leitura recusou, o dado que coletam, cada um na posição do pedido.</summary>
+    private static IEnumerable<FieldError> ConferirItens(ConteudoLido conteudo, CatalogoDoModelo catalogo) =>
+        conteudo.Itens.Select(item => (Lugar: new LugarDoCampo(item.Indice),
+                Recusas: ConferirCampo(item.Item, $"itens[{item.Indice}]", catalogo, ConferenciaNoCatalogo.FatoDoItem)))
+            .Concat(conteudo.PartesNaoLidas.Campos.Where(static campo => !campo.DeGrupo).Select(campo =>
+                (campo.Lugar, Recusas: ConferirDadoDoCampoNaoLido(campo, catalogo, ConferenciaNoCatalogo.FatoDoItem))))
+            .OrderBy(static parte => parte.Lugar.Posicao)
+            .SelectMany(static parte => parte.Recusas);
 
     /// <summary>
-    /// Os grupos lidos e, dos grupos que a leitura recusou, os campos que ela aceitou, cada um na posição do grupo no pedido.
+    /// Os grupos lidos e, dos grupos que a leitura recusou, os campos que ela aceitou e o dado dos que recusou, cada um na
+    /// posição do grupo no pedido e, dentro do grupo, na do campo.
     /// </summary>
-    private static IEnumerable<FieldError> ConferirGrupos(GruposLidos grupos, CatalogoDoModelo catalogo) =>
-        grupos.Lidos.Select(grupo => (Posicao: grupo.Indice, Recusas: ConferirGrupo(grupo.Grupo, $"grupos[{grupo.Indice}]", catalogo)))
-            .Concat(grupos.CamposDeGruposNaoLidos.Select(campo =>
-                (Posicao: campo.Grupo, Recusas: ConferirCampo(campo.Campo, campo.Caminho, catalogo, ConferenciaNoCatalogo.FatoDoSubitem))))
-            .OrderBy(static parte => parte.Posicao)
+    private static IEnumerable<FieldError> ConferirGrupos(ConteudoLido conteudo, CatalogoDoModelo catalogo) =>
+        conteudo.Grupos.Lidos.Select(grupo => (Lugar: new LugarDoCampo(grupo.Indice, 0),
+                Recusas: ConferirGrupo(grupo.Grupo, $"grupos[{grupo.Indice}]", catalogo)))
+            .Concat(conteudo.Grupos.CamposDeGruposNaoLidos.Select(campo => (Lugar: new LugarDoCampo(campo.Grupo, campo.Posicao),
+                Recusas: ConferirCampo(campo.Campo, campo.Caminho, catalogo, ConferenciaNoCatalogo.FatoDoSubitem))))
+            .Concat(conteudo.PartesNaoLidas.Campos.Where(static campo => campo.DeGrupo).Select(campo =>
+                (campo.Lugar, Recusas: ConferirDadoDoCampoNaoLido(campo, catalogo, ConferenciaNoCatalogo.FatoDoSubitem))))
+            .OrderBy(static parte => parte.Lugar.Posicao).ThenBy(static parte => parte.Lugar.NoGrupo)
             .SelectMany(static parte => parte.Recusas);
+
+    private static IEnumerable<FieldError> ConferirDadoDoCampoNaoLido(
+        CampoNaoLido campo,
+        CatalogoDoModelo catalogo,
+        Func<string, IReadOnlyDictionary<string, FatoDoCatalogo>, DomainError?> recusaDeColetavel) =>
+        recusaDeColetavel(campo.FatoCodigo, catalogo.Fatos) is { } recusa
+            ? [new FieldError($"{campo.Caminho}.fatoCodigo", recusa, campo.FatoCodigo)]
+            : [];
 
     private static IEnumerable<FieldError> ConferirGrupo(GrupoDoModelo grupo, string caminho, CatalogoDoModelo catalogo) =>
     [
@@ -169,7 +185,7 @@ internal static class ConferenciaDoModelo
 
     private static IEnumerable<FieldError> ConferirVinculos(ConteudoLido conteudo, CatalogoDoModelo catalogo, VinculosDoModelo existentes)
     {
-        VinculosDeFatos propostos = Vinculos(conteudo.ParaConteudo().NaFormaGravada());
+        VinculosDeFatos propostos = VinculosDeFatos.Unir([Vinculos(conteudo.ParaConteudo().NaFormaGravada()), VinculosDasPartesNaoLidas.De(conteudo)]);
         return ConferenciaNoCatalogo.VinculoNovo(catalogo.Fatos, existentes.Fatos, propostos) is { IsFailure: true } vinculo ? vinculo.Errors : [];
     }
 

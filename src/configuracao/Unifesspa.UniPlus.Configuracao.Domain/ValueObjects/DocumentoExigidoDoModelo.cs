@@ -26,4 +26,9 @@ public sealed record DocumentoExigidoDoModelo(
 
     /// <summary>A condição que torna o documento exigido, com o caminho do campo dela na entrada.</summary>
     public IReadOnlyList<PredicadoNaEntrada> Predicados() => [new("quando", Quando)];
+
+    /// <summary>O que o documento vincula no catálogo: o dado das opções que o multiplicam e os que a condição cita, com os valores dela.</summary>
+    public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
+        PorOpcao is null ? [] : [PorOpcao.FatoCodigo],
+        Quando?.Clausulas.SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor)) ?? []);
 }
