@@ -96,15 +96,15 @@
           "readOnly": true
         },
         "dadosComprovados": {
-          "title": "Fatos comprovados",
-          "description": "Códigos dos fatos do candidato que o documento comprova. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "title": "Dados comprovados",
+          "description": "Códigos dos dados do candidato que o documento comprova, declarados pelo autor da configuração.",
           "type": "array",
+          "uniqueItems": true,
           "items": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 60
-          },
-          "readOnly": true
+            "maxLength": 50
+          }
         },
         "faseChave": {
           "title": "Fase em que é exigido",
