@@ -48,6 +48,30 @@ public sealed class MetodoNaoAceitoTests(MonolitoPostgresFixture fixture)
         await AfirmarCodigoAsync(resposta);
     }
 
+    [Fact(DisplayName = "O documento de contrato publicado só aceita leitura: o POST responde 405 com Allow e o código do método não aceito")]
+    public async Task DocumentoDeContratoPublicado_ComPost_Responde405ComAllowEOCodigo()
+    {
+        using HttpClient client = fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await client.PostAsync(new Uri("/openapi/selecao.json", UriKind.Relative), content: null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+        resposta.Content.Headers.Allow.Should().Contain("GET");
+        await AfirmarCodigoAsync(resposta);
+    }
+
+    [Fact(DisplayName = "O método é conferido antes do nome do documento de contrato: o POST num nome não publicado responde 405 sem repetir o nome")]
+    public async Task DocumentoDeContratoNaoPublicado_ComPost_Responde405SemRepetirONome()
+    {
+        using HttpClient client = fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await client.PostAsync(new Uri("/openapi/inexistente-x7q.json", UriKind.Relative), content: null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+        resposta.Content.Headers.Allow.Should().Contain("GET");
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain("x7q").And.Contain(Codigo);
+    }
+
     [Fact(DisplayName = "O HEAD num caminho que só aceita leitura por GET responde 405 com Allow e tipo do conteúdo")]
     public async Task Head_NumCaminhoDeGet_Responde405ComAllow()
     {

@@ -25,6 +25,21 @@ public sealed class CaminhoInexistenteNoPortalTests(PortalApiFactory factory) : 
         texto.Should().NotContain("x7q");
     }
 
+    [Fact(DisplayName = "O documento de contrato com nome que o serviço não publica responde 404 com o código comum, sem repetir o nome")]
+    public async Task DocumentoDeContratoInexistente_Responde404ComOCodigoComum()
+    {
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage resposta = await client.GetAsync(new Uri("/openapi/inexistente-x7q.json", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        string texto = await resposta.Content.ReadAsStringAsync();
+        using JsonDocument corpo = JsonDocument.Parse(texto);
+        corpo.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.caminho_inexistente");
+        texto.Should().NotContain("x7q");
+    }
+
     [Fact(DisplayName = "O método que a rota não aceita responde 405 com Allow e o código do método não aceito, sem repetir o caminho")]
     public async Task MetodoNaoAceito_Responde405ComAllowEOCodigo()
     {
