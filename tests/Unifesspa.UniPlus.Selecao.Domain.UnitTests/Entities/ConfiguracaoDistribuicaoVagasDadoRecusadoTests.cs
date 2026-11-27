@@ -30,7 +30,7 @@ public sealed class ConfiguracaoDistribuicaoVagasDadoRecusadoTests
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
             erro => erro.Field == "quadro[1].quantidade"
                 && erro.Error.Code == DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa
-                && erro.Error.Message.Contains("(-3)", StringComparison.Ordinal));
+                && erro.Error.Message == "A quantidade de vagas declarada não pode ser negativa.");
     }
 
     [Fact(DisplayName = "A distribuição federal recusa a retirada negativa antes de calcular o quadro")]

@@ -96,7 +96,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
         resultado.IsFailure.Should().BeTrue("AC_PCD não está no rol de nove da regra pura — só a variação -COM-AC-PCD o admite");
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
-            && e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal));
+            && !e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Lei 12.711 com AC_PCD materializa o quadro pelo art. 10 sob a variação -COM-AC-PCD")]
@@ -131,7 +131,8 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
         resultado.IsFailure.Should().BeTrue("o rol de COM-AC-PCD só admite AC e AC_PCD — nenhuma cota da Lei 12.711");
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
-            && e.Error.Message.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal));
+            && !e.Error.Message.Contains("AC_PCD", StringComparison.Ordinal)
+            && !e.Error.Message.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "VO_base acima das vagas anuais autorizadas da oferta é recusado")]

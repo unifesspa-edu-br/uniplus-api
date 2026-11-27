@@ -57,7 +57,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         resultado.Errors.Select(static erro => erro.Field + "|" + erro.Error.Code).Should().Equal(
             recusas.Select(static r => $"distribuicaoVagas[{r.Oferta}].{r.Campo}|{r.Codigo}"));
 
-    [Fact(DisplayName = "A quantidade negativa no quadro responde com o código e o campo específicos, citando o valor")]
+    [Fact(DisplayName = "A quantidade negativa no quadro responde com o código e o campo específicos")]
     public async Task QuantidadeNegativa_RespondeComCodigoECampoEspecificos()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -69,7 +69,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
             mocks, processo, Pedido(oferta, Institucional, [modalidade], new QuantidadeVagaInput(modalidade, -3)));
 
         DeveRecusarNaOrdem(resultado, Recusa(0, "quadro[0].quantidade", "QuantidadeVagaNegativa"));
-        resultado.Error!.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa (-3).");
+        resultado.Error!.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa.");
     }
 
     [Fact(DisplayName = "As recusas de cadastro da oferta, da regra, da referência demográfica e da modalidade aparecem juntas")]

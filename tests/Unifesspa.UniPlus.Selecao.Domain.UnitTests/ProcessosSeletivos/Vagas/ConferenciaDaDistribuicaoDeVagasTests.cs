@@ -71,13 +71,22 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
             ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 0, []),
             "modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesVazias);
 
-    [Fact(DisplayName = "A quantidade negativa no quadro é recusada no campo da linha, citando o valor")]
+    [Fact(DisplayName = "A quantidade negativa no quadro é recusada no campo da linha")]
     public void QuantidadeNegativa_RecusaNoCampoDaLinha()
     {
         IReadOnlyList<FieldError> recusas = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 2, [10, -3]);
 
         DeveRecusarSo(recusas, "quadro[1].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
-        recusas[0].Error.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa (-3).");
+        recusas[0].Error.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa.");
+    }
+
+    [Fact(DisplayName = "A recusa da quantidade negativa não repete o número recebido")]
+    public void QuantidadeNegativa_NaoRepeteONumeroRecebido()
+    {
+        IReadOnlyList<FieldError> recusas = ConferenciaDaDistribuicaoDeVagas.ConferirForma(50, null, 1, [-7919]);
+
+        recusas.Should().ContainSingle().Which.Error.Message.Should().NotContain("7919");
+        recusas[0].Field.Should().NotContain("7919");
     }
 
     [Fact(DisplayName = "A quantidade zero ou ausente no quadro passa na forma")]
@@ -255,9 +264,8 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
             Fixada("QUI", 50),
             Modalidade("PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal)));
 
-        recusas.Should().HaveCount(2);
-        recusas[0].Error.Message.Should().Contain("IND");
-        recusas[1].Error.Message.Should().Contain("PCD");
+        recusas.Select(static r => r.Error.Code).Should().Equal(
+            DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente, DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente);
     }
 
     [Fact(DisplayName = "O código de regra fora do vocabulário não recebe conferência de ramo nem de fronteira")]

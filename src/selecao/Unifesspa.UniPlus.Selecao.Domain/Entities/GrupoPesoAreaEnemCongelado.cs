@@ -85,7 +85,7 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
         Result<GrupoAreaEnemSnapshot> grupo = GrupoAreaEnemSnapshot.Criar(codigo, rotulo);
         if (grupo.IsFailure)
         {
-            erros.Add(new("grupoAreaEnem", grupo.Error!));
+            erros.AddRange(grupo.Errors);
         }
         return grupo;
     }
@@ -134,32 +134,37 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
         List<FieldError> erros)
     {
         string campo = $"areas[{indice}]";
-        string? codigo = TextoCongelado.NormalizarOuNulo(area.Codigo);
-        string? rotulo = TextoCongelado.NormalizarOuNulo(area.Rotulo);
-        DomainError? recusa = RecusaDaIdentificacao(codigo, rotulo, codigosVistos);
-        if (recusa is not null)
-        {
-            erros.Add(new(campo, recusa));
-        }
-        AdicionarRecusasDasMedidas(area.Peso, area.Corte, rotulo, campo, erros);
-        if (recusa is null)
+        (string? codigo, string? rotulo) = (TextoCongelado.NormalizarOuNulo(area.Codigo), TextoCongelado.NormalizarOuNulo(area.Rotulo));
+        List<FieldError> recusasDaIdentificacao = [.. RecusasDaIdentificacao(codigo, rotulo, codigosVistos, campo)];
+        erros.AddRange(recusasDaIdentificacao);
+        AdicionarRecusasDasMedidas(area.Peso, area.Corte, campo, erros);
+        if (recusasDaIdentificacao.Count == 0)
         {
             validas.Add((codigo!, rotulo!, area.Peso, area.Corte));
         }
     }
 
-    private static DomainError? RecusaDaIdentificacao(string? codigo, string? rotulo, HashSet<string> codigosVistos)
+    private static IEnumerable<FieldError> RecusasDaIdentificacao(
+        string? codigo, string? rotulo, HashSet<string> codigosVistos, string campo)
     {
-        if (!CodigoDeAreaValido(codigo) || !RotuloDeAreaValido(rotulo))
-        {
-            return new("GrupoPesoAreaEnemCongelado.AreaInvalida",
-                $"Cada área do quadro de pesos por área precisa de código (até {AreaCodigoMaxLength} caracteres) e rótulo (até {AreaRotuloMaxLength} caracteres), sem o caractere nulo nem caractere que não seja texto.");
-        }
-        return !codigosVistos.Add(codigo!)
-            ? new("GrupoPesoAreaEnemCongelado.AreaRepetida",
-                $"A área {CaracteresInvisiveis.ParaEco(rotulo!, TextoCongelado.TamanhoMaximoEcoado)} aparece mais de uma vez no mesmo grupo do quadro de pesos por área.")
-            : null;
+        bool repetida = CodigoDeAreaValido(codigo) && !codigosVistos.Add(codigo!);
+        return new[] { RecusaDoCodigoDaArea(codigo, repetida, campo), RecusaDoRotuloDaArea(rotulo, campo) }.OfType<FieldError>();
     }
+
+    private static FieldError? RecusaDoCodigoDaArea(string? codigo, bool repetida, string campo) =>
+        repetida
+            ? new(campo, new("GrupoPesoAreaEnemCongelado.AreaRepetida",
+                "A área aparece mais de uma vez no mesmo grupo do quadro de pesos por área."))
+            : !CodigoDeAreaValido(codigo)
+                ? new($"{campo}.codigo", new("GrupoPesoAreaEnemCongelado.AreaInvalida",
+                    $"O código da área do quadro de pesos por área é obrigatório e deve ter até {AreaCodigoMaxLength} caracteres, sem o caractere nulo nem caractere que não seja texto."))
+                : null;
+
+    private static FieldError? RecusaDoRotuloDaArea(string? rotulo, string campo) =>
+        RotuloDeAreaValido(rotulo)
+            ? null
+            : new($"{campo}.rotulo", new("GrupoPesoAreaEnemCongelado.RotuloDaAreaInvalido",
+                $"O rótulo da área do quadro de pesos por área é obrigatório e deve ter até {AreaRotuloMaxLength} caracteres, sem o caractere nulo nem caractere que não seja texto."));
 
     private static bool CodigoDeAreaValido(string? codigo) =>
         codigo is not null && TextoCongelado.CabeNaColuna(codigo, AreaCodigoMaxLength);
@@ -167,30 +172,17 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
     private static bool RotuloDeAreaValido(string? rotulo) =>
         rotulo is not null && TextoCongelado.CabeNaColuna(rotulo, AreaRotuloMaxLength);
 
-    private static void AdicionarRecusasDasMedidas(decimal peso, decimal? corte, string? rotulo, string campo, List<FieldError> erros)
+    private static void AdicionarRecusasDasMedidas(decimal peso, decimal? corte, string campo, List<FieldError> erros)
     {
-        string daArea = RotuloDeAreaValido(rotulo)
-            ? $"da área {CaracteresInvisiveis.ParaEco(rotulo!, TextoCongelado.TamanhoMaximoEcoado)}"
-            : "da área";
-        DomainError? recusaPeso = RecusaDoPeso(peso, daArea);
-        DomainError? recusaCorte = RecusaDoCorte(corte, daArea);
-        if (recusaPeso is not null)
+        if (peso < 0)
         {
-            erros.Add(new($"{campo}.peso", recusaPeso));
+            erros.Add(new($"{campo}.peso", new("GrupoPesoAreaEnemCongelado.PesoNegativo", "O peso da área não pode ser negativo.")));
         }
-        if (recusaCorte is not null)
+        if (corte is < 0 or > CorteMaximo)
         {
-            erros.Add(new($"{campo}.corte", recusaCorte));
+            erros.Add(new($"{campo}.corte", new("GrupoPesoAreaEnemCongelado.CorteForaDaFaixa", $"O corte da área deve estar entre 0 e {CorteMaximo}.")));
         }
     }
-
-    private static DomainError? RecusaDoPeso(decimal peso, string daArea) => peso < 0
-        ? new("GrupoPesoAreaEnemCongelado.PesoNegativo", $"O peso {daArea} não pode ser negativo.")
-        : null;
-
-    private static DomainError? RecusaDoCorte(decimal? corte, string daArea) => corte is < 0 or > CorteMaximo
-        ? new("GrupoPesoAreaEnemCongelado.CorteForaDaFaixa", $"O corte {daArea} deve estar entre 0 e {CorteMaximo}.")
-        : null;
 
     private static DomainError? RecusaDoConjuntoDeAreas(
         int quantidade, List<(string Codigo, string Rotulo, decimal Peso, decimal? Corte)> validas) =>

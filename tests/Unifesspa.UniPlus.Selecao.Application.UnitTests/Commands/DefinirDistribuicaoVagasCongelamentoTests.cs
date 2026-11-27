@@ -57,7 +57,7 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
         ConferirGrupoCongelado(processo.DistribuicaoVagas.Single().GrupoAreaEnem, result.Value!.Single().GrupoAreaEnem, codigo, rotulo);
     }
 
-    [Fact(DisplayName = "Grupo da oferta que não forma um grupo válido é recusado no campo grupoAreaEnem da distribuição, acumulado com as demais checagens")]
+    [Fact(DisplayName = "Grupo da oferta que não forma um grupo válido é recusado no campo do código do grupo, dentro da distribuição, acumulado com as demais checagens")]
     public async Task Handle_GrupoDaOfertaInvalido_RecusaNoCampoAcumulado()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -68,7 +68,7 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoInstitucional(ofertaCursoId, modalidadeId, 101)));
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].grupoAreaEnem"
+        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].grupoAreaEnem.codigo"
             && e.Error.Code == "GrupoAreaEnemSnapshot.TamanhoInvalido");
         result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].vagasOfertadasBase"
             && e.Error.Code == "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseAcimaDasVagasAutorizadas",

@@ -29,47 +29,75 @@ public sealed class GrupoAreaEnemSnapshotTests
         grupo.Rotulo.Should().Be("Humanística I".Normalize(NormalizationForm.FormC));
     }
 
-    [Theory(DisplayName = "Código ausente ou em branco é recusado")]
+    [Theory(DisplayName = "Código ausente ou em branco é recusado no campo do código")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_SemCodigo_Recusa(string? codigo)
+    public void Criar_SemCodigo_RecusaNoCampoDoCodigo(string? codigo)
     {
-        GrupoAreaEnemSnapshot.Criar(codigo, "Tecnológica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CodigoObrigatorio");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar(codigo, "Tecnológica");
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "grupoAreaEnem.codigo" && e.Error.Code == "GrupoAreaEnemSnapshot.CodigoObrigatorio");
     }
 
-    [Theory(DisplayName = "Rótulo ausente ou em branco é recusado")]
+    [Theory(DisplayName = "Rótulo ausente ou em branco é recusado no campo do rótulo")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Criar_SemRotulo_Recusa(string? rotulo)
+    public void Criar_SemRotulo_RecusaNoCampoDoRotulo(string? rotulo)
     {
-        GrupoAreaEnemSnapshot.Criar("TECNOLOGICA", rotulo).Error!.Code.Should().Be("GrupoAreaEnemSnapshot.RotuloObrigatorio");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar("TECNOLOGICA", rotulo);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "grupoAreaEnem.rotulo" && e.Error.Code == "GrupoAreaEnemSnapshot.RotuloObrigatorio");
     }
 
-    [Fact]
-    public void Criar_SemCodigoERotuloComCaractereInvalido_RecusaCodigoObrigatorio()
+    [Fact(DisplayName = "Código ausente e rótulo com caractere nulo voltam juntos, cada um no seu campo")]
+    public void Criar_SemCodigoERotuloComCaractereInvalido_AcumulaAsDuasRecusas()
     {
-        GrupoAreaEnemSnapshot.Criar(null, "Tecno\0lógica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CodigoObrigatorio");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar(null, "Tecno\0lógica");
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CodigoObrigatorio"),
+            ("grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.CaractereInvalido"));
     }
 
-    [Fact]
-    public void Criar_CodigoComCaractereInvalidoESemRotulo_RecusaRotuloObrigatorio()
+    [Fact(DisplayName = "Código com caractere nulo e rótulo ausente voltam juntos, cada um no seu campo")]
+    public void Criar_CodigoComCaractereInvalidoESemRotulo_AcumulaAsDuasRecusas()
     {
-        GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", null).Error!.Code.Should().Be("GrupoAreaEnemSnapshot.RotuloObrigatorio");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", null);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.CaractereInvalido"),
+            ("grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.RotuloObrigatorio"));
     }
 
-    [Fact]
-    public void Criar_CodigoLongoERotuloComCaractereInvalido_RecusaCaractereInvalido()
+    [Fact(DisplayName = "Código acima do limite e rótulo com caractere nulo voltam juntos, cada um no seu campo")]
+    public void Criar_CodigoLongoERotuloComCaractereInvalido_AcumulaAsDuasRecusas()
     {
-        GrupoAreaEnemSnapshot.Criar(new string('C', 31), "Tecno\0lógica")
-            .Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar(new string('C', 31), "Tecno\0lógica");
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("grupoAreaEnem.codigo", "GrupoAreaEnemSnapshot.TamanhoInvalido"),
+            ("grupoAreaEnem.rotulo", "GrupoAreaEnemSnapshot.CaractereInvalido"));
     }
 
-    [Fact(DisplayName = "Caractere nulo é recusado na fronteira do domínio")]
+    [Fact(DisplayName = "Caractere nulo no código é recusado na fronteira do domínio")]
     public void Criar_CaractereNulo_Recusa()
     {
         GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", "Tecnológica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
+    }
+
+    [Fact(DisplayName = "Código e rótulo inválidos ao mesmo tempo não repetem o valor recebido em mensagem nem em campo")]
+    public void Criar_CodigoERotuloInvalidos_NaoRepeteOValorRecebido()
+    {
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar("CODIGO-FICTICIO-\u202E-RECONHECIVEL", "ROTULO-FICTICIO-\0-RECONHECIVEL");
+
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Select(e => e.Error.Message).Concat(resultado.Errors.Select(e => e.Field))
+            .Should().OnlyContain(texto => !texto!.Contains("FICTICIO", StringComparison.OrdinalIgnoreCase)
+                && !texto.Contains("RECONHECIVEL", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact(DisplayName = "O rótulo com controle bidirecional é recusado na criação, sem ecoar o texto nem o controle")]
@@ -83,13 +111,17 @@ public sealed class GrupoAreaEnemSnapshotTests
         resultado.Value.Should().BeNull();
     }
 
-    [Theory(DisplayName = "Código ou rótulo acima do tamanho da coluna é recusado")]
-    [InlineData(31, 10)]
-    [InlineData(10, 61)]
-    public void Criar_AcimaDoTamanho_Recusa(int tamanhoCodigo, int tamanhoRotulo)
+    [Theory(DisplayName = "Código ou rótulo acima do tamanho da coluna é recusado no campo e com o limite na mensagem")]
+    [InlineData(31, 10, "grupoAreaEnem.codigo", "O código do grupo de área do ENEM deve ter até 30 caracteres.")]
+    [InlineData(10, 61, "grupoAreaEnem.rotulo", "O rótulo do grupo de área do ENEM deve ter até 60 caracteres.")]
+    public void Criar_AcimaDoTamanho_Recusa(int tamanhoCodigo, int tamanhoRotulo, string campo, string mensagem)
     {
-        GrupoAreaEnemSnapshot.Criar(new string('C', tamanhoCodigo), new string('r', tamanhoRotulo))
-            .Error!.Code.Should().Be("GrupoAreaEnemSnapshot.TamanhoInvalido");
+        Result<GrupoAreaEnemSnapshot> resultado = GrupoAreaEnemSnapshot.Criar(new string('C', tamanhoCodigo), new string('r', tamanhoRotulo));
+
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be(campo);
+        erro.Error.Code.Should().Be("GrupoAreaEnemSnapshot.TamanhoInvalido");
+        erro.Error.Message.Should().Be(mensagem);
     }
 
     [Fact(DisplayName = "No limite do tamanho da coluna é aceito")]

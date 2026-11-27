@@ -143,7 +143,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static FieldError? RecusaDaQuantidadeNegativa(int? quantidade, int indice) =>
         quantidade is < 0
             ? Recusa($"quadro[{indice}].quantidade", DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa,
-                $"A quantidade de vagas declarada não pode ser negativa ({quantidade}).")
+                "A quantidade de vagas declarada não pode ser negativa.")
             : null;
 
     private static FieldError? ModalidadesRepetidas(IReadOnlyList<ModalidadeSelecionada> modalidades) =>
@@ -157,7 +157,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static IEnumerable<FieldError> RecusasDeTeto(DistribuicaoDeVagasDeclarada declarada, int? vagasAnuaisAutorizadas) =>
         vagasAnuaisAutorizadas is { } teto && declarada.VagasOfertadasBase > teto
             ? [Recusa("vagasOfertadasBase", DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseAcimaDasVagasAutorizadas,
-                $"As vagas ofertadas base ({declarada.VagasOfertadasBase}) excedem as {teto} vagas anuais autorizadas para a oferta.")]
+                $"As vagas ofertadas base excedem as {teto} vagas anuais autorizadas para a oferta.")]
             : [];
 
     // A regra declara o conjunto exato que reconhece, e não um teto: os dois lados do rol são a mesma
@@ -166,32 +166,32 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static IEnumerable<FieldError> RecusasDoRolFechado(
         DistribuicaoDeVagasDeclarada declarada, IReadOnlyCollection<string>? modalidadesAdmitidas)
     {
-        if (modalidadesAdmitidas is not { Count: > 0 } || declarada.CodigoDaRegra is not { } regra)
+        if (modalidadesAdmitidas is not { Count: > 0 } || declarada.CodigoDaRegra is null)
         {
             return [];
         }
 
         string[] codigos = [.. declarada.Modalidades.Select(static m => m.Codigo)];
         return Presentes(
-            ModalidadesForaDoRol(regra, codigos, modalidadesAdmitidas),
-            declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades) ? null : ModalidadesDoRolAusentes(regra, codigos, modalidadesAdmitidas));
+            ModalidadesForaDoRol(codigos, modalidadesAdmitidas),
+            declarada.Recusado(DadoDaDistribuicaoDeVagas.Modalidades) ? null : ModalidadesDoRolAusentes(codigos, modalidadesAdmitidas));
     }
 
-    private static FieldError? ModalidadesForaDoRol(string regra, string[] codigos, IReadOnlyCollection<string> admitidas)
+    private static FieldError? ModalidadesForaDoRol(string[] codigos, IReadOnlyCollection<string> admitidas)
     {
-        string[] naoAdmitidas = [.. codigos.Where(c => !admitidas.Contains(c, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal)];
-        return naoAdmitidas.Length > 0
+        bool haNaoAdmitida = codigos.Any(c => !admitidas.Contains(c, StringComparer.Ordinal));
+        return haNaoAdmitida
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadeNaoAdmitidaPelaRegra,
-                $"A regra {regra} não admite a(s) modalidade(s) {string.Join(", ", naoAdmitidas)}.")
+                "A regra de distribuição admite apenas as modalidades do seu rol.")
             : null;
     }
 
-    private static FieldError? ModalidadesDoRolAusentes(string regra, string[] codigos, IReadOnlyCollection<string> admitidas)
+    private static FieldError? ModalidadesDoRolAusentes(string[] codigos, IReadOnlyCollection<string> admitidas)
     {
         string[] ausentes = [.. admitidas.Where(c => !codigos.Contains(c, StringComparer.Ordinal))];
         return ausentes.Length > 0
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadeDoRolAusente,
-                $"A regra {regra} exige a(s) modalidade(s) {string.Join(", ", ausentes)}.")
+                $"A regra declarada exige a(s) modalidade(s) {string.Join(", ", ausentes)}.")
             : null;
     }
 
@@ -257,8 +257,8 @@ public static class ConferenciaDaDistribuicaoDeVagas
         modalidades
             .Where(static m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
                 && !string.Equals(m.ComposicaoOrigemCodigo, ModalidadesFederaisLei12711.Ac, StringComparison.Ordinal))
-            .Select(static retirada => Recusa("modalidades", DistribuicaoDeVagasErrorCodes.RetiradaFederalDeveSerDeAmplaConcorrencia,
-                $"No ramo federal, a modalidade {retirada.Codigo} (RETIRADA_DE_OUTRA_MODALIDADE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
+            .Select(static _ => Recusa("modalidades", DistribuicaoDeVagasErrorCodes.RetiradaFederalDeveSerDeAmplaConcorrencia,
+                "No ramo federal, a modalidade de retirada de outra modalidade (RETIRADA_DE_OUTRA_MODALIDADE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
 
     private static IEnumerable<FieldError> Presentes(params FieldError?[] recusas) =>
         recusas.OfType<FieldError>();
@@ -278,7 +278,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static FieldError? FronteiraDoQuadroFixado(ModalidadeSelecionada modalidade) =>
         modalidade.QuantidadeDeclarada is null
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente,
-                $"A modalidade {modalidade.Codigo} está selecionada mas não tem quantidade fixada pelo edital.")
+                "Toda modalidade selecionada precisa de quantidade fixada pelo edital.")
             : null;
 
     private static FieldError? FronteiraDaLeiDeCotas(ModalidadeSelecionada modalidade)
@@ -289,12 +289,12 @@ public static class ConferenciaDaDistribuicaoDeVagas
         if (calculada && modalidade.QuantidadeDeclarada is not null)
         {
             return Recusa("modalidades", DistribuicaoDeVagasErrorCodes.QuantidadeCalculadaNaoInformavel,
-                $"A quantidade de {modalidade.Codigo} é calculada pela Lei 12.711 — não pode ser fixada pelo edital.");
+                "A quantidade da modalidade calculada pela Lei 12.711 não pode ser fixada pelo edital.");
         }
 
         return exigeDeclaracao && modalidade.QuantidadeDeclarada is null
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.QuantidadeDeclaradaObrigatoria,
-                $"A modalidade {modalidade.Codigo} (retirada ou suplemento) exige a quantidade fixada pelo edital.")
+                "A modalidade de retirada ou de suplemento exige a quantidade fixada pelo edital.")
             : null;
     }
 

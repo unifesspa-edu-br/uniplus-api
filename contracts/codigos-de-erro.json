@@ -6054,7 +6054,7 @@
     {
       "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.area_invalida",
       "status": 422,
-      "titulo": "Área do quadro de pesos por área sem código ou rótulo válido"
+      "titulo": "Código da área do quadro de pesos por área ausente ou inválido"
     },
     {
       "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.area_repetida",
@@ -6085,6 +6085,11 @@
       "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.pesos_somam_zero",
       "status": 422,
       "titulo": "Os pesos das áreas do grupo do quadro de pesos por área não podem somar zero"
+    },
+    {
+      "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.rotulo_da_area_invalido",
+      "status": 422,
+      "titulo": "Rótulo da área do quadro de pesos por área ausente ou inválido"
     },
     {
       "codigo": "uniplus.selecao.grupo_peso_area_enem_congelado.sem_areas",

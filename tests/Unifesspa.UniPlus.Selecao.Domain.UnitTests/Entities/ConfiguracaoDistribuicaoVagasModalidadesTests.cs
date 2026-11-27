@@ -15,7 +15,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaConfigur
 
 public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
 {
-    [Fact(DisplayName = "Modalidade fora do rol que a regra admite é recusada, nomeando regra e modalidade")]
+    [Fact(DisplayName = "Modalidade fora do rol que a regra admite é recusada, sem citar modalidade nem o código da regra")]
     public void Criar_ModalidadeForaDoRolDaRegra_Falha()
     {
         List<ModalidadeSelecionada> modalidades =
@@ -30,8 +30,8 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         resultado.IsFailure.Should().BeTrue("o PSIQ é certame exclusivo — não oferta ampla concorrência");
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra"
-            && e.Error.Message.Contains("AC", StringComparison.Ordinal)
-            && e.Error.Message.Contains(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), StringComparison.Ordinal));
+            && !e.Error.Message.Contains("AC_", StringComparison.Ordinal)
+            && !e.Error.Message.Contains(RegraDeDistribuicaoDeVagas.PorAcrescimoIndigenaEQuilombola.Codigo(), StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Rol fechado com modalidade faltando é recusado, não só o excedente")]
@@ -171,7 +171,8 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e =>
             e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco"
-            && e.Error.Message.Contains("AC_I", StringComparison.Ordinal));
+            && e.Error.Message == "O par cruzado da modalidade deve apontar de volta para ela."
+            && !e.Error.Message.Contains("AC_", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Par cruzado apontando para modalidade que não é cruzada é recusado")]
