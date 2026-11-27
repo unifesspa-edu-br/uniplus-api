@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Exporta o documento guardado com o <c>id</c> do rascunho e os descritivos só de leitura dos cadastros vivos. A unidade
+/// Exporta o documento guardado com o <c>id</c> do rascunho e os descritivos só de leitura dos cadastros vivos, entre eles o quadro
+/// de vagas e o total de cada distribuição, calculados no momento da exportação, com cada cadastro das vagas lido uma só vez. A unidade
 /// administradora é a que o rascunho guarda pelo identificador, e o documento traz o código que ela tem hoje, para que o
 /// documento exportado, salvo de volta, nomeie a mesma unidade ainda que o código tenha mudado depois. O descritivo cujo
 /// cadastro não resolve é omitido. Os rótulos dos códigos de enum vêm por último,
@@ -14,7 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </summary>
 public sealed class ExportacaoDoRascunho(
     IUnidadeReader unidades,
-    DescricaoDoDocumentoDoRascunho descricao,
+    IEnumerable<IDescricaoDeCadastro> descricoes,
+    LeituraDasVagasDoRascunho leituraDasVagas,
     ResolucaoDosModelosCitados resolucao,
     DescricaoDaLocalidade localidade,
     IEsquemaDoDocumentoDaConfiguracao esquema)
@@ -29,12 +32,20 @@ public sealed class ExportacaoDoRascunho(
         documento.Insert(Math.Min(PosicaoDoIdNaRaiz, documento.Count), "id", rascunho.Id.ToString());
         OmitirNomesDeMunicipiosAusentes(documento);
         await DescreverUnidadeAdministradoraAsync(documento, rascunho.UnidadeAdministradoraOrigemId, cancellationToken).ConfigureAwait(false);
-        await descricao.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
-        await localidade.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        await DescreverCadastrosVivosAsync(documento, cancellationToken).ConfigureAwait(false);
         DescricaoDoNomeAbreviado.Descrever(documento);
         await DescreverModelosAsync(rascunho.Id, documento, cancellationToken).ConfigureAwait(false);
         RotulosDosCodigosDeContrato.Descrever(documento, esquema.Forma);
         return documento;
+    }
+
+    private async Task DescreverCadastrosVivosAsync(JsonObject documento, CancellationToken cancellationToken)
+    {
+        VagasDoRascunhoComCadastrosVivos vagas = await leituraDasVagas.LerAsync(documento, cancellationToken).ConfigureAwait(false);
+        DescricaoDoDocumentoDoRascunho descricao = new(esquema, [.. descricoes, .. vagas.DescricoesDosNomes()]);
+        await descricao.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        await localidade.DescreverAsync(documento, cancellationToken).ConfigureAwait(false);
+        DescricaoDoQuadroDeVagas.Descrever(documento, vagas, esquema.Forma);
     }
 
     private async Task DescreverModelosAsync(Guid donoId, JsonObject documento, CancellationToken cancellationToken)

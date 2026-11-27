@@ -44,6 +44,15 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Payload
 
 internal static class CatalogosDoEnvelopeFechado
 {
+    /// <summary>O código que <see cref="SemearCatalogosRicosAsync"/> dá à oferta de curso semeada com o sufixo.</summary>
+    internal static string CodigoDaOferta(string sufixo) => $"OFERTA_E2E_{sufixo}".ToUpperInvariant().Replace("-", "_", StringComparison.Ordinal);
+
+    /// <summary>O código que <see cref="SemearCatalogosRicosAsync"/> dá ao curso semeado com o sufixo.</summary>
+    internal static string CodigoDoCurso(string sufixo) => $"MED{sufixo}".ToUpperInvariant();
+
+    /// <summary>O código (o censo de referência) que <see cref="SemearCatalogosRicosAsync"/> dá à referência demográfica semeada com o sufixo.</summary>
+    internal static string CodigoDaReferenciaDemografica(string sufixo) => $"Censo {sufixo}";
+
     /// <summary>Os ids dos catálogos semeados por <see cref="SemearCatalogosRicosAsync"/>.</summary>
     internal sealed record CatalogosSemeados(
         Guid UnidadeId,
@@ -116,7 +125,7 @@ internal static class CatalogosDoEnvelopeFechado
 
     private static async Task<OfertaCurso> SemearCursoELocalEPrepararAOfertaAsync(UniPlusDbContext config, Guid unidadeId, string sufixo)
     {
-        Curso curso = Curso.Criar($"MED{sufixo}".ToUpperInvariant(), "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
+        Curso curso = Curso.Criar(CodigoDoCurso(sufixo), "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
         LocalOferta local = LocalOferta.Criar(
             new("CAMPUS_SEDE", null, "1504208", "Marabá", "PA", null, null),
             DateTimeOffset.UtcNow).ValorEsperado();
@@ -132,9 +141,8 @@ internal static class CatalogosDoEnvelopeFechado
         Result<UnidadeOfertante> unidadeOfertante = UnidadeOfertante.Criar(
             unidadeId, $"CEPS{sufixo}", "Centro de Processos Seletivos E2E", nameof(TipoUnidade.Centro));
         unidadeOfertante.IsSuccess.Should().BeTrue(unidadeOfertante.Error?.Message);
-        string codigo = $"OFERTA_E2E_{sufixo}".ToUpperInvariant().Replace("-", "_", StringComparison.Ordinal);
         Result<OfertaCurso> oferta = OfertaCurso.Criar(
-            curso.Id, local.Id, unidadeOfertante.Value!, new DeclaracaoDaOfertaDeCurso(codigo, "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"]));
+            curso.Id, local.Id, unidadeOfertante.Value!, new DeclaracaoDaOfertaDeCurso(CodigoDaOferta(sufixo), "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"]));
         oferta.IsSuccess.Should().BeTrue(oferta.Error?.Message);
 
         return oferta.Value!;
@@ -148,7 +156,7 @@ internal static class CatalogosDoEnvelopeFechado
     private static ReferenciaReservaDemografica NovaReferenciaReservaDemografica(string sufixo)
     {
         Result<ReferenciaReservaDemografica> referencia = ReferenciaReservaDemografica.Criar(
-            $"Censo {sufixo}", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º");
+            CodigoDaReferenciaDemografica(sufixo), 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º");
         referencia.IsSuccess.Should().BeTrue(referencia.Error?.Message);
 
         return referencia.Value!;

@@ -10,4 +10,10 @@ public abstract record QuadroDeVagas(IReadOnlyList<VagasDaModalidade> Vagas, int
     /// <summary>A quantidade da modalidade no quadro; zero quando o quadro não a tem.</summary>
     public int QuantidadeDe(string modalidadeCodigo) =>
         Vagas.FirstOrDefault(vagas => string.Equals(vagas.ModalidadeCodigo, modalidadeCodigo, StringComparison.Ordinal))?.Quantidade ?? 0;
+
+    /// <summary>As vagas por modalidade na ordem ordinal do código da modalidade, a ordem em que o quadro é projetado.</summary>
+    public IReadOnlyList<VagasDaModalidade> VagasPeloCodigoDaModalidade() => PeloCodigoDaModalidade(Vagas);
+
+    protected static IReadOnlyList<VagasDaModalidade> PeloCodigoDaModalidade(IEnumerable<VagasDaModalidade> linhas) =>
+        [.. linhas.OrderBy(static linha => linha.ModalidadeCodigo, StringComparer.Ordinal)];
 }

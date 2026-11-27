@@ -53,11 +53,13 @@ public sealed class FaixaDeDataDoEsquemaTests
         RascunhoDeProcessoSeletivo rascunho = RascunhoDeProcessoSeletivo.Criar(Guid.NewGuid(), conteudo).Value!;
         IUnidadeReader unidades = Substitute.For<IUnidadeReader>();
         EsquemaDoDocumentoDaConfiguracao esquema = new();
-        DescricaoDoDocumentoDoRascunho descricao = new(
-            esquema,
-            [new DescricaoDeUnidades(unidades), new DescricaoDeTiposDeProcesso(Substitute.For<ITipoProcessoReader>())]);
-        ExportacaoDoRascunho exportacao = new(unidades, descricao, new ResolucaoDosModelosCitados(Substitute.For<IModeloDeDocumentoRepository>()),
-            new DescricaoDaLocalidade(Substitute.For<IConferenciaEnderecoGeo>()), esquema);
+        ExportacaoDoRascunho exportacao = new(
+            unidades,
+            [new DescricaoDeUnidades(unidades), new DescricaoDeTiposDeProcesso(Substitute.For<ITipoProcessoReader>())],
+            LeituraDasVagasDeTeste.SemCadastros(),
+            new ResolucaoDosModelosCitados(Substitute.For<IModeloDeDocumentoRepository>()),
+            new DescricaoDaLocalidade(Substitute.For<IConferenciaEnderecoGeo>()),
+            esquema);
         return await exportacao.ExportarAsync(rascunho, CancellationToken.None);
     }
 

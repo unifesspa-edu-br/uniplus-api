@@ -26,7 +26,7 @@ internal static class SerializacaoDoQuadroDeVagas
     internal static JsonObject SerializarVagasDaOferta(ConfiguracaoDistribuicaoVagas configuracao) => new()
     {
         ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
-        ["quadro"] = SerializarLinhas(configuracao.Quadro.Vagas),
+        ["quadro"] = SerializarLinhas(configuracao.Quadro.VagasPeloCodigoDaModalidade()),
         ["totalDeVagasDoEdital"] = configuracao.TotalDeVagasDoEdital,
         ["conferenciaDaReservaLegal"] = configuracao.Quadro is QuadroDeVagasDaLeiDeCotas leiDeCotas
             ? SerializarConferencia(leiDeCotas.ConferenciaDaReservaLegal)
@@ -68,13 +68,12 @@ internal static class SerializacaoDoQuadroDeVagas
 
     private static JsonObject SerializarRetiradas(QuadroDeVagasFixadoNoEdital quadro) => new()
     {
-        ["vagasRetiradas"] = SerializarLinhas(quadro.VagasRetiradasNoAjuste),
+        ["vagasRetiradas"] = SerializarLinhas(quadro.VagasRetiradasPeloCodigoDaModalidade()),
         ["totalDeVagasRetiradas"] = quadro.TotalDeVagasRetiradasNoAjuste,
     };
 
     private static JsonArray SerializarLinhas(IEnumerable<VagasDaModalidade> linhas) =>
         new([.. linhas
-            .OrderBy(static linha => linha.ModalidadeCodigo, StringComparer.Ordinal)
             .Select(static linha => (JsonNode)new JsonObject
             {
                 ["modalidadeCodigo"] = HashCanonicalComputer.NormalizeNfc(linha.ModalidadeCodigo),

@@ -120,4 +120,19 @@ public sealed class VagasLidasTests
         lidas.Origem.PartesRecusadas.Should().NotBeEmpty();
         lidas.Vagas.DistribuicaoVagas.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "As distribuições adotadas voltam com a posição que tinham na lista enviada, e a recusada não aparece")]
+    public void DistribuicoesNaPosicaoDoDocumento_TrazAPosicaoEnviadaDeCadaAdotada()
+    {
+        VagasLidas lidas = Ler(Vagas(Distribuicao(2, TextoDigitado), Distribuicao(6), Distribuicao(9, OfertaDeMedicina)));
+
+        lidas.DistribuicoesNaPosicaoDoDocumento().Select(static adotada => adotada.PosicaoNoDocumento).Should().Equal(6, 9);
+        lidas.DistribuicoesNaPosicaoDoDocumento().Select(static adotada => adotada.Distribuicao).Should().Equal(lidas.Vagas.DistribuicaoVagas);
+    }
+
+    [Fact(DisplayName = "O documento sem vagas não tem distribuição em posição alguma")]
+    public void DistribuicoesNaPosicaoDoDocumento_BlocoAusente_EhVazio()
+    {
+        Ler(null).DistribuicoesNaPosicaoDoDocumento().Should().BeEmpty();
+    }
 }

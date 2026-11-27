@@ -11795,6 +11795,8 @@
         "tags": [
           "RascunhoDeProcessoSeletivo"
         ],
+        "summary": "Exporta o documento do rascunho",
+        "description": "Exporta o documento do rascunho. Traz o id do rascunho na raiz e, ao lado dos c\u00F3digos, os descritivos s\u00F3 de leitura que o Uni\u002B j\u00E1 guarda nos cadastros. Em cada distribui\u00E7\u00E3o de vagas, traz o quadro de vagas por modalidade e o total de vagas do edital, calculados dos cadastros no momento da exporta\u00E7\u00E3o; a distribui\u00E7\u00E3o que n\u00E3o puder ser calculada permanece no documento sem esses dois campos. O descritivo cujo cadastro n\u00E3o resolve tamb\u00E9m \u00E9 omitido. N\u00E3o traz versao nem publicadoEm, que n\u00E3o existem antes da publica\u00E7\u00E3o.",
         "operationId": "ObterRascunhoDeProcessoSeletivo",
         "parameters": [
           {

@@ -4,11 +4,9 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
-using NSubstitute;
-
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DescricaoDeOfertasDeCursoTests
 {
@@ -19,18 +17,14 @@ public sealed class DescricaoDeOfertasDeCursoTests
             { "ofertaCursoCodigo": "MEDICINA_MARABA" } ] }
         """;
 
-    private readonly IOfertaCursoReader _ofertas = Substitute.For<IOfertaCursoReader>();
+    private readonly Dictionary<string, OfertaDeCursoCitada> _ofertas = new(StringComparer.Ordinal)
+    {
+        ["MEDICINA_MARABA"] = Oferta("MEDICINA_MARABA", "Medicina", "Bacharelado", "Campus Universitário de Marabá", "MATUTINO", "VESPERTINO"),
+        ["PEDAGOGIA_MARABA"] = Oferta("PEDAGOGIA_MARABA", "Pedagogia", "Licenciatura", "Campus Universitário de Marabá", "NOTURNO"),
+    };
 
-    public DescricaoDeOfertasDeCursoTests() =>
-        _ofertas.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns(
-        [
-            Oferta("MEDICINA_MARABA", "Medicina", "Bacharelado", "Campus Universitário de Marabá", "MATUTINO", "VESPERTINO"),
-            Oferta("PEDAGOGIA_MARABA", "Pedagogia", "Licenciatura", "Campus Universitário de Marabá", "NOTURNO"),
-        ]);
-
-    private static OfertaCursoView Oferta(string codigo, string curso, string grau, string unidade, params string[] turnos) => new(
-        Guid.CreateVersion7(), codigo, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "CAMAR", unidade, "CAMPUS",
-        "REGULAR", "PRESENCIAL", "EXTENSIVO", "REGULAR", turnos, null, null, null, null, null, null, curso, grau);
+    private static OfertaDeCursoCitada Oferta(string codigo, string curso, string grau, string unidade, params string[] turnos) =>
+        new(Guid.CreateVersion7(), codigo, curso, grau, unidade, turnos, null, null, null);
 
     [Fact(DisplayName = "O curso, o grau, a unidade ofertante e os turnos entram depois do código da oferta, com os turnos na ordem do cadastro")]
     public async Task Descrever_OfertaViva_TrazOsDadosDaOfertaAoLadoDoCodigo()
@@ -54,12 +48,11 @@ public sealed class DescricaoDeOfertasDeCursoTests
         DocumentoDescritoDeTeste.Chaves(documento["distribuicaoVagas"]![1]).Should().Equal("ofertaCursoCodigo");
     }
 
-    [Fact(DisplayName = "O cadastro de ofertas é lido uma vez para todas as distribuições, e a oferta repetida é descrita nas duas")]
-    public async Task Descrever_OfertaRepetida_LeOCadastroUmaVezEDescreveAsDuas()
+    [Fact(DisplayName = "A oferta repetida no documento é descrita nas duas distribuições")]
+    public async Task Descrever_OfertaRepetida_DescreveAsDuas()
     {
         JsonObject documento = await DocumentoDescritoDeTeste.DescreverAsync(DocumentoComDistribuicoes, new DescricaoDeOfertasDeCurso(_ofertas));
 
         documento["distribuicaoVagas"]![2]!["cursoNome"]!.GetValue<string>().Should().Be("Medicina");
-        await _ofertas.Received(1).ListarVivasAsync(Arg.Any<CancellationToken>());
     }
 }

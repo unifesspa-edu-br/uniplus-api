@@ -74,4 +74,31 @@ public sealed class QuadroDeVagasTests
         quadro.QuantidadeDe("LB_PPI").Should().Be(8);
         quadro.QuantidadeDe("LI_Q").Should().Be(0);
     }
+
+    private static readonly VagasDaModalidade[] ForaDeOrdem = [new("ampla", 1), new("L2", 2), new("L10", 3), new("AC", 4), new("L1", 5)];
+
+    [Fact(DisplayName = "As vagas pelo código da modalidade saem em ordem ordinal, sem tratar os números dentro do código")]
+    public void VagasPeloCodigoDaModalidade_FicamEmOrdemOrdinal()
+    {
+        QuadroDeVagasFixadoNoEdital quadro = new(ForaDeOrdem, TotalDeVagasDoEdital: 15, []);
+
+        quadro.VagasPeloCodigoDaModalidade().Select(static vagas => vagas.ModalidadeCodigo).Should().Equal("AC", "L1", "L10", "L2", "ampla");
+        quadro.Vagas.Select(static vagas => vagas.ModalidadeCodigo).Should().Equal("ampla", "L2", "L10", "AC", "L1");
+    }
+
+    [Fact(DisplayName = "As vagas retiradas no ajuste saem em ordem ordinal do código da modalidade")]
+    public void VagasRetiradasPeloCodigoDaModalidade_FicamEmOrdemOrdinal()
+    {
+        QuadroDeVagasFixadoNoEdital quadro = new(Quadro, TotalDeVagasDoEdital: 20, ForaDeOrdem);
+
+        quadro.VagasRetiradasPeloCodigoDaModalidade().Select(static vagas => vagas.ModalidadeCodigo).Should().Equal("AC", "L1", "L10", "L2", "ampla");
+    }
+
+    [Fact(DisplayName = "O quadro da Lei de Cotas também entrega as vagas em ordem ordinal do código")]
+    public void QuadroDaLeiDeCotas_VagasPeloCodigoDaModalidade_FicamEmOrdemOrdinal()
+    {
+        QuadroDeVagasDaLeiDeCotas quadro = new(ForaDeOrdem, TotalDeVagasDoEdital: 15, new(10, 10, VagasCortadasPorEscassez: 0));
+
+        quadro.VagasPeloCodigoDaModalidade().Select(static vagas => vagas.ModalidadeCodigo).Should().Equal("AC", "L1", "L10", "L2", "ampla");
+    }
 }

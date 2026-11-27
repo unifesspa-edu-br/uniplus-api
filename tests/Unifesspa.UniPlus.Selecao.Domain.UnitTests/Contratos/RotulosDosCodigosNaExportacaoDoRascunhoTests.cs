@@ -173,7 +173,8 @@ public sealed class RotulosDosCodigosNaExportacaoDoRascunhoTests
         IUnidadeReader unidades = Substitute.For<IUnidadeReader>();
         ExportacaoDoRascunho exportacao = new(
             unidades,
-            new DescricaoDoDocumentoDoRascunho(Esquema, []),
+            [],
+            LeituraDasVagasDeTeste.SemCadastros(),
             new ResolucaoDosModelosCitados(modelos),
             new DescricaoDaLocalidade(Substitute.For<IConferenciaEnderecoGeo>()),
             Esquema);
