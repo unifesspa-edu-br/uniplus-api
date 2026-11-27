@@ -19,7 +19,7 @@ public sealed record ListarPedidosDeConcessaoQuery(
     int Limit,
     PaginationDirection Direction) : IQuery<Result<ListarPedidosDeConcessaoResult>>;
 
-/// <summary>Resultado paginado, do mais recente ao mais antigo: as âncoras são o par (instante, <c>Id</c>) de fronteira da janela.</summary>
+/// <summary>Resultado paginado, do mais recente ao mais antigo: as âncoras são o par (instante, <c>Id</c>) de fronteira da página.</summary>
 public sealed record ListarPedidosDeConcessaoResult(
     IReadOnlyList<PedidoResumoDto> Items,
     (string SortKey, Guid Id)? Anterior,

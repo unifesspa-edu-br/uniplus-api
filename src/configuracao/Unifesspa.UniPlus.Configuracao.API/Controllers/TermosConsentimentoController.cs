@@ -66,7 +66,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// cada página ao seguir o <c>cursor</c> do header <c>Link</c> — que já o
     /// preserva automaticamente.
     /// </summary>
-    /// <param name="page">Cursor decodificado (<c>cursor</c>/<c>limit</c>/<c>direction</c> da wire).</param>
+    /// <param name="page">Cursor decodificado (<c>cursor</c>/<c>limit</c>/<c>direction</c> da requisição).</param>
     /// <param name="q">
     /// Termo de busca livre (caixa-insensível) sobre o <c>Nome</c> do termo;
     /// ausente/vazio = sem filtro. O cursor só continua com a mesma busca (ADR-0026):

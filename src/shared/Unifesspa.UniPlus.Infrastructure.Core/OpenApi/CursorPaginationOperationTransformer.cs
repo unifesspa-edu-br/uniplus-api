@@ -8,12 +8,13 @@ using Microsoft.OpenApi;
 using Pagination;
 
 /// <summary>
-/// Operation transformer que reconcilia o spec OpenAPI com o contrato wire de
-/// paginação por cursor opaco (ADR-0026). O <see cref="FromCursorAttribute"/>
+/// Operation transformer que reconcilia o spec OpenAPI com o contrato que o cliente da API
+/// enxerga na paginação por cursor opaco (ADR-0026). O <see cref="FromCursorAttribute"/>
 /// herda de <c>ModelBinderAttribute</c> com <c>BindingSource = Query</c>, fazendo
 /// o ApiExplorer descrever o tipo <see cref="PageRequest"/> (record com
-/// <c>AfterId</c> + <c>Limit</c> + <c>AfterSortKey</c>) como query bag — vazando o
-/// shape interno pós-decode em vez do contrato wire (<c>cursor</c> + <c>limit</c>).
+/// <c>AfterId</c> + <c>Limit</c> + <c>AfterSortKey</c>) como conjunto de parâmetros de
+/// consulta — vazando o formato interno, já decodificado, em vez do contrato que o cliente
+/// enxerga (<c>cursor</c> + <c>limit</c>).
 /// <para>
 /// Este transformer detecta operações com <see cref="FromCursorAttribute"/> e:
 /// </para>
@@ -51,7 +52,7 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
             return Task.CompletedTask;
 
         RemoveLeakedPageRequestParameters(operation);
-        AddWireParameters(operation);
+        AdicionarParametrosDaPaginacao(operation);
         DeclareResponseHeaders(operation);
         MarkAsPaginated(operation);
 
@@ -75,7 +76,7 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
         parameter.In == ParameterLocation.Query
             && LeakedPageRequestProperties.Contains(parameter.Name, StringComparer.Ordinal);
 
-    private static void AddWireParameters(OpenApiOperation operation)
+    private static void AdicionarParametrosDaPaginacao(OpenApiOperation operation)
     {
         operation.Parameters ??= [];
         operation.Parameters.Add(CursorParameter());
@@ -101,8 +102,8 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
         Name = LimitParam,
         In = ParameterLocation.Query,
         Required = false,
-        Description = "Tamanho máximo da janela de resultados. Limites configurados em "
-            + "CursorPaginationOptions; valores fora do range retornam 422 com "
+        Description = "Tamanho máximo da página de resultados. Limites configurados em "
+            + "CursorPaginationOptions; valores fora do intervalo retornam 422 com "
             + "code uniplus.pagination.limit_invalido (ADR-0026).",
         Schema = new OpenApiSchema
         {
