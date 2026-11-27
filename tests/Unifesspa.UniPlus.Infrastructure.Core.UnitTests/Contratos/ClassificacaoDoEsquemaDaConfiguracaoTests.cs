@@ -26,11 +26,11 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
             { "regra": { "codigo": "ELIMINACAO_ZERO_EM_AREA", "versao": "v1" }, "parametros": {} },
             { "regra": { "codigo": "ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM", "versao": "v1" }, "parametros": {} } ],
           "criteriosDeDesempate": [
-            { "ordem": 1, "regra": { "codigo": "DESEMPATE_MAIOR_NOTA_ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "etapa_prova_objetiva" } },
-            { "ordem": 2, "regra": { "codigo": "DESEMPATE_IDOSO", "versao": "v1" }, "parametros": { "idadeMinima": 60 } },
-            { "ordem": 3, "regra": { "codigo": "DESEMPATE_CONDICAO_SOBRE_DADO", "versao": "v1" }, "parametros": { "codigoDoDado": "UF", "operador": "ALGUM_DE", "valor": ["PA"] } },
-            { "ordem": 4, "regra": { "codigo": "DESEMPATE_MAIOR_NOTA_AREA_ENEM", "versao": "v1" }, "parametros": { "areas": [ "MATEMATICA", "REDACAO" ] } },
-            { "ordem": 5, "regra": { "codigo": "DESEMPATE_MAIOR_IDADE", "versao": "v1" }, "parametros": {} } ],
+            { "regra": { "codigo": "DESEMPATE_MAIOR_NOTA_ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "etapa_prova_objetiva" } },
+            { "regra": { "codigo": "DESEMPATE_IDOSO", "versao": "v1" }, "parametros": { "idadeMinima": 60 } },
+            { "regra": { "codigo": "DESEMPATE_CONDICAO_SOBRE_DADO", "versao": "v1" }, "parametros": { "codigoDoDado": "UF", "operador": "ALGUM_DE", "valor": ["PA"] } },
+            { "regra": { "codigo": "DESEMPATE_MAIOR_NOTA_AREA_ENEM", "versao": "v1" }, "parametros": { "areas": [ "MATEMATICA", "REDACAO" ] } },
+            { "regra": { "codigo": "DESEMPATE_MAIOR_IDADE", "versao": "v1" }, "parametros": {} } ],
           "resolucaoPesoAreaEnem": "RES-2026-01" }
         """;
 
@@ -45,6 +45,14 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
     public void Regra_SemCodigoEVersao_Recusa() =>
         CaminhosComErro(Documento("""{ "regraCalculo": { "id": "3f2a9c1e-5b7d-4e8a-9c3f-1a2b3c4d5e6f" } }"""), Classificacao)
             .Should().Contain("/regraCalculo/id");
+
+    [Fact(DisplayName = "O critério de desempate com ordem é recusado como campo desconhecido, porque a ordem é a posição na lista")]
+    public void Desempate_ComOrdem_RecusaCampoDesconhecido()
+    {
+        JsonNode classificacao = Documento("""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "DESEMPATE_MAIOR_IDADE", "versao": "v1" }, "parametros": {} } ] }""");
+
+        CaminhosComErro(classificacao, Classificacao).Should().Contain("/criteriosDeDesempate/0/ordem");
+    }
 
     [Theory(DisplayName = "O parâmetro de desempate que não é o da regra é recusado com o caminho")]
     [InlineData("DESEMPATE_MAIOR_NOTA_ETAPA", "{}", "/parametros")]
@@ -62,7 +70,7 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
         ArgumentNullException.ThrowIfNull(codigo);
         ArgumentNullException.ThrowIfNull(parametros);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "parametros": {{parametros}} } ] }""");
+        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "parametros": {{parametros}} } ] }""");
 
         CaminhosComErro(classificacao, Classificacao).Should().Contain($"/criteriosDeDesempate/0{caminho}");
     }

@@ -561,7 +561,6 @@
     ],
     "criteriosDeDesempate": [
       {
-        "ordem": 1,
         "regra": {
           "codigo": "DESEMPATE_MAIOR_NOTA_ETAPA",
           "versao": "v1"
@@ -571,7 +570,6 @@
         }
       },
       {
-        "ordem": 2,
         "regra": {
           "codigo": "DESEMPATE_MAIOR_IDADE",
           "versao": "v1"
