@@ -158,12 +158,10 @@ internal sealed class LeituraDoConteudo(IReadOnlyDictionary<string, string> form
 
     private RestricaoValor? LerRestricao(RestricaoValorInput? entrada, string campo)
     {
-        Result<RestricaoValor> restricao = entrada is null
-            ? Result<RestricaoValor>.Failure(new DomainError(RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."))
-            : EntradaDeRegras.Restricao(entrada);
+        Result<RestricaoValor> restricao = EntradaDeRegras.Restricao(entrada);
         if (restricao.IsFailure)
         {
-            _recusas.Recusas.Add(new(campo, restricao.Error!));
+            _recusas.Recusas.AddRange(restricao.Errors.Select(e => e.NoCaminhoDoItem(campo)));
         }
 
         return restricao.Value;

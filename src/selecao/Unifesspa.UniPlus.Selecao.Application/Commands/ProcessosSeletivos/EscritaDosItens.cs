@@ -267,16 +267,10 @@ internal static class EscritaDosItens
     /// <summary>A forma das restrições de valor do item; os valores e fatos citados são conferidos contra o catálogo, depois.</summary>
     private static List<RestricaoValor> ConferirRestricoes(IReadOnlyList<RestricaoValorInput>? restricoes, string campo, List<FieldError> erros)
     {
-        List<Result<RestricaoValor>> lidas = [.. (restricoes ?? []).Select(LerRestricao)];
-        erros.AddRange(lidas.Select((lida, indice) => (lida, indice)).Where(static r => r.lida.IsFailure)
-            .Select(r => new FieldError($"{campo}.restricoes[{r.indice}]", r.lida.Error!)));
+        List<Result<RestricaoValor>> lidas = [.. (restricoes ?? []).Select(EntradaDeRegras.Restricao)];
+        erros.AddRange(lidas.SelectMany((lida, indice) => lida.Errors.Select(e => e.NoCaminhoDoItem($"{campo}.restricoes[{indice}]"))));
         return [.. lidas.Where(static lida => lida.IsSuccess).Select(static lida => lida.Value!)];
     }
-
-    private static Result<RestricaoValor> LerRestricao(RestricaoValorInput? entrada) =>
-        entrada is null
-            ? Result<RestricaoValor>.Failure(new DomainError(RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."))
-            : EntradaDeRegras.Restricao(entrada);
 
     private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, ConfiguracaoDoItem configuracao, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {

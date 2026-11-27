@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -40,13 +41,19 @@ public static class RestricoesDeValor
             return Recusa(RestricaoValorErrorCodes.OpcoesVazias, "As opções permitidas precisam de ao menos um grupo de valores.");
         }
 
-        if (entradas.Select(static e => OpcoesCondicionadas.Violacao(e.Valores)).FirstOrDefault(static v => v is not null) is { } violacao)
-        {
-            return Recusa(RestricaoValorErrorCodes.OpcoesVazias, violacao);
-        }
+        List<FieldError> recusas = RecusasDosGrupos(entradas);
 
-        return Result<RestricaoValor>.Success(new OpcoesPermitidas([.. entradas.Select(static e => new OpcoesCondicionadas(e.Quando, e.Valores))]));
+        return recusas.Count > 0
+            ? Result<RestricaoValor>.ValidationFailure(recusas)
+            : Result<RestricaoValor>.Success(new OpcoesPermitidas([.. entradas.Select(static e => new OpcoesCondicionadas(e.Quando, e.Valores))]));
     }
+
+    private static List<FieldError> RecusasDosGrupos(IReadOnlyList<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> entradas) =>
+        [.. entradas
+            .Select(static (grupo, posicao) => (Violacao: OpcoesCondicionadas.Violacao(grupo.Valores), Posicao: posicao))
+            .Where(static grupo => grupo.Violacao is not null)
+            .Select(static grupo => new FieldError(
+                $"entradas[{grupo.Posicao}].valores", new DomainError(RestricaoValorErrorCodes.OpcoesVazias, grupo.Violacao!)))];
 
     public static Result<RestricaoValor> DasRespostas(IReadOnlyCollection<string> fatos)
     {
@@ -68,6 +75,19 @@ public static class RestricoesDeValor
         Formularios.FaixaDeData.Violacao(minima, maxima) is { } violacao
             ? Recusa(RestricaoValorErrorCodes.LimitesIncoerentes, violacao)
             : Result<RestricaoValor>.Success(new FaixaDeData(minima, maxima));
+
+    /// <summary>
+    /// A faixa de data a partir dos limites já lidos; limite nulo é limite ausente. Cada limite recusado volta no seu
+    /// campo, o mínimo antes do máximo, e a coerência entre os dois só é conferida com os dois lidos.
+    /// </summary>
+    public static Result<RestricaoValor> FaixaDeDataLida(Result<LimiteDeData>? minima, Result<LimiteDeData>? maxima)
+    {
+        RecusasDoElemento recusas = new();
+        LimiteDeData? limiteMinimo = minima is null ? null : recusas.Parte(minima, "dataMinima");
+        LimiteDeData? limiteMaximo = maxima is null ? null : recusas.Parte(maxima, "dataMaxima");
+
+        return recusas.ConferidoPor(() => FaixaDeData(limiteMinimo, limiteMaximo));
+    }
 
     /// <summary>
     /// O limite da faixa de data pelo token da âncora: <c>DATA_FIXA</c> com a data e sem deslocamento,

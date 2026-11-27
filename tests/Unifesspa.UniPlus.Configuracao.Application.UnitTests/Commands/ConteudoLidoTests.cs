@@ -191,6 +191,34 @@ public sealed class ConteudoLidoTests
         lido.Documentos.DocumentosExigidos.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "A restrição de opções com um grupo nulo e outro com condição inválida recusa os dois, cada um no caminho do seu grupo")]
+    public void Ler_OpcoesComGrupoNuloEGrupoRecusado_RecusaOsDoisGrupos()
+    {
+        CondicaoPrecondicaoInput condicaoInvalida = new("MAIOR_IDADE", "OPERADOR_QUE_NAO_EXISTE", JsonSerializer.SerializeToElement(true));
+        RestricaoValorInput opcoes = new("OPCOES_PERMITIDAS", Entradas: [null!, new OpcoesCondicionadasInput([[condicaoInvalida]], ["A"])]);
+
+        IReadOnlyList<string> campos = CamposRecusadosDoItemCom(opcoes);
+
+        campos.Should().Equal("itens[0].regras.restricoes[0].entradas[0]", "itens[0].regras.restricoes[0].entradas[1].quando[0][0].operador");
+    }
+
+    [Fact(DisplayName = "A faixa de data com os dois limites inválidos recusa os dois, o mínimo antes do máximo")]
+    public void Ler_FaixaDeDataComOsDoisLimitesInvalidos_RecusaOsDois()
+    {
+        RestricaoValorInput faixa = new("FAIXA_DE_DATA", DataMinima: new LimiteDeDataInput("HOJE"), DataMaxima: new LimiteDeDataInput("HOJE"));
+
+        IReadOnlyList<string> campos = CamposRecusadosDoItemCom(faixa);
+
+        campos.Should().Equal("itens[0].regras.restricoes[0].dataMinima", "itens[0].regras.restricoes[0].dataMaxima");
+    }
+
+    private static IReadOnlyList<string> CamposRecusadosDoItemCom(RestricaoValorInput restricao)
+    {
+        LeituraDoConteudo leitura = new(Formatos);
+        leitura.Ler(new ConteudoDoModeloInput(null, null, [Item("MAIOR_IDADE", 0).ComRestricoes(restricao).Construir()], null, null));
+        return [.. leitura.Recusas.Select(static e => e.Field!)];
+    }
+
     private static ConteudoDoModeloInput ComPartesRecusadasNoMeio() => new(
         "Habilitação",
         [PaginaValida(), ElementoNulo<PaginaDoFormularioInput>(), PaginaValida() with { Exibicao = PredicadoSemCondicao }, PaginaValida()],

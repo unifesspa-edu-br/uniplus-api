@@ -120,9 +120,19 @@ public static class EntradaDeRegras
         impedimento is null ? null : new(ParaEntrada(impedimento.Quando), impedimento.Mensagem);
 
     /// <summary>A restrição de valor da entrada, pelo tipo; os valores e fatos citados são conferidos depois.</summary>
-    public static Result<RestricaoValor> Restricao(RestricaoValorInput input)
+    public static Result<RestricaoValor> Restricao(RestricaoValorInput? input)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        if (input is null)
+        {
+            return Result<RestricaoValor>.Failure(new DomainError(
+                RestricaoValorErrorCodes.TipoDesconhecido, "A restrição de valor é nula."));
+        }
+
+        return PorTipo(input);
+    }
+
+    private static Result<RestricaoValor> PorTipo(RestricaoValorInput input)
+    {
         IReadOnlyList<string> fatos = input.Fatos ?? [];
         return RestricoesDeValor.TipoDeclarado(input.Tipo) switch
         {
@@ -131,7 +141,7 @@ public static class EntradaDeRegras
             TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas),
             TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(fatos),
             TipoRestricaoValor.MunicipiosDaUf => RestricoesDeValor.DaUf(fatos),
-            TipoRestricaoValor.FaixaDeData => LerFaixaDeData(input.DataMinima, input.DataMaxima),
+            TipoRestricaoValor.FaixaDeData => RestricoesDeValor.FaixaDeDataLida(Limite(input.DataMinima), Limite(input.DataMaxima)),
             _ => TipoDeRestricaoDesconhecido(),
         };
     }
@@ -147,25 +157,8 @@ public static class EntradaDeRegras
             : Result<RestricaoValor>.Failure(new DomainError(
                 RestricaoValorErrorCodes.LimitesIncoerentes, "Os limites de tamanho de texto são números inteiros."));
 
-    private static Result<RestricaoValor> LerFaixaDeData(LimiteDeDataInput? minima, LimiteDeDataInput? maxima)
-    {
-        Result<LimiteDeData?> lidaMinima = LerLimite(minima);
-        Result<LimiteDeData?> lidaMaxima = LerLimite(maxima);
-        return lidaMinima.IsFailure || lidaMaxima.IsFailure
-            ? Result<RestricaoValor>.ValidationFailure([.. lidaMinima.Errors, .. lidaMaxima.Errors])
-            : RestricoesDeValor.FaixaDeData(lidaMinima.Value, lidaMaxima.Value);
-    }
-
-    private static Result<LimiteDeData?> LerLimite(LimiteDeDataInput? input)
-    {
-        if (input is null)
-        {
-            return Result<LimiteDeData?>.Success(null);
-        }
-
-        Result<LimiteDeData> lido = RestricoesDeValor.Limite(input.Ancora, input.Data, input.Anos, input.Dias);
-        return lido.IsSuccess ? Result<LimiteDeData?>.Success(lido.Value) : Result<LimiteDeData?>.ValidationFailure(lido.Errors);
-    }
+    private static Result<LimiteDeData>? Limite(LimiteDeDataInput? input) =>
+        input is null ? null : RestricoesDeValor.Limite(input.Ancora, input.Data, input.Anos, input.Dias);
 
     /// <summary>
     /// O envio que a simulação supõe; nulo quando ela não o informa. A zona é procurada na base de fusos
@@ -224,19 +217,10 @@ public static class EntradaDeRegras
 
     private static Result<RestricaoValor> Opcoes(IReadOnlyList<OpcoesCondicionadasInput>? entradas)
     {
-        List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = [];
-        foreach (OpcoesCondicionadasInput? entrada in entradas ?? [])
-        {
-            Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lida = GrupoDeOpcoes(entrada);
-            if (lida.IsFailure)
-            {
-                return Result<RestricaoValor>.ValidationFailure(lida.Errors);
-            }
+        RecusasDoElemento recusas = new();
+        List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = recusas.Lista(entradas, "entradas", GrupoDeOpcoes);
 
-            lidas.Add(lida.Value);
-        }
-
-        return RestricoesDeValor.Opcoes(lidas);
+        return recusas.ConferidoPor(() => RestricoesDeValor.Opcoes(lidas));
     }
 
     private static Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> GrupoDeOpcoes(OpcoesCondicionadasInput? entrada)
@@ -247,10 +231,10 @@ public static class EntradaDeRegras
                 RestricaoValorErrorCodes.OpcoesVazias, "As opções permitidas contêm um grupo nulo."));
         }
 
-        Result<PredicadoDnf?> quando = Predicado(entrada.Quando);
-        return quando.IsFailure
-            ? Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.ValidationFailure(quando.Errors)
-            : Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Success((quando.Value, entrada.Valores ?? []));
+        RecusasDoElemento recusas = new();
+        PredicadoDnf? quando = recusas.Parte(Predicado(entrada.Quando), "quando");
+
+        return recusas.Montado<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>(() => (quando, entrada.Valores ?? []));
     }
 
     /// <summary>
