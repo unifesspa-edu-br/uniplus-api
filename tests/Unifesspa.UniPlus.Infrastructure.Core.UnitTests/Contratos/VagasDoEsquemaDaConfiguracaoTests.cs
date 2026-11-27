@@ -47,7 +47,7 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
               "opcoesDeCurso": { "numero": 2 },
               "distribuicaoVagas": [ { "ofertaCursoCodigo": "ENG_CIVIL_MARABA" } ],
               "ordemDeRemanejamento": { "regra": { "codigo": "REMANEJAMENTO_ORDEM_LEI_12711", "versao": "v1" }, "destinoFinalCodigo": "AC",
-                "destinos": [ { "modalidadeOrigemCodigo": "LB_PPI", "ordem": 1, "modalidadeDestinoCodigo": "LB_Q" } ] } }
+                "destinos": [ { "modalidadeOrigemCodigo": "LB_PPI", "modalidadeDestinoCodigo": "LB_Q" } ] } }
             """)).Should().BeEmpty();
 
     [Theory(DisplayName = "A oferta fora do formato do código ou pelo identificador interno é recusada")]
@@ -109,10 +109,10 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Documento($$"""{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "opcoesDeCurso": { "numero": {{numero}} } }"""))
             .Should().Contain("/opcoesDeCurso/numero");
 
-    [Theory(DisplayName = "A cascata com ordem zero, destino em minúsculas ou mais de 56 destinos é recusada")]
-    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A", "ordem": 0, "modalidadeDestinoCodigo": "B" } ] }""", "/destinos/0/ordem")]
-    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A", "ordem": 1, "modalidadeDestinoCodigo": "b" } ] }""", "/destinos/0/modalidadeDestinoCodigo")]
-    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A", "ordem": 1 } ] }""", "/destinos/0")]
+    [Theory(DisplayName = "A cascata com ordem informada, destino em minúsculas ou sem destino é recusada")]
+    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A", "ordem": 1, "modalidadeDestinoCodigo": "B" } ] }""", "/destinos/0/ordem")]
+    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A", "modalidadeDestinoCodigo": "b" } ] }""", "/destinos/0/modalidadeDestinoCodigo")]
+    [InlineData("""{ "destinos": [ { "modalidadeOrigemCodigo": "A" } ] }""", "/destinos/0")]
     public void Cascata_Invalida_Recusa(string cascata, string caminho)
     {
         ArgumentNullException.ThrowIfNull(cascata);
@@ -123,7 +123,7 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "A cascata com 57 destinos é recusada")]
     public void Cascata_DestinosEmExcesso_Recusa()
     {
-        JsonArray destinos = new([.. Enumerable.Range(1, 57).Select(static i => (JsonNode)Documento($$"""{ "modalidadeOrigemCodigo": "A", "ordem": {{i}}, "modalidadeDestinoCodigo": "B" }"""))]);
+        JsonArray destinos = new([.. Enumerable.Range(1, 57).Select(static _ => (JsonNode)Documento("""{ "modalidadeOrigemCodigo": "A", "modalidadeDestinoCodigo": "B" }"""))]);
 
         CaminhosComErro(new JsonObject { ["destinos"] = destinos }, Cascata).Should().Contain("/destinos");
     }

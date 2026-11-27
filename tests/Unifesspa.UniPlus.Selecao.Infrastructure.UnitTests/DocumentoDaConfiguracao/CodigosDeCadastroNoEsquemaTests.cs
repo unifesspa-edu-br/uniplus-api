@@ -42,8 +42,8 @@ public sealed class CodigosDeCadastroNoEsquemaTests
     {
         yield return ["\"motivosDeDecisao\": [{ \"faseChave\": \"fase\", \"tipoDeDecisaoCodigo\": \"HOMOLOGACAO\", \"codigo\": \"VALOR\" }]", "/motivosDeDecisao/0/codigo"];
         yield return ["\"ordemDeRemanejamento\": { \"destinoFinalCodigo\": \"VALOR\" }", "/ordemDeRemanejamento/destinoFinalCodigo"];
-        yield return ["\"ordemDeRemanejamento\": { \"destinos\": [{ \"modalidadeOrigemCodigo\": \"VALOR\", \"ordem\": 1, \"modalidadeDestinoCodigo\": \"DESTINO\" }] }", "/ordemDeRemanejamento/destinos/0/modalidadeOrigemCodigo"];
-        yield return ["\"ordemDeRemanejamento\": { \"destinos\": [{ \"modalidadeOrigemCodigo\": \"ORIGEM\", \"ordem\": 1, \"modalidadeDestinoCodigo\": \"VALOR\" }] }", "/ordemDeRemanejamento/destinos/0/modalidadeDestinoCodigo"];
+        yield return ["\"ordemDeRemanejamento\": { \"destinos\": [{ \"modalidadeOrigemCodigo\": \"VALOR\", \"modalidadeDestinoCodigo\": \"DESTINO\" }] }", "/ordemDeRemanejamento/destinos/0/modalidadeOrigemCodigo"];
+        yield return ["\"ordemDeRemanejamento\": { \"destinos\": [{ \"modalidadeOrigemCodigo\": \"ORIGEM\", \"modalidadeDestinoCodigo\": \"VALOR\" }] }", "/ordemDeRemanejamento/destinos/0/modalidadeDestinoCodigo"];
     }
 
     [Theory]

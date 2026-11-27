@@ -21050,7 +21050,7 @@
           },
           "destinos": {
             "title": "Destinos",
-            "description": "Os destinos de cada modalidade de origem, at\u00E9 56 no total e at\u00E9 8 origens distintas.",
+            "description": "Os destinos de cada modalidade de origem, at\u00E9 56 no total e at\u00E9 8 origens distintas. A ordem de um destino \u00E9 a posi\u00E7\u00E3o dele na lista entre os da mesma modalidade de origem, a partir de 1, e decide quem recebe primeiro.",
             "type": "array",
             "maxItems": 56,
             "items": {
@@ -21058,7 +21058,6 @@
               "additionalProperties": false,
               "required": [
                 "modalidadeOrigemCodigo",
-                "ordem",
                 "modalidadeDestinoCodigo"
               ],
               "properties": {
@@ -21067,12 +21066,6 @@
                   "description": "C\u00F3digo da modalidade que cede as vagas.",
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCadastro",
                   "maxLength": 60
-                },
-                "ordem": {
-                  "title": "Ordem",
-                  "description": "Posi\u00E7\u00E3o do destino na ordem da origem, a partir de 1. A ordem \u00E9 sem\u00E2ntica: decide quem recebe primeiro.",
-                  "type": "integer",
-                  "minimum": 1
                 },
                 "modalidadeDestinoCodigo": {
                   "title": "Modalidade de destino",
