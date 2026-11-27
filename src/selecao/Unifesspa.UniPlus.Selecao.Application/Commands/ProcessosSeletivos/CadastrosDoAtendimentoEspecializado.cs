@@ -9,9 +9,11 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Monta o atendimento especializado do processo a partir dos cadastros vivos do módulo Configuração
 /// (ADR-0056): lê cada condição, cada recurso e cada tipo de deficiência pelo identificador e congela por valor o
-/// código e o nome (ADR-0061). A leitura segue nessa ordem e para na primeira ausência: os recursos só são lidos se
-/// as condições foram encontradas, e os tipos de deficiência só se os recursos foram. A regra de que o tipo de
-/// deficiência só vale sob a condição de pessoa com deficiência (ADR-0067) é do <see cref="AtendimentoEspecializado.Criar"/>.
+/// código e o nome (ADR-0061). Todas as recusas saem juntas (ADR-0125, item 5), na ordem da leitura do documento:
+/// identificadores repetidos, tipo de deficiência sem a condição de pessoa com deficiência (só quando todas as
+/// condições foram encontradas) e, por fim, cada identificador sem cadastro, em condições, recursos e tipos, no item
+/// e na posição em que veio no pedido. A regra de que o tipo de deficiência só vale sob a condição de pessoa com
+/// deficiência (ADR-0067) é do <see cref="AtendimentoEspecializado"/>.
 /// </summary>
 public sealed class CadastrosDoAtendimentoEspecializado(
     ICondicaoAtendimentoReader condicaoAtendimentoReader,
@@ -23,92 +25,85 @@ public sealed class CadastrosDoAtendimentoEspecializado(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        Result<IReadOnlyList<CondicaoOfertada>> condicoes = await CondicoesOfertadasAsync(command.CondicaoIds, cancellationToken).ConfigureAwait(false);
-        return condicoes.IsFailure
-            ? Result<AtendimentoEspecializado>.ValidationFailure(condicoes.Errors)
-            : await MontarComRecursosAsync(command, condicoes.Value!, cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<CondicaoOfertada> condicoes = await CondicoesOfertadasAsync(command.CondicaoIds, cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<RecursoOfertado> recursos = await RecursosOfertadosAsync(command.RecursoIds, cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<DeficienciaAtendida> tipos = await DeficienciasAtendidasAsync(command.TipoDeficienciaIds, cancellationToken).ConfigureAwait(false);
+
+        return Montar(command, condicoes, recursos, tipos);
     }
 
-    private async Task<Result<AtendimentoEspecializado>> MontarComRecursosAsync(
-        DefinirAtendimentoEspecializadoCommand command, IReadOnlyList<CondicaoOfertada> condicoes, CancellationToken cancellationToken)
-    {
-        Result<IReadOnlyList<RecursoOfertado>> recursos = await RecursosOfertadosAsync(command.RecursoIds, cancellationToken).ConfigureAwait(false);
-        return recursos.IsFailure
-            ? Result<AtendimentoEspecializado>.ValidationFailure(recursos.Errors)
-            : await MontarComDeficienciasAsync(command, condicoes, recursos.Value!, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<Result<AtendimentoEspecializado>> MontarComDeficienciasAsync(
-        DefinirAtendimentoEspecializadoCommand command,
-        IReadOnlyList<CondicaoOfertada> condicoes,
-        IReadOnlyList<RecursoOfertado> recursos,
-        CancellationToken cancellationToken)
-    {
-        Result<IReadOnlyList<DeficienciaAtendida>> deficiencias = await DeficienciasAtendidasAsync(command.TipoDeficienciaIds, cancellationToken).ConfigureAwait(false);
-        return deficiencias.IsFailure
-            ? Result<AtendimentoEspecializado>.ValidationFailure(deficiencias.Errors)
-            : AtendimentoEspecializado.Criar(condicoes, recursos, deficiencias.Value!);
-    }
-
-    private Task<Result<IReadOnlyList<CondicaoOfertada>>> CondicoesOfertadasAsync(
+    private Task<CopiasDoCadastro<CondicaoOfertada>> CondicoesOfertadasAsync(
         IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
         CopiarAsync<CondicaoAtendimentoView, CondicaoOfertada>(
             ids,
+            "condicaoIds",
             condicaoAtendimentoReader.ObterPorIdAsync,
             static condicao => CondicaoOfertada.Criar(condicao.Id, condicao.Codigo, condicao.Nome),
-            CondicaoNaoEncontrada,
+            AtendimentoEspecializado.CondicaoNaoEncontrada(),
             cancellationToken);
 
-    private Task<Result<IReadOnlyList<RecursoOfertado>>> RecursosOfertadosAsync(
+    private Task<CopiasDoCadastro<RecursoOfertado>> RecursosOfertadosAsync(
         IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
         CopiarAsync<RecursoAcessibilidadeView, RecursoOfertado>(
             ids,
+            "recursoIds",
             recursoAcessibilidadeReader.ObterPorIdAsync,
             static recurso => RecursoOfertado.Criar(recurso.Id, recurso.Codigo, recurso.Nome),
-            RecursoNaoEncontrado,
+            AtendimentoEspecializado.RecursoNaoEncontrado(),
             cancellationToken);
 
-    private Task<Result<IReadOnlyList<DeficienciaAtendida>>> DeficienciasAtendidasAsync(
+    private Task<CopiasDoCadastro<DeficienciaAtendida>> DeficienciasAtendidasAsync(
         IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
         CopiarAsync<TipoDeficienciaView, DeficienciaAtendida>(
             ids,
+            "tipoDeficienciaIds",
             tipoDeficienciaReader.ObterPorIdAsync,
             static tipo => DeficienciaAtendida.Criar(tipo.Id, tipo.Codigo, tipo.Nome),
-            TipoDeficienciaNaoEncontrado,
+            AtendimentoEspecializado.TipoDeficienciaNaoEncontrado(),
             cancellationToken);
 
-    private static async Task<Result<IReadOnlyList<TCopia>>> CopiarAsync<TView, TCopia>(
+    private static Result<AtendimentoEspecializado> Montar(
+        DefinirAtendimentoEspecializadoCommand command,
+        CopiasDoCadastro<CondicaoOfertada> condicoes,
+        CopiasDoCadastro<RecursoOfertado> recursos,
+        CopiasDoCadastro<DeficienciaAtendida> tipos)
+    {
+        List<FieldError> recusas = AtendimentoEspecializado.ValidarIdsUnicos(command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds);
+        if (condicoes.Recusas.Count == 0)
+        {
+            recusas.AddRange(AtendimentoEspecializado.ValidarDeficienciaComCondicaoPcd(condicoes.Copias, tipos.Copias));
+        }
+
+        recusas.AddRange([.. condicoes.Recusas, .. recursos.Recusas, .. tipos.Recusas]);
+
+        return recusas.Count > 0
+            ? Result<AtendimentoEspecializado>.ValidationFailure(recusas)
+            : AtendimentoEspecializado.Criar(condicoes.Copias, recursos.Copias, tipos.Copias);
+    }
+
+    private static async Task<CopiasDoCadastro<TCopia>> CopiarAsync<TView, TCopia>(
         IReadOnlyList<Guid> ids,
+        string lista,
         Func<Guid, CancellationToken, Task<TView?>> obter,
         Func<TView, TCopia> copiar,
-        Func<Guid, DomainError> naoEncontrado,
+        DomainError naoEncontrado,
         CancellationToken cancellationToken)
         where TView : class
     {
         List<TCopia> copias = [];
-        foreach (Guid id in ids)
+        List<FieldError> recusas = [];
+        for (int posicao = 0; posicao < ids.Count; posicao++)
         {
-            TView? cadastrado = await obter(id, cancellationToken).ConfigureAwait(false);
+            TView? cadastrado = await obter(ids[posicao], cancellationToken).ConfigureAwait(false);
             if (cadastrado is null)
             {
-                return Result<IReadOnlyList<TCopia>>.Failure(naoEncontrado(id));
+                recusas.Add(new($"{lista}[{posicao}]", naoEncontrado));
+                continue;
             }
-
             copias.Add(copiar(cadastrado));
         }
-
-        return Result<IReadOnlyList<TCopia>>.Success(copias);
+        return new(copias, recusas);
     }
 
-    private static DomainError CondicaoNaoEncontrada(Guid condicaoId) => new(
-        "AtendimentoEspecializado.CondicaoNaoEncontrada",
-        $"Condição de atendimento {condicaoId} não encontrada ou não está mais viva.");
-
-    private static DomainError RecursoNaoEncontrado(Guid recursoId) => new(
-        "AtendimentoEspecializado.RecursoNaoEncontrado",
-        $"Recurso de acessibilidade {recursoId} não encontrado ou não está mais vivo.");
-
-    private static DomainError TipoDeficienciaNaoEncontrado(Guid tipoDeficienciaId) => new(
-        "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado",
-        $"Tipo de deficiência {tipoDeficienciaId} não encontrado ou não está mais vivo.");
+    private sealed record CopiasDoCadastro<T>(IReadOnlyList<T> Copias, IReadOnlyList<FieldError> Recusas);
 }

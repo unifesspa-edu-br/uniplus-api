@@ -23,21 +23,21 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
     /// </summary>
     public const string CodigoCondicaoPcd = "PCD";
 
-    /// <summary>Fato do candidato cujas opções são as condições de atendimento ofertadas.</summary>
+    /// <summary>Dado do candidato cujas opções são as condições de atendimento ofertadas.</summary>
     public const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
 
-    /// <summary>Fato do candidato cujas opções são os recursos de acessibilidade ofertados.</summary>
+    /// <summary>Dado do candidato cujas opções são os recursos de acessibilidade ofertados.</summary>
     public const string FatoRecursoAcessibilidade = "RECURSO_ACESSIBILIDADE";
 
-    /// <summary>Fato do candidato cujas opções são os tipos de deficiência ofertados.</summary>
+    /// <summary>Dado do candidato cujas opções são os tipos de deficiência ofertados.</summary>
     public const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
-    /// Indica que as opções do fato vêm sempre do atendimento especializado, qualquer que seja a origem
+    /// Indica que as opções do dado vêm sempre do atendimento especializado, qualquer que seja a origem
     /// copiada para o campo: o atendimento é, por natureza, o dono da condição e do recurso.
     /// </summary>
-    public static bool ImpoeOrigemDoFato(string fatoCodigo) =>
-        fatoCodigo is FatoCondicaoAtendimento or FatoRecursoAcessibilidade;
+    public static bool ImpoeOrigemDoFato(string codigoDoDado) =>
+        codigoDoDado is FatoCondicaoAtendimento or FatoRecursoAcessibilidade;
 
     /// <summary>
     /// Indica que, quando o campo tem as opções do processo, quem responde por elas é o atendimento
@@ -45,8 +45,8 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
     /// tipos do cadastro (UNI-REQ-0012), mas o processo publicado antes disso congelou a origem do
     /// processo, e as opções dele continuam sendo as do atendimento.
     /// </summary>
-    public static bool GereOpcoesDoFato(string fatoCodigo) =>
-        ImpoeOrigemDoFato(fatoCodigo) || fatoCodigo is FatoTipoDeficiencia;
+    public static bool GereOpcoesDoFato(string codigoDoDado) =>
+        ImpoeOrigemDoFato(codigoDoDado) || codigoDoDado is FatoTipoDeficiencia;
 
     private static readonly DomainError CondicaoDuplicada = new(
         "AtendimentoEspecializado.CondicaoDuplicada", "Cada condição de atendimento só pode ser ofertada uma vez.");
@@ -94,12 +94,12 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// As opções que o atendimento dá ao fato, ordenadas pelo código e numeradas a partir de zero: o
+    /// As opções que o atendimento dá ao dado, ordenadas pelo código e numeradas a partir de zero: o
     /// atendimento não tem ordem de negócio própria, e remover um item renumera os demais preservando
-    /// a ordem relativa. Vazio para fato que o atendimento não gere.
+    /// a ordem relativa. Vazio para dado que o atendimento não gere.
     /// </summary>
-    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoFato(string fatoCodigo) =>
-        fatoCodigo switch
+    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoFato(string codigoDoDado) =>
+        codigoDoDado switch
         {
             FatoCondicaoAtendimento => [.. _condicoes
                 .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)

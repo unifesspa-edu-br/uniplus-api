@@ -13461,7 +13461,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "O pedido trouxe o mesmo identificador mais de uma vez em `condicaoIds`. Cada condição de atendimento só pode constar uma vez no atendimento especializado do processo. A repetição é conferida antes de consultar os cadastros de Configuração.",
+        "O pedido trouxe o mesmo identificador mais de uma vez em `condicaoIds`. Cada condição de atendimento só pode constar uma vez no atendimento especializado do processo. A repetição é conferida sobre o pedido, sem consultar os cadastros, e vem na mesma resposta das demais recusas do pedido, sem esconder nenhuma delas.",
         "A recusa sai com **422** e, como é erro de campo, o problema vem em `errors`, com o campo (`condicaoIds`) e este código; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13477,8 +13477,8 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um dos identificadores de `condicaoIds` não corresponde a uma condição de atendimento do cadastro de Configuração, ou ela foi removida depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. O `detail` traz o identificador recusado.",
-        "A recusa sai com **422**. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
+        "Um identificador de `condicaoIds` não corresponde a uma condição de atendimento do cadastro de Configuração, ou ela foi removida depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `condicaoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
         "Recarregue a lista do cadastro e escolha de novo. Se a opção que você queria foi removida, não dá mais para usá-la; peça a quem mantém o cadastro de Configuração que o restabeleça, se for o caso."
@@ -13493,7 +13493,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "O pedido trouxe o mesmo identificador mais de uma vez em `recursoIds`. Cada recurso de acessibilidade só pode constar uma vez no atendimento especializado do processo. A repetição é conferida antes de consultar os cadastros de Configuração.",
+        "O pedido trouxe o mesmo identificador mais de uma vez em `recursoIds`. Cada recurso de acessibilidade só pode constar uma vez no atendimento especializado do processo. A repetição é conferida sobre o pedido, sem consultar os cadastros, e vem na mesma resposta das demais recusas do pedido, sem esconder nenhuma delas.",
         "A recusa sai com **422** e, como é erro de campo, o problema vem em `errors`, com o campo (`recursoIds`) e este código; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13509,8 +13509,8 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um dos identificadores de `recursoIds` não corresponde a um recurso de acessibilidade do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. O `detail` traz o identificador recusado.",
-        "A recusa sai com **422**. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
+        "Um identificador de `recursoIds` não corresponde a um recurso de acessibilidade do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `recursoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
         "Recarregue a lista do cadastro e escolha de novo. Se o item que você queria foi removido, não dá mais para usá-lo; peça a quem mantém o cadastro de Configuração que o restabeleça, se for o caso."
@@ -13525,7 +13525,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "O pedido trouxe o mesmo identificador mais de uma vez em `tipoDeficienciaIds`. Cada tipo de deficiência só pode constar uma vez no atendimento especializado do processo. A repetição é conferida antes de consultar os cadastros de Configuração.",
+        "O pedido trouxe o mesmo identificador mais de uma vez em `tipoDeficienciaIds`. Cada tipo de deficiência só pode constar uma vez no atendimento especializado do processo. A repetição é conferida sobre o pedido, sem consultar os cadastros, e vem na mesma resposta das demais recusas do pedido, sem esconder nenhuma delas.",
         "A recusa sai com **422** e, como é erro de campo, o problema vem em `errors`, com o campo (`tipoDeficienciaIds`) e este código; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13541,8 +13541,8 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um dos identificadores de `tipoDeficienciaIds` não corresponde a um tipo de deficiência do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. O `detail` traz o identificador recusado.",
-        "A recusa sai com **422**. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
+        "Um identificador de `tipoDeficienciaIds` não corresponde a um tipo de deficiência do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `tipoDeficienciaIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
         "Recarregue a lista do cadastro e escolha de novo. Se o item que você queria foi removido, não dá mais para usá-lo; peça a quem mantém o cadastro de Configuração que o restabeleça, se for o caso."
@@ -13557,7 +13557,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "O pedido trouxe tipos de deficiência em `tipoDeficienciaIds`, mas a condição de pessoa com deficiência (a condição de código `PCD` do cadastro de condições de atendimento) não está entre as condições escolhidas em `condicaoIds`. O tipo de deficiência só faz sentido como detalhe dessa condição.",
+        "O pedido trouxe tipos de deficiência em `tipoDeficienciaIds`, mas a condição de pessoa com deficiência (a condição de código `PCD` do cadastro de condições de atendimento) não está entre as condições escolhidas em `condicaoIds`. O tipo de deficiência só faz sentido como detalhe dessa condição. Esta conferência só vale quando todas as condições enviadas foram encontradas no cadastro, e a recusa de um recurso não a esconde.",
         "A recusa sai com **422** e, como é erro de campo, o problema vem em `errors`, com o campo (`tipoDeficienciaIds`) e este código; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [

@@ -56,22 +56,12 @@ public static class DefinirAtendimentoEspecializadoCommandHandler
         return Result.Success();
     }
 
-    /// <remarks>
-    /// A validação precede a leitura (ADR-0125, ponto 5): um lote com identificador repetido não precisa de nenhuma
-    /// consulta aos cadastros para saber que será recusado.
-    /// </remarks>
     private static async Task<Result> DefinirAsync(
         ProcessoSeletivo processo,
         DefinirAtendimentoEspecializadoCommand command,
         CadastrosDoAtendimentoEspecializado cadastros,
         CancellationToken cancellationToken)
     {
-        List<FieldError> repetidos = AtendimentoEspecializado.ValidarIdsUnicos(command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds);
-        if (repetidos.Count > 0)
-        {
-            return Result.ValidationFailure(repetidos);
-        }
-
         Result<AtendimentoEspecializado> montado = await cadastros.MontarAsync(command, cancellationToken).ConfigureAwait(false);
         if (montado.IsFailure)
         {
