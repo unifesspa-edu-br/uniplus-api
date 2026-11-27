@@ -21,9 +21,23 @@ public sealed class CombinacaoDoGrupoTests
     [InlineData(FormaDeComprovacao.TodosOsItens, null, "INVALIDA", true, "RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos")]
     [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, "INVALIDA", true, "RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites")]
     [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, "INVALIDA", true, "RegraDeComprovacao.ConsequenciaInvalida")]
-    public void Declarar_DefeitosSimultaneos_ConservaPrimeiraRecusa(FormaDeComprovacao tipo, int? quantidade, string consequencia, bool temBase, string codigo)
+    public void Declarar_DefeitosSimultaneos_ApontaPrimeiraRecusaEmError(FormaDeComprovacao tipo, int? quantidade, string consequencia, bool temBase, string codigo)
     {
         CombinacaoDoGrupo.Declarar(tipo, quantidade, consequencia, 1, temBase).Error!.Code.Should().Be(codigo);
+    }
+
+    [Theory]
+    [InlineData(FormaDeComprovacao.TodosOsItens, 0, "INVALIDA", true,
+        "RegraDeComprovacao.QuantidadeMinimaProibidaQuandoExigeTodos,RegraDeComprovacao.ConsequenciaProibidaQuandoExigeTodos,RegraDeComprovacao.BaseLegalProibidaQuandoExigeTodos")]
+    [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens, 0, "INVALIDA", true,
+        "RegraDeComprovacao.QuantidadeMinimaDeItensForaDosLimites,RegraDeComprovacao.ConsequenciaInvalida")]
+    [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens, 1, null, true, "RegraDeComprovacao.BaseLegalSemConsequencia")]
+    public void Declarar_DefeitosSimultaneos_DevolveTodasAsRecusasNaOrdem(FormaDeComprovacao tipo, int? quantidade, string? consequencia, bool temBase, string codigos)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+        Result<CombinacaoDoGrupo> resultado = CombinacaoDoGrupo.Declarar(tipo, quantidade, consequencia, 1, temBase);
+
+        resultado.Errors.Select(erro => erro.Error.Code).Should().Equal(codigos.Split(','));
     }
 
     [Fact]
