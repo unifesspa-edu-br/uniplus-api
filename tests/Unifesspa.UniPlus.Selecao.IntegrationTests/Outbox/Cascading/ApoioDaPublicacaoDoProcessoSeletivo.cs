@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
-// produtivo → ProcessoSeletivo.Publicar(, ExemploDeEnvelopeDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
+// produtivo → ProcessoSeletivo.Publicar(, ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico()) emite ProcessoPublicadoEvent via
 // AddDomainEvent → handler retorna (Result, IEnumerable<object>) com o
 // evento drenado por DequeueDomainEvents().Cast<object>() →
 // CaptureCascadingMessages persiste envelope na MESMA transação do

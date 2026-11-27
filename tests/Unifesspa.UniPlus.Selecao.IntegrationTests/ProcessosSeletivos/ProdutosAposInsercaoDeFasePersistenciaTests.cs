@@ -74,7 +74,7 @@ public sealed class ProdutosAposInsercaoDeFasePersistenciaTests(ProcessoSeletivo
     }
 
     private static RegraRecursoFase Recurso(Guid produto) => RegraRecursoFase.Criar(
-        ExemploDeEnvelope.Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'e'),
+        ExemploDeProcessoSeletivo.Regra(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), 'e'),
         ParametrosDoRecursoDeTeste.Declarados(48m, UnidadePrazo.Horas), produto,
         ProcedimentosDeRecurso.De([])).Value!;
 }

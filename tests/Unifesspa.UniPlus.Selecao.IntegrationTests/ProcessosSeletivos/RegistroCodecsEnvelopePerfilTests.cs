@@ -32,7 +32,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
         // bytes na coluna sem poder recomputar o hash da linha forense.
         VersaoConfiguracao comprometida = ComBytes(versao, ComPeriodoAdulterado(bytes));
 
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(comprometida);
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(comprometida);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);

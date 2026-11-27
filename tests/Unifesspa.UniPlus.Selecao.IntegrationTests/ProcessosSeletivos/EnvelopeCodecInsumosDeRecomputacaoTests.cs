@@ -46,14 +46,14 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, caminho, valorNovo);
 
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(mutado));
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(mutado));
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
 
         reidratado.IsFailure.Should().BeTrue($"o quadro congelado não é o que '{caminho}' monta");
         reidratado.Error!.Message.Should().Contain("o quadro congelado não é o que a declaração da oferta monta");
@@ -68,8 +68,8 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Trocar o id do recurso da etapa não muda os bytes canônicos")]
     public void IdDoRecursoDaEtapa_NaoEntraNosBytes()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        byte[] antes = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
 
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         IReadOnlyList<RecursoDaEtapa> originais = [.. objetiva.Recursos];
@@ -78,7 +78,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         objetiva.Recursos.Select(r => r.Id)
             .Should().NotIntersectWith(originais.Select(r => r.Id), "pré-condição: as janelas reconstruídas têm identidade nova");
 
-        byte[] depois = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
 
         depois.Should().Equal(antes, "a mesma janela recursal, numa linha nova, é a mesma publicação");
     }
@@ -95,23 +95,23 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Redeclarar a mesma banca da etapa com o id lido preserva a linha e os bytes canônicos")]
     public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        byte[] antes = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
         RedeclararComOIdLido(objetiva);
 
         ConferirQueALinhaNaoGirouDeId(objetiva, idsOriginais);
-        byte[] depois = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
         depois.Should().Equal(antes, "a mesma configuração de banca é a mesma publicação");
     }
 
     [Fact(DisplayName = "Redeclarar a banca da etapa sem o id lido recria a linha e muda os bytes canônicos")]
     public void RedeclararABancaDaEtapaSemOId_RecriaALinhaEMudaOsBytes()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        byte[] antes = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         Dictionary<TipoDeBanca, Guid> idsOriginais = IdsDasBancasPorTipo(objetiva);
 
@@ -120,7 +120,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
         objetiva.Bancas.Select(b => b.Id).Should().NotIntersectWith(idsOriginais.Values,
             "sem o id, a banca declarada é outra");
-        byte[] depois = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        byte[] depois = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
         depois.Should().NotEqual(antes, "o id da banca faz parte do conteúdo congelado");
     }
 
@@ -145,7 +145,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Golden rica — a fixture é o envelope do exemplo")]
     public void GoldenRica_EOEnvelopeDoExemplo()
     {
-        SnapshotCanonico atual = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ExemploDeEnvelopeProcessoRico.ProcessoRico()));
+        SnapshotCanonico atual = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico()));
 
         byte[]? esperado = LerFixtureRica();
         if (esperado is null || !atual.Bytes.SequenceEqual(esperado))

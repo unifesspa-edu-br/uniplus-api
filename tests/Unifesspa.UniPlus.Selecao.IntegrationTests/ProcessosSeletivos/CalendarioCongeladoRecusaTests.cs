@@ -22,16 +22,16 @@ public sealed class CalendarioCongeladoRecusaTests
 {
     private static ProcessoSeletivo ProcessoPublicado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         return processo;
     }
 
     private static Result<EnvelopeReidratado> ReidratarComBlocoAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         adulterar(payload["calendarioDiasUteis"]!.AsObject());
@@ -39,7 +39,7 @@ public sealed class CalendarioCongeladoRecusaTests
         byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(payload);
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
 
-        return ExemploDeEnvelope.Registro.Reidratar(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, adulterados));
+        return ExemploDeProcessoSeletivo.Registro.Reidratar(ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, adulterados));
     }
 
     private static void DeveRecusar(Action<JsonObject> adulterar, string porque)
@@ -118,15 +118,15 @@ public sealed class CalendarioCongeladoRecusaTests
 
     private static Result<EnvelopeReidratado> ReidratarSemCalendarioComRecursoSoNa(string ondeSobra)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         payload["calendarioDiasUteis"] = new JsonObject { ["presente"] = false };
         RemoverRecursos(payload, ondeSobra);
-        return ExemploDeEnvelope.Registro.Reidratar(
-            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
+        return ExemploDeProcessoSeletivo.Registro.Reidratar(
+            ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
     }
 
     private static void RemoverRecursos(JsonObject payload, string ondeSobra)
@@ -162,10 +162,10 @@ public sealed class CalendarioCongeladoRecusaTests
     public void EnvelopeIntegro_Reidrata()
     {
         ProcessoSeletivo processo = ProcessoPublicado();
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(
-            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(
+            ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.DadosDeCatalogo.CalendarioDiasUteis!.DiasNaoUteis.Should().HaveCount(4);
@@ -207,9 +207,9 @@ public sealed class CalendarioCongeladoRecusaTests
     [InlineData("municipioNome", "Maraba\u0301")]
     public void TextoDecomposto_Recusado(string campo, string decomposto)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
 
         JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
         JsonObject bloco = payload["calendarioDiasUteis"]!.AsObject();
@@ -224,8 +224,8 @@ public sealed class CalendarioCongeladoRecusaTests
 
     private static void ConferirRecusaDeTextoDecomposto(ProcessoSeletivo processo, byte[] adulterados)
     {
-        Result<EnvelopeReidratado> resultado = ExemploDeEnvelope.Registro.Reidratar(
-            ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, adulterados));
+        Result<EnvelopeReidratado> resultado = ExemploDeProcessoSeletivo.Registro.Reidratar(
+            ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, adulterados));
         resultado.IsFailure.Should().BeTrue(
             "o encoder emite estes campos em NFC; aceitar a forma decomposta faria os bytes mudarem na recanonicalização");
     }

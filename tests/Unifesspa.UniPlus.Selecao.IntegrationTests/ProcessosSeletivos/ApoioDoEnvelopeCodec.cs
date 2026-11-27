@@ -53,14 +53,14 @@ internal static class ApoioDoEnvelopeCodec
         ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico congelado, string contaId)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = entrada.Dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, entrada.HashDocumento), AtorUsuarioContaId = contaId, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = entrada.Dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, entrada.HashDocumento), AtorUsuarioContaId = contaId, Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         return publicacao.Value!;
     }
 
     internal static EnvelopeReidratado Reidratado(VersaoConfiguracao versao)
     {
-        Result<EnvelopeReidratado> reidratado = ExemploDeEnvelope.Registro.Reidratar(versao);
+        Result<EnvelopeReidratado> reidratado = ExemploDeProcessoSeletivo.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         return reidratado.Value!;
     }
@@ -128,16 +128,16 @@ internal static class ApoioDoEnvelopeCodec
 
     internal static EnvelopeReidratado ReidratarMutado(Action<JsonObject> mutar)
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        ExemploDeEnvelopeEntrada.Publicar(processo);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         mutar(mutado);
         PerfilCanonicoV1.Instancia.Serializar(mutado).Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
         // Os rótulos acompanham o código escrito; a mutação troca só o código, e a leitura decide por ele.
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(ContextoDosRotulos.SemContexto(mutado).AsObject());
 
-        return Reidratado(ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados));
+        return Reidratado(ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, bytesMutados));
     }
 
     /// <summary>

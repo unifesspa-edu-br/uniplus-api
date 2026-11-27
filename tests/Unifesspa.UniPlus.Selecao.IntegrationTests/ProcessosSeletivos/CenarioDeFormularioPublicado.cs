@@ -72,7 +72,7 @@ internal sealed class CenarioDeFormularioPublicado
 
         processo.DefinirItens([CorRacaDeEscolhaUnica()]).IsSuccess.Should().BeTrue();
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([ExemploDeProcessoSeletivoEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -93,7 +93,7 @@ internal sealed class CenarioDeFormularioPublicado
     {
         IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento), AtorUsuarioContaId = ator, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico(), MotivosEscolhidos = MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo) });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento), AtorUsuarioContaId = ator, Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico(), MotivosEscolhidos = MotivosDeDecisaoDoProcessoDeTeste.Cobrindo(processo) });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
         return publicar.Value!;

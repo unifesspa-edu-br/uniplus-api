@@ -17,8 +17,8 @@ public sealed class EnvelopeLidoDivulgacaoPersistenciaTests(ProcessoSeletivoDbFi
     public async Task Reidratar_PadraoMinimizadoSemLinhaPersistida_ReproduzOsBytes()
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS divulgação padrão");
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         EnvelopeReidratado lido = ApoioDoEnvelopeCodec.Reidratado(versao);
         lido.Configuracao.DivulgacaoETaxa.ConfiguracaoDivulgacao.Should().BeNull();
         Guid linha = await PersistirPadraoExplicitoAsync(processo);

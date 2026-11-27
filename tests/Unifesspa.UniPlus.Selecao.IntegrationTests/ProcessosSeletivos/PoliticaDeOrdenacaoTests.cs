@@ -81,7 +81,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// </para>
 /// <para>
 /// A projeção é pura (ADR-0109 D6) — nenhum teste aqui precisa de banco. O <c>permutar</c> de
-/// <see cref="ExemploDeEnvelope"/> continua significando só ordem física de entrada (Prova A); a
+/// <see cref="ExemploDeProcessoSeletivo"/> continua significando só ordem física de entrada (Prova A); a
 /// mutação de chaves em conflito desta suíte é gerada à parte, com processos mínimos próprios.
 /// </para>
 /// </remarks>

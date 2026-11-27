@@ -133,7 +133,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         DadosEdital dados = NovosDados(documento.Id);
         SnapshotCanonico canonico = Canonicalizar(processo, dados, documento);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() });
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
     }
@@ -187,7 +187,7 @@ internal sealed class CenarioDeRetificacaoPersistida
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado),
                 FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do prazo de inscrição");
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do prazo de inscrição");
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
         return retificar.Value!;
     }

@@ -171,7 +171,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
         DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(new EntradaCanonicalizacao(carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId, new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"), Conformidade: null, DadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = ExemploDeEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do texto das opções");
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = ExemploDeProcessoSeletivoDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do texto das opções");
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
 
         return retificar.Value!;

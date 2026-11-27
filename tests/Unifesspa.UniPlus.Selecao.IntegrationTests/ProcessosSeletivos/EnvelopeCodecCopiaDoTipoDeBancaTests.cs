@@ -27,9 +27,9 @@ public sealed class EnvelopeCodecCopiaDoTipoDeBancaTests
     [Fact(DisplayName = "O envelope lido devolve, em cada banca da fase e da etapa, a mesma cópia do tipo que foi congelada")]
     public void RoundTrip_DevolveACopiaDoTipoDeCadaBanca()
     {
-        ProcessoSeletivo original = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo original = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
 
-        Result<EnvelopeReidratado> lido = VersoesDoEnvelopeDeTeste.ReidratarComoAbertura(ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(original)).Bytes);
+        Result<EnvelopeReidratado> lido = VersoesDoEnvelopeDeTeste.ReidratarComoAbertura(ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(original)).Bytes);
 
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         lido.Value!.Configuracao.Cronograma.CronogramaFases.SelectMany(static f => f.BancasRequeridas).Select(static b => (b.Id, b.Tipo))
@@ -129,12 +129,12 @@ public sealed class EnvelopeCodecCopiaDoTipoDeBancaTests
     [Fact(DisplayName = "Trocar o tipo de origem da banca, com outra cópia, muda os bytes canônicos")]
     public void CopiaDeOutroTipo_FazParteDoConteudoCongelado()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-        byte[] antes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+        byte[] antes = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes;
 
         TrocarACopiaDaPrimeiraBancaDaEtapa(processo.Etapas.Single(static e => e.Nome == "Prova Objetiva"));
 
-        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo)).Bytes.Should().NotEqual(antes);
+        ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo)).Bytes.Should().NotEqual(antes);
     }
 
     private static void TrocarACopiaDaPrimeiraBancaDaEtapa(EtapaProcesso etapa)

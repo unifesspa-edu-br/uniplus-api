@@ -171,7 +171,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     [Fact(DisplayName = "Envelope que coleta a edição do ENEM com classificação sem ENEM é recusado pela regra da publicação")]
     public void EdicaoDoEnemSemClassificacaoEnem_Recusa()
     {
-        byte[] bytes = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
+        byte[] bytes = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
 
         Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(bytes);
 
@@ -182,9 +182,9 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
 
     private static ProcessoSeletivo ProcessoComClassificacaoSemEnem()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, ExemploDeEnvelope.Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, ExemploDeProcessoSeletivo.Regra(RegraDeDesempate.MaiorIdade.Codigo(), 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
         Result definir = processo.DefinirClassificacao(ClassificacaoSemEnem());
         definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
 
@@ -194,8 +194,8 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
-            RegraCalculo = ExemploDeEnvelope.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
-            RegraOrdemAlocacao = ExemploDeEnvelope.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '3'),
+            RegraCalculo = ExemploDeProcessoSeletivo.Regra(RegraDeCalculoDaNota.ClassificacaoImportada.Codigo(), 'a'),
+            RegraOrdemAlocacao = ExemploDeProcessoSeletivo.Regra(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria.Codigo(), '3'),
         }).Value!;
 
     /// <summary>

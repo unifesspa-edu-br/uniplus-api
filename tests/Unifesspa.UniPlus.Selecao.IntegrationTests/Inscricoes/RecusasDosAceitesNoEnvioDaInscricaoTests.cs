@@ -78,7 +78,7 @@ public sealed class RecusasDosAceitesNoEnvioDaInscricaoTests
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Envio_UmTermoDeOutraVersaoEOutroSemAceite_DevolveAsDuasRecusas));
         InscricaoRequest pedido = PedidoDoProcesso(processo);
         AceiteDeTermoInput aceite = pedido.Aceites![0] with { VersaoId = Guid.NewGuid() };
-        processo.DefinirTermos([ExemploDeEnvelopeEntrada.Termo(Declaracao, 0), ExemploDeEnvelopeEntrada.Termo(Adicional, 1)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([ExemploDeProcessoSeletivoEntrada.Termo(Declaracao, 0), ExemploDeProcessoSeletivoEntrada.Termo(Adicional, 1)]).IsSuccess.Should().BeTrue();
 
         Result<ReciboDaInscricaoDto> envio = await EnviarAsync(db, processo, pedido with { Aceites = [aceite] }, "00000113");
 

@@ -18,9 +18,9 @@ public sealed class EnvelopeLidoCulturaEIdentificadorTests
         {
             CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
             CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator.Should().Be(",");
-            ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
-            SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
-            FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+            ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
+            SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
+            FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         }
         finally
         {
@@ -31,12 +31,12 @@ public sealed class EnvelopeLidoCulturaEIdentificadorTests
     [Fact]
     public void Reidratar_IdentificadorLegivelNulo_PreservaAAusencia()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico();
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico();
         IdentificadoresDeTeste.Retirar(processo);
-        SnapshotCanonico congelado = ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
         ApoioDoEnvelopeCodec.Envelope(congelado)["identificadorLegivel"].Should().BeNull();
         processo.DefinirIdentificadorLegivel(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdentificadorLegivel.Criar("processo-com-identificador").Value).IsSuccess.Should().BeTrue();
-        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        EnvelopeReidratado lido = FidelidadeDoEnvelopeDeTeste.Conferir(processo, ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         lido.Configuracao.IdentificadorLegivel.Should().BeNull();
     }
 }

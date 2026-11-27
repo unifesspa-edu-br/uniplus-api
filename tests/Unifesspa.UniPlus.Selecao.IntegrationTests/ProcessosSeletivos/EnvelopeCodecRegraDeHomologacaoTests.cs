@@ -26,7 +26,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     [Fact(DisplayName = "A fase com regra de homologação a escreve no envelope e a fase sem regra traz a chave com null")]
     public void Fase_GravaAChaveNulaQuandoNaoTemARegra()
     {
-        JsonObject envelope = Envelope(Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico()));
+        JsonObject envelope = Envelope(Codificar(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico()));
 
         FaseNoEnvelope(envelope, FasePreliminar)["regraDeHomologacao"].Should().BeOfType<JsonObject>();
         FaseNoEnvelope(envelope, FaseDeInscricao).ContainsKey("regraDeHomologacao").Should().BeTrue();
@@ -36,16 +36,16 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     [Fact(DisplayName = "Ida e volta do envelope com a regra de homologação reproduz os bytes e o hash congelados")]
     public void IdaEVolta_ComARegra_ReproduzBytesEHash()
     {
-        ProcessoSeletivo processo = ExemploDeEnvelopeProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
+        ProcessoSeletivo processo = ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(comBancasExigidasNaPublicacao: true);
         IsencaoDaTaxaDeTeste.GarantirOFormularioDeQuemCobraTaxa(processo);
         SnapshotCanonico congelado = Codificar(processo);
-        ExemploDeEnvelopeEntrada.Publicar(processo);
-        VersaoConfiguracao versao = ExemploDeEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        ExemploDeProcessoSeletivoEntrada.Publicar(processo);
+        VersaoConfiguracao versao = ExemploDeProcessoSeletivoEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado reidratado = AssertSerializacaoEReidratacao(processo, versao, congelado);
 
         HashCanonicalComputer.ComputeSha256Hex(congelado.Bytes).Should().Be(versao.HashConfiguracao);
-        FaseReidratada(reidratado, FasePreliminar).RegraDeHomologacao!.MesmoConteudo(ExemploDeEnvelopeCronograma.RegraDeHomologacaoDoExemplo())
+        FaseReidratada(reidratado, FasePreliminar).RegraDeHomologacao!.MesmoConteudo(ExemploDeProcessoSeletivoCronograma.RegraDeHomologacaoDoExemplo())
             .Should().BeTrue();
         FaseReidratada(reidratado, FaseDeInscricao).RegraDeHomologacao.Should().BeNull();
     }
@@ -57,8 +57,8 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
             "RESULTADO_CLASSIFICACAO",
             [AlternativaDeCondicoes.Declarar([CondicaoDeHomologacao.Declarar("RESULTADO_NO_RETORNO_DO_INEP", 2023, null, null).Value!]).Value!]);
 
-        SnapshotCanonico exemplo = Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico());
-        SnapshotCanonico mudada = Codificar(ExemploDeEnvelopeProcessoRico.ProcessoRico(regraDeHomologacao: outra));
+        SnapshotCanonico exemplo = Codificar(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico());
+        SnapshotCanonico mudada = Codificar(ExemploDeProcessoSeletivoProcessoRico.ProcessoRico(regraDeHomologacao: outra));
 
         mudada.Bytes.Should().NotEqual(exemplo.Bytes);
         HashCanonicalComputer.ComputeSha256Hex(mudada.Bytes).Should().NotBe(HashCanonicalComputer.ComputeSha256Hex(exemplo.Bytes));
@@ -96,7 +96,7 @@ public sealed class EnvelopeCodecRegraDeHomologacaoTests
     }
 
     private static SnapshotCanonico Codificar(ProcessoSeletivo processo) =>
-        ExemploDeEnvelope.Canonicalizador.Canonicalizar(ExemploDeEnvelopeEntrada.Entrada(processo));
+        ExemploDeProcessoSeletivo.Canonicalizador.Canonicalizar(ExemploDeProcessoSeletivoEntrada.Entrada(processo));
 
     private static JsonObject FaseNoEnvelope(JsonObject envelope, string codigo) =>
         envelope["cronogramaFases"]!["fases"]!.AsArray().Single(fase => fase!["codigo"]!.GetValue<string>() == codigo)!.AsObject();
