@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using System.Collections.Frozen;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -21,6 +22,7 @@ public sealed class CadastrosCitadosNoDocumento
     private readonly FrozenDictionary<string, CategoriaDeDocumentoCitada> _categoriasDeDocumento = FrozenDictionary<string, CategoriaDeDocumentoCitada>.Empty;
     private readonly FrozenDictionary<string, LocalidadeRegente> _localidades = FrozenDictionary<string, LocalidadeRegente>.Empty;
     private readonly FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> _regras = FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>.Empty;
+    private readonly FrozenDictionary<string, DescritorFatoCandidato> _dadosDoDesempate = FrozenDictionary<string, DescritorFatoCandidato>.Empty;
     private readonly FrozenSet<string> _tiposDeAto = FrozenSet<string>.Empty;
 
     public CadastrosCitadosNoDocumento(DateTimeOffset lidoEm) => LidoEm = lidoEm;
@@ -95,6 +97,16 @@ public sealed class CadastrosCitadosNoDocumento
     {
         get => _regras;
         init => _regras = (value ?? throw new ArgumentNullException(nameof(value))).ToFrozenDictionary();
+    }
+
+    /// <summary>
+    /// O vocabulário de dados do candidato que o desempate por condição pode citar (ADR-0111), pelo código. Só é lido quando o documento cita
+    /// essa regra; vazio recusa todo dado, o que mantém fechada a leitura que o recebeu sem o vocabulário.
+    /// </summary>
+    public IReadOnlyDictionary<string, DescritorFatoCandidato> DadosDoDesempate
+    {
+        get => _dadosDoDesempate;
+        init => _dadosDoDesempate = Congelado(value);
     }
 
     /// <summary>Os códigos dos tipos de ato com versão vigente em <see cref="LidoEm"/>.</summary>

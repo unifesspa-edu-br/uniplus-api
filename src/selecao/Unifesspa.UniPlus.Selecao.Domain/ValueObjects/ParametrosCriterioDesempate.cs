@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Services;
@@ -71,6 +73,39 @@ public sealed record ParametrosDesempateIdoso(int IdadeMinima) : ParametrosCrite
 public sealed record ParametrosDesempatePredicadoFato(CondicaoDnf Condicao) : ParametrosCriterioDesempate
 {
     public override RegraDeDesempate RegraCorrespondente() => RegraDeDesempate.CondicaoSobreDado;
+
+    /// <summary>
+    /// A condição a partir do dado, do operador e do valor informados: o que falta é recusado no campo de cada um, e, com os três
+    /// presentes, a condição acumula as recusas do dado, do operador e do valor.
+    /// </summary>
+    public static Result<ParametrosCriterioDesempate> Criar(string? dado, string? operador, JsonElement? valor)
+    {
+        List<FieldError> ausentes = CamposAusentes(dado, operador, valor);
+        if (ausentes.Count > 0 || valor is not { } valorInformado)
+        {
+            return Result<ParametrosCriterioDesempate>.ValidationFailure(ausentes);
+        }
+
+        Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(dado, operador, valorInformado);
+        return condicao.IsFailure
+            ? Result<ParametrosCriterioDesempate>.ValidationFailure(condicao.Errors)
+            : Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempatePredicadoFato(condicao.Value!));
+    }
+
+    private static List<FieldError> CamposAusentes(string? dado, string? operador, JsonElement? valor) =>
+    [
+        .. new (string Campo, bool Ausente)[]
+        {
+            (CondicaoDnf.CampoFato, string.IsNullOrWhiteSpace(dado)),
+            (CondicaoDnf.CampoOperador, string.IsNullOrWhiteSpace(operador)),
+            (CondicaoDnf.CampoValor, valor is null),
+        }
+        .Where(static campo => campo.Ausente)
+        .Select(static campo => new FieldError(campo.Campo, new DomainError(
+            "CriterioDesempate.PredicadoFatoIncompleto",
+            $"O critério de desempate por condição sobre dado exige o dado, o operador e o valor para a regra {RegraDeDesempate.CondicaoSobreDado.Codigo()}."))),
+    ];
+
     internal IEnumerable<FieldError> ConferirContraOVocabulario(IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario, IReadOnlySet<string>? coletados)
     {
         Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, Condicao)]);

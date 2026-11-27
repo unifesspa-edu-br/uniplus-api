@@ -62,6 +62,25 @@ internal static class LeituraDasFases
         OrigemNoDocumento origem = OrigemNoDocumento.Reunir(
             [posicoes, OrigemNoDocumento.SoComPartesRecusadas(PartesRecusadasDasFases.De(lidas, posicoes)), .. ListasDasFases.Origens(lidas, posicoes)]);
 
-        return new([.. OrdemDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))], origem);
+        Dictionary<string, string> codigoPelaChave = CodigoPelaChave(adotadas);
+
+        return new([.. OrdemDaConfiguracao.Fases(adotadas.Select(static par => par.Fase))], codigoPelaChave, ChavesRecusadas(lidas, codigoPelaChave), origem);
     }
+
+    private static Dictionary<string, string> CodigoPelaChave(IEnumerable<(FaseCronograma Fase, int Posicao)> adotadas)
+    {
+        Dictionary<string, string> codigoPelaChave = new(StringComparer.Ordinal);
+        foreach ((FaseCronograma fase, _) in adotadas)
+        {
+            codigoPelaChave.TryAdd(fase.Chave.Valor, fase.Codigo);
+        }
+
+        return codigoPelaChave;
+    }
+
+    private static HashSet<string> ChavesRecusadas(IReadOnlyList<FaseLida> lidas, Dictionary<string, string> codigoPelaChave) => lidas
+        .Where(static lida => lida.Fase is null)
+        .Select(static lida => lida.Chave)
+        .Where(chave => !codigoPelaChave.ContainsKey(chave))
+        .ToHashSet(StringComparer.Ordinal);
 }

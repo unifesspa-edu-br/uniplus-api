@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Xunit;
 
 using static CenarioDeProcesso;
+using static DeclaracoesAdotadasDeTeste;
 
 /// <summary>A etapa acontece numa fase do cronograma: a fase existe, a janela da etapa cabe na dela e a fase que agrupa etapas tem alguma.</summary>
 public sealed class EtapasNoCronogramaTests
@@ -230,5 +231,46 @@ public sealed class EtapasNoCronogramaTests
         item.Codigo.Should().Be("cronograma_etapa_declara_a_fase");
         item.Mensagem.Should().Be("Cronograma: toda etapa declara uma fase que está no cronograma");
         item.Ok.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Com fase recusada na leitura, a etapa que declara fase fora do cronograma não é recusada, e o item fica pendente")]
+    public void FaseDaEtapa_ComFaseRecusadaNaLista_NaoJulgaEDeixaOItemPendente()
+    {
+        EtapasDoProcesso etapas = Etapas(EtapaNaFase("ENTREVISTA"));
+        CronogramaDoProcesso lido = CronogramaDoProcesso.Do([Avaliacao().Adotada()]);
+        CronogramaDoProcesso comFaseRecusada = CronogramaDoProcesso.Do([Avaliacao().Adotada()], ComPartesRecusadas("fases"));
+
+        EtapasNoCronograma.ConferirFaseDasEtapas(lido, etapas).Should().ContainSingle();
+        EtapasNoCronograma.ConferirFaseDasEtapas(comFaseRecusada, etapas).Should().BeEmpty();
+        EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(comFaseRecusada, etapas).Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Com fase recusada na leitura, a etapa cuja fase está no cronograma mantém o item aprovado")]
+    public void FaseDaEtapa_ComFaseRecusadaENaListaDoCronograma_ItemSegueAprovado()
+    {
+        CronogramaDoProcesso comFaseRecusada = CronogramaDoProcesso.Do([Avaliacao().Adotada()], ComPartesRecusadas("fases"));
+
+        EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(comFaseRecusada, Etapas(EtapaNaFase("AVALIACAO"))).Ok.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A etapa sem fase porque a leitura recusou o campo dela não é recusada como etapa sem fase, e o item fica pendente")]
+    public void FaseDaEtapa_CampoRecusadoNaLeitura_NaoJulgaEDeixaOItemPendente()
+    {
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([Avaliacao().Adotada()]);
+        EtapasDoProcesso etapas = EtapasDoProcesso.Das([new ModeloDeEtapa("Prova").Adotada()], ComPartesRecusadas("etapas[0].faseCodigo"));
+
+        EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas).Should().BeEmpty();
+        etapas.ConferirCompletude().Should().BeEmpty();
+        EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas).Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Com fase recusada na lista, a etapa sem fase declarada pode ter citado a recusada e fica sem julgar")]
+    public void FaseDaEtapa_EtapaSemFaseEFaseRecusadaNaLista_NaoJulgaEDeixaOItemPendente()
+    {
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([Avaliacao().Adotada()], ComPartesRecusadas("fases"));
+        EtapasDoProcesso etapas = EtapasDoProcesso.Das([new ModeloDeEtapa("Prova").Adotada()], ComPartesRecusadas("fases"));
+
+        etapas.ConferirCompletude().Should().BeEmpty();
+        EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas).Ok.Should().BeFalse();
     }
 }

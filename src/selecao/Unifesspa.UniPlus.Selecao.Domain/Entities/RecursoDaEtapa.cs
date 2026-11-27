@@ -108,9 +108,27 @@ public sealed class RecursoDaEtapa : EntityBase
             "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato.");
 
     private static DomainError? ValidarRegra(ReferenciaRegra regra) =>
-        regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo() ? null : new DomainError(
-            "RecursoDaEtapa.RegraCatalogoInvalida",
-            "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
+        regra.Codigo == RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo() ? null : RegraInvalida();
+
+    /// <summary>A recusa da regra que não permite contar o prazo de recurso a partir de uma publicação, ou que o catálogo não tem.</summary>
+    internal static DomainError RegraInvalida() => new(
+        "RecursoDaEtapa.RegraCatalogoInvalida",
+        "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
+
+    /// <summary>
+    /// As recusas da âncora e dos parâmetros, que não dependem da regra: quem lê o documento as acumula com a recusa da regra que o
+    /// catálogo não tem, quando não há referência para criar o recurso.
+    /// </summary>
+    internal static IReadOnlyList<FieldError> RecusasDaAncoraEDosParametros(EventoInicialDoPrazo? ancora, ParametrosDeclaradosDoRecurso declarados)
+    {
+        ArgumentNullException.ThrowIfNull(declarados);
+
+        List<FieldError> erros = [];
+        AdicionarRecusa(erros, "ancora", ValidarAncora(ancora));
+        erros.AddRange(declarados.Conferir().Recusas.Select(static recusa => new FieldError(recusa.Campo, ErroDosParametros(recusa))));
+
+        return erros;
+    }
 
     // Os códigos são literais, e não montados a partir do motivo: é assim que o registro de erros enxerga cada um, porque um código
     // interpolado nunca apareceria na varredura, e um erro sem registro vira 500 em vez de 422.

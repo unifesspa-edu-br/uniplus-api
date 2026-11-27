@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 using static ModeloDeEtapa;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas.DeclaracoesAdotadasDeTeste;
 
 public sealed class EtapasDoProcessoTests
 {
@@ -197,6 +198,32 @@ public sealed class EtapasDoProcessoTests
         etapas.ConferirCompletude().Select(static r => (r.Field, r.Error.Code)).Should().Equal(
             ("etapas[0].faseCodigo", "ProcessoSeletivo.EtapaSemFaseDeclarada"),
             ("etapas[2].faseCodigo", "ProcessoSeletivo.EtapaSemFaseDeclarada"));
+    }
+
+    [Fact(DisplayName = "A etapa cujo campo da fase a leitura recusou não é recusada como etapa sem fase, e a sem recusa continua recusada")]
+    public void ConferirCompletude_CampoDaFaseRecusadoNaLeitura_NaoJulgaAEtapa()
+    {
+        EtapaProcesso[] etapas = [new ModeloDeEtapa("A").Adotada(), (new ModeloDeEtapa("B") with { Ordem = 2 }).Adotada()];
+
+        EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].faseCodigo")).ConferirCompletude()
+            .Select(static r => r.Field).Should().Equal("etapas[1].faseCodigo");
+    }
+
+    [Fact(DisplayName = "A recusa de outro campo da etapa não suspende a causa da etapa sem fase")]
+    public void ConferirCompletude_OutroCampoRecusado_ContinuaRecusandoAEtapaSemFase()
+    {
+        EtapasDoProcesso etapas = EtapasDoProcesso.Das([new ModeloDeEtapa("A").Adotada()], ComPartesRecusadas("etapas[0].produtos"));
+
+        etapas.ConferirCompletude().Select(static r => r.Error.Code).Should().Equal("ProcessoSeletivo.EtapaSemFaseDeclarada");
+    }
+
+    [Fact(DisplayName = "Com fase recusada na lista de fases, nenhuma etapa sem fase declarada é recusada como tal")]
+    public void ConferirCompletude_FaseRecusadaNaLista_NaoJulgaAsEtapasSemFase()
+    {
+        EtapaProcesso[] etapas = [new ModeloDeEtapa("A").Adotada(), (new ModeloDeEtapa("B") with { Ordem = 2 }).Adotada()];
+
+        EtapasDoProcesso.Das(etapas, ComPartesRecusadas("fases")).ConferirCompletude().Should().BeEmpty();
+        EtapasDoProcesso.Das(etapas, ComPartesRecusadas("fases[0].unidadeResponsavel")).ConferirCompletude().Should().HaveCount(2);
     }
 
     [Fact(DisplayName = "As recusas das declarações saem prefixadas pela posição da etapa e podem ser filtradas por código")]

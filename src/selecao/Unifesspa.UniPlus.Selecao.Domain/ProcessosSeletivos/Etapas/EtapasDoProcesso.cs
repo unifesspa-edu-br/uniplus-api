@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -13,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed record EtapasDoProcesso
 {
     private const string ListaDasEtapas = "etapas";
+    private const string CampoDaFase = "faseCodigo";
 
     public EtapasDoProcesso(IReadOnlyList<EtapaDeclarada> etapas, bool leituraRecusouEtapa = false)
     {
@@ -36,6 +38,12 @@ public sealed record EtapasDoProcesso
     /// <summary>Se o uso da nota do ENEM não se sabe: nenhuma etapa declarada o usa, e a leitura recusou etapa que poderia usá-lo.</summary>
     public bool UsoDaNotaDoEnemIndeterminado => LeituraRecusouEtapa && !UsaNotaDoEnem;
 
+    /// <summary>
+    /// Se a leitura do documento recusou alguma fase da lista: a fase que a etapa declarou pode ser a recusada, e a etapa sem fase
+    /// declarada deixa de ser julgada.
+    /// </summary>
+    public bool TemParteRecusadaNaListaDeFases { get; internal init; }
+
     /// <summary>As etapas do processo vivo, cada uma lida como declarou: as recusas do estado carregado do banco ficam à vista.</summary>
     public static EtapasDoProcesso Das(IEnumerable<EtapaProcesso> etapas) => Das(etapas, OrigemNoDocumento.Identidade);
 
@@ -50,7 +58,10 @@ public sealed record EtapasDoProcesso
 
         return new(
             [.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.PartesRecusadasDe($"etapas[{posicao}]")))],
-            origem.TemParteRecusadaEm(ListaDasEtapas));
+            origem.TemParteRecusadaEm(ListaDasEtapas))
+        {
+            TemParteRecusadaNaListaDeFases = origem.TemParteRecusadaEm(CronogramaDoProcesso.ListaDasFases),
+        };
     }
 
     /// <summary>A etapa de nota do ENEM, quando o processo declara uma só; com duas, nenhuma é a designada.</summary>
@@ -115,14 +126,21 @@ public sealed record EtapasDoProcesso
     private static IReadOnlyList<string> ProdutosJulgaveis(EtapaDeclarada etapa) =>
         etapa.ParteRecusadaEm(EtapaDeclarada.ListaDosProdutos) ? [] : etapa.Atos.TiposComCicloAberto();
 
-    /// <summary>Toda etapa publicada declara a fase em que acontece; uma causa por etapa sem fase.</summary>
+    /// <summary>
+    /// Toda etapa publicada declara a fase em que acontece; uma causa por etapa sem fase. A etapa cuja fase a leitura recusou, ou que
+    /// pode ter citado uma fase que a leitura recusou, não está sem fase: a causa é a da leitura.
+    /// </summary>
     public IReadOnlyList<FieldError> ConferirCompletude() =>
     [
         .. Etapas
             .Select(static (etapa, posicao) => (etapa, posicao))
-            .Where(static par => par.etapa.FaseCodigo is null)
-            .Select(static par => NaEtapa(par.posicao, "faseCodigo", EtapaSemFaseDeclarada(par.etapa.Nome))),
+            .Where(par => par.etapa.FaseCodigo is null && !FaseSemJulgar(par.etapa))
+            .Select(static par => NaEtapa(par.posicao, CampoDaFase, EtapaSemFaseDeclarada(par.etapa.Nome))),
     ];
+
+    /// <summary>Se a etapa sem fase declarada não se julga: a leitura recusou o campo da fase dela ou alguma fase da lista.</summary>
+    internal bool FaseSemJulgar(EtapaDeclarada etapa) =>
+        etapa.FaseCodigo is null && (etapa.ParteRecusadaEm(CampoDaFase) || TemParteRecusadaNaListaDeFases);
 
     public ItemConformidade ItemDaAncoraDoRecurso() => new(
         "cronograma_ancora_do_recurso_da_etapa",

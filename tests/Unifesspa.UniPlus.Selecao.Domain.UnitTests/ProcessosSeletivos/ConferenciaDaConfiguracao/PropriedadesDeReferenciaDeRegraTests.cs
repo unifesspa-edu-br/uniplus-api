@@ -33,6 +33,9 @@ public sealed class PropriedadesDeReferenciaDeRegraTests
             "RegraDoCatalogoCitada.Referencia",
             "RegraEliminacao.Regra",
             "RegraRecursoFase.Regra",
+            "RegrasDoCatalogo.Arredondamento",
+            "RegrasDoCatalogo.Calculo",
+            "RegrasDoCatalogo.OrdemDeAlocacao",
         ];
 
     [Fact]

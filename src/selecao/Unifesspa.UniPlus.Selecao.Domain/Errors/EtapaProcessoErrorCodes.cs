@@ -27,4 +27,7 @@ public static class EtapaProcessoErrorCodes
     public const string EscalaNaFormaObjetiva = "EtapaProcesso.EscalaNaFormaObjetiva";
     public const string TipoBancaNaoEncontradoOuInativo = "EtapaProcesso.TipoBancaNaoEncontradoOuInativo";
     public const string PassoComEscalaDeAtendimento = "EtapaProcesso.PassoComEscalaDeAtendimento";
+
+    /// <summary>O tipo de ato que a etapa publica não tem versão vigente no catálogo de Publicações.</summary>
+    public const string AtoDoProdutoNaoEncontrado = "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo";
 }
