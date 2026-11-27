@@ -207,6 +207,8 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
 
         await VerificarFiltroDeTipoProcessoAsync(client, regraSiSU, regraPSIQ);
 
+        await VerificarFiltroRepetidoUsaOPrimeiroValorAsync(client, regraSiSU, regraPSIQ);
+
         await VerificarParametroLegadoAsync(client, regraSiSU, regraPSIQ);
     }
 
@@ -272,6 +274,18 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLega
         using JsonDocument filtradaJson = JsonDocument.Parse(await filtrada.Content.ReadAsStringAsync());
         IReadOnlyList<string> filtradas = [.. filtradaJson.RootElement.EnumerateArray()
             .Select(static item => item.GetProperty("regraCodigo").GetString()!)];
+        filtradas.Should().Contain(regraSiSU);
+        filtradas.Should().NotContain(regraPSIQ);
+    }
+
+    private static async Task VerificarFiltroRepetidoUsaOPrimeiroValorAsync(HttpClient client, string regraSiSU, string regraPSIQ)
+    {
+        HttpResponseMessage filtrada = await client.GetAsync(
+            new Uri("/api/selecao/obrigatoriedades-legais?tipoProcesso=SISU&tipoProcesso=INDIGENA_E_QUILOMBOLA&limit=50", UriKind.Relative));
+        using JsonDocument filtradaJson = JsonDocument.Parse(await filtrada.Content.ReadAsStringAsync());
+        IReadOnlyList<string> filtradas = [.. filtradaJson.RootElement.EnumerateArray()
+            .Select(static item => item.GetProperty("regraCodigo").GetString()!)];
+        filtrada.StatusCode.Should().Be(HttpStatusCode.OK);
         filtradas.Should().Contain(regraSiSU);
         filtradas.Should().NotContain(regraPSIQ);
     }

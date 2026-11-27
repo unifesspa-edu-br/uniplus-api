@@ -80,7 +80,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
             return filtroDeCategoria.ToActionResult(_mapper);
         }
 
-        string? codigo = Request.Query.TryGetValue("tipoProcesso", out StringValues valores) ? valores.ToString() : tipoProcesso;
+        string? codigo = Request.Query.TryGetValue("tipoProcesso", out StringValues valores) ? valores.FirstOrDefault() : tipoProcesso;
         ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, codigo, filtroDeCategoria.Value, vigentes);
 
         return await ListarPaginadoAsync(consulta, page, cancellationToken).ConfigureAwait(false);
