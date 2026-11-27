@@ -65,12 +65,14 @@ public sealed class InscricaoEquivalenciaTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RecusasDoEnvio_GrupoForaDegenerado_RecusaSemExaminarOcorrencias(bool listaNula)
+    public void Submeter_GrupoForaDegenerado_RecusaSemExaminarOcorrencias(bool listaNula)
     {
         Inscricao inscricao = NovaInscricao();
-        IReadOnlyList<FieldError> recusas = inscricao.RecusasDoEnvio(PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), GrupoDegenerado(listaNula), []), Admitidas,
-            new ApuracaoDoEnvio(FormularioDeTeste.AvaliacaoSemOcultos, new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>(), []));
-        recusas.Should().Contain(e => e.Error.Code == InscricaoErrorCodes.GrupoForaDoFormulario);
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter("000123",
+            PreenchimentoDoCandidato.Criar(OpcoesDeCursoDaInscricao.Reidratar(null, null), new Dictionary<string, JsonElement>(), GrupoDegenerado(listaNula), []), Admitidas,
+            new ApuracaoDoEnvio(FormularioDeTeste.AvaliacaoSemOcultos, new Dictionary<string, JsonElement>(), new Dictionary<string, DefinicaoDaResposta>(), []),
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), new DateTimeOffset(2026, 3, 10, 12, 0, 0, TimeSpan.Zero));
+        resultado.Errors.Should().Contain(e => e.Error.Code == InscricaoErrorCodes.GrupoForaDoFormulario);
     }
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> GrupoDegenerado(bool listaNula) =>
