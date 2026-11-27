@@ -78,14 +78,14 @@ public static class DefinirFormularioCommandHandler
         DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         FormularioLido lido = await LerAsync(command, declarado, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-        return lido.Erros.Count > 0
-            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, declarado, processo, lido)])
+        return lido.Erros.Count > 0 || lido.RecusasDoVinculoNovo.Count > 0
+            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, declarado, processo, lido), .. lido.RecusasDoVinculoNovo])
             : Gravar(command, declarado, processo, lido);
     }
 
     /// <summary>
-    /// As páginas lidas pela forma, as exibições conferidas contra o catálogo — lido só quando preciso — e, na criação do
-    /// formulário que guarda o conjunto básico da inscrição, os itens dele. Esse formulário tem a seção reservada dos dados
+    /// As páginas lidas pela forma, o catálogo lido só quando preciso — para a exibição ou para os itens da criação — e as
+    /// recusas conferidas contra ele. O formulário que guarda o conjunto básico da inscrição tem a seção reservada dos dados
     /// básicos, a primeira: o que nasce agora nasce também com os itens dela.
     /// </summary>
     private static async Task<FormularioLido> LerAsync(
@@ -100,19 +100,40 @@ public static class DefinirFormularioCommandHandler
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
-        ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, declarado.Codigo);
-        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(lidas, contexto), .. consequencia.Errors];
-        List<FatoColetado>? itensDaCriacao = criaInscricao ? ResolverItensDaCriacao(contexto, erros) : null;
-        return new FormularioLido(entradas.Count, [.. lidas.Paginas], itensDaCriacao, contexto, erros, consequencia.Value);
+        return LerContraOCatalogo(command, declarado, processo, new PaginasEmLeitura(entradas.Count, lidas, daSecao, criaInscricao), ContextoDoCatalogo.De(processo, catalogo));
     }
 
-    private static List<FatoColetado> ResolverItensDaCriacao(ContextoDoCatalogo contexto, List<FieldError> erros)
+    private static FormularioLido LerContraOCatalogo(
+        DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, PaginasEmLeitura paginas, ContextoDoCatalogo contexto)
     {
-        (List<FatoColetado> basicos, List<FieldError> errosDosBasicos) = EscritaDosItens.Resolver(EscritaDosItens.Ler(ConjuntoBasicoDaInscricao.Itens), contexto);
+        Result<ConsequenciaDoDescumprimento?> consequencia = LeituraDaConsequenciaDaFaltaDeEnvio.Ler(command.ConsequenciaDaFaltaDeEnvio, declarado.Codigo);
+        List<FieldError> erros = [.. paginas.DaSecao, .. paginas.Lidas.Erros, .. EscritaDasPaginasDoFormulario.ConferirExibicoes(paginas.Lidas, contexto), .. consequencia.Errors];
+        ItensLidos? lidosDaCriacao = paginas.CriaInscricao ? LeituraDosItensDoFormulario.Ler(ConjuntoBasicoDaInscricao.Itens, contexto) : null;
+        List<FatoColetado>? itensDaCriacao = lidosDaCriacao is null ? null : ResolverItensDaCriacao(lidosDaCriacao, contexto, erros);
+        return new FormularioLido(
+            paginas.QuantidadeEnviada, [.. paginas.Lidas.Paginas], itensDaCriacao, erros, consequencia.Value,
+            RecusasDoVinculoNovo(processo, contexto, paginas.Lidas, lidosDaCriacao));
+    }
+
+    private static List<FatoColetado> ResolverItensDaCriacao(ItensLidos lidos, ContextoDoCatalogo contexto, List<FieldError> erros)
+    {
+        (List<FatoColetado> basicos, List<FieldError> errosDosBasicos) = EscritaDosItens.Resolver(lidos, contexto);
         erros.AddRange(errosDosBasicos);
         return basicos;
     }
+
+    /// <summary>
+    /// O vínculo novo ao catálogo, conferido junto das demais recusas: as exibições lidas de todas as páginas, inclusive as
+    /// recusadas, e os dados e as condições dos itens lidos da criação do formulário.
+    /// </summary>
+    private static List<FieldError> RecusasDoVinculoNovo(ProcessoSeletivo processo, ContextoDoCatalogo contexto, PaginasDoFormularioLidas lidas, ItensLidos? criacao) =>
+        [.. ConferenciaDeVinculoNovo.Conferir(
+            contexto.Fatos,
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
+            VinculosDeFatos.De(
+                criacao?.CodigosEnviados ?? [],
+                lidas.Exibicoes.SelectMany(static e => e?.Clausulas ?? []).SelectMany(static c => c.Condicoes).Concat(criacao?.CondicoesLidas ?? [])
+                    .Select(static c => (c.Fato, c.Valor)))).Errors];
 
     /// <summary>
     /// As recusas do formulário somam-se às das páginas (ADR-0125). A estrutura só é conferida com todas as páginas montadas,
@@ -129,32 +150,20 @@ public static class DefinirFormularioCommandHandler
 
     private static Result Gravar(DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, FormularioLido lido)
     {
-        Result vinculoNovo = ConferirVinculoNovo(processo, lido);
-        if (vinculoNovo.IsFailure)
-        {
-            return vinculoNovo;
-        }
-
         Result definido = processo.DefinirFormulario(declarado, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
-    private static Result ConferirVinculoNovo(ProcessoSeletivo processo, FormularioLido lido) =>
-        ConferenciaDeVinculoNovo.Conferir(
-            lido.Contexto.Fatos,
-            ReferenciasVivas.Vinculos(processo.Declaracao()),
-            VinculosDeFatos.De(
-                (lido.ItensDaCriacao ?? []).Select(static f => f.FatoCodigo),
-                lido.Paginas.SelectMany(static e => e.Condicoes).Concat((lido.ItensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
-                    .Select(static c => (c.Fato, c.Valor))));
+    /// <summary>As páginas lidas pela forma, a quantidade enviada, as recusas da seção dos dados básicos e se o formulário nasce com os itens dela.</summary>
+    private sealed record PaginasEmLeitura(int QuantidadeEnviada, PaginasDoFormularioLidas Lidas, List<FieldError> DaSecao, bool CriaInscricao);
 
     /// <summary>
-    /// As páginas montadas, os itens da criação do formulário de inscrição, o contexto do catálogo que as conferiu e as
-    /// recusas da leitura; as páginas estão completas quando nenhuma entrada foi recusada.
+    /// As páginas montadas, os itens da criação do formulário de inscrição, as recusas da leitura e as do vínculo novo ao
+    /// catálogo; as páginas estão completas quando nenhuma entrada foi recusada.
     /// </summary>
     private sealed record FormularioLido(
-        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, ContextoDoCatalogo Contexto, List<FieldError> Erros,
-        ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio)
+        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, List<FieldError> Erros,
+        ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio, List<FieldError> RecusasDoVinculoNovo)
     {
         public bool PaginasCompletas => Paginas.Count == QuantidadeEnviada;
     }

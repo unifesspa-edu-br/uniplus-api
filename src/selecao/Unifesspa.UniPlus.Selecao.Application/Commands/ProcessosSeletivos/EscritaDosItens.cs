@@ -18,165 +18,15 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-using CampoDoMembro = (string FatoCodigo, bool TemExibicao, Unifesspa.UniPlus.Regras.Formularios.Obrigatoriedade Obrigatoriedade, System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlus.Regras.Formularios.RestricaoValor> Restricoes);
-
-/// <summary>Os itens lidos pela forma, sem leitura externa: a configuração de cada item cuja forma foi aceita.</summary>
-internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<ConfiguracaoDoItem?> Configuracoes, IReadOnlyList<FieldError> Erros);
-
-/// <summary>O tipo de campo, a obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
-internal sealed record ConfiguracaoDoItem(TipoDeCampo TipoDeCampo, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null)
-{
-    /// <summary>As regras do item com a exibição dada, que a leitura da exibição devolve à parte.</summary>
-    public RegrasDoCampo RegrasComExibicao(PredicadoDnf? exibicao) => new(exibicao, Obrigatoriedade, Restricoes, Impedimento);
-}
-
-/// <summary>A exibição e a obrigatoriedade lidas de um grupo, com as recusas da leitura; a parte recusada fica ausente.</summary>
-internal sealed record RegrasLidasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade? Obrigatoriedade, IReadOnlyList<FieldError> Erros)
-{
-    /// <summary>As regras do grupo; nulas quando alguma parte foi recusada.</summary>
-    public ExibicaoEObrigatoriedade? Configuracao => Erros.Count == 0 ? ParaAConferenciaDaForma : null;
-
-    /// <summary>As regras lidas, com <c>Nunca</c> no lugar da obrigatoriedade recusada, para a forma do grupo ser conferida mesmo assim.</summary>
-    public ExibicaoEObrigatoriedade ParaAConferenciaDaForma => new(Exibicao, Obrigatoriedade ?? Obrigatoriedade.Nunca);
-}
-
 /// <summary>
-/// Um grupo lido pela forma, sem leitura externa: as ocorrências, nulas quando a leitura delas foi recusada, a
-/// configuração dele, se a forma inteira foi aceita, os campos lidos como os itens e todas as recusas da leitura,
-/// as do grupo e as dos campos.
-/// </summary>
-internal sealed record GrupoLido(
-    GrupoColetadoInput Entrada,
-    OcorrenciasDoGrupo? Ocorrencias,
-    ExibicaoEObrigatoriedade? Configuracao,
-    bool FormaValida,
-    ItensLidos Campos,
-    IReadOnlyList<FieldError> Erros);
-
-/// <summary>Os grupos lidos pela forma, com as recusas da leitura de todos.</summary>
-internal sealed record GruposLidos(IReadOnlyList<GrupoLido> Grupos, IReadOnlyList<FieldError> Erros);
-
-/// <summary>
-/// A escrita dos itens do formulário do processo, sem ler nem mudar o processo: primeiro a forma
-/// de cada item, sem I/O; depois, para os itens de forma válida, a coletabilidade (só se coleta fato
+/// A resolução contra o catálogo dos itens e dos grupos do formulário do processo, já lidos pela forma, sem ler nem
+/// mudar o processo: para os itens de forma válida, a coletabilidade (só se coleta fato
 /// declarado com vínculo de campo) e a semântica das regras (operador × domínio × valor do fato
 /// citado, contra a oferta do próprio processo para os domínios dinâmicos). A validação estrutural
 /// do grafo e o guard de mutação são do agregado.
 /// </summary>
 internal static class EscritaDosItens
 {
-    public static ItensLidos Ler(IReadOnlyList<FatoColetadoInput> entradas, string caminho = "itens")
-    {
-        ArgumentNullException.ThrowIfNull(entradas);
-        List<FieldError> erros = [];
-        ConfiguracaoDoItem?[] configuracoes = new ConfiguracaoDoItem?[entradas.Count];
-        for (int indice = 0; indice < entradas.Count; indice++)
-        {
-            configuracoes[indice] = LerConfiguracao(entradas[indice], $"{caminho}[{indice}]", erros);
-        }
-
-        return new ItensLidos(entradas, configuracoes, erros);
-    }
-
-    /// <summary>
-    /// A configuração do item pela forma, acumulando as recusas dele em <paramref name="erros"/>; nula quando o item teve
-    /// alguma recusa. A coerência do tipo de campo com o fato só roda com o tipo lido, depois, contra o catálogo.
-    /// </summary>
-    private static ConfiguracaoDoItem? LerConfiguracao(FatoColetadoInput input, string campo, List<FieldError> erros)
-    {
-        int recusasAntes = erros.Count;
-        erros.AddRange(FormaDoItem.ValidarFormaBasica(input.FatoCodigo, input.Ordem, input.Apresentacao?.Rotulo).Select(erro => erro.NoCaminhoDe(campo)));
-        TipoDeCampo? tipo = LerTipoDeCampo(input.Apresentacao?.TipoDeCampo, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}", erros);
-        (Obrigatoriedade? obrigatoriedade, IReadOnlyList<RestricaoValor> restricoes, Impedimento? impedimento) =
-            LerRegras(input.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}", erros);
-        return erros.Count == recusasAntes ? new ConfiguracaoDoItem(tipo!.Value, obrigatoriedade!, restricoes, impedimento) : null;
-    }
-
-    /// <summary>
-    /// A obrigatoriedade, as restrições e o impedimento do item pela forma, no caminho das regras. A exibição é lida à parte, na
-    /// resolução, porque a recusa dela sai junto das semânticas.
-    /// </summary>
-    private static (Obrigatoriedade? Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento) LerRegras(
-        RegrasDoCampoInput? regras, string campo, List<FieldError> erros)
-    {
-        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
-            regras?.Obrigatoriedade?.Tipo, regras?.Obrigatoriedade?.Predicado, $"{campo}.obrigatoriedade", $"{campo}.obrigatoriedade.predicado", erros);
-        IReadOnlyList<RestricaoValor> restricoes = ConferirRestricoes(regras?.Restricoes, campo, erros);
-        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(regras?.Impedimento);
-        if (impedimento.IsFailure)
-        {
-            erros.AddRange(impedimento.Errors.Select(e => e.NoCaminhoDoItem($"{campo}.impedimento.quando")));
-        }
-
-        return (obrigatoriedade, restricoes, impedimento.Value);
-    }
-
-    private static TipoDeCampo? LerTipoDeCampo(string? codigo, string campo, List<FieldError> erros)
-    {
-        Result<TipoDeCampo> tipo = TipoDeCampoDaEntrada.Ler(codigo);
-        if (tipo.IsFailure)
-        {
-            erros.Add(new($"{campo}.tipoDeCampo", tipo.Error!));
-        }
-
-        return tipo.IsSuccess ? tipo.Value : null;
-    }
-
-    /// <summary>
-    /// Os grupos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada um, a forma
-    /// do grupo — código, ordem, rótulo, contagem, quantidade de campos, autorreferência — e os
-    /// campos, lidos como os itens no caminho do grupo, sem seção própria.
-    /// </summary>
-    public static GruposLidos LerGrupos(IReadOnlyList<GrupoColetadoInput> entradas)
-    {
-        ArgumentNullException.ThrowIfNull(entradas);
-        GrupoLido[] grupos = [.. entradas.Select((entrada, indice) => LerGrupo(entrada, $"grupos[{indice}]"))];
-        return new GruposLidos(grupos, [.. grupos.SelectMany(static g => g.Erros)]);
-    }
-
-    private static GrupoLido LerGrupo(GrupoColetadoInput input, string caminho)
-    {
-        OcorrenciasLidasDoGrupo ocorrencias = OcorrenciasLidasDoGrupo.Ler(input.Ocorrencias);
-        RegrasLidasDoGrupo regras = LerRegrasDoGrupo(input, caminho);
-        ItensLidos campos = Ler(input.Subitens ?? [], $"{caminho}.subitens");
-        List<FieldError> erros = [.. NoCaminho(ocorrencias.Recusas, caminho), .. regras.Erros, .. RecusasDaFormaDoGrupo(input, ocorrencias, regras, campos, caminho)];
-        return new GrupoLido(input, ocorrencias.Declaradas, regras.Configuracao, erros.Count == 0, campos, [.. erros, .. campos.Erros]);
-    }
-
-    // A identificação da ocorrência do candidato depende da inclusão declarada, do mínimo quando declarado e da
-    // forma lida dos campos; as recusas são acumuladas na mesma resposta (ADR-0125).
-    private static IEnumerable<FieldError> RecusasDaFormaDoGrupo(
-        GrupoColetadoInput input, OcorrenciasLidasDoGrupo ocorrencias, RegrasLidasDoGrupo regras, ItensLidos campos, string caminho) =>
-        NoCaminho(FormaDoGrupoNaEntrada.Conferir(input, ocorrencias, regras.Exibicao, regras.Obrigatoriedade, CamposDoMembro(input, campos)), caminho);
-
-    private static RegrasLidasDoGrupo LerRegrasDoGrupo(GrupoColetadoInput input, string caminho)
-    {
-        string caminhoDasRegras = $"{caminho}.{GrupoColetadoInput.CaminhoDasRegras}";
-        Result<PredicadoDnf?> exibicao = EntradaDeRegras.Predicado(input.Regras?.Exibicao);
-        List<FieldError> erros = [];
-        if (exibicao.IsFailure)
-        {
-            erros.AddRange(exibicao.Errors.Select(e => e.NoCaminhoDoItem($"{caminhoDasRegras}.exibicao")));
-        }
-
-        Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(
-            input.Regras?.Obrigatoriedade?.Tipo, input.Regras?.Obrigatoriedade?.Predicado,
-            $"{caminhoDasRegras}.obrigatoriedade", $"{caminhoDasRegras}.obrigatoriedade.predicado", erros);
-        return new RegrasLidasDoGrupo(exibicao.IsSuccess ? exibicao.Value : null, obrigatoriedade, erros);
-    }
-
-    private static IEnumerable<FieldError> NoCaminho(IEnumerable<FieldError> erros, string caminho) =>
-        erros.Select(erro => erro.NoCaminhoDoItem(caminho));
-
-    /// <summary>
-    /// Os campos pela forma lida, para identificar o candidato como membro. O campo de forma recusada já tem a
-    /// própria recusa e fica nulo, para que só a falta do parentesco seja acusada.
-    /// </summary>
-    private static CampoDoMembro?[] CamposDoMembro(GrupoColetadoInput input, ItensLidos lidos) =>
-        [.. (input.Subitens ?? []).Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
-            ? (CampoDoMembro?)(subitem.FatoCodigo, subitem.Regras?.Exibicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
-            : null)];
-
     /// <summary>
     /// Os grupos conferidos contra o catálogo, acumulando tudo no mesmo lote (ADR-0125): os campos
     /// como os itens, mas coletando fato de membro; a semântica da exibição e da obrigatoriedade
@@ -222,43 +72,13 @@ internal static class EscritaDosItens
         ArgumentNullException.ThrowIfNull(contexto);
         List<(int Indice, Result<FatoColetado> Fato)> resolvidos =
         [
-            .. lidos.Configuracoes.Select((configuracao, indice) => (indice, configuracao))
-                .Where(static item => item.configuracao is not null)
-                .Select(item => (item.indice, ResolverFato(lidos.Entradas[item.indice], item.configuracao!, contexto, campoDeGrupo))),
+            .. lidos.Itens.Select((item, indice) => (indice, item))
+                .Where(static par => par.item.Configuracao is not null)
+                .Select(par => (par.indice, ResolverFato(par.item.Entrada, par.item.Configuracao!, contexto, campoDeGrupo))),
         ];
         return (
             [.. resolvidos.Where(static r => r.Fato.IsSuccess).Select(static r => r.Fato.Value!)],
             [.. lidos.Erros, .. resolvidos.Where(static r => r.Fato.IsFailure).SelectMany(r => r.Fato.Errors.Select(erro => erro.NoCaminhoDe($"{caminho}[{r.Indice}]")))]);
-    }
-
-    /// <summary>
-    /// A obrigatoriedade na forma do termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
-    /// <c>QUANDO</c> com ele. A semântica do predicado é conferida contra o catálogo, depois.
-    /// </summary>
-    private static Obrigatoriedade? ConferirObrigatoriedade(
-        string? token,
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicadoInput,
-        string caminhoDoToken,
-        string caminhoDoPredicado,
-        List<FieldError> erros)
-    {
-        Result<PredicadoDnf?> predicado = EntradaDeRegras.Predicado(predicadoInput);
-        Obrigatoriedade? obrigatoriedade = predicado.IsSuccess ? EntradaDeRegras.Obrigatoriedade(token, predicado.Value) : null;
-        erros.AddRange(predicado.IsFailure
-            ? [.. predicado.Errors.Select(e => e.NoCaminhoDoItem(caminhoDoPredicado))]
-            : obrigatoriedade is null ? [new FieldError(caminhoDoToken, ObrigatoriedadeInvalida)] : []);
-        return obrigatoriedade;
-    }
-
-    private static readonly DomainError ObrigatoriedadeInvalida = new(
-        FatoColetadoErrorCodes.ObrigatoriedadeInvalida, "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado.");
-
-    /// <summary>A forma das restrições de valor do item; os valores e fatos citados são conferidos contra o catálogo, depois.</summary>
-    private static List<RestricaoValor> ConferirRestricoes(IReadOnlyList<RestricaoValorInput>? restricoes, string campo, List<FieldError> erros)
-    {
-        List<Result<RestricaoValor>> lidas = [.. (restricoes ?? []).Select(EntradaDeRegras.Restricao)];
-        erros.AddRange(lidas.SelectMany((lida, indice) => lida.Errors.Select(e => e.NoCaminhoDoItem($"{campo}.restricoes[{indice}]"))));
-        return [.. lidas.Where(static lida => lida.IsSuccess).Select(static lida => lida.Value!)];
     }
 
     private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, ConfiguracaoDoItem configuracao, ContextoDoCatalogo contexto, bool campoDeGrupo)
