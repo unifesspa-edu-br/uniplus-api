@@ -48,8 +48,8 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
 
         await ConferirConsultasAsync(db, processoId, fernanda, fase);
 
-        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
-        formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain("DECLARA_RENDA", "a resposta que decide o gatilho muda a avaliação");
+        Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> formularios = await _cenario.ObterFormulariosAsync(db, processoId, fernanda);
+        formularios.Value!.Should().ContainSingle().Which.DependenciasDaAvaliacao!.Fatos.Should().Contain("DECLARA_RENDA", "a resposta que decide o gatilho muda a avaliação");
     }
 
     private static FatoColetado PerguntaSobreRenda(string codigo) => FatoColetadoDeTeste.Coletando(codigo, 1)

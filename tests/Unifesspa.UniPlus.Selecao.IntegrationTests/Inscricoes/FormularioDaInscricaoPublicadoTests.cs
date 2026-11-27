@@ -38,12 +38,13 @@ public sealed class FormularioDaInscricaoPublicadoTests
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
 
-        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
+        Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> formularios = await _cenario.ObterFormulariosAsync(db, processoId, fernanda);
 
-        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
-        formulario.Value!.DependenciasDaAvaliacao.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["CONCORRER_PCD"], []));
-        JsonSerializer.Serialize(formulario.Value!.DependenciasDaAvaliacao).Should().NotContain("AC", "a matriz e o que ela contribui não saem");
-        formulario.Value!.Formulario.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
+        formularios.IsSuccess.Should().BeTrue(formularios.Error?.Message);
+        FormularioApresentadoDoProcessoDto formulario = formularios.Value!.Should().ContainSingle().Subject;
+        formulario.DependenciasDaAvaliacao.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["CONCORRER_PCD"], []));
+        JsonSerializer.Serialize(formulario.DependenciasDaAvaliacao).Should().NotContain("AC", "a matriz e o que ela contribui não saem");
+        formulario.Formulario.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
             "a derivação da modalidade não vai ao navegador");
     }
 
@@ -53,9 +54,9 @@ public sealed class FormularioDaInscricaoPublicadoTests
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await _cenario.IniciarRascunhoAsync(db, processoId, fernanda)).IsSuccess.Should().BeTrue();
 
-        Result<FormularioApresentadoDoProcessoDto> formulario = await _cenario.ObterFormularioAsync(db, processoId, fernanda);
-        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
-        return formulario.Value!;
+        Result<IReadOnlyList<FormularioApresentadoDoProcessoDto>> formularios = await _cenario.ObterFormulariosAsync(db, processoId, fernanda);
+        formularios.IsSuccess.Should().BeTrue(formularios.Error?.Message);
+        return formularios.Value!.Should().ContainSingle().Subject;
     }
 
     [Fact(DisplayName = "O formulário da inscrição publicado traz, só pelo código, o dado do candidato que o FADA cita como dependência do Fator")]
