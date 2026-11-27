@@ -14856,7 +14856,7 @@
         "UNI-REQ-0080"
       ],
       "oQueAconteceu": [
-        "O calendário de dias úteis vigente traz o mesmo dia não útil mais de uma vez, com a mesma\nabrangência e o mesmo recorte territorial (município e UF). A mensagem informa a data repetida.",
+        "O calendário de dias úteis vigente traz o mesmo dia não útil mais de uma vez, com a mesma\nabrangência e o mesmo recorte territorial (município e UF). A mensagem diz que há um dia repetido, sem informar a data; para achar o registro, procure no calendário vigente os dias com a mesma data, abrangência, município e UF.",
         "O mesmo dia pode aparecer mais de uma vez quando a abrangência ou o recorte são diferentes: um\nferiado nacional que também é municipal são dois fatos, com fundamentos distintos. O que se recusa é\no registro igual a outro em data, abrangência, município e UF. Dois registros iguais indicam\ncadastro inconsistente, e absorvê-los na cópia esconderia o defeito dentro de uma versão\nimutável.",
         "O calendário de dias úteis vigente é cadastrado no módulo Configuração, e a versão do processo\ncongela uma cópia dele por valor, com a lista dos dias não úteis (UNI-REQ-0080). Ao copiá-lo, o\nsistema confere de novo cada dia e o conjunto, e recusa o que o cadastro não aceitaria. A recusa\nsó vale para o processo que depende do calendário, isto é, o que tem prazo de recurso (ver\n[calendário vigente ausente](/erros/uniplus.selecao.processo_seletivo.calendario_vigente_ausente)); um processo sem contagem sobre dia útil segue normalmente, porque não usa o dado.",
         "A conferência vem depois das da localidade ([`localidade_ausente`](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)) e da convenção de contagem\n([`algoritmo_contagem_prazo_nao_declarado`](/erros/uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado)), e antes das demais conferências de conformidade e do cronograma. A consulta de\nconformidade do processo mostra o item \"Calendário de dias úteis vigente\" como pendente enquanto o\ncalendário vigente estiver nessa condição. Nada é gravado.",
@@ -15709,7 +15709,7 @@
       "codigo": "uniplus.selecao.configuracao_derivacao_fato.codigo_fato_duplicado",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um mesmo fato derivado ficou com mais de uma configuração de derivação no processo, ou o\ncódigo dele coincide com o de um grupo repetível ou de um campo de grupo do processo. A\nmensagem do erro distingue as causas, e o que conta como conflito depende de onde o erro\napareceu.",
+        "Um mesmo fato derivado ficou com mais de uma configuração de derivação no processo, ou o\ncódigo dele coincide com o de um grupo repetível ou de um campo de grupo do processo. A\nmensagem do erro distingue as causas, e o que conta como conflito depende de onde o erro\napareceu. Na definição das regras de derivação, a mensagem não traz o código do fato, que veio no\npedido. Na aplicação de modelo de formulário, o código vem da cópia do catálogo e a mensagem o cita.",
         "**Definição das regras de derivação.** O conjunto de configurações enviado tem um conflito de\ncódigo, de duas formas:",
         "- **Fato com mais de uma configuração:** o mesmo `codigoFato` aparece em duas ou mais\n  configurações da lista. Cada fato derivado tem uma só configuração no processo, com todas as\n  regras dele.\n- **Código que já é de um grupo ou de um campo de grupo:** o `codigoFato` coincide com o código\n  de um grupo repetível ou de um campo de grupo coletado no processo.",
         "A conferência roda sobre o conjunto, depois de a forma e o catálogo terem sido aceitos, e\nrecusa na primeira configuração que conflita. A definição substitui integralmente as regras de\nderivação do processo, de modo que a lista enviada é a única que conta: configurações de\nenvios anteriores não participam do conflito.",
@@ -15846,7 +15846,7 @@
       "oQueAconteceu": [
         "Numa distribuição institucional, as quantidades que o edital fixou no quadro somam mais que o\n`voBase` da oferta, e a regra de ajuste do quadro declarada em `argsAjuste` não consegue retirar o\nexcesso inteiro:",
         "- **`reduzirDe`:** a modalidade nomeada tem menos vagas que o excesso.\n- **`reduzirProporcionalEm`:** as modalidades nomeadas, somadas, têm menos vagas que o excesso.",
-        "O sistema não reduz o que pode e devolve um quadro que continua acima do total: ou a regra de ajuste do quadro\nfecha o quadro, ou a distribuição é recusada. A mensagem do erro traz o código da modalidade\n(no `reduzirDe`), a quantidade de vagas disponível e o tamanho do excesso.",
+        "O sistema não reduz o que pode e devolve um quadro que continua acima do total: ou a regra de ajuste do quadro\nfecha o quadro, ou a distribuição é recusada. A mensagem do erro diz qual dos dois casos ocorreu (a\nmodalidade do ajuste não tem vagas suficientes, ou as modalidades do ajuste somam menos vagas que o\nexcesso); ela não traz o código da modalidade, a quantidade de vagas disponível nem o tamanho do\nexcesso, que se conferem no quadro enviado.",
         "A conferência só roda quando há excesso e há regra de ajuste do quadro declarada; sem excesso a regra de ajuste do quadro não é\naplicada. Sem regra de ajuste do quadro, o excesso é recusado por\n[`quadro_excede_as_vagas_ofertadas_base`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base).\nSe a regra de ajuste do quadro cita modalidade fora das selecionadas, a recusa é\n[`ajuste_referencia_modalidade_fora_do_quadro`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro),\nconferida antes.",
         "A recusa vem sem campo específico e, por ser conferida depois das demais verificações do item,\nnão acumula com elas. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada."
       ],
@@ -15863,7 +15863,7 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.ajuste_referencia_modalidade_fora_do_quadro",
       "requisitos": [],
       "oQueAconteceu": [
-        "Numa distribuição institucional, as quantidades do quadro somam mais que o `voBase` e a\nregra de ajuste do quadro declarada em `argsAjuste` nomeia uma modalidade (`reduzirDe`) ou uma das\nmodalidades da lista (`reduzirProporcionalEm`) cujo código não está entre as modalidades\nselecionadas da oferta. Não há de onde retirar vagas de uma modalidade que a oferta não tem. A\nmensagem do erro traz o código da modalidade citada; no `reduzirProporcionalEm`, é a primeira\nda lista que não está no quadro.",
+        "Numa distribuição institucional, as quantidades do quadro somam mais que o `voBase` e a\nregra de ajuste do quadro declarada em `argsAjuste` nomeia uma modalidade (`reduzirDe`) ou uma das\nmodalidades da lista (`reduzirProporcionalEm`) cujo código não está entre as modalidades\nselecionadas da oferta. Não há de onde retirar vagas de uma modalidade que a oferta não tem. A\nmensagem do erro diz que o ajuste reduz de modalidade que não está entre as modalidades\nselecionadas; ela não traz o código da modalidade citada, que se confere em `argsAjuste` (no\n`reduzirProporcionalEm`, cada código da lista).",
         "A conferência só roda quando há excesso e há regra de ajuste do quadro declarada: se o quadro não passa do total, a\nregra de ajuste do quadro não é aplicada e os códigos dela não são conferidos. Esta causa é conferida antes da de\nvagas insuficientes\n([`ajuste_nao_absorve_o_excesso`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.ajuste_nao_absorve_o_excesso)).",
         "A recusa vem sem campo específico e, por ser conferida depois das demais verificações do item,\nnão acumula com elas. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada."
       ],
@@ -16009,7 +16009,7 @@
         "Uma modalidade selecionada na oferta usa remanejamento cruzado (`CRUZADO`) com um par que não\ncumpre a reciprocidade. O remanejamento cruzado troca vagas entre duas modalidades da mesma\noferta, e cada uma precisa apontar para a outra. A mensagem do erro distingue duas formas:",
         "- **Par consigo mesma:** o par da modalidade é ela própria. Isso não remaneja para lugar\n  nenhum.\n- **Par que não aponta de volta:** o par está selecionado na oferta, mas não usa remanejamento\n  cruzado, ou usa com outra modalidade como par.",
         "A reciprocidade é conferida aqui, sobre o conjunto da oferta, porque no cadastro a primeira\nmodalidade de um par não teria a quem apontar quando fosse criada. O par ausente da oferta tem\nrecusa própria, conferida antes\n([`remanejamento_par_nao_selecionado`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.remanejamento_par_nao_selecionado)).",
-        "A recusa vem no campo `distribuicaoVagas[i].modalidades` e acumula, no array `errors[]`, com as\ndemais violações da mesma distribuição que o domínio confere em conjunto. A conferência de\nreferências entre modalidades devolve só a primeira violação encontrada, na ordem das\nmodalidades da oferta. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada.",
+        "A recusa vem no campo `distribuicaoVagas[i].modalidades` e acumula, no array `errors[]`, com as\ndemais violações da mesma distribuição que o domínio confere em conjunto. A conferência de\nreferências entre modalidades devolve todas as violações encontradas, na ordem das\nmodalidades da oferta. O processamento para na primeira distribuição da lista que falhar. A\nsimulação da distribuição devolve a mesma recusa, sem gravar nada.",
         "Esta mesma conferência também roda quando o sistema relê a configuração congelada da versão\npublicada, na retificação em ato único. Nesse caso a recusa sai como uma violação única (sem a lista `errors[]`) e se\nrefere à versão congelada, não ao pedido enviado."
       ],
       "comoResolver": [
@@ -16057,10 +16057,25 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Com os parâmetros informados — `voBase`, `pr`, as retiradas declaradas —, a\nfórmula do art. 10 (`AC = VO − VR_final − Σ(retiradas)`) resultaria numa\nampla concorrência negativa. `VR_final` é a reserva legal já calculada\n(as oito sub-reservas somadas, depois da eventual capagem por escassez —\nver\n[`regra_ajuste_obrigatoria`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.regra_ajuste_obrigatoria)):\nse ela mais as retiradas excedem o `VO`, a combinação de parâmetros é\ninviável — não há vagas suficientes para sustentar tudo o que foi\ndeclarado.",
+        "A mensagem do erro diz que a ampla concorrência resultaria negativa com as reservas pedidas e\norienta o ajuste; ela não traz o valor calculado nem os parâmetros informados.",
         "Este cálculo roda depois da montagem completa do quadro federal (reserva\nlegal já capada quando necessário) — não acumula com nenhuma outra\nviolação, é a primeira falha que interrompe a criação da configuração."
       ],
       "comoResolver": [
         "Aumente o `voBase` da oferta, reduza o `pr` (dentro do limite legal de\n[0,5; 1,0], ver\n[`percentual_da_reserva_legal_fora_do_limite`](/erros/uniplus.selecao.configuracao_distribuicao_vagas.percentual_da_reserva_legal_fora_do_limite)),\nou reduza a quantidade das retiradas declaradas — qualquer combinação que\ndeixe `AC` não-negativa resolve."
+      ],
+      "ondeAparece": [
+        "Definição de distribuição de vagas do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Numa distribuição pela Lei 12.711, uma modalidade de retirada ou de suplemento declarada tem o mesmo código de uma das reservas federais ou da ampla concorrência (`AC`). Esses valores são calculados pela lei: se uma retirada ou um suplemento usasse o mesmo código, sobrescreveria o valor calculado sem aviso, e o total de vagas deixaria de fechar.",
+        "A conferência é a primeira do cálculo do quadro federal e interrompe a criação da configuração antes de qualquer conta. A recusa não aponta campo, e a mensagem diz apenas que o código coincide com uma reserva federal ou com a ampla concorrência; ela não repete o código recebido."
+      ],
+      "comoResolver": [
+        "Retire da seleção da oferta a modalidade de retirada ou de suplemento que usa o código de uma reserva federal ou de `AC`. Se a intenção era alterar a quantidade de uma reserva federal, ela é calculada pela lei e não é informada como retirada nem como suplemento. O código de uma modalidade não pode ser alterado no cadastro; se ela for necessária, peça à equipe técnica do Uni+ a verificação do cadastro de modalidades."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -18378,7 +18393,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um documento exigido declara a fase em que é exigido e, opcionalmente, a etapa em que é\ncoletado, e a etapa tem de acontecer na mesma fase da exigência. Isso deixou de valer em uma\ndestas situações:",
-        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe diz que a etapa coleta o documento na fase da exigência\n  e não pode passar para outra fase sem antes reconfigurar a exigência.",
+        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A mensagem de\n  detalhe diz que a etapa da exigência não acontece na fase e traz o código dessa fase, sem o\n  identificador da etapa;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
         "Na definição dos documentos, o sistema confere o vínculo de cada exigência nesta ordem: a fase,\no formulário a que o documento pertence, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo))\ne a etapa na fase. Esta é a última, e o primeiro defeito encontrado interrompe a definição."
       ],
       "comoResolver": [
@@ -18395,7 +18410,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um documento exigido pode indicar a etapa em que é coletado. A etapa indicada não está entre as\netapas deste processo.",
-        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a terceira dessas\nconferências: só roda se a fase e o formulário estiverem corretos, e é seguida pela\nconferência de que a etapa acontece na fase da exigência (ver\n[`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)).\nO primeiro defeito encontrado interrompe a definição."
+        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a terceira dessas\nconferências: só roda se a fase e o formulário estiverem corretos, e é seguida pela\nconferência de que a etapa acontece na fase da exigência (ver\n[`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)).\nO primeiro defeito encontrado interrompe a definição.",
+        "A mensagem diz que a etapa da exigência não pertence ao processo; ela não traz o identificador\nda etapa."
       ],
       "comoResolver": [
         "Na definição, indique uma etapa que seja deste processo ou retire a indicação de etapa do\ndocumento."
@@ -18409,7 +18425,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Todo documento exigido é exigido numa fase do cronograma do processo. A fase informada para o\ndocumento não está no cronograma deste processo.",
-        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a primeira dessas\nconferências, e o primeiro defeito encontrado interrompe a definição. Na definição, ela vem\ndepois das conferências de forma e da montagem de cada exigência."
+        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a primeira dessas\nconferências, e o primeiro defeito encontrado interrompe a definição. Na definição, ela vem\ndepois das conferências de forma e da montagem de cada exigência.",
+        "A mensagem diz que a fase da exigência não pertence ao cronograma do processo; ela não traz o\nidentificador da fase."
       ],
       "comoResolver": [
         "Na definição, informe uma fase que esteja no cronograma deste processo."
@@ -19342,7 +19359,7 @@
         "Publicar o preliminar e o definitivo da mesma matéria **não** cai aqui: a fase\ndeclara o mesmo tipo de ato duas vezes, uma com o papel preliminar e outra com o\npapel definitivo. É o tipo de ato que liga o definitivo ao preliminar que ele\nespera."
       ],
       "comoResolver": [
-        "Remova a declaração repetida. A mensagem da recusa nomeia o código do ato que\naparece mais de uma vez com o mesmo papel na fase.",
+        "Remova a declaração repetida. A mensagem da recusa diz que há ato declarado mais de uma vez com o mesmo papel na fase, sem\nrepetir o código do ato; o campo aponta o produto repetido.",
         "Se a intenção era anunciar duas publicações diferentes da fase — um gabarito e um\nresultado, por exemplo —, declare o tipo de ato de cada uma. Se era anunciar o\npreliminar e o definitivo da mesma matéria, declare o mesmo tipo de ato duas vezes,\numa com cada papel."
       ],
       "ondeAparece": [
@@ -19400,7 +19417,7 @@
       "codigo": "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada fase do cronograma do processo é uma cópia de uma fase canônica do cadastro\ndo módulo Configuração: dela vêm o código da fase, a origem da data, se a fase\ncoleta inscrição ou o pedido de isenção, se agrupa etapas e se permite\ncomplementação de documentos. O pedido de definição do cronograma\n(`PUT .../cronograma-fases`) citou, em `fases[n].faseCanonicaId`, um identificador\nque não corresponde a nenhuma fase canônica, ou que corresponde a uma fase que\nfoi removida do cadastro. A mensagem traz o identificador.",
+        "Cada fase do cronograma do processo é uma cópia de uma fase canônica do cadastro\ndo módulo Configuração: dela vêm o código da fase, a origem da data, se a fase\ncoleta inscrição ou o pedido de isenção, se agrupa etapas e se permite\ncomplementação de documentos. O pedido de definição do cronograma\n(`PUT .../cronograma-fases`) citou, em `fases[n].faseCanonicaId`, um identificador\nque não corresponde a nenhuma fase canônica, ou que corresponde a uma fase que\nfoi removida do cadastro. A mensagem não repete o identificador; o campo\n`fases[n].faseCanonicaId` indica a fase recusada.",
         "A recusa **interrompe a montagem do cronograma** na fase citada: sem a fase\ncanônica, não há de onde copiar nem como conferir o resto dessa fase. As fases\nanteriores da lista são montadas normalmente, e as violações que elas já tiveram\n(período, atos, bancas, por exemplo) saem na mesma resposta, no array `errors[]`; as\nfases seguintes não chegam a ser conferidas. Nada é gravado."
       ],
       "comoResolver": [
@@ -19545,7 +19562,7 @@
       "codigo": "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada fase do cronograma pode indicar a unidade da Unifesspa que responde por ela. A unidade indicada para uma das fases não existe no cadastro de unidades ou foi desativada. A confirmação é feita no cadastro vivo, a cada definição do cronograma e de novo ao publicar o edital ou divulgar uma retificação, porque a unidade pode ter deixado de existir depois que foi escolhida. A mensagem diz qual fase e qual unidade. Nada foi gravado ou publicado."
+        "Cada fase do cronograma pode indicar a unidade da Unifesspa que responde por ela. A unidade indicada para uma das fases não existe no cadastro de unidades ou foi desativada. A confirmação é feita no cadastro vivo, a cada definição do cronograma e de novo ao publicar o edital ou divulgar uma retificação, porque a unidade pode ter deixado de existir depois que foi escolhida. A mensagem diz qual fase não encontrou a unidade, sem repetir o identificador da unidade enviado. Nada foi gravado ou publicado."
       ],
       "comoResolver": [
         "Escolha, na fase indicada, outra unidade que esteja viva no cadastro e repita a operação. Se a unidade certa foi desativada por engano, peça a quem mantém o cadastro de unidades que a reative. Com todas as fases apontando para unidades vivas, a definição e a publicação seguem normalmente."
@@ -20079,11 +20096,11 @@
       ],
       "oQueAconteceu": [
         "A ordem de coleta reúne quatro motivos de dependência: um campo informa um dado, um dado condiciona a exibição, um dado calcula outro e um dado condiciona uma exigência de documento. A configuração não pode formar um ciclo (UNI-REQ-0077 e UNI-REQ-0078).",
-        "As dependências configuradas formam um ciclo: uma parte depende, direta ou indiretamente, dela mesma. A mensagem traz o caminho, com o tipo da parte e o código dela, na ordem em que cada uma depende da seguinte. A publicação é recusada com **422**, sem congelar a configuração.",
+        "As dependências configuradas formam um ciclo: uma parte depende, direta ou indiretamente, dela mesma. A mensagem diz que há partes que dependem umas das outras, sem trazer o caminho do ciclo nem o tipo e o código das partes. A publicação é recusada com **422**, sem congelar a configuração.",
         "A consulta de conformidade também informa essa pendência."
       ],
       "comoResolver": [
-        "Ajuste as regras indicadas no caminho do ciclo para que cada dado seja conhecido antes de ser usado na exibição, no cálculo ou na condição da exigência de documento.",
+        "Como a mensagem não traz o caminho do ciclo, revise os campos, as regras de exibição, de cálculo e de condição de documento exigido da configuração, para que cada dado seja conhecido antes de ser usado na exibição, no cálculo ou na condição da exigência de documento.",
         "Em processo já publicado, faça o ajuste numa retificação e repita a operação recusada."
       ],
       "ondeAparece": [
@@ -20514,7 +20531,7 @@
         "UNI-REQ-0265"
       ],
       "oQueAconteceu": [
-        "A regra de homologação não aponta um resultado da fase ou aponta um resultado que não é produto da fase com papel declarado."
+        "A regra de homologação não aponta um resultado da fase ou aponta um resultado que não é produto da fase com papel declarado. A mensagem não traz o código da fase; o campo do erro aponta `resultadoAtoCodigo`\nda regra de homologação."
       ],
       "comoResolver": [
         "Informe na regra um resultado que seja produto da própria fase, com seu papel."
@@ -22469,7 +22486,7 @@
       ],
       "oQueAconteceu": [
         "A escala de atendimento da etapa declarou dois níveis com o mesmo rótulo. A comparação\nignora espaços nas pontas e trata como iguais as grafias do mesmo texto com acento\ncomposto e decomposto. A banca escolhe o nível pelo rótulo, e dois níveis iguais com\nfrações diferentes não dizem quanto vale a escolha.",
-        "A recusa vale já na gravação, também em rascunho, e chega no array `errors[]`, no campo\n`escalaDeAtendimento[i].rotulo` do segundo nível repetido."
+        "A recusa vale já na gravação, também em rascunho, e chega no array `errors[]`, no campo\n`escalaDeAtendimento[i].rotulo` do segundo nível repetido. A mensagem diz que há nível repetido na escala, sem trazer o rótulo."
       ],
       "comoResolver": [
         "Dê um rótulo distinto a cada nível, ou remova o repetido.",
@@ -23540,6 +23557,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O cronograma do processo inclui uma fase que, pelo cadastro de fases, agrupa etapas\npontuadas (como a das provas), mas nenhuma etapa do processo declara acontecer nela.\nA fase existiria no edital sem nada para avaliar. A recusa sai com **422**.",
+        "A mensagem de detalhe diz que a fase agrupa etapas no cronograma e nenhuma etapa declara\nacontecer nela; ela não traz o código da fase, e o campo do erro aponta a fase no cronograma.",
         "A gravação do cronograma não barra esse estado de imediato: ele é legítimo enquanto o\ncertame está sendo montado, e quem o recusa é a publicação. A mesma conferência vale\nna retificação em ato único, que gera nova\nversão, e a operação é recusada antes de qualquer gravação."
       ],
       "comoResolver": [
@@ -23582,10 +23600,10 @@
       ],
       "oQueAconteceu": [
         "A cascata do processo declara, como destino de alguma origem, um código\nde modalidade que não é modalidade selecionada em nenhuma oferta do\nprocesso — nem na oferta específica onde a origem `SEGUE_ORDEM_DE_REMANEJAMENTO` está\n(coberto por\n[`cascata_fallback_nao_selecionado_na_oferta`](/erros/uniplus.selecao.processo_seletivo.cascata_fallback_nao_selecionado_na_oferta),\nquando é o único destino que resolveria ali), nem em oferta nenhuma. Um\ndestino que não existe em lugar algum do processo é sempre um destino\nmorto, mesmo que outra posição da mesma fila resolva numa oferta\nespecífica.",
-        "Roda na mesma segunda passada de\n[`cascata_origem_nao_segue_cascata`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata)\n— por origem, em ordem determinística, e para cada origem, por destino,\ntambém em ordem — logo depois de confirmar que a origem corresponde a uma\nmodalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` de fato ofertada. Sequencial: a primeira\nposição com essa inconsistência interrompe a avaliação; nunca acumula com\nnenhuma outra causa desta série."
+        "É avaliada na mesma passada, sobre o conjunto do processo, de\n[`cascata_origem_nao_segue_cascata`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata)\n— por origem, em ordem determinística, e para cada origem, por destino,\ntambém em ordem. Cada destino com essa inconsistência gera uma causa, e as causas se acumulam em\n`errors[]`, com as demais desta série. A mensagem diz que a cascata declara um destino que não é\nmodalidade selecionada em nenhuma oferta do processo, sem trazer o código do destino."
       ],
       "comoResolver": [
-        "Corrija o código de destino apontado para uma modalidade que de fato está\nselecionada em alguma oferta do processo, ou remova a posição da fila se\nela não corresponde a nenhuma modalidade real."
+        "Como a mensagem não traz o código do destino, confira os destinos da cascata e corrija o código que não corresponde a modalidade ofertada, para uma modalidade que de fato está\nselecionada em alguma oferta do processo, ou remova a posição da fila se\nela não corresponde a nenhuma modalidade real."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -23600,10 +23618,10 @@
       "oQueAconteceu": [
         "A cascata do processo é única, mas cada oferta de curso seleciona seu\npróprio subconjunto de modalidades — a fila de destinos de uma origem e o\nfallback só resolvem, numa oferta específica, se pelo menos uma das\nmodalidades que a cascata cita ali estiver de fato selecionada. Esta causa\ncobre dois cenários:",
         "- O **fallback** da cascata não é modalidade selecionada na oferta — sem\n  ele, uma vaga que percorresse toda a fila de qualquer origem sem\n  preenchimento não teria onde parar.\n- **Nenhum destino da fila de uma origem** é modalidade selecionada na\n  oferta — a fila entera é resolvida contra as modalidades daquela oferta\n  específica, e se nenhuma posição resolver, o remanejamento também não\n  tem para onde ir.",
-        "O primeiro cenário é conferido uma vez por oferta (depois de confirmar que\no processo tem cascata — ver\n[`cascata_origem_ausente`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_ausente));\no segundo é conferido para cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` da oferta, em\nordem determinística. Sequencial: a primeira oferta ou modalidade com essa\ninconsistência interrompe a avaliação; nunca acumula com nenhuma outra\ncausa desta série."
+        "O primeiro cenário é conferido uma vez por oferta (depois de confirmar que\no processo tem cascata — ver\n[`cascata_origem_ausente`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_ausente));\no segundo é conferido para cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` da oferta, em\nordem determinística. Cada oferta ou modalidade com essa inconsistência gera uma causa, e as causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A\nmensagem diz qual dos dois cenários ocorreu (o destino alternativo, o fallback, não está entre as\nmodalidades selecionadas da oferta, ou nenhum destino de uma origem está), sem nomear a oferta, a\nmodalidade nem o código."
       ],
       "comoResolver": [
-        "Se o erro aponta o fallback, confirme que a modalidade de fallback da\ncascata está selecionada na oferta indicada. Se aponta uma origem, revise\na fila de destinos dela na cascata — pelo menos um dos códigos precisa\ncorresponder a uma modalidade selecionada naquela oferta."
+        "Como a mensagem não nomeia a oferta, confira cada oferta do processo que segue a cascata. Se o\ncaso é o fallback, confirme que a modalidade de fallback da cascata está selecionada na oferta.\nSe é uma origem, revise\na fila de destinos dela na cascata — pelo menos um dos códigos precisa\ncorresponder a uma modalidade selecionada naquela oferta."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -23617,7 +23635,7 @@
       ],
       "oQueAconteceu": [
         "Uma oferta de curso tem modalidade com `regraRemanejamento` igual a\n`SEGUE_ORDEM_DE_REMANEJAMENTO`, mas a oferta não usa a regra de distribuição de vagas da\nLei 12.711/2012 (cascata de remanejamento de cotas, UNI-REQ-0056). A cascata do processo é a sequência legal\nde remanejamento das cotas reservadas dessa lei — fora desse regime, não\nhá reserva legal cuja vaga não preenchida precise ser remanejada por uma\nsequência congelada; `SEGUE_ORDEM_DE_REMANEJAMENTO` não tem o que resolver ali.",
-        "Roda como parte da conferência de conformidade estrutural para publicação\n(`PendenciaDaCascata`), avaliada oferta por oferta, em ordem determinística\n(por `OfertaCursoOrigemId`). É a primeira condição conferida para cada\noferta com ao menos uma modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` — antes de checar se o\nprocesso tem cascata configurada. Sequencial: a primeira oferta com essa\ninconsistência interrompe a avaliação; nunca acumula com nenhuma outra\ncausa desta série."
+        "Roda como parte da conferência de conformidade estrutural para publicação\n(`PendenciaDaCascata`), avaliada oferta por oferta, em ordem determinística\n(por `OfertaCursoOrigemId`). É a primeira condição conferida para cada\noferta com ao menos uma modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` — antes de checar se o\nprocesso tem cascata configurada. Cada oferta com essa inconsistência gera uma causa e, para ela, as demais conferências da\ncascata não se aplicam; as causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a oferta tem modalidade\ncom `SEGUE_ORDEM_DE_REMANEJAMENTO` fora do regime federal, sem nomear a oferta nem a modalidade."
       ],
       "comoResolver": [
         "Se a modalidade de fato pertence a uma cota reservada da Lei 12.711/2012,\nconfirme que a oferta está configurada com a regra de distribuição de\nvagas correspondente. Se a oferta não segue esse regime, corrija o\n`remanejamento.regra` da modalidade para `DESTINO_UNICO` ou `CRUZADO`."
@@ -23635,10 +23653,10 @@
       "oQueAconteceu": [
         "Uma modalidade com `regraRemanejamento` igual a `SEGUE_ORDEM_DE_REMANEJAMENTO` não tem\nnenhuma sequência de destinos declarada para ela na cascata do processo\n(cascata de remanejamento de cotas, UNI-REQ-0056). Essa causa cobre dois cenários distintos:",
         "- O processo **não tem cascata de remanejamento configurada** —\n  nenhuma modalidade pode seguir uma cascata que não existe.\n- O processo **tem** cascata, mas ela não declara o código dessa\n  modalidade específica como origem — ela cobre outras origens, mas não\n  esta.",
-        "O primeiro cenário é conferido uma vez por oferta, antes de examinar cada\nmodalidade individualmente — a partir daí, se o processo tiver cascata, o\nsegundo cenário é conferido para cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` da\noferta, em ordem determinística (por código). Sequencial: a primeira\noferta ou modalidade com essa inconsistência interrompe a avaliação de\nconformidade estrutural para publicação; nunca acumula com nenhuma outra\ncausa desta série."
+        "O primeiro cenário é conferido uma vez por oferta, antes de examinar cada\nmodalidade individualmente — a partir daí, se o processo tiver cascata, o\nsegundo cenário é conferido para cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` da\noferta, em ordem determinística (por código). Cada oferta ou modalidade com essa\ninconsistência gera uma causa na avaliação de conformidade estrutural para publicação, e\nas causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz qual dos dois cenários ocorreu (o processo não\ntem cascata, ou a cascata não declara destino para a modalidade), sem nomear a oferta nem a\nmodalidade."
       ],
       "comoResolver": [
-        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione a modalidade apontada como origem na cascata já configurada —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `remanejamento.regra` dela."
+        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione na cascata já configurada, como origem, cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` que ainda\nnão consta nela (a mensagem não nomeia a modalidade) —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `remanejamento.regra` dela."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -23652,10 +23670,10 @@
       ],
       "oQueAconteceu": [
         "A cascata do processo declara, como origem, um código de modalidade que\nnenhuma oferta do processo marca com `regraRemanejamento` igual a\n`SEGUE_ORDEM_DE_REMANEJAMENTO`. É a conferência inversa de\n[`cascata_origem_ausente`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_ausente):\nlá, a modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` existe mas a cascata não a cobre; aqui, a\ncascata cobre uma origem que nenhuma modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` de fato\nusa — a fila de destinos daquela origem não tem para quê existir.",
-        "Diferente das causas anteriores desta série, que rodam durante a\navaliação oferta por oferta, esta roda **depois**, numa segunda passada\nque só acontece se nenhuma oferta reprovou nenhuma delas: percorre as\norigens da cascata, em ordem determinística, e confere cada uma contra o\nconjunto de todos os códigos de modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` do processo,\nsomando todas as ofertas. Sequencial: a primeira origem com essa\ninconsistência interrompe a avaliação; nunca acumula com nenhuma outra\ncausa desta série, e nunca coexiste com as quatro anteriores — se alguma\ndelas tivesse disparado, a avaliação já teria parado antes de chegar\naqui."
+        "Diferente das causas anteriores desta série, que são avaliadas oferta por oferta, esta é avaliada\nsobre o conjunto do processo: percorre os destinos da cascata, em ordem determinística, e confere\na origem de cada um contra o conjunto de todos os códigos de modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` do\nprocesso, somando todas as ofertas. Cada destino cuja origem tem essa inconsistência gera uma causa, e as\ncausas se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a cascata declara\numa origem que nenhuma oferta marca como `SEGUE_ORDEM_DE_REMANEJAMENTO`, sem trazer o código da\norigem."
       ],
       "comoResolver": [
-        "Remova a origem apontada da cascata, ou configure alguma modalidade do\nprocesso com `remanejamento.regra` igual a `SEGUE_ORDEM_DE_REMANEJAMENTO` e o mesmo código\ndessa origem."
+        "Como a mensagem não traz o código da origem, confira as origens da cascata contra as modalidades\n`SEGUE_ORDEM_DE_REMANEJAMENTO` das ofertas. Remova da cascata a origem que nenhuma modalidade usa, ou configure alguma modalidade do\nprocesso com `remanejamento.regra` igual a `SEGUE_ORDEM_DE_REMANEJAMENTO` e o mesmo código\ndessa origem."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -23812,7 +23830,7 @@
         "UNI-REQ-0076"
       ],
       "oQueAconteceu": [
-        "O pedido tentou configurar, no processo, uma regra de derivação para um fato que o\npróprio sistema deriva das modalidades que o processo oferta: a modalidade de\nconcorrência da pessoa candidata (`MODALIDADE`) ou a opção pelas cotas da lei\n(`OPTOU_PELAS_COTAS_DA_LEI`). Esses fatos saem da distribuição de vagas e das regras de\ncada modalidade ofertada; uma segunda regra, no processo, criaria uma definição\nconcorrente. A recusa sai com **422**, no campo `configuracoes[i].codigoFato` da\nconfiguração que cita o fato, e nada foi gravado."
+        "O pedido tentou configurar, no processo, uma regra de derivação para um fato que o\npróprio sistema deriva das modalidades que o processo oferta: a modalidade de\nconcorrência da pessoa candidata (`MODALIDADE`) ou a opção pelas cotas da lei\n(`OPTOU_PELAS_COTAS_DA_LEI`). Esses fatos saem da distribuição de vagas e das regras de\ncada modalidade ofertada; uma segunda regra, no processo, criaria uma definição\nconcorrente. A recusa sai com **422**, no campo `configuracoes[i].codigoFato` da\nconfiguração que cita o fato, e nada foi gravado. A mensagem diz que o fato é derivado das modalidades que o processo oferta e\nnão se configura no processo; ela não traz o código do fato."
       ],
       "comoResolver": [
         "Retire do pedido a configuração desse fato e reenvie as demais regras de derivação\n(`PUT /api/selecao/processos-seletivos/{id}/regras-derivacao`). Para mudar quem concorre\na cada modalidade, ajuste a distribuição de vagas e a regra de aplicabilidade das\nmodalidades ofertadas\n(`PUT /api/selecao/processos-seletivos/{id}/distribuicao-vagas`), e não uma regra de\nderivação à parte."
@@ -23978,7 +23996,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_comeca_antes_da_fase",
       "requisitos": [],
       "oQueAconteceu": [
-        "O início declarado para uma etapa é anterior ao início da fase do cronograma em que\nela acontece. A etapa é parte da fase, então o período dela cabe dentro do período da\nfase. A mensagem de detalhe cita a etapa, o início dela e o início da fase. A recusa\nsai com **422**.",
+        "O início declarado para uma etapa é anterior ao início da fase do cronograma em que\nela acontece. A etapa é parte da fase, então o período dela cabe dentro do período da\nfase. A mensagem de detalhe diz que a etapa começa antes do período da fase; ela não traz o nome da\netapa, as datas nem o código da fase, e o campo do erro aponta o início da etapa. A recusa\nsai com **422**.",
         "Só se compara o que os dois lados declararam: fase sem período não contém nada, e\netapa sem período acontece no período da fase. Início igual ao da fase passa. A etapa que\ndeclara apenas um dos extremos herda o outro da fase.",
         "A regra vale ao definir as etapas, ao definir o cronograma (que pode mover a fase por\nbaixo de etapas já datadas) e, como defesa, na publicação e na retificação em ato único, para que nenhuma versão congele uma prova marcada\npara antes da fase que a contém."
       ],
@@ -23998,6 +24016,7 @@
       "oQueAconteceu": [
         "O período da etapa não tem nenhum ponto em comum com o período da fase do cronograma em\nque ela acontece. Há dois casos, e a mensagem de detalhe diz qual ocorreu:",
         "- a etapa **começa depois** de a fase ter terminado;\n- a etapa **termina antes** de a fase ter começado.",
+        "A mensagem de detalhe não traz o nome da etapa, as datas nem o código da fase; o campo do erro\naponta o início ou o fim da etapa, conforme o caso.",
         "A etapa é parte da fase, então o período dela cabe dentro do período da fase. Só se\ncompara o que os dois lados declararam, e a etapa que declara apenas um dos extremos\nherda o outro da fase; por isso uma prova que só diz quando começa pode cair fora de uma\nfase que já terminou. A recusa sai com **422**.",
         "A regra vale ao definir as etapas, ao definir o cronograma e, como defesa, na\npublicação e na retificação em ato único.",
         "Os casos em que a etapa começa antes da fase ou termina depois dela têm códigos\npróprios: [`etapa_comeca_antes_da_fase`](/erros/uniplus.selecao.processo_seletivo.etapa_comeca_antes_da_fase)\ne [`etapa_termina_depois_da_fase`](/erros/uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase)."
@@ -24049,7 +24068,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_duplicada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O pedido declarou duas ou mais etapas cuja nota vem do ENEM. A nota do ENEM é uma só\npor candidato, então o processo tem, no máximo, uma etapa desse tipo. A mensagem de\ndetalhe diz quantas vieram e cita o nome de cada uma. A recusa sai com **422** e nada\nfoi gravado."
+        "O pedido declarou duas ou mais etapas cuja nota vem do ENEM. A nota do ENEM é uma só\npor candidato, então o processo tem, no máximo, uma etapa desse tipo. A mensagem de\ndetalhe diz que mais de uma foi declarada; ela não traz a quantidade nem o nome das etapas. A recusa sai com **422** e nada\nfoi gravado."
       ],
       "comoResolver": [
         "Mantenha uma única etapa com a nota vinda do ENEM e reenvie as etapas\n(`PUT /api/selecao/processos-seletivos/{id}/etapas`). As demais etapas não podem ter\na nota vinda do ENEM."
@@ -24062,7 +24081,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_nao_compoe_nota",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma etapa que declara a nota vinda do ENEM não compõe a média da nota final: o caráter\ndela é só eliminatório, ou ela não tem peso. Um processo baseado em ENEM declara a nota do ENEM justamente para gerar a\nnota final, então essa etapa entra na média. A mensagem de detalhe cita a etapa. A\nrecusa sai com **422** e nada foi gravado."
+        "Uma etapa que declara a nota vinda do ENEM não compõe a média da nota final: o caráter\ndela é só eliminatório, ou ela não tem peso. Um processo baseado em ENEM declara a nota do ENEM justamente para gerar a\nnota final, então essa etapa entra na média. A mensagem de detalhe diz que a etapa com a nota vinda do ENEM precisa compor a média; ela não\ntraz o nome da etapa, e o campo do erro aponta a etapa. A\nrecusa sai com **422** e nada foi gravado."
       ],
       "comoResolver": [
         "Na etapa com nota do ENEM, declare o caráter classificatório (ou ambos) e um peso, e\nreenvie as etapas (`PUT /api/selecao/processos-seletivos/{id}/etapas`)."
@@ -24075,7 +24094,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_nota_enem_sem_classificacao_enem",
       "requisitos": [],
       "oQueAconteceu": [
-        "O processo tem uma etapa cuja nota vem do ENEM, mas a classificação declarada não é\nbaseada em ENEM ou não é calculada pela média ponderada, que é a fórmula em que a nota\ndo ENEM entra como componente. A mensagem de detalhe cita a etapa. A recusa sai com\n**422** e nada foi gravado.",
+        "O processo tem uma etapa cuja nota vem do ENEM, mas a classificação declarada não é\nbaseada em ENEM ou não é calculada pela média ponderada, que é a fórmula em que a nota\ndo ENEM entra como componente. A mensagem de detalhe diz que a nota vinda do ENEM exige classificação baseada em ENEM, calculada\npela média ponderada; ela não traz o nome da etapa. A recusa sai com\n**422** e nada foi gravado.",
         "A conferência acontece nos dois sentidos: ao definir as etapas, contra a classificação\nque já está gravada, e ao definir a classificação, contra as etapas que já existem. Se\na classificação ainda não foi gravada, a definição das etapas não é recusada por este\nmotivo. Quando a recusa vem da definição da classificação, o erro aponta os campos da\nclassificação que impedem o cálculo local do ENEM."
       ],
       "comoResolver": [
@@ -24186,7 +24205,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_no_cronograma",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma das etapas enviadas declara acontecer em uma fase, identificada pelo código, que\nnão está no cronograma do processo. A etapa vive dentro de uma fase do cronograma, então\na fase precisa existir nele. A mensagem de detalhe cita a etapa e o código da fase. A\nrecusa sai com **422** e as etapas anteriores permanecem.",
+        "Uma das etapas enviadas declara acontecer em uma fase, identificada pelo código, que\nnão está no cronograma do processo. A etapa vive dentro de uma fase do cronograma, então\na fase precisa existir nele. A mensagem de detalhe diz que há etapa que declara uma fase fora do cronograma; ela não traz o\nnome da etapa nem o código da fase, e o campo do erro aponta a fase declarada na etapa. A\nrecusa sai com **422** e as etapas anteriores permanecem.",
         "Uma etapa sem fase declarada não é recusada por este código; no rascunho ela é aceita,\ne quem a barra é a publicação."
       ],
       "comoResolver": [
@@ -24201,7 +24220,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase",
       "requisitos": [],
       "oQueAconteceu": [
-        "O fim declarado para uma etapa é posterior ao fim da fase do cronograma em que ela\nacontece. A etapa é parte da fase, então o período dela cabe dentro do período da fase. A\nmensagem de detalhe cita a etapa, o fim dela e o fim da fase. A recusa sai com **422**.",
+        "O fim declarado para uma etapa é posterior ao fim da fase do cronograma em que ela\nacontece. A etapa é parte da fase, então o período dela cabe dentro do período da fase. A\nmensagem de detalhe diz que a etapa termina depois do período da fase; ela não traz o nome da\netapa, as datas nem o código da fase, e o campo do erro aponta o fim da etapa. A recusa sai com **422**.",
         "Só se compara o que os dois lados declararam: fase sem período não contém nada, e etapa\nsem período acontece no período da fase. Fim igual ao da fase passa. A etapa que declara\napenas um dos extremos herda o outro da fase.",
         "A regra vale ao definir as etapas, ao definir o cronograma (que pode encurtar a fase por\nbaixo de etapas já datadas) e, como defesa, na publicação e na retificação em ato único, para que nenhuma versão congele uma prova marcada\npara depois do fim da fase que a contém."
       ],
@@ -24568,10 +24587,10 @@
       ],
       "oQueAconteceu": [
         "O processo tem um formulário que não declara a fase do cronograma em que é respondido. O\nformulário abre e fecha com o prazo da fase a que está ligado, e sem a fase não\nhá período para ele. O rascunho aceita o formulário sem fase, porque a\nconfiguração se monta aos poucos; a publicação e a retificação em ato único não.",
-        "A mensagem da resposta diz qual formulário está sem fase. Havendo mais de um,\na recusa aponta o primeiro, e os demais aparecem nas repetições da operação."
+        "A mensagem da resposta diz que o formulário ainda não declara a fase em que é respondido, sem\ntrazer o código dele. Havendo mais de um,\na recusa trata do primeiro, na ordem dos formulários do processo, e os demais aparecem nas repetições da operação."
       ],
       "comoResolver": [
-        "Informe, na definição do formulário apontado, a fase do cronograma em que ele é\nrespondido. A fase tem de ser uma que o cronograma do processo contém: o formulário\nobrigatório da inscrição se liga à fase que coleta inscrição, e o facultativo do\npedido de isenção, à fase que abre a solicitação de isenção. Fase fora do cronograma é\nrecusada à parte, com outro código.",
+        "Informe, na definição do formulário que ainda não tem fase (a mensagem não o nomeia; confira os\nformulários do processo, na ordem), a fase do cronograma em que ele é\nrespondido. A fase tem de ser uma que o cronograma do processo contém: o formulário\nobrigatório da inscrição se liga à fase que coleta inscrição, e o facultativo do\npedido de isenção, à fase que abre a solicitação de isenção. Fase fora do cronograma é\nrecusada à parte, com outro código.",
         "Depois de declarar a fase de todos os formulários, repita a operação recusada."
       ],
       "ondeAparece": [
@@ -25562,7 +25581,7 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "Uma fase ou uma etapa declara, entre os atos que publica, um tipo de ato que o catálogo\nclassifica como **resultado**, mas não diz se o produto é preliminar ou definitivo. Para o\nresultado o papel é obrigatório: é ele que diz se a publicação abre um ciclo de recurso ou\nse encerra a matéria. A mensagem de detalhe nomeia o tipo de ato e o lugar, a fase ou a etapa,\nonde ele foi declarado.",
+        "Uma fase ou uma etapa declara, entre os atos que publica, um tipo de ato que o catálogo\nclassifica como **resultado**, mas não diz se o produto é preliminar ou definitivo. Para o\nresultado o papel é obrigatório: é ele que diz se a publicação abre um ciclo de recurso ou\nse encerra a matéria. A mensagem de detalhe não nomeia o tipo de ato nem o lugar; o campo do erro aponta o produto\nsem papel, declarado na fase ou na etapa.",
         "A classificação vem do catálogo de tipos de ato, na data da conferência. Um tipo que não é\nresultado, como um aviso ou um parecer, não declara papel."
       ],
       "comoResolver": [
@@ -25619,10 +25638,10 @@
       ],
       "oQueAconteceu": [
         "O formulário do processo exige o aceite de um termo, e a versão do termo\nescolhida ainda não tem a forma de aceite definida. Só é forma resolvida o\nregistro digital do aceite, com ou sem registro do endereço de rede do\ncandidato; versão cuja forma de aceite está por definir não pode ser congelada\nno processo.",
-        "A recusa acontece ao tentar congelar uma versão (publicação inicial ou retificação em ato único), e nada é congelado.\nHavendo mais de um termo nessa situação, a recusa aponta o primeiro na ordem do\nformulário. A mensagem da resposta indica o termo."
+        "A recusa acontece ao tentar congelar uma versão (publicação inicial ou retificação em ato único), e nada é congelado.\nHavendo mais de um termo nessa situação, a recusa aponta o primeiro na ordem do\nformulário. A mensagem da resposta diz que a versão do termo exigido não tem forma de aceite definida, sem\ntrazer o código do termo."
       ],
       "comoResolver": [
-        "Troque a versão do termo apontado por uma versão com registro digital do aceite,\nentre as versões que o catálogo de termos oferece. Se nenhuma versão do termo\ntem a forma de aceite definida, a definição é feita por quem mantém o catálogo\nde termos.",
+        "Como a mensagem não nomeia o termo, confira os termos exigidos do formulário, na ordem, e troque a\nversão do que está sem forma de aceite por uma versão com registro digital do aceite,\nentre as versões que o catálogo de termos oferece. Se nenhuma versão do termo\ntem a forma de aceite definida, a definição é feita por quem mantém o catálogo\nde termos.",
         "Em processo já publicado, a troca é feita numa retificação. Depois, repita a\noperação recusada."
       ],
       "ondeAparece": [
@@ -25686,7 +25705,7 @@
         "- os **produtos de fase** do cronograma;\n- os **produtos de etapa**, com a etapa identificada por nome e ordem;\n- o **ato da própria operação**, isto é, o ato que está sendo registrado ao publicar ou retificar, quando o tipo dele é único;\n- o **ato já registrado do processo**, de uma versão anterior, que já ocupa a vaga do tipo. É o\n  caso do `EDITAL_ABERTURA` numa retificação: se o cronograma volta a declará-lo, a declaração\n  repete a vaga que o edital de abertura já ocupa.",
         "O ato da operação e o ato já registrado do mesmo tipo ocupam a **mesma vaga** e contam **uma vez\nsó**, porque a retificação continua a linhagem do ato registrado. O que repete é a declaração do\ncronograma sobre essa vaga.",
         "A unicidade vem do catálogo de tipos de ato, mas em momentos diferentes. A do ato da operação vem\ndo tipo conferido na **data de publicação do ato**. A dos produtos do cronograma vem do catálogo na\npublicação; a partir daí, a marcação fica **congelada na versão publicada**, e a retificação usa a\nmarcação congelada para os tipos que já estavam declarados, lendo o catálogo só para os tipos\ndeclarados pela primeira vez. Marcar ou desmarcar um tipo como único no catálogo depois da\npublicação não alcança o processo já publicado (UNI-REQ-0163). Tipo que não é único no momento que\nvale para ele não gera esta recusa.",
-        "A mensagem de detalhe nomeia o tipo pelo nome do catálogo (por exemplo, \"Resultado final\") e diz\nonde ele repete: em qual fase, em qual etapa (com a ordem), no ato em registro ou nos atos já\nregistrados.",
+        "A mensagem de detalhe nomeia o tipo pelo nome do catálogo (por exemplo, \"Resultado final\") e diz\nque ele está declarado mais de uma vez, sem citar fase nem etapa. Quando a repetição está na\ndeclaração enviada, o campo aponta o produto repetido; quando o tipo já está ocupado por um ato\njá registrado, a recusa vem sem campo.",
         "Não confunda com a repetição **dentro de uma mesma fase ou etapa**, que tem outra regra e outra\nrecusa: a mesma fase ou etapa não declara o mesmo tipo com o mesmo papel duas vezes\n([`ato_duplicado_na_fase`](/erros/uniplus.selecao.fase_cronograma.ato_duplicado_na_fase) e\n[`ato_duplicado_na_etapa`](/erros/uniplus.selecao.etapa_processo.ato_duplicado_na_etapa)).",
         "A recusa é do conteúdo do cronograma frente ao catálogo, e não de uma disputa por estado\ngravado. Por isso o status é **422**."
       ],
@@ -25771,7 +25790,7 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "Uma fase ou uma etapa declara, com papel preliminar ou definitivo, um tipo de ato que o\ncatálogo marca como **congelador de configuração**, como o edital de abertura ou a\nretificação do edital. Esses tipos criam uma versão nova da configuração do processo ao\nserem publicados. A correção de um resultado, ao contrário, é uma errata ou retificação do\nato e não cria versão nova; um tipo que congela não teria correção possível como resultado.\nA mensagem de detalhe nomeia o tipo de ato e o lugar, a fase ou a etapa, onde ele foi\ndeclarado."
+        "Uma fase ou uma etapa declara, com papel preliminar ou definitivo, um tipo de ato que o\ncatálogo marca como **congelador de configuração**, como o edital de abertura ou a\nretificação do edital. Esses tipos criam uma versão nova da configuração do processo ao\nserem publicados. A correção de um resultado, ao contrário, é uma errata ou retificação do\nato e não cria versão nova; um tipo que congela não teria correção possível como resultado.\nA mensagem de detalhe não nomeia o tipo de ato nem o lugar; o campo do erro aponta o produto\ncom papel, declarado na fase ou na etapa."
       ],
       "comoResolver": [
         "Escolha para o produto um tipo de ato de resultado que não congele a configuração. Se o\nproduto só precisa constar no cronograma como publicação esperada, declare-o sem papel. Um\nato que muda a configuração do processo se publica pela publicação ou pela retificação do\nedital, e não como item de resultado. O preflight de conformidade mostra esta pendência no\nitem `cronograma_tipo_que_congela_nao_eh_resultado`."
@@ -25883,7 +25902,7 @@
         "A etapa não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a etapa apontando\npara um modelo que ninguém consegue emitir."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o código declarado, e o campo indica qual produto de qual\netapa o trouxe. Três desfechos possíveis:",
+        "A mensagem da recusa não repete o código declarado, e o campo indica qual produto de qual\netapa o trouxe. Três desfechos possíveis:",
         "- **Erro de grafia no código.** Corrija para o código exato do catálogo.\n- **O tipo existe e está sem versão vigente.** Publique a versão dele no catálogo de\n  tipos de ato, no módulo Publicações, e repita a definição das etapas.\n- **O tipo não é o certo.** Declare o tipo de ato que a etapa de fato publica."
       ],
       "ondeAparece": [
@@ -25920,7 +25939,7 @@
         "Dar papel a um ato que não é resultado misturaria as duas: o edital estaria\nreclassificando o catálogo. O recurso cabe contra a decisão, não contra o documento\nque a executa ou corrige."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o código do ato. Três desfechos possíveis:",
+        "A mensagem da recusa não repete o código do ato; o campo indica o produto. Três desfechos possíveis:",
         "- **O ato de fato não é resultado** — é aviso, convocação ou publicação semelhante.\n  Apenas omita o papel: a etapa continua declarando que publica esse ato.\n- **O ato deveria ser resultado.** Corrija a classificação no cadastro do tipo de ato,\n  no módulo Publicações. A correção vale para todos os processos, porque a\n  classificação é do tipo.\n- **O ato citado não era o pretendido.** Declare o tipo de ato de resultado que a\n  etapa publica, e dê a ele o papel.",
         "O mesmo problema na fase tem\n[página própria](/erros/uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado)."
       ],
@@ -25938,7 +25957,7 @@
         "A fase não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a fase apontando\npara um modelo que ninguém consegue emitir."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o código declarado, e o campo indica qual produto de\nqual fase o trouxe. Três desfechos possíveis:",
+        "A mensagem da recusa não repete o código declarado, e o campo indica qual produto de\nqual fase o trouxe. Três desfechos possíveis:",
         "- **Erro de grafia no código.** Corrija para o código exato do catálogo.\n- **O tipo existe e está sem versão vigente.** Publique a versão dele no catálogo de\n  tipos de ato, no módulo Publicações, e repita a definição do cronograma.\n- **O tipo não é o certo.** Declare o tipo de ato que a fase de fato publica."
       ],
       "ondeAparece": [
@@ -25978,7 +25997,7 @@
         "- **Convocação e chamada** concedem o direito de ocupar a vaga, ato que não se\n  desfaz. O recurso do candidato não é contra a convocação — é contra a não\n  comprovação, o resultado da habilitação, que a antecede.\n- **Errata** que corrige resultado já publicado altera a situação do\n  candidato, mas o recurso cabe contra o **resultado corrigido**, não contra a\n  errata."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o código do ato. Três desfechos possíveis:",
+        "A mensagem da recusa não repete o código do ato; o campo indica o produto. Três desfechos possíveis:",
         "- **O ato de fato não é resultado** — é aviso, convocação ou publicação semelhante.\n  Apenas omita o papel: a fase continua declarando que publica esse ato.\n- **O ato deveria ser resultado.** Corrija a classificação no cadastro do tipo de\n  ato, no módulo Publicações. A correção vale para todos os processos, porque a\n  classificação é do tipo.\n- **O ato citado não era o pretendido.** Declare o tipo de ato de resultado que a\n  fase publica, e dê a ele o papel."
       ],
       "ondeAparece": [
@@ -27410,13 +27429,42 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.retificacao.ciclo_novo_de_item_sem_preliminar_aberto",
+      "requisitos": [
+        "UNI-REQ-0157",
+        "UNI-REQ-0282"
+      ],
+      "oQueAconteceu": [
+        "A retificação que muda a regra ou os dados de entrada de um resultado preliminar já publicado exige um novo resultado preliminar, em novo ciclo, antes do definitivo. O pedido de retificação declara os itens que terão novo ciclo, e um dos itens declarados não tem resultado preliminar publicado com o ciclo ainda aberto.",
+        "Isso acontece quando o preliminar do item ainda não foi publicado, quando o resultado definitivo que fecha o ciclo já foi publicado, ou quando o item não existe na versão publicada vigente. A recusa é **422**, não aponta campo, e a mensagem diz que o ciclo declarado não tem preliminar publicado com o ciclo aberto; ela não identifica o item.",
+        "Se houver mais de um problema na retificação, as recusas são devolvidas juntas, e as de ciclo não declarado vêm antes destas."
+      ],
+      "comoResolver": [
+        "Retire do pedido de retificação o item declarado como novo ciclo que não tem preliminar publicado com o ciclo aberto. Se o definitivo já foi publicado, o ciclo está encerrado e a retificação não o reabre. Se o item deveria existir, confira com a equipe do processo se o preliminar dele foi publicado."
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.retificacao.ciclo_novo_nao_declarado",
+      "requisitos": [
+        "UNI-REQ-0157",
+        "UNI-REQ-0282"
+      ],
+      "oQueAconteceu": [
+        "A retificação muda a regra ou os dados de entrada de um resultado preliminar que já foi publicado, e o pedido não declara o novo ciclo desse resultado. O novo resultado preliminar precisa ser publicado antes do definitivo, e por isso o pedido declara o novo ciclo de cada resultado nessa condição.",
+        "A recusa é **422** e não aponta campo: a mensagem cita o código do ato do resultado preliminar que ficou sem declaração. Uma recusa é devolvida para cada resultado nessa condição, em ordem do identificador do item, e as recusas de ciclo declarado sem preliminar aberto vêm depois."
+      ],
+      "comoResolver": [
+        "Declare, no pedido de retificação, o novo ciclo de cada resultado preliminar citado na mensagem. Se a mudança não deveria alterar o resultado já publicado, ajuste a retificação para não mexer na regra nem nos dados de entrada daquele resultado."
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.retificacao.eixo_do_fato_ja_coletado_alterado",
       "requisitos": [
         "UNI-REQ-0159",
         "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
-        "Ao retificar um processo já publicado, a versão nova congelaria um fato com\ndefinição diferente da que alguma versão publicada já coletou. A retificação é\nrecusada com **422**. A mensagem vem no campo `detail` da resposta (não em\n`errors`) e cita o fato (ou o resumo de grupo), o eixo que mudou e os dois\nvalores, o publicado e o novo.",
+        "Ao retificar um processo já publicado, a versão nova congelaria um fato com\ndefinição diferente da que alguma versão publicada já coletou. A retificação é\nrecusada com **422**. A mensagem vem no campo `detail` da resposta (não em\n`errors`) e cita o fato (ou o resumo de grupo), o eixo que mudou e o valor\npublicado; o valor novo não vai na mensagem.",
         "A recusa sai ao congelar a versão nova, e os eixos são de dois tipos:",
         "- **eixos do campo que coleta o fato**: são conferidos nos itens de qualquer formulário do processo (inscrição, isenção ou habilitação) que a nova versão publicaria. São quatro: o **tipo de campo** (como a pessoa responde à pergunta), a **origem dos valores**, o **formato** do texto e a **classificação de proteção** do dado;\n- **eixos do fato citado em condição de documento exigido**: vêm do catálogo atual no momento da publicação. São três: o **domínio** (tipo de dado), a **cardinalidade** (um valor ou vários) e o **ponto de resolução** (a fase em que o fato é resolvido);\n- **operação do resumo de grupo**: a operação aplicada aos campos do grupo também vem do catálogo no momento da publicação.",
         "Os eixos do catálogo são conferidos no congelamento da retificação em ato único.\nPor isso a recusa sai mesmo sem alterar nenhum campo, se o catálogo mudou depois\nda publicação.",

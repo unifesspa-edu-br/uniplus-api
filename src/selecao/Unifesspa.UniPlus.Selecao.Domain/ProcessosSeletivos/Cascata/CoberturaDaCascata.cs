@@ -49,10 +49,8 @@ public static class CoberturaDaCascata
             return [];
         }
 
-        string primeira = modalidadesSegueCascata[0].Codigo;
-
-        return OfertaForaDoRegimeFederal(oferta) ? [ForaDoRegimeFederal(oferta, primeira)]
-            : configuracao.Vagas.Cascata is null ? [SemCascata(oferta, primeira)]
+        return OfertaForaDoRegimeFederal(oferta) ? [ForaDoRegimeFederal()]
+            : configuracao.Vagas.Cascata is null ? [SemCascata()]
             : [.. FallbackDaOferta(configuracao, oferta), .. modalidadesSegueCascata.SelectMany(modalidade => DaOrigem(configuracao, oferta, modalidade.Codigo))];
     }
 
@@ -60,29 +58,29 @@ public static class CoberturaDaCascata
         FallbackNaoSelecionadoNaOferta(oferta, configuracao.Vagas.Cascata!.FallbackCodigo)
             ? [new DomainError(
                 "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
-                $"O fallback \"{configuracao.Vagas.Cascata.FallbackCodigo}\" da cascata não é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.")]
+                "O destino alternativo da cascata não está entre as modalidades selecionadas na oferta.")]
             : [];
 
     private static IEnumerable<DomainError> DaOrigem(ConfiguracaoDeclarada configuracao, ConfiguracaoDistribuicaoVagas oferta, string origem) =>
-        OrigemNaoDeclaradaNaCascata(configuracao, origem) ? [OrigemSemDestino(oferta, origem)]
-        : DestinoDaOrigemNaoResolvivelNaOferta(configuracao, oferta, origem) ? [DestinoNaoResolvivel(oferta, origem)]
+        OrigemNaoDeclaradaNaCascata(configuracao, origem) ? [OrigemSemDestino()]
+        : DestinoDaOrigemNaoResolvivelNaOferta(configuracao, oferta, origem) ? [DestinoNaoResolvivel()]
         : [];
 
-    private static DomainError ForaDoRegimeFederal(ConfiguracaoDistribuicaoVagas oferta, string modalidade) => new(
+    private static DomainError ForaDoRegimeFederal() => new(
         "ProcessoSeletivo.CascataForaDoRegimeFederal",
-        $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidade}\" com SegueCascata, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
+        "A oferta tem modalidade com SegueCascata, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
 
-    private static DomainError SemCascata(ConfiguracaoDistribuicaoVagas oferta, string modalidade) => new(
+    private static DomainError SemCascata() => new(
         "ProcessoSeletivo.CascataOrigemAusente",
-        $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidade}\" com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
+        "A oferta tem modalidade com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
 
-    private static DomainError OrigemSemDestino(ConfiguracaoDistribuicaoVagas oferta, string origem) => new(
+    private static DomainError OrigemSemDestino() => new(
         "ProcessoSeletivo.CascataOrigemAusente",
-        $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{origem}\" com SegueCascata, mas a cascata não declara nenhum destino para ela.");
+        "A oferta tem modalidade com SegueCascata, mas a cascata não declara nenhum destino para ela.");
 
-    private static DomainError DestinoNaoResolvivel(ConfiguracaoDistribuicaoVagas oferta, string origem) => new(
+    private static DomainError DestinoNaoResolvivel() => new(
         "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
-        $"Nenhum destino da origem \"{origem}\" na cascata é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.");
+        "Nenhum destino de uma origem da cascata é modalidade selecionada na oferta.");
 
     private static IEnumerable<DomainError> DosDestinos(ConfiguracaoDeclarada configuracao, IReadOnlyList<ConfiguracaoDistribuicaoVagas> ofertas)
     {
@@ -112,14 +110,14 @@ public static class CoberturaDaCascata
         {
             yield return new DomainError(
                 "ProcessoSeletivo.CascataOrigemNaoSegueCascata",
-                $"A cascata declara a origem \"{destino.ModalidadeOrigemCodigo}\", mas nenhuma oferta do processo a marca como SegueCascata.");
+                "A cascata declara uma origem que nenhuma oferta do processo marca como SegueCascata.");
         }
 
         if (!codigosOfertados.Contains(destino.ModalidadeDestinoCodigo))
         {
             yield return new DomainError(
                 "ProcessoSeletivo.CascataDestinoDesconhecido",
-                $"A cascata declara o destino \"{destino.ModalidadeDestinoCodigo}\", que não é modalidade selecionada em nenhuma oferta do processo.");
+                "A cascata declara um destino que não é modalidade selecionada em nenhuma oferta do processo.");
         }
     }
 

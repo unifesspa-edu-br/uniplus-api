@@ -101,6 +101,18 @@ public sealed class FaseCronogramaCriacaoTests
         Recusas(resultado).Should().Equal(("produtos[2]", "FaseCronograma.AtoDuplicadoNaFase"));
     }
 
+    [Fact(DisplayName = "A recusa do par repetido não repete o código do ato enviado")]
+    public void Criar_ParRepetido_MensagemSemOCodigoDoAto()
+    {
+        Result<FaseCronograma> resultado = Criar(new()
+        {
+            Produtos = [Preliminar("ATO_FICTICIO_ZETA"), Preliminar("ATO_FICTICIO_ZETA")],
+        });
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().NotContainEquivalentOf("ZETA")
+            .And.Be("Na fase, há ato declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.");
+    }
+
     [Fact(DisplayName = "O par repetido A, B, B, A recusa o segundo B e o segundo A, cada um no seu produto")]
     public void Criar_ParRepetidoEmAbba_RecusaCadaRepeticao()
     {
@@ -112,8 +124,7 @@ public sealed class FaseCronogramaCriacaoTests
         Recusas(resultado).Should().Equal(
             ("produtos[2]", "FaseCronograma.AtoDuplicadoNaFase"),
             ("produtos[3]", "FaseCronograma.AtoDuplicadoNaFase"));
-        resultado.Errors[0].Error.Message.Should().Contain("'ATO_B'");
-        resultado.Errors[1].Error.Message.Should().Contain("'ATO_A'");
+        resultado.Errors.Select(static e => e.Error.Message).Should().OnlyContain(static m => !m.Contains("ATO_", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A fábrica recusa os candidatos atendidos na banca de análise de recursos, no campo dos candidatos atendidos")]

@@ -71,23 +71,23 @@ public sealed record EixosDeVersaoPublicada(
 /// fato que o candidato já pode ter respondido (UNI-REQ-0144), ou na operação de um agregado de
 /// grupo, que o fato de membro já coletado alimenta.
 /// </summary>
-public sealed record TrocaDeEixo(string Fato, string Eixo, string? Publicado, string? Novo, bool DeAgregado = false)
+public sealed record TrocaDeEixo(string Fato, string Eixo, string? Publicado, bool DeAgregado = false)
 {
     public const string Codigo = RetificacaoErrorCodes.EixoDoFatoJaColetadoAlterado;
 
     public DomainError ParaErro() => new(Codigo, DeAgregado ? MensagemDoAgregado() : MensagemDoFato());
 
     private string MensagemDoFato() =>
-        $"O fato '{Fato}' já foi coletado por versão publicada do edital e o eixo '{Eixo}' dele mudou de '{Publicado ?? "(vazio)"}' para '{Novo ?? "(vazio)"}'. "
+        $"O fato '{Fato}' já foi coletado por versão publicada do edital e o eixo '{Eixo}' dele mudou em relação ao valor publicado '{Publicado ?? "(vazio)"}'. "
         + "O fato já coletado mantém a definição da versão publicada: a retificação não a troca, e a mudança vale para processo novo.";
 
     private string MensagemDoAgregado() =>
-        $"O resumo de grupo '{Fato}' já foi usado por versão publicada do edital e a operação dele mudou de '{Publicado ?? "(vazio)"}' para '{Novo ?? "(vazio)"}'. "
+        $"O resumo de grupo '{Fato}' já foi usado por versão publicada do edital e a operação dele mudou em relação ao valor publicado '{Publicado ?? "(vazio)"}'. "
         + "O resumo de grupo já usado mantém a definição da versão publicada: a retificação não a troca, e a mudança vale para processo novo.";
 
     internal static TrocaDeEixo? Primeira(string fato, IEnumerable<(string Eixo, string? Valor)> publicado, IEnumerable<(string Eixo, string? Valor)> novo) =>
         publicado.Zip(novo)
             .Where(static par => !string.Equals(par.First.Valor, par.Second.Valor, StringComparison.Ordinal))
-            .Select(par => new TrocaDeEixo(fato, par.First.Eixo, par.First.Valor, par.Second.Valor))
+            .Select(par => new TrocaDeEixo(fato, par.First.Eixo, par.First.Valor))
             .FirstOrDefault();
 }

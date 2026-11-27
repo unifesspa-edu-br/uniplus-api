@@ -32,12 +32,12 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
     private static PublicacoesDaFase Publicando(RegraDeHomologacaoDasInscricoes? regra, params ProdutoDaFase[] produtos) =>
         new(produtos, EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: null, RegraDeHomologacao: regra);
 
-    private static FieldError? Ausente(RegraDeHomologacaoDasInscricoes? regra, string codigoDaFase = FaseDaRegra) =>
-        ConferenciaDaRegraDeHomologacao.ResultadoAusente(codigoDaFase, regra);
+    private static FieldError? Ausente(RegraDeHomologacaoDasInscricoes? regra) =>
+        ConferenciaDaRegraDeHomologacao.ResultadoAusente(regra);
 
     private static FieldError? QueNaoEProduto(
-        RegraDeHomologacaoDasInscricoes? regra, ProdutoDaFase[] produtos, string codigoDaFase = FaseDaRegra) =>
-        ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(codigoDaFase, Publicando(regra, produtos));
+        RegraDeHomologacaoDasInscricoes? regra, ProdutoDaFase[] produtos) =>
+        ConferenciaDaRegraDeHomologacao.ResultadoQueNaoEProduto(Publicando(regra, produtos));
 
     [Fact(DisplayName = "O resultado apontado que é produto com papel da fase não tem recusa")]
     public void Resultado_ProdutoComPapel_SemRecusa() =>
@@ -58,7 +58,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         recusa.Should().NotBeNull();
         recusa!.Field.Should().Be(CampoDoResultado);
         recusa.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
-        recusa.Error.Message.Should().Contain(FaseDaRegra);
+        recusa.Error.Message.Should().Contain("precisa apontar o resultado").And.NotContain(FaseDaRegra);
     }
 
     [Theory(DisplayName = "Resultado em branco vale como não apontado")]
@@ -79,7 +79,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         recusa.Should().NotBeNull();
         recusa!.Field.Should().Be(CampoDoResultado);
         recusa.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
-        recusa.Error.Message.Should().Contain("precisa ser produto, com papel").And.Contain(FaseDaRegra).And.NotContain("OUTRO_RESULTADO");
+        recusa.Error.Message.Should().Contain("precisa ser produto, com papel").And.NotContain(FaseDaRegra).And.NotContain("OUTRO_RESULTADO");
     }
 
     [Theory]
@@ -118,16 +118,6 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
     [Fact(DisplayName = "O definitivo do resultado não é conferido por esta regra: só o preliminar basta")]
     public void Resultado_SemDefinitivo_NaoEConferidoAqui() =>
         QueNaoEProduto(Regra(), [Preliminar()]).Should().BeNull();
-
-    [Theory(DisplayName = "O código da fase não decide a conferência: o resultado vem dos produtos qualquer que seja o código")]
-    [InlineData("HOMOLOGACAO_INSCRICOES")]
-    [InlineData("HOMOLOGACAO_RESULTADO_FINAL")]
-    [InlineData("CLASSIFICACAO")]
-    public void Resultado_QualquerCodigoDeFase_ConfereOsProdutos(string codigoDaFase)
-    {
-        QueNaoEProduto(Regra(), [Preliminar()], codigoDaFase).Should().BeNull();
-        QueNaoEProduto(Regra("OUTRO_RESULTADO"), [Preliminar()], codigoDaFase).Should().NotBeNull();
-    }
 
     [Fact(DisplayName = "Criar a fase recusa o resultado que a regra aponta e não é produto, no campo da fase")]
     public void Criar_ResultadoQueNaoEProduto_RecusaNoCampoDaRegra()

@@ -155,7 +155,7 @@ public static class PendenciasDosFormularios
         formulario.FaseId is not { } fase
             ? new DomainError(
                 FormularioProcessoErrorCodes.SemFase,
-                $"O formulário '{formulario.Codigo.Valor}' ainda não declara a fase em que é respondido.")
+                "O formulário ainda não declara a fase em que é respondido.")
             : RegrasDosFormularios.RecusaDaFaseForaDoCronograma(configuracao, fase);
 
     private static DomainError? RecusaDaEstruturaDasPaginas(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario) =>
@@ -200,6 +200,6 @@ public static class PendenciasDosFormularios
         configuracao.Coleta.TermosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo
             ? new DomainError(
                 TermoExigidoFormularioErrorCodes.SemFormaDeAceite,
-                $"O termo '{termo.Codigo}' usa uma versão sem forma de aceite definida; escolha uma versão com registro digital.")
+                "A versão do termo exigido não tem forma de aceite definida; escolha uma versão com registro digital.")
             : null;
 }

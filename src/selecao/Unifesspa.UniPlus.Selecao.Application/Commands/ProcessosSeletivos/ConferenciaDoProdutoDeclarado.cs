@@ -111,7 +111,7 @@ internal sealed class ConferenciaDoProdutoDeclarado(AtosConsultadosNaEdicao atos
             return Recusa($"{campo}.atoCodigo", ConferenciaDoProdutoDoAto.AtoNaoEncontrado(dono));
         }
 
-        return ConferenciaDoProdutoDoAto.RecusaDoPapel(atoCodigo, papel, conhecida.Classificacao, dono) is { } recusaDoPapel
+        return ConferenciaDoProdutoDoAto.RecusaDoPapel(papel, conhecida.Classificacao, dono) is { } recusaDoPapel
             ? Recusa($"{campo}.papel", recusaDoPapel)
             : Result<ProdutoConferido>.Success(new ProdutoConferido.Aceito(atoCodigo, papel));
     }

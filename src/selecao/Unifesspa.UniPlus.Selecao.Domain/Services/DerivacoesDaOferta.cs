@@ -40,9 +40,9 @@ public static class DerivacoesDaOferta
         || string.Equals(codigoFato, OpcaoPelasCotasDaLei.Fato, StringComparison.Ordinal);
 
     /// <summary>A recusa de configurar no processo um fato que a oferta deriva.</summary>
-    public static DomainError RecusaDeConfiguracao(string codigoFato) => new(
+    public static DomainError RecusaDeConfiguracao() => new(
         ProcessoSeletivoErrorCodes.DerivacaoDaOferta,
-        $"O fato '{codigoFato}' é derivado das modalidades que o processo oferta, e não se configura no processo.");
+        "O fato é derivado das modalidades que o processo oferta, e não se configura no processo.");
 
     /// <summary>
     /// A distribuição de vagas que vale para quem escolheu uma ou mais ofertas de curso — a 1ª e a 2ª
@@ -83,31 +83,42 @@ public static class DerivacoesDaOferta
         ArgumentNullException.ThrowIfNull(modalidades);
 
         List<ConfiguracaoDerivacaoFato> efetivas = [.. configuradas];
-        List<ModalidadeSelecionada> ofertadas = [.. modalidades];
-        bool ofertaCotaDaLei = ofertadas.Exists(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
+        AcrescentarDerivacoesDaOferta(efetivas, [.. modalidades]);
+        return efetivas;
+    }
+
+    private static void AcrescentarDerivacoesDaOferta(List<ConfiguracaoDerivacaoFato> efetivas, List<ModalidadeSelecionada> ofertadas)
+    {
         List<(string? Contribui, PredicadoDnf Quando)> regras =
             [.. RegrasNaOferta(ofertadas).Select(static r => ((string?)r.Modalidade.Codigo, r.Regra))];
         if (regras.Count == 0)
         {
-            return efetivas;
+            return;
         }
 
-        if (ofertaCotaDaLei && regras.Exists(static r => r.Quando.FatosCitados.Contains(OpcaoPelasCotasDaLei.Fato)))
+        if (OfertaCotaDaLei(ofertadas) && regras.Exists(static r => r.Quando.FatosCitados.Contains(OpcaoPelasCotasDaLei.Fato)))
         {
-            efetivas.Add(Derivacao(OpcaoPelasCotasDaLei.Fato, [.. OpcaoPelasCotasDaLei.RegrasDaOpcao.Select(static r => (r.Contribui, r.Quando))]));
-
-            // A opção depende do egresso de escola pública. A regra dele é a do sistema, fixa no código
-            // e igual à padrão do catálogo, por isso vale sem cópia quando o processo não configura
-            // outra. A que o processo configura, vinda do modelo ou do operador, prevalece.
-            if (!efetivas.Exists(static d => string.Equals(d.CodigoFato, OrigemEscolar.FatoEgresso, StringComparison.Ordinal)))
-            {
-                efetivas.Add(Derivacao(OrigemEscolar.FatoEgresso, [.. OrigemEscolar.RegrasDoEgresso.Select(static r => (r.Contribui, r.Quando))]));
-            }
+            AcrescentarDerivacoesDaOpcao(efetivas);
         }
 
         efetivas.Add(Derivacao(ModalidadeDoCandidato.Fato, regras));
-        return efetivas;
     }
+
+    private static void AcrescentarDerivacoesDaOpcao(List<ConfiguracaoDerivacaoFato> efetivas)
+    {
+        efetivas.Add(Derivacao(OpcaoPelasCotasDaLei.Fato, [.. OpcaoPelasCotasDaLei.RegrasDaOpcao.Select(static r => (r.Contribui, r.Quando))]));
+
+        // A opção depende do egresso de escola pública. A regra dele é a do sistema, fixa no código
+        // e igual à padrão do catálogo, por isso vale sem cópia quando o processo não configura
+        // outra. A que o processo configura, vinda do modelo ou do operador, prevalece.
+        if (!efetivas.Exists(static d => string.Equals(d.CodigoFato, OrigemEscolar.FatoEgresso, StringComparison.Ordinal)))
+        {
+            efetivas.Add(Derivacao(OrigemEscolar.FatoEgresso, [.. OrigemEscolar.RegrasDoEgresso.Select(static r => (r.Contribui, r.Quando))]));
+        }
+    }
+
+    private static bool OfertaCotaDaLei(IEnumerable<ModalidadeSelecionada> ofertadas) =>
+        ofertadas.Any(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
 
     /// <summary>
     /// A regra de cada modalidade ofertada como ela vale na oferta — lida com a opção pelas cotas
@@ -121,18 +132,15 @@ public static class DerivacoesDaOferta
         List<ModalidadeSelecionada> ofertadas = [.. modalidades
             .DistinctBy(static m => m.Codigo, StringComparer.Ordinal)
             .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];
-        bool ofertaCotaDaLei = ofertadas.Exists(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
-        List<(ModalidadeSelecionada, PredicadoDnf)> regras = [];
-        foreach (ModalidadeSelecionada modalidade in ofertadas)
-        {
-            PredicadoDnf? regra = ofertaCotaDaLei ? modalidade.RegraDeAplicabilidade : SemOpcaoPelasCotas(modalidade.RegraDeAplicabilidade);
-            if (regra is not null)
-            {
-                regras.Add((modalidade, regra));
-            }
-        }
+        bool ofertaCotaDaLei = OfertaCotaDaLei(ofertadas);
 
-        return regras;
+        return
+        [
+            .. ofertadas
+                .Select(m => (Modalidade: m, Regra: ofertaCotaDaLei ? m.RegraDeAplicabilidade : SemOpcaoPelasCotas(m.RegraDeAplicabilidade)))
+                .Where(static par => par.Regra is not null)
+                .Select(static par => (par.Modalidade, Regra: par.Regra!)),
+        ];
     }
 
     /// <summary>
@@ -147,42 +155,33 @@ public static class DerivacoesDaOferta
             return regra;
         }
 
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        int indice = 0;
-        foreach (ClausulaDnf clausula in regra.Clausulas)
+        List<List<CondicaoDnf>> clausulas = [.. regra.Clausulas.Select(RestantesDaClausula).OfType<List<CondicaoDnf>>()];
+        return clausulas.Exists(static restantes => restantes.Count == 0) ? PredicadoDnf.SemClausula : Reagrupar(clausulas);
+    }
+
+    private static PredicadoDnf? Reagrupar(List<List<CondicaoDnf>> clausulas) =>
+        clausulas.Count == 0
+            ? null
+            : PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [.. clausulas.SelectMany(static (restantes, indice) => restantes.Select(condicao => (indice, condicao)))]).Value!;
+
+    /// <summary>As condições da cláusula que ainda dependem de outros fatos; nulo quando a cláusula não vale com a opção falsa.</summary>
+    private static List<CondicaoDnf>? RestantesDaClausula(ClausulaDnf clausula)
+    {
+        List<CondicaoDnf> restantes = [];
+        foreach (CondicaoDnf condicao in clausula.Condicoes)
         {
-            List<CondicaoDnf> restantes = [];
-            bool vale = true;
-            foreach (CondicaoDnf condicao in clausula.Condicoes)
+            switch (ComOpcaoFalsa(condicao))
             {
-                switch (ComOpcaoFalsa(condicao))
-                {
-                    case true:
-                        break;
-                    case false:
-                        vale = false;
-                        break;
-                    default:
-                        restantes.Add(condicao);
-                        break;
-                }
+                case false:
+                    return null;
+                case null:
+                    restantes.Add(condicao);
+                    break;
             }
-
-            if (!vale)
-            {
-                continue;
-            }
-
-            if (restantes.Count == 0)
-            {
-                return PredicadoDnf.SemClausula;
-            }
-
-            linhas.AddRange(restantes.Select(c => (indice, c)));
-            indice++;
         }
 
-        return indice == 0 ? null : PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!;
+        return restantes;
     }
 
     /// <summary>O valor da condição sobre a opção pelas cotas valendo falso; nulo na que não é sobre ela.</summary>

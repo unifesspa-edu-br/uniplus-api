@@ -117,7 +117,7 @@ public sealed record CalendarioDiasUteisCongelado
             if (MesmaChave(dias[i - 1], dias[i]))
             {
                 return new DomainError(CalendarioDiasUteisCongeladoErrorCodes.DiaDuplicado,
-                    $"O dia {dias[i].Data:yyyy-MM-dd} aparece mais de uma vez com a mesma abrangência e o mesmo recorte territorial.");
+                    "O calendário tem um dia repetido com a mesma abrangência e o mesmo recorte territorial.");
             }
         }
 

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class EixosDoItemCongeladoTests
@@ -30,6 +31,17 @@ public sealed class EixosDoItemCongeladoTests
         troca.ParaErro().Code.Should().Be("Retificacao.EixoDoFatoJaColetadoAlterado");
     }
 
+    [Fact(DisplayName = "A recusa da troca de eixo não repete o valor novo enviado e mantém o dado do candidato e o valor publicado")]
+    public void ParaErro_NaoRepeteOValorNovo()
+    {
+        EixosDoItemCongelado novo = Publicado with { Formato = "FORMATO_NOVO_FICTICIO_ZETA" };
+
+        DomainError erro = Publicado.PrimeiraTroca("DADO_FICTICIO_ALFA", novo)!.ParaErro();
+
+        erro.Code.Should().Be("Retificacao.EixoDoFatoJaColetadoAlterado");
+        erro.Message.Should().NotContainEquivalentOf("ZETA").And.Contain("DADO_FICTICIO_ALFA");
+    }
+
     [Fact(DisplayName = "Eixos iguais, inclusive formato nulo, não geram recusa")]
     public void PrimeiraTroca_EixosIguais_NaoRecusa() =>
         Publicado.PrimeiraTroca("FATO", Publicado with { }).Should().BeNull();
@@ -39,7 +51,7 @@ public sealed class EixosDoItemCongeladoTests
     {
         TrocaDeEixo? troca = (Publicado with { Formato = "FORMATO" }).PrimeiraTroca("FATO", Publicado);
 
-        troca.Should().Be(new TrocaDeEixo("FATO", "formato", "FORMATO", null));
+        troca.Should().Be(new TrocaDeEixo("FATO", "formato", "FORMATO"));
     }
 
     [Fact(DisplayName = "A primeira diferença segue a ordem dos seis eixos")]

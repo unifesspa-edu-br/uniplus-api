@@ -47,7 +47,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEFadaTests
         processo.DefinirItensNaFaseDaImportacao([]).IsSuccess.Should().BeTrue();
         processo.DefinirTermosNaFaseDaImportacao([Termo("DECLARACAO", 0, FormaAceite.ADefinir)]).IsSuccess.Should().BeTrue();
 
-        CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
+        DomainError semForma = CondicoesParaRegistrarConfiguracaoDeTeste.PrimeiraCausa(processo)!;
+        semForma.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
+        semForma.Message.Should().NotContain("DECLARACAO");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
 

@@ -125,12 +125,14 @@ public sealed class PreenchimentoDoCandidatoTests
     [Fact]
     public void RecusasDosAceites_RepetidosEForaDaVersao_AcumulaNaOrdem()
     {
-        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "A", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "B", Guid.Empty, "x")]);
-        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new() { [FormularioDeTeste.TermoDaInscricao("A")] = new(Guid.Empty, "certo") };
-        valor.RecusasDosAceites(termos).Select(static r => (r.Field, r.Error.Code, r.Error.Message)).Should().Equal(
-            ("aceites[0]", InscricaoErrorCodes.AceiteDeOutraVersao, "O aceite do termo 'A' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."),
-            ("aceites[1]", InscricaoErrorCodes.AceiteRepetido, "O termo 'A' foi aceito mais de uma vez. Envie um único aceite para cada termo."),
-            ("aceites[2]", InscricaoErrorCodes.AceiteForaDoFormulario, "O termo 'B' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
+        PreenchimentoDoCandidato valor = Criar(aceites: [new(FormularioDeTeste.CodigoDaInscricao, "TERMO_FICTICIO_ALFA", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "TERMO_FICTICIO_ALFA", Guid.Empty, "errado"), new(FormularioDeTeste.CodigoDaInscricao, "TERMO_FICTICIO_BETA", Guid.Empty, "x")]);
+        Dictionary<TermoNoFormulario, TermoAdmitido> termos = new() { [FormularioDeTeste.TermoDaInscricao("TERMO_FICTICIO_ALFA")] = new(Guid.Empty, "certo") };
+        IReadOnlyList<FieldError> recusas = [.. valor.RecusasDosAceites(termos)];
+        recusas.Select(static r => (r.Field, r.Error.Code, r.Error.Message)).Should().Equal(
+            ("aceites[0]", InscricaoErrorCodes.AceiteDeOutraVersao, "O aceite do termo não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."),
+            ("aceites[1]", InscricaoErrorCodes.AceiteRepetido, "O termo foi aceito mais de uma vez. Envie um único aceite para cada termo."),
+            ("aceites[2]", InscricaoErrorCodes.AceiteForaDoFormulario, "O termo não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
+        recusas.Select(static r => r.Error.Message).Should().OnlyContain(static m => !m.Contains("FICTICIO", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact(DisplayName = "O mesmo código de termo aceito em dois formulários não é aceite repetido, e os dois se mantêm")]

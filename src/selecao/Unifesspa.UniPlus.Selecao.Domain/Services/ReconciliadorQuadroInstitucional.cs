@@ -52,27 +52,26 @@ public static class ReconciliadorQuadroInstitucional
         int indice = IndiceDe(codigos, parametros.ModalidadeCodigo);
         if (indice < 0)
         {
-            return ModalidadeForaDoQuadro(parametros.ModalidadeCodigo);
+            return ModalidadeForaDoQuadro();
         }
 
         return quantidades[indice] < excesso
-            ? ExcessoNaoAbsorvido($"A modalidade {parametros.ModalidadeCodigo} tem {quantidades[indice]} vaga(s) e o excesso é de {excesso}.")
+            ? ExcessoNaoAbsorvido("A modalidade do ajuste não tem vagas suficientes para absorver o excesso.")
             : Retirar(quantidades, [indice], [excesso], excesso);
     }
 
     private static Result<QuadroReconciliado> ReduzirProporcionalmente(
         IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosReduzirProporcionalEm parametros)
     {
-        string? ausente = parametros.ModalidadeCodigos.FirstOrDefault(codigo => IndiceDe(codigos, codigo) < 0);
-        if (ausente is not null)
+        if (parametros.ModalidadeCodigos.Any(codigo => IndiceDe(codigos, codigo) < 0))
         {
-            return ModalidadeForaDoQuadro(ausente);
+            return ModalidadeForaDoQuadro();
         }
 
         int[] alvos = [.. parametros.ModalidadeCodigos.Select(codigo => IndiceDe(codigos, codigo))];
         int disponivel = alvos.Sum(indice => quantidades[indice]);
         return disponivel < excesso
-            ? ExcessoNaoAbsorvido($"As modalidades do ajuste somam {disponivel} vaga(s) e o excesso é de {excesso}.")
+            ? ExcessoNaoAbsorvido("As modalidades do ajuste somam menos vagas do que o excesso a absorver.")
             : Retirar(quantidades, alvos, CortesProporcionais(quantidades, alvos, excesso, disponivel), excesso);
     }
 
@@ -119,8 +118,8 @@ public static class ReconciliadorQuadroInstitucional
         return -1;
     }
 
-    private static Result<QuadroReconciliado> ModalidadeForaDoQuadro(string codigo) =>
+    private static Result<QuadroReconciliado> ModalidadeForaDoQuadro() =>
         Result<QuadroReconciliado>.Failure(new DomainError(
             "ConfiguracaoDistribuicaoVagas.AjusteReferenciaModalidadeForaDoQuadro",
-            $"O ajuste reduz de {codigo}, que não está entre as modalidades selecionadas."));
+            "O ajuste reduz de modalidade que não está entre as modalidades selecionadas."));
 }

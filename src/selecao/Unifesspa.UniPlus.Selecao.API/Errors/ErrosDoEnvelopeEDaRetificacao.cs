@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 /// <summary>
 /// Recusas do codec do envelope, da conferência da retificação e do estado editável da configuração.
@@ -11,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 internal static class ErrosDoEnvelopeEDaRetificacao
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. DoCodecDoEnvelope(), .. DaRetificacaoEDoEstadoEditavel()];
+        [.. DoCodecDoEnvelope(), .. DaRetificacaoEDoEstadoEditavel(), .. DoCicloNovoDaRetificacao()];
 
     private static KeyValuePair<string, DomainErrorMapping>[] DoCodecDoEnvelope() =>
     [
@@ -40,5 +41,13 @@ internal static class ErrosDoEnvelopeEDaRetificacao
         // A allowlist que falha FECHADA: só o rascunho aceita mutação da configuração, e todo estado
         // novo nasce imutável por omissão.
         new("ProcessoSeletivo.MutacaoForaDeEstadoEditavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_fora_de_estado_editavel", "O processo não está em um estado que aceite mutação da configuração")),
+    ];
+
+    private static KeyValuePair<string, DomainErrorMapping>[] DoCicloNovoDaRetificacao() =>
+    [
+        // A retificação que muda a regra ou os dados de um preliminar publicado declara o novo ciclo
+        // (UNI-REQ-0157, UNI-REQ-0282), e só o preliminar publicado com ciclo aberto aceita a declaração.
+        new(RetificacaoErrorCodes.CicloNovoNaoDeclarado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.ciclo_novo_nao_declarado", "A retificação exige declarar o novo ciclo do resultado preliminar já publicado")),
+        new(RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.ciclo_novo_de_item_sem_preliminar_aberto", "O ciclo novo declarado não tem resultado preliminar publicado com o ciclo aberto")),
     ];
 }
