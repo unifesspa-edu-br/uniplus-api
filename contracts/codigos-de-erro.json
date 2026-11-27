@@ -3992,6 +3992,11 @@
       "titulo": "Um fato derivado não pode depender de si mesmo"
     },
     {
+      "codigo": "uniplus.requisicao.caminho_inexistente",
+      "status": 404,
+      "titulo": "A requisição pede um caminho que a API não oferece"
+    },
+    {
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
       "status": 400,
       "titulo": "A requisição não declara campo obrigatório do contrato"

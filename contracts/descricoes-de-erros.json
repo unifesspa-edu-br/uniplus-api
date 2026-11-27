@@ -12980,6 +12980,22 @@
       ]
     },
     {
+      "codigo": "uniplus.requisicao.caminho_inexistente",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O caminho da requisição não corresponde a nenhuma operação da API: ele não existe, tem um trecho escrito de outra forma ou traz, num método que a operação aceita, um identificador fora do formato esperado, como um identificador incompleto.",
+        "A resposta não repete o caminho pedido nem indica qual trecho não corresponde.",
+        "Quando o caminho existe e o registro procurado não, a resposta 404 traz o código do assunto, como [processo seletivo não encontrado](/erros/uniplus.selecao.processo_seletivo.nao_encontrado). Um parâmetro da consulta cujo valor não vira o tipo declarado recebe [valor inválido](/erros/uniplus.requisicao.valor_invalido)."
+      ],
+      "comoResolver": [
+        "Confira na referência da API do módulo o caminho da operação, incluindo o prefixo do módulo, e o formato de cada identificador.",
+        "Se o caminho veio de um link da própria API e ainda assim recebeu este erro, informe o `traceId` da resposta à equipe do Uni+."
+      ],
+      "ondeAparece": [
+        "Qualquer requisição cujo caminho não corresponde a uma operação da API"
+      ]
+    },
+    {
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
       "requisitos": [],
       "oQueAconteceu": [
@@ -13042,7 +13058,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um parâmetro declarado **fora do corpo** veio com valor presente, e esse valor\nnão vira o tipo que o contrato declara — `?vigentes=abc` onde se espera um\nbooleano, `?data=ontem` onde se espera uma data.",
-        "O erro vale para parâmetros no caminho, na consulta, no cabeçalho ou em um campo de formulário.",
+        "O erro vale para parâmetros no caminho cujo formato a operação não restringe, na consulta, no cabeçalho ou em um campo de formulário. O identificador de caminho que a operação restringe a um formato e vem fora dele recebe [caminho inexistente](/erros/uniplus.requisicao.caminho_inexistente).",
         "O `detail` informa o nome do parâmetro, sem indicar a posição de cada elemento inválido nem repetir o valor recusado. Mesmo um parâmetro opcional pode ter um valor incompatível com o tipo esperado.",
         "**O corpo fica fora desta causa**, de propósito — é o que a separa de\n[requisição malformada](/erros/uniplus.requisicao.malformada), que responde pelo\nvalor que não converte dentro do documento. A recusa de leitura do corpo já\ndistingue documento ilegível, campo não declarado e documento inexistente, três\nsituações que o cliente corrige de formas diferentes; trazê-las para cá as\nachataria numa só.",
         "Esta causa é anterior à validação. Aqui o valor **não chegou a virar o tipo**;\nnuma validação reprovada ele virou, e foi o conteúdo que não serviu — um formato\nque a expressão regular do parâmetro recusa, um intervalo fora da faixa aceita.",
