@@ -57,6 +57,9 @@ public sealed class CanonicalizerEProjecaoPuraTests
         "CronogramaCongelado",
     ];
 
+    /// <summary>O que escreve o grupo e o quadro de pesos por área do Enem no documento congelado, na Application, usado pelo canonicalizador.</summary>
+    private static readonly string[] NomesDasAreasDoEnemNoDocumentoCongelado = ["AreasDoEnemNoDocumentoCongelado"];
+
     private static readonly string[] EsperadosNoCanonicalizador =
     [
         "SnapshotPublicacaoCanonicalizer",
@@ -97,6 +100,18 @@ public sealed class CanonicalizerEProjecaoPuraTests
             "a varredura tem de encontrar todos os tipos da projeção do certame; sem isso a regra passaria vazia");
 
         BarrarEstadoExterno(Types().That().Are(tipos), "a mesma entrada e o mesmo endereço base produzem sempre a mesma resposta").Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "A escrita do quadro de pesos por área do Enem no documento congelado é pura — não depende de repositório, DbContext, relógio, service provider nem HttpClient")]
+    public void AreasDoEnemNoDocumentoCongelado_NaoDependeDeEstadoExterno()
+    {
+        IEnumerable<IType> tipos = Arquitetura.Types.Where(static t => t.Namespace.FullName.StartsWith("Unifesspa.UniPlus.", StringComparison.Ordinal)
+            && NomesDasAreasDoEnemNoDocumentoCongelado.Contains(t.Name));
+
+        tipos.Select(static t => t.Name).Should().Contain(NomesDasAreasDoEnemNoDocumentoCongelado,
+            "a varredura tem de encontrar o tipo; sem isso a regra passaria vazia");
+
+        BarrarEstadoExterno(Types().That().Are(tipos), "o quadro escrito no envelope é projeção pura (ADR-0109 D6)").Check(Arquitetura);
     }
 
     [Fact(DisplayName = "Controle: a regra de pureza reprova o handler que define o cronograma, que depende de repositório e de TimeProvider")]

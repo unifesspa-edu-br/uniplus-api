@@ -13,12 +13,13 @@ public sealed class ConferenciaDosMunicipiosNoGeo(IConferenciaEnderecoGeo geo)
     public Task<Result<MunicipiosConferidosNoGeo>> ConferirAsync(
         DeclaracaoDaProvaPresencial? declaracao, CancellationToken cancellationToken) =>
         declaracao is { TemProvaPresencial: true } presencial
-            ? ConferirDeclaradosAsync(presencial.Municipios, cancellationToken)
+            ? ConferirAsync(presencial.Municipios, cancellationToken)
             : Task.FromResult(Result<MunicipiosConferidosNoGeo>.Success(MunicipiosConferidosNoGeo.Nenhum));
 
-    private async Task<Result<MunicipiosConferidosNoGeo>> ConferirDeclaradosAsync(
+    public async Task<Result<MunicipiosConferidosNoGeo>> ConferirAsync(
         IReadOnlyList<MunicipioDeProva> municipios, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(municipios);
         Dictionary<string, ResultadoDoMunicipioNoGeo> resultados = new(StringComparer.Ordinal);
         foreach (MunicipioDeProva municipio in municipios)
         {

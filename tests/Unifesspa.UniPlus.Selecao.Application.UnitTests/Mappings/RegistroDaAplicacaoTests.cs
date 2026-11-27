@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 using Unifesspa.UniPlus.Selecao.Application.Services.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services.ListagemDeInscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services.NotasDoEnem;
+using Unifesspa.UniPlus.Selecao.Application.Services.Rascunhos.Descricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 
 public sealed class RegistroDaAplicacaoTests
@@ -49,6 +50,17 @@ public sealed class RegistroDaAplicacaoTests
     {
         ServiceCollection servicos = CriarServicos();
         ServiceDescriptor registro = servicos.Should().ContainSingle(item => item.ServiceType == tipo).Subject;
+        registro.Lifetime.Should().Be(ServiceLifetime.Scoped);
+    }
+
+    [Theory]
+    [InlineData(typeof(DescricaoDeMunicipiosDeProva))]
+    [InlineData(typeof(DescricaoDePesosPorAreaDoEnem))]
+    public void AddSelecaoApplication_DescricaoDoRascunhoExportado_RegistraComoDescricaoDeCadastroDeEscopo(Type descricao)
+    {
+        ServiceCollection servicos = CriarServicos();
+        ServiceDescriptor registro = servicos.Should()
+            .ContainSingle(item => item.ServiceType == typeof(IDescricaoDeCadastro) && item.ImplementationType == descricao).Subject;
         registro.Lifetime.Should().Be(ServiceLifetime.Scoped);
     }
 

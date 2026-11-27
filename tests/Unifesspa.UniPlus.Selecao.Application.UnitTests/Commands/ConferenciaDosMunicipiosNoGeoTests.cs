@@ -17,7 +17,7 @@ public sealed class ConferenciaDosMunicipiosNoGeoTests
     public async Task ConferirAsync_SemMunicipios_NaoConsultaGeo()
     {
         ConferenciaDosMunicipiosNoGeo conferencia = Criar();
-        (await conferencia.ConferirAsync(null, CancellationToken.None)).Value.Should().Be(MunicipiosConferidosNoGeo.Nenhum);
+        (await conferencia.ConferirAsync((DeclaracaoDaProvaPresencial?)null, CancellationToken.None)).Value.Should().Be(MunicipiosConferidosNoGeo.Nenhum);
         (await conferencia.ConferirAsync(Declaracao(false), CancellationToken.None)).Value.Should().Be(MunicipiosConferidosNoGeo.Nenhum);
         (await conferencia.ConferirAsync(Declaracao(true), CancellationToken.None)).Value.Should().Be(MunicipiosConferidosNoGeo.Nenhum);
         await _geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
@@ -77,6 +77,33 @@ public sealed class ConferenciaDosMunicipiosNoGeoTests
         Result<MunicipiosConferidosNoGeo> resultado = await Criar().ConferirAsync(declaracao, CancellationToken.None);
         ConferenciaDaProvaPresencial.Conferir(declaracao, resultado.Value!, 1).Select(static recusa => recusa.Error.Code)
             .Should().Equal(ProvaPresencialErrorCodes.MunicipioNaoConferidoNoGeo, ProvaPresencialErrorCodes.MunicipiosAcimaDoLimite);
+    }
+
+    [Fact]
+    public async Task ConferirAsync_ListaDeMunicipios_ConsultaEmOrdemSemOlharADeclaracaoNemOLimite()
+    {
+        _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+        _geo.ConferirMunicipioAsync("1508159", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Xinguara"));
+        MunicipioDeProva[] municipios = [new("1504208", "PA", null, 0), new("1508159", "PA", null, 1)];
+        Result<MunicipiosConferidosNoGeo> resultado = await Criar().ConferirAsync(municipios, CancellationToken.None);
+        resultado.Value!.NomeConferido("1504208").Should().Be("Marabá");
+        resultado.Value.NomeConferido("1508159").Should().Be("Xinguara");
+        Received.InOrder(() =>
+        {
+            _ = _geo.ConferirMunicipioAsync("1504208", "PA", CancellationToken.None);
+            _ = _geo.ConferirMunicipioAsync("1508159", "PA", CancellationToken.None);
+        });
+    }
+
+    [Fact]
+    public async Task ConferirAsync_ListaDeMunicipiosComGeoIndisponivel_InterrompeComErro()
+    {
+        DomainError erro = new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível");
+        _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Failure(erro));
+        MunicipioDeProva[] municipios = [new("1504208", "PA", null, 0), new("1508159", "PA", null, 1)];
+        Result<MunicipiosConferidosNoGeo> resultado = await Criar().ConferirAsync(municipios, CancellationToken.None);
+        resultado.Error.Should().Be(erro);
+        await _geo.DidNotReceive().ConferirMunicipioAsync("1508159", "PA", Arg.Any<CancellationToken>());
     }
 
     private ConferenciaDosMunicipiosNoGeo Criar() => new(_geo);

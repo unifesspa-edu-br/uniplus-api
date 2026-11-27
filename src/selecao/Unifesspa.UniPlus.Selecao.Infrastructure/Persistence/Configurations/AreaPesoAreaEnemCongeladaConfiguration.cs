@@ -58,11 +58,11 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
             .IsRequired()
             .HasComment("Rótulo oficial da área do ENEM, copiado junto do código.");
         builder.Property(a => a.Peso)
-            .HasPrecision(LimitesDoEnvelope.PrecisaoPesoAreaEnem, 4)
+            .HasPrecision(LimitesDoEnvelope.PrecisaoPesoAreaEnem, GrupoPesoAreaEnemCongelado.EscalaDoPesoEDoCorte)
             .IsRequired()
             .HasComment("Peso da área na média do grupo, copiado da resolução de Pesos por Área.");
         builder.Property(a => a.Corte)
-            .HasPrecision(LimitesDoEnvelope.PrecisaoCorteAreaEnem, 4)
+            .HasPrecision(LimitesDoEnvelope.PrecisaoCorteAreaEnem, GrupoPesoAreaEnemCongelado.EscalaDoPesoEDoCorte)
             .HasComment("Nota mínima da área (0 a 1000), copiada da resolução de Pesos por Área; nulo quando a área não tem corte.");
 
         builder.HasIndex(a => new { a.GrupoPesoAreaEnemCongeladoId, a.Codigo })

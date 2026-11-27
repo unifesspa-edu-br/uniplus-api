@@ -56,7 +56,7 @@
         },
         "nome": {
           "title": "Nome do município",
-          "description": "Nome do município no Geo, copiado na última publicação ou retificação; vazio antes da primeira. Campo só de leitura: ignorado na importação.",
+          "description": "Nome do município no Geo. Na exportação do rascunho é o do momento da exportação, omitido se o Geo não responde ou se há mais municípios distintos que o limite; na versão publicada é o nome congelado. Campo só de leitura: ignorado na importação.",
           "type": "string",
           "maxLength": 150,
           "readOnly": true

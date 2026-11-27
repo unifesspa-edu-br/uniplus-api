@@ -65,7 +65,7 @@
     },
     "quadroPesoAreaEnem": {
       "title": "Quadro de pesos por área do Enem",
-      "description": "Os pesos e cortes por área do Enem que a resolução fixa, copiados na exportação. Campo só de leitura: ignorado na importação, porque é congelado do catálogo pela resolução.",
+      "description": "Os pesos e cortes por área do Enem que a resolução fixa. Na exportação do rascunho vêm do cadastro no momento da exportação; na versão publicada, os congelados. Campo só de leitura: ignorado na importação, porque quem o define é a resolução.",
       "type": "array",
       "readOnly": true,
       "items": {

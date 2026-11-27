@@ -23,6 +23,8 @@ internal static class CamposDeContextoDoDocumento
     public const string TiposDeDeficiencia = "tiposDeDeficiencia";
     public const string BasesLegaisDaFada = "basesLegaisDaFada";
     public const string ParticipacoesDaReserva = "participacoesDaReserva";
+    public const string MunicipiosDeProva = "municipiosDeProva";
+    public const string PesosPorAreaDoEnem = "pesosPorAreaDoEnem";
 
     public static IReadOnlyList<CampoDeContexto> Todos { get; } =
     [
@@ -45,6 +47,8 @@ internal static class CamposDeContextoDoDocumento
         new("/atendimento/tiposDeficiencia/*", "tipoDeficienciaCodigo", TiposDeDeficiencia, ["tipoDeficienciaNome"]),
         new("/fada", "baseLegalCodigo", BasesLegaisDaFada, ["tipoInstrumento", "identificacao", "descricao", "municipios"]),
         new("/cadastroDeReserva/*", "participacaoDaReserva", ParticipacoesDaReserva, ["participacaoDaReservaRotulo"]),
+        new("/provaPresencial/municipios/*", "codigoIbge", MunicipiosDeProva, ["nome"], "uf"),
+        new("/classificacao", "resolucaoPesoAreaEnem", PesosPorAreaDoEnem, ["quadroPesoAreaEnem"]),
     ];
 
     public static IReadOnlyList<ListaDeCodigosDeContexto> ListasDeCodigos { get; } =

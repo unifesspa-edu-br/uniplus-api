@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoCongelado;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -39,17 +40,11 @@ internal static class SerializacaoDasVagas
         ["regraAjuste"] = configuracao.RegraAjuste is { } regraAjuste ? EscritaCanonica.SerializarReferenciaRegra(regraAjuste) : null,
         ["ajusteDoQuadro"] = SerializacaoDoQuadroDeVagas.SerializarAjusteDoQuadro(configuracao.AjusteDoQuadro),
         ["referenciaDemografica"] = configuracao.ReferenciaDemografica is { } referencia ? SerializarReferenciaDemografica(referencia) : null,
-        ["grupoAreaEnem"] = configuracao.GrupoAreaEnem is { } grupo ? SerializarGrupoAreaEnem(grupo) : null,
+        ["grupoAreaEnem"] = configuracao.GrupoAreaEnem is { } grupo ? AreasDoEnemNoDocumentoCongelado.Grupo(grupo) : null,
     };
 
     private static string? SerializarPercentual(decimal? percentual) =>
         percentual is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, EscritaCanonica.EscalaPadrao) : null;
-
-    internal static JsonObject SerializarGrupoAreaEnem(GrupoAreaEnemSnapshot grupo) => new()
-    {
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(grupo.Codigo),
-        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(grupo.Rotulo),
-    };
 
     private static JsonObject SerializarReferenciaDemografica(ReferenciaReservaDemograficaSnapshot referencia) => new()
     {

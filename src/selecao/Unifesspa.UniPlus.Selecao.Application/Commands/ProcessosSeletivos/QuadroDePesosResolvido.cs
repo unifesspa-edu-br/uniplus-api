@@ -14,6 +14,20 @@ internal sealed record QuadroDePesosResolvido(
 
     public static QuadroDePesosResolvido Recusado(string? informada, IReadOnlyList<FieldError> recusas) => new(informada, [], recusas);
 
+    /// <summary>A forma é conferida antes da busca, pois o banco recusa caracteres nulos.</summary>
+    public static async Task<QuadroDePesosResolvido> DaResolucaoAsync(
+        string resolucao, IPesoAreaEnemReader leitor, CancellationToken cancellationToken)
+    {
+        List<FieldError> recusas = ConfiguracaoClassificacao.ValidarResolucaoPesoAreaEnem(resolucao);
+        if (recusas.Count > 0)
+        {
+            return Recusado(resolucao, recusas);
+        }
+
+        ResolucaoPesoAreaEnemView? cadastrada = await leitor.ObterPorResolucaoAsync(resolucao, cancellationToken).ConfigureAwait(false);
+        return DaResolucaoCadastrada(resolucao, cadastrada);
+    }
+
     public static QuadroDePesosResolvido DaResolucaoCadastrada(string informada, ResolucaoPesoAreaEnemView? cadastrada) => cadastrada switch
     {
         null => Recusado(informada, [NaResolucao("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada",
