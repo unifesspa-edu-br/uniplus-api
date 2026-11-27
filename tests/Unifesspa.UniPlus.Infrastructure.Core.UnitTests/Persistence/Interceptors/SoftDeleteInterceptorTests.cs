@@ -246,41 +246,49 @@ public sealed class SoftDeleteInterceptorTests
     public void SavingChanges_DadoEntidadeComColecaoOwnedRemovida_EntaoPreservaOsItensDaColecao()
     {
         using ContextoTeste contexto = CriarContexto();
-        EntidadeComColecaoOwned entidade = new();
-        entidade.AdicionarItem("item-1");
-        entidade.AdicionarItem("item-2");
+        EntidadeComColecaoOwned entidade = EntidadeComDoisItens();
         contexto.EntidadesComColecaoOwned.Add(entidade);
         contexto.SaveChanges();
 
         contexto.EntidadesComColecaoOwned.Remove(entidade);
         contexto.SaveChanges();
+        contexto.ChangeTracker.Clear();
 
-        entidade.IsDeleted.Should().BeTrue();
         EntidadeComColecaoOwned? recarregada = contexto.EntidadesComColecaoOwned
             .Include(e => e.Itens)
             .FirstOrDefault(e => e.Id == entidade.Id);
-        recarregada.Should().NotBeNull();
-        recarregada!.Itens.Select(i => i.Valor).Should().BeEquivalentTo(["item-1", "item-2"],
-            "o soft-delete do principal não pode apagar fisicamente os itens da coleção owned");
+        ConferirItensPreservados(entidade, recarregada);
     }
 
     [Fact]
     public async Task SavingChangesAsync_DadoEntidadeComColecaoOwnedRemovida_EntaoPreservaOsItensDaColecao()
     {
         await using ContextoTeste contexto = CriarContexto();
-        EntidadeComColecaoOwned entidade = new();
-        entidade.AdicionarItem("item-1");
-        entidade.AdicionarItem("item-2");
+        EntidadeComColecaoOwned entidade = EntidadeComDoisItens();
         contexto.EntidadesComColecaoOwned.Add(entidade);
         await contexto.SaveChangesAsync();
 
         contexto.EntidadesComColecaoOwned.Remove(entidade);
         await contexto.SaveChangesAsync();
+        contexto.ChangeTracker.Clear();
 
-        entidade.IsDeleted.Should().BeTrue();
         EntidadeComColecaoOwned? recarregada = await contexto.EntidadesComColecaoOwned
             .Include(e => e.Itens)
             .FirstOrDefaultAsync(e => e.Id == entidade.Id);
+        ConferirItensPreservados(entidade, recarregada);
+    }
+
+    private static EntidadeComColecaoOwned EntidadeComDoisItens()
+    {
+        EntidadeComColecaoOwned entidade = new();
+        entidade.AdicionarItem("item-1");
+        entidade.AdicionarItem("item-2");
+        return entidade;
+    }
+
+    private static void ConferirItensPreservados(EntidadeComColecaoOwned removida, EntidadeComColecaoOwned? recarregada)
+    {
+        removida.IsDeleted.Should().BeTrue();
         recarregada.Should().NotBeNull();
         recarregada!.Itens.Select(i => i.Valor).Should().BeEquivalentTo(["item-1", "item-2"],
             "o soft-delete do principal não pode apagar fisicamente os itens da coleção owned");
