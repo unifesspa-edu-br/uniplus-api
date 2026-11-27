@@ -16,13 +16,13 @@ internal sealed record ConteudoLido(
     IReadOnlyList<(int Indice, ItemDoModelo Item)> Itens,
     IReadOnlyList<(int Indice, TermoDoModelo Termo)> Termos,
     IReadOnlyList<string> Pressupostos,
-    IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> Grupos,
+    GruposLidos Grupos,
     ConjuntoLidoDeDocumentos Documentos,
     bool PorInteiro)
 {
     public ConteudoDoModelo ParaConteudo() => new(
         Titulo, [.. Paginas.Select(static e => e.Pagina)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
-        [.. Grupos.Select(static g => g.Grupo)], Documentos.ParaConjunto());
+        [.. Grupos.Lidos.Select(static g => g.Grupo)], Documentos.ParaConjunto());
 
     /// <summary>
     /// As recusas do domínio contam as partes lidas; a parte que a leitura deixou de fora desloca as seguintes.
@@ -36,7 +36,7 @@ internal sealed record ConteudoLido(
             Lista("paginas", Paginas.Select(static e => e.Indice)),
             Lista("itens", Itens.Select(static e => e.Indice)),
             Lista("termos", Termos.Select(static e => e.Indice)),
-            Lista("grupos", Grupos.Select(static e => e.Indice)),
+            Lista("grupos", Grupos.Lidos.Select(static e => e.Indice)),
             Lista(ConjuntoDeDocumentosDoModelo.ListaDosDocumentos, Documentos.DocumentosExigidos.Select(static e => e.Indice)),
             Lista(ConjuntoDeDocumentosDoModelo.ListaDosGrupos, Documentos.GruposDeDocumentos.Select(static e => e.Indice)),
         ];
@@ -48,4 +48,17 @@ internal sealed record ConteudoLido(
 
     private static string NaPosicaoDaEntrada(string campo, ListaDaEntrada[] listas) =>
         listas.Select(l => l.NaPosicaoDaEntrada(campo)).FirstOrDefault(static c => c is not null) ?? campo;
+}
+
+/// <summary>
+/// Os grupos que a leitura aceitou, com a posição de cada um na entrada, e os campos que ela aceitou nos grupos que
+/// recusou: esses seguem só para a conferência no catálogo, e não fazem parte do conteúdo.
+/// </summary>
+internal sealed record GruposLidos(
+    IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> Lidos, IReadOnlyList<CampoDeGrupoNaoLido> CamposDeGruposNaoLidos);
+
+/// <summary>Um campo lido de um grupo que a leitura recusou, com a posição do grupo e a do campo na entrada.</summary>
+internal sealed record CampoDeGrupoNaoLido(int Grupo, int Posicao, ItemDoModelo Campo)
+{
+    public string Caminho => $"grupos[{Grupo}].subitens[{Posicao}]";
 }

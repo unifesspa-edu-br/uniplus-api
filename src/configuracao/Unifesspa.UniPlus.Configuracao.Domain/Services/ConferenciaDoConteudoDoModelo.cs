@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <c>Unifesspa.UniPlus.Regras</c>. As recusas acumulam (ADR-0125) na ordem das regras: o cabeçalho, a forma
 /// de cada página, item, grupo e termo, o teto de itens e os pressupostos; a estrutura pela declaração e o
 /// grafo de coleta só são conferidos sobre partes bem formadas e sobre o conteúdo inteiro, porque dependem
-/// de todas as partes.
+/// de todas as partes. O teto de itens e a unicidade dos termos contam o pedido inteiro: com parte recusada na
+/// leitura, é a leitura que os confere sobre o pedido.
 /// </summary>
 public static class ConferenciaDoConteudoDoModelo
 {
@@ -45,7 +46,7 @@ public static class ConferenciaDoConteudoDoModelo
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes,
         bool conteudoPorInteiro)
     {
-        List<FieldError> erros = ConferirPartesDoConteudo(declaracao, conteudo);
+        List<FieldError> erros = ConferirPartesDoConteudo(declaracao, conteudo, conteudoPorInteiro);
 
         // A estrutura depende da declaração, recusada no cadastro quando incompleta.
         return erros.Count > 0 || !conteudoPorInteiro || declaracao is not { } declarada
@@ -53,13 +54,14 @@ public static class ConferenciaDoConteudoDoModelo
             : ConferirEstruturaEGrafo(declarada, conteudo, derivacoes);
     }
 
-    private static List<FieldError> ConferirPartesDoConteudo(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo) =>
+    private static List<FieldError> ConferirPartesDoConteudo(
+        DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, bool conteudoPorInteiro) =>
     [
         .. conteudo.TextosNaoGravaveis(),
         .. FormaDoCabecalho.ValidarTitulo(conteudo.Titulo),
         .. ConferirFormaDasPaginas(conteudo),
-        .. ConferirCamposEGrupos(declaracao, conteudo),
-        .. ConferirFormaDosTermos(conteudo),
+        .. ConferirCamposEGrupos(declaracao, conteudo, conteudoPorInteiro),
+        .. ConferirFormaDosTermos(conteudo, conteudoPorInteiro),
         .. ConferirPressupostos(declaracao, conteudo),
         .. FormatoDosCodigosDoConteudo.Conferir(conteudo),
     ];
@@ -81,10 +83,15 @@ public static class ConferenciaDoConteudoDoModelo
             FormaDaPagina.Conferir(pagina.Codigo, pagina.Ordem, pagina.Tipo, pagina.Titulo, pagina.Descricao, pagina.Aviso, pagina.Exibicao is not null),
             $"paginas[{i}]"));
 
-    private static List<FieldError> ConferirCamposEGrupos(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo)
+    /// <summary>
+    /// O teto de itens só é conferido com o conteúdo por inteiro: com parte recusada na leitura, a leitura o confere
+    /// sobre o pedido, e os itens e campos recusados não estão aqui.
+    /// </summary>
+    private static List<FieldError> ConferirCamposEGrupos(DeclaracaoDoFormulario? declaracao, ConteudoDoModelo conteudo, bool conteudoPorInteiro)
     {
-        List<FieldError> excesso = FormaDoItem.ValidarQuantidade(
-            FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)));
+        List<FieldError> excesso = conteudoPorInteiro
+            ? FormaDoItem.ValidarQuantidade(FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)))
+            : [];
         return excesso.Count > 0
             ? excesso
             :
@@ -95,10 +102,16 @@ public static class ConferenciaDoConteudoDoModelo
             ];
     }
 
-    private static IEnumerable<FieldError> ConferirFormaDosTermos(ConteudoDoModelo conteudo) =>
+    /// <summary>
+    /// A unicidade dos termos só é conferida com o conteúdo por inteiro: com parte recusada na leitura, a
+    /// leitura a confere sobre o pedido, e os termos recusados não estão aqui.
+    /// </summary>
+    private static IEnumerable<FieldError> ConferirFormaDosTermos(ConteudoDoModelo conteudo, bool conteudoPorInteiro) =>
     [
         .. conteudo.Termos.SelectMany((termo, i) => NoCaminho(FormaDoTermo.ValidarFormaBasica(termo.Codigo, termo.Ordem), $"termos[{i}]")),
-        .. FormaDoTermo.ConferirUnicidade([.. conteudo.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]),
+        .. conteudoPorInteiro
+            ? FormaDoTermo.ConferirUnicidade([.. conteudo.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))])
+            : [],
     ];
 
     /// <summary>A forma de um campo do modelo, item ou campo de grupo, no caminho dele.</summary>

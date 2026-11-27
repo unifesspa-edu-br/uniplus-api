@@ -22,7 +22,7 @@ using Recusa = (string Campo, string Codigo, string Mensagem);
 
 /// <summary>
 /// A leitura do conteúdo do modelo pela forma das regras: acumula as recusas na ordem das partes
-/// (páginas, itens, termos, grupos, documentos) e guarda a posição de cada parte lida na entrada.
+/// (páginas, itens, termos, grupos, documentos), confere a repetição de termos sobre o pedido inteiro e guarda a posição de cada parte lida na entrada.
 /// </summary>
 public sealed class ConteudoLidoTests
 {
@@ -115,7 +115,7 @@ public sealed class ConteudoLidoTests
         lido.Paginas.Select(static e => e.Indice).Should().Equal(0, 3);
         lido.Itens.Select(static i => i.Indice).Should().Equal(0, 2);
         lido.Termos.Select(static t => t.Indice).Should().Equal(1);
-        lido.Grupos.Select(static g => g.Indice).Should().Equal(0, 2);
+        lido.Grupos.Lidos.Select(static g => g.Indice).Should().Equal(0, 2);
         lido.Documentos.DocumentosExigidos.Select(static d => d.Indice).Should().Equal(0, 3);
     }
 
@@ -235,7 +235,10 @@ public sealed class ConteudoLidoTests
         .WhenTypeIs<JsonElement>();
 
     private static Recusa[] RecusasEsperadas() =>
-        [.. RecusasDasPaginas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos()];
+        [.. RecusasDasPaginas(), .. RecusasDosItens(), .. RecusasDosTermos(), .. RecusasDosGrupos(), .. RecusasDosDocumentos(), .. RecusasDeTermoRepetido()];
+
+    private static Recusa[] RecusasDeTermoRepetido() =>
+        [("termos[2].codigo", TermoFormularioErrorCodes.CodigoDuplicado, "O código aparece em mais de um termo do formulário.")];
 
     private static PaginaDoFormularioInput[] PaginasRecusadas() =>
         [ElementoNulo<PaginaDoFormularioInput>(), EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 1).ComTitulo("Dados").ExibidaQuando(PredicadoSemCondicao).Construir()];
