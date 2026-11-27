@@ -79,6 +79,8 @@ A consulta de preflight passou a aceitar a data como opcional e derivá-la da me
 forma que o gate. Informá-la continua possível para processo em rascunho, que pode
 ainda não ter cronograma que a resolva.
 
+Emenda (2026-11-27): catálogos com vigência usam o dia civil do fuso da instituição, não o dia em UTC.
+
 O ruleset aplicável é a união das regras com
 `TipoProcessoCodigo = "TODOS_OS_TIPOS"` e das regras cujo código é exatamente o código congelado em `ProcessoSeletivo.TipoProcesso`.
 As duas partes obedecem a `VigenciaInicio <= dataReferencia < VigenciaFim`,
