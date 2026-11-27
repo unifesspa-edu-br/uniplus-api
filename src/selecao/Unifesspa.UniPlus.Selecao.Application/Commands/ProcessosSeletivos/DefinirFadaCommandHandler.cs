@@ -4,10 +4,12 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Fada;
 using Domain.ValueObjects;
-using Services.DocumentoDaConfiguracao;
 
 using Kernel.Results;
+
+using Services.DocumentoDaConfiguracao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -66,11 +68,9 @@ public static class DefinirFadaCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        if (command.TemConfiguracaoDoFada)
+        if (DeclaracaoDoFada.Recusa(aplica: false, command.TemConfiguracaoDoFada) is { } recusa)
         {
-            return Result.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.FadaNaoAplicaComConfiguracao,
-                "O processo que não aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) não pode ter a configuração do FADA."));
+            return Result.Failure(recusa);
         }
 
         return await DefinirESalvarAsync(processo, aplica: false, fada: null, unitOfWork, cancellationToken).ConfigureAwait(false);
