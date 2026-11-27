@@ -95,13 +95,14 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
         && certame.ProcessoSeletivoId != Guid.Empty
         && certame.AtoCriadorId != Guid.Empty
         && !string.IsNullOrWhiteSpace(nome)
+        && DocumentosPorAto(certame.EditaisPublicados) is { } documentosPorAto
             ? new CertameDaOrigem(
                 certame.ProcessoSeletivoId,
                 certame.AtoCriadorId,
                 nome,
                 NumeroDoEdital(certame.Periodo),
                 DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
-                DocumentosPorAto(certame.EditaisPublicados),
+                documentosPorAto,
                 situacao)
             : null;
 
@@ -110,26 +111,31 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
 
     /// <summary>
     /// Os documentos de cada ato divulgado do processo, pelo ato: o edital de cada versão e os atos que
-    /// não criam versão.
+    /// não criam versão. Edital sem a lista de documentos, que o contrato exige, deixa o certame fora do
+    /// contrato (resultado nulo); a lista de editais ausente é válida e não tem documento algum. O edital sem identificador do ato
+    /// também tem a lista conferida, mas não entra no resultado: não há a quem associar os documentos.
     /// </summary>
-    private static Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> DocumentosPorAto(
+    private static Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>? DocumentosPorAto(
         IReadOnlyList<EditalPublicadoDoCertamePayload?>? editais)
     {
         Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> porAto = [];
-
-        foreach (EditalPublicadoDoCertamePayload? edital in editais ?? [])
+        foreach (EditalPublicadoDoCertamePayload edital in (editais ?? []).OfType<EditalPublicadoDoCertamePayload>())
         {
-            if (edital is not null && edital.AtoId != Guid.Empty)
+            if (DocumentosDoEdital(edital) is not { } documentos)
             {
-                porAto[edital.AtoId] = DocumentosDoEdital(edital);
+                return null;
             }
+
+            porAto[edital.AtoId] = documentos;
         }
+
+        porAto.Remove(Guid.Empty);
 
         return porAto;
     }
 
-    private static IReadOnlyList<DocumentoDoEvento> DocumentosDoEdital(EditalPublicadoDoCertamePayload edital) =>
-        [.. (edital.Documentos ?? []).Select(ComoDocumento).OfType<DocumentoDoEvento>()];
+    private static IReadOnlyList<DocumentoDoEvento>? DocumentosDoEdital(EditalPublicadoDoCertamePayload edital) =>
+        edital.Documentos is { } documentos ? [.. documentos.Select(ComoDocumento).OfType<DocumentoDoEvento>()] : null;
 
     /// <summary>
     /// Documento sem nome, sem tipo de mídia, com tamanho negativo, papel desconhecido ou endereço

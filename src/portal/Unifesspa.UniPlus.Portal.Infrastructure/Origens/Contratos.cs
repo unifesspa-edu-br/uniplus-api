@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 
+using System.Text.Json.Serialization;
+
 using Unifesspa.UniPlus.Portal.Application.Certames;
 
 /// <summary>
@@ -39,7 +41,8 @@ internal sealed record DocumentoEditalDoCertamePayload(Uri? UrlDownload);
 
 /// <summary>
 /// O edital de uma versão divulgada: o ato que a criou e os documentos dele no acervo. Origem
-/// anterior ao campo não o envia, e item nulo ou incompleto é descartado na leitura.
+/// anterior ao campo não o envia. Edital nulo é descartado na leitura; edital sem a lista de
+/// documentos, que o contrato exige, deixa a origem indisponível.
 /// </summary>
 internal sealed record EditalPublicadoDoCertamePayload(
     Guid AtoId,
@@ -58,14 +61,17 @@ internal sealed record DocumentoDoAtoPayload(
 
 /// <summary>
 /// Os campos de um ato da consulta unificada (Publicações) que a Portal lê. O assinante não é
-/// declarado de propósito: dado pessoal que a página pública não usa não entra na Portal.
+/// declarado de propósito: dado pessoal que a página pública não usa não entra na Portal. Ano, data e
+/// indicador de congelamento são anuláveis para que a ausência fique visível: o contrato os exige, e o
+/// valor padrão do tipo (zero, data mínima, falso) nunca pode passar por valor recebido. O ano só
+/// vale como número: o padrão do leitor aceitaria o texto <c>"2026"</c>, que o contrato não admite.
 /// </summary>
 internal sealed record AtoNormativoPayload(
     Guid Id,
     string? TipoCodigo,
     string? TipoNome,
-    int Ano,
+    [property: JsonNumberHandling(JsonNumberHandling.Strict)] int? Ano,
     string? Numero,
-    DateOnly DataDoAto,
-    bool CongelaConfiguracao,
+    DateOnly? DataDoAto,
+    bool? CongelaConfiguracao,
     string? MotivoRetificacao);
