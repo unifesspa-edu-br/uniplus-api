@@ -71,7 +71,7 @@ public sealed class LeituraDaProvidenciaTests
 
         ListarProvidenciasResult resultado = await ProvidenciaQueryHandler.Handle(query, Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Diogo), CancellationToken.None);
 
-        resultado.Items.Should().ContainSingle().Which.Situacao.Should().Be("ABERTA");
+        resultado.Items.Should().ContainSingle().Which.Situacao.Codigo.Should().Be("ABERTA");
         verificador.Gravados.Single().Select(static r => r.ResourceId).Should().Equal(_item.Id);
         await _cenario.Providencias.Received(1).ListarPaginadoAsync(
             Arg.Is<FiltroDeProvidencias>(f => f.Situacao == SituacaoDaProvidencia.Aberta && f.Agora == ProvidenciaBuilder.Agora), "chave", null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());

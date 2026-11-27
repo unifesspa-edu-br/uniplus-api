@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -23,7 +25,7 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaDto dto = ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddMinutes(10), ProvidenciaBuilder.Diogo);
 
-        (dto.Situacao, dto.EncerramentoDaConcessao, dto.Concessao.Ativa).Should().Be(("PREJUDICADA", new EncerramentoDaConcessaoDto("REVOGADA", Agora.AddMinutes(5)), false));
+        (dto.Situacao.Codigo, dto.EncerramentoDaConcessao, dto.Concessao.Ativa).Should().Be(("PREJUDICADA", Encerramento(CausaDoEncerramento.Revogada, Agora.AddMinutes(5)), false));
         (dto.Fundamento, dto.Desfecho, dto.ImpedidoDeResponder).Should().Be((ProvidenciaBuilder.Fundamento, (DesfechoDaProvidenciaDto?)null, false));
     }
 
@@ -34,7 +36,7 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaDto dto = ProvidenciaMapping.ToDto(Item(cenario.Aberta(), cenario), Agora.AddHours(2), null);
 
-        (dto.Situacao, dto.EncerramentoDaConcessao).Should().Be(("PREJUDICADA", new EncerramentoDaConcessaoDto("VENCIDA", Agora.AddHours(1))));
+        (dto.Situacao.Codigo, dto.EncerramentoDaConcessao).Should().Be(("PREJUDICADA", Encerramento(CausaDoEncerramento.Vencida, Agora.AddHours(1))));
     }
 
     [Fact(DisplayName = "O item da fila não traz o fundamento nem o motivo do desfecho, e marca quem lê se está impedido")]
@@ -45,7 +47,7 @@ public sealed class ProvidenciaMappingTests
 
         ProvidenciaResumoDto resumo = ProvidenciaMapping.ToResumo(Item(p, cenario), Agora, ProvidenciaBuilder.Cecilia.Identidade);
 
-        (resumo.Situacao, resumo.Desfecho, resumo.ImpedidoDeResponder).Should().Be(("RESPONDIDA", new AtoDoDesfechoDto(Agora, new IdentidadeDto(ProvidenciaBuilder.Emissor, "diogo.souza", ProvidenciaBuilder.Diogo.Nome)), true));
+        (resumo.Situacao.Codigo, resumo.Desfecho, resumo.ImpedidoDeResponder).Should().Be(("RESPONDIDA", new AtoDoDesfechoDto(Agora, new IdentidadeDto(ProvidenciaBuilder.Emissor, "diogo.souza", ProvidenciaBuilder.Diogo.Nome)), true));
         resumo.EncerramentoDaConcessao.Should().BeNull();
     }
 
@@ -91,8 +93,45 @@ public sealed class ProvidenciaMappingTests
         ConcessaoMapping.EventosDaConcessao(cenario.Concessao, Agora.AddHours(4)).Select(static e => (e.Tipo.Codigo, e.Instante)).Should().Equal(
             ("CONCEDIDA", Agora.AddDays(-30)), ("VENCIDA", Agora.AddHours(1)), ("REVOGADA", Agora.AddHours(3)));
         ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddHours(4), null).EncerramentoDaConcessao
-            .Should().Be(new EncerramentoDaConcessaoDto("VENCIDA", Agora.AddHours(1)));
+            .Should().Be(Encerramento(CausaDoEncerramento.Vencida, Agora.AddHours(1)));
     }
+
+    [Fact(DisplayName = "O detalhe da providência aberta mostra o tipo, a situação e o escopo da instituição da concessão como código e rótulo")]
+    public void Detalhe_Aberta_MostraTipoSituacaoEEscopoComRotulo()
+    {
+        ProvidenciaBuilder cenario = new();
+
+        ProvidenciaDto dto = ProvidenciaMapping.ToDto(Item(cenario.Aberta(), cenario), Agora, null);
+
+        (dto.Tipo.Codigo, dto.Tipo.Rotulo, dto.Situacao.Codigo, dto.Situacao.Rotulo, dto.Concessao.Escopo.Tipo.Codigo, dto.Concessao.Escopo.Tipo.Rotulo)
+            .Should().Be(("RETIRADA", "Retirada do acesso", "ABERTA", "Aberta", "INSTITUICAO", "Instituição"));
+    }
+
+    [Fact(DisplayName = "O item da fila da providência de revisão mostra o tipo e a situação como código e rótulo")]
+    public void Resumo_Revisao_MostraTipoESituacaoComRotulo()
+    {
+        ProvidenciaBuilder cenario = new ProvidenciaBuilder().DoTipo("REVISAO");
+
+        ProvidenciaResumoDto resumo = ProvidenciaMapping.ToResumo(Item(cenario.Respondida(), cenario), Agora, null);
+
+        (resumo.Tipo.Codigo, resumo.Tipo.Rotulo, resumo.Situacao.Codigo, resumo.Situacao.Rotulo)
+            .Should().Be(("REVISAO", "Revisão do acesso", "RESPONDIDA", "Respondida"));
+    }
+
+    [Fact(DisplayName = "A causa do encerramento mostra o código e o rótulo")]
+    public void Detalhe_Prejudicada_MostraACausaComRotulo()
+    {
+        ProvidenciaBuilder cenario = new();
+        Providencia p = cenario.Aberta();
+        cenario.Concessao.Revogar(ProvidenciaBuilder.AtoDeDiogo(Agora.AddMinutes(5)), "Revogada pela revogação comum.");
+
+        EncerramentoDaConcessaoDto encerramento = ProvidenciaMapping.ToDto(Item(p, cenario), Agora.AddMinutes(10), null).EncerramentoDaConcessao!;
+
+        (encerramento.Causa.Codigo, encerramento.Causa.Rotulo).Should().Be(("REVOGADA", "Revogada"));
+    }
+
+    private static EncerramentoDaConcessaoDto Encerramento(CausaDoEncerramento causa, DateTimeOffset em) =>
+        new(CodigoComRotulo<CausaDoEncerramento>.De(causa), em);
 
     private static ProvidenciaComConcessao Item(Providencia p, ProvidenciaBuilder cenario) =>
         new(p, new ConcessaoDaProvidencia(cenario.Concessao, NomeDoPerfil.Reidratar(CenarioDaProvidencia.PerfilNome)));

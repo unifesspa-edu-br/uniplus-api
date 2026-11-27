@@ -111,7 +111,7 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
             && i.GetProperty("perfil").GetProperty("id").GetGuid() == perfil);
 
     private static async Task<string?> DecideAsync(Revisao revisao) =>
-        ItemSensivelDeLeandro(await LerAsync(revisao.Marlene, $"{RotaDasRevisoes}/{revisao.Id}"), revisao.Perfil).GetProperty("decide").GetString();
+        ItemSensivelDeLeandro(await LerAsync(revisao.Marlene, $"{RotaDasRevisoes}/{revisao.Id}"), revisao.Perfil).GetProperty("decide").GetProperty("codigo").GetString();
 
     private static Task<HttpResponseMessage> ConfirmarAsync(HttpClient decisor, Revisao revisao) =>
         EnviarAsync(decisor, HttpMethod.Post, $"{RotaDasRevisoes}/{revisao.Id}/itens/{revisao.ItemId}/confirmacao");

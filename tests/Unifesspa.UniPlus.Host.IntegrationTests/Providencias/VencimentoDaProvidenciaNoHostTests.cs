@@ -45,7 +45,7 @@ public sealed class VencimentoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         _relogio.Avancar(TimeSpan.FromHours(2));
         JsonElement lida = await ProvidenciaAsync(g.Diogo, providencia);
 
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "VENCIDA"));
+        (lida.GetProperty("situacao").GetProperty("codigo").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetProperty("codigo").GetString()).Should().Be(("PREJUDICADA", "VENCIDA"));
         lida.GetProperty("encerramentoDaConcessao").GetProperty("em").GetDateTimeOffset().Should().BeCloseTo(validaAte, TimeSpan.FromMilliseconds(1));
         (await LinhaAsync(providencia)).Should().Be(antes, "a situação derivada não grava nada");
         (await FilaDasProvidenciasAsync(g.Diogo, "?situacao=ABERTA")).Should().NotContain(providencia);

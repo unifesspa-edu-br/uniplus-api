@@ -1,13 +1,16 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
 /// <summary>Revisão periódica dos acessos na listagem, com a contagem do que falta decidir.</summary>
-/// <param name="Situacao"><c>em_andamento</c> ou <c>concluida</c>, derivada dos itens a cada leitura.</param>
+/// <param name="Situacao"><c>EM_ANDAMENTO</c> ou <c>CONCLUIDA</c>, derivada dos itens a cada leitura.</param>
 /// <param name="Pendentes">Itens sem decisão sobre concessão ainda ativa.</param>
 public sealed record RevisaoResumoDto(
     Guid Id,
     DateTimeOffset AbertaEm,
     IdentidadeDto AbertaPor,
-    string Situacao,
+    CodigoComRotulo<SituacaoDaRevisao> Situacao,
     int TotalDeItens,
     int Pendentes);
 
@@ -16,7 +19,7 @@ public sealed record RevisaoDeAcessosDto(
     Guid Id,
     DateTimeOffset AbertaEm,
     IdentidadeDto AbertaPor,
-    string Situacao,
+    CodigoComRotulo<SituacaoDaRevisao> Situacao,
     int TotalDeItens,
     int Pendentes,
     IReadOnlyList<ItemDaRevisaoDto> Itens);
@@ -37,8 +40,8 @@ public sealed record ItemDaRevisaoDto(
     PerfilResumoDto Perfil,
     EscopoDto Escopo,
     DateTimeOffset? ValidaAte,
-    string Decide,
-    string Situacao,
+    CodigoComRotulo<TipoDeGovernanca> Decide,
+    CodigoComRotulo<SituacaoDoItemDaRevisao> Situacao,
     IdentidadeDto? DecididoPor,
     DateTimeOffset? DecididoEm,
     bool EhDoLeitor);

@@ -90,7 +90,7 @@
             "type": "string"
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -205,6 +205,29 @@
             "description": "Uma entrada por viola\u00E7\u00E3o, quando a resposta re\u00FAne mais de uma ou quando alguma aponta um campo. A primeira \u00E9 a que descreve a resposta inteira."
           }
         }
+      },
+      "TipoDeEscopo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeEscopoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeEscopoCodigo": {
+        "enum": [
+          "UNIDADE",
+          "INSTITUICAO"
+        ],
+        "type": "string",
+        "description": "- \u0060UNIDADE\u0060: Unidade\n- \u0060INSTITUICAO\u0060: Institui\u00E7\u00E3o"
       },
       "UserProfileResponse": {
         "required": [

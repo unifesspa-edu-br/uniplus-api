@@ -1,5 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>Concessão de acesso como a API a expõe. Traz o nome de exibição de quem age, nunca o CPF.</summary>
 /// <param name="Versao">Número da versão do perfil a que a concessão está presa, e não o da em vigor; nulo no perfil de governança.</param>
 /// <param name="RevogadaPor">Quem revogou; nulo enquanto a concessão não foi revogada e na revogação pela revisão das concessões, que é do sistema.</param>
@@ -27,9 +31,9 @@ public sealed record IdentidadeDto(string Emissor, string ContaId, string? Nome 
 
 public sealed record PerfilResumoDto(Guid Id, string Nome);
 
-public sealed record EscopoDto(string Tipo, Guid? UnidadeId);
+public sealed record EscopoDto(CodigoComRotulo<TipoDeEscopo> Tipo, Guid? UnidadeId);
 
-public sealed record OrigemDto(string Tipo, Guid Id);
+public sealed record OrigemDto(CodigoComRotulo<TipoDeOrigem> Tipo, Guid Id);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/concessoes/{id}/revogacao</c>.</summary>
 /// <param name="Motivo">Obrigatório; fica na trilha.</param>

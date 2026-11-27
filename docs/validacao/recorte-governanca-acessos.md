@@ -135,7 +135,7 @@ enviar_pdf() {
   curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" --data-binary @"$PDF" "$1" \
     | tr -d '\r' | awk -F': ' 'tolower($1)=="etag"{gsub(/"/,"",$2); print $2}'
 }
-situacao_do_pedido() { api "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" >/dev/null; corpo -r .situacao; }
+situacao_do_pedido() { api "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" >/dev/null; corpo -r .situacao.codigo; }
 
 # Kafka lido de dentro do broker, pelo listener interno. O consumidor de linha de comando é só instrumento de teste.
 # O valor da mensagem é Avro (envelope do Confluent, com o schema-id nos 5 primeiros bytes). O consumidor de linha de
@@ -320,7 +320,7 @@ espera '2??' "" "5.1 cria o perfil e a versão 1"
 PERFIL_P=$(corpo -r .perfilId); VERSAO_P=$(corpo -r .versaoId); ETAG=$(enviar_pdf "$(corpo -r .urlDeEnvio)")
 api diogo.souza POST "/api/autorizacao/perfis/$PERFIL_P/versoes/$VERSAO_P/documento/confirmacao" "{\"etag\":\"$ETAG\"}"
 for i in $(seq 1 80); do api leandro.viana GET "/api/autorizacao/perfis/$PERFIL_P" >/dev/null
-  [ "$(corpo -r .versaoPendente.situacaoDoDocumento)" = verificado ] && break; sleep 3; done
+  [ "$(corpo -r .versaoPendente.situacaoDoDocumento.codigo)" = VERIFICADO ] && break; sleep 3; done
 
 api diogo.souza POST "/api/autorizacao/perfis/$PERFIL_P/versoes/$VERSAO_P/aprovacao" '{"etapa":"gestao_de_acessos"}'
 espera 422 uniplus.autorizacao.perfil.decisor_e_autor "5.1 quem criou a versão não a aprova"
@@ -364,7 +364,7 @@ espera 201 "" "5.3 pedido de Encarregado de dados"; PEDIDO_E=$(corpo -r .id)
 api isabella.figueiredo POST "/api/autorizacao/pedidos-de-concessao/$PEDIDO_E/anexos" "{\"tamanhoDoPdf\":$TAM}"
 ANEXO_E=$(corpo -r .id); ETAG=$(enviar_pdf "$(corpo -r .urlDeEnvio)")
 api isabella.figueiredo POST "/api/autorizacao/pedidos-de-concessao/$PEDIDO_E/anexos/$ANEXO_E/confirmacao" "{\"etag\":\"$ETAG\"}"
-for i in $(seq 1 80); do [ "$(situacao_do_pedido "$PEDIDO_E" isabella.figueiredo)" != aguardando_documento ] && break; sleep 3; done
+for i in $(seq 1 80); do [ "$(situacao_do_pedido "$PEDIDO_E" isabella.figueiredo)" != AGUARDANDO_DOCUMENTO ] && break; sleep 3; done
 api isabella.figueiredo POST "/api/autorizacao/pedidos-de-concessao/$PEDIDO_E/aceite" "{\"termoVersaoApresentadaId\":\"$TERMO\"}"
 api diogo.souza POST "/api/autorizacao/pedidos-de-concessao/$PEDIDO_E/aprovacoes"; espera 200 "" "5.3 gestor aprova a etapa funcional"
 # Leitura K10 (seção 6), aqui, antes da concessão: o Encarregado ainda não tem a permissão e lê por titularidade.
@@ -391,7 +391,7 @@ C_BETINA=$(conc_de "$REPRESENTANTE_ID" "$(conta_id_de betina.neves)")
 revogar "$C_BETINA" "$(email_de betina.neves)"
 espera 422 uniplus.autorizacao.concessao.ultimo_representante "5.4 revogação do último Representante recusada"
 corpo -r .detail                                                            # orienta a designar antes quem substitui
-api diogo.souza GET "/api/autorizacao/concessoes/$C_BETINA/trilha"; corpo '[.[].tipo]'   # sem "revogada"
+api diogo.souza GET "/api/autorizacao/concessoes/$C_BETINA/trilha"; corpo '[.[].tipo.codigo]'   # sem "REVOGADA"
 ```
 
 ## 6. Registro de acesso no tópico Kafka

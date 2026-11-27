@@ -92,8 +92,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
     private static async Task ConferirDesfechoAsync(HttpClient gestor, Guid pedido, string situacao, string desfecho)
     {
         JsonElement lido = await LerAsync(gestor, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be(situacao);
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be(desfecho);
+        lido.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be(situacao);
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetProperty("codigo").GetString().Should().Be(desfecho);
     }
 
     // O banco recusa gravar a troca do pedido enquanto a conferência roda; a restrição sai mesmo se ela falhar.

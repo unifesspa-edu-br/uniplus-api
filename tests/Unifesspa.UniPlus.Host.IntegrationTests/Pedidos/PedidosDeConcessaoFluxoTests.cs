@@ -36,7 +36,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
 
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        aprovado.GetProperty("situacao").GetString().Should().Be("APROVADO");
+        aprovado.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("APROVADO");
         Concessao concessao = (await ConcessoesAsync(Leandro, perfil)).Single();
         ConferirConcessaoDoPedido(concessao, id, unidade);
         aprovado.GetProperty("decisoes").EnumerateArray().Single().GetProperty("decisor").GetProperty("nome").GetString().Should().Be(Diogo.Nome);
@@ -104,11 +104,11 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirPrimeiraEtapaAsync(diogo, marlene, id, perfil);
         JsonElement protecao = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        protecao.GetProperty("situacao").GetString().Should().Be("APROVADO");
+        protecao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("APROVADO");
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorContaId.Should().Be(Marlene.ContaId.ToString());
         JsonElement[] decisoes = [.. protecao.GetProperty("decisoes").EnumerateArray()];
-        decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("GESTOR", "PROTECAO_DE_DADOS");
-        decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("SENSIVEL");
+        decisoes.Select(d => d.GetProperty("etapa").GetProperty("codigo").GetString()).Should().Equal("GESTOR", "PROTECAO_DE_DADOS");
+        decisoes[0].GetProperty("sensibilidadeAvaliada").GetProperty("codigo").GetString().Should().Be("SENSIVEL");
         (await ListarFilaAsync(marlene, "PROTECAO_DE_DADOS")).Should().NotContain(id);
     }
 
@@ -188,7 +188,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         JsonElement recusado = await CorpoAsync(
             await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "função não exige acesso a laudos" }), HttpStatusCode.OK);
 
-        recusado.GetProperty("situacao").GetString().Should().Be("RECUSADO");
+        recusado.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("RECUSADO");
         recusado.GetProperty("concessaoId").ValueKind.Should().Be(JsonValueKind.Null);
         (await ConcessoesAsync(Betina, perfil)).Should().BeEmpty();
         await ConferirRecusaNaTrilhaENasFilasAsync(betina, diogo, id);
@@ -223,7 +223,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
 
         JsonElement aceito = await CorpoAsync(await AceitarAsync(leandro, id), HttpStatusCode.OK);
-        aceito.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
+        aceito.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_GESTOR");
         aceito.GetProperty("beneficiario").GetProperty("nome").GetString().Should().Be(Leandro.Nome);
         aceito.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
@@ -279,8 +279,8 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
     {
         JsonElement gestor = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        gestor.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
-        gestor.GetProperty("etapaAtual").GetString().Should().Be("PROTECAO_DE_DADOS");
+        gestor.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_PROTECAO_DE_DADOS");
+        gestor.GetProperty("etapaAtual").GetProperty("codigo").GetString().Should().Be("PROTECAO_DE_DADOS");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty("Leandro ainda não tem a concessão");
         (await ListarFilaAsync(marlene, "PROTECAO_DE_DADOS")).Should().Contain(id);
         (await ListarFilaAsync(diogo, "GESTOR")).Should().NotContain(id);

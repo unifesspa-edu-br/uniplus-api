@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Depois da primeira designação, a instituição não fica sem nenhuma pessoa com concessão vigente de Representante do

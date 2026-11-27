@@ -85,13 +85,13 @@ renovar_token_do_executor() {
 executor_tem_perfil() {
     como "a leitura dos perfis do executor" "$TOKEN" GET "/api/profile/me" \
         | jq -e --arg n "$1" --arg u "$2" \
-            'any(.perfis[]; .nome == $n and (if $u == "" then .escopoTipo == "instituicao" else .unidadeId == $u end))' >/dev/null
+            'any(.perfis[]; .nome == $n and (if $u == "" then .escopoTipo.codigo == "INSTITUICAO" else .unidadeId == $u end))' >/dev/null
 }
 
 aguardar_documento_do_perfil() {
     local perfil="$1" token="$2" situacao="" fim=$((SECONDS + ESPERA_VERIFICACAO))
     while [ "$SECONDS" -lt "$fim" ]; do
-        situacao=$(como "a leitura do perfil" "$token" GET "/api/autorizacao/perfis/$perfil" | jq -r '.versaoPendente.situacaoDoDocumento // empty')
+        situacao=$(como "a leitura do perfil" "$token" GET "/api/autorizacao/perfis/$perfil" | jq -r '.versaoPendente.situacaoDoDocumento.codigo // empty')
         [ "$situacao" = "VERIFICADO" ] && return 0
         sleep 3
     done
@@ -100,7 +100,7 @@ aguardar_documento_do_perfil() {
 
 # A etapa em que a versão pendente do perfil espera decisão (vazia se não há versão pendente). $1=perfil
 etapa_pendente_do_perfil() {
-    detalhe_do_perfil_do_gestor "$1" | jq -r '.versaoPendente.etapaAtual // empty'
+    detalhe_do_perfil_do_gestor "$1" | jq -r '.versaoPendente.etapaAtual.codigo // empty'
 }
 
 # O segundo gestor aprova a versão depois do verificador. Se o perfil é protegido (traz dado pessoal), a versão ainda
@@ -133,7 +133,7 @@ detalhe_do_perfil_do_gestor() {
 retomar_versao_pendente() {
     local pendente
     pendente=$(jq -c '.versaoPendente // empty' <<< "$3")
-    case "$(jq -r '.situacaoDoDocumento // empty' <<< "$pendente")" in
+    case "$(jq -r '.situacaoDoDocumento.codigo // empty' <<< "$pendente")" in
         EM_VERIFICACAO | VERIFICADO) aprovar_versao_do_perfil "$1" "$(jq -r '.versaoId' <<< "$pendente")" "$2" ;;
         *) fail "o perfil '$2' existe sem versão em vigor e sem documento enviado. Cancele a versão pendente na tela de perfis ou recrie a base." ;;
     esac
@@ -181,7 +181,7 @@ atualizar_permissoes_do_perfil() {
     fi
     # O acréscimo abre revisão e bloqueia novos pedidos. Encerra-a, revogando as concessões não migradas;
     # o executor solicita a versão atual logo depois. Também permite retomar uma execução interrompida.
-    if jq -e '.revisaoDasConcessoes.situacao == "aberta"' <<< "$detalhe" >/dev/null; then
+    if jq -e '.revisaoDasConcessoes.situacao.codigo == "ABERTA"' <<< "$detalhe" >/dev/null; then
         como "o encerramento da revisão das concessões do perfil '$nome'" \
             "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" POST \
             "/api/autorizacao/perfis/$id/revisao-das-concessoes/encerramento" \
@@ -230,7 +230,7 @@ pedido_em_andamento_do_executor() {
     como "a lista dos pedidos de $ADMIN_USER" "$TOKEN" GET "/api/autorizacao/pedidos-de-concessao?fila=meus&situacao=AGUARDANDO_GESTOR&limit=100" \
         | jq -r --arg p "$1" --arg u "$2" --arg e "$email" --arg j "$JUSTIFICATIVA_DO_PEDIDO" \
             'first(.[] | select(.perfil.id == $p and (.escopo.unidadeId // "") == $u and (.beneficiario.email | ascii_downcase) == ($e | ascii_downcase)
-                                and .justificativa == $j and .situacao == "AGUARDANDO_GESTOR")) | .id // empty'
+                                and .justificativa == $j and .situacao.codigo == "AGUARDANDO_GESTOR")) | .id // empty'
 }
 
 # O executor pede o perfil para si e um gestor aprova. $1=perfil $2=unidade (vazio: instituição) $3=nome
@@ -245,7 +245,7 @@ pedir_e_aprovar() {
     fi
     gestor=$(gestor_que_decide) || fail "não foi possível escolher um gestor para aprovar o perfil '$nome'."
     situacao=$(como "a aprovação do pedido do perfil '$nome' por $gestor" "$(token_de "$gestor" "$SENHA_GESTORES")" POST \
-        "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" | jq -r '.situacao')
+        "/api/autorizacao/pedidos-de-concessao/$pedido/aprovacoes" "" | jq -r '.situacao.codigo')
     [ "$situacao" = "APROVADO" ] || fail "o pedido $pedido do perfil '$nome' ficou em '$situacao', não em 'aprovado'."
 }
 

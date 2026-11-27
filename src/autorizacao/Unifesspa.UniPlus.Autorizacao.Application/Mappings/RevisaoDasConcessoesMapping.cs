@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento da <see cref="RevisaoDasConcessoesDoPerfil"/> para a resposta: o resumo do perfil e a revisão com a lista.</summary>
 public static class RevisaoDasConcessoesMapping
@@ -46,7 +46,7 @@ public static class RevisaoDasConcessoesMapping
         return new ConcessaoDaRevisaoDto(
             concessao.Id,
             concessao.BeneficiarioNome,
-            concessao.EscopoTipo.Codigo(), concessao.UnidadeId,
+            CodigoComRotulo<TipoDeEscopo>.De(concessao.EscopoTipo), concessao.UnidadeId,
             concessao.ValidaAte,
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
             composicao.Acrescimo,

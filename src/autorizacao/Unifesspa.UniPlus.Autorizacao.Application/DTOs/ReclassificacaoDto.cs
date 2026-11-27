@@ -1,7 +1,15 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>Como a permissão mudou no catálogo: a classe e o escopo, de e para.</summary>
-public sealed record MudancaDaPermissaoDto(string ClassificacaoAnterior, string ClassificacaoNova, bool DeUnidadeAnterior, bool DeUnidadeNovo);
+public sealed record MudancaDaPermissaoDto(
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoAnterior,
+    CodigoComRotulo<ClassificacaoDeProtecao> ClassificacaoNova,
+    bool DeUnidadeAnterior,
+    bool DeUnidadeNovo);
 
 /// <summary>Um item da fila de uma etapa: o perfil e a permissão reclassificada, com as concessões que ainda aguardam a etapa.</summary>
 public sealed record ItemDaFilaDeReclassificacoesDto(
@@ -14,21 +22,25 @@ public sealed record ItemDaFilaDeReclassificacoesDto(
     int ConcessoesAguardando);
 
 /// <summary>A permissão como a versão a guardou.</summary>
-public sealed record PermissaoDaVersaoEmUsoDto(string Codigo, string Classificacao, bool DeUnidade);
+public sealed record PermissaoDaVersaoEmUsoDto(string Codigo, CodigoComRotulo<ClassificacaoDeProtecao> Classificacao, bool DeUnidade);
 
 /// <summary>Uma versão do perfil em uso, com todas as permissões e o caminho do documento instituidor.</summary>
 public sealed record VersaoEmUsoDto(
-    Guid Id, int Numero, string Situacao, IReadOnlyList<PermissaoDaVersaoEmUsoDto> Permissoes, string? LinkDoDocumento);
+    Guid Id,
+    int Numero,
+    CodigoComRotulo<SituacaoDaVersao> Situacao,
+    IReadOnlyList<PermissaoDaVersaoEmUsoDto> Permissoes,
+    string? LinkDoDocumento);
 
 /// <summary>Uma concessão suspensa pela reclassificação, com as etapas que a base dela exige e as já decididas.</summary>
 public sealed record ConcessaoSuspensaDto(
     Guid ConcessaoId,
     string? BeneficiarioNome,
-    string EscopoTipo,
+    CodigoComRotulo<TipoDeEscopo> EscopoTipo,
     Guid? UnidadeId,
     int? Versao,
-    IReadOnlyList<string> EtapasExigidas,
-    IReadOnlyList<string> EtapasDecididas,
+    IReadOnlyList<CodigoComRotulo<EtapaDaVersao>> EtapasExigidas,
+    IReadOnlyList<CodigoComRotulo<EtapaDaVersao>> EtapasDecididas,
     bool EhDoLeitor);
 
 /// <summary>O detalhe da reclassificação para quem a revê.</summary>
@@ -56,4 +68,11 @@ public sealed record DecisaoDaReclassificacaoDto(
 
 /// <summary>Uma divergência da governança para a tela.</summary>
 public sealed record DivergenciaDaGovernancaDto(
-    Guid Id, Guid PerfilId, string PerfilNome, string Codigo, string Tipo, string? De, string? Para, DateTimeOffset Instante);
+    Guid Id,
+    Guid PerfilId,
+    string PerfilNome,
+    string Codigo,
+    CodigoComRotulo<TipoDeDivergencia> Tipo,
+    string? De,
+    string? Para,
+    DateTimeOffset Instante);

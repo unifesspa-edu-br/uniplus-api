@@ -100,7 +100,7 @@ public sealed class AcessoEIsolamentoDaInstalacaoTests : InstalacaoTestBase
         // O handler da Seleção processou o resultado (não achou o arquivo): é o sinal de que a mensagem foi consumida.
         await AguardarLogAsync($"Resultado da verificação do arquivo {id} descartado");
         LerLog().Should().NotContain($"documento {id} da Autorização");
-        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("DOCUMENTO_EM_VERIFICACAO");
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("DOCUMENTO_EM_VERIFICACAO");
     }
 
     [Fact(DisplayName = "O resultado entregue à fila da Autorização não executa o handler da Seleção")]

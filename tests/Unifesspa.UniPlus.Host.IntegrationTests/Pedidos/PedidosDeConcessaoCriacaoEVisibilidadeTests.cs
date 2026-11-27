@@ -49,7 +49,7 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
         using HttpResponseMessage resposta = await CriarBrutoAsync(leandro, perfil, unidade, null);
 
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.Created);
-        corpo.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
+        corpo.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_GESTOR");
         corpo.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
         corpo.GetProperty("solicitante").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
     }

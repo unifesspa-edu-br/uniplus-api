@@ -35,7 +35,7 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
         respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent, await respostas[0].Content.ReadAsStringAsync());
         await ConferirCodigoAsync(respostas[1], HttpStatusCode.Conflict, "uniplus.autorizacao.providencia.concessao_nao_ativa");
         JsonElement lida = await ProvidenciaAsync(g.Diogo, providencia);
-        (lida.GetProperty("situacao").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
+        (lida.GetProperty("situacao").GetProperty("codigo").GetString(), lida.GetProperty("encerramentoDaConcessao").GetProperty("causa").GetProperty("codigo").GetString()).Should().Be(("PREJUDICADA", "REVOGADA"));
         (await LinhaAsync(providencia)).Estado.Should().Be("ABERTA");
     }
 

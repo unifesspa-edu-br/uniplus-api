@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Monta, pela fábrica do domínio, a concessão que o teste precisa como pré-condição. Sem ajuste, concede o perfil a

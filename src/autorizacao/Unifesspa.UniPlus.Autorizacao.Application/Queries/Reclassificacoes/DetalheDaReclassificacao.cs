@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -7,7 +8,6 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -77,9 +77,10 @@ public sealed class DetalheDaReclassificacao
     }
 
     internal static MudancaDaPermissaoDto Mudanca(ReclassificacaoDaPermissao r) => new(
-        Texto(r.ClassificacaoAnterior), Texto(r.ClassificacaoNova), r.DeUnidadeAnterior, r.DeUnidadeNovo);
-
-    internal static string Texto(ClassificacaoDeProtecao classificacao) => ClassificacoesDeProtecao.ParaTokenCanonico(classificacao);
+        CodigoComRotulo<ClassificacaoDeProtecao>.De(r.ClassificacaoAnterior),
+        CodigoComRotulo<ClassificacaoDeProtecao>.De(r.ClassificacaoNova),
+        r.DeUnidadeAnterior,
+        r.DeUnidadeNovo);
 
     // O documento instituidor é o da própria versão ou, na versão de remoção, o da proposta que ela herda.
     private static VersaoEmUsoDto Versao(Perfil perfil, VersaoDoPerfil versao)
@@ -90,9 +91,9 @@ public sealed class DetalheDaReclassificacao
         return new VersaoEmUsoDto(
             versao.Id,
             versao.Numero,
-            versao.Situacao.Codigo(),
+            CodigoComRotulo<SituacaoDaVersao>.De(versao.Situacao),
             [.. versao.Permissoes.OrderBy(static p => p.Codigo.Valor, StringComparer.Ordinal)
-                .Select(static p => new PermissaoDaVersaoEmUsoDto(p.Codigo.Valor, Texto(p.Classificacao), p.DeUnidade))],
+                .Select(static p => new PermissaoDaVersaoEmUsoDto(p.Codigo.Valor, CodigoComRotulo<ClassificacaoDeProtecao>.De(p.Classificacao), p.DeUnidade))],
             temDocumento ? $"/api/autorizacao/perfis/{perfil.Id:D}/versoes/{portadora:D}/documento" : null);
     }
 
@@ -103,11 +104,11 @@ public sealed class DetalheDaReclassificacao
         return new ConcessaoSuspensaDto(
             concessao.Id,
             concessao.BeneficiarioNome,
-            concessao.EscopoTipo.Codigo(),
+            CodigoComRotulo<TipoDeEscopo>.De(concessao.EscopoTipo),
             concessao.UnidadeId,
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
-            [.. reclassificacao.EtapasExigidas(suspensa.Item.Base).Select(static e => e.Codigo())],
-            [.. suspensa.Decisoes.Select(static d => d.Etapa.Codigo())],
+            [.. reclassificacao.EtapasExigidas(suspensa.Item.Base).Select(CodigoComRotulo<EtapaDaVersao>.De)],
+            [.. suspensa.Decisoes.Select(static d => CodigoComRotulo<EtapaDaVersao>.De(d.Etapa))],
             leitor is not null && concessao.Beneficiario.Equals(leitor));
     }
 }

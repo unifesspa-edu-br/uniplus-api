@@ -23882,7 +23882,7 @@
             "type": "string"
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -25686,6 +25686,29 @@
         ],
         "type": "string",
         "description": "Como o campo do formul\u00E1rio \u00E9 apresentado e respondido pelo candidato.\n\n- \u0060NUMERO\u0060: N\u00FAmero \u2014 Campo em que o candidato digita um n\u00FAmero inteiro.\n- \u0060SIM_OU_NAO\u0060: Sim ou n\u00E3o \u2014 Campo em que o candidato responde sim ou n\u00E3o.\n- \u0060ESCOLHA_UNICA\u0060: Escolha de um valor \u2014 Campo em que o candidato escolhe uma op\u00E7\u00E3o entre as oferecidas.\n- \u0060ESCOLHA_MULTIPLA\u0060: Escolha de v\u00E1rios valores \u2014 Campo em que o candidato escolhe uma ou mais op\u00E7\u00F5es entre as oferecidas.\n- \u0060TEXTO\u0060: Texto \u2014 Campo em que o candidato digita um texto, conferido pelo formato do dado.\n- \u0060DATA\u0060: Data \u2014 Campo em que o candidato informa uma data do calend\u00E1rio.\n- \u0060ENDERECO\u0060: Endere\u00E7o \u2014 Campo de endere\u00E7o completo, preenchido a partir da busca do CEP.\n- \u0060MUNICIPIO\u0060: Munic\u00EDpio \u2014 Campo em que o candidato escolhe o munic\u00EDpio entre os da unidade federativa j\u00E1 respondida."
+      },
+      "TipoDeEscopo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeEscopoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeEscopoCodigo": {
+        "enum": [
+          "UNIDADE",
+          "INSTITUICAO"
+        ],
+        "type": "string",
+        "description": "- \u0060UNIDADE\u0060: Unidade\n- \u0060INSTITUICAO\u0060: Institui\u00E7\u00E3o"
       },
       "TipoDeficienciaDto": {
         "required": [

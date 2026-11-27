@@ -78,7 +78,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
         JsonElement item = corpo.RootElement.GetProperty("perfis").EnumerateArray().Should().ContainSingle().Subject;
         item.GetProperty("concessaoId").GetGuid().Should().Be(institucional);
         item.GetProperty("perfilId").GetGuid().Should().Be(perfil);
-        item.GetProperty("escopoTipo").GetString().Should().Be("instituicao");
+        item.GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("INSTITUICAO");
         item.GetProperty("unidadeId").ValueKind.Should().Be(JsonValueKind.Null);
         item.GetProperty("validaAte").ValueKind.Should().Be(JsonValueKind.Null);
     }
@@ -95,7 +95,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
         using JsonDocument corpo = await ConsultarAsync(Leandro);
 
         JsonElement item = corpo.RootElement.GetProperty("perfis").EnumerateArray().Should().ContainSingle().Subject;
-        item.GetProperty("escopoTipo").GetString().Should().Be("unidade");
+        item.GetProperty("escopoTipo").GetProperty("codigo").GetString().Should().Be("UNIDADE");
         item.GetProperty("unidadeId").GetGuid().Should().Be(unidadeExtinta);
         item.GetProperty("unidadeSigla").ValueKind.Should().Be(JsonValueKind.Null);
         item.GetProperty("unidadeNome").ValueKind.Should().Be(JsonValueKind.Null);

@@ -156,7 +156,7 @@ public abstract partial class InstalacaoTestBase
     private protected static async Task AguardarSituacaoAsync(HttpClient client, Guid id, string situacao)
     {
         await AguardarAsync(
-            async () => (await LerAsync(client, $"{Rota}/{id}")).GetProperty("situacao").GetString() == situacao,
+            async () => (await LerAsync(client, $"{Rota}/{id}")).GetProperty("situacao").GetProperty("codigo").GetString() == situacao,
             $"a instalação {id} não chegou a {situacao}");
     }
 
@@ -354,7 +354,7 @@ public abstract partial class InstalacaoTestBase
         JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
         return [.. itens.EnumerateArray().Select(t => (
             t.GetProperty("autor").GetProperty("contaId").GetString()!,
-            t.GetProperty("resultado").GetString()!))];
+            t.GetProperty("resultado").GetProperty("codigo").GetString()!))];
     }
 
     private protected string LerLog()

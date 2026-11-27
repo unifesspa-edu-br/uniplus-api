@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
 /// <summary>
 /// Corpo do <c>POST /api/autorizacao/perfis</c>: o que a versão
 /// declara e o tamanho previsto do documento que a institui.
@@ -51,13 +54,14 @@ public sealed record EnvioDoDocumentoDto(
     Guid PerfilId,
     Guid VersaoId,
     Guid DocumentoId,
-    string Situacao,
+    CodigoComRotulo<SituacaoDoAnexo> Situacao,
     Uri UrlDeEnvio,
     string TipoDeMidia,
     DateTimeOffset ExpiraEm);
 
 /// <summary>Documento instituidor da versão depois da confirmação do envio.</summary>
-public sealed record DocumentoDaVersaoDto(Guid Id, Guid VersaoId, string Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
+public sealed record DocumentoDaVersaoDto(
+    Guid Id, Guid VersaoId, CodigoComRotulo<SituacaoDoAnexo> Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
 
 /// <summary>URL assinada de leitura de um documento verificado, de validade curta.</summary>
 public sealed record LeituraDoDocumentoDaVersaoDto(Uri Url, DateTimeOffset ExpiraEm);

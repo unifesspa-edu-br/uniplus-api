@@ -156,17 +156,17 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         (await ConcessoesAsync(Leandro, perfilId)).Should().ContainSingle().Which.VersaoId
             .Should().Be(reduzida.GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid());
         JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be("AGUARDANDO_GESTOR");
+        lido.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("AGUARDANDO_GESTOR");
         lido.GetProperty("versao").GetInt32().Should().Be(2);
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("VERSAO_ATUALIZADA");
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetProperty("codigo").GetString().Should().Be("VERSAO_ATUALIZADA");
     }
 
     private static async Task ConferirDevolucaoAsync(HttpClient betina, Guid pedido)
     {
         JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be("DEVOLVIDO");
+        lido.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("DEVOLVIDO");
         lido.GetProperty("versao").GetInt32().Should().Be(1);
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("DEVOLVIDO");
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetProperty("codigo").GetString().Should().Be("DEVOLVIDO");
     }
 
 }

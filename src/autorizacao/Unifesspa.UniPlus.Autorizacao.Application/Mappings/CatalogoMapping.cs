@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento do <see cref="CatalogoDaAplicacao"/> para as permissões agrupadas por módulo e por resource.</summary>
 public static class CatalogoMapping
@@ -23,5 +24,5 @@ public static class CatalogoMapping
         new(resource.Key, [.. resource.Select(Permissao)]);
 
     private static PermissaoDoCatalogoResponse Permissao(DefinicaoDePermissao definicao) =>
-        new(definicao.Codigo, definicao.Nome, definicao.Descricao, ValoresCanonicos.De(definicao.Requisito.Sensibilidade));
+        new(definicao.Codigo, definicao.Nome, definicao.Descricao, CodigoComRotulo<ClassificacaoDeProtecao>.De(definicao.Requisito.Sensibilidade));
 }

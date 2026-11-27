@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>A revisão das concessões do perfil, com a lista das concessões avaliadas.</summary>
 /// <param name="Situacao">
@@ -32,7 +33,7 @@ public sealed record RevisaoDasConcessoesDto(
 public sealed record ConcessaoDaRevisaoDto(
     Guid ConcessaoId,
     string? BeneficiarioNome,
-    string EscopoTipo,
+    CodigoComRotulo<TipoDeEscopo> EscopoTipo,
     Guid? UnidadeId,
     DateTimeOffset? ValidaAte,
     int? VersaoAtual,

@@ -1370,7 +1370,7 @@
             "type": "string"
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -1675,6 +1675,29 @@
             }
           }
         }
+      },
+      "TipoDeEscopo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeEscopoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeEscopoCodigo": {
+        "enum": [
+          "UNIDADE",
+          "INSTITUICAO"
+        ],
+        "type": "string",
+        "description": "- \u0060UNIDADE\u0060: Unidade\n- \u0060INSTITUICAO\u0060: Institui\u00E7\u00E3o"
       },
       "UserProfileResponse": {
         "required": [

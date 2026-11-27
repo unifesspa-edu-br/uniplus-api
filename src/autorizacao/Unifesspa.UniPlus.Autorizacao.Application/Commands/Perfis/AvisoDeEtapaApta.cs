@@ -50,7 +50,7 @@ public sealed class AvisoDeEtapaApta
         }
 
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        EtapaDaVersao etapa = CatalogoDe<EtapaDaVersao>.Obter(pendente!.EtapaAtual);
+        EtapaDaVersao etapa = CatalogoDe<EtapaDaVersao>.Obter(pendente!.EtapaAtual.Codigo);
         List<DestinatarioDoAviso> aprovadores = await _grupos.ListarAsync(GruposDaGovernanca.DaEtapa(etapa), cancellationToken).ConfigureAwait(false);
         PedidoDeAviso pedido = new(Modelo(perfil, versao, pendente, etapa), versao.Id, $"{versao.CicloDeAprovacao}:{etapa.Codigo()}", aprovadores, Excluidos(versao));
 

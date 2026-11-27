@@ -151,7 +151,7 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         desativacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await desativacao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
         using JsonDocument perfil = await LerAsync(diogo, id);
-        perfil.RootElement.GetProperty("governanca").GetString().Should().Be("GESTOR_DE_ACESSOS");
+        perfil.RootElement.GetProperty("governanca").GetProperty("codigo").GetString().Should().Be("GESTOR_DE_ACESSOS");
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("versaoId").ValueKind.Should().Be(JsonValueKind.Null);
         perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().BePositive();
         perfil.RootElement.GetProperty("situacaoDoAcesso").GetProperty("codigo").GetString().Should().Be("EM_VIGOR");

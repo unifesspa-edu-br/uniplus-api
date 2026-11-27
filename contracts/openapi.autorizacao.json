@@ -8150,7 +8150,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoAnexo"
           },
           "tamanhoDeclarado": {
             "type": "integer",
@@ -8180,7 +8180,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoAnexo"
           },
           "urlDeEnvio": {
             "type": "string",
@@ -8347,6 +8347,55 @@
           }
         }
       },
+      "CausaDoEncerramento": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CausaDoEncerramentoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "CausaDoEncerramentoCodigo": {
+        "enum": [
+          "REVOGADA",
+          "VENCIDA"
+        ],
+        "type": "string",
+        "description": "- \u0060REVOGADA\u0060: Revogada\n- \u0060VENCIDA\u0060: Vencida"
+      },
+      "ClassificacaoDeProtecao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ClassificacaoDeProtecaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ClassificacaoDeProtecaoCodigo": {
+        "enum": [
+          "PUBLICO",
+          "INTERNO",
+          "PESSOAL",
+          "IDENTIFICADOR",
+          "SENSIVEL"
+        ],
+        "type": "string",
+        "description": "Classifica\u00E7\u00E3o da prote\u00E7\u00E3o exigida para o tratamento de dados.\n\n- \u0060PUBLICO\u0060: P\u00FAblico \u2014 Dado que pode ser divulgado sem restri\u00E7\u00E3o.\n- \u0060INTERNO\u0060: Interno \u2014 Dado de acesso restrito \u00E0 institui\u00E7\u00E3o.\n- \u0060PESSOAL\u0060: Pessoal \u2014 Dado pessoal relacionado a uma pessoa identificada ou identific\u00E1vel.\n- \u0060IDENTIFICADOR\u0060: Identificador \u2014 Dado pessoal que identifica diretamente uma pessoa.\n- \u0060SENSIVEL\u0060: Sens\u00EDvel \u2014 Dado pessoal sens\u00EDvel, como informa\u00E7\u00E3o sobre sa\u00FAde."
+      },
       "ComposicaoEmVigorDto": {
         "required": [
           "versaoId",
@@ -8462,7 +8511,7 @@
             ]
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -8613,7 +8662,7 @@
             ]
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -8632,13 +8681,13 @@
           "etapasExigidas": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EtapaDaVersao"
             }
           },
           "etapasDecididas": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EtapaDaVersao"
             }
           },
           "ehDoLeitor": {
@@ -8953,10 +9002,10 @@
         "type": "object",
         "properties": {
           "etapa": {
-            "type": "string"
+            "$ref": "#/components/schemas/EtapaDaVersao"
           },
           "resultado": {
-            "type": "string"
+            "$ref": "#/components/schemas/ResultadoDaDecisao"
           },
           "nome": {
             "type": [
@@ -8987,13 +9036,13 @@
         "type": "object",
         "properties": {
           "etapa": {
-            "type": "string"
+            "$ref": "#/components/schemas/EtapaDoPedido"
           },
           "decisor": {
             "$ref": "#/components/schemas/IdentidadeDto"
           },
           "resultado": {
-            "type": "string"
+            "$ref": "#/components/schemas/ResultadoDaDecisao"
           },
           "motivo": {
             "type": [
@@ -9012,7 +9061,7 @@
             }
           },
           "sensibilidadeAvaliada": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "dispensa": {
             "type": [
@@ -9042,6 +9091,31 @@
           }
         }
       },
+      "DesfechoDaTrocaDeVersao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/DesfechoDaTrocaDeVersaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "DesfechoDaTrocaDeVersaoCodigo": {
+        "enum": [
+          "INALTERADO",
+          "VERSAO_ATUALIZADA",
+          "VOLTOU_AO_GESTOR",
+          "DEVOLVIDO"
+        ],
+        "type": "string",
+        "description": "- \u0060INALTERADO\u0060: Inalterado\n- \u0060VERSAO_ATUALIZADA\u0060: Vers\u00E3o atualizada\n- \u0060VOLTOU_AO_GESTOR\u0060: Voltou ao gestor\n- \u0060DEVOLVIDO\u0060: Devolvido"
+      },
       "DivergenciaDaGovernancaDto": {
         "required": [
           "id",
@@ -9070,7 +9144,7 @@
             "type": "string"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeDivergencia"
           },
           "de": {
             "type": [
@@ -9109,7 +9183,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoAnexo"
           },
           "tamanhoDeclarado": {
             "type": "integer",
@@ -9132,7 +9206,7 @@
         "type": "object",
         "properties": {
           "causa": {
-            "type": "string"
+            "$ref": "#/components/schemas/CausaDoEncerramento"
           },
           "em": {
             "type": "string",
@@ -9228,7 +9302,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoAnexo"
           },
           "urlDeEnvio": {
             "type": "string",
@@ -9251,7 +9325,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -9284,6 +9358,29 @@
         ],
         "type": "string",
         "description": "- \u0060GESTAO_DE_ACESSOS\u0060: Gest\u00E3o de acessos\n- \u0060PROTECAO_DE_DADOS\u0060: Prote\u00E7\u00E3o de dados"
+      },
+      "EtapaDoPedido": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/EtapaDoPedidoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "EtapaDoPedidoCodigo": {
+        "enum": [
+          "GESTOR",
+          "PROTECAO_DE_DADOS"
+        ],
+        "type": "string",
+        "description": "- \u0060GESTOR\u0060: Gestor\n- \u0060PROTECAO_DE_DADOS\u0060: Prote\u00E7\u00E3o de dados"
       },
       "EventoDaTrilhaDto": {
         "required": [
@@ -9447,7 +9544,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaInstalacao"
           },
           "numeroDoDocumento": {
             "type": "string"
@@ -9493,7 +9590,7 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaInstalacao"
           },
           "urlDeEnvio": {
             "type": "string",
@@ -9647,10 +9744,10 @@
             "format": "date-time"
           },
           "decide": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeGovernanca"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoItemDaRevisao"
           },
           "decididoPor": {
             "oneOf": [
@@ -9750,10 +9847,10 @@
         "type": "object",
         "properties": {
           "classificacaoAnterior": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "classificacaoNova": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "deUnidadeAnterior": {
             "type": "boolean"
@@ -9795,7 +9892,7 @@
         "type": "object",
         "properties": {
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeOrigem"
           },
           "id": {
             "type": "string",
@@ -9833,12 +9930,16 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoPedido"
           },
           "etapaAtual": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EtapaDoPedido"
+              }
             ]
           },
           "solicitante": {
@@ -9951,12 +10052,16 @@
             "format": "uuid"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoPedido"
           },
           "etapaAtual": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EtapaDoPedido"
+              }
             ]
           },
           "beneficiario": {
@@ -10012,7 +10117,7 @@
             "type": "string"
           },
           "escopoTipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "unidadeId": {
             "type": [
@@ -10073,13 +10178,17 @@
             "type": "boolean"
           },
           "governanca": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDeGovernanca"
+              }
             ]
           },
           "sensibilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "situacaoDoAcesso": {
             "$ref": "#/components/schemas/SituacaoDoAcessoDoPerfil"
@@ -10172,13 +10281,17 @@
             "type": "boolean"
           },
           "governanca": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDeGovernanca"
+              }
             ]
           },
           "sensibilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "situacaoDoAcesso": {
             "$ref": "#/components/schemas/SituacaoDoAcessoDoPerfil"
@@ -10227,15 +10340,19 @@
             "type": "string"
           },
           "escopo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDeEscopo"
           },
           "exigeAprovacaoDeProtecaoDeDados": {
             "type": "boolean"
           },
           "governanca": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TipoDeGovernanca"
+              }
             ]
           }
         }
@@ -10268,7 +10385,7 @@
             "type": "string"
           },
           "classificacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           },
           "deUnidade": {
             "type": "boolean"
@@ -10294,7 +10411,7 @@
             "type": "string"
           },
           "sensibilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           }
         }
       },
@@ -10313,7 +10430,7 @@
             "type": "string"
           },
           "sensibilidade": {
-            "type": "string"
+            "$ref": "#/components/schemas/ClassificacaoDeProtecao"
           }
         }
       },
@@ -10495,13 +10612,13 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDaProvidencia"
           },
           "fundamento": {
             "type": "string"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaProvidencia"
           },
           "abertaEm": {
             "type": "string",
@@ -10557,10 +10674,10 @@
             "format": "uuid"
           },
           "tipo": {
-            "type": "string"
+            "$ref": "#/components/schemas/TipoDaProvidencia"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaProvidencia"
           },
           "abertaEm": {
             "type": "string",
@@ -10862,6 +10979,59 @@
           }
         }
       },
+      "ResultadoDaDecisao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ResultadoDaDecisaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultadoDaDecisaoCodigo": {
+        "enum": [
+          "APROVADO",
+          "RECUSADO",
+          "PERFIL_ALTERADO",
+          "PRAZO_VENCIDO",
+          "TERMO_EXIGIDO"
+        ],
+        "type": "string",
+        "description": "- \u0060APROVADO\u0060: Aprovado\n- \u0060RECUSADO\u0060: Recusado\n- \u0060PERFIL_ALTERADO\u0060: Perfil alterado\n- \u0060PRAZO_VENCIDO\u0060: Prazo vencido\n- \u0060TERMO_EXIGIDO\u0060: Termo exigido"
+      },
+      "ResultadoDaTentativaDeInstalacao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/ResultadoDaTentativaDeInstalacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultadoDaTentativaDeInstalacaoCodigo": {
+        "enum": [
+          "ACEITA",
+          "CODIGO_ERRADO",
+          "EXPIRADA",
+          "SEM_PENDENCIA",
+          "JA_HAVIA_GESTOR",
+          "CODIGO_REENVIADO"
+        ],
+        "type": "string",
+        "description": "- \u0060ACEITA\u0060: Aceita\n- \u0060CODIGO_ERRADO\u0060: C\u00F3digo errado\n- \u0060EXPIRADA\u0060: Expirada\n- \u0060SEM_PENDENCIA\u0060: Sem pend\u00EAncia\n- \u0060JA_HAVIA_GESTOR\u0060: J\u00E1 havia gestor\n- \u0060CODIGO_REENVIADO\u0060: C\u00F3digo reenviado"
+      },
       "RetomadaDaSuspensaoDto": {
         "required": [
           "concluida",
@@ -10875,7 +11045,7 @@
           "etapasPendentes": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EtapaDaVersao"
             }
           }
         }
@@ -10996,7 +11166,7 @@
             "$ref": "#/components/schemas/IdentidadeDto"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaRevisao"
           },
           "totalDeItens": {
             "type": "integer",
@@ -11058,7 +11228,7 @@
             "$ref": "#/components/schemas/IdentidadeDto"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaRevisao"
           },
           "totalDeItens": {
             "type": "integer",
@@ -11142,6 +11312,50 @@
         "type": "string",
         "description": "- \u0060AGUARDANDO_DECISOES\u0060: Aguardando decis\u00E3o da gest\u00E3o\n- \u0060RETIDA\u0060: Retida\n- \u0060AGUARDANDO_PROTECAO_DE_DADOS\u0060: Aguardando prote\u00E7\u00E3o de dados\n- \u0060MIGRADA\u0060: Migrada\n- \u0060RECUSADA\u0060: Recusada\n- \u0060NAO_MIGRADA\u0060: N\u00E3o migrada\n- \u0060FORA_DA_LISTA\u0060: Fora da lista"
       },
+      "SituacaoDaInstalacao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaInstalacaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDaInstalacaoCodigo": {
+        "enum": [
+          "AGUARDANDO_DOCUMENTO",
+          "DOCUMENTO_EM_VERIFICACAO",
+          "DOCUMENTO_VERIFICADO",
+          "DOCUMENTO_RECUSADO",
+          "AGUARDANDO_CODIGO",
+          "CONFIRMADA",
+          "CANCELADA",
+          "EXPIRADA"
+        ],
+        "type": "string",
+        "description": "- \u0060AGUARDANDO_DOCUMENTO\u0060: Aguardando documento\n- \u0060DOCUMENTO_EM_VERIFICACAO\u0060: Documento em verifica\u00E7\u00E3o\n- \u0060DOCUMENTO_VERIFICADO\u0060: Documento verificado\n- \u0060DOCUMENTO_RECUSADO\u0060: Documento recusado\n- \u0060AGUARDANDO_CODIGO\u0060: Aguardando c\u00F3digo\n- \u0060CONFIRMADA\u0060: Confirmada\n- \u0060CANCELADA\u0060: Cancelada\n- \u0060EXPIRADA\u0060: Expirada"
+      },
+      "SituacaoDaProvidencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaProvidenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "SituacaoDaProvidenciaCodigo": {
         "enum": [
           "ABERTA",
@@ -11152,13 +11366,28 @@
         "type": "string",
         "description": "- \u0060ABERTA\u0060: Aberta\n- \u0060RESPONDIDA\u0060: Respondida\n- \u0060ATENDIDA\u0060: Atendida\n- \u0060PREJUDICADA\u0060: Prejudicada"
       },
+      "SituacaoDaRevisao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaRevisaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
       "SituacaoDaRevisaoCodigo": {
         "enum": [
           "EM_ANDAMENTO",
           "CONCLUIDA"
         ],
         "type": "string",
-        "description": "- \u0060EM_ANDAMENTO\u0060: Em Andamento\n- \u0060CONCLUIDA\u0060: Conclu\u00EDda"
+        "description": "- \u0060EM_ANDAMENTO\u0060: Em andamento\n- \u0060CONCLUIDA\u0060: Conclu\u00EDda"
       },
       "SituacaoDaRevisaoDasConcessoes": {
         "required": [
@@ -11184,6 +11413,33 @@
         "type": "string",
         "description": "- \u0060ABERTA\u0060: Aberta\n- \u0060ENCERRANDO\u0060: Em encerramento\n- \u0060ENCERRADA\u0060: Encerrada"
       },
+      "SituacaoDaVersao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDaVersaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDaVersaoCodigo": {
+        "enum": [
+          "PENDENTE",
+          "VIGENTE",
+          "ENCERRADA",
+          "CANCELADA",
+          "RECUSADA",
+          "EXPIRADA"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente\n- \u0060VIGENTE\u0060: Vigente\n- \u0060ENCERRADA\u0060: Encerrada\n- \u0060CANCELADA\u0060: Cancelada\n- \u0060RECUSADA\u0060: Recusada\n- \u0060EXPIRADA\u0060: Expirada"
+      },
       "SituacaoDoAcessoDoPerfil": {
         "required": [
           "codigo",
@@ -11207,6 +11463,71 @@
         ],
         "type": "string",
         "description": "Situa\u00E7\u00E3o do acesso do perfil, e n\u00E3o de cada concess\u00E3o: com o perfil em vigor, uma concess\u00E3o ainda pode n\u00E3o dar acesso por prazo vencido, revis\u00E3o das concess\u00F5es em andamento ou permiss\u00E3o suspensa por reclassifica\u00E7\u00E3o. A desativa\u00E7\u00E3o do perfil n\u00E3o altera a situa\u00E7\u00E3o.\n\n- \u0060SUSPENSO\u0060: Suspenso \u2014 H\u00E1 suspens\u00E3o aberta: nenhuma concess\u00E3o do perfil d\u00E1 acesso at\u00E9 a retomada.\n- \u0060EM_VIGOR\u0060: Em vigor \u2014 Sem suspens\u00E3o e com permiss\u00F5es valendo. O perfil de governan\u00E7a est\u00E1 sempre em vigor.\n- \u0060SEM_VERSAO_EM_VIGOR\u0060: Sem vers\u00E3o em vigor \u2014 Sem suspens\u00E3o e sem vers\u00E3o aprovada valendo."
+      },
+      "SituacaoDoAnexo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoAnexoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoAnexoCodigo": {
+        "enum": [
+          "AGUARDANDO_ENVIO",
+          "EM_VERIFICACAO",
+          "VERIFICADO",
+          "RECUSADO"
+        ],
+        "type": "string",
+        "description": "- \u0060AGUARDANDO_ENVIO\u0060: Aguardando envio\n- \u0060EM_VERIFICACAO\u0060: Em verifica\u00E7\u00E3o\n- \u0060VERIFICADO\u0060: Verificado\n- \u0060RECUSADO\u0060: Recusado"
+      },
+      "SituacaoDoItemDaRevisao": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoItemDaRevisaoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "SituacaoDoItemDaRevisaoCodigo": {
+        "enum": [
+          "PENDENTE",
+          "CONFIRMADA",
+          "REVOGADA",
+          "CONCESSAO_ENCERRADA"
+        ],
+        "type": "string",
+        "description": "- \u0060PENDENTE\u0060: Pendente\n- \u0060CONFIRMADA\u0060: Confirmada\n- \u0060REVOGADA\u0060: Revogada\n- \u0060CONCESSAO_ENCERRADA\u0060: Concess\u00E3o encerrada"
+      },
+      "SituacaoDoPedido": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/SituacaoDoPedidoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
       },
       "SituacaoDoPedidoCodigo": {
         "enum": [
@@ -11262,18 +11583,18 @@
             "format": "date-time"
           },
           "papelDeQuemSuspendeu": {
-            "type": "string"
+            "$ref": "#/components/schemas/EtapaDaVersao"
           },
           "etapasExigidasAgora": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EtapaDaVersao"
             }
           },
           "etapasDecididas": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EtapaDaVersao"
             }
           }
         }
@@ -11307,7 +11628,7 @@
             "format": "date-time"
           },
           "resultado": {
-            "type": "string"
+            "$ref": "#/components/schemas/ResultadoDaTentativaDeInstalacao"
           }
         }
       },
@@ -11342,6 +11663,124 @@
             ]
           }
         }
+      },
+      "TipoDaProvidencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDaProvidenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDaProvidenciaCodigo": {
+        "enum": [
+          "RETIRADA",
+          "REVISAO"
+        ],
+        "type": "string",
+        "description": "- \u0060RETIRADA\u0060: Retirada do acesso\n- \u0060REVISAO\u0060: Revis\u00E3o do acesso"
+      },
+      "TipoDeDivergencia": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeDivergenciaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeDivergenciaCodigo": {
+        "enum": [
+          "COMPOSICAO_FALTANTE",
+          "COMPOSICAO_EXCEDENTE",
+          "CLASSIFICACAO",
+          "ESCOPO"
+        ],
+        "type": "string",
+        "description": "- \u0060COMPOSICAO_FALTANTE\u0060: Composi\u00E7\u00E3o faltante\n- \u0060COMPOSICAO_EXCEDENTE\u0060: Composi\u00E7\u00E3o excedente\n- \u0060CLASSIFICACAO\u0060: Classifica\u00E7\u00E3o\n- \u0060ESCOPO\u0060: Escopo"
+      },
+      "TipoDeEscopo": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeEscopoCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeEscopoCodigo": {
+        "enum": [
+          "UNIDADE",
+          "INSTITUICAO"
+        ],
+        "type": "string",
+        "description": "- \u0060UNIDADE\u0060: Unidade\n- \u0060INSTITUICAO\u0060: Institui\u00E7\u00E3o"
+      },
+      "TipoDeGovernanca": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeGovernancaCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeGovernancaCodigo": {
+        "enum": [
+          "GESTOR_DE_ACESSOS",
+          "REPRESENTANTE_DO_CONTROLADOR",
+          "GESTOR_DE_PROTECAO_DE_DADOS"
+        ],
+        "type": "string",
+        "description": "- \u0060GESTOR_DE_ACESSOS\u0060: Gestor de acessos\n- \u0060REPRESENTANTE_DO_CONTROLADOR\u0060: Representante do controlador\n- \u0060GESTOR_DE_PROTECAO_DE_DADOS\u0060: Gestor de prote\u00E7\u00E3o de dados"
+      },
+      "TipoDeOrigem": {
+        "required": [
+          "codigo",
+          "rotulo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/TipoDeOrigemCodigo"
+          },
+          "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoDeOrigemCodigo": {
+        "enum": [
+          "PEDIDO",
+          "INSTALACAO"
+        ],
+        "type": "string",
+        "description": "- \u0060PEDIDO\u0060: Pedido\n- \u0060INSTALACAO\u0060: Instala\u00E7\u00E3o"
       },
       "TipoDoEventoDoHistoricoDaConcessao": {
         "required": [
@@ -11446,7 +11885,7 @@
             "format": "int32"
           },
           "desfecho": {
-            "type": "string"
+            "$ref": "#/components/schemas/DesfechoDaTrocaDeVersao"
           },
           "instante": {
             "type": "string",
@@ -11468,10 +11907,10 @@
             "format": "int32"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaVersao"
           },
           "etapa": {
-            "type": "string"
+            "$ref": "#/components/schemas/EtapaDaVersao"
           },
           "instante": {
             "type": "string",
@@ -11626,7 +12065,7 @@
             "format": "int32"
           },
           "situacao": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDaVersao"
           },
           "permissoes": {
             "type": "array",
@@ -11655,6 +12094,7 @@
           "criadaEm",
           "expiraEm",
           "etapaAtual",
+          "etapasExigidas",
           "exigeProtecaoDeDados",
           "acrescimo",
           "remocao",
@@ -11692,7 +12132,7 @@
             "format": "uuid"
           },
           "situacaoDoDocumento": {
-            "type": "string"
+            "$ref": "#/components/schemas/SituacaoDoAnexo"
           },
           "criadaEm": {
             "type": "string",
@@ -11703,7 +12143,13 @@
             "format": "date-time"
           },
           "etapaAtual": {
-            "type": "string"
+            "$ref": "#/components/schemas/EtapaDaVersao"
+          },
+          "etapasExigidas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaDaVersao"
+            }
           },
           "exigeProtecaoDeDados": {
             "type": "boolean"

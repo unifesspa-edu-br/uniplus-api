@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -146,7 +147,7 @@ public sealed class ContencaoPorSuspensao
             ? Result<RetomadaDaSuspensaoDto>.ValidationFailure(decisao.Errors)
             : Result<RetomadaDaSuspensaoDto>.Success(new RetomadaDaSuspensaoDto(
                 perfil.SuspensaoAberta is null,
-                [.. perfil.EtapasPendentesDaRetomada(_catalogo).Select(static e => e.Codigo())]));
+                [.. perfil.EtapasPendentesDaRetomada(_catalogo).Select(CodigoComRotulo<EtapaDaVersao>.De)]));
     }
 
     private sealed record PedidoDeSuspensao(Identidade Autor, EtapaDaVersao Papel, string? Motivo);

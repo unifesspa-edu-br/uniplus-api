@@ -31,6 +31,8 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public List<ConcessaoComAPermissao> ConcessoesComAPermissao { get; } = [];
 
+    public List<Guid> VersoesEmUso { get; } = [];
+
     public HashSet<Guid> VersoesComDocumentoLido { get; } = [];
 
     public Task<ResumoSha256?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) => Task.FromResult(Impressao);
@@ -64,7 +66,7 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
         Task.FromResult<IReadOnlyList<ConcessaoComAPermissao>>([.. ConcessoesComAPermissao]);
 
     public Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Guid>>([]);
+        Task.FromResult<IReadOnlyList<Guid>>([.. VersoesEmUso]);
 
     public Task<IReadOnlySet<Guid>> ListarVersoesComDocumentoLidoAsync(
         Identidade leitor, IReadOnlyCollection<VersaoDoPerfil> versoes, CancellationToken cancellationToken = default) =>

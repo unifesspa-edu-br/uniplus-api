@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Os recortes das concessões que valem, num só lugar para quem conta, avisa ou consulta seus titulares.</summary>
 internal static class RecortesDasConcessoes

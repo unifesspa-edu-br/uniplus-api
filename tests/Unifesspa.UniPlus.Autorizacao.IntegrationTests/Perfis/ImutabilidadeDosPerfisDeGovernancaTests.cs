@@ -39,7 +39,7 @@ public sealed class ImutabilidadeDosPerfisDeGovernancaTests : PerfilEndpointTest
         (await versao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
         (await desativacao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
         using JsonDocument perfil = await LerAsync(diogo, id);
-        perfil.RootElement.GetProperty("governanca").GetString().Should().Be(governanca);
+        perfil.RootElement.GetProperty("governanca").GetProperty("codigo").GetString().Should().Be(governanca);
         perfil.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
     }
 }

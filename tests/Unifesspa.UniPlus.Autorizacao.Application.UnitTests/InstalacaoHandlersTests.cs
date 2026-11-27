@@ -102,6 +102,14 @@ public sealed class InstalacaoHandlersTests
         unidade.Gravacoes.Should().Be(1);
     }
 
+    [Fact(DisplayName = "Iniciar responde com a situação Aguardando documento, como código e rótulo")]
+    public async Task Iniciar_Aceito_RespondeComASituacaoAguardandoDocumento()
+    {
+        Result<InstalacaoIniciadaDto> resultado = await IniciarAsync(Gestores(), new RepositorioComPendencia(null), new UnidadeDeTrabalho());
+
+        (resultado.Value!.Situacao.Codigo, resultado.Value.Situacao.Rotulo).Should().Be(("AGUARDANDO_DOCUMENTO", "Aguardando documento"));
+    }
+
     [Fact(DisplayName = "Gestor com e-mail fora do domínio institucional recusa o início, sem gravar nada")]
     public async Task Iniciar_GestorComEmailNaoInstitucional_Recusa()
     {

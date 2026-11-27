@@ -3,12 +3,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Respostas;
-using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CatalogoDoMapeamento;
@@ -24,7 +22,7 @@ public sealed class PerfilListadoMappingTests
         PerfilListadoDto dto = PerfilMapping.ToListadoDto(perfil, Catalogo);
 
         dto.Should().BeEquivalentTo(new PerfilListadoDto(
-            perfil.Id, perfil.Nome, perfil.Descricao, true, null, ValoresCanonicos.De(ClassificacaoDeProtecao.Interno), Esperada(SituacaoDoAcessoDoPerfil.EmVigor), true, null, null));
+            perfil.Id, perfil.Nome, perfil.Descricao, true, null, CodigoComRotulo<ClassificacaoDeProtecao>.De(ClassificacaoDeProtecao.Interno), Esperada(SituacaoDoAcessoDoPerfil.EmVigor), true, null, null));
     }
 
     [Fact(DisplayName = "O perfil com composição em vigor e sem proposta está em vigor e não tem pendente")]
@@ -110,7 +108,9 @@ public sealed class PerfilListadoMappingTests
     {
         Perfil perfil = PerfisDeTeste.DeGovernanca("Gestão de acessos", "Governa os acessos.", ["teste:itens:ler"], new DoublesDePerfis.CatalogoDeTeste());
 
-        PerfilMapping.ToListadoDto(perfil, Catalogo).Governanca.Should().Be(TipoDeGovernanca.GestorDeAcessos.Codigo());
+        CodigoComRotulo<TipoDeGovernanca>? governanca = PerfilMapping.ToListadoDto(perfil, Catalogo).Governanca;
+
+        (governanca!.Codigo, governanca.Rotulo).Should().Be(("GESTOR_DE_ACESSOS", "Gestor de acessos"));
     }
 
     [Fact(DisplayName = "O perfil desativado expõe o instante da desativação")]
@@ -130,8 +130,8 @@ public sealed class PerfilListadoMappingTests
 
         SuspensaoDoPerfilDto? suspensao = PerfilMapping.ToListadoDto(perfil, Catalogo).Suspensao;
 
-        suspensao!.PapelDeQuemSuspendeu.Should().Be(EtapaDaVersao.GestaoDeAcessos.Codigo());
-        suspensao.EtapasExigidasAgora.Should().Equal(EtapaDaVersao.GestaoDeAcessos.Codigo());
+        (suspensao!.PapelDeQuemSuspendeu.Codigo, suspensao.PapelDeQuemSuspendeu.Rotulo).Should().Be(("GESTAO_DE_ACESSOS", "Gestão de acessos"));
+        suspensao.EtapasExigidasAgora.Select(static e => e.Codigo).Should().Equal("GESTAO_DE_ACESSOS");
     }
 
     private static CodigoComRotulo<SituacaoDoAcessoDoPerfil> Esperada(SituacaoDoAcessoDoPerfil valor) => CodigoComRotulo<SituacaoDoAcessoDoPerfil>.De(valor);

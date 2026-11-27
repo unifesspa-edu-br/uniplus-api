@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;

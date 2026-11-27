@@ -191,7 +191,7 @@ public abstract class PedidosDeConcessaoTestBase
     }
 
     internal static async Task<string> SituacaoAsync(HttpClient client, Guid id) =>
-        (await LerAsync(client, $"{Rota}/{id}")).GetProperty("situacao").GetString()!;
+        (await LerAsync(client, $"{Rota}/{id}")).GetProperty("situacao").GetProperty("codigo").GetString()!;
 
     internal static async Task<string[]> TiposDaTrilhaAsync(HttpClient client, Guid id)
     {
@@ -435,7 +435,7 @@ public abstract class PedidosDeConcessaoTestBase
 
         using HttpResponseMessage confirmacao = await EnviarAsync(
             solicitante, HttpMethod.Post, $"{Rota}/{pedidoId}/anexos/{anexoId}/confirmacao", new { etag });
-        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("EM_VERIFICACAO");
+        (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("EM_VERIFICACAO");
         return anexoId;
     }
 
@@ -443,7 +443,7 @@ public abstract class PedidosDeConcessaoTestBase
     {
         JsonElement pedido = await LerAsync(client, $"{Rota}/{pedidoId}");
         return pedido.GetProperty("anexos").EnumerateArray()
-            .Single(a => a.GetProperty("id").GetGuid() == anexoId).GetProperty("situacao").GetString()!;
+            .Single(a => a.GetProperty("id").GetGuid() == anexoId).GetProperty("situacao").GetProperty("codigo").GetString()!;
     }
 
     private protected async Task<JsonElement> AguardarAvisoAsync(Persona destinatario, Guid pedidoId, string assunto)

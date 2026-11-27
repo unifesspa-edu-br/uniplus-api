@@ -27,7 +27,7 @@ public sealed class AberturaDaProvidenciaTests
     {
         (Result<ProvidenciaDto> resposta, IEnumerable<object> mensagens) = await AbrirAsync(Valida());
 
-        (resposta.Value!.Situacao, resposta.Value.Tipo, resposta.Value.ImpedidoDeResponder).Should().Be(("ABERTA", "RETIRADA", true));
+        (resposta.Value!.Situacao.Codigo, resposta.Value.Tipo.Codigo, resposta.Value.ImpedidoDeResponder).Should().Be(("ABERTA", "RETIRADA", true));
         mensagens.Should().HaveCount(3);
         Received.InOrder(() =>
         {

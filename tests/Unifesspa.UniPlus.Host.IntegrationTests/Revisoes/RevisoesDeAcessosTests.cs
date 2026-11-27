@@ -45,10 +45,10 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (_, JsonElement revisao) = await AbrirAsync(marlene);
 
         ItensDe(revisao, Betina).Should().BeEmpty("o perfil só interno não entra");
-        (ItemDe(revisao, Leandro).GetProperty("decide").GetString(), ItemDe(revisao, Leandro).GetProperty("situacao").GetString()).Should().Be((Representante, "PENDENTE"));
-        ItemDe(revisao, Marlene).GetProperty("decide").GetString().Should().Be("GESTOR_DE_ACESSOS");
-        ItemDe(revisao, Diogo).GetProperty("decide").GetString().Should().Be(Representante);
-        revisao.GetProperty("situacao").GetString().Should().Be("EM_ANDAMENTO");
+        (ItemDe(revisao, Leandro).GetProperty("decide").GetProperty("codigo").GetString(), ItemDe(revisao, Leandro).GetProperty("situacao").GetProperty("codigo").GetString()).Should().Be((Representante, "PENDENTE"));
+        ItemDe(revisao, Marlene).GetProperty("decide").GetProperty("codigo").GetString().Should().Be("GESTOR_DE_ACESSOS");
+        ItemDe(revisao, Diogo).GetProperty("decide").GetProperty("codigo").GetString().Should().Be(Representante);
+        revisao.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("EM_ANDAMENTO");
     }
 
     [Fact(DisplayName = "Só uma revisão fica em andamento, e só o Representante do controlador a abre")]
@@ -77,7 +77,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         JsonElement depois = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Diogo);
-        (depois.GetProperty("situacao").GetString(), depois.GetProperty("decididoPor").GetProperty("contaId").GetString()).Should().Be(("REVOGADA", Marlene.ContaId.ToString()));
+        (depois.GetProperty("situacao").GetProperty("codigo").GetString(), depois.GetProperty("decididoPor").GetProperty("contaId").GetString()).Should().Be(("REVOGADA", Marlene.ContaId.ToString()));
     }
 
     [Fact(DisplayName = "A revogação na revisão entra na trilha da concessão, e o item decidido não se decide de novo")]
@@ -108,7 +108,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
             HttpStatusCode.UnprocessableEntity,
             "concessao.minimo_de_gestores");
 
-        ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Diogo).GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Diogo).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("PENDENTE");
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -143,7 +143,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         await ConferirErroAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{rotaDoItem}/revogacao", new { motivo = Motivo }), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
 
         JsonElement item = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Leandro);
-        item.GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        item.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("PENDENTE");
         (await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha")).EnumerateArray()
             .Select(e => e.GetProperty("tipo").GetProperty("codigo").GetString()).Should().NotContain("REVOGADA");
     }
@@ -192,7 +192,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
 
         JsonElement[] itens = ItensDe(revisao, Marlene);
-        itens.Should().HaveCount(2).And.OnlyContain(i => i.GetProperty("decide").GetString() == "GESTOR_DE_ACESSOS");
+        itens.Should().HaveCount(2).And.OnlyContain(i => i.GetProperty("decide").GetProperty("codigo").GetString() == "GESTOR_DE_ACESSOS");
         JsonElement comum = itens.Single(i => i.GetProperty("perfil").GetProperty("nome").GetString()!.StartsWith("Análise", StringComparison.Ordinal));
         string rota = $"{RotaDasRevisoes}/{revisaoId}/itens/{comum.GetProperty("id").GetGuid()}/confirmacao";
         await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
@@ -210,7 +210,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         JsonElement pagina = await LerAsync(diogo, RotaDasRevisoes);
         JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
         JsonElement resumo = itens.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == revisaoId);
-        resumo.GetProperty("situacao").GetString().Should().Be("EM_ANDAMENTO");
+        resumo.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("EM_ANDAMENTO");
         resumo.GetProperty("totalDeItens").GetInt32().Should().Be(aberta.GetProperty("totalDeItens").GetInt32());
         resumo.GetProperty("pendentes").GetInt32().Should().Be(aberta.GetProperty("pendentes").GetInt32()).And.BePositive();
         using HttpClient leandro = Cliente(Leandro);
@@ -245,7 +245,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         await RevogarForaDaRevisaoAsync(item.GetProperty("concessaoId").GetGuid());
 
         JsonElement depois = await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}");
-        ItemDe(depois, Leandro).GetProperty("situacao").GetString().Should().Be("CONCESSAO_ENCERRADA");
+        ItemDe(depois, Leandro).GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("CONCESSAO_ENCERRADA");
         depois.GetProperty("pendentes").GetInt32().Should().Be(revisao.GetProperty("pendentes").GetInt32() - 1);
         await ConferirErroAsync(
             await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{item.GetProperty("id").GetGuid()}/confirmacao"), HttpStatusCode.Conflict, "revisao.concessao_nao_ativa");

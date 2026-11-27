@@ -167,7 +167,7 @@ public sealed class ContencaoPorSuspensaoTests
         Result<RetomadaDaSuspensaoDto> segunda = await Retomar(protecao, perfil, EtapaProtecao);
 
         primeira.Value!.Concluida.Should().BeFalse();
-        primeira.Value.EtapasPendentes.Should().Equal(EtapaProtecao);
+        primeira.Value.EtapasPendentes.Select(static e => (e.Codigo, e.Rotulo)).Should().Equal((EtapaProtecao, "Proteção de dados"));
         segunda.Value!.Concluida.Should().BeTrue();
         perfil.SuspensaoAberta.Should().BeNull();
     }

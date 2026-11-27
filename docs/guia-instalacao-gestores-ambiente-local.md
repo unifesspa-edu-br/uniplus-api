@@ -229,7 +229,7 @@ Aguarde o veredicto do verificador (segundos) e confira `situacao`:
 
 ```bash
 curl -s -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.uniplus.instalacao.v1+json" \
-  "$API/api/autorizacao/instalacao/$ID" | jq .situacao   # esperado: "documento_verificado"
+  "$API/api/autorizacao/instalacao/$ID" | jq .situacao.codigo   # esperado: "DOCUMENTO_VERIFICADO"
 ```
 
 > O `Accept` é o media type vendor da rota (`instalacao`, versão 1); sem ele a API também responde `200`.

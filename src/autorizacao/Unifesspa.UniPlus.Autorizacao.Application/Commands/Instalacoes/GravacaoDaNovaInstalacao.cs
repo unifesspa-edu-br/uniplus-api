@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -46,5 +46,10 @@ public sealed class GravacaoDaNovaInstalacao
     }
 
     private static InstalacaoIniciadaDto Iniciada(Instalacao instalacao, UrlDeEnvioDoPdf envio) =>
-        new(instalacao.Id, SituacaoDaInstalacao.AguardandoDocumento.Codigo(), envio.Endereco, EnvioDoPdf.TipoDeMidia, envio.ExpiraEm);
+        new(
+            instalacao.Id,
+            CodigoComRotulo<SituacaoDaInstalacao>.De(SituacaoDaInstalacao.AguardandoDocumento),
+            envio.Endereco,
+            EnvioDoPdf.TipoDeMidia,
+            envio.ExpiraEm);
 }

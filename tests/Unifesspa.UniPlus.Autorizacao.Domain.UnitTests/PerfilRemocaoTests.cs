@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class PerfilRemocaoTests
 {

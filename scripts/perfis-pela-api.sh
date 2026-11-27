@@ -76,7 +76,7 @@ situacao_do_perfil() {
         situacao_da_versao_pendente "$detalhe" "$2"
         return
     fi
-    jq -e '.ultimaVersaoEncerradaSemVigor.situacao == "EXPIRADA"' <<< "$detalhe" >/dev/null && echo ENCERRADA_EXPIRADA || echo ENCERRADA_POR_DECISAO
+    jq -e '.ultimaVersaoEncerradaSemVigor.situacao.codigo == "EXPIRADA"' <<< "$detalhe" >/dev/null && echo ENCERRADA_EXPIRADA || echo ENCERRADA_POR_DECISAO
 }
 
 # A situação de um perfil com versão em vigor: as permissões em vigor e as da versão pendente, se houver, devem ser as
@@ -93,7 +93,7 @@ situacao_do_perfil_em_vigor() {
 # A situação de um perfil sem versão em vigor e com versão pendente. $1=detalhe $2=permissões pedidas
 situacao_da_versao_pendente() {
     sem_diferenca "$(diferenca_de_permissoes "$1" "$2")" || { echo PENDENTE_DIFERENTE; return; }
-    case "$(jq -r '.versaoPendente.situacaoDoDocumento' <<< "$1")" in
+    case "$(jq -r '.versaoPendente.situacaoDoDocumento.codigo' <<< "$1")" in
         EM_VERIFICACAO | VERIFICADO) echo PENDENTE_COM_DOCUMENTO ;;
         *) echo PENDENTE_SEM_DOCUMENTO ;;
     esac

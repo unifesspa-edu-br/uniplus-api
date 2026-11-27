@@ -87,7 +87,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         await AprovarNasDuasEtapasAsync(diogo, marlene, id);
 
-        (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().EscopoTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeEscopo.Instituicao);
+        (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().EscopoTipo.Should().Be(Kernel.Domain.Enums.TipoDeEscopo.Instituicao);
         (await TiposDaTrilhaAsync(diogo, id)).Should().Equal(
             "PEDIDO_CRIADO", "ANEXO_ENVIADO", "ANEXO_VERIFICADO", "BENEFICIARIO_ACEITOU", "TERMO_ACEITO", "ANEXO_LIDO", "ANEXO_LIDO", "PEDIDO_APROVADO_NA_ETAPA", "PEDIDO_APROVADO_NA_ETAPA");
     }

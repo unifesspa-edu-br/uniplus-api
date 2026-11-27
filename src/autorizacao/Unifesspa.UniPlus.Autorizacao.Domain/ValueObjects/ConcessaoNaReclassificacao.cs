@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Uma etapa já decidida para a concessão: quem decidiu e o que decidiu.</summary>
 public sealed record DecisaoNaConcessao(EtapaDaVersao Etapa, Identidade Decisor, ResultadoDaLiberacao Resultado);

@@ -1,18 +1,16 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento da <see cref="RevisaoDeAcessos"/> para os DTOs e para os eventos da trilha da concessão.</summary>
 public static class RevisaoMapping
 {
-    public static readonly string EmAndamento = SituacaoDaRevisao.EmAndamento.Codigo();
-    public static readonly string Concluida = SituacaoDaRevisao.Concluida.Codigo();
-
     public static RevisaoResumoDto ToResumo(ResumoDaRevisao resumo)
     {
         ArgumentNullException.ThrowIfNull(resumo);
@@ -55,10 +53,15 @@ public static class RevisaoMapping
             revogada ? $"Revisão {item.RevisaoId}: acesso revogado." : $"Revisão {item.RevisaoId}: acesso mantido.");
     }
 
-    private static string Situacao(int pendentes) => pendentes > 0 ? EmAndamento : Concluida;
+    private static CodigoComRotulo<SituacaoDaRevisao> Situacao(int pendentes) =>
+        CodigoComRotulo<SituacaoDaRevisao>.De(pendentes > 0 ? SituacaoDaRevisao.EmAndamento : SituacaoDaRevisao.Concluida);
 
-    private static string Situacao(ItemDaRevisaoComConcessao item) =>
-        item.Item.Resultado?.Codigo() ?? (item.ConcessaoAtiva ? "PENDENTE" : "CONCESSAO_ENCERRADA");
+    private static SituacaoDoItemDaRevisao Situacao(ItemDaRevisaoComConcessao item) => item.Item.Resultado switch
+    {
+        ResultadoDoItemDaRevisao.Confirmada => SituacaoDoItemDaRevisao.Confirmada,
+        ResultadoDoItemDaRevisao.Revogada => SituacaoDoItemDaRevisao.Revogada,
+        _ => item.ConcessaoAtiva ? SituacaoDoItemDaRevisao.Pendente : SituacaoDoItemDaRevisao.ConcessaoEncerrada,
+    };
 
     // O item decidido mostra a governança gravada na decisão; o pendente, a que o decidiria agora.
     private static TipoDeGovernanca QuemDecide(ItemDaRevisao item, Concessao concessao, IReadOnlySet<Identidade> representantes) =>
@@ -74,10 +77,10 @@ public static class RevisaoMapping
             c.Id,
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, item.PerfilNome.Valor),
-            new EscopoDto(c.EscopoTipo.Codigo(), c.UnidadeId),
+            new EscopoDto(CodigoComRotulo<TipoDeEscopo>.De(c.EscopoTipo), c.UnidadeId),
             c.ValidaAte,
-            QuemDecide(i, c, representantes).Codigo(),
-            Situacao(item),
+            CodigoComRotulo<TipoDeGovernanca>.De(QuemDecide(i, c, representantes)),
+            CodigoComRotulo<SituacaoDoItemDaRevisao>.De(Situacao(item)),
             i.DecididoPor is { } p ? new IdentidadeDto(p.Emissor, p.ContaId, p.Nome) : null,
             i.DecididoEm,
             EhDoLeitor(c, leitor));

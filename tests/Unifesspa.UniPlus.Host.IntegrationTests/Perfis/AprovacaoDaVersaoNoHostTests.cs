@@ -94,7 +94,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         Envio versao = await PendenteVerificadaAsync(diogo, vigente.PerfilId, Consultar, Sensivel);
 
         JsonElement pendente = (await AprovarAsync(isabella, versao, EtapaGestao)).GetProperty("versaoPendente");
-        (pendente.GetProperty("etapaAtual").GetString(), pendente.GetProperty("decisoes").GetArrayLength()).Should().Be((EtapaProtecao, 1));
+        (pendente.GetProperty("etapaAtual").GetProperty("codigo").GetString(), pendente.GetProperty("decisoes").GetArrayLength()).Should().Be((EtapaProtecao, 1));
         await AprovarAsync(marlene, versao, EtapaProtecao);
 
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, versao.VersaoId)).Should().BeTrue();
@@ -145,7 +145,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
 
         JsonElement perfil = await CorpoAsync(recusa, HttpStatusCode.OK);
         perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetString().Should().Be("RECUSADA");
+        perfil.GetProperty("ultimaVersaoEncerradaSemVigor").GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("RECUSADA");
         perfil.GetRawText().Should().NotContain("O protocolo não cobre");
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, vigente.VersaoId)).Should().BeTrue();
     }

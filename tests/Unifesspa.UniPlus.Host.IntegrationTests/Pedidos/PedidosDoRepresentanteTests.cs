@@ -43,7 +43,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
 
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        aprovado.GetProperty("situacao").GetString().Should().Be("APROVADO");
+        aprovado.GetProperty("situacao").GetProperty("codigo").GetString().Should().Be("APROVADO");
         aprovado.GetProperty("admitePrazo").GetBoolean().Should().BeFalse("a designação de Representante não tem prazo");
         (await ConcessoesAsync(Marlene, Representante)).Should().ContainSingle();
         (await DetalheDaDispensaAsync(diogo, id)).Should().Contain("designacao_de_protecao_de_dados");

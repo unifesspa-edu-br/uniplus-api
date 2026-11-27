@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
+using Unifesspa.UniPlus.Application.Abstractions.Respostas;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento das versões do perfil e dos documentos que as instituem para os DTOs.</summary>
@@ -16,7 +16,11 @@ public static class VersaoMapping
         ArgumentNullException.ThrowIfNull(documento);
 
         return new DocumentoDaVersaoDto(
-            documento.Id, documento.VersaoId, documento.Situacao.Codigo(), documento.TamanhoDeclarado, documento.EnviadoEm);
+            documento.Id,
+            documento.VersaoId,
+            CodigoComRotulo<SituacaoDoAnexo>.De(documento.Situacao),
+            documento.TamanhoDeclarado,
+            documento.EnviadoEm);
     }
 
     internal static ComposicaoEmVigorDto VigenteDe(Perfil perfil, VersaoDoPerfil vigente, CatalogoDaAplicacao catalogo) =>
@@ -36,7 +40,10 @@ public static class VersaoMapping
     internal static UltimaVersaoEncerradaSemVigorDto? UltimaEncerradaSemVigorDe(Perfil perfil) =>
         perfil.UltimaVersaoEncerradaSemVigor is { } versao
             ? new UltimaVersaoEncerradaSemVigorDto(
-                versao.Numero, versao.Situacao.Codigo(), EtapaDeParada(versao).Codigo(), InstanteDoFim(versao))
+                versao.Numero,
+                CodigoComRotulo<SituacaoDaVersao>.De(versao.Situacao),
+                CodigoComRotulo<EtapaDaVersao>.De(EtapaDeParada(versao)),
+                InstanteDoFim(versao))
             : null;
 
     private static VersaoPendenteDto Pendente(
@@ -46,8 +53,10 @@ public static class VersaoMapping
 
         return new VersaoPendenteDto(
             pendente.Id, pendente.Numero, pendente.Nome, pendente.Descricao, Descrever(pendente.Codigos(), catalogo), pendente.Protocolo,
-            documento.Id, documento.Situacao.Codigo(), pendente.CriadaEm, pendente.ExpiraEm!.Value,
-            EtapaAtual(pendente, exige).Codigo(), exige, Descrever(acrescimo, catalogo),
+            documento.Id, CodigoComRotulo<SituacaoDoAnexo>.De(documento.Situacao), pendente.CriadaEm, pendente.ExpiraEm!.Value,
+            CodigoComRotulo<EtapaDaVersao>.De(EtapaAtual(pendente, exige)),
+            [.. SuspensaoDoPerfil.EtapasExigidas(exige).Select(CodigoComRotulo<EtapaDaVersao>.De)],
+            exige, Descrever(acrescimo, catalogo),
             Descrever((perfil.VersaoVigente?.Codigos() ?? []).Except(pendente.Codigos(), StringComparer.Ordinal), catalogo),
             [.. pendente.DecisoesDoCiclo().Select(DecisaoDe)],
             pendente.CriadorTemConcessao,
@@ -63,7 +72,12 @@ public static class VersaoMapping
     }
 
     private static DecisaoDaVersaoDto DecisaoDe(DecisaoDaVersao decisao) =>
-        new(decisao.Etapa.Codigo(), decisao.Resultado.Codigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
+        new(
+            CodigoComRotulo<EtapaDaVersao>.De(decisao.Etapa),
+            CodigoComRotulo<ResultadoDaDecisao>.De(decisao.Resultado),
+            decisao.DecisorNome,
+            decisao.DecisorTemConcessao,
+            decisao.Instante);
 
     private static EtapaDaVersao EtapaAtual(VersaoDoPerfil versao, bool exigeProtecaoDeDados) =>
         versao.AprovadaPelaGestao && exigeProtecaoDeDados ? EtapaDaVersao.ProtecaoDeDados : EtapaDaVersao.GestaoDeAcessos;

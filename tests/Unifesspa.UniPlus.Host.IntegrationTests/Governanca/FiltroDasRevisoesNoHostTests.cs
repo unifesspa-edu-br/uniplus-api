@@ -155,7 +155,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
             using HttpResponseMessage resposta = await client.GetAsync(pagina);
             JsonElement itens = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()).RootElement;
             itens.GetArrayLength().Should().BeLessThanOrEqualTo(2);
-            paginas.Add([.. itens.EnumerateArray().Select(static i => (i.GetProperty("id").GetGuid(), i.GetProperty("situacao").GetString()!))]);
+            paginas.Add([.. itens.EnumerateArray().Select(static i => (i.GetProperty("id").GetGuid(), i.GetProperty("situacao").GetProperty("codigo").GetString()!))]);
             pagina = resposta.Headers.TryGetValues("Link", out IEnumerable<string>? links) ? Proxima(links) : null;
         }
 
