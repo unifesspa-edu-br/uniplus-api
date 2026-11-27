@@ -24,6 +24,8 @@ public sealed class RotulosDosCodigosDeContratoNoEsquemaTests
     {
         ["motivo.schema.json#/properties/sentidoRotulo"] =
             "O sentido também é só de leitura e é escrito junto com o rótulo pelo cadastro de motivos.",
+        ["cadastro-de-reserva.schema.json#/properties/participacaoDaReservaRotulo"] =
+            "O rótulo da participação da reserva é escrito pelo campo de contexto do cadastro de reserva, não pela tabela de rótulos.",
         ["pesos-por-area.schema.json#/properties/grupoAreaEnemRotulo"] =
             "O quadro de pesos por área é inteiro só de leitura, congelado do catálogo.",
     };
