@@ -33,7 +33,7 @@ O pipeline `AddUniPlusOpenApi("modulo", config)` (ver `Infrastructure.Core/OpenA
 6. `CorpoJsonOperationTransformer` e `RespostaJsonOperationTransformer` — escrevem, nas actions marcadas com `[CorpoJson(componente)]` e `[RespostaJson(componente)]`, o corpo `application/json` do pedido e da resposta `200` como `$ref` para o componente de `components/schemas`. O de resposta roda antes do `VendorMediaTypeOperationTransformer`, que copia o schema para a vendor MIME.
 7. `EsquemaDoDocumentoNaOpenApi` (só no documento `selecao`, ligado em `SelecaoModuleRegistration`) — publica o esquema do documento de configuração como componentes. Os componentes saem de `ComponentesDoEsquema`, que segue os `$ref` a partir de `documento.schema.json` (vira componente só o que é alcançado, e uma colisão de nome falha a geração), e são escritos como o esquema os declara (`ComponenteDoEsquemaPublicado`): o modelo de schema da biblioteca não os representa fielmente (a `const` que não é texto vira texto e o esquema booleano `false` some), por isso o texto não passa pelo leitor dela.
 
-Endpoint runtime: `GET /openapi/{modulo}.json`.
+Endpoint runtime: `GET /openapi/{modulo}.json`. O nome é o do documento publicado, em minúsculas; outro nome responde 404 com `uniplus.requisicao.caminho_inexistente`.
 
 ## Drift check
 
