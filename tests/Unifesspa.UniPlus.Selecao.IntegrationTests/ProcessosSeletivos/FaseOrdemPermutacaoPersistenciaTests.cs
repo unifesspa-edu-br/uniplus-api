@@ -122,7 +122,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar($"fase_{codigo.ToLowerInvariant()}").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

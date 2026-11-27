@@ -32,8 +32,8 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 {
     private static FaseCronograma FaseDeHomologacao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -69,8 +69,8 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     }
 
     private static FaseCronograma FaseDeHomologacaoNaOrdem2() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), "HOMOLOGACAO_INSCRICOES", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

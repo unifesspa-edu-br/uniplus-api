@@ -11,7 +11,7 @@ internal static class FaseParaReferenciaBuilder
         FaseCronograma.Reidratar(
             ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, false, false, coleta, false)),
+            OrigensDoTipoDeFaseDeTeste.Da(Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, false, false, coleta, false),
             new DecisoesDeCronogramaDaFase(1, inicio, fim, null),
             new PublicacoesDaFase([], false, null), []);
 }

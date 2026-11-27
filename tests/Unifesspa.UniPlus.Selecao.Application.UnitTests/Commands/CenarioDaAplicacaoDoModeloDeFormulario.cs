@@ -57,9 +57,9 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     // Os formulários nascem ligados à fase do papel: o obrigatório sem fase não conta como da inscrição.
     private static FaseCronograma FaseDoCronograma(string codigo, int ordem, bool coletaInscricao) =>
         FaseCronograma.Criar(ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false,
-                PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: codigo, origemData: OrigemDataFase.NoEdital, agrupaEtapas: false,
+                permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 Ordem: ordem, Inicio: new DateTimeOffset(2026, 2, ordem, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, ordem, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
@@ -178,9 +178,9 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         FaseCronograma[] fases =
         [
             .. codigos.Select((codigo, i) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-                OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                    Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: coletaInscricao(codigo),
-                    ColetaSolicitacaoIsencao: false)),
+                OrigensDoTipoDeFaseDeTeste.Da(
+                    Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao(codigo),
+                    coletaSolicitacaoIsencao: false),
                 new DecisoesDeCronogramaDaFase(i + 1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!),

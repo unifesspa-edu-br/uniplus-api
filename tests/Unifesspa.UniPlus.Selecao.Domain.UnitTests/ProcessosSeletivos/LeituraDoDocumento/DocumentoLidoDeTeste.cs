@@ -105,7 +105,7 @@ internal static class DocumentoLidoDeTeste
         [.. lidos.Origem.PartesRecusadas.Select(static parte => parte.Causa.Error.Message)];
 
     private static OrigemCanonicaDaFase FaseCanonica(string codigo) =>
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
+        OrigensDoTipoDeFaseDeTeste.Da(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false);
 
     private static RegraDoCatalogoCitada Regra(TipoRegra tipo, string codigo) => new(tipo, ReferenciaRegra.De(codigo, "v1", Hash), default);
 }

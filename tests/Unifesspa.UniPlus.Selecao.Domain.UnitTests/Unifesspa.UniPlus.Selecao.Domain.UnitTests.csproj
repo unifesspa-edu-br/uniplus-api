@@ -35,7 +35,7 @@
     <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em
          cada projeto que precisa, em vez de copiado: três cópias divergiriam na primeira correção. -->
     <Compile Include="../Shared/CondicaoDeHomologacaoComDefeitoDeTeste.cs" Link="CondicaoDeHomologacaoComDefeitoDeTeste.cs" />
-    <Compile Include="../Shared/OrigensCanonicasDeTeste.cs" Link="OrigensCanonicasDeTeste.cs" />
+    <Compile Include="../Shared/OrigensDoTipoDeFaseDeTeste.cs" Link="OrigensDoTipoDeFaseDeTeste.cs" />
     <Compile Include="../Shared/ConfiguracaoPublicadaDeTeste.cs" Link="ConfiguracaoPublicadaDeTeste.cs" />
     <Compile Include="../Shared/ArquivosDeModeloDeTeste.cs" Link="ArquivosDeModeloDeTeste.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />

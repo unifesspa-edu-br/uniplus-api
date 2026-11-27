@@ -36,8 +36,8 @@ internal static class ProcessosDoPainelDeConformidade
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — SiSU", OrigemCandidatos.ImportacaoExterna);
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-                OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                    Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+                OrigensDoTipoDeFaseDeTeste.Da(
+                    Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!],
@@ -156,9 +156,9 @@ internal static class ProcessosDoPainelDeConformidade
     // coleta inscrição, embora a origem seja própria.
     private static FaseCronograma FaseQueProduzResultadoSemColetarInscricao() =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "RESULTADO_FINAL"),
@@ -166,9 +166,9 @@ internal static class ProcessosDoPainelDeConformidade
 
     private static FaseCronograma FaseConforme() =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-                ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                origemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true,
+                coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
@@ -176,8 +176,8 @@ internal static class ProcessosDoPainelDeConformidade
 
     private static FaseCronograma FaseDoResultadoDaClassificacao(int ordem, string codigo) =>
         FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-                Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)),
+            OrigensDoTipoDeFaseDeTeste.Da(
+                Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
             bancasRequeridas: [BancasDeTeste.DaHomologacaoDasInscricoesDaFase()]).Value!;

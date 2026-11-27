@@ -126,8 +126,8 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     private static FaseCronograma FaseQueHomologa(
         PublicacoesDaFase publicacoes, IReadOnlyList<BancaRequerida> bancas, bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false,
         Guid? faseCanonicaOrigemId = null, bool semUnidadeResponsavel = false) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
         publicacoes,
         bancas).Value!;

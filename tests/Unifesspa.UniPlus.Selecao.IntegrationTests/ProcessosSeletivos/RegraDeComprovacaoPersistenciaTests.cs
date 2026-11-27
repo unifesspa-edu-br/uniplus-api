@@ -38,8 +38,8 @@ public sealed class RegraDeComprovacaoPersistenciaTests : IClassFixture<Processo
             null)).Value!;
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;

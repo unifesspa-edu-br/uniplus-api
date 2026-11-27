@@ -22,10 +22,9 @@ public sealed class CronogramaComAMarcaDeMesmoMomentoTests
 
     private static FaseCronograma Fase(bool marcada, string codigo = "CEPS") => FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         new Guid("6666aaaa-0000-4000-8000-000000000002"),
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital,
-            AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false)
-        { Nome = "Inscrição" }),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            origemId: new Guid("4444dddd-0000-4000-8000-000000000002"), codigo: "INSCRICAO", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false).ComNome("Inscrição"),
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: null, Fim: null, UnidadeResponsavel: new UnidadeResponsavelSnapshot(new Guid("5555eeee-0000-4000-8000-000000000002"), codigo, "CEPS", "Centro de Processos Seletivos"))
         { NoMesmoMomentoDaAnterior = marcada },

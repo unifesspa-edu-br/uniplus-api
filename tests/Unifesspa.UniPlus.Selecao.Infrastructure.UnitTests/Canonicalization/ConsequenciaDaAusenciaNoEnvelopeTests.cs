@@ -55,7 +55,7 @@ public sealed class ConsequenciaDaAusenciaNoEnvelopeTests
     private static JsonObject Fase()
     {
         BancaRequerida banca = BancaRequerida.Criar(Chave(), Tipo(), [], consequenciaDaAusencia: ConsequenciaDoDescumprimento.EliminaDoProcesso);
-        OrigemCanonicaDaFase origem = OrigensCanonicasDeTeste.ComNome(new(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false));
+        OrigemCanonicaDaFase origem = OrigensDoTipoDeFaseDeTeste.Da(Guid.NewGuid(), "SELECAO", OrigemDataFase.NoEdital, false, false, false, false);
         FaseCronograma fase = FaseCronograma.Reidratar(ChaveLocal.Criar("fase").Value, Guid.NewGuid(), origem,
             new DecisoesDeCronogramaDaFase(1, null, null, null), new PublicacoesDaFase([], false, null), [banca]);
         return JsonNode.Parse(PerfilCanonicoV1.Instancia.Serializar(SerializacaoDoCronograma.SerializarFase(fase)))!.AsObject();

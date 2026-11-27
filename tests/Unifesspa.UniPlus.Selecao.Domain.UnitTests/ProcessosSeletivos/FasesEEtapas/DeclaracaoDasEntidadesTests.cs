@@ -72,7 +72,7 @@ public sealed class DeclaracaoDasEntidadesTests
 
         return FaseCronograma.Reidratar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
             Guid.CreateVersion7(),
-            OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false)),
+            OrigensDoTipoDeFaseDeTeste.Da(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
             new DecisoesDeCronogramaDaFase(1, Abertura, Abertura.AddDays(9), UnidadesDeTeste.Ceps),
             new PublicacoesDaFase([], false, null),
             [comCandidatosAtendidos]);

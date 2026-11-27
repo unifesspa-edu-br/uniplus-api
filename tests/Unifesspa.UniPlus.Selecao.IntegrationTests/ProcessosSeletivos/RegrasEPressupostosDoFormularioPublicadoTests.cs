@@ -149,9 +149,9 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
     }
 
     private static FaseCronograma FaseDeHabilitacaoDepoisDasDemais(ProcessoSeletivo processo) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             processo.CronogramaFases.Max(static f => f.Ordem) + 1, Inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
             UnidadeResponsavel: UnidadesDeTeste.Ceps),

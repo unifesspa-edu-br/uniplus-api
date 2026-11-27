@@ -65,9 +65,9 @@ internal static class ApoioDaPoliticaDeOrdenacao
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static FaseCronograma FaseMinima() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
-        OrigensCanonicasDeTeste.ComNome(new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false)),
+        OrigensDoTipoDeFaseDeTeste.Da(
+            origemId: Guid.CreateVersion7(), codigo: "INSCRICAO", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true,
+            coletaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelDaPublicacaoPrevista.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
