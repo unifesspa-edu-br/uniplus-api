@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoCongelado;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -81,7 +82,7 @@ internal static class SerializacaoDaClassificacao
             ["baseadoEmEnem"] = classificacao.BaseadoEmEnem,
             ["regrasEliminacao"] = SerializarRegrasDeEliminacao(classificacao.RegrasEliminacao),
             ["resolucaoPesoAreaEnem"] = SerializarResolucaoDosPesos(classificacao.ResolucaoPesoAreaEnem),
-            ["quadroPesoAreaEnem"] = SerializarQuadroPesoAreaEnem(classificacao.QuadroPesoAreaEnem),
+            ["quadroPesoAreaEnem"] = AreasDoEnemNoDocumentoCongelado.QuadroDePesos(classificacao.QuadroPesoAreaEnem),
         };
     }
 
@@ -107,27 +108,6 @@ internal static class SerializacaoDaClassificacao
 
     private static string? SerializarResolucaoDosPesos(string? resolucao) =>
         resolucao is null ? null : HashCanonicalComputer.NormalizeNfc(resolucao);
-
-    private static JsonArray SerializarQuadroPesoAreaEnem(IEnumerable<GrupoPesoAreaEnemCongelado> quadro) =>
-        new([.. quadro
-            .OrderBy(static g => HashCanonicalComputer.NormalizeNfc(g.GrupoAreaEnem.Codigo), StringComparer.Ordinal)
-            .Select(static g => (JsonNode)new JsonObject
-            {
-                ["grupoAreaEnem"] = SerializacaoDasVagas.SerializarGrupoAreaEnem(g.GrupoAreaEnem),
-                ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(g.BaseLegal),
-                ["areas"] = SerializarAreasDoGrupo(g),
-            })]);
-
-    private static JsonArray SerializarAreasDoGrupo(GrupoPesoAreaEnemCongelado grupo) =>
-        new([.. grupo.Areas
-            .OrderBy(static a => HashCanonicalComputer.NormalizeNfc(a.Codigo), StringComparer.Ordinal)
-            .Select(static a => (JsonNode)new JsonObject
-            {
-                ["codigo"] = HashCanonicalComputer.NormalizeNfc(a.Codigo),
-                ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
-                ["peso"] = HashCanonicalComputer.SerializeDecimalCanonical(a.Peso, EscritaCanonica.EscalaPadrao),
-                ["corte"] = a.Corte is { } corte ? HashCanonicalComputer.SerializeDecimalCanonical(corte, EscritaCanonica.EscalaPadrao) : null,
-            })]);
 
     private static JsonObject SerializarParametrosRegraEliminacao(ParametrosRegraEliminacao parametros) => parametros switch
     {

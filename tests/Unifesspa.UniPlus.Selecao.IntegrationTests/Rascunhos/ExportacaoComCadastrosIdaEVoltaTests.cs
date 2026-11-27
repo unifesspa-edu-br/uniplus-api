@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Rascunhos;
 
-using System.Net;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
@@ -27,8 +28,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
-
-using static ClienteDoRascunhoDeTeste;
 
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -48,15 +47,17 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
     public async Task ExportarEImportar_ComCadastros_PreservaEscolhasEReconstroiDescritivos()
     {
         string codigo = await SemearCadastrosAsync();
-        await _cliente.ConcederAsync(Conta, UnidadesDeTeste.Ceps.OrigemId);
-        Guid original = await CriarAsync(DocumentoCompleto(codigo));
-        JsonObject primeiro = await ExportarAsync(original);
+        await using WebApplicationFactory<HostAssemblyMarker> host = ClienteDoRascunhoDeTeste.HostComGeo(fixture, GeoDosMunicipiosDeProva());
+        ClienteDoRascunhoDeTeste cliente = new(fixture) { HostComGeoSubstituido = host };
+        await cliente.ConcederAsync(Conta, UnidadesDeTeste.Ceps.OrigemId);
+        Guid original = await cliente.CriarComDocumentoAsync(Conta, DocumentoCompleto(codigo));
+        JsonObject primeiro = await cliente.ExportarAsync(Conta, original);
         await ConferirDescritivosAsync(primeiro, codigo);
         new EsquemaDoDocumentoDaConfiguracao().Avaliar(primeiro).Should().BeEmpty();
-        Guid copia = await CriarAsync(AlterarDescritivos(primeiro));
+        Guid copia = await cliente.CriarComDocumentoAsync(Conta, AlterarDescritivos(primeiro));
         copia.Should().NotBe(original);
         await ConferirDocumentosGuardadosAsync(original, copia, codigo);
-        JsonObject segundo = await ExportarAsync(copia);
+        JsonObject segundo = await cliente.ExportarAsync(Conta, copia);
         CompararExportacoes(primeiro, original, segundo, copia);
     }
 
@@ -65,13 +66,13 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
     {
         CodigosSemeados codigos = await SemearCadastrosDosDescritivosAsync();
         await _cliente.ConcederAsync(Conta, UnidadesDeTeste.Ceps.OrigemId);
-        Guid original = await CriarAsync(DocumentoComDescritivos(codigos));
-        JsonObject primeiro = await ExportarAsync(original);
+        Guid original = await _cliente.CriarComDocumentoAsync(Conta, DocumentoComDescritivos(codigos));
+        JsonObject primeiro = await _cliente.ExportarAsync(Conta, original);
         await ConferirNomesDosCadastrosAsync(primeiro, codigos);
         new EsquemaDoDocumentoDaConfiguracao().Avaliar(primeiro).Should().BeEmpty();
-        Guid copia = await CriarAsync(AlterarDescritivosDosCadastros(primeiro));
-        JsonNode.DeepEquals(await DocumentoGuardadoAsync(copia), await DocumentoGuardadoAsync(original)).Should().BeTrue();
-        CompararExportacoes(primeiro, original, await ExportarAsync(copia), copia);
+        Guid copia = await _cliente.CriarComDocumentoAsync(Conta, AlterarDescritivosDosCadastros(primeiro));
+        JsonNode.DeepEquals(await _cliente.DocumentoGuardadoAsync(copia), await _cliente.DocumentoGuardadoAsync(original)).Should().BeTrue();
+        CompararExportacoes(primeiro, original, await _cliente.ExportarAsync(Conta, copia), copia);
     }
 
     private sealed record CodigosSemeados(string Condicao, string Recurso, string TipoDeficiencia, string BaseLegal);
@@ -175,20 +176,6 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         }
         """;
 
-    private async Task<Guid> CriarAsync(string documento)
-    {
-        using HttpResponseMessage resposta = await _cliente.EnviarAsync(Conta, HttpMethod.Post, Rota, documento, chave: Guid.CreateVersion7().ToString());
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        return (await Corpo(resposta)).GetProperty("id").GetGuid();
-    }
-
-    private async Task<JsonObject> ExportarAsync(Guid id)
-    {
-        using HttpResponseMessage resposta = await _cliente.EnviarAsync(Conta, HttpMethod.Get, $"{Rota}/{id}");
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-    }
-
     private async Task ConferirDescritivosAsync(JsonObject documento, string codigo)
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
@@ -202,8 +189,14 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         fase["unidadeResponsavelNome"]!.GetValue<string>().Should().Be(unidade.Nome);
         fase["unidadeResponsavelSigla"]!.GetValue<string>().Should().Be(unidade.Sigla);
         ConferirDocumentoEMotivo(documento, codigo);
-        documento["provaPresencial"]!["municipios"]!.AsArray().Should().OnlyContain(m => m!.AsObject().ContainsKey("nome") == false);
+        ConferirNomesDosMunicipiosDeProva(documento["provaPresencial"]!["municipios"]!.AsArray());
     }
+
+    private static void ConferirNomesDosMunicipiosDeProva(JsonArray municipios) =>
+        municipios.Select(static municipio => municipio!["nome"]!.GetValue<string>()).Should().Equal("Marabá", "Belém");
+
+    private static FakeConferenciaEnderecoGeo GeoDosMunicipiosDeProva() =>
+        new FakeConferenciaEnderecoGeo().ComMunicipio("1504208", "PA", "Marabá").ComMunicipio("1501402", "PA", "Belém");
 
     private static void ConferirDocumentoEMotivo(JsonObject documento, string codigo)
     {
@@ -229,22 +222,15 @@ public sealed class ExportacaoComCadastrosIdaEVoltaTests(CascadingFixture fixtur
         alterado["cronograma"]!["fases"]![0]!["unidadeResponsavelNome"] = "Unidade alterada";
         alterado["motivosDeDecisao"]![0]!["descricao"] = "Descrição alterada";
         alterado["motivosDeDecisao"]![0]!["sentidoRotulo"] = "Rótulo alterado";
+        alterado["provaPresencial"]!["municipios"]![0]!["nome"] = "Município alterado";
         return alterado.ToJsonString();
     }
 
     private async Task ConferirDocumentosGuardadosAsync(Guid original, Guid copia, string codigo)
     {
-        JsonNode guardado = await DocumentoGuardadoAsync(original);
+        JsonNode guardado = await _cliente.DocumentoGuardadoAsync(original);
         JsonNode.DeepEquals(guardado, JsonNode.Parse(DocumentoCompleto(codigo))).Should().BeTrue();
-        JsonNode.DeepEquals(guardado, await DocumentoGuardadoAsync(copia)).Should().BeTrue();
-    }
-
-    private async Task<JsonNode> DocumentoGuardadoAsync(Guid id)
-    {
-        await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        string documento = await banco.RascunhosDeProcessosSeletivos.AsNoTracking().Where(r => r.Id == id).Select(r => r.Documento).SingleAsync();
-        return JsonNode.Parse(documento)!;
+        JsonNode.DeepEquals(guardado, await _cliente.DocumentoGuardadoAsync(copia)).Should().BeTrue();
     }
 
     private static void CompararExportacoes(JsonObject primeiro, Guid original, JsonObject segundo, Guid copia)

@@ -17863,7 +17863,7 @@
           },
           "quadroPesoAreaEnem": {
             "title": "Quadro de pesos por \u00E1rea do Enem",
-            "description": "Os pesos e cortes por \u00E1rea do Enem que a resolu\u00E7\u00E3o fixa, copiados na exporta\u00E7\u00E3o. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque \u00E9 congelado do cat\u00E1logo pela resolu\u00E7\u00E3o.",
+            "description": "Os pesos e cortes por \u00E1rea do Enem que a resolu\u00E7\u00E3o fixa. Na exporta\u00E7\u00E3o do rascunho v\u00EAm do cadastro no momento da exporta\u00E7\u00E3o; na vers\u00E3o publicada, os congelados. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque quem o define \u00E9 a resolu\u00E7\u00E3o.",
             "type": "array",
             "readOnly": true,
             "items": {
@@ -21093,7 +21093,7 @@
       },
       "DocumentoDaConfiguracaoPesosPorArea": {
         "title": "Grupo de pesos por \u00E1rea",
-        "description": "Os pesos e cortes das \u00E1reas do Enem de um grupo, congelados do cat\u00E1logo. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque \u00E9 congelado do cat\u00E1logo pela resolu\u00E7\u00E3o.",
+        "description": "Os pesos e cortes das \u00E1reas do Enem de um grupo, lidos do cadastro na exporta\u00E7\u00E3o do rascunho e congelados na vers\u00E3o publicada. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque quem o define \u00E9 a resolu\u00E7\u00E3o.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -21216,7 +21216,7 @@
           },
           "nome": {
             "title": "Nome do munic\u00EDpio",
-            "description": "Nome do munic\u00EDpio no Geo, copiado na \u00FAltima publica\u00E7\u00E3o ou retifica\u00E7\u00E3o; vazio antes da primeira. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "description": "Nome do munic\u00EDpio no Geo. Na exporta\u00E7\u00E3o do rascunho \u00E9 o do momento da exporta\u00E7\u00E3o, omitido se o Geo n\u00E3o responde ou se h\u00E1 mais munic\u00EDpios distintos que o limite; na vers\u00E3o publicada \u00E9 o nome congelado. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
             "type": "string",
             "maxLength": 150,
             "readOnly": true

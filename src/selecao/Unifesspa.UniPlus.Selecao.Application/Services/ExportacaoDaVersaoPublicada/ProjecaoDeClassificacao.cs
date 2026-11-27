@@ -14,20 +14,33 @@ internal static class ProjecaoDeClassificacao
         }
         JsonObject origem = (JsonObject)classificacao.DeepClone();
         origem["criteriosDeDesempate"] = congelado["criteriosDesempate"]?.DeepClone();
-        AchatarGrupos(origem["quadroPesoAreaEnem"] as JsonArray);
+        if (origem["quadroPesoAreaEnem"] is JsonArray quadro)
+        {
+            origem["quadroPesoAreaEnem"] = ProjetarQuadroDePesos(quadro, formaDaParte);
+        }
         TraduzirEtapas(origem["regrasEliminacao"] as JsonArray, chaves);
         TraduzirEtapas(origem["criteriosDeDesempate"] as JsonArray, chaves);
         return CopiaPeloEsquema.Copiar(origem, formaDaParte);
     }
 
-    private static void AchatarGrupos(JsonArray? grupos)
+    /// <summary>
+    /// O quadro de pesos do documento congelado na forma da exportação: o grupo de áreas achatado em código e rótulo, o peso e
+    /// o corte como número e o corte nulo descartado, tudo conforme o que o esquema declara para a classificação.
+    /// </summary>
+    internal static JsonArray ProjetarQuadroDePesos(JsonArray quadroCongelado, FormaDoNo formaDaClassificacao)
     {
-        foreach (JsonObject grupo in (grupos ?? []).OfType<JsonObject>())
-        {
-            ProjecaoDeParte.Transferir(grupo, "grupoAreaEnemCodigo", grupo["grupoAreaEnem"]?["codigo"]);
-            ProjecaoDeParte.Transferir(grupo, "grupoAreaEnemRotulo", grupo["grupoAreaEnem"]?["rotulo"]);
-        }
+        FormaDoNo formaDoGrupo = formaDaClassificacao.Propriedades["quadroPesoAreaEnem"].Itens!;
+        return new([.. quadroCongelado.OfType<JsonObject>().Select(grupo => (JsonNode)CopiaPeloEsquema.Copiar(AchatarGrupo(grupo), formaDoGrupo))]);
     }
+
+    private static JsonObject AchatarGrupo(JsonObject grupo)
+    {
+        JsonObject achatado = (JsonObject)grupo.DeepClone();
+        ProjecaoDeParte.Transferir(achatado, "grupoAreaEnemCodigo", grupo["grupoAreaEnem"]?["codigo"]);
+        ProjecaoDeParte.Transferir(achatado, "grupoAreaEnemRotulo", grupo["grupoAreaEnem"]?["rotulo"]);
+        return achatado;
+    }
+
     private static void TraduzirEtapas(JsonArray? regras, ChavesDoDocumentoCongelado chaves)
     {
         foreach (JsonObject regra in (regras ?? []).OfType<JsonObject>())

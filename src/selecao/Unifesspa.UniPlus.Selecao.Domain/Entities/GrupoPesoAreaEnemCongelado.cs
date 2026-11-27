@@ -37,6 +37,9 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
     /// <summary>Nota máxima de uma área do ENEM, teto do corte.</summary>
     public const decimal CorteMaximo = 1000m;
 
+    /// <summary>Casas decimais do peso e do corte, no banco, no documento congelado e na exportação (<c>multipleOf</c> 0,0001).</summary>
+    public const int EscalaDoPesoEDoCorte = 4;
+
     private readonly List<AreaPesoAreaEnemCongelada> _areas = [];
 
     public Guid ConfiguracaoClassificacaoId { get; private set; }

@@ -245,6 +245,8 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeRecursosDeAcessibilidade>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeTiposDeDeficiencia>();
         services.AddScoped<IDescricaoDeCadastro, DescricaoDeBasesLegaisDaFada>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDeMunicipiosDeProva>();
+        services.AddScoped<IDescricaoDeCadastro, DescricaoDePesosPorAreaDoEnem>();
     }
 
     private static void AddPreparacaoDosAtos(IServiceCollection services)

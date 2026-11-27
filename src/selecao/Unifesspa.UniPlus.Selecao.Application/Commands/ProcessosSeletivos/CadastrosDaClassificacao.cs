@@ -26,14 +26,13 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
     }
 
     /// <summary>
-    /// Consulta apenas quando a combinação aceita a resolução; a forma é conferida antes da busca,
-    /// pois o banco recusa caracteres nulos. As demais combinações são conferidas pelo domínio.
+    /// Consulta apenas quando a combinação aceita a resolução; as demais combinações são conferidas pelo domínio.
     /// </summary>
     public async Task<QuadroDePesosResolvido> ResolverQuadroAsync(
         ReferenciaRegra regraCalculo, DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
         ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regraCalculo, command.BaseadoEmEnem)
             && !string.IsNullOrWhiteSpace(command.ResolucaoPesoAreaEnem)
-            ? await CongelarQuadroAsync(command.ResolucaoPesoAreaEnem, cancellationToken).ConfigureAwait(false)
+            ? await QuadroDePesosResolvido.DaResolucaoAsync(command.ResolucaoPesoAreaEnem, pesoAreaEnemReader, cancellationToken).ConfigureAwait(false)
             : QuadroDePesosResolvido.SemConsulta(command.ResolucaoPesoAreaEnem);
 
     private async Task<Result<DeclaracaoDaClassificacao>> ResolverCalculoEOrdemDeAlocacaoAsync(
@@ -127,18 +126,6 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
             "A regra não é do tipo regra_eliminacao."),
         _ => null,
     };
-
-    private async Task<QuadroDePesosResolvido> CongelarQuadroAsync(string resolucao, CancellationToken cancellationToken)
-    {
-        List<FieldError> recusas = ConfiguracaoClassificacao.ValidarResolucaoPesoAreaEnem(resolucao);
-        if (recusas.Count > 0)
-        {
-            return QuadroDePesosResolvido.Recusado(resolucao, recusas);
-        }
-
-        ResolucaoPesoAreaEnemView? cadastrada = await pesoAreaEnemReader.ObterPorResolucaoAsync(resolucao, cancellationToken).ConfigureAwait(false);
-        return QuadroDePesosResolvido.DaResolucaoCadastrada(resolucao, cadastrada);
-    }
 
     private static DeclaracaoDaClassificacao DeclaracaoDoPedido(
         DefinirClassificacaoCommand command, (ReferenciaRegra Calculo, ReferenciaRegra? Arredondamento) calculoDaNota, ReferenciaRegra ordem) => new()

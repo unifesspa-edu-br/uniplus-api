@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/pesos-por-area.schema.json",
   "title": "Grupo de pesos por área",
-  "description": "Os pesos e cortes das áreas do Enem de um grupo, congelados do catálogo. Campo só de leitura: ignorado na importação, porque é congelado do catálogo pela resolução.",
+  "description": "Os pesos e cortes das áreas do Enem de um grupo, lidos do cadastro na exportação do rascunho e congelados na versão publicada. Campo só de leitura: ignorado na importação, porque quem o define é a resolução.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

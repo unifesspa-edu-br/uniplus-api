@@ -183,8 +183,8 @@ internal static class LeituraDaClassificacao
         leitor.ExigirChaves(area, path, "codigo", "rotulo", "peso", "corte");
         string codigo = leitor.TextoNaoVazio(area, "codigo", path, LimitesDoEnvelope.AreaPesoAreaEnemCodigo);
         string rotulo = leitor.TextoNaoVazio(area, "rotulo", path, LimitesDoEnvelope.AreaPesoAreaEnemRotulo);
-        decimal peso = leitor.Decimal(area, "peso", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPesoAreaEnem);
-        decimal? corte = leitor.DecimalOpcional(area, "corte", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoCorteAreaEnem);
+        decimal peso = leitor.Decimal(area, "peso", GrupoPesoAreaEnemCongelado.EscalaDoPesoEDoCorte, path, LimitesDoEnvelope.PrecisaoPesoAreaEnem);
+        decimal? corte = leitor.DecimalOpcional(area, "corte", GrupoPesoAreaEnemCongelado.EscalaDoPesoEDoCorte, path, LimitesDoEnvelope.PrecisaoCorteAreaEnem);
         return leitor.Falhou ? null : (codigo, rotulo, peso, corte);
     }
 

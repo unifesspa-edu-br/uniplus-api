@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -42,18 +41,5 @@ public sealed class CadastrosDaClassificacaoTests
 
         resultado.Error!.Code.Should().Be("RegraEliminacao.RegraTipoInvalido");
         resultado.Error.Message.Should().Be("Código de regra de eliminação desconhecido: INEXISTENTE.");
-    }
-
-    [Fact]
-    public void DaResolucaoCadastrada_LinhaInvalida_RecusaSemCopiarQuadro()
-    {
-        PesoAreaEnemView linha = new(Guid.NewGuid(), "Resolução", new GrupoAreaEnemView("", "Grupo"), [], "Base legal");
-        ResolucaoPesoAreaEnemView cadastrada = new("Resolução cadastrada", [linha], []);
-
-        QuadroDePesosResolvido resolvido = QuadroDePesosResolvido.DaResolucaoCadastrada("Resolução informada", cadastrada);
-
-        resolvido.Resolucao.Should().Be("Resolução informada");
-        resolvido.Quadro.Should().BeEmpty();
-        resolvido.Recusas.Should().NotBeEmpty().And.OnlyContain(erro => erro.Field == ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem);
     }
 }
