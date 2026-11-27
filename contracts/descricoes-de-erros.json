@@ -21293,7 +21293,7 @@
         "UNI-REQ-0091"
       ],
       "oQueAconteceu": [
-        "O formulário da inscrição pode exigir o aceite de termos de consentimento ou\nde declaração (UNI-REQ-0086). Para enviar, todo termo obrigatório e visível\nprecisa ter aceite na versão e no hash que o formulário apresenta. Falta o\naceite de um termo, ou o aceite é de outra versão. A recusa indica o termo. O\nrascunho pode ficar com a lista de aceites incompleta; a recusa vem no envio\n(UNI-REQ-0091)."
+        "O formulário da inscrição pode exigir o aceite de termos de consentimento ou\nde declaração (UNI-REQ-0086). Para enviar, todo termo obrigatório e visível\nprecisa ter aceite. Falta o aceite de um termo. O aceite de outra versão tem\nrecusa própria (aceite_de_outra_versao) e não repete esta. A recusa indica o\ntermo. O rascunho pode ficar com a lista de aceites incompleta; a recusa vem\nno envio (UNI-REQ-0091)."
       ],
       "comoResolver": [
         "Leia o termo indicado, aceite-o no formulário e envie a inscrição de novo.\nQuem integra deve enviar o aceite com o código, a versão e o hash do termo que\no formulário apresenta."
