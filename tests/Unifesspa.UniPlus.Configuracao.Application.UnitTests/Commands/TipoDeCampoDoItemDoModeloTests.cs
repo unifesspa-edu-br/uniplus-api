@@ -65,7 +65,8 @@ public sealed class TipoDeCampoDoItemDoModeloTests
         ConteudoLido lido = leitura.Ler(Conteudo(Campo("SIM_OU_NAO").SemApresentacao().Construir()));
 
         leitura.Recusas.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"));
+            ("itens[0].apresentacao.tipoDeCampo", "ItemFormulario.TipoDeCampoObrigatorio"),
+            ("itens[0].apresentacao.rotulo", "ItemFormulario.RotuloObrigatorio"));
         lido.Itens.Should().BeEmpty();
     }
 

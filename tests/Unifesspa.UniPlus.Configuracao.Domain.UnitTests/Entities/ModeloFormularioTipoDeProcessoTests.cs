@@ -35,7 +35,7 @@ public sealed class ModeloFormularioTipoDeProcessoTests
     public void Criar_TipoValido_GuardaCodigoRecebido()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, DeOutraFaseObrigatoria, Codigo, Conteudo(), SemDerivacoes);
+            "HABILITACAO", new DescritivoDoModelo("Habilitação", null, Codigo), DeOutraFaseObrigatoria, Conteudo(), SemDerivacoes);
 
         modelo.Value!.TipoProcessoCodigo.Should().Be(Codigo);
     }
@@ -44,9 +44,9 @@ public sealed class ModeloFormularioTipoDeProcessoTests
     public void Atualizar_TipoValido_GuardaCodigoRecebido()
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO", "Habilitação", null, DeOutraFaseObrigatoria, null, Conteudo(), SemDerivacoes).Value!;
+            "HABILITACAO", new DescritivoDoModelo("Habilitação", null, null), DeOutraFaseObrigatoria, Conteudo(), SemDerivacoes).Value!;
 
-        Result atualizado = modelo.Atualizar("Habilitação", null, Codigo, Conteudo(), SemDerivacoes);
+        Result atualizado = modelo.Atualizar(new DescritivoDoModelo("Habilitação", null, Codigo), Conteudo(), SemDerivacoes);
 
         atualizado.IsSuccess.Should().BeTrue(atualizado.Error?.Message);
         modelo.TipoProcessoCodigo.Should().Be(Codigo);

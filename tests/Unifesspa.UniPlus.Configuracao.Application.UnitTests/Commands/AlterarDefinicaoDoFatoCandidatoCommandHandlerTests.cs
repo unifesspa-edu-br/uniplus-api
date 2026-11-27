@@ -377,7 +377,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     private static ModeloFormulario ModeloHabilitacao(ConteudoDoModelo conteudo, bool ativo)
     {
         ModeloFormulario modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação Medicina", null, DeOutraFaseObrigatoria, null, conteudo,
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação Medicina", null, null), DeOutraFaseObrigatoria, conteudo,
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         if (ativo)
         {

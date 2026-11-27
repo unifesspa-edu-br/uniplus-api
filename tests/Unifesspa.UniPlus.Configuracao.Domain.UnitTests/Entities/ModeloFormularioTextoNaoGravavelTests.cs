@@ -36,7 +36,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
     public void TextoComCaractereNulo_NaDescricao_Recusa()
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "HABILITACAO_MEDICINA", "Habilitação", "texto\0", DeOutraFaseObrigatoria, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            "HABILITACAO_MEDICINA", new DescritivoDoModelo("Habilitação", "texto\0", null), DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         DeveRecusarTextoNaoGravavelEm(modelo, "descritivo.descricao");
     }
@@ -147,7 +147,7 @@ public sealed class ModeloFormularioTextoNaoGravavelTests
         string codigo = string.Concat(Enumerable.Repeat("\u0958", ModeloFormulario.CodigoMaxLength));
 
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            codigo, "Habilitação", null, DeOutraFaseObrigatoria, null, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
+            codigo, new DescritivoDoModelo("Habilitação", null, null), DeOutraFaseObrigatoria, Conteudo([Item("CERTIFICADO", 0)]), SemDerivacoes);
 
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.CodigoFormatoInvalido);
     }

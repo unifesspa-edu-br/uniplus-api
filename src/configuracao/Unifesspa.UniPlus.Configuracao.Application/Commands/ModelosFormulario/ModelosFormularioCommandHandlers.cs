@@ -4,13 +4,14 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Lê e confere o conteúdo contra o catálogo, e só então cria o modelo, com as recusas do catálogo
-/// e as do modelo no mesmo lote (ADR-0125). A entrada que não se lê não chega às regras do conteúdo,
-/// que dependem dele inteiro; as do cadastro saem junto.
+/// Lê e confere o conteúdo contra o catálogo e só então cria o modelo, com as recusas da leitura, do
+/// catálogo e do modelo no mesmo lote (ADR-0125). A parte do conteúdo que não se leu não alimenta a
+/// conferência que depende dela; as demais regras e as do cadastro saem junto.
 /// </summary>
 public static class CriarModeloFormularioCommandHandler
 {
@@ -41,19 +42,14 @@ public static class CriarModeloFormularioCommandHandler
         CriarModeloFormularioCommand command, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
         DeclaracaoDoFormulario? declaracao = command.Declaracao?.ParaDeclaracao();
-        DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
-        (ConteudoLido conteudo, IReadOnlyList<FieldError> recusasDaLeitura, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+        DescritivoDoModelo descritivo = (command.Descritivo ?? DescritivoDoModeloInput.Ausente).ParaDescritivo();
+        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
             command.Conteudo, declaracao, descritivo.TipoProcessoCodigo, ModeloGravado.Nenhum, cancellationToken).ConfigureAwait(false);
-        if (recusasDaLeitura.Count > 0)
-        {
-            erros.AddRange(ModeloFormulario.ConferirCadastro(command.Codigo, descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo, declaracao));
-            return Result<ModeloFormulario>.ValidationFailure(erros);
-        }
-
-        Result<ModeloFormulario> criar = ModeloFormulario.Criar(
-            command.Codigo, descritivo.Nome, descritivo.Descricao, declaracao, descritivo.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
-        erros.AddRange(criar.Errors);
-        return erros.Count > 0 ? Result<ModeloFormulario>.ValidationFailure(erros) : criar;
+        erros.AddRange(conteudo.NasPosicoesDaEntrada(ModeloFormulario.ConferirCriacao(
+            command.Codigo, descritivo, declaracao, conteudo.ParaConteudo(), catalogo.Derivacoes, conteudo.PorInteiro)));
+        return erros.Count > 0
+            ? Result<ModeloFormulario>.ValidationFailure(erros)
+            : ModeloFormulario.Criar(command.Codigo, descritivo, declaracao, conteudo.ParaConteudo(), catalogo.Derivacoes);
     }
 }
 
@@ -87,19 +83,14 @@ public static class AtualizarModeloFormularioCommandHandler
     private static async Task<Result> ConferirEAtualizarAsync(
         AtualizarModeloFormularioCommand command, ModeloFormulario modelo, EscritaDoModelo escrita, CancellationToken cancellationToken)
     {
-        DescritivoDoModeloInput descritivo = command.Descritivo ?? DescritivoDoModeloInput.Ausente;
-        (ConteudoLido conteudo, IReadOnlyList<FieldError> recusasDaLeitura, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
+        DescritivoDoModelo descritivo = (command.Descritivo ?? DescritivoDoModeloInput.Ausente).ParaDescritivo();
+        (ConteudoLido conteudo, CatalogoDoModelo catalogo, List<FieldError> erros) = await escrita.LerEConferirAsync(
             command.Conteudo, modelo.Declaracao, descritivo.TipoProcessoCodigo, ModeloGravado.De(modelo), cancellationToken).ConfigureAwait(false);
-        if (recusasDaLeitura.Count > 0)
-        {
-            erros.AddRange(ModeloFormulario.ConferirDescritivo(descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo));
-            return Result.ValidationFailure(erros);
-        }
-
-        Result atualizar = modelo.Atualizar(
-            descritivo.Nome, descritivo.Descricao, descritivo.TipoProcessoCodigo, conteudo.ParaConteudo(), catalogo.Derivacoes);
-        erros.AddRange(atualizar.Errors);
-        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+        erros.AddRange(conteudo.NasPosicoesDaEntrada(modelo.ConferirAtualizacao(
+            descritivo, conteudo.ParaConteudo(), catalogo.Derivacoes, conteudo.PorInteiro)));
+        return erros.Count > 0
+            ? Result.ValidationFailure(erros)
+            : modelo.Atualizar(descritivo, conteudo.ParaConteudo(), catalogo.Derivacoes);
     }
 }
 

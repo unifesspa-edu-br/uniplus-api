@@ -221,7 +221,7 @@ public sealed class ObterFormularioApresentadoDoModeloQueryHandlerTests
         IReadOnlyList<GrupoDoModelo>? grupos = null)
     {
         Kernel.Results.Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "MODELO_DE_TESTE", "Modelo de teste", null, declaracao ?? DeOutraFaseObrigatoria, null,
+            "MODELO_DE_TESTE", new DescritivoDoModelo("Modelo de teste", null, null), declaracao ?? DeOutraFaseObrigatoria,
             new ConteudoDoModelo("Habilitação", [Dados, Revisao], itens ?? [], termos ?? [], pressupostos ?? [], grupos ?? []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         modelo.IsSuccess.Should().BeTrue(modelo.Error?.Message);

@@ -68,7 +68,7 @@ public sealed class ConteudoDoModeloFormaGravadaTests
             Grupos = grupo ? [Grupo("GRUPO", 0, null, item) with { PaginaCodigo = " DADOS " }] : []
         };
 
-        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>());
+        List<FieldError> erros = ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, conteudo.NaFormaGravada(), new Dictionary<string, IReadOnlyCollection<string>>(), conteudoPorInteiro: true);
 
         erros.Should().ContainSingle(erro => erro.Field == campo && erro.Error.Code == EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }

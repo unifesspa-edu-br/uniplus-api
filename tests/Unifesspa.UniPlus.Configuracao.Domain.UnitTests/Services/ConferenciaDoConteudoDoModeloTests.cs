@@ -29,7 +29,7 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     private static List<FieldError> Conferir(ConteudoDoModelo conteudo) => Conferir(conteudo, DeOutraFaseObrigatoria);
 
     private static List<FieldError> Conferir(ConteudoDoModelo conteudo, DeclaracaoDoFormulario? declaracao) =>
-        ConferenciaDoConteudoDoModelo.Conferir(declaracao, conteudo, SemDerivacoes);
+        ConferenciaDoConteudoDoModelo.Conferir(declaracao, conteudo, SemDerivacoes, conteudoPorInteiro: true);
 
     private static string[] Campos(IEnumerable<FieldError> erros) => [.. erros.Select(static e => e.Field ?? "(sem campo)")];
 
@@ -53,8 +53,8 @@ public sealed class ConferenciaDoConteudoDoModeloTests
     [Fact(DisplayName = "O conteúdo e as derivações são obrigatórios")]
     public void ConteudoOuDerivacoesNulos_Lanca()
     {
-        Action semConteudo = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, null!, SemDerivacoes);
-        Action semDerivacoes = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, Conteudo(), null!);
+        Action semConteudo = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, null!, SemDerivacoes, conteudoPorInteiro: true);
+        Action semDerivacoes = () => ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, Conteudo(), null!, conteudoPorInteiro: true);
 
         semConteudo.Should().Throw<ArgumentNullException>();
         semDerivacoes.Should().Throw<ArgumentNullException>();
@@ -209,6 +209,29 @@ public sealed class ConferenciaDoConteudoDoModeloTests
         Codigos(Conferir(foraDeSecao)).Should().Equal(EstruturaFormularioErrorCodes.ItemForaDeSecao);
         Codigos(Conferir(foraDeSecao with { Titulo = new string('T', FormaDoCabecalho.TituloMaxLength + 1) }))
             .Should().Equal(EstruturaFormularioErrorCodes.TituloTamanho);
+    }
+
+    [Fact(DisplayName = "Com parte do conteúdo fora, a estrutura e o grafo não são conferidos, e as demais regras são")]
+    public void ConteudoSemParte_NaoConfereEstruturaNemGrafoEConfereAsDemaisRegras()
+    {
+        ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null });
+        ConteudoDoModelo citaFatoQueNaoColeta = Conteudo(Item("CERTIFICADO", 0, Quando("OUTRO_FATO")));
+        ConteudoDoModelo pressupostoRepetido = Conteudo(Item("CERTIFICADO")) with { Pressupostos = ["SEXO", "SEXO"] };
+
+        ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, foraDeSecao, SemDerivacoes, conteudoPorInteiro: false).Should().BeEmpty();
+        ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, citaFatoQueNaoColeta, SemDerivacoes, conteudoPorInteiro: false).Should().BeEmpty();
+        Codigos(ConferenciaDoConteudoDoModelo.Conferir(DeOutraFaseObrigatoria, pressupostoRepetido, SemDerivacoes, conteudoPorInteiro: false))
+            .Should().Equal(ModeloFormularioErrorCodes.PressupostoRepetido);
+    }
+
+    [Fact(DisplayName = "O conteúdo inteiro tem a estrutura e o grafo conferidos como antes")]
+    public void ConteudoPorInteiro_ConfereEstruturaEGrafo()
+    {
+        ConteudoDoModelo foraDeSecao = Conteudo(Item("CERTIFICADO") with { PaginaCodigo = null });
+        ConteudoDoModelo citaFatoQueNaoColeta = Conteudo(Item("CERTIFICADO", 0, Quando("OUTRO_FATO")));
+
+        Codigos(Conferir(foraDeSecao)).Should().Equal(EstruturaFormularioErrorCodes.ItemForaDeSecao);
+        Codigos(Conferir(citaFatoQueNaoColeta)).Should().Equal(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
     [Fact(DisplayName = "Com a declaração recusada no cadastro, a estrutura que depende dela não é conferida")]

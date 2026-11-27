@@ -48,7 +48,7 @@ public sealed class DeclaracaoDoModeloMappingTests
     private static ModeloFormulario ModeloDeOutraFase(DeclaracaoDoFormulario declaracao)
     {
         Result<ModeloFormulario> modelo = ModeloFormulario.Criar(
-            "MODELO_DE_TESTE", "Modelo de teste", null, declaracao, null,
+            "MODELO_DE_TESTE", new DescritivoDoModelo("Modelo de teste", null, null), declaracao,
             new ConteudoDoModelo("Modelo", [Secao, Revisao], [], [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         return modelo.Value ?? throw new InvalidOperationException(string.Join("; ", modelo.Errors.Select(static e => e.Error.Code)));

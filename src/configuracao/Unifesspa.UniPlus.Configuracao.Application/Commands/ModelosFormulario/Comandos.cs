@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -44,10 +44,12 @@ public sealed record DeclaracaoDoModeloInput(bool? ServeAFaseDeInscricao, bool? 
 public sealed record DescritivoDoModeloInput(string? Nome, string? Descricao, string? TipoProcessoCodigo)
 {
     /// <summary>O caminho do descritivo no corpo, onde a recusa do nome, da descrição e do tipo de processo se aponta.</summary>
-    public const string Caminho = ModeloFormulario.CaminhoDoDescritivo;
+    public const string Caminho = DescritivoDoModelo.Caminho;
 
     /// <summary>O descritivo que não veio: sem nome, sem descrição e sem tipo de processo.</summary>
     public static DescritivoDoModeloInput Ausente { get; } = new(null, null, null);
+
+    public DescritivoDoModelo ParaDescritivo() => new(Nome, Descricao, TipoProcessoCodigo);
 }
 
 /// <summary>O corpo da edição do modelo: o descritivo e o conteúdo; o código e a declaração não mudam.</summary>

@@ -18,13 +18,13 @@ internal sealed class EscritaDoModelo(
     IFatoCandidatoRepository fatoRepository, ITermoConsentimentoReader termoReader, ITipoProcessoReader tipoProcessoReader)
 {
     /// <summary>
-    /// O conteúdo lido, as recusas da leitura e as recusas acumuladas da leitura e do catálogo (ADR-0125). O modelo
+    /// O conteúdo lido e as recusas acumuladas da leitura e do catálogo (ADR-0125). O modelo
     /// que serve à fase de inscrição coleta o conjunto básico na seção reservada, como o formulário do processo: o item
     /// básico omitido entra como está gravado no modelo, e o enviado tem de ser igual a ele. O tipo
     /// de processo é conferido só quando muda: desativar o tipo recusa vínculo novo, e o modelo que
     /// já o usava continua com ele.
     /// </summary>
-    public async Task<(ConteudoLido Conteudo, IReadOnlyList<FieldError> RecusasDaLeitura, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
+    public async Task<(ConteudoLido Conteudo, CatalogoDoModelo Catalogo, List<FieldError> Erros)> LerEConferirAsync(
         ConteudoDoModeloInput? entrada,
         DeclaracaoDoFormulario? declaracao,
         string? tipoProcessoCodigo,
@@ -44,7 +44,7 @@ internal sealed class EscritaDoModelo(
             erros.Add(inexistente);
         }
 
-        return (conteudo, leitura.Recusas, catalogo, erros);
+        return (conteudo, catalogo, erros);
     }
 
     private async Task<List<FieldError>> ConferirNoCatalogoAsync(

@@ -17,6 +17,14 @@ public sealed class CaminhoDasRecusasDaPaginaTests
         erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
     }
 
+    [Fact(DisplayName = "O tipo que não se leu não confere a exibição, e o resto da página é conferido")]
+    public void Conferir_TipoNaoLido_PulaSoARegraDaExibicao()
+    {
+        List<FieldError> erros = FormaDaPagina.Conferir("DADOS", 0, tipo: null, titulo: null, descricao: null, aviso: null, temExibicao: true);
+
+        erros.Select(static e => e.Field).Should().Equal("apresentacao.titulo");
+    }
+
     [Fact(DisplayName = "A descrição e o aviso acima do limite são recusados no caminho da apresentação")]
     public void Conferir_DescricaoEAvisoLongos_ApontamNaApresentacao()
     {
