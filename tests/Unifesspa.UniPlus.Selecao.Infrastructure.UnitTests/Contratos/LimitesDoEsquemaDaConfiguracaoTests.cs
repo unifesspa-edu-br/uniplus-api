@@ -45,6 +45,7 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.Fato), LimitesDoEnvelope.Fato, Condicoes, "/$defs/condicao/properties/codigoDoDado", true),
         (nameof(LimitesDoEnvelope.ObservacaoBaseLegal), LimitesDoEnvelope.ObservacaoBaseLegal, Condicoes, "/$defs/baseLegal/properties/observacao", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoCodigo), LimitesDoEnvelope.TipoDocumentoCodigo, Exigencia, "/tipoDocumentoCodigo", true),
+        (nameof(LimitesDoEnvelope.Fato) + " (dados comprovados)", LimitesDoEnvelope.Fato, Exigencia, "/dadosComprovados/items", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoNome), LimitesDoEnvelope.TipoDocumentoNome, Exigencia, "/tipoDocumentoNome", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoCategoria), LimitesDoEnvelope.TipoDocumentoCategoria, Exigencia, "/tipoDocumentoCategoria", true),
         (nameof(LimitesDoEnvelope.FinalidadeTratamento), LimitesDoEnvelope.FinalidadeTratamento, Exigencia, "/finalidadeTratamento", true),

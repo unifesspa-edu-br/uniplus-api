@@ -19806,15 +19806,15 @@
             "readOnly": true
           },
           "dadosComprovados": {
-            "title": "Fatos comprovados",
-            "description": "C\u00F3digos dos fatos do candidato que o documento comprova. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o, porque vem do cat\u00E1logo pelo c\u00F3digo.",
+            "title": "Dados comprovados",
+            "description": "C\u00F3digos dos dados do candidato que o documento comprova, declarados pelo autor da configura\u00E7\u00E3o.",
             "type": "array",
+            "uniqueItems": true,
             "items": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 60
-            },
-            "readOnly": true
+              "maxLength": 50
+            }
           },
           "faseChave": {
             "title": "Fase em que \u00E9 exigido",
