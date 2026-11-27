@@ -72,6 +72,42 @@ public sealed class CadastrosDoAtendimentoEspecializadoTests
         montado.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
     }
 
+    [Fact(DisplayName = "Condição que o cadastro não devolveu não faz o tipo de deficiência ser recusado por falta da condição de pessoa com deficiência")]
+    public async Task MontarAsync_CondicaoAusente_NaoRecusaOTipoPorFaltaDaCondicaoPcd()
+    {
+        TipoDeficienciaView visual = new(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null);
+        Cadastrar(visual);
+
+        Result<AtendimentoEspecializado> montado = await Montar([Guid.CreateVersion7()], [], [visual.Id]);
+
+        montado.Errors.Select(static e => e.Error.Code).Should().Equal("AtendimentoEspecializado.CondicaoNaoEncontrada");
+    }
+
+    [Fact(DisplayName = "Recurso ausente não esconde a recusa do tipo de deficiência sem a condição de pessoa com deficiência")]
+    public async Task MontarAsync_RecursoAusente_MantemARecusaDoTipoSemCondicaoPcd()
+    {
+        CondicaoAtendimentoView lactante = new(Guid.CreateVersion7(), "LACTANTE", "Lactante");
+        TipoDeficienciaView visual = new(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null);
+        Cadastrar(lactante);
+        Cadastrar(visual);
+
+        Result<AtendimentoEspecializado> montado = await Montar([lactante.Id], [Guid.CreateVersion7()], [visual.Id]);
+
+        montado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("tipoDeficienciaIds", "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd"),
+            ("recursoIds[0]", "AtendimentoEspecializado.RecursoNaoEncontrado"));
+    }
+
+    [Fact(DisplayName = "Recusas sem cadastro não repetem o identificador enviado")]
+    public async Task MontarAsync_NaoEncontrado_NaoRepeteOIdentificadorNaMensagem()
+    {
+        Guid ausente = Guid.CreateVersion7();
+
+        Result<AtendimentoEspecializado> montado = await Montar([ausente], [], []);
+
+        montado.Errors.Should().ContainSingle().Which.Error.Message.Should().NotContain(ausente.ToString());
+    }
+
     [Fact(DisplayName = "Sem identificadores, monta o atendimento vazio sem consultar os cadastros")]
     public async Task MontarAsync_SemIdentificadores_MontaVazioSemConsultar()
     {

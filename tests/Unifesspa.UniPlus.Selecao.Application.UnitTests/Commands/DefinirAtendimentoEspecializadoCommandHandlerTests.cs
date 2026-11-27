@@ -44,12 +44,15 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_CondicaoIdDuplicado_RecusaSemConsultarLeitores()
+    public async Task Handle_CondicaoRepetidaEInexistente_JuntaAsRecusasEConsultaOsCadastros()
     {
         Cenario cenario = new();
         Result resultado = await cenario.Executar([cenario.CondicaoId, cenario.CondicaoId], [], []);
-        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
-        await cenario.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("condicaoIds", "AtendimentoEspecializado.CondicaoDuplicada"),
+            ("condicaoIds[0]", "AtendimentoEspecializado.CondicaoNaoEncontrada"),
+            ("condicaoIds[1]", "AtendimentoEspecializado.CondicaoNaoEncontrada"));
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -80,13 +83,14 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_RecursoInexistente_RecusaSemConsultarTiposNemGravar()
+    public async Task Handle_RecursoETipoInexistentes_JuntaAsDuasRecusasSemGravar()
     {
         Cenario cenario = new();
         cenario.ConfigurarCondicao("LACTANTE");
         Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.RecursoId], [cenario.TipoDeficienciaId]);
-        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.RecursoNaoEncontrado");
-        await cenario.TipoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("recursoIds[0]", "AtendimentoEspecializado.RecursoNaoEncontrado"),
+            ("tipoDeficienciaIds[0]", "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado"));
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -102,14 +106,36 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PrimeiraCondicaoAusente_DevolveUmSoErroEPara()
+    public async Task Handle_CondicaoRecursoETipoInexistentes_JuntaNaOrdemDoPedidoComOCodigoDaCondicao()
+    {
+        Cenario cenario = new();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [cenario.RecursoId], [cenario.TipoDeficienciaId]);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("condicaoIds[0]", "AtendimentoEspecializado.CondicaoNaoEncontrada"),
+            ("recursoIds[0]", "AtendimentoEspecializado.RecursoNaoEncontrado"),
+            ("tipoDeficienciaIds[0]", "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado"));
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_VariosRecursosInexistentes_UmaRecusaParaCadaUmNaPosicaoDoPedido()
     {
         Cenario cenario = new();
         cenario.ConfigurarCondicao("LACTANTE");
-        Guid ausente = Guid.CreateVersion7();
-        Result resultado = await cenario.Executar([ausente, cenario.CondicaoId], [cenario.RecursoId], []);
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
-        await cenario.RecursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        cenario.ConfigurarRecurso();
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [Guid.CreateVersion7(), cenario.RecursoId, Guid.CreateVersion7()], []);
+        resultado.Errors.Select(static e => e.Field).Should().Equal("recursoIds[0]", "recursoIds[2]");
+        await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_UmSoTipoInexistente_RecusaSoEleComOCampoDoItem()
+    {
+        Cenario cenario = new();
+        cenario.ConfigurarCondicao("PCD");
+        Result resultado = await cenario.Executar([cenario.CondicaoId], [], [cenario.TipoDeficienciaId]);
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("tipoDeficienciaIds[0]");
     }
 
     [Fact]
