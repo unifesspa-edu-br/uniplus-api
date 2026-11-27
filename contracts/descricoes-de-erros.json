@@ -25734,7 +25734,9 @@
     },
     {
       "codigo": "uniplus.selecao.produto_da_etapa.ato_nao_encontrado_no_catalogo",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0546"
+      ],
       "oQueAconteceu": [
         "Um dos produtos que a etapa declara publicar cita um tipo de ato que não tem versão\nvigente no catálogo de tipos de ato publicados na data de hoje. Ou o código não existe\nno catálogo, ou existe e nenhuma versão dele está vigente agora.",
         "A etapa não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a etapa apontando\npara um modelo que ninguém consegue emitir."
@@ -25749,7 +25751,9 @@
     },
     {
       "codigo": "uniplus.selecao.produto_da_etapa.papel_desconhecido",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0157"
+      ],
       "oQueAconteceu": [
         "Um dos produtos que a etapa declara publicar veio com um papel que não está entre os\ndeclaráveis.",
         "O papel diz onde aquela publicação fica no ciclo de recurso da matéria, e só há três\nestados possíveis:",
@@ -25785,7 +25789,9 @@
     },
     {
       "codigo": "uniplus.selecao.produto_da_fase.ato_nao_encontrado_no_catalogo",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0546"
+      ],
       "oQueAconteceu": [
         "Um dos produtos que a fase declara publicar cita um tipo de ato que não tem versão\nvigente no catálogo de tipos de ato publicados na data de hoje. Ou o código não\nexiste no catálogo, ou existe e nenhuma versão dele está vigente agora.",
         "A fase não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a fase apontando\npara um modelo que ninguém consegue emitir."
@@ -25800,7 +25806,9 @@
     },
     {
       "codigo": "uniplus.selecao.produto_da_fase.papel_desconhecido",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0157"
+      ],
       "oQueAconteceu": [
         "Um dos produtos que a fase declara publicar veio com um papel que não está entre os\ndeclaráveis.",
         "O papel diz onde aquela publicação fica no ciclo recursal da matéria, e só há três\nestados possíveis:",
