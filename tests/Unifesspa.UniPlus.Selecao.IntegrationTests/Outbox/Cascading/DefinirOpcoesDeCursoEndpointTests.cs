@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -74,6 +75,10 @@ public sealed class DefinirOpcoesDeCursoEndpointTests
         HttpResponseMessage resposta = await PutAsync(api, processoId, new { });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
+        problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
+            .Should().Equal("numero");
         (await LerNumeroGravadoAsync(api, processoId)).Should().Be(1);
     }
 

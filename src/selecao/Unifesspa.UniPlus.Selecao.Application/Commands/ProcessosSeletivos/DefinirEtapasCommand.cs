@@ -54,12 +54,11 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// a carga sem a chave.
 /// </para>
 /// <para>
-/// As duas formas de ausência têm respostas diferentes, e é de propósito. A chave OMITIDA não
-/// desserializa: 400 na borda, antes de existir comando. A chave PRESENTE com <c>null</c>
-/// desserializa normalmente — o tipo não-anulável não impede, porque o host não liga
-/// <c>RespectNullableAnnotations</c> nem a exigência implícita alcança propriedade de item de
-/// coleção no corpo — e quem a recusa é a regra <c>NotNull</c> do validador, com 422 e o campo
-/// nomeado. Comportamento verificado ponta a ponta, não deduzido.
+/// A chave OMITIDA não desserializa: 400 na borda, antes de existir comando. A chave PRESENTE com
+/// <c>null</c> desserializa normalmente, porque o host não liga <c>RespectNullableAnnotations</c>, e quem a
+/// recusa é a exigência implícita do ASP.NET para tipo de referência não anulável, que alcança também a
+/// propriedade de item de lista: 400 com o mesmo código da omitida, <c>campo_obrigatorio_ausente</c>, e o
+/// campo nomeado. A regra <c>NotNull</c> do validador só vale para quem monta o comando fora do HTTP.
 /// </para>
 /// <para>
 /// O que ele NÃO cobre é a construção em C#: o default deixa o compilador aceitar, em
