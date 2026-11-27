@@ -2,19 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/desempate.schema.json",
   "title": "Critério de desempate",
-  "description": "Um critério de desempate: a regra do catálogo e os parâmetros dela. Os critérios são aplicados na ordem, do primeiro ao último.",
+  "description": "Um critério de desempate: a regra do catálogo e os parâmetros dela. Os critérios são aplicados na ordem em que aparecem na lista, do primeiro ao último.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "regra"
   ],
   "properties": {
-    "ordem": {
-      "title": "Ordem",
-      "description": "Posição do critério na sequência de desempate, a partir de 1.",
-      "type": "integer",
-      "minimum": 1
-    },
     "regra": {
       "title": "Regra do critério",
       "description": "Regra de desempate no catálogo de regras.",

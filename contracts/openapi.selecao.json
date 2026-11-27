@@ -18677,19 +18677,13 @@
       },
       "DocumentoDaConfiguracaoDesempate": {
         "title": "Crit\u00E9rio de desempate",
-        "description": "Um crit\u00E9rio de desempate: a regra do cat\u00E1logo e os par\u00E2metros dela. Os crit\u00E9rios s\u00E3o aplicados na ordem, do primeiro ao \u00FAltimo.",
+        "description": "Um crit\u00E9rio de desempate: a regra do cat\u00E1logo e os par\u00E2metros dela. Os crit\u00E9rios s\u00E3o aplicados na ordem em que aparecem na lista, do primeiro ao \u00FAltimo.",
         "type": "object",
         "additionalProperties": false,
         "required": [
           "regra"
         ],
         "properties": {
-          "ordem": {
-            "title": "Ordem",
-            "description": "Posi\u00E7\u00E3o do crit\u00E9rio na sequ\u00EAncia de desempate, a partir de 1.",
-            "type": "integer",
-            "minimum": 1
-          },
           "regra": {
             "title": "Regra do crit\u00E9rio",
             "description": "Regra de desempate no cat\u00E1logo de regras.",
