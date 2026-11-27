@@ -92,6 +92,52 @@ public sealed class ContratoPublicoDoCertameHttpTests
             (PapelDoDocumento.Anexo, "Quadro de vagas.docx", 800L, "https://acervo.example/anexos/quadro.docx"));
     }
 
+    [Theory]
+    [InlineData("\"atoId\": \"0192a000-0000-7000-8000-0000000000a1\", \"documentos\": null")]
+    [InlineData("\"atoId\": \"0192a000-0000-7000-8000-0000000000a1\", \"semDocumentos\": []")]
+    [InlineData("\"atoId\": \"0192a000-0000-7000-8000-0000000000a1\", \"documentos\": \"edital.pdf\"")]
+    [InlineData("\"documentos\": null")]
+    [InlineData("\"atoId\": \"00000000-0000-0000-0000-000000000000\", \"documentos\": null")]
+    public async Task Edital_publicado_sem_a_lista_de_documentos_vira_indisponivel(string propriedadesDoEdital)
+    {
+        string editais = $$"""
+            "editaisPublicados": [ { {{propriedadesDoEdital}} } ]
+            """;
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Indisponivel>();
+    }
+
+    [Fact]
+    public async Task Lista_de_editais_publicados_nula_continua_valida_e_sem_documentos()
+    {
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", "\"editaisPublicados\": null, \"situacao\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
+            .Which.Certame.DocumentosPorAto.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Edital_publicado_com_lista_de_documentos_vazia_e_valido()
+    {
+        string editais = $$"""
+            "editaisPublicados": [ { "atoId": "{{Criador}}", "documentos": [] } ]
+            """;
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, contrato => contrato.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
+            .Which.Certame.DocumentosPorAto[Criador].Should().BeEmpty();
+    }
+
     [Fact]
     public async Task Consulta_sai_sem_credencial_nem_cookie()
     {

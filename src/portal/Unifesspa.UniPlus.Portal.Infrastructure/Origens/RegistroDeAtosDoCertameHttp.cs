@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 using Refit;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
 /// <summary>
@@ -125,21 +126,14 @@ internal sealed partial class RegistroDeAtosDoCertameHttp : IRegistroDeAtosDoCer
 
     /// <summary>
     /// A anotação de nulidade não alcança os elementos da lista desserializada: um ato nulo na página
-    /// é ato fora do contrato, como o ato sem id ou sem tipo.
+    /// é ato fora do contrato, como o ato sem id, sem tipo, com tipo fora do formato do código ou sem
+    /// algum dos campos que o contrato exige.
     /// </summary>
     private static AtoDaOrigem? AtoDaOrigemDe(AtoNormativoPayload? ato) =>
-        ato is { Id: var id, TipoCodigo: { } tipoCodigo }
+        ato is { Id: var id, TipoCodigo: { } tipoCodigo, Ano: { } ano, DataDoAto: { } dataDoAto, CongelaConfiguracao: { } congelaConfiguracao }
         && id != Guid.Empty
-        && !string.IsNullOrWhiteSpace(tipoCodigo)
-            ? new AtoDaOrigem(
-                id,
-                tipoCodigo,
-                ato.TipoNome,
-                ato.Ano,
-                ato.Numero,
-                ato.DataDoAto,
-                ato.CongelaConfiguracao,
-                ato.MotivoRetificacao)
+        && FormatoDoCodigo.TemFormatoValido(tipoCodigo)
+            ? new AtoDaOrigem(id, tipoCodigo, ato.TipoNome, ano, ato.Numero, dataDoAto, congelaConfiguracao, ato.MotivoRetificacao)
             : null;
 
     private PaginaDeAtosLida ProximaPagina(List<AtoDaOrigem> atos, HttpResponseHeaders cabecalhos, int numero)

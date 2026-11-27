@@ -163,6 +163,49 @@ public sealed class RegistroDeAtosDoCertameHttpTests
         rede.Chamadas.Should().Be(2, "a página com ato fora do contrato encerra a leitura");
     }
 
+    [Theory]
+    [InlineData("\"ano\": 2026,", "")]
+    [InlineData("\"ano\": 2026,", "\"ano\": null,")]
+    [InlineData("\"dataDoAto\": \"2026-12-01\",", "")]
+    [InlineData("\"dataDoAto\": \"2026-12-01\",", "\"dataDoAto\": null,")]
+    [InlineData("\"congelaConfiguracao\": false,", "")]
+    [InlineData("\"congelaConfiguracao\": false,", "\"congelaConfiguracao\": null,")]
+    [InlineData("\"tipoCodigo\": \"AVISO\",", "\"tipoCodigo\": \"aviso\",")]
+    [InlineData("\"tipoCodigo\": \"AVISO\",", "\"tipoCodigo\": \" EDITAL \",")]
+    [InlineData("\"tipoCodigo\": \"AVISO\",", "\"tipoCodigo\": \"EDITAL__ABERTURA\",")]
+    [InlineData("\"tipoCodigo\": \"AVISO\",", "")]
+    public async Task Ato_com_campo_obrigatorio_ausente_nulo_ou_com_codigo_fora_do_formato_interrompe_a_leitura_e_nao_chega_a_pagina(
+        string trechoCorreto, string trechoRecebido)
+    {
+        Guid valido = Guid.NewGuid();
+        string atoForaDoContrato = Ato(Guid.NewGuid()).Replace(trechoCorreto, trechoRecebido, StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => PaginaCom([Ato(valido), atoForaDoContrato], proximoCursor: "c2"));
+
+        LeituraDosAtos leitura = await Ler(rede);
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.OrigemIndisponivel);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(valido);
+        rede.Chamadas.Should().Be(1, "a página com ato fora do contrato encerra a leitura");
+    }
+
+    [Theory]
+    [InlineData("\"ano\": 2026,", "\"ano\": \"2026\",")]
+    [InlineData("\"dataDoAto\": \"2026-12-01\",", "\"dataDoAto\": 20261124,")]
+    [InlineData("\"congelaConfiguracao\": false,", "\"congelaConfiguracao\": \"false\",")]
+    [InlineData("\"tipoCodigo\": \"AVISO\",", "\"tipoCodigo\": 7,")]
+    public async Task Ato_com_campo_de_tipo_errado_torna_a_pagina_ilegivel_e_nenhum_ato_chega_a_pagina(
+        string trechoCorreto, string trechoRecebido)
+    {
+        string atoForaDoContrato = Ato(Guid.NewGuid()).Replace(trechoCorreto, trechoRecebido, StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => PaginaCom([Ato(Guid.NewGuid()), atoForaDoContrato], proximoCursor: "c2"));
+
+        LeituraDosAtos leitura = await Ler(rede);
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.OrigemIndisponivel);
+        leitura.Atos.Should().BeEmpty("o corpo fora do contrato não é aproveitado nem em parte");
+        rede.Chamadas.Should().Be(1);
+    }
+
     [Fact]
     public async Task Cursor_ilegivel_na_pagina_do_limite_e_falha_na_paginacao_e_nao_limite_atingido()
     {
