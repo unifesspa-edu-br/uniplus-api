@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.ProtecaoDoCatalogo;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Web;
 
 using AwesomeAssertions;
 
@@ -112,20 +113,21 @@ public sealed class DecisoesDaProtecaoEndpointTests : HistoricoDaProtecaoTestBas
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact]
+    [Fact(DisplayName = "O link da página seguinte repete a busca sem os espaços das pontas e mantém o mesmo filtro")]
     public async Task Decisoes_CursorComBuscaAparada_ContinuaMesmoFiltro()
     {
         (string marca, _, _, _) = await RegistrarTresDecisoesAsync();
         using HttpClient client = Fixture.Factory.CreateClient();
         HttpResponseMessage primeira = await Enviar(client, HttpMethod.Get, $"{Base}/decisoes?busca=%20{marca}%20&limit=1", Betina);
         string link = LinkRel(primeira, "next")!;
-        link.Should().Contain($"busca=%20{marca}%20");
+        HttpUtility.ParseQueryString(new Uri(link, UriKind.RelativeOrAbsolute).Query)["busca"].Should().Be(marca);
+        link.Should().NotContain("%20");
         HttpResponseMessage seguindoLink = await Enviar(client, HttpMethod.Get, link, Betina);
-        HttpResponseMessage aparada = await Enviar(client, HttpMethod.Get, link.Replace($"%20{marca}%20", marca, StringComparison.Ordinal), Betina);
+        HttpResponseMessage comEspacos = await Enviar(client, HttpMethod.Get, link.Replace($"busca={marca}", $"busca=%20{marca}%20", StringComparison.Ordinal), Betina);
 
         seguindoLink.StatusCode.Should().Be(HttpStatusCode.OK);
-        aparada.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await aparada.Content.ReadAsStringAsync()).Should().Be(await seguindoLink.Content.ReadAsStringAsync());
+        comEspacos.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await comEspacos.Content.ReadAsStringAsync()).Should().Be(await seguindoLink.Content.ReadAsStringAsync());
     }
 
     [Theory(DisplayName = "O filtro fora do vocabulário, ou que não é decisão, e o período invertido respondem 422 no campo")]
