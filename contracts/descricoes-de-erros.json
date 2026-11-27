@@ -12992,7 +12992,8 @@
         "Se o caminho veio de um link da própria API e ainda assim recebeu este erro, informe o `traceId` da resposta à equipe do Uni+."
       ],
       "ondeAparece": [
-        "Qualquer requisição cujo caminho não corresponde a uma operação da API"
+        "Qualquer requisição cujo caminho não corresponde a uma operação da API",
+        "O pedido do documento de contrato (OpenAPI) com um nome que o serviço não publica, como `/openapi/inexistente.json`. O nome vale como publicado, em letras minúsculas."
       ]
     },
     {
