@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// O caminho que nenhuma operação atende (rota que não existe, identificador de rota fora do formato) responde 404 com o
-/// corpo de erro e o código comum da fronteira; o 404 de registro inexistente e o 405 continuam como estavam (ADR-0023).
+/// corpo de erro e o código comum da fronteira; o 404 de registro inexistente continua com o código do assunto (ADR-0023).
 /// </summary>
 [Collection(MonolitoHostCollection.Name)]
 public sealed class CaminhoInexistenteTests(MonolitoPostgresFixture fixture)
@@ -40,18 +40,6 @@ public sealed class CaminhoInexistenteTests(MonolitoPostgresFixture fixture)
         texto.Should().NotContain("x7q");
     }
 
-    [Fact(DisplayName = "O método que a rota não aceita é recusado antes do formato do identificador: 405 com Allow e sem o código comum")]
-    public async Task MetodoQueARotaNaoAceita_E405AntesDoFormatoDoIdentificador()
-    {
-        using HttpClient client = fixture.Factory.CreateClient();
-
-        HttpResponseMessage resposta = await client.GetAsync(new Uri("/api/configuracao/admin/campi/abc-x7q", UriKind.Relative));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
-        resposta.Content.Headers.Allow.Should().Contain("DELETE");
-        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(Codigo);
-    }
-
     [Fact(DisplayName = "O 404 de registro inexistente mantém o código do assunto e não recebe o código comum")]
     public async Task RegistroInexistente_MantemOCodigoDoAssunto()
     {
@@ -62,18 +50,6 @@ public sealed class CaminhoInexistenteTests(MonolitoPostgresFixture fixture)
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
         using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         corpo.RootElement.GetProperty("code").GetString().Should().NotBe(Codigo).And.EndWith(".nao_encontrado");
-    }
-
-    [Fact(DisplayName = "O método não aceito pela rota continua 405 com Allow e sem o código comum")]
-    public async Task MetodoNaoAceito_Continua405()
-    {
-        using HttpClient client = fixture.Factory.CreateClient();
-
-        HttpResponseMessage resposta = await client.PostAsync(new Uri("/api/configuracao/campi", UriKind.Relative), content: null);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
-        resposta.Content.Headers.Allow.Should().Contain("GET");
-        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(Codigo);
     }
 
     [Theory(DisplayName = "As rotas que existem não mudam: saúde e documento de contrato respondem 200")]

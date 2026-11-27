@@ -126,7 +126,7 @@ app.UseReverseProxyConfiguration();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseRespostaDoCaminhoInexistente();
+app.UseRespostaDaRequisicaoSemOperacao();
 app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();

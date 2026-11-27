@@ -4012,6 +4012,11 @@
       "titulo": "A requisição não pôde ser lida"
     },
     {
+      "codigo": "uniplus.requisicao.metodo_nao_aceito",
+      "status": 405,
+      "titulo": "A requisição usa um método que o caminho não aceita"
+    },
+    {
       "codigo": "uniplus.requisicao.valor_invalido",
       "status": 400,
       "titulo": "A requisição traz valor que não corresponde ao tipo declarado"
