@@ -53,73 +53,21 @@ public sealed partial class UnidadeReader : IUnidadeReader
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<UnidadeView>> ListarAtivasAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UnidadeView>> ListarAtivasAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         List<UnidadeView>? cacheado = await ObterDoCacheAsync(cancellationToken).ConfigureAwait(false);
-        if (cacheado is not null)
-        {
-            return cacheado;
-        }
+        return cacheado ?? await CarregarSobLeaseAsync(cancellationToken).ConfigureAwait(false);
+    }
 
-        IAsyncDisposable? lease = null;
-        bool leaseIndisponivelPorOutage = false;
+    private async Task<IReadOnlyList<UnidadeView>> CarregarSobLeaseAsync(CancellationToken cancellationToken)
+    {
+        (IAsyncDisposable? lease, bool leaseIndisponivelPorOutage) = await TentarAdquirirLeaseAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            lease = await _cache
-                .AcquireLeaseAsync(UnidadeCacheKeys.LeaseTodasAsUnidadesAtivas, LeaseTtl, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            LogFalhaAdquirirLease(_logger, ex);
-            leaseIndisponivelPorOutage = true;
-        }
-
-        try
-        {
-            if (!leaseIndisponivelPorOutage && lease is null)
-            {
-                for (int tentativa = 0; tentativa < TentativasDeRecheck; tentativa++)
-                {
-                    await Task.Delay(EsperaCurta, cancellationToken).ConfigureAwait(false);
-                    cacheado = await ObterDoCacheAsync(cancellationToken).ConfigureAwait(false);
-                    if (cacheado is not null)
-                    {
-                        return cacheado;
-                    }
-                }
-
-                LogLeaseEsgotouSemPopular(_logger, UnidadeCacheKeys.TodasAsUnidadesAtivas);
-            }
-            else if (lease is not null)
-            {
-                cacheado = await ObterDoCacheAsync(cancellationToken).ConfigureAwait(false);
-                if (cacheado is not null)
-                {
-                    return cacheado;
-                }
-            }
-
-            IReadOnlyList<UnidadeView> views = await CarregarDoSourceAsync(cancellationToken).ConfigureAwait(false);
-
-            try
-            {
-                await _cache.DefinirAsync(
-                    UnidadeCacheKeys.TodasAsUnidadesAtivas,
-                    views,
-                    CacheTtl,
-                    cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                LogFalhaPopularCache(_logger, ex);
-            }
-
-            return views;
+            return await ObterDoCacheAposLeaseAsync(lease, leaseIndisponivelPorOutage, cancellationToken).ConfigureAwait(false)
+                ?? await CarregarDoSourceEPopularCacheAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -128,6 +76,65 @@ public sealed partial class UnidadeReader : IUnidadeReader
                 await lease.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task<(IAsyncDisposable? Lease, bool IndisponivelPorOutage)> TentarAdquirirLeaseAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            IAsyncDisposable? lease = await _cache
+                .AcquireLeaseAsync(UnidadeCacheKeys.LeaseTodasAsUnidadesAtivas, LeaseTtl, cancellationToken)
+                .ConfigureAwait(false);
+            return (lease, false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogFalhaAdquirirLease(_logger, ex);
+            return (null, true);
+        }
+    }
+
+    private async Task<List<UnidadeView>?> ObterDoCacheAposLeaseAsync(IAsyncDisposable? lease, bool leaseIndisponivelPorOutage, CancellationToken cancellationToken)
+    {
+        if (leaseIndisponivelPorOutage)
+        {
+            return null;
+        }
+
+        return lease is not null
+            ? await ObterDoCacheAsync(cancellationToken).ConfigureAwait(false)
+            : await EsperarOCachePopuladoAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<UnidadeView>?> EsperarOCachePopuladoAsync(CancellationToken cancellationToken)
+    {
+        for (int tentativa = 0; tentativa < TentativasDeRecheck; tentativa++)
+        {
+            await Task.Delay(EsperaCurta, cancellationToken).ConfigureAwait(false);
+            List<UnidadeView>? cacheado = await ObterDoCacheAsync(cancellationToken).ConfigureAwait(false);
+            if (cacheado is not null)
+            {
+                return cacheado;
+            }
+        }
+
+        LogLeaseEsgotouSemPopular(_logger, UnidadeCacheKeys.TodasAsUnidadesAtivas);
+        return null;
+    }
+
+    private async Task<IReadOnlyList<UnidadeView>> CarregarDoSourceEPopularCacheAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<UnidadeView> views = await CarregarDoSourceAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _cache.DefinirAsync(UnidadeCacheKeys.TodasAsUnidadesAtivas, views, CacheTtl, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogFalhaPopularCache(_logger, ex);
+        }
+
+        return views;
     }
 
     public async Task<UnidadeView?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -146,6 +153,24 @@ public sealed partial class UnidadeReader : IUnidadeReader
             .ConfigureAwait(false);
 
         return unidade?.ToView();
+    }
+
+    public async Task<IReadOnlyList<UnidadeView>> ListarPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        // O caractere nulo não cabe em coluna de texto do Postgres e faria o parâmetro ser recusado: esse código não tem Unidade.
+        List<string> codigosDoLote = [.. codigos.Where(static codigo => !codigo.Contains('\0', StringComparison.Ordinal)).Distinct(StringComparer.Ordinal)];
+        List<Unidade> unidades = await _dbContext.Unidades
+            .AsNoTracking()
+            .Where(u => codigosDoLote.Contains(u.Codigo))
+            .OrderBy(u => u.Sigla)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. unidades.Select(u => u.ToView())];
     }
 
     private async Task<List<UnidadeView>?> ObterDoCacheAsync(CancellationToken cancellationToken)

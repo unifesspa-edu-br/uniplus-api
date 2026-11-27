@@ -37,4 +37,13 @@ public interface IUnidadeReader
     Task<UnidadeView?> ObterPorCodigoAsync(
         string codigo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As Unidades vivas que têm hoje cada um dos <paramref name="codigos"/>, numa só leitura direto do banco, pela mesma razão de
+    /// <see cref="ObterPorCodigoAsync"/>, ordenadas por sigla. O código que nenhuma Unidade viva tem não aparece no resultado, e
+    /// um código repetido no lote devolve a Unidade uma só vez.
+    /// </summary>
+    Task<IReadOnlyList<UnidadeView>> ListarPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
 }
