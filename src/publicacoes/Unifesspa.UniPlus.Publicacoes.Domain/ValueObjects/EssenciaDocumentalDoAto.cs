@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 /// <summary>
 /// A essência documental e normativa do ato (ADR-0105): a numeração, o tipo copiado do catálogo, a data
@@ -25,7 +26,6 @@ public readonly record struct EssenciaDocumentalDoAto(
     private const int OrgaoMaxLength = 200;
     private const int SerieMaxLength = 100;
     private const int NumeroMaxLength = 60;
-    private const int TipoCodigoMaxLength = 60;
     private const int TipoNomeMaxLength = 200;
     private const int AssinanteMaxLength = 200;
     private const int MotivoRetificacaoMaxLength = 1000;
@@ -76,7 +76,7 @@ public readonly record struct EssenciaDocumentalDoAto(
     private static string CodigoConferido(string tipoCodigo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoCodigo);
-        if (tipoCodigo.Length > TipoCodigoMaxLength || !FormatoDoCodigo.TemFormatoValido(tipoCodigo))
+        if (tipoCodigo.Length > TipoAtoPublicado.TamanhoMaximoDoCodigo || !FormatoDoCodigo.TemFormatoValido(tipoCodigo))
         {
             throw new ArgumentException("Código do tipo de ato fora do formato.", nameof(tipoCodigo));
         }

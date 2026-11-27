@@ -12,8 +12,10 @@ using Microsoft.OpenApi;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi.Apoio;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class UniPlusSchemaTransformerTests
 {
@@ -80,6 +82,44 @@ public sealed class UniPlusSchemaTransformerTests
         campo.Type.Should().Be(JsonSchemaType.String);
     }
 
+    [Theory(DisplayName = "O texto marcado como código, anulável ou não, publica o padrão do código e o limite")]
+    [InlineData("codigo", JsonSchemaType.String)]
+    [InlineData("codigoAnulavel", JsonSchemaType.String | JsonSchemaType.Null)]
+    public async Task NoFormatoDoCodigo_PublicaPadraoELimite(string campo, JsonSchemaType tipo)
+    {
+        OpenApiSchema schema = new() { Type = tipo };
+
+        await new UniPlusSchemaTransformer().TransformAsync(schema, ContextoDaPropriedade<ComCodigoMarcado>(campo), CancellationToken.None);
+
+        schema.Pattern.Should().Be("^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$");
+        schema.MaxLength.Should().Be(60);
+        schema.Type.Should().Be(tipo);
+    }
+
+    [Fact(DisplayName = "O campo sem a marca de código não ganha padrão nem limite")]
+    public async Task SemMarca_NaoPublicaPadrao()
+    {
+        OpenApiSchema schema = new() { Type = JsonSchemaType.String };
+
+        await new UniPlusSchemaTransformer().TransformAsync(schema, ContextoDaPropriedade<ComCodigoMarcado>("livre"), CancellationToken.None);
+
+        schema.Pattern.Should().BeNull();
+        schema.MaxLength.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "A marca de código recusa o campo que não é texto ou que já aceita códigos de um enum")]
+    [InlineData(typeof(ComCodigoMarcadoEmNumero), "numero")]
+    [InlineData(typeof(ComCodigoMarcadoQueAceitaFase), "fase")]
+    public async Task NoFormatoDoCodigo_CampoInvalido_Lanca(Type pai, string campo)
+    {
+        OpenApiSchema schema = new() { Type = JsonSchemaType.String };
+        OpenApiSchemaTransformerContext contexto = ContextoDaPropriedade(pai, campo);
+
+        Func<Task> aplicar = () => new UniPlusSchemaTransformer().TransformAsync(schema, contexto, CancellationToken.None);
+
+        (await aplicar.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain("NoFormatoDoCodigo");
+    }
+
     private static OpenApiSchemaTransformerContext ContextoDoTipo() => ContextoDoTipo<Dto>();
 
     private static OpenApiSchemaTransformerContext ContextoDoTipo<T>() => new()
@@ -95,9 +135,12 @@ public sealed class UniPlusSchemaTransformerTests
     /// O contexto da forma que o pipeline passa para o schema de uma propriedade: o <c>JsonPropertyInfo</c> é o da propriedade
     /// do pai e o <c>JsonTypeInfo</c> é o do tipo dela, que para o objeto aninhado é o do próprio objeto.
     /// </summary>
-    private static OpenApiSchemaTransformerContext ContextoDaPropriedade<TPai>(string nome)
+    private static OpenApiSchemaTransformerContext ContextoDaPropriedade<TPai>(string nome) =>
+        ContextoDaPropriedade(typeof(TPai), nome);
+
+    private static OpenApiSchemaTransformerContext ContextoDaPropriedade(Type pai, string nome)
     {
-        JsonPropertyInfo propriedade = TipoDe<TPai>().Properties.Single(p => p.Name == nome);
+        JsonPropertyInfo propriedade = new DefaultJsonTypeInfoResolver().GetTypeInfo(pai, Opcoes)!.Properties.Single(p => p.Name == nome);
         return new()
         {
             DocumentName = "t",
@@ -152,6 +195,30 @@ public sealed class UniPlusSchemaTransformerTests
     {
         [ObrigatorioNoContrato]
         public string? Codigo { get; init; }
+    }
+
+    public sealed class ComCodigoMarcado
+    {
+        [NoFormatoDoCodigo(60)]
+        public string Codigo { get; init; } = "";
+
+        [NoFormatoDoCodigo(60)]
+        public string? CodigoAnulavel { get; init; }
+
+        public string Livre { get; init; } = "";
+    }
+
+    public sealed class ComCodigoMarcadoEmNumero
+    {
+        [NoFormatoDoCodigo(60)]
+        public int Numero { get; init; }
+    }
+
+    public sealed class ComCodigoMarcadoQueAceitaFase
+    {
+        [NoFormatoDoCodigo(60)]
+        [AceitaCodigosDe<ModeloDeCodigosDeTeste.Fase>]
+        public string Fase { get; init; } = "";
     }
 
     public sealed record Item() : ItemClassificado(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, null);

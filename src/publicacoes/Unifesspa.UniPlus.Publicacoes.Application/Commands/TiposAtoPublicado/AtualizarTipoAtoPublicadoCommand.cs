@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
@@ -23,7 +25,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// </remarks>
 public sealed record AtualizarTipoAtoPublicadoCommand(
     Guid Id,
-    string? Codigo,
+    [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string? Codigo,
     string? Nome,
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,

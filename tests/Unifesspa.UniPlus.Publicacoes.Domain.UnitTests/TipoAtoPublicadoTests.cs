@@ -57,6 +57,9 @@ public sealed class TipoAtoPublicadoTests
         };
 
     [Theory(DisplayName = "Código fora do formato UPPER_SNAKE é recusado")]
+    [InlineData(" EDITAL_ABERTURA ")]
+    [InlineData("edital_abertura")]
+    [InlineData("5")]
     [InlineData("convocacao")]
     [InlineData("Convocacao")]
     [InlineData("_EDITAL")]
@@ -130,6 +133,16 @@ public sealed class TipoAtoPublicadoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.BaseLegalTamanho);
+    }
+
+    [Fact(DisplayName = "Atualizar com o código do tipo acrescido de espaços é recusado, sem aparar")]
+    public void Atualizar_ComCodigoComEspacos_RecusaSemAparar()
+    {
+        TipoAtoPublicado tipo = Novo(codigo: "EDITAL_ABERTURA").Value!;
+
+        Result resultado = tipo.ConferirCodigoInalterado(" EDITAL_ABERTURA ");
+
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoImutavel);
     }
 
     [Fact(DisplayName = "Atualizar revalida os campos e não muta a entidade quando falha")]
