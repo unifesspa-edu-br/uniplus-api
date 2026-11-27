@@ -23,7 +23,7 @@ public sealed class DescricaoDeTiposDeFaseTests
 
     public DescricaoDeTiposDeFaseTests() =>
         _fases.ListarVivasPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
-            .Returns([new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, "NO_EDITAL")]);
+            .Returns([new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, false, "NO_EDITAL")]);
 
     [Fact(DisplayName = "O nome do tipo de fase entra logo depois do código, e o cadastro é lido uma vez com os códigos distintos")]
     public async Task Descrever_FasesComTipoConhecido_TrazONomeAoLadoDoCodigo()

@@ -54,6 +54,15 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<FaseCanonica>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Os sinalizadores do comando levam a marca de organizada em chamadas à fase")]
+    public void Sinalizadores_LevamAMarcaDeOrganizadaEmChamadas()
+    {
+        new CriarFaseCanonicaCommand("HABILITACAO", Nome: "x", OrganizadaEmChamadas: true).Sinalizadores()
+            .OrganizadaEmChamadas.Should().BeTrue();
+        new CriarFaseCanonicaCommand("HABILITACAO", Nome: "x").Sinalizadores()
+            .OrganizadaEmChamadas.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
     public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {

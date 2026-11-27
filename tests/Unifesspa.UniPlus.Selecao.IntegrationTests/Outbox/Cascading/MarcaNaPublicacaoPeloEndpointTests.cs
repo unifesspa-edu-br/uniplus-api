@@ -83,7 +83,7 @@ public sealed class MarcaNaPublicacaoPeloEndpointTests(CascadingFixture fixture)
     {
         DateTimeOffset inicio = new(2026, 1, 20, 0, 0, 0, TimeSpan.Zero);
         ProcessoPublicavelComAMarca processo = await ProcessoPublicavelComAMarca.SemearAsync(
-            fixture, "Períodos que se sobrepõem", 1, Criar(Habilitacao, 2, inicio, inicio.AddDays(20)));
+            fixture, "Períodos que se sobrepõem", 1, Criar(OrigemNoEdital(Habilitacao), 2, inicio, inicio.AddDays(20)));
 
         using HttpResponseMessage recusada = await processo.PublicarAsync();
 

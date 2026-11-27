@@ -22616,7 +22616,8 @@
           "agrupaEtapas",
           "permiteComplementacao",
           "coletaInscricao",
-          "coletaSolicitacaoIsencao"
+          "coletaSolicitacaoIsencao",
+          "organizadaEmChamadas"
         ],
         "type": "object",
         "properties": {
@@ -22637,6 +22638,9 @@
             "type": "boolean"
           },
           "coletaSolicitacaoIsencao": {
+            "type": "boolean"
+          },
+          "organizadaEmChamadas": {
             "type": "boolean"
           }
         }

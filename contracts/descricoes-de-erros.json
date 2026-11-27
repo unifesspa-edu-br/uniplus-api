@@ -19794,6 +19794,24 @@
       ]
     },
     {
+      "codigo": "uniplus.selecao.formulario_processo.chamadas_sem_formulario_obrigatorio",
+      "requisitos": [
+        "UNI-REQ-0144",
+        "UNI-REQ-0552"
+      ],
+      "oQueAconteceu": [
+        "Uma fase do cronograma é organizada em chamadas (como a habilitação, em que cada chamada convoca candidatos para enviar os seus documentos), mas nenhum formulário obrigatório está ligado a ela. É o formulário obrigatório da fase que todo convocado preenche e envia em cada chamada, e sem ele a chamada não teria o que receber. A mensagem aponta a fase pela chave dela na configuração.",
+        "Cada fase organizada em chamadas sem formulário obrigatório gera uma recusa própria, na ordem do cronograma. O rascunho pode ficar sem o formulário enquanto a configuração é montada. A recusa acontece ao congelar uma versão: publicação inicial ou retificação em ato único; a conferência de conformidade do processo mostra a mesma falta. Nada é congelado."
+      ],
+      "comoResolver": [
+        "Grave um formulário obrigatório (`obrigatorio` verdadeiro) ligado a cada fase indicada, com as seções e os itens que o convocado preenche, e repita a operação. Em processo já publicado, a criação do formulário é uma alteração da configuração e se faz numa retificação."
+      ],
+      "ondeAparece": [
+        "Publicação inicial do processo seletivo",
+        "Retificação em ato único"
+      ]
+    },
+    {
       "codigo": "uniplus.selecao.formulario_processo.codigo_duplicado",
       "requisitos": [],
       "oQueAconteceu": [

@@ -54,6 +54,7 @@ public sealed record FaseDeclarada
         AgrupaEtapas = origem.AgrupaEtapas;
         ColetaInscricao = origem.ColetaInscricao;
         ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
+        OrganizadaEmChamadas = origem.OrganizadaEmChamadas;
         Atos = atos;
         Bancas = bancas;
         Recusas = recusas;
@@ -83,6 +84,8 @@ public sealed record FaseDeclarada
     public bool ColetaInscricao { get; }
 
     public bool ColetaSolicitacaoIsencao { get; }
+
+    public bool OrganizadaEmChamadas { get; }
 
     public AtosDaFase Atos { get; }
 

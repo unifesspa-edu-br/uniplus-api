@@ -57,6 +57,7 @@ internal static class SerializacaoDoCronograma
         item["permiteComplementacao"] = fase.PermiteComplementacao;
         item["coletaInscricao"] = fase.ColetaInscricao;
         item["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao;
+        item["organizadaEmChamadas"] = fase.OrganizadaEmChamadas;
     }
 
     private static void AcrescentarDecisoesDeCronograma(JsonObject item, FaseCronograma fase)

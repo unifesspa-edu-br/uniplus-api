@@ -123,7 +123,8 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             AgrupaEtapas: agrupaEtapas,
             PermiteComplementacao: permiteComplementacao,
             ColetaInscricao: coletaInscricao,
-            ColetaSolicitacaoIsencao: coletaIsencao));
+            ColetaSolicitacaoIsencao: coletaIsencao,
+            OrganizadaEmChamadas: fase.OrganizadaEmChamadas));
     }
 
     [Theory(DisplayName = "O cronograma projeta a marca de mesmo momento como a fase a tem")]

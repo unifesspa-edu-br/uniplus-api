@@ -20,7 +20,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Publica
 
 /// <summary>
 /// A obrigatoriedade dos formulários por fase na publicação (UNI-REQ-0144): quem cobra taxa tem formulário
-/// facultativo na janela de isenção, o obrigatório só vale na fase que também coleta inscrição, e o processo de
+/// facultativo no período de isenção, o obrigatório só vale na fase que também coleta inscrição, e o processo de
 /// resultado importado não tem formulário na fase que coleta inscrição. Cada regra é provada com uma configuração
 /// que a recusa e outra que a atende, pelo código da recusa e não pela fase nem pelo nome do formulário.
 /// </summary>
@@ -42,7 +42,7 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Processo que cobra taxa e não tem formulário facultativo na janela de isenção é recusado na publicação")]
+    [Fact(DisplayName = "Processo que cobra taxa e não tem formulário facultativo no período de isenção é recusado na publicação")]
     public async Task QuemCobraTaxaSemFormularioDeIsencao_RecusaAPublicacao()
     {
         IReadOnlySet<string> recusas = await PublicarEListarRecusasAsync(
@@ -52,7 +52,7 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
         recusas.Should().Contain(TaxaSemFormularioDeIsencao);
     }
 
-    [Fact(DisplayName = "Processo que cobra taxa e tem formulário facultativo na janela de isenção não é recusado por falta dele")]
+    [Fact(DisplayName = "Processo que cobra taxa e tem formulário facultativo no período de isenção não é recusado por falta dele")]
     public async Task QuemCobraTaxaComFormularioFacultativoDeIsencao_NaoRecusaPorFaltaDele()
     {
         IReadOnlySet<string> recusas = await PublicarEListarRecusasAsync(
@@ -140,11 +140,10 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
     };
 
     private static FaseCronograma FaseSoDeIsencao() => FaseDoCronogramaPublicavelDeTeste.Criar(
-        FaseDeIsencao,
+        FaseDoCronogramaPublicavelDeTeste.OrigemNoEdital(FaseDeIsencao) with { ColetaSolicitacaoIsencao = true },
         ordem: 1,
         new DateTimeOffset(2025, 11, 1, 0, 0, 0, TimeSpan.Zero),
-        new DateTimeOffset(2025, 11, 10, 0, 0, 0, TimeSpan.Zero),
-        coletaSolicitacaoIsencao: true);
+        new DateTimeOffset(2025, 11, 10, 0, 0, 0, TimeSpan.Zero));
 
     private static OpcoesDoProcessoSeletivoPublicavel ProcessoComFaseSoDeIsencao(bool obrigatorio) => new()
     {

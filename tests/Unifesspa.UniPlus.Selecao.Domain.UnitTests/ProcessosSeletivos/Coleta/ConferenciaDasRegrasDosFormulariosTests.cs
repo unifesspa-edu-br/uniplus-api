@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Formularios;
 public sealed class ConferenciaDasRegrasDosFormulariosTests
 {
     private readonly FaseCronograma _inscricao = FaseDeTeste.Criar(1, "INSCRICAO", coletaInscricao: true);
-    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(3, "HABILITACAO");
+    private readonly FaseCronograma _habilitacao = FaseDeTeste.Criar(3, "HABILITACAO", organizadaEmChamadas: false);
 
     private ConhecimentoDosFatos Conhecimento(params ColetaDoFormulario[] coletas) =>
         new(coletas, new CatalogoDosFatosCitados(new Dictionary<string, string>(), [], new Dictionary<string, IReadOnlyCollection<string>>()), [_inscricao, _habilitacao]);

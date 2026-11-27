@@ -53,7 +53,7 @@ public sealed class RepeticaoPorGrupoTests
     {
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
-        FaseCronograma habilitacao = Fase(2, FormularioProcesso.CodigoFaseHabilitacao);
+        FaseCronograma habilitacao = Fase(2, "HABILITACAO");
         processo.DefinirCronogramaFases([inscricao, habilitacao], []).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, habilitacao.Id, null, FormularioDeTeste.Paginas())
             .IsSuccess.Should().BeTrue();

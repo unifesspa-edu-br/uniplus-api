@@ -71,6 +71,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     /// <summary>Se a fase abre a janela de pedido de isenção da taxa.</summary>
     public bool ColetaSolicitacaoIsencao { get; private set; }
 
+    /// <summary>Se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.</summary>
+    public bool OrganizadaEmChamadas { get; private set; }
+
     /// <summary>Início da janela, sempre em UTC (<c>Offset</c> zero).</summary>
     public DateTimeOffset? Inicio { get; private set; }
 
@@ -270,7 +273,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
     }
 
     private OrigemCanonicaDaFase OrigemCanonica() => new(
-        FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao)
+        FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao, OrganizadaEmChamadas)
     { Nome = TipoFaseNome };
 
     private DecisoesDeCronogramaDaFase DecisoesDeCronograma() =>
@@ -286,6 +289,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso, IPeriodoDaFas
         PermiteComplementacao = origem.PermiteComplementacao;
         ColetaInscricao = origem.ColetaInscricao;
         ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
+        OrganizadaEmChamadas = origem.OrganizadaEmChamadas;
     }
 
     private void DefinirCronograma(DecisoesDeCronogramaDaFase cronograma)

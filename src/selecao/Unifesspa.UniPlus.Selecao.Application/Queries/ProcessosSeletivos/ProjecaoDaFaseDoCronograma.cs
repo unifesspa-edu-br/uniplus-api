@@ -39,7 +39,8 @@ internal static class ProjecaoDaFaseDoCronograma
         AgrupaEtapas: fase.AgrupaEtapas,
         PermiteComplementacao: fase.PermiteComplementacao,
         ColetaInscricao: fase.ColetaInscricao,
-        ColetaSolicitacaoIsencao: fase.ColetaSolicitacaoIsencao);
+        ColetaSolicitacaoIsencao: fase.ColetaSolicitacaoIsencao,
+        OrganizadaEmChamadas: fase.OrganizadaEmChamadas);
 
     private static CronogramaDaFaseDto ProjetarCronogramaDaFase(FaseCronograma fase) => new(
         Ordem: fase.Ordem,

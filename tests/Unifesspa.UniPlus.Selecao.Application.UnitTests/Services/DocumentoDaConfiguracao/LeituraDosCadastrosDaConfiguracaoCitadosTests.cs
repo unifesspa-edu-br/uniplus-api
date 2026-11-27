@@ -34,7 +34,7 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         _leitura = new(_tiposDeProcesso, _fasesCanonicas, _tiposDeBanca, _categorias, _tiposDeEtapa, _pesosPorArea, _tiposDeDocumento);
 
     private static FaseCanonicaView Fase(string codigo, string origemData = "NO_EDITAL") =>
-        new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, origemData);
+        new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, false, origemData);
 
     private static TipoBancaView TipoCadastrado(TipoDeBanca tipo) => new(Guid.CreateVersion7(), tipo, $"Banca {tipo.Codigo()}", null, null, PapelDaBanca.ImportaCandidatos, false, false, []);
 

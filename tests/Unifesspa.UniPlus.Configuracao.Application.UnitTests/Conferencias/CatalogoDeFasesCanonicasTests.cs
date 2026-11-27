@@ -55,7 +55,7 @@ public sealed class CatalogoDeFasesCanonicasTests
         item.Descricao,
         item.BaseLegal,
         item.OrigemData.Codigo(),
-        new SinalizadoresDaFase(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao));
+        new SinalizadoresDaFase(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao, item.OrganizadaEmChamadas));
 
     [Fact(DisplayName = "Os identificadores do seed são únicos e do prefixo determinístico")]
     public void Seed_IdentificadoresDeterministicos()
@@ -123,6 +123,12 @@ public sealed class CatalogoDeFasesCanonicasTests
         item.BaseLegal.Should().Be(
             "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016");
     }
+
+    [Fact(DisplayName = "Só a habilitação nasce organizada em chamadas")]
+    public void Seed_SoAHabilitacaoEOrganizadaEmChamadas() =>
+        FaseCanonicaSeed.Itens.Where(item => item.OrganizadaEmChamadas)
+            .Select(item => item.Codigo)
+            .Should().Equal("HABILITACAO");
 
     [Fact(DisplayName = "Codigos é exatamente o conjunto de Descritos, na mesma ordem")]
     public void Codigos_DerivaDeDescritos()

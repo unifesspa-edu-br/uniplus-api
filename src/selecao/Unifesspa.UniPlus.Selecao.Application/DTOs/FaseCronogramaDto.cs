@@ -97,13 +97,15 @@ public sealed record FaseCronogramaDto(
 /// <param name="PermiteComplementacao">Se a fase admite complementação de documentos.</param>
 /// <param name="ColetaInscricao">Se a fase coleta a inscrição.</param>
 /// <param name="ColetaSolicitacaoIsencao">Se a fase coleta a solicitação de isenção da taxa.</param>
+/// <param name="OrganizadaEmChamadas">Se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.</param>
 public sealed record FaseCanonicaCongeladaDto(
     Guid OrigemId,
     CodigoComRotulo<OrigemDataFase> OrigemData,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     bool ColetaInscricao,
-    bool ColetaSolicitacaoIsencao);
+    bool ColetaSolicitacaoIsencao,
+    bool OrganizadaEmChamadas);
 
 /// <summary>O que o edital decide sobre a fase: a posição, o período e quem responde.</summary>
 /// <param name="Ordem">A posição da fase na sequência do cronograma.</param>

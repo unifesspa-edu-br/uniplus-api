@@ -22,7 +22,7 @@ internal static class LeituraDoCronograma
     private static readonly string[] ChavesDaFase =
     [
         "id", "chave", "ordem", "noMesmoMomentoDaAnterior", "tipoFaseOrigemId", "codigo", "tipoFaseNome", "origemData", "agrupaEtapas", "permiteComplementacao",
-        "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "publicacoesPrevistas",
+        "coletaInscricao", "coletaSolicitacaoIsencao", "organizadaEmChamadas", "inicio", "fim", "publicacoesPrevistas",
         "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao", "regraDeHomologacao",
     ];
 
@@ -84,7 +84,8 @@ internal static class LeituraDoCronograma
         leitor.Booleano(item, "agrupaEtapas", path),
         leitor.Booleano(item, "permiteComplementacao", path),
         leitor.Booleano(item, "coletaInscricao", path),
-        leitor.Booleano(item, "coletaSolicitacaoIsencao", path))
+        leitor.Booleano(item, "coletaSolicitacaoIsencao", path),
+        leitor.Booleano(item, "organizadaEmChamadas", path))
     { Nome = leitor.TextoNaoVazio(item, "tipoFaseNome", path, LimitesDoEnvelope.TipoFaseNome) };
 
     // A unidade responsável vem depois das filhas na ordem da gramática, e completa estas decisões.

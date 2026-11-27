@@ -68,8 +68,8 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
             [new UnidadeView(Guid.CreateVersion7(), "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null)]);
         _fasesCanonicas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs(
         [
-            new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, "NO_EDITAL"),
-            new FaseCanonicaView(Guid.CreateVersion7(), "RESULTADO", "Resultado", null, false, false, null, false, false, "NO_EDITAL"),
+            new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, false, "NO_EDITAL"),
+            new FaseCanonicaView(Guid.CreateVersion7(), "RESULTADO", "Resultado", null, false, false, null, false, false, false, "NO_EDITAL"),
         ]);
     }
 

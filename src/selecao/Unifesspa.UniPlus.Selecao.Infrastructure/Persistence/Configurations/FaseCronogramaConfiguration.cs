@@ -80,6 +80,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.PermiteComplementacao).HasComment("Indica se a fase permite complementar informações.");
         builder.Property(f => f.ColetaInscricao).HasComment("Indica se a fase recebe inscrições.");
         builder.Property(f => f.ColetaSolicitacaoIsencao).HasComment("Indica se a fase recebe pedidos de isenção da taxa.");
+        builder.Property(f => f.OrganizadaEmChamadas).HasComment("Indica se a fase se repete em chamadas; o edital exige nela ao menos um formulário obrigatório.");
         builder.Property(f => f.Inicio).HasComment("Início do período da fase, quando definido.");
         builder.Property(f => f.Fim).HasComment("Fim do período da fase, quando definido.");
         builder.MapearRegraDeHomologacao(f => f.RegraDeHomologacao);
