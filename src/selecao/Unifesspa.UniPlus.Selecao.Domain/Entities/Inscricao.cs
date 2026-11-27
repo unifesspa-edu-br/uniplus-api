@@ -307,11 +307,18 @@ public sealed class Inscricao : EntityBase
         ArgumentNullException.ThrowIfNull(apuracao);
         if (ConferirNaoCancelada() is { } cancelada) return Result<ComprovanteInscricao>.Failure(cancelada);
         if (ConferirPrecondicao(precondicao) is { } recusada) return Result<ComprovanteInscricao>.Failure(recusada);
-        IReadOnlyList<FieldError> recusas = [.. RecusasDoEnvio(recebido, admitidas, apuracao),
-            .. ModalidadesDoEnvio.DaAvaliacao(apuracao.Avaliacao, recebido.Opcoes).Recusas(recebido.Opcoes, admitidas)];
+        IReadOnlyList<FieldError> recusas = RecusasDoEnvioCompleto(recebido, admitidas, apuracao);
         return recusas.Count > 0 ? Result<ComprovanteInscricao>.ValidationFailure(recusas)
             : AplicarEnvio(numeroGeradoSeNecessario, recebido, admitidas, apuracao, instante);
     }
+
+    // A forma é conferida aqui de novo para o domínio se proteger de um envio que não passou pela conferência do envio; num envio válido não há recusa.
+    private IReadOnlyList<FieldError> RecusasDoEnvioCompleto(PreenchimentoDoCandidato recebido, RespostasAdmitidas admitidas, ApuracaoDoEnvio apuracao) =>
+    [
+        .. recebido.RecusasDeForma(admitidas),
+        .. RecusasDoEnvio(recebido, admitidas, apuracao),
+        .. ModalidadesDoEnvio.DaAvaliacao(apuracao.Avaliacao, recebido.Opcoes).Recusas(recebido.Opcoes, admitidas),
+    ];
 
     private Result<ComprovanteInscricao> AplicarEnvio(string numeroGerado, PreenchimentoDoCandidato recebido,
         RespostasAdmitidas admitidas, ApuracaoDoEnvio apuracao, DateTimeOffset instante)
@@ -356,7 +363,10 @@ public sealed class Inscricao : EntityBase
             Formulario.ApenasCifraIndividual(Formulario.SemNumerosDeDocumento(Formulario.Preenchimento.Respostas)),
             Formulario.Preenchimento.Opcoes.Segunda, modalidades.Segunda is { Derivada: true } ? modalidades.Segunda.Itens : null);
 
-    /// <summary>Acumula as recusas locais na ordem do envio, antes das modalidades e das conferências externas.</summary>
+    /// <summary>
+    /// Acumula as recusas locais na ordem do envio, antes das modalidades e das conferências externas.
+    /// A forma do preenchimento não entra aqui: quem chama a confere uma vez, antes.
+    /// </summary>
     public IReadOnlyList<FieldError> RecusasDoEnvio(PreenchimentoDoCandidato recebido, RespostasAdmitidas admitidas,
         ApuracaoDoEnvio apuracao, IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? documentosEmVerificacao = null)
     {
@@ -366,7 +376,6 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, JsonElement> mescladas = Formulario.Preenchimento.RespostasAposMesclar(recebido.Respostas);
         return
         [
-            .. recebido.RecusasDeForma(admitidas),
             .. apuracao.RecusasDosDerivados(),
             .. Titular.RecusasDoCpf(recebido.Respostas),
             .. RecusasDoPerfilEnviado(recebido, mescladas, admitidas),
