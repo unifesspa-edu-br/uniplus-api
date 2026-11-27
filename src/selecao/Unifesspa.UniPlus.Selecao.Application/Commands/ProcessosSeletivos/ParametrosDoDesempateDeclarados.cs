@@ -10,7 +10,6 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Monta os parâmetros tipados de um critério de desempate a partir dos que o pedido declara, conforme o código da
@@ -31,7 +30,7 @@ internal static class ParametrosDoDesempateDeclarados
             RegraDeDesempate.MaiorNotaNaEtapa => DaMaiorNotaNaEtapa(ordem, parametros),
             RegraDeDesempate.MaiorIdade => Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorIdade()),
             RegraDeDesempate.Idoso => DoIdoso(ordem, parametros),
-            RegraDeDesempate.CondicaoSobreDado => DoPredicadoDeFato(ordem, parametros),
+            RegraDeDesempate.CondicaoSobreDado => DoPredicadoDeFato(parametros),
             RegraDeDesempate.MaiorNotaPorAreaDoEnem => DaMaiorNotaPorAreaDoEnem(parametros),
             _ => throw new ArgumentOutOfRangeException(nameof(regra)),
         };
@@ -62,34 +61,11 @@ internal static class ParametrosDoDesempateDeclarados
         Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempateMaiorNotaAreaEnem(
             [.. (parametros.Areas ?? []).Take(ParametrosDesempateMaiorNotaAreaEnem.AreasMaximo + 1).Select(static area => area ?? string.Empty)]));
 
-    private static Result<ParametrosCriterioDesempate> DoPredicadoDeFato(int ordem, ParametrosDoCriterioDesempateInput parametros)
-    {
-        List<FieldError> ausentes = CamposAusentesDoPredicado(ordem, parametros);
-        return ausentes.Count > 0
-            ? Result<ParametrosCriterioDesempate>.ValidationFailure(ausentes)
-            : CondicaoDoPredicado(parametros);
-    }
-
-    private static List<FieldError> CamposAusentesDoPredicado(int ordem, ParametrosDoCriterioDesempateInput parametros)
-    {
-        (string Campo, string? Texto)[] informados = [("fato", parametros.Fato), ("operador", parametros.Operador), ("valor", parametros.Valor)];
-        return [.. informados
-            .Where(static campo => string.IsNullOrWhiteSpace(campo.Texto))
-            .Select(campo => new FieldError(campo.Campo, new DomainError(
-                "CriterioDesempate.PredicadoFatoIncompleto",
-                $"O critério na ordem {ordem} exige Fato, Operador e Valor para a regra {RegraDeDesempate.CondicaoSobreDado.Codigo()}.")))];
-    }
-
-    /// <summary>
-    /// Com fato, operador e valor presentes, a condição acumula as recusas do operador desconhecido e do valor incoerente com ele, cada uma no seu campo.
-    /// </summary>
-    private static Result<ParametrosCriterioDesempate> CondicaoDoPredicado(ParametrosDoCriterioDesempateInput parametros)
-    {
-        Result<CondicaoDnf> condicao = CondicaoDnf.CriarInformada(parametros.Fato, parametros.Operador, InterpretarValor(parametros.Valor!));
-        return condicao.IsFailure
-            ? Result<ParametrosCriterioDesempate>.ValidationFailure(condicao.Errors)
-            : Result<ParametrosCriterioDesempate>.Success(new ParametrosDesempatePredicadoFato(condicao.Value!));
-    }
+    private static Result<ParametrosCriterioDesempate> DoPredicadoDeFato(ParametrosDoCriterioDesempateInput parametros) =>
+        ParametrosDesempatePredicadoFato.Criar(
+            parametros.Fato,
+            parametros.Operador,
+            string.IsNullOrWhiteSpace(parametros.Valor) ? null : InterpretarValor(parametros.Valor));
 
     /// <summary>
     /// <see cref="ParametrosDoCriterioDesempateInput.Valor"/> permanece texto, mas quando o texto já É um JSON válido

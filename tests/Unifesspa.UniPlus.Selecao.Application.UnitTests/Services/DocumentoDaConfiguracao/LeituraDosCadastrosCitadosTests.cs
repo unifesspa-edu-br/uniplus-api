@@ -8,11 +8,13 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -36,6 +38,7 @@ public sealed class LeituraDosCadastrosCitadosTests
     private readonly ITipoAtoPublicadoReader _tiposDeAto = Substitute.For<ITipoAtoPublicadoReader>();
     private readonly IRegraCatalogoReader _regras = Substitute.For<IRegraCatalogoReader>();
     private readonly IConferenciaEnderecoGeo _geo = Substitute.For<IConferenciaEnderecoGeo>();
+    private readonly IFatoCandidatoReader _dadosDoCandidato = Substitute.For<IFatoCandidatoReader>();
     private readonly TimeProvider _relogio = Substitute.For<TimeProvider>();
     private readonly LeituraDosCadastrosCitados _leitura;
 
@@ -48,13 +51,18 @@ public sealed class LeituraDosCadastrosCitadosTests
             _tiposDeAto,
             _regras,
             _geo,
-            new(
-                Substitute.For<ITipoProcessoReader>(),
-                Substitute.For<IFaseCanonicaReader>(),
-                Substitute.For<ITipoBancaReader>(),
-                Substitute.For<ICategoriaDocumentoReader>()),
+            _dadosDoCandidato,
+            CadastrosDaConfiguracaoSemRegistro(),
             new(_relogio, new ResolvedorFusoDeTeste()));
     }
+
+    private static LeituraDosCadastrosDaConfiguracaoCitados CadastrosDaConfiguracaoSemRegistro() => new(
+        Substitute.For<ITipoProcessoReader>(),
+        Substitute.For<IFaseCanonicaReader>(),
+        Substitute.For<ITipoBancaReader>(),
+        Substitute.For<ICategoriaDocumentoReader>(),
+        Substitute.For<ITipoEtapaReader>(),
+        Substitute.For<IPesoAreaEnemReader>());
 
     private static UnidadeView Unidade(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, codigo.ToLowerInvariant(), $"Unidade {codigo}", null, "ADMINISTRATIVA", false, null);
@@ -102,52 +110,85 @@ public sealed class LeituraDosCadastrosCitadosTests
     public async Task FusoNaoReconhecido_EFalha()
     {
         LeituraDosCadastrosCitados leitura = new(
-            _unidades, _tiposDeAto, _regras, _geo,
-            new(Substitute.For<ITipoProcessoReader>(), Substitute.For<IFaseCanonicaReader>(), Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>()),
+            _unidades, _tiposDeAto, _regras, _geo, _dadosDoCandidato,
+            CadastrosDaConfiguracaoSemRegistro(),
             new(_relogio, new ResolvedorFusoIndisponivelDeTeste()));
 
         Result<CadastrosCitadosNoDocumento> lidos = await leitura.LerAsync(SemCodigos with { Unidades = ["CEPS"] }, CancellationToken.None);
 
         lidos.IsFailure.Should().BeTrue();
-        await _unidades.DidNotReceiveWithAnyArgs().ObterPorCodigoAsync(default!, default);
+        await _unidades.DidNotReceiveWithAnyArgs().ListarPorCodigosAsync(default!, default);
     }
 
-    [Fact(DisplayName = "Cada unidade citada é lida uma vez e fica pelo código, e a que o cadastro não tem vivo fica fora")]
-    public async Task Unidades_SaoLidasUmaVezEFicamPeloCodigo()
+    [Fact(DisplayName = "O vocabulário de dados do desempate é lido uma vez, quando o documento cita a condição sobre dado, e traz os dados do catálogo")]
+    public async Task DadosDoDesempate_SaoLidosQuandoARegraECitada()
+    {
+        _dadosDoCandidato.ListarAsync(Arg.Any<CancellationToken>()).Returns(CenarioDosCriteriosDeDesempate.FatosDoCatalogo());
+        _regras.ListarPorReferenciasAsync(default!, default).ReturnsForAnyArgs([Regra(RegraDeDesempate.CondicaoSobreDado.Codigo(), TipoRegra.CriterioDesempate)]);
+
+        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Regras = [(RegraDeDesempate.CondicaoSobreDado.Codigo(), "v1")] });
+
+        lidos.Value!.DadosDoDesempate.Keys.Should().Equal("PROFESSOR_RURAL");
+        await _dadosDoCandidato.Received(1).ListarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Sem a condição sobre dado citada, o vocabulário de dados não é consultado e fica vazio")]
+    public async Task DadosDoDesempate_NaoSaoLidosSemAregraCitada()
+    {
+        _regras.ListarPorReferenciasAsync(default!, default).ReturnsForAnyArgs([Regra(RegraDeDesempate.MaiorIdade.Codigo(), TipoRegra.CriterioDesempate)]);
+
+        Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Regras = [(RegraDeDesempate.MaiorIdade.Codigo(), "v1")] });
+
+        lidos.Value!.DadosDoDesempate.Should().BeEmpty();
+        await _dadosDoCandidato.DidNotReceiveWithAnyArgs().ListarAsync(default);
+    }
+
+    [Fact(DisplayName = "As unidades citadas são lidas numa só chamada e ficam pelo código, e a que o cadastro não tem viva fica fora")]
+    public async Task Unidades_SaoLidasNumaSoChamadaEFicamPeloCodigo()
     {
         UnidadeView ceps = Unidade("CEPS");
-        _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(ceps);
-        _unidades.ObterPorCodigoAsync("EXTINTA", Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+        _unidades.ListarPorCodigosAsync(default!, default).ReturnsForAnyArgs([ceps]);
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Unidades = ["CEPS", "EXTINTA"] });
 
         lidos.Value!.Unidades.Keys.Should().Equal("CEPS");
         lidos.Value.Unidades["CEPS"].OrigemId.Should().Be(ceps.Id);
-        await _unidades.Received(1).ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>());
-        await _unidades.Received(1).ObterPorCodigoAsync("EXTINTA", Arg.Any<CancellationToken>());
+        await _unidades.Received(1).ListarPorCodigosAsync(Arg.Is<IReadOnlyCollection<string>>(c => c.SequenceEqual(new[] { "CEPS", "EXTINTA" })), Arg.Any<CancellationToken>());
+        await _unidades.DidNotReceiveWithAnyArgs().ObterPorCodigoAsync(default!, default);
     }
 
-    [Fact(DisplayName = "A unidade que o domínio recusa copiar é falha da leitura, que para na primeira falha e não lê as demais")]
-    public async Task Unidade_QueODominioRecusa_EFalhaEParaALeitura()
+    [Fact(DisplayName = "A unidade que o domínio recusa copiar é falha da leitura")]
+    public async Task Unidade_QueODominioRecusa_EFalhaDaLeitura()
     {
-        _unidades.ObterPorCodigoAsync("RUIM", Arg.Any<CancellationToken>()).Returns(Unidade("RUIM") with { CidadeNome = "Marabá" });
+        _unidades.ListarPorCodigosAsync(default!, default).ReturnsForAnyArgs([Unidade("RUIM") with { CidadeNome = "Marabá" }, Unidade("CEPS")]);
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Unidades = ["RUIM", "CEPS"] });
 
         lidos.IsFailure.Should().BeTrue();
-        await _unidades.DidNotReceive().ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A regra do catálogo é lida pelo par de código e versão, com o tipo e a referência que o processo congela")]
-    public async Task Regra_ELidaPeloParDeCodigoEVersao()
+    [Fact(DisplayName = "As regras do catálogo são lidas numa só chamada pelos pares de código e versão, com o tipo e a referência que o processo congela")]
+    public async Task Regras_SaoLidasNumaSoChamadaPelosPares()
     {
         RegraCatalogo regra = Regra("CONTAGEM", TipoRegra.ConvencaoContagemPrazo);
-        _regras.ObterAsync("CONTAGEM", "v1", Arg.Any<CancellationToken>()).Returns(regra);
+        _regras.ListarPorReferenciasAsync(default!, default).ReturnsForAnyArgs([regra]);
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Regras = [("CONTAGEM", "v1"), ("OUTRA", "v1")] });
 
         lidos.Value!.Regras.Keys.Should().Equal(("CONTAGEM", "v1"));
         lidos.Value.Regras[("CONTAGEM", "v1")].Should().Be(new RegraDoCatalogoCitada(TipoRegra.ConvencaoContagemPrazo, regra.Referencia()));
+        (string Codigo, string Versao)[] pedidas = [("CONTAGEM", "v1"), ("OUTRA", "v1")];
+        await _regras.Received(1).ListarPorReferenciasAsync(Arg.Is<IReadOnlyCollection<(string Codigo, string Versao)>>(c => c.SequenceEqual(pedidas)), Arg.Any<CancellationToken>());
+        await _regras.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
+    }
+
+    [Fact(DisplayName = "Sem regra nem unidade citada, o catálogo de regras e o de unidades não são consultados")]
+    public async Task SemRegraNemUnidadeCitada_NaoConsultaOsCadastros()
+    {
+        await Ler(SemCodigos);
+
+        await _regras.DidNotReceiveWithAnyArgs().ListarPorReferenciasAsync(default!, default);
+        await _unidades.DidNotReceiveWithAnyArgs().ListarPorCodigosAsync(default!, default);
     }
 
     [Fact(DisplayName = "O município que o Geo conhece fica pelo código, conferido na UF do prefixo do código IBGE")]
@@ -216,7 +257,7 @@ public sealed class LeituraDosCadastrosCitadosTests
     public async Task Geo_Indisponivel_NaoImpedeALeitura()
     {
         GeoResponde("1504208", Result<string>.Failure(Erro(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel)));
-        _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(Unidade("CEPS"));
+        _unidades.ListarPorCodigosAsync(default!, default).ReturnsForAnyArgs([Unidade("CEPS")]);
 
         Result<CadastrosCitadosNoDocumento> lidos = await Ler(SemCodigos with { Localidade = "1504208", Unidades = ["CEPS"] });
 

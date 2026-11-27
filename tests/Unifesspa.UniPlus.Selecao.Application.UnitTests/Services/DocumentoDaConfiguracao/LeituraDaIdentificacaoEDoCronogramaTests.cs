@@ -41,8 +41,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
     {
         ITipoAtoPublicadoReader tiposDeAto = Substitute.For<ITipoAtoPublicadoReader>();
         tiposDeAto.ListarVigentesAsync(default!, default, default).ReturnsForAnyArgs([]);
-        _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>()).Returns(Unidade("CEPS"));
-        _unidades.ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+        _unidades.ListarPorCodigosAsync(default!, default).ReturnsForAnyArgs([Unidade("CEPS")]);
         _tiposDeProcesso.ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.CreateVersion7(), "SISU", "Sistema de Seleção", null));
         _fasesCanonicas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs([Fase("INSCRICAO"), Fase("RECURSO")]);
         _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
@@ -51,7 +50,8 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
             tiposDeAto,
             Substitute.For<IRegraCatalogoReader>(),
             _geo,
-            new(_tiposDeProcesso, _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>()),
+            Substitute.For<IFatoCandidatoReader>(),
+            new(_tiposDeProcesso, _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>()),
             new(new RelogioFixo(new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)), new ResolvedorFusoDeTeste())));
     }
 
@@ -81,8 +81,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
     {
         await Ler();
 
-        await _unidades.Received(1).ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>());
-        await _unidades.Received(1).ObterPorCodigoAsync("CGA", Arg.Any<CancellationToken>());
+        await _unidades.Received(1).ListarPorCodigosAsync(Arg.Is<IReadOnlyCollection<string>>(c => c.SequenceEqual(new[] { "CEPS", "CGA" })), Arg.Any<CancellationToken>());
         await _fasesCanonicas.Received(1).ListarVivasPorCodigosAsync(Arg.Is<IReadOnlyCollection<string>>(c => c.SequenceEqual(new[] { "INSCRICAO", "RECURSO" })), Arg.Any<CancellationToken>());
         await _tiposDeProcesso.Received(1).ObterAtivoPorCodigoAsync("SISU", Arg.Any<CancellationToken>());
         await _geo.Received(1).ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>());
@@ -104,7 +103,7 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
 
         lidos.IsSuccess.Should().BeTrue();
         lidos.Value!.Cronograma.CronogramaFases.Should().BeEmpty();
-        await _unidades.DidNotReceiveWithAnyArgs().ObterPorCodigoAsync(default!, default);
+        await _unidades.DidNotReceiveWithAnyArgs().ListarPorCodigosAsync(default!, default);
         await _geo.DidNotReceiveWithAnyArgs().ConferirMunicipioAsync(default!, default!, default);
     }
 

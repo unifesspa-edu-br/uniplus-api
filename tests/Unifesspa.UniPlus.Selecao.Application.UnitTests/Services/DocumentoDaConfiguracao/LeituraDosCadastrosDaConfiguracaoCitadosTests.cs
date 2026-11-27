@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -22,10 +23,12 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     private readonly IFaseCanonicaReader _fasesCanonicas = Substitute.For<IFaseCanonicaReader>();
     private readonly ITipoBancaReader _tiposDeBanca = Substitute.For<ITipoBancaReader>();
     private readonly ICategoriaDocumentoReader _categorias = Substitute.For<ICategoriaDocumentoReader>();
+    private readonly ITipoEtapaReader _tiposDeEtapa = Substitute.For<ITipoEtapaReader>();
+    private readonly IPesoAreaEnemReader _pesosPorArea = Substitute.For<IPesoAreaEnemReader>();
     private readonly LeituraDosCadastrosDaConfiguracaoCitados _leitura;
 
     public LeituraDosCadastrosDaConfiguracaoCitadosTests() =>
-        _leitura = new(_tiposDeProcesso, _fasesCanonicas, _tiposDeBanca, _categorias);
+        _leitura = new(_tiposDeProcesso, _fasesCanonicas, _tiposDeBanca, _categorias, _tiposDeEtapa, _pesosPorArea);
 
     private static FaseCanonicaView Fase(string codigo, string origemData = "NO_EDITAL") =>
         new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, origemData);
@@ -82,6 +85,8 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         await _fasesCanonicas.DidNotReceiveWithAnyArgs().ListarVivasPorCodigosAsync(default!, default);
         await _tiposDeBanca.DidNotReceiveWithAnyArgs().ListarVivosPorCodigosAsync(default!, default);
         await _categorias.DidNotReceiveWithAnyArgs().ListarVivasPorCodigosAsync(default!, default);
+        await _tiposDeEtapa.DidNotReceiveWithAnyArgs().ListarAtivosPorCodigosAsync(default!, default);
+        await _pesosPorArea.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
     }
 
     [Fact(DisplayName = "O código que o cadastro não tem vivo fica fora do dicionário, sem recusar a leitura")]
@@ -132,5 +137,68 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
 
         lidos.IsFailure.Should().BeTrue();
         lidos.Error!.Code.Should().Be("TipoProcessoSnapshot.TamanhoInvalido");
+    }
+
+    [Fact(DisplayName = "Os tipos de etapa citados são lidos numa só chamada, com os códigos distintos, e cada um volta como a cópia que a etapa guarda")]
+    public async Task TiposDeEtapa_SaoLidosNumaSoChamadaEFicamPelaCopia()
+    {
+        TipoEtapaView redacao = TipoEtapaViewDeTeste.Com(Guid.CreateVersion7(), "REDACAO").Chamado("Redação").Construir();
+        _tiposDeEtapa.ListarAtivosPorCodigosAsync(Lote("REDACAO", "ENTREVISTA"), Arg.Any<CancellationToken>()).Returns([redacao]);
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TiposDeEtapa = ["REDACAO", "ENTREVISTA"] }, CancellationToken.None);
+
+        lidos.Value!.TiposDeEtapa.Keys.Should().Equal("REDACAO");
+        lidos.Value.TiposDeEtapa["REDACAO"].Should().Match<TipoEtapaSnapshot>(tipo => tipo.OrigemId == redacao.Id && tipo.Nome == "Redação");
+        await _tiposDeEtapa.Received(1).ListarAtivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O tipo de etapa cuja cópia o domínio recusa fica fora do dicionário, como o inexistente, sem falhar a leitura")]
+    public async Task TipoDeEtapaQueODominioRecusa_FicaFora()
+    {
+        TipoEtapaView semCarater = TipoEtapaViewDeTeste.Com(Guid.CreateVersion7(), "SEM_CARATER").ComCarater(admitePontuacao: false, admiteEliminacao: false).Construir();
+        TipoEtapaView entrevista = TipoEtapaViewDeTeste.Com(Guid.CreateVersion7(), "ENTREVISTA").Construir();
+        _tiposDeEtapa.ListarAtivosPorCodigosAsync(default!, default).ReturnsForAnyArgs([entrevista, semCarater]);
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TiposDeEtapa = ["ENTREVISTA", "SEM_CARATER"] }, CancellationToken.None);
+
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.TiposDeEtapa.Keys.Should().Equal("ENTREVISTA");
+    }
+
+    [Fact(DisplayName = "O quadro de pesos fica pela resolução como o documento a escreveu, com os grupos e os rótulos dos grupos que faltam")]
+    public async Task QuadroDePesos_FicaPelaResolucaoCitada()
+    {
+        ResolucaoPesoAreaEnemView cadastrada = CenarioDaClassificacao.ResolucaoCom(CenarioDaClassificacao.GruposDoAnexoI.Take(2), ("TECNOLOGICA", "Tecnológica"));
+        _pesosPorArea.ObterPorResolucaoAsync("  res. 805/2024 ", Arg.Any<CancellationToken>()).Returns(cadastrada);
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { ResolucaoDePesos = "  res. 805/2024 " }, CancellationToken.None);
+
+        QuadroDePesosCitado quadro = lidos.Value!.QuadrosDePesos["  res. 805/2024 "];
+        quadro.Grupos.Select(static grupo => grupo.GrupoAreaEnem.Codigo).Should().Equal("HUMANISTICA_I", "HUMANISTICA_II");
+        quadro.GruposAusentes.Should().Equal("Tecnológica");
+        quadro.Completo.Should().BeFalse();
+        await _pesosPorArea.Received(1).ObterPorResolucaoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A resolução sem pesos cadastrados fica fora do dicionário sem falhar a leitura")]
+    public async Task ResolucaoSemPesosCadastrados_FicaFora()
+    {
+        _pesosPorArea.ObterPorResolucaoAsync("INEXISTENTE", Arg.Any<CancellationToken>()).Returns((ResolucaoPesoAreaEnemView?)null);
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { ResolucaoDePesos = "INEXISTENTE" }, CancellationToken.None);
+
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.QuadrosDePesos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A resolução com linha que o domínio recusa copiar fica fora do dicionário sem falhar a leitura")]
+    public async Task ResolucaoComLinhaRecusada_FicaFora()
+    {
+        _pesosPorArea.ObterPorResolucaoAsync("RUIM", Arg.Any<CancellationToken>()).Returns(CenarioDaClassificacao.ResolucaoCom([("", "Grupo sem código")]));
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { ResolucaoDePesos = "RUIM" }, CancellationToken.None);
+
+        lidos.IsSuccess.Should().BeTrue();
+        lidos.Value!.QuadrosDePesos.Should().BeEmpty();
     }
 }

@@ -45,14 +45,15 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaDoDocumentoRealTests
             tiposDeAto,
             Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<IConferenciaEnderecoGeo>(),
-            new(Substitute.For<ITipoProcessoReader>(), _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>()),
+            Substitute.For<IFatoCandidatoReader>(),
+            new(Substitute.For<ITipoProcessoReader>(), _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>()),
             new(new RelogioFixo(new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)), CenarioDeInscricaoPublicada.Fuso())));
     }
 
     private void CadastrosDeTeste()
     {
-        _unidades.ObterPorCodigoAsync("CEPS", Arg.Any<CancellationToken>())
-            .Returns(new UnidadeView(Guid.CreateVersion7(), "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null));
+        _unidades.ListarPorCodigosAsync(default!, default).ReturnsForAnyArgs(
+            [new UnidadeView(Guid.CreateVersion7(), "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null)]);
         _fasesCanonicas.ListarVivasPorCodigosAsync(default!, default).ReturnsForAnyArgs(
         [
             new FaseCanonicaView(Guid.CreateVersion7(), "INSCRICAO", "Inscrição", null, false, false, null, true, false, "NO_EDITAL"),

@@ -14,40 +14,52 @@ internal sealed record CodigosCitadosPorCadastro(
     IReadOnlyList<string> CategoriasDeDocumento,
     string? Localidade,
     IReadOnlyList<(string Codigo, string Versao)> Regras,
-    IReadOnlyList<string> TiposDeAto);
+    IReadOnlyList<string> TiposDeAto)
+{
+    /// <summary>Os códigos dos tipos de etapa que as etapas citam.</summary>
+    public IReadOnlyList<string> TiposDeEtapa { get; init; } = [];
+
+    /// <summary>A resolução dos pesos por área do ENEM que a classificação cita; ausente é nulo.</summary>
+    public string? ResolucaoDePesos { get; init; }
+}
 
 /// <summary>
-/// Junta, nas declarações da identificação e do cronograma, os códigos distintos que o documento cita em cada cadastro: a unidade
+/// Junta, nas declarações da identificação, do cronograma e da avaliação, os códigos distintos que o documento cita em cada cadastro: a unidade
 /// administradora e as responsáveis pelas fases compartilham o cadastro de unidades, e a regra vem do algoritmo de contagem, da regra
-/// de recurso e dos procedimentos. Não confere o que cada código é.
+/// de recurso e dos procedimentos. As etapas e a classificação entram pela união com o que elas citam
+/// (<see cref="CodigosCitadosNaAvaliacao"/>). Não confere o que cada código é.
 /// </summary>
 internal static class CodigosCitadosNoDocumento
 {
-    internal static CodigosCitadosPorCadastro Em(DeclaracoesDoDocumento declaracoes)
+    internal static CodigosCitadosPorCadastro Em(DeclaracoesDoDocumento declaracoes) =>
+        Unir(DaIdentificacaoEDasFases(declaracoes), CodigosCitadosNaAvaliacao.Em(declaracoes));
+
+    // A avaliação cita tipos de banca, atos e regras dos mesmos cadastros que as fases, e cada código vale uma vez.
+    private static CodigosCitadosPorCadastro Unir(CodigosCitadosPorCadastro dasFases, CodigosDaAvaliacaoCitados avaliacao) => dasFases with
+    {
+        TiposDeBanca = CodigosDistintos.De([.. dasFases.TiposDeBanca, .. avaliacao.TiposDeBanca]),
+        Regras = [.. dasFases.Regras.Concat(avaliacao.Regras).Distinct()],
+        TiposDeAto = CodigosDistintos.De([.. dasFases.TiposDeAto, .. avaliacao.TiposDeAto]),
+        TiposDeEtapa = avaliacao.TiposDeEtapa,
+        ResolucaoDePesos = avaliacao.ResolucaoDePesos,
+    };
+
+    private static CodigosCitadosPorCadastro DaIdentificacaoEDasFases(DeclaracoesDoDocumento declaracoes)
     {
         IdentificacaoNoDocumento identificacao = declaracoes.Identificacao;
         FaseNoDocumento[] fases = [.. declaracoes.Fases];
         BancaNoDocumento[] bancas = [.. fases.SelectMany(static fase => fase.Bancas)];
 
         return new(
-            Distintos([identificacao.UnidadeAdministradoraCodigo, .. fases.Select(static fase => fase.Referencias.UnidadeResponsavelCodigo)]),
+            CodigosDistintos.De([identificacao.UnidadeAdministradoraCodigo, .. fases.Select(static fase => fase.Referencias.UnidadeResponsavelCodigo)]),
             identificacao.TipoProcessoCodigo,
-            Distintos(fases.Select(static fase => fase.Referencias.FaseCanonicaCodigo)),
-            Distintos(bancas.Select(static banca => banca.TipoBancaCodigo)),
-            Distintos(bancas.SelectMany(static banca => banca.CategoriasDocumentoCodigos)),
+            CodigosDistintos.De(fases.Select(static fase => fase.Referencias.FaseCanonicaCodigo)),
+            CodigosDistintos.De(bancas.Select(static banca => banca.TipoBancaCodigo)),
+            CodigosDistintos.De(bancas.SelectMany(static banca => banca.CategoriasDocumentoCodigos)),
             identificacao.LocalidadeCodigoIbge,
-            Regras(identificacao, fases),
-            Distintos(fases.SelectMany(static fase => fase.Publicacoes.Produtos).Select(static produto => produto.AtoCodigo)));
+            CodigosDistintos.DasRegras(ReferenciasDeRegra(identificacao, fases)),
+            CodigosDistintos.De(fases.SelectMany(static fase => fase.Publicacoes.Produtos).Select(static produto => produto.AtoCodigo)));
     }
-
-    private static string[] Distintos(IEnumerable<string?> codigos) =>
-        [.. codigos.OfType<string>().Distinct(StringComparer.Ordinal)];
-
-    private static (string Codigo, string Versao)[] Regras(IdentificacaoNoDocumento identificacao, FaseNoDocumento[] fases) =>
-        [.. ReferenciasDeRegra(identificacao, fases)
-            .Where(static referencia => referencia.Codigo is not null && referencia.Versao is not null)
-            .Select(static referencia => (referencia.Codigo!, referencia.Versao!))
-            .Distinct()];
 
     private static IEnumerable<ReferenciaDeRegraNoDocumento> ReferenciasDeRegra(IdentificacaoNoDocumento identificacao, FaseNoDocumento[] fases)
     {

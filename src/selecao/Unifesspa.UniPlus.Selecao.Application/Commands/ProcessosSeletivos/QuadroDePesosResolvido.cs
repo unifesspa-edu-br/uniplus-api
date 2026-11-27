@@ -72,7 +72,7 @@ internal sealed record QuadroDePesosResolvido(
         return erros.Count > 0 ? Recusado(informada, erros) : new(cadastrada.Resolucao, quadro, []);
     }
 
-    private static Result<GrupoPesoAreaEnemCongelado> CopiarLinha(PesoAreaEnemView linha) => GrupoPesoAreaEnemCongelado.Criar(
+    internal static Result<GrupoPesoAreaEnemCongelado> CopiarLinha(PesoAreaEnemView linha) => GrupoPesoAreaEnemCongelado.Criar(
         linha.GrupoCurso.Codigo, linha.GrupoCurso.Rotulo, linha.BaseLegal,
         linha.Areas.Select(static area => ((string?)area.Codigo, (string?)area.Rotulo, area.Peso, area.Corte)));
 

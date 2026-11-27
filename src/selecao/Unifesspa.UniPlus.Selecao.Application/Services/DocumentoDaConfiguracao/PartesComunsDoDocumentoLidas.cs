@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -46,8 +47,22 @@ internal static class PartesComunsDoDocumentoLidas
         posicao,
         CodigoDoCatalogo<TipoMotivoDeDecisao>(Texto(procedimento, "tipoDeDecisao")),
         Alvo(Objeto(procedimento, "alvo")),
-        Referencia(Objeto(procedimento, "regra")) ?? new ReferenciaDeRegraNoDocumento(null, null));
+        ReferenciaOuVazia(procedimento, "regra"));
 
     internal static AlvoNoDocumento? Alvo(JsonObject? alvo) =>
         alvo is null ? null : new(Texto(alvo, "itemDeAvaliacaoChave"), Texto(alvo, "areaDoEnem"));
+
+    internal static ProdutoNoDocumento Produto(int posicao, JsonObject produto) => new(
+        posicao,
+        Texto(produto, "atoCodigo")!,
+        CodigoDoCatalogo<PapelDaPublicacaoPrevista>(Texto(produto, "papel")));
+
+    internal static string?[]? TiposDeDecisao(JsonObject pai) =>
+        pai["tiposDeDecisao"] is JsonArray lista ? [.. lista.Select(static tipo => tipo?.GetValue<string>())] : null;
+
+    internal static RegraDeRecursoNoDocumento RegraDeRecurso(JsonObject regra) => new(
+        new(Texto(regra, "regraCodigo"), Texto(regra, "regraVersao")),
+        Texto(regra, "publicacaoDeReferenciaAtoCodigo"),
+        ParametrosDoRecurso(regra),
+        [.. Itens(regra, "procedimentosDeRecurso").Select(static item => Procedimento(item.Posicao, item.Item))]);
 }
