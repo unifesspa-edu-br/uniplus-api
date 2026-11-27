@@ -24,6 +24,7 @@ public sealed class CadastrosCitadosNoDocumento
     private readonly FrozenDictionary<string, LocalidadeRegente> _localidades = FrozenDictionary<string, LocalidadeRegente>.Empty;
     private readonly FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada> _regras = FrozenDictionary<(string Codigo, string Versao), RegraDoCatalogoCitada>.Empty;
     private readonly FrozenDictionary<string, DescritorFatoCandidato> _dadosDoDesempate = FrozenDictionary<string, DescritorFatoCandidato>.Empty;
+    private CadastrosDasVagasEDasExigenciasCitados _vagasEExigencias = new();
     private readonly FrozenSet<string> _tiposDeAto = FrozenSet<string>.Empty;
 
     public CadastrosCitadosNoDocumento(DateTimeOffset lidoEm) => LidoEm = lidoEm;
@@ -110,6 +111,13 @@ public sealed class CadastrosCitadosNoDocumento
         init => _dadosDoDesempate = Congelado(value);
     }
 
+    /// <summary>Os cadastros que a distribuição de vagas, o atendimento, o FADA e as exigências citam; vazio recusa todo código.</summary>
+    public CadastrosDasVagasEDasExigenciasCitados VagasEExigencias
+    {
+        get => _vagasEExigencias;
+        init => _vagasEExigencias = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
     /// <summary>Os códigos dos tipos de ato com versão vigente em <see cref="LidoEm"/>.</summary>
     public IReadOnlySet<string> TiposDeAto
     {
@@ -132,6 +140,22 @@ public sealed class CadastrosCitadosNoDocumento
     internal CategoriaDeDocumentoCitada? Categoria(string? codigo) => Achado(_categoriasDeDocumento, codigo);
 
     internal LocalidadeRegente? Localidade(string? codigoIbge) => Achado(_localidades, codigoIbge);
+
+    internal OfertaDeCursoCitada? OfertaDeCurso(string? codigo) => Achado(_vagasEExigencias.OfertasDeCurso, codigo);
+
+    internal ModalidadeNoCadastro? Modalidade(string? codigo) => Achado(_vagasEExigencias.Modalidades, codigo);
+
+    internal ReferenciaReservaDemograficaSnapshot? ReferenciaDemografica(string? codigo) => Achado(_vagasEExigencias.ReferenciasDemograficas, codigo);
+
+    internal OpcaoDeAtendimentoCitada? CondicaoDeAtendimento(string? codigo) => Achado(_vagasEExigencias.CondicoesDeAtendimento, codigo);
+
+    internal OpcaoDeAtendimentoCitada? RecursoDeAcessibilidade(string? codigo) => Achado(_vagasEExigencias.RecursosDeAcessibilidade, codigo);
+
+    internal OpcaoDeAtendimentoCitada? TipoDeDeficiencia(string? codigo) => Achado(_vagasEExigencias.TiposDeDeficiencia, codigo);
+
+    internal CopiaDoTipoDeDocumento? TipoDeDocumento(string? codigo) => Achado(_vagasEExigencias.TiposDeDocumento, codigo);
+
+    internal BaseLegalCongelada? BaseLegalDoFada(string? codigo) => Achado(_vagasEExigencias.BasesLegaisDoFada, codigo);
 
     internal bool TipoDeAtoVigente(string codigo) => _tiposDeAto.Contains(codigo);
 

@@ -6,6 +6,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Services.DocumentoDaConfiguracao;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>Monta a exigência documental a partir dos dados informados.</summary>
@@ -85,7 +87,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         EscritaDasRestricoesDoDocumento restricoes = partes.Restricoes;
         // A forma da exigência já recusou o código do formulário ausente ou fora do formato.
         DocumentoExigidoDeclarado declarado = new(
-            new CopiaDoTipoDeDocumento(tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)),
+            CopiaDosCadastrosDasVagas.TipoDeDocumento(tipo),
             new MomentoDaExigencia(documentoInformado.FaseId(), documentoInformado.EtapaId(), EscritaDaExigencia.FormularioDoCodigo(documentoInformado.FormularioCodigo())!),
             new AplicabilidadeDaExigencia(EscritaDaExigencia.AplicabilidadeDoToken(documentoInformado.Aplicabilidade()), partes.Condicoes),
             new IndeferimentoDoDocumento(documentoInformado.Obrigatorio(), documentoInformado.ConsequenciaDoDescumprimento(), basesLegais, documentoInformado.Indeferimento?.AbrePrazoParaReenvio ?? false),

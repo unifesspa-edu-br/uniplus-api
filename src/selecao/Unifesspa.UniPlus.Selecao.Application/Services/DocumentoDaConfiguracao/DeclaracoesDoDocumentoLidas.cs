@@ -17,7 +17,7 @@ using static PartesComunsDoDocumentoLidas;
 
 /// <summary>
 /// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva, a
-/// manifestação de interesse, a prova presencial, as etapas e a classificação, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
+/// manifestação de interesse, a prova presencial, as etapas, a classificação, as vagas e as exigências de documentos, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
 /// então aqui só se converte; o que falta fica ausente ou no valor de partida do tipo, e quem o confere é o domínio. Não decide regra.
 /// </summary>
 internal static class DeclaracoesDoDocumentoLidas
@@ -35,6 +35,8 @@ internal static class DeclaracoesDoDocumentoLidas
             ProvaPresencial = ProvaPresencial(Objeto(documento, "provaPresencial")),
             Etapas = EtapasDoDocumentoLidas.De(documento["etapas"]),
             Classificacao = ClassificacaoDoDocumentoLida.De(documento["classificacao"]),
+            Vagas = VagasDoDocumentoLidas.De(documento),
+            Exigencias = ExigenciasDoDocumentoLidas.De(documento["documentosExigidos"]),
         };
     }
 

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -16,7 +17,8 @@ internal sealed record CadastrosDaConfiguracaoCitados(
     IReadOnlyDictionary<string, TipoDeBancaCopiado> TiposDeBanca,
     IReadOnlyDictionary<string, CategoriaDeDocumentoCitada> CategoriasDeDocumento,
     IReadOnlyDictionary<string, TipoEtapaSnapshot> TiposDeEtapa,
-    IReadOnlyDictionary<string, QuadroDePesosCitado> QuadrosDePesos);
+    IReadOnlyDictionary<string, QuadroDePesosCitado> QuadrosDePesos,
+    IReadOnlyDictionary<string, CopiaDoTipoDeDocumento> TiposDeDocumento);
 
 /// <summary>
 /// Lê os cadastros de Configuração que o documento cita: o tipo de processo, a fase canônica, o tipo de banca, o tipo de etapa, a
@@ -29,7 +31,8 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
     ITipoBancaReader tiposDeBanca,
     ICategoriaDocumentoReader categoriasDeDocumento,
     ITipoEtapaReader tiposDeEtapa,
-    IPesoAreaEnemReader pesosPorArea)
+    IPesoAreaEnemReader pesosPorArea,
+    ITipoDocumentoReader tiposDeDocumento)
 {
     internal async Task<Result<CadastrosDaConfiguracaoCitados>> LerAsync(CodigosCitadosPorCadastro codigos, CancellationToken cancellationToken)
     {
@@ -43,7 +46,8 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
                 await TiposDeBancaAsync(codigos.TiposDeBanca, cancellationToken).ConfigureAwait(false),
                 await CategoriasAsync(codigos.CategoriasDeDocumento, cancellationToken).ConfigureAwait(false),
                 await TiposDeEtapaAsync(codigos.TiposDeEtapa, cancellationToken).ConfigureAwait(false),
-                await QuadrosDePesosAsync(codigos.ResolucaoDePesos, cancellationToken).ConfigureAwait(false)));
+                await QuadrosDePesosAsync(codigos.ResolucaoDePesos, cancellationToken).ConfigureAwait(false),
+                await TiposDeDocumentoAsync(codigos.TiposDeDocumento, cancellationToken).ConfigureAwait(false)));
     }
 
     private async Task<Result<IReadOnlyDictionary<string, TipoProcessoSnapshot>>> TipoDeProcessoAsync(string? codigo, CancellationToken cancellationToken)
@@ -90,6 +94,13 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitados(
                 .Select(static tipo => (tipo.Codigo, Copia: CopiaDoTipoDeEtapa.De(tipo)))
                 .Where(static tipo => tipo.Copia.IsSuccess)
                 .ToDictionary(static tipo => tipo.Codigo, static tipo => tipo.Copia.Value!, StringComparer.Ordinal);
+
+    private async Task<IReadOnlyDictionary<string, CopiaDoTipoDeDocumento>> TiposDeDocumentoAsync(
+        IReadOnlyList<string> codigos, CancellationToken cancellationToken) =>
+        codigos.Count == 0
+            ? new Dictionary<string, CopiaDoTipoDeDocumento>()
+            : (await tiposDeDocumento.ListarVivosPorCodigosAsync(codigos, cancellationToken).ConfigureAwait(false))
+                .ToDictionary(static tipo => tipo.Codigo, CopiaDosCadastrosDasVagas.TipoDeDocumento, StringComparer.Ordinal);
 
     // O quadro fica pela resolução como o documento a escreveu: o cadastro a compara pela forma em que a grava.
     private async Task<IReadOnlyDictionary<string, QuadroDePesosCitado>> QuadrosDePesosAsync(

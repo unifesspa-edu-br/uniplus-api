@@ -6,10 +6,12 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -25,10 +27,11 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
     private readonly ICategoriaDocumentoReader _categorias = Substitute.For<ICategoriaDocumentoReader>();
     private readonly ITipoEtapaReader _tiposDeEtapa = Substitute.For<ITipoEtapaReader>();
     private readonly IPesoAreaEnemReader _pesosPorArea = Substitute.For<IPesoAreaEnemReader>();
+    private readonly ITipoDocumentoReader _tiposDeDocumento = Substitute.For<ITipoDocumentoReader>();
     private readonly LeituraDosCadastrosDaConfiguracaoCitados _leitura;
 
     public LeituraDosCadastrosDaConfiguracaoCitadosTests() =>
-        _leitura = new(_tiposDeProcesso, _fasesCanonicas, _tiposDeBanca, _categorias, _tiposDeEtapa, _pesosPorArea);
+        _leitura = new(_tiposDeProcesso, _fasesCanonicas, _tiposDeBanca, _categorias, _tiposDeEtapa, _pesosPorArea, _tiposDeDocumento);
 
     private static FaseCanonicaView Fase(string codigo, string origemData = "NO_EDITAL") =>
         new(Guid.CreateVersion7(), codigo, $"Fase {codigo}", null, false, true, null, true, false, origemData);
@@ -201,4 +204,29 @@ public sealed class LeituraDosCadastrosDaConfiguracaoCitadosTests
         lidos.IsSuccess.Should().BeTrue();
         lidos.Value!.QuadrosDePesos.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "O tipo de documento é lido numa só chamada, com os códigos distintos, e congela o id, o nome, a categoria e a proteção")]
+    public async Task TipoDeDocumento_ELidoEmLoteECongelaAProtecao()
+    {
+        TipoDocumentoView rg = TipoDocumento("RG");
+        _tiposDeDocumento.ListarVivosPorCodigosAsync(Lote("RG", "CPF"), Arg.Any<CancellationToken>()).Returns([rg]);
+
+        Result<CadastrosDaConfiguracaoCitados> lidos = await _leitura.LerAsync(SemCodigos with { TiposDeDocumento = ["RG", "CPF"] }, CancellationToken.None);
+
+        lidos.Value!.TiposDeDocumento.Keys.Should().Equal("RG");
+        lidos.Value.TiposDeDocumento["RG"].Should().Be(new CopiaDoTipoDeDocumento(
+            rg.Id, "RG", "Documento RG", "PESSOAL", new ProtecaoDoDocumento(ClassificacaoDeProtecao.Pessoal, "Finalidade de teste", "CUMPRIMENTO_OBRIGACAO_LEGAL")));
+        await _tiposDeDocumento.Received(1).ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Sem tipo de documento citado o cadastro não é consultado")]
+    public async Task SemTipoDeDocumentoCitado_NaoConsultaOCadastro()
+    {
+        await _leitura.LerAsync(SemCodigos, CancellationToken.None);
+
+        await _tiposDeDocumento.DidNotReceiveWithAnyArgs().ListarVivosPorCodigosAsync(default!, default);
+    }
+
+    private static TipoDocumentoView TipoDocumento(string codigo) =>
+        new(Guid.CreateVersion7(), codigo, $"Documento {codigo}", "PESSOAL", ClassificacaoDeProtecao.Pessoal, "Finalidade de teste", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);
 }

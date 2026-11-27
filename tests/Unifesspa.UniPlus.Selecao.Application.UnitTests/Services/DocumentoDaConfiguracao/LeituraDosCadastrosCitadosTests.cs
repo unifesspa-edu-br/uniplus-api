@@ -48,13 +48,23 @@ public sealed class LeituraDosCadastrosCitadosTests
         _tiposDeAto.ListarVigentesAsync(default!, default, default).ReturnsForAnyArgs([]);
         _leitura = new(
             _unidades,
-            _tiposDeAto,
-            _regras,
             _geo,
-            _dadosDoCandidato,
+            CadastrosDoCatalogo(),
             CadastrosDaConfiguracaoSemRegistro(),
+            CadastrosDasVagasSemRegistro(),
             new(_relogio, new ResolvedorFusoDeTeste()));
     }
+
+    private LeituraDosCadastrosDoCatalogoCitados CadastrosDoCatalogo() => new(_regras, _tiposDeAto, _dadosDoCandidato);
+
+    private static LeituraDosCadastrosDasVagasCitados CadastrosDasVagasSemRegistro() => new(
+        Substitute.For<IOfertaCursoReader>(),
+        Substitute.For<IModalidadeReader>(),
+        Substitute.For<IReferenciaReservaDemograficaReader>(),
+        Substitute.For<ICondicaoAtendimentoReader>(),
+        Substitute.For<IRecursoAcessibilidadeReader>(),
+        Substitute.For<ITipoDeficienciaReader>(),
+        Substitute.For<IBaseLegalDoFadaReader>());
 
     private static LeituraDosCadastrosDaConfiguracaoCitados CadastrosDaConfiguracaoSemRegistro() => new(
         Substitute.For<ITipoProcessoReader>(),
@@ -62,7 +72,8 @@ public sealed class LeituraDosCadastrosCitadosTests
         Substitute.For<ITipoBancaReader>(),
         Substitute.For<ICategoriaDocumentoReader>(),
         Substitute.For<ITipoEtapaReader>(),
-        Substitute.For<IPesoAreaEnemReader>());
+        Substitute.For<IPesoAreaEnemReader>(),
+        Substitute.For<ITipoDocumentoReader>());
 
     private static UnidadeView Unidade(string codigo) =>
         new(Guid.CreateVersion7(), codigo, codigo, codigo.ToLowerInvariant(), $"Unidade {codigo}", null, "ADMINISTRATIVA", false, null);
@@ -110,8 +121,9 @@ public sealed class LeituraDosCadastrosCitadosTests
     public async Task FusoNaoReconhecido_EFalha()
     {
         LeituraDosCadastrosCitados leitura = new(
-            _unidades, _tiposDeAto, _regras, _geo, _dadosDoCandidato,
+            _unidades, _geo, CadastrosDoCatalogo(),
             CadastrosDaConfiguracaoSemRegistro(),
+            CadastrosDasVagasSemRegistro(),
             new(_relogio, new ResolvedorFusoIndisponivelDeTeste()));
 
         Result<CadastrosCitadosNoDocumento> lidos = await leitura.LerAsync(SemCodigos with { Unidades = ["CEPS"] }, CancellationToken.None);

@@ -39,7 +39,7 @@ internal static class LeituraDasRegrasDeEliminacao
             return Recusa(regra, "regra.codigo", foraDoCatalogo);
         }
 
-        EtapaCitadaNoDocumento? etapa = regra.EtapaChave is { } chave ? EtapaCitadaNoDocumento.De(chave, etapas) : null;
+        ParteCitadaNoDocumento? etapa = regra.EtapaChave is { } chave ? ParteCitadaNoDocumento.De(chave, etapas) : null;
         return etapa switch
         {
             { RecusadaNaLeitura: true } => null,

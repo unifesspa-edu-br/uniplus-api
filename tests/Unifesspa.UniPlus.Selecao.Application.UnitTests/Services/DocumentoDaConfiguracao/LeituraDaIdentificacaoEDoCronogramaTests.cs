@@ -47,11 +47,17 @@ public sealed class LeituraDaIdentificacaoEDoCronogramaTests
         _geo.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
         _leitura = new(new(
             _unidades,
-            tiposDeAto,
-            Substitute.For<IRegraCatalogoReader>(),
             _geo,
-            Substitute.For<IFatoCandidatoReader>(),
-            new(_tiposDeProcesso, _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>()),
+            new(Substitute.For<IRegraCatalogoReader>(), tiposDeAto, Substitute.For<IFatoCandidatoReader>()),
+            new(_tiposDeProcesso, _fasesCanonicas, Substitute.For<ITipoBancaReader>(), Substitute.For<ICategoriaDocumentoReader>(), Substitute.For<ITipoEtapaReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<ITipoDocumentoReader>()),
+            new(
+                Substitute.For<IOfertaCursoReader>(),
+                Substitute.For<IModalidadeReader>(),
+                Substitute.For<IReferenciaReservaDemograficaReader>(),
+                Substitute.For<ICondicaoAtendimentoReader>(),
+                Substitute.For<IRecursoAcessibilidadeReader>(),
+                Substitute.For<ITipoDeficienciaReader>(),
+                Substitute.For<IBaseLegalDoFadaReader>()),
             new(new RelogioFixo(new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)), new ResolvedorFusoDeTeste())));
     }
 

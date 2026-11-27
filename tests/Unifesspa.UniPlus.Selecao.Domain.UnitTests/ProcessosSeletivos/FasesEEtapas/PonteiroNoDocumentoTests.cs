@@ -42,6 +42,26 @@ public sealed class PonteiroNoDocumentoTests
     [InlineData("classificacao.criterios[2].parametros.etapaRef", "/classificacao/criteriosDeDesempate/2/parametros/etapaChave")]
     [InlineData("classificacao.criterios[2].parametros.areas[1]", "/classificacao/criteriosDeDesempate/2/parametros/areas/1")]
     [InlineData("classificacao.criterios[2].regra.codigo", "/classificacao/criteriosDeDesempate/2/regra/codigo")]
+    [InlineData("distribuicaoVagas[1].ofertaCursoId", "/distribuicaoVagas/1/ofertaCursoCodigo")]
+    [InlineData("distribuicaoVagas[0].referenciaReservaDemograficaId", "/distribuicaoVagas/0/referenciaDemograficaCodigo")]
+    [InlineData("distribuicaoVagas[0].regraDistribuicaoCodigo", "/distribuicaoVagas/0/regraDistribuicao/codigo")]
+    [InlineData("distribuicaoVagas[0].regraAjusteVersao", "/distribuicaoVagas/0/regraAjuste/versao")]
+    [InlineData("distribuicaoVagas[2].modalidadeIds", "/distribuicaoVagas/2/modalidades")]
+    [InlineData("distribuicaoVagas[2].modalidadeIds[3]", "/distribuicaoVagas/2/modalidades/3/codigo")]
+    [InlineData("ordemDeRemanejamento.fallbackCodigo", "/ordemDeRemanejamento/destinoFinalCodigo")]
+    [InlineData("ordemDeRemanejamento.ordens", "/ordemDeRemanejamento/destinos")]
+    [InlineData("ordemDeRemanejamento.ordens[2].modalidadeDestinoCodigo", "/ordemDeRemanejamento/destinos/2/modalidadeDestinoCodigo")]
+    [InlineData("fada.fatoElegibilidadeCodigo", "/fada/codigoDoDadoDeElegibilidade")]
+    [InlineData("fada.baseLegalId", "/fada/baseLegalCodigo")]
+    [InlineData("atendimento.condicaoIds[1]", "/atendimento/condicoes/1/condicaoCodigo")]
+    [InlineData("atendimento.recursoIds", "/atendimento/recursos")]
+    [InlineData("atendimento.tipoDeficienciaIds[0]", "/atendimento/tiposDeficiencia/0/tipoDeficienciaCodigo")]
+    [InlineData("documentosExigidos.exigencias[1].fatosComprovados", "/documentosExigidos/exigencias/1/dadosComprovados")]
+    [InlineData("documentosExigidos.exigencias[1].fatosComprovados[0]", "/documentosExigidos/exigencias/1/dadosComprovados/0")]
+    [InlineData("documentosExigidos.exigencias[0].tipoDocumentoId", "/documentosExigidos/exigencias/0/tipoDocumentoCodigo")]
+    [InlineData("documentosExigidos.exigencias[0].faseId", "/documentosExigidos/exigencias/0/faseChave")]
+    [InlineData("exigencias[2].repeticaoPorGrupo", "/documentosExigidos/exigencias/2/repeticaoPorGrupo")]
+    [InlineData("regrasDeComprovacao[1].itens[0].quantidadeMinima", "/documentosExigidos/regrasDeComprovacao/1/itens/0/quantidadeMinima")]
     public void Converter_CampoComOutroNomeNoDocumento_UsaONomeDoDocumento(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
@@ -57,6 +77,7 @@ public sealed class PonteiroNoDocumentoTests
     [InlineData("fases[5].ordem", "/cronograma/fases/5")]
     [InlineData("etapas[0].ordem", "/etapas/0")]
     [InlineData("classificacao.criterios[3].ordem", "/classificacao/criteriosDeDesempate/3")]
+    [InlineData("ordemDeRemanejamento.ordens[4].ordem", "/ordemDeRemanejamento/destinos/4")]
     public void Converter_OrdemQueODocumentoNaoTem_ApontaAParte(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 

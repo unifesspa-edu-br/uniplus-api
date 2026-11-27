@@ -5,6 +5,7 @@ using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+using Services.DocumentoDaConfiguracao;
 
 using Kernel.Results;
 
@@ -168,7 +169,7 @@ public static class DefinirFadaCommandHandler
             ? Falha<BaseLegalCongelada>(
                 "ConfiguracaoDoFada.BaseLegalNaoEncontrada",
                 $"Base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) {baseLegalId} não encontrada ou desativada.")
-            : Result<BaseLegalCongelada>.Success(Congelar(baseLegal));
+            : Result<BaseLegalCongelada>.Success(CopiaDosCadastrosDasVagas.BaseLegalDoFada(baseLegal));
     }
 
     private static DomainError RecusaDaDeclaracaoIncompleta(DefinirFadaCommand command) =>
@@ -181,15 +182,6 @@ public static class DefinirFadaCommandHandler
                 "A versão da regra, o fator e a base legal são obrigatórios quando o código da regra é informado.");
 
     private static Result<T> Falha<T>(string codigo, string mensagem) => Result<T>.Failure(new DomainError(codigo, mensagem));
-
-    private static BaseLegalCongelada Congelar(BaseLegalDoFadaView baseLegal) =>
-        new(
-            baseLegal.Id,
-            baseLegal.Codigo,
-            baseLegal.TipoInstrumento,
-            baseLegal.Identificacao,
-            baseLegal.Descricao,
-            [.. baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf))]);
 
     /// <summary>A configuração do FADA com todos os campos que o processo que o aplica precisa declarar.</summary>
     private sealed record ConfiguracaoDeclarada(
