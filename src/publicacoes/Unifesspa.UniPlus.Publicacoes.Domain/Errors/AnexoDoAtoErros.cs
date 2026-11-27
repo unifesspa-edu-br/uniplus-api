@@ -6,25 +6,25 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 /// <summary>Erros dos anexos de um ato que o domínio e os handlers produzem com a mesma mensagem.</summary>
 public static class AnexoDoAtoErros
 {
-    public static DomainError QuantidadeExcedida(int quantidadeEnviada) => new(
+    public static DomainError QuantidadeExcedida() => new(
         AnexoDoAtoErrorCodes.QuantidadeExcedida,
-        $"O ato admite no máximo {AnexoDoAto.QuantidadeMaxima} anexos; foram enviados {quantidadeEnviada}.");
+        $"O ato admite no máximo {AnexoDoAto.QuantidadeMaxima} anexos.");
 
     public static DomainError NomeInvalido() => new(
         AnexoDoAtoErrorCodes.NomeInvalido,
         $"O nome do anexo é obrigatório e deve ter no máximo {AnexoDoAto.NomeMaxLength} caracteres.");
 
-    public static DomainError TipoMidiaInvalido(string nome) => new(
+    public static DomainError TipoMidiaInvalido() => new(
         AnexoDoAtoErrorCodes.TipoMidiaInvalido,
-        $"O tipo de mídia do anexo '{nome}' deve ter a forma tipo/subtipo (ex.: application/pdf).");
+        "O tipo de mídia do anexo deve ter a forma tipo/subtipo (ex.: application/pdf).");
 
-    public static DomainError HashInvalido(string nome) => new(
+    public static DomainError HashInvalido() => new(
         AnexoDoAtoErrorCodes.HashInvalido,
-        $"O hash do anexo '{nome}' deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).");
+        "O hash do anexo deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).");
 
-    public static DomainError NomeDuplicado(string nome) => new(
+    public static DomainError NomeDuplicado() => new(
         AnexoDoAtoErrorCodes.NomeDuplicado,
-        $"Há mais de um anexo chamado '{nome}' no mesmo ato.");
+        "Há mais de um anexo com o mesmo nome neste ato.");
 
     public static DomainError Nulo() => new(
         AnexoDoAtoErrorCodes.Nulo,

@@ -4,4 +4,8 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Publicacoes.Domain.UnitTests" />
+  </ItemGroup>
+
 </Project>

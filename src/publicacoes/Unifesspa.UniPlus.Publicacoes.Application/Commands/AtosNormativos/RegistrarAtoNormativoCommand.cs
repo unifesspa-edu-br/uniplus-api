@@ -52,14 +52,14 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// domínio.</para>
 /// </remarks>
 public sealed record RegistrarAtoNormativoCommand(
-    string Orgao,
-    string Serie,
+    string? Orgao,
+    string? Serie,
     int Ano,
     string? Numero,
-    [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string TipoCodigo,
+    [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string? TipoCodigo,
     DateOnly DataDoAto,
-    string DocumentoHash,
-    string Assinante,
+    string? DocumentoHash,
+    string? Assinante,
     Guid? VersaoDoObjetoId = null,
     string? VersaoDoObjetoHash = null,
     Guid? AtoRetificadoId = null,
@@ -78,11 +78,11 @@ public sealed record RegistrarAtoNormativoCommand(
 /// estrangeira — o módulo não conhece, e não deve conhecer, o que há do outro lado.
 /// </summary>
 public sealed record VinculoEntidadeInput(
-    [property: NoFormatoDoCodigo(TipoDaEntidadeVinculada.TamanhoMaximo)] string EntidadeTipo,
+    [property: NoFormatoDoCodigo(TipoDaEntidadeVinculada.TamanhoMaximo)] string? EntidadeTipo,
     Guid EntidadeId);
 
 /// <summary>
 /// Arquivo anexo ao documento principal do ato: nome, tipo de mídia e hash SHA-256
 /// (hexadecimal minúsculo) do conteúdo.
 /// </summary>
-public sealed record AnexoDoAtoInput(string Nome, string TipoMidia, string Hash);
+public sealed record AnexoDoAtoInput(string? Nome, string? TipoMidia, string? Hash);

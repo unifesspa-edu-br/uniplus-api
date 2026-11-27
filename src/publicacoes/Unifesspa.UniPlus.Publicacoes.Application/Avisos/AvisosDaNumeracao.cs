@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Avisos;
 using System.Globalization;
 using System.Linq;
 
-using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -16,6 +15,9 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 /// </summary>
 internal static class AvisosDaNumeracao
 {
+    /// <summary>Código do aviso de número duplicado.</summary>
+    public const string AvisoNumeroDuplicado = "NumeroDuplicado";
+
     public static async Task<IReadOnlyList<AvisoNumeracao>> CalcularAsync(
         IAtoNormativoRepository atosRepository,
         AtoNormativo ato,
@@ -48,7 +50,7 @@ internal static class AvisosDaNumeracao
             ato.Orgao,
             conflitantes.Count);
 
-        return new AvisoNumeracao(AtoNormativoRegras.AvisoNumeroDuplicado, mensagem, conflitantes);
+        return new AvisoNumeracao(AvisoNumeroDuplicado, mensagem, conflitantes);
     }
 
     /// <summary>

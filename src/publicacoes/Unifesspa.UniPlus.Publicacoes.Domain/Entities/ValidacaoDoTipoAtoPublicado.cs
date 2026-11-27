@@ -1,14 +1,11 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 internal sealed class ValidacaoDoTipoAtoPublicado(DeclaracaoDoTipoAtoPublicado declaracao)
 {
-    private static readonly CampoDeCodigo CampoCodigo = new(
-        "Código do tipo de ato", TipoAtoPublicado.TamanhoMaximoDoCodigo, TipoAtoPublicadoErrorCodes.CodigoObrigatorio, TipoAtoPublicadoErrorCodes.CodigoFormato);
     private readonly List<FieldError> _erros = [];
     private string? _nome;
     private string? _baseLegal;
@@ -32,7 +29,7 @@ internal sealed class ValidacaoDoTipoAtoPublicado(DeclaracaoDoTipoAtoPublicado d
 
     private void ConferirCodigo()
     {
-        if (CampoCodigo.Recusa(declaracao.Codigo, "codigo") is { } recusa)
+        if (TipoAtoPublicado.CampoDoCodigo.Recusa(declaracao.Codigo, "codigo") is { } recusa)
         {
             _erros.Add(recusa);
         }

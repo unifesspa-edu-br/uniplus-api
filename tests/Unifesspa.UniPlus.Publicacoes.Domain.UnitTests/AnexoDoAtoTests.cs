@@ -28,113 +28,22 @@ public sealed class AnexoDoAtoTests
     [InlineData("abc")]
     [InlineData("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n")]
     [InlineData("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")]
-    public void Conferir_HashForaDoFormato_Recusa(string hash)
+    public void Recusas_HashForaDoFormato_Recusa(string hash)
     {
-        DomainError? erro = AnexoDoAto.Conferir([("Anexo I.pdf", "application/pdf", hash)]);
+        IReadOnlyList<FieldError> recusas = AnexoDoAto.Recusas([("Anexo I.pdf", "application/pdf", hash)]);
 
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.HashInvalido);
-    }
-
-    [Theory(DisplayName = "Nome vazio ou só de espaços é recusado")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Conferir_NomeVazio_Recusa(string nome)
-    {
-        DomainError? erro = AnexoDoAto.Conferir([(nome, "application/pdf", HashValido)]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
-    }
-
-    [Fact(DisplayName = "Nome acima do limite é recusado")]
-    public void Conferir_NomeLongoDemais_Recusa()
-    {
-        DomainError? erro = AnexoDoAto.Conferir(
-            [(new string('x', AnexoDoAto.NomeMaxLength + 1), "application/pdf", HashValido)]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
+        ResumoDasRecusas.De(recusas).Should().Equal(("anexos[0].hash", AnexoDoAtoErrorCodes.HashInvalido));
     }
 
     [Theory(DisplayName = "Tipo de mídia fora da forma tipo/subtipo é recusado")]
     [InlineData("")]
     [InlineData("pdf")]
     [InlineData("application/")]
-    public void Conferir_TipoMidiaInvalido_Recusa(string tipoMidia)
+    public void Recusas_TipoMidiaInvalido_Recusa(string tipoMidia)
     {
-        DomainError? erro = AnexoDoAto.Conferir([("Anexo I.pdf", tipoMidia, HashValido)]);
+        IReadOnlyList<FieldError> recusas = AnexoDoAto.Recusas([("Anexo I.pdf", tipoMidia, HashValido)]);
 
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.TipoMidiaInvalido);
-    }
-
-    [Fact(DisplayName = "Dois anexos com o mesmo nome (após o trim) no mesmo ato são recusados")]
-    public void Conferir_NomeDuplicado_Recusa()
-    {
-        DomainError? erro = AnexoDoAto.Conferir(
-        [
-            ("Anexo I.pdf", "application/pdf", HashValido),
-            ("  Anexo I.pdf ", "application/pdf", OutroHash),
-        ]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
-    }
-
-    [Fact(DisplayName = "Mais de 50 anexos no mesmo ato são recusados")]
-    public void Conferir_AcimaDoLimite_Recusa()
-    {
-        (string, string, string)[] anexos =
-            [.. Enumerable.Range(0, AnexoDoAto.QuantidadeMaxima + 1).Select(i => ($"Anexo {i}.pdf", "application/pdf", HashValido))];
-
-        AnexoDoAto.Conferir(anexos)!.Code.Should().Be(AnexoDoAtoErrorCodes.QuantidadeExcedida);
-        AnexoDoAto.Conferir(anexos[..AnexoDoAto.QuantidadeMaxima]).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "Com mais de 50 anexos e um inválido, a recusa é pela quantidade")]
-    public void Conferir_AcimaDoLimiteComUmInvalido_RecusaPelaQuantidade()
-    {
-        (string, string, string)[] anexos =
-            [("Anexo 0.pdf", "application/pdf", "abc"), .. Enumerable.Range(1, AnexoDoAto.QuantidadeMaxima).Select(i => ($"Anexo {i}.pdf", "application/pdf", HashValido))];
-
-        AnexoDoAto.Conferir(anexos)!.Code.Should().Be(AnexoDoAtoErrorCodes.QuantidadeExcedida);
-    }
-
-    [Fact(DisplayName = "Anexo com nome, tipo de mídia e hash inválidos é recusado pelo nome")]
-    public void Conferir_NomeTipoEHashInvalidos_RecusaPeloNome()
-    {
-        DomainError? erro = AnexoDoAto.Conferir([("  ", "pdf", "abc")]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
-    }
-
-    [Fact(DisplayName = "Nome nulo é recusado pelo nome")]
-    public void Conferir_NomeNulo_RecusaPeloNome()
-    {
-        DomainError? erro = AnexoDoAto.Conferir([(null!, "application/pdf", HashValido)]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeInvalido);
-    }
-
-    [Fact(DisplayName = "Nome repetido antes de um hash inválido é recusado pelo nome duplicado")]
-    public void Conferir_NomeDuplicadoAntesDeHashInvalido_RecusaPelaDuplicidade()
-    {
-        DomainError? erro = AnexoDoAto.Conferir(
-        [
-            ("A.pdf", "application/pdf", HashValido),
-            ("A.pdf", "application/pdf", OutroHash),
-            ("C.pdf", "application/pdf", "abc"),
-        ]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
-    }
-
-    [Fact(DisplayName = "Hash inválido no primeiro anexo é recusado antes da duplicidade do segundo")]
-    public void Conferir_HashInvalidoAntesDeNomeDuplicado_RecusaPeloHash()
-    {
-        DomainError? erro = AnexoDoAto.Conferir(
-        [
-            ("A.pdf", "application/pdf", "abc"),
-            ("A.pdf", "application/pdf", OutroHash),
-        ]);
-
-        erro!.Code.Should().Be(AnexoDoAtoErrorCodes.HashInvalido);
+        ResumoDasRecusas.De(recusas).Should().Equal(("anexos[0].tipoMidia", AnexoDoAtoErrorCodes.TipoMidiaInvalido));
     }
 
     [Fact(DisplayName = "Registrar guarda os anexos na ordem recebida, com o tipo de mídia em minúsculas")]

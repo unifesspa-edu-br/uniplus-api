@@ -32,6 +32,7 @@
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/ResolvedorFusoDeTeste.cs" Link="ResolvedorFusoDeTeste.cs" />
     <Compile Include="../Shared/TipoAtoPublicadoDeTeste.cs" Link="TipoAtoPublicadoDeTeste.cs" />
+    <Compile Include="../Shared/VersaoDoObjetoDeTeste.cs" Link="VersaoDoObjetoDeTeste.cs" />
   </ItemGroup>
 
   <ItemGroup>

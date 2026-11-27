@@ -1053,13 +1053,22 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "tipoMidia": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "hash": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1518,10 +1527,16 @@
         "type": "object",
         "properties": {
           "orgao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "serie": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "ano": {
             "type": "integer",
@@ -1536,17 +1551,26 @@
           "tipoCodigo": {
             "maxLength": 60,
             "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "dataDoAto": {
             "type": "string",
             "format": "date"
           },
           "documentoHash": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "assinante": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "versaoDoObjetoId": {
             "type": [
@@ -1785,7 +1809,10 @@
           "entidadeTipo": {
             "maxLength": 60,
             "pattern": "^[A-Z][A-Z0-9]*(_[A-Z0-9]\u002B)*$",
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "entidadeId": {
             "type": "string",

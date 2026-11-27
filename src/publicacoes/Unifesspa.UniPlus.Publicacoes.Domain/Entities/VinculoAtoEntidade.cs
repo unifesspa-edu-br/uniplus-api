@@ -58,7 +58,7 @@ public sealed class VinculoAtoEntidade : IForensicEntity
 
     /// <summary>
     /// Cria o vínculo de <paramref name="ato"/> com a <paramref name="entidade"/>. Invariantes de
-    /// última linha — o validator já recusa o mesmo antes, com 422.
+    /// última linha — a conferência da declaração já recusa o mesmo antes, com 422.
     /// </summary>
     public static VinculoAtoEntidade Criar(AtoNormativo ato, EntidadeVinculada entidade)
     {

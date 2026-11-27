@@ -7,11 +7,11 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A ordem em que <c>AtoNormativo.Registrar</c> confere as invariantes é contrato: quando um
-/// registro viola duas, a exceção aponta a primeira da sequência — órgão, série, tipo, assinante,
-/// número, motivo da retificação, nome do tipo, ano, hash do documento, ato retificado vazio,
-/// simetria do par de retificação, vínculos (tipo, identificador, repetição) e anexos. Cada linha de
-/// dados viola um passo e o seguinte; a fábrica é chamada com os argumentos à vista porque é ela o assunto.
+/// As guardas finais de <c>AtoNormativo.Registrar</c> lançam <see cref="ArgumentException"/> com o campo da
+/// primeira recusa, na ordem do corpo do pedido: órgão, série, ano, número, código do tipo, nome do
+/// tipo, hash do documento, assinante, ato retificado, motivo da retificação, vínculos (por posição) e
+/// anexos. Cada linha de dados viola um passo e o seguinte; a fábrica é chamada com os argumentos à vista
+/// porque é ela o assunto.
 /// </summary>
 public sealed class OrdemDasRecusasDoRegistroDoAtoTests
 {
@@ -24,49 +24,43 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
     private static readonly EntidadeVinculada ProcessoSemId = new("PROCESSO", Guid.Empty);
     private static readonly (string, string, string) AnexoSemHash = ("Anexo I.pdf", "application/pdf", "abc");
 
-    public static TheoryData<string, RegistroComViolacoes, Type, string, string> TextosObrigatorios => new()
+    public static TheoryData<string, RegistroComViolacoes, string> Essencia => new()
     {
-        { "órgão nulo antes da série", Valido with { Orgao = null!, Serie = Texto(101) }, typeof(ArgumentNullException), "orgao", "" },
-        { "órgão em branco antes da série", Valido with { Orgao = "  ", Serie = Texto(101) }, typeof(ArgumentException), "orgao", "" },
-        { "órgão longo antes da série", Valido with { Orgao = Texto(201), Serie = Texto(101) }, typeof(ArgumentException), "orgao", "" },
-        { "série antes do tipo", Valido with { Serie = Texto(101), TipoCodigo = Texto(61) }, typeof(ArgumentException), "serie", "" },
-        { "tipo antes do assinante", Valido with { TipoCodigo = Texto(61), Assinante = Texto(201) }, typeof(ArgumentException), "tipoCodigo", "" },
-        { "assinante antes do número", Valido with { Assinante = Texto(201), Numero = Texto(61) }, typeof(ArgumentException), "assinante", "" },
+        { "órgão nulo antes da série", Valido with { Orgao = null!, Serie = Texto(101) }, "orgao" },
+        { "órgão em branco antes da série", Valido with { Orgao = "  ", Serie = Texto(101) }, "orgao" },
+        { "órgão longo antes da série", Valido with { Orgao = Texto(201), Serie = Texto(101) }, "orgao" },
+        { "série antes do ano", Valido with { Serie = Texto(101), Ano = 0 }, "serie" },
+        { "ano antes do número", Valido with { Ano = 0, Numero = Texto(61) }, "ano" },
+        { "número antes do código do tipo", Valido with { Numero = Texto(61), TipoCodigo = Texto(61) }, "numero" },
+        { "código do tipo antes do nome do tipo", Valido with { TipoCodigo = Texto(61), TipoNome = Texto(201) }, "tipoCodigo" },
+        { "nome do tipo antes do hash", Valido with { TipoNome = Texto(201), DocumentoHash = "abc" }, "tipoNome" },
+        { "hash antes do assinante", Valido with { DocumentoHash = "abc", Assinante = Texto(201) }, "documentoHash" },
+        { "assinante antes do ato retificado", Valido with { Assinante = Texto(201), AtoRetificadoId = Guid.Empty }, "assinante" },
     };
 
-    public static TheoryData<string, RegistroComViolacoes, Type, string, string> TextosOpcionaisAnoEHash => new()
+    public static TheoryData<string, RegistroComViolacoes, string> RetificacaoVinculosEAnexos => new()
     {
-        { "número antes do motivo", Valido with { Numero = Texto(61), MotivoRetificacao = Texto(1001) }, typeof(ArgumentException), "numero", "" },
-        { "motivo antes do nome do tipo", Valido with { MotivoRetificacao = Texto(1001), TipoNome = Texto(201) }, typeof(ArgumentException), "motivoRetificacao", "" },
-        { "nome do tipo antes do ano", Valido with { TipoNome = Texto(201), Ano = 0 }, typeof(ArgumentException), "tipoNome", "" },
-        { "ano antes do hash", Valido with { Ano = 0, DocumentoHash = "abc" }, typeof(ArgumentOutOfRangeException), "ano", "" },
-        { "hash antes do ato retificado vazio", Valido with { DocumentoHash = "abc", AtoRetificadoId = Guid.Empty, MotivoRetificacao = "corrige" }, typeof(ArgumentException), "documentoHash", "" },
+        { "ato retificado vazio antes do motivo", Valido with { AtoRetificadoId = Guid.Empty, MotivoRetificacao = Texto(1001) }, "atoRetificadoId" },
+        { "motivo antes dos vínculos", Valido with { MotivoRetificacao = Texto(1001), AtoRetificadoId = Guid.CreateVersion7(), Vinculos = [ProcessoSemId] }, "motivoRetificacao" },
+        { "tipo do vínculo antes do identificador", Valido with { Vinculos = [new("x", Guid.Empty)] }, "vinculos[0].entidadeTipo" },
+        { "identificador do vínculo antes da repetição", Valido with { Vinculos = [ProcessoSemId, ProcessoSemId] }, "vinculos[0].entidadeId" },
+        { "repetição do vínculo antes dos anexos", Valido with { Vinculos = [Processo, Processo], Anexos = [AnexoSemHash] }, "vinculos[1]" },
+        { "segundo vínculo inválido depois de um válido", Valido with { Vinculos = [Processo, new("x", Guid.CreateVersion7())] }, "vinculos[1].entidadeTipo" },
+        { "vínculo antes dos anexos", Valido with { Vinculos = [new("x", Guid.CreateVersion7())], Anexos = [AnexoSemHash] }, "vinculos[0].entidadeTipo" },
+        { "anexo inválido", Valido with { Anexos = [AnexoSemHash] }, "anexos[0].hash" },
     };
 
-    public static TheoryData<string, RegistroComViolacoes, Type, string, string> RetificacaoVinculosEAnexos => new()
-    {
-        { "ato retificado vazio antes da simetria", Valido with { AtoRetificadoId = Guid.Empty }, typeof(ArgumentException), "atoRetificadoId", "Identificador do ato retificado" },
-        { "simetria antes dos vínculos", Valido with { MotivoRetificacao = "corrige", Vinculos = [new("x", Guid.Empty)] }, typeof(ArgumentException), "atoRetificadoId", "par (ato retificado, motivo)" },
-        { "tipo do vínculo antes do identificador", Valido with { Vinculos = [new("x", Guid.Empty)] }, typeof(ArgumentException), "entidadeTipo", "" },
-        { "identificador do vínculo antes da repetição", Valido with { Vinculos = [ProcessoSemId, ProcessoSemId] }, typeof(ArgumentException), "entidadeId", "" },
-        { "repetição do vínculo antes dos anexos", Valido with { Vinculos = [Processo, Processo], Anexos = [AnexoSemHash] }, typeof(ArgumentException), "vinculos", "" },
-        { "segundo vínculo inválido depois de um válido", Valido with { Vinculos = [Processo, new("x", Guid.CreateVersion7())] }, typeof(ArgumentException), "entidadeTipo", "" },
-        { "tipo do vínculo antes dos anexos", Valido with { Vinculos = [new("x", Guid.CreateVersion7())], Anexos = [AnexoSemHash] }, typeof(ArgumentException), "entidadeTipo", "" },
-    };
-
-    [Theory(DisplayName = "Com duas invariantes violadas, a exceção aponta a primeira da sequência")]
-    [MemberData(nameof(TextosObrigatorios))]
-    [MemberData(nameof(TextosOpcionaisAnoEHash))]
+    [Theory(DisplayName = "Com duas invariantes violadas, a exceção aponta o campo da primeira na ordem do corpo")]
+    [MemberData(nameof(Essencia))]
     [MemberData(nameof(RetificacaoVinculosEAnexos))]
     public void Registrar_ComDuasInvariantesVioladas_RecusaAPrimeiraDaSequencia(
-        string descricao, RegistroComViolacoes r, Type excecao, string parametro, string trechoDaMensagem)
+        string descricao, RegistroComViolacoes r, string campo)
     {
         Exception? recusa = Record.Exception(() => AtoNormativo.Registrar(
             Guid.CreateVersion7(), EssenciaDe(r), PublicadoEm, versaoDoObjeto: null, r.Vinculos, r.Anexos));
 
-        recusa.Should().BeOfType(excecao, descricao);
-        ((ArgumentException)recusa!).ParamName.Should().Be(parametro, descricao);
-        recusa.Message.Contains(trechoDaMensagem, StringComparison.Ordinal).Should().BeTrue(descricao);
+        recusa.Should().BeOfType<ArgumentException>(descricao);
+        ((ArgumentException)recusa!).ParamName.Should().Be(campo, descricao);
     }
 
     [Fact(DisplayName = "O identificador informado é mantido")]
@@ -98,7 +92,7 @@ public sealed class OrdemDasRecusasDoRegistroDoAtoTests
             Guid.CreateVersion7(), EssenciaDe(Valido), PublicadoEm, versaoDoObjeto: null,
             vinculos: [new("PROCESSO", processo), new("CHAMADA", Guid.CreateVersion7()), new("PROCESSO", processo)]);
 
-        acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be("vinculos");
+        acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be("vinculos[2]");
     }
 
     [Fact(DisplayName = "Os anexos ficam na ordem de envio, numerados a partir de zero")]

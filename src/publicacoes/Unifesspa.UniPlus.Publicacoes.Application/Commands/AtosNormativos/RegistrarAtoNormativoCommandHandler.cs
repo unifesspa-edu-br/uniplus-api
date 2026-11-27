@@ -30,7 +30,7 @@ public static class RegistrarAtoNormativoCommandHandler
         Result<AtoMontado> montado = await montagem
             .MontarAsync(command, command.PublicadoEm ?? timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         return montado.IsFailure
-            ? Result<RegistrarAtoNormativoResult>.Failure(montado.Error!)
+            ? Result<RegistrarAtoNormativoResult>.ValidationFailure(montado.Errors)
             : await GravarAsync(command, montado.Value!, atosRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 

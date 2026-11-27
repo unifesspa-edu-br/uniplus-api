@@ -41,9 +41,10 @@ public sealed class VinculosNoRegistroDoAtoEndpointTests
             client, PayloadAto(tipo, "13", "2026-03-13", [Vinculo(processo), Vinculo(processo)]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.publicacoes.ato_normativo.vinculo_repetido");
     }
 
-    /// <remarks>A anotação de nulidade do record não impede um <c>"vinculos": [null]</c> no corpo.</remarks>
+    /// <remarks>O elemento nulo da lista chega ao domínio, que o recusa na posição dele.</remarks>
     [Fact(DisplayName = "Elemento nulo na lista de vínculos é recusado com 422 — nunca 500")]
     public async Task Registrar_VinculoNulo_Retorna422()
     {
@@ -53,6 +54,7 @@ public sealed class VinculosNoRegistroDoAtoEndpointTests
         HttpResponseMessage resposta = await PostAtoAsync(client, PayloadComVinculoNulo(tipo));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.publicacoes.ato_normativo.vinculo_nulo");
     }
 
     [Fact(DisplayName = "Rótulo de entidade fora da grafia canônica é recusado com 422")]
@@ -66,6 +68,7 @@ public sealed class VinculosNoRegistroDoAtoEndpointTests
             PayloadAto(tipo, "13", "2026-03-13", [Vinculo(Guid.CreateVersion7(), "processo-seletivo")]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.publicacoes.ato_normativo.vinculo_tipo_de_entidade_invalido");
     }
 
     [Fact(DisplayName = "O endpoint administrativo recusa ato vinculado a processo seletivo, mesmo entre outros vínculos")]

@@ -88,7 +88,7 @@ public sealed class AtoNormativoTests
     public void Registrar_ComVersaoDoObjeto_Guarda()
     {
         ReferenciaVersaoDoObjeto versao = ReferenciaVersaoDoObjeto
-            .Criar(Guid.CreateVersion7(), HashValido).Value!;
+            .DoPar(Guid.CreateVersion7(), HashValido).Valor!;
 
         AtoNormativo ato = AtoNormativo.Registrar(Guid.CreateVersion7(), Valida, Registro, versao);
 
@@ -162,7 +162,7 @@ public sealed class AtoNormativoTests
         Action acao = () => AtoNormativo.Registrar(
             Guid.CreateVersion7(), Valida with { Numeracao = Numeracao with { Ano = ano } }, Registro, versaoDoObjeto: null);
 
-        acao.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("ano");
+        acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be("ano");
     }
 
     [Fact(DisplayName = "Retificação preenche o par (ato retificado, motivo) e normaliza o motivo")]
@@ -178,9 +178,9 @@ public sealed class AtoNormativoTests
     }
 
     [Theory(DisplayName = "Par de retificação incompleto (só um dos dois) é recusado")]
-    [InlineData(true, false)]   // só ato retificado
-    [InlineData(false, true)]   // só motivo
-    public void Registrar_ComRetificacaoIncompleta_Lanca(bool temRetificado, bool temMotivo)
+    [InlineData(true, false, "motivoRetificacao")]
+    [InlineData(false, true, "atoRetificadoId")]
+    public void Registrar_ComRetificacaoIncompleta_Lanca(bool temRetificado, bool temMotivo, string campoDoLadoQueFalta)
     {
         Guid? retificado = temRetificado ? Guid.CreateVersion7() : null;
         string? motivo = temMotivo ? "corrige o anexo II" : null;
@@ -188,7 +188,7 @@ public sealed class AtoNormativoTests
 
         Action acao = () => AtoNormativo.Registrar(Guid.CreateVersion7(), essencia, Registro, versaoDoObjeto: null);
 
-        acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be("atoRetificadoId");
+        acao.Should().Throw<ArgumentException>().Which.ParamName.Should().Be(campoDoLadoQueFalta);
     }
 
     [Fact(DisplayName = "Motivo em branco normaliza para ausente (par ausente é válido)")]

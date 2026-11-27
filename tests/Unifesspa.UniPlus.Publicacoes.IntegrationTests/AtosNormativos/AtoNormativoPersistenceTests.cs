@@ -36,7 +36,7 @@ public sealed class AtoNormativoPersistenceTests
     private static readonly DateOnly Publicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Registro = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
     private static readonly AtoNormativoDeTeste Base = new();
-    private static readonly ReferenciaVersaoDoObjeto Versao = ReferenciaVersaoDoObjeto.Criar(Guid.CreateVersion7(), HashValido).Value!;
+    private static readonly ReferenciaVersaoDoObjeto Versao = VersaoDoObjetoDeTeste.Criar(Guid.CreateVersion7(), HashValido);
 
     private readonly PublicacoesDbFixture _fixture;
     private readonly AtoNormativoPersistenciaApoio _apoio;
