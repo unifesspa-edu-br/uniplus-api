@@ -1890,9 +1890,7 @@
     },
     {
       "codigo": "uniplus.autorizacao.reclassificacao.nao_encontrada",
-      "requisitos": [
-        "UNI-REQ-0321"
-      ],
+      "requisitos": [],
       "oQueAconteceu": [
         "Não existe reclassificação com o identificador informado, para consulta ou para decisão."
       ],
