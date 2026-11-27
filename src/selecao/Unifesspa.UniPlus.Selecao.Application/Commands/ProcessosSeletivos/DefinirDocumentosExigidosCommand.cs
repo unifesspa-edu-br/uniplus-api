@@ -17,9 +17,9 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// Entrada de uma condição do gatilho DNF, usada por <see cref="AplicabilidadeDaExigenciaInput"/>.
 /// <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato de <c>CondicaoPrecondicaoInput</c>
 /// (códigos declarados em <see cref="Regras.Enums.Operador"/>; <see cref="Valor"/> é texto,
-/// interpretado como JSON quando possível).
+/// interpretado como JSON quando possível). A cláusula ausente é recusada; a cláusula negativa é recusada pelo domínio.
 /// </summary>
-public sealed record CondicaoGatilhoInput(int Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor);
+public sealed record CondicaoGatilhoInput(int? Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor);
 
 /// <summary>
 /// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
@@ -74,13 +74,20 @@ public sealed record AplicabilidadeDaExigenciaInput([property: AceitaCodigosDe<A
 }
 
 /// <summary>O que acontece quando o documento não é apresentado, e a base legal da obrigação.</summary>
-/// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir.</param>
+/// <param name="Obrigatorio">Se a falta do documento impede a inscrição de seguir; ausente é recusado pelo domínio.</param>
 /// <param name="ConsequenciaDoDescumprimento">Código da consequência do descumprimento, lido no GET; ausente, a exigência não determina resultado.</param>
 /// <param name="BasesLegais">As bases legais da exigência; ausentes valem lista vazia, válida na escrita e pendente na publicação quando exigida.</param>
-public sealed record IndeferimentoDoDocumentoInput(bool Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalInput>? BasesLegais, bool AbrePrazoParaReenvio = false)
+/// <param name="AbrePrazoParaReenvio">Se o indeferimento abre prazo para o candidato reenviar o documento; ausente é recusado pelo domínio.</param>
+public sealed record IndeferimentoDoDocumentoInput(bool? Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalInput>? BasesLegais, bool? AbrePrazoParaReenvio)
 {
     /// <summary>O caminho da consequência no pedido.</summary>
     public const string CaminhoDaConsequencia = "indeferimento.consequenciaDoDescumprimento";
+
+    /// <summary>O caminho da obrigatoriedade no pedido.</summary>
+    public const string CaminhoDoObrigatorio = "indeferimento.obrigatorio";
+
+    /// <summary>O caminho da escolha de abrir prazo para reenvio no pedido.</summary>
+    public const string CaminhoDoPrazoParaReenvio = "indeferimento.abrePrazoParaReenvio";
 }
 
 /// <summary>O modelo de documento que a exigência oferece ao candidato; o handler lê dele só a identidade.</summary>
@@ -165,7 +172,7 @@ public sealed record CardinalidadeQualificadaInput(int? QuantidadeMinima = null,
 /// <summary>A consequência do indeferimento de um grupo com quantidade mínima de itens e as bases legais dela.</summary>
 /// <param name="ConsequenciaDoDescumprimento">Código da consequência lido no GET; só o grupo com quantidade mínima de itens a declara.</param>
 /// <param name="BasesLegais">As bases legais, só quando a consequência está declarada.</param>
-public sealed record IndeferimentoDoGrupoInput([property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null, bool AbrePrazoParaReenvio = false);
+public sealed record IndeferimentoDoGrupoInput([property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento = null, IReadOnlyList<BaseLegalInput>? BasesLegais = null, bool? AbrePrazoParaReenvio = null);
 
 /// <summary>Regra informada para comprovar uma exigência documental.</summary>
 public sealed record RegraDeComprovacaoInformada(

@@ -33,7 +33,7 @@ public static class ValidationErrorCodes
     public const string Raiz = "uniplus.validacao";
 
     /// <summary><c>NotNull</c> e <c>NotEmpty</c>.</summary>
-    public const string Obrigatorio = "uniplus.validacao.obrigatorio";
+    public const string Obrigatorio = CodigosDeValidacao.Obrigatorio;
 
     /// <summary><c>Length</c>, <c>MinimumLength</c>, <c>MaximumLength</c> e o tamanho exato.</summary>
     public const string Tamanho = "uniplus.validacao.tamanho";

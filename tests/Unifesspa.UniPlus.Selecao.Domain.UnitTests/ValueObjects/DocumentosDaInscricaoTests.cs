@@ -58,7 +58,7 @@ public sealed class DocumentosDaInscricaoTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.NewGuid(), codigo, nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Guid.NewGuid(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

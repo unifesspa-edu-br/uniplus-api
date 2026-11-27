@@ -31,7 +31,7 @@ public sealed record DocumentoExigidoDoModeloInput(
 /// O indeferimento do documento exigido do modelo: se o documento é obrigatório, a consequência de o
 /// candidato não o apresentar e as bases legais que a sustentam.
 /// </summary>
-public sealed record IndeferimentoDoDocumentoDoModeloInput(bool Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais, bool AbrePrazoParaReenvio = false);
+public sealed record IndeferimentoDoDocumentoDoModeloInput(bool? Obrigatorio, [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais, bool? AbrePrazoParaReenvio);
 
 /// <summary>
 /// O que o modelo escolhe sobre a emissão e a validade do documento. Omitir um dos dois, ou os dois, deixa a
@@ -45,7 +45,7 @@ public sealed record RequisitosDoDocumentoDoModeloInput(
 /// O indeferimento de um grupo de documentos do modelo: a consequência de o candidato não apresentar a
 /// quantidade mínima de documentos do grupo e as bases legais que a sustentam.
 /// </summary>
-public sealed record IndeferimentoDoGrupoDeDocumentosDoModeloInput([property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais, bool AbrePrazoParaReenvio = false);
+public sealed record IndeferimentoDoGrupoDeDocumentosDoModeloInput([property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDoDescumprimento, IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais, bool? AbrePrazoParaReenvio);
 
 /// <summary>
 /// Documentos dos quais o candidato apresenta ao menos a quantidade mínima: quantidade ausente vale um e o

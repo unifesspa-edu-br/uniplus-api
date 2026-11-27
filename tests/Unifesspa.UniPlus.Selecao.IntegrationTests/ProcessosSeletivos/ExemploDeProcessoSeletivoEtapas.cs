@@ -169,10 +169,10 @@ internal static class ExemploDeProcessoSeletivoEtapas
         return etapa;
     }
 
-    internal static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa() =>
+    internal static IReadOnlyList<NivelDeAtendimentoDeclarado> EscalaDeAtendimentoDaDefesa() =>
         [
-            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atendeu_parcialmente").Value!, "Atendeu parcialmente", 0.5000m),
-            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_atendeu").Value!, "Atendeu", 1.0000m),
-            NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_nao_atendeu").Value!, "Não atendeu", 0.0000m),
+            new("Atendeu parcialmente", 0.5000m, "nivel_atendeu_parcialmente"),
+            new("Atendeu", 1.0000m, "nivel_atendeu"),
+            new("Não atendeu", 0.0000m, "nivel_nao_atendeu"),
         ];
 }

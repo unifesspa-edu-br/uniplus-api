@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static class EtapaDeAtendimentoBuilder
 {
-    internal static ProcessoSeletivo CriarProcesso(IReadOnlyList<NivelDeAtendimento> niveis, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
+    internal static ProcessoSeletivo CriarProcesso(IReadOnlyList<NivelDeAtendimentoDeclarado> niveis, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Processo {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
@@ -20,7 +20,7 @@ internal static class EtapaDeAtendimentoBuilder
         return processo;
     }
 
-    internal static EtapaProcesso CriarEtapa(IReadOnlyList<NivelDeAtendimento> niveis, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
+    internal static EtapaProcesso CriarEtapa(IReadOnlyList<NivelDeAtendimentoDeclarado> niveis, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
     {
         Result<TipoEtapaSnapshot> tipo = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ENTREVISTA", "Entrevista", true, true, false);
         tipo.IsSuccess.Should().BeTrue();
@@ -31,11 +31,14 @@ internal static class EtapaDeAtendimentoBuilder
         etapa.IsSuccess.Should().BeTrue();
         return etapa.Value!;
     }
+    internal static IReadOnlyList<NivelDeAtendimentoDeclarado>? EscalaDeclarada(EtapaProcesso etapa) =>
+        etapa.EscalaDeAtendimento?.Select(static nivel => new NivelDeAtendimentoDeclarado(nivel.Rotulo, nivel.Fracao, nivel.Chave.Valor)).ToList();
+
     internal static void RedeclararItens(EtapaProcesso etapa, IReadOnlyList<ItemDeAvaliacaoDeclarado> itens)
     {
         IdentificacaoDaEtapa identificacao = new(etapa.Nome, etapa.Carater, etapa.TipoEtapa, etapa.Ordem, etapa.FaseCodigo);
         DeclaracaoDaAvaliacaoDaEtapa avaliacao = new(etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima,
-            etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, etapa.EscalaDeAtendimento);
+            etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, EscalaDeclarada(etapa));
         etapa.AtualizarDados(identificacao, avaliacao, itens).IsSuccess.Should().BeTrue();
     }
 

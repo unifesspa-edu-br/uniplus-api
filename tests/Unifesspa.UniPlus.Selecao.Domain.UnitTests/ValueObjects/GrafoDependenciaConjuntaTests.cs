@@ -48,7 +48,7 @@ public sealed class GrafoDependenciaConjuntaTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

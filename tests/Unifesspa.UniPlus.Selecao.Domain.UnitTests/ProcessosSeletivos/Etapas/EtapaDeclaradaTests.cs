@@ -60,7 +60,7 @@ public sealed class EtapaDeclaradaTests
 
     private static readonly ItemDeAvaliacaoDeclarado[] ItensInvalidos = [new(null, " ", -1m)];
 
-    private static readonly NivelDeAtendimento[] EscalaInvalida = [new(" ", 2m)];
+    private static readonly NivelDeAtendimentoDeclarado[] EscalaInvalida = [new(" ", 2m, null)];
 
     private static EtapaDeclarada EtapaQueEmiteParecerEPublicaPreliminares()
     {

@@ -17,7 +17,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
     private const string ExigenciaCompleta = """
         { "chave": "exigencia_comprovante_renda", "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
           "faseChave": "inscricao", "etapaChave": "etapa_prova_objetiva", "formularioCodigo": "INSCRICAO",
-          "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "consequenciaDoDescumprimento": "RETIRA_O_ACRESCIMO",
+          "aplicabilidade": "CONDICIONAL", "obrigatorio": true, "abrePrazoParaReenvio": false, "consequenciaDoDescumprimento": "RETIRA_O_ACRESCIMO",
           "condicoes": [ [ { "codigoDoDado": "RENDA_FAMILIAR", "operador": "MENOR_IGUAL", "valor": 3 } ] ],
           "basesLegais": [ { "referencia": "Decreto 6.593/2008", "abrangencia": "FEDERAL", "situacao": "RESOLVIDO" } ],
           "prazoDeEmissao": { "escolha": "COM_PRAZO", "valor": 90, "unidade": "DIAS", "referencia": { "tipo": "FIM_DAS_INSCRICOES" }, "efeitoForaDoPrazo": "RECUSAR_DOCUMENTO" },
@@ -26,11 +26,22 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
           "tamanhoMaximoBytes": 5242880 }
         """;
 
-    [Fact(DisplayName = "A exigência completa valida e a só com a chave, como num rascunho, também")]
-    public void Exigencia_CompletaEApenasComAChave_Valida()
+    [Fact(DisplayName = "A exigência completa valida e a só com a chave e as duas escolhas do indeferimento, como num rascunho, também")]
+    public void Exigencia_CompletaEApenasComAChaveEAsEscolhas_Valida()
     {
         CaminhosComErro(Documento(ExigenciaCompleta), $"{Exigencias}#/$defs/exigencia").Should().BeEmpty();
-        CaminhosComErro(Documento("""{ "chave": "rascunho" }"""), $"{Exigencias}#/$defs/exigencia").Should().BeEmpty();
+        CaminhosComErro(Documento("""{ "chave": "rascunho", "obrigatorio": false, "abrePrazoParaReenvio": false }"""), $"{Exigencias}#/$defs/exigencia").Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "A exigência sem a obrigatoriedade ou sem a escolha de prazo para reenvio é recusada")]
+    [InlineData("""{ "chave": "x", "abrePrazoParaReenvio": false }""")]
+    [InlineData("""{ "chave": "x", "obrigatorio": false }""")]
+    [InlineData("""{ "chave": "x" }""")]
+    public void Exigencia_SemAsEscolhasDoIndeferimento_Recusa(string exigencia)
+    {
+        ArgumentNullException.ThrowIfNull(exigencia);
+
+        CaminhosComErro(Documento(exigencia), $"{Exigencias}#/$defs/exigencia").Should().Contain("");
     }
 
     [Fact(DisplayName = "A exigência sem chave é recusada")]
@@ -114,7 +125,7 @@ public sealed class DocumentosExigidosDoEsquemaDaConfiguracaoTests
         string definicao = $"{Exigencias}#/$defs/exigencia";
         string longo = new('A', 61);
 
-        CaminhosComErro(Documento("""{ "chave": "x", "modelo": { "nomeArquivo": "modelo.docx", "formato": "docx", "hashSha256": "0000000000000000000000000000000000000000000000000000000000000000" } }"""), definicao)
+        CaminhosComErro(Documento("""{ "chave": "x", "obrigatorio": true, "abrePrazoParaReenvio": false, "modelo": { "nomeArquivo": "modelo.docx", "formato": "docx", "hashSha256": "0000000000000000000000000000000000000000000000000000000000000000" } }"""), definicao)
             .Should().BeEmpty();
         CaminhosComErro(Documento($$"""{ "chave": "x", "tipoDocumentoCodigo": "{{longo}}", "hipoteseLegal": "{{new string('h', 41)}}" }"""), definicao)
             .Should().Contain(["/tipoDocumentoCodigo", "/hipoteseLegal"]);

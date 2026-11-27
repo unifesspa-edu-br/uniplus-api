@@ -177,7 +177,7 @@ public sealed class RotulosDosCodigosNaExportacaoDoRascunhoTests
             new ResolucaoDosModelosCitados(modelos),
             new DescricaoDaLocalidade(Substitute.For<IConferenciaEnderecoGeo>()),
             Esquema);
-        string documento = $$"""{ {{Cabecalho}}, "documentosExigidos": { "exigencias": [ { "chave": "exigencia_autodeclaracao", "modeloId": "{{modelo.Id}}" } ] } }""";
+        string documento = $$"""{ {{Cabecalho}}, "documentosExigidos": { "exigencias": [ { "chave": "exigencia_autodeclaracao", "obrigatorio": true, "abrePrazoParaReenvio": false, "modeloId": "{{modelo.Id}}" } ] } }""";
         RascunhoDeProcessoSeletivo rascunho = RascunhoDeProcessoSeletivo.Criar(Guid.NewGuid(), DocumentoDoRascunho.Criar(documento, null).Value!).Value!;
 
         return await exportacao.ExportarAsync(rascunho, CancellationToken.None);

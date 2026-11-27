@@ -31,7 +31,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         [nameof(EtapaProcesso.PassoDoLancamento)] = () => Etapa(avaliacao: a => a with { PassoDoLancamento = 0.5m }),
         [nameof(EtapaProcesso.FormaDeAvaliacao)] = () => Etapa(avaliacao: a => a with { FormaDeAvaliacao = FormaDeAvaliacao.Objetiva }),
         [nameof(EtapaProcesso.RegraConsolidacao)] = () => Etapa(avaliacao: a => a with { RegraConsolidacao = ReferenciaRegra.De(RegraDeApuracaoDaAvaliacao.AvaliacaoUnica.Codigo(), "v1", new string('a', 64)) }),
-        [nameof(EtapaProcesso.EscalaDeAtendimento)] = () => Etapa(avaliacao: a => a with { EscalaDeAtendimento = [new("Atende", 1m), new("Atende em parte", 0.5m)] }),
+        [nameof(EtapaProcesso.EscalaDeAtendimento)] = () => Etapa(avaliacao: a => a with { EscalaDeAtendimento = [new("Atende", 1m, null), new("Atende em parte", 0.5m, null)] }),
         [nameof(EtapaProcesso.Inicio)] = () => Etapa(janela: (Inicio, null, false)),
         [nameof(EtapaProcesso.Fim)] = () => Etapa(janela: (null, Inicio.AddDays(3), false)),
         [nameof(EtapaProcesso.EmiteParecerIndividual)] = () => Etapa(janela: (null, null, true)),

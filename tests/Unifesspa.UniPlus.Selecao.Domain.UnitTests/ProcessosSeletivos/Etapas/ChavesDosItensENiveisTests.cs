@@ -29,15 +29,15 @@ public sealed class ChavesDosItensENiveisTests
     public void Reconciliar_NiveisComBasesIguais_FormaChavesDistintas()
     {
         List<NivelDeAtendimento> niveis = ReconciliacaoDosNiveisDeAtendimento.Reconciliar([], [
-            new("—", 1m), new("(*)", 0m), new("Atende parcialmente (50%)", 0.5m)]);
+            new("—", 1m, null), new("(*)", 0m, null), new("Atende parcialmente (50%)", 0.5m, null)]);
         niveis.Select(static nivel => nivel.Chave.Valor).Should().Equal("nivel", "nivel_2", "nivel_atende_parcialmente_50");
     }
 
     [Fact]
     public void Reconciliar_NivelReconhecido_PreservaChaveAoRenomear()
     {
-        NivelDeAtendimento anterior = ReconciliacaoDosNiveisDeAtendimento.Reconciliar([], [new("Atende", 1m)])[0];
-        List<NivelDeAtendimento> niveis = ReconciliacaoDosNiveisDeAtendimento.Reconciliar([anterior], [anterior with { Rotulo = "Completo" }]);
+        NivelDeAtendimento anterior = ReconciliacaoDosNiveisDeAtendimento.Reconciliar([], [new("Atende", 1m, null)])[0];
+        List<NivelDeAtendimento> niveis = ReconciliacaoDosNiveisDeAtendimento.Reconciliar([anterior], [new("Completo", 1m, anterior.Chave.Valor)]);
         niveis[0].Chave.Valor.Should().Be("nivel_atende");
         niveis[0].Should().BeSameAs(anterior);
     }
@@ -45,7 +45,7 @@ public sealed class ChavesDosItensENiveisTests
     [Fact]
     public void Reconciliar_ChaveDeNivelDesconhecida_FormaNova()
     {
-        NivelDeAtendimento declarado = new("Completo", 1m) { Chave = ChaveLocal.Criar("nivel_desconhecido").Value };
+        NivelDeAtendimentoDeclarado declarado = new("Completo", 1m, "nivel_desconhecido");
         ReconciliacaoDosNiveisDeAtendimento.Reconciliar([], [declarado])[0].Chave.Valor.Should().Be("nivel_completo");
     }
 
@@ -62,7 +62,7 @@ public sealed class ChavesDosItensENiveisTests
         ChaveLocal chave = ChaveLocal.Criar("nivel_conservado").Value;
         DeclaracaoDaAvaliacaoDaEtapa avaliacao = modelo.Avaliacao() with
         {
-            EscalaDeAtendimento = [new NivelDeAtendimento("Completo", 1m) { Chave = chave }],
+            EscalaDeAtendimento = [new NivelDeAtendimentoDeclarado("Completo", 1m, chave.Valor)],
         };
         EtapaProcesso etapa = EtapaProcesso.Reidratar(ChaveLocal.Criar("etapa").Value,
             Guid.CreateVersion7(), modelo.Identificacao(), avaliacao, []);
@@ -112,8 +112,8 @@ public sealed class ChavesDosItensENiveisTests
         {
             EscalaDeAtendimento =
             [
-                NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_zeta").Value, "Atendeu", 1m),
-                NivelDeAtendimento.Criar(ChaveLocal.Criar("nivel_alfa").Value, "Não atendeu", 0m),
+                new NivelDeAtendimentoDeclarado("Atendeu", 1m, "nivel_zeta"),
+                new NivelDeAtendimentoDeclarado("Não atendeu", 0m, "nivel_alfa"),
             ],
         };
 

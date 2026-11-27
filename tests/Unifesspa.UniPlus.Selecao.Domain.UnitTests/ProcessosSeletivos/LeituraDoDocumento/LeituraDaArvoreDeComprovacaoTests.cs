@@ -105,4 +105,13 @@ public sealed class LeituraDaArvoreDeComprovacaoTests
 
         Causas(lidas).Should().Equal(($"{Raiz}/0/itens/0/exigenciaChave", "RegraDeComprovacao.DocumentoObrigatorio"));
     }
+
+    [Fact(DisplayName = "O grupo sem a escolha de prazo para reenvio é recusado no campo dela, e a regra de documento sem ela é aceita")]
+    public void Grupo_SemEscolhaDeReenvio_Recusa()
+    {
+        RegraDeComprovacaoNoDocumento grupo = Grupo(0, FormaDeComprovacao.TodosOsItens, Folha(0, "identidade")) with { AbrePrazoParaReenvio = null };
+
+        Causas(Ler(DuasExigencias, grupo)).Should().Equal(($"{Raiz}/0/abrePrazoParaReenvio", "uniplus.validacao.obrigatorio"));
+        Causas(Ler(DuasExigencias, Folha(0, "identidade"))).Should().BeEmpty();
+    }
 }

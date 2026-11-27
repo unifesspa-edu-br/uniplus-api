@@ -245,7 +245,7 @@ public sealed class AvaliadorDaComprovacaoRepeticaoTests
                 CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
             ]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

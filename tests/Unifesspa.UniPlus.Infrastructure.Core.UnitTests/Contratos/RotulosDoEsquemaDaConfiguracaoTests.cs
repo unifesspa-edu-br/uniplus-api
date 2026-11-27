@@ -36,7 +36,7 @@ public sealed class RotulosDoEsquemaDaConfiguracaoTests
     public void Exigencia_ComRotulos_Valida()
     {
         JsonNode exigencia = Documento("""
-            { "chave": "doc_identidade", "aplicabilidade": "GERAL", "aplicabilidadeRotulo": "Geral",
+            { "chave": "doc_identidade", "aplicabilidade": "GERAL", "aplicabilidadeRotulo": "Geral", "obrigatorio": true, "abrePrazoParaReenvio": false,
               "basesLegais": [{ "referencia": "Lei 12.711/2012", "abrangencia": "FEDERAL", "abrangenciaRotulo": "Federal" }],
               "formatosPermitidos": { "lista": [{ "formato": "PDF", "formatoRotulo": "PDF", "tamanhoMaximoBytesMax": 1024 }] },
               "prazoDeEmissao": { "escolha": "COM_PRAZO", "escolhaRotulo": "Com prazo", "valor": 3, "unidade": "MESES", "unidadeRotulo": "Meses" } }

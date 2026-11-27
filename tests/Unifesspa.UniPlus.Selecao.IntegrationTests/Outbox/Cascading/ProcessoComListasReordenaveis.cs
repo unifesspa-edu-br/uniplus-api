@@ -112,7 +112,7 @@ internal sealed class ProcessoComListasReordenaveis
     private static void MoverParaAOrdem(EtapaProcesso etapa, int ordem) => etapa.AtualizarDados(
         new IdentificacaoDaEtapa(etapa.Nome, etapa.Carater, etapa.TipoEtapa, ordem, etapa.FaseCodigo),
         new DeclaracaoDaAvaliacaoDaEtapa(
-            etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, etapa.EscalaDeAtendimento))
+            etapa.Peso, etapa.NotaMinima, etapa.NotaMaxima, etapa.PassoDoLancamento, etapa.FormaDeAvaliacao, etapa.RegraConsolidacao, Cenarios.EtapaDeAtendimentoBuilder.EscalaDeclarada(etapa)))
         .IsSuccess.Should().BeTrue();
 
     private void RegravarOsRecursosDaEtapa(ProcessoSeletivo processo)

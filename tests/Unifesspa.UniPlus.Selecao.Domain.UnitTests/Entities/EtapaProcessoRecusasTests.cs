@@ -31,7 +31,7 @@ public sealed class EtapaProcessoRecusasTests
         public FormaDeAvaliacao? Forma { get; init; }
         public ReferenciaRegra? Regra { get; init; }
         public IReadOnlyList<ItemDeAvaliacaoDeclarado>? Itens { get; init; }
-        public IReadOnlyList<NivelDeAtendimento>? Escala { get; init; }
+        public IReadOnlyList<NivelDeAtendimentoDeclarado?>? Escala { get; init; }
     }
 
     private static TipoEtapaSnapshot Tipo(bool doEnem = false) => TipoEtapaSnapshot.Criar(
@@ -103,7 +103,7 @@ public sealed class EtapaProcessoRecusasTests
         Passo = -1m,
         Forma = FormaDeAvaliacao.Objetiva,
         Itens = [Item("Clareza", 5m)],
-        Escala = [new("Atendeu", 1m)],
+        Escala = [new("Atendeu", 1m, null)],
     };
 
     private static readonly (string? Campo, string Codigo)[] RecusasDaFormaEDaAvaliacaoEsperadas =
@@ -142,7 +142,7 @@ public sealed class EtapaProcessoRecusasTests
         Forma = FormaDeAvaliacao.Humana,
         Regra = Regra(),
         Itens = [Item("Clareza", 10m)],
-        Escala = [new("Atendeu", 1m)],
+        Escala = [new("Atendeu", 1m, null)],
     };
 
     [Fact(DisplayName = "Criar e AtualizarDados recusam igual a etapa de nota do ENEM")]
@@ -249,7 +249,7 @@ public sealed class EtapaProcessoRecusasTests
 
     // ── Escala de atendimento com elemento nulo ──
 
-    private static List<FieldError> FormaBasicaComEscala(IReadOnlyList<NivelDeAtendimento?> escala) =>
+    private static List<FieldError> FormaBasicaComEscala(IReadOnlyList<NivelDeAtendimentoDeclarado?> escala) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", CaraterEtapa.Ambas, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: escala),
@@ -258,7 +258,7 @@ public sealed class EtapaProcessoRecusasTests
     [Fact(DisplayName = "A escala com um nível completo e um elemento nulo é recusada na posição do nulo")]
     public void ValidarFormaBasica_EscalaComNivelCompletoEElementoNulo_RecusaNaPosicao()
     {
-        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimento("Atendeu", 1m), null]);
+        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimentoDeclarado("Atendeu", 1m, null), null]);
 
         Pares(erros).Should().Equal(("escalaDeAtendimento[1]", NiveisDeAtendimento.RotuloInvalido));
     }
@@ -276,11 +276,11 @@ public sealed class EtapaProcessoRecusasTests
     [Fact(DisplayName = "O elemento nulo ocupa índice: a recusa do nível seguinte cita a posição real")]
     public void ValidarFormaBasica_NivelInvalidoDepoisDeElementoNulo_CitaAPosicaoReal()
     {
-        List<FieldError> erros = FormaBasicaComEscala([null, new NivelDeAtendimento("Excedeu", 1.5m)]);
+        List<FieldError> erros = FormaBasicaComEscala([null, new NivelDeAtendimentoDeclarado("Excedeu", 1.5m, null)]);
 
         Pares(erros).Should().Equal(
             ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
-            ("escalaDeAtendimento[1].fracao", CodigosDeValidacao.Formato),
+            ("escalaDeAtendimento[1].fracao", NiveisDeAtendimento.FracaoInvalida),
             ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
     }
 
@@ -288,14 +288,40 @@ public sealed class EtapaProcessoRecusasTests
     [InlineData(-0.1)]
     [InlineData(1.5)]
     [InlineData(1.00001)]
-    [InlineData(0.99999)]
-    public void ValidarFormaBasica_FracaoInvalida_RecusaComCodigoEMensagemDeFormato(decimal fracao)
+    public void ValidarFormaBasica_FracaoForaDaFaixa_RecusaComFracaoInvalida(decimal fracao)
     {
-        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimento("Completo", 1m), new NivelDeAtendimento("Parcial", fracao)]);
+        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimentoDeclarado("Completo", 1m, null), new NivelDeAtendimentoDeclarado("Parcial", fracao, null)]);
+        FieldError erro = erros.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("escalaDeAtendimento[1].fracao");
+        erro.Error.Code.Should().Be(NiveisDeAtendimento.FracaoInvalida);
+        erro.Error.Message.Should().Be("A fração do nível deve ficar entre 0 e 1.");
+    }
+
+    [Fact(DisplayName = "A fração dentro da faixa com mais de 4 casas decimais é recusada como formato")]
+    public void ValidarFormaBasica_FracaoComPrecisaoAlemDoLimite_RecusaComFormato()
+    {
+        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimentoDeclarado("Completo", 1m, null), new NivelDeAtendimentoDeclarado("Parcial", 0.99999m, null)]);
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Field.Should().Be("escalaDeAtendimento[1].fracao");
         erro.Error.Code.Should().Be(CodigosDeValidacao.Formato);
-        erro.Error.Message.Should().Be("A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1.");
+        erro.Error.Message.Should().Be("A fração do nível deve ter no máximo 4 casas decimais.");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void ValidarFormaBasica_FracaoNosLimitesDaFaixa_Aceita(decimal fracao) =>
+        FormaBasicaComEscala([new NivelDeAtendimentoDeclarado("Completo", 1m, null), new NivelDeAtendimentoDeclarado("Parcial", fracao, null)])
+            .Should().BeEmpty();
+
+    [Fact(DisplayName = "A fração ausente é recusada como obrigatória no campo da fração, sem valer 0")]
+    public void ValidarFormaBasica_FracaoAusente_RecusaComoObrigatoria()
+    {
+        List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimentoDeclarado("Completo", 1m, null), new NivelDeAtendimentoDeclarado("Parcial", null, null)]);
+        FieldError erro = erros.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("escalaDeAtendimento[1].fracao");
+        erro.Error.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+        erro.Error.Message.Should().Be("Informe a fração do nível de atendimento.");
     }
 
     [Fact(DisplayName = "Criar com a escala só de elemento nulo e itens recusa o nulo e a falta de nível completo")]
@@ -331,7 +357,7 @@ public sealed class EtapaProcessoRecusasTests
         {
             Forma = FormaDeAvaliacao.Humana,
             Itens = [Item("Clareza", 10m)],
-            Escala = [new("Atendeu", 1m), null!],
+            Escala = [new("Atendeu", 1m, null), null!],
         });
 
         Pares(resultado.Errors).Should().Equal(("escalaDeAtendimento[1]", NiveisDeAtendimento.RotuloInvalido));

@@ -135,7 +135,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Fase, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

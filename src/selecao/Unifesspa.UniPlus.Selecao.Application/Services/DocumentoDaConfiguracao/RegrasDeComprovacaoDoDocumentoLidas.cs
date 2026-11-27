@@ -23,7 +23,7 @@ internal static class RegrasDeComprovacaoDoDocumentoLidas
         Texto(regra, "exigenciaChave"))
     {
         QuantidadeMinima = Valor<int>(regra, "quantidadeMinima"),
-        AbrePrazoParaReenvio = Valor<bool>(regra, "abrePrazoParaReenvio") ?? false,
+        AbrePrazoParaReenvio = Valor<bool>(regra, "abrePrazoParaReenvio"),
         ConsequenciaDoDescumprimento = CodigoDoCatalogo<ConsequenciaDoDescumprimento>(Texto(regra, "consequenciaDoDescumprimento")),
         BasesLegais = ExigenciasDoDocumentoLidas.BasesLegais(regra),
         CriterioDeDistincao = CodigoDoCatalogo<CriterioDeDistincaoDasApresentacoes>(Texto(regra, "criterioDeDistincao")),

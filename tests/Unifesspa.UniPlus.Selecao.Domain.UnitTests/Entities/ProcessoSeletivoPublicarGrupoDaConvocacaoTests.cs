@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
                 CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("LB_PPI")).Value!,
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
             ]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, "ELIMINA_DO_PROCESSO", [BaseLegalResolvidaQualquer()], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

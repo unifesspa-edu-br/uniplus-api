@@ -26,7 +26,7 @@ internal static class ExigenciaNoFormularioDeTeste
                 new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "COMPROVANTE_DE_RESIDENCIA", "Comprovante de residência", "IDENTIFICACAO", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(formularioCodigo)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(true, null, [BaseLegalDaExigencia()]),
+                new IndeferimentoDoDocumento(true, null, [BaseLegalDaExigencia()], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
         Result definida = processo.DefinirDocumentosExigidos([RegraDeComprovacao.CriarRegraDeDocumento(exigencia, 0).Value!]);

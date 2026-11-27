@@ -153,7 +153,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumentoCodigo, tipoDocumentoNome, tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fatoDeModalidade, Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaDoDescumprimento, [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequenciaDoDescumprimento, [BaseLegalResolvidaQualquer()], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;

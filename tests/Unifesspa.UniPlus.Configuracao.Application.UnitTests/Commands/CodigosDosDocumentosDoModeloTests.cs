@@ -27,7 +27,7 @@ public sealed class CodigosDosDocumentosDoModeloTests
     public void Ler_CodigosDesconhecidosDoGrupo_AcumulaNaOrdemDaLeitura()
     {
         BaseLegalDoModeloInput baseLegal = new("Lei de referência", "DESCONHECIDO", "DESCONHECIDO", null);
-        GrupoDeDocumentosDoModeloInput grupo = new(1, new("DESCONHECIDO", [baseLegal]), []);
+        GrupoDeDocumentosDoModeloInput grupo = new(1, new("DESCONHECIDO", [baseLegal], false), []);
         LeituraDoConteudo leitura = new(new Dictionary<string, string>(StringComparer.Ordinal));
         leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, new(null, [grupo])));
 
@@ -44,7 +44,7 @@ public sealed class CodigosDosDocumentosDoModeloTests
     private static IEnumerable<(string? Field, string Code)> Recusas(string consequenciaDoDescumprimento, string abrangencia, string situacao)
     {
         BaseLegalDoModeloInput baseLegal = new("Lei de referência", abrangencia, situacao, null);
-        DocumentoExigidoDoModeloInput documento = new("INSCRICAO", "DOCUMENTO", null, new(true, consequenciaDoDescumprimento, [baseLegal]));
+        DocumentoExigidoDoModeloInput documento = new("INSCRICAO", "DOCUMENTO", null, new(true, consequenciaDoDescumprimento, [baseLegal], false));
         LeituraDoConteudo leitura = new(new Dictionary<string, string>(StringComparer.Ordinal));
         leitura.Ler(new ConteudoDoModeloInput(null, null, null, null, null, null, new([documento], null)));
         return leitura.Recusas.Select(static r => (r.Field, r.Error.Code));

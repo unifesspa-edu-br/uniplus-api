@@ -24,7 +24,7 @@ internal static class RegrasDeComprovacaoDeTeste
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(FaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, consequencia, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, consequencia, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;
@@ -34,7 +34,7 @@ internal static class RegrasDeComprovacaoDeTeste
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(FaseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequencia, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, consequencia, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

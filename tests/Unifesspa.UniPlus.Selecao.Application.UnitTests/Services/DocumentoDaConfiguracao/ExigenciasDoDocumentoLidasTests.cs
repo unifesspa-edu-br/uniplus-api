@@ -120,7 +120,7 @@ public sealed class ExigenciasDoDocumentoLidasTests
             EscolhaDaValidade.ExigeDocumentoValido, new(TipoDaDataDeReferencia.DataEspecifica, new DateOnly(2027, 3, 15), null), EfeitoNaAnaliseDoDocumento.AceitarComAviso));
     }
 
-    [Fact(DisplayName = "A exigência que traz só a chave deixa o resto ausente, vazio ou no valor de partida")]
+    [Fact(DisplayName = "A exigência que traz só a chave deixa o resto ausente ou vazio")]
     public void ExigenciaMinima_DeixaORestoAusente()
     {
         ExigenciaNoDocumento renda = Lidas(BlocoCompleto).Exigencias[1];
@@ -128,7 +128,7 @@ public sealed class ExigenciasDoDocumentoLidasTests
         renda.TipoDocumentoCodigo.Should().BeNull();
         renda.Aplicabilidade.Should().BeNull();
         renda.Obrigatorio.Should().BeNull();
-        renda.AbrePrazoParaReenvio.Should().BeFalse();
+        renda.AbrePrazoParaReenvio.Should().BeNull();
         renda.Condicoes.Should().BeEmpty();
         renda.BasesLegais.Should().BeEmpty();
         renda.FormatosPermitidos.Should().BeNull();
@@ -166,11 +166,11 @@ public sealed class ExigenciasDoDocumentoLidasTests
         renda.GrupoDoFormularioParaRepeticao.Should().Be("RENDAS");
     }
 
-    [Fact(DisplayName = "O valor de tipo errado fica ausente ou no valor de partida, sem exceção")]
+    [Fact(DisplayName = "O valor de tipo errado fica ausente, sem exceção")]
     public void TipoErrado_FicaAusente()
     {
         ExigenciasNoDocumento bloco = Lidas("""
-            { "exigencias": [ { "chave": "x", "tipoDocumentoCodigo": 5, "obrigatorio": "sim", "tamanhoMaximoBytes": "grande", "modeloId": "não é identificador",
+            { "exigencias": [ { "chave": "x", "tipoDocumentoCodigo": 5, "obrigatorio": "sim", "abrePrazoParaReenvio": "talvez", "tamanhoMaximoBytes": "grande", "modeloId": "não é identificador",
                                 "aplicabilidade": "DESCONHECIDA", "condicoes": [ "texto", [ 3, { "codigoDoDado": 1 } ] ], "dadosComprovados": [ 1, "NOME" ],
                                 "validade": { "escolha": 2, "referencia": { "tipo": "DATA_ESPECIFICA", "data": "ontem" } } } ],
               "regrasDeComprovacao": [ { "forma": 1, "quantidadeMinima": "duas", "dataReferencia": "31/01/2027", "itens": "nenhum" } ] }
@@ -179,6 +179,7 @@ public sealed class ExigenciasDoDocumentoLidasTests
         ExigenciaNoDocumento exigencia = bloco.Exigencias.Should().ContainSingle().Subject;
         exigencia.TipoDocumentoCodigo.Should().BeNull();
         exigencia.Obrigatorio.Should().BeNull();
+        exigencia.AbrePrazoParaReenvio.Should().BeNull();
         exigencia.TamanhoMaximoBytes.Should().BeNull();
         exigencia.ModeloId.Should().BeNull();
         exigencia.Aplicabilidade.Should().BeNull();

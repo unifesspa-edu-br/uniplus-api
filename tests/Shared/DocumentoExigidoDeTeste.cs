@@ -38,7 +38,9 @@ internal sealed record DocumentoExigidoDeTeste
 
     private IReadOnlyList<CondicaoGatilho> Condicoes { get; init; } = [];
 
-    private bool Obrigatorio { get; init; } = true;
+    private bool? Obrigatorio { get; init; } = true;
+
+    private bool? AbrePrazoParaReenvio { get; init; } = false;
 
     private string? Consequencia { get; init; }
 
@@ -81,6 +83,8 @@ internal sealed record DocumentoExigidoDeTeste
         this with { TipoDeAplicabilidade = Aplicabilidade.Condicional, Condicoes = condicoes };
 
     public DocumentoExigidoDeTeste ComObrigatorio(bool obrigatorio) => this with { Obrigatorio = obrigatorio };
+
+    public DocumentoExigidoDeTeste ComPrazoParaReenvio(bool abrePrazoParaReenvio) => this with { AbrePrazoParaReenvio = abrePrazoParaReenvio };
 
     public DocumentoExigidoDeTeste Facultativa() => this with { Obrigatorio = false };
 
@@ -125,7 +129,7 @@ internal sealed record DocumentoExigidoDeTeste
 
     private AplicabilidadeDaExigencia AplicabilidadeDeclarada() => new(TipoDeAplicabilidade, Condicoes);
 
-    private IndeferimentoDoDocumento IndeferimentoDeclarado() => new(Obrigatorio, Consequencia, BasesLegais);
+    private IndeferimentoDoDocumento IndeferimentoDeclarado() => new(Obrigatorio, Consequencia, BasesLegais, AbrePrazoParaReenvio);
 
     private RequisitosDoDocumento RequisitosDoArquivo() => new(Formatos, TamanhoMaximoBytes, Modelo, PrazoDeEmissao, Validade);
 }

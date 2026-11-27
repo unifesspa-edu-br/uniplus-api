@@ -12,7 +12,7 @@ public sealed record RegraDeComprovacaoNoDocumento(int PosicaoNoDocumento, Forma
 {
     public int? QuantidadeMinima { get; init; }
 
-    public bool AbrePrazoParaReenvio { get; init; }
+    public bool? AbrePrazoParaReenvio { get; init; }
 
     public ConsequenciaDoDescumprimento? ConsequenciaDoDescumprimento { get; init; }
 

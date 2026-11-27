@@ -196,7 +196,7 @@ public sealed class ConsequenciasDasBancasTests
             .ComMomento(new MomentoDaExigencia(processo.CronogramaFases.Single().Id, processo.Etapas.Single().Id, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional,
                 [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(codigo)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false))
             .Construir();
 
     private static ProcessoSeletivo ProcessoComBanca(ConsequenciaDoDescumprimento consequencia)

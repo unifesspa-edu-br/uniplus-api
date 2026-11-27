@@ -193,7 +193,7 @@ public sealed class ExigenciasDeFasePosteriorTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(fase.Id, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

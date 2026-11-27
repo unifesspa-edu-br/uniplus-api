@@ -243,7 +243,7 @@ public sealed class AvaliadorDaComprovacaoTests
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
             })]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, "RETIRA_O_ACRESCIMO", [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

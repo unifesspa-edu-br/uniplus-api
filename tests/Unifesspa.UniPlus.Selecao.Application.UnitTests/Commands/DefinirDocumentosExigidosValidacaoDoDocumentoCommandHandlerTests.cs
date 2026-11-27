@@ -84,7 +84,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         RegraDeComprovacaoInformada semDocumento = new("DOCUMENTO");
         RegraDeComprovacaoInformada desconhecido = new("XOR");
-        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Itens: [desconhecido]);
+        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Indeferimento: new(AbrePrazoParaReenvio: false), Itens: [desconhecido]);
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [semDocumento, grupo]));
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             ("regrasDeComprovacao[0].documento", "RegraDeComprovacao.DocumentoObrigatorio"),
@@ -137,7 +137,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
     }
 
     private static RegraDeComprovacaoInformada GrupoCom(ItemDocumentoExigidoInput primeira, ItemDocumentoExigidoInput outra) =>
-        new("TODOS_OS_ITENS", Itens: [new("DOCUMENTO", primeira), new("DOCUMENTO", outra)]);
+        new("TODOS_OS_ITENS", Indeferimento: new(AbrePrazoParaReenvio: false), Itens: [new("DOCUMENTO", primeira), new("DOCUMENTO", outra)]);
 
     [Fact]
     public async Task Handle_DeclaracaoRecusadaEOutroGrupoIncoerente_AcumulaCausasIndependentes()
@@ -160,7 +160,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDoDocumentoCommandHandlerT
         CenarioDaExigencia cenario = ProcessoComUmaFase();
         ItemDocumentoExigidoInput item = cenario.ItemCondicional(new CondicaoGatilhoInput(0, "FATO_FICTICIO", "IGUAL", "SIM")).Construir();
         RegraDeComprovacaoInformada documentoInformado = new("DOCUMENTO", item, null, null, null, null);
-        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Itens: [documentoInformado], GrupoDoFormularioParaRepeticao: "GRUPO_INEXISTENTE");
+        RegraDeComprovacaoInformada grupo = new("TODOS_OS_ITENS", Indeferimento: new(AbrePrazoParaReenvio: false), Itens: [documentoInformado], GrupoDoFormularioParaRepeticao: "GRUPO_INEXISTENTE");
 
         Result resultado = await HandleAsync(cenario.Mocks, new(cenario.Processo.Id, [grupo]));
 

@@ -40,14 +40,17 @@ public sealed class ItemDocumentoExigidoInputValidator : AbstractValidator<ItemD
     }
 }
 
-/// <summary>Forma de uma condição do gatilho: cláusula não negativa, fato, operador do catálogo e valor.</summary>
+/// <summary>
+/// Forma de uma condição do gatilho: cláusula informada, fato, operador do catálogo e valor. A cláusula negativa é recusada
+/// por <c>CondicaoGatilho.Criar</c>, e não aqui, para que a regra tenha uma só fonte.
+/// </summary>
 public sealed class CondicaoGatilhoInputValidator : AbstractValidator<CondicaoGatilhoInput>
 {
     private static readonly string CodigosDosOperadores = string.Join(", ", CatalogoDe<Operador>.Todos().Select(static c => c.Codigo));
 
     public CondicaoGatilhoInputValidator()
     {
-        RuleFor(c => c.Clausula).GreaterThanOrEqualTo(0).WithMessage("O ordinal da cláusula não pode ser negativo.");
+        RuleFor(c => c.Clausula).NotNull().WithMessage("Informe a cláusula da condição.");
         RuleFor(c => c.Fato).NotEmpty().WithMessage("O fato da condição é obrigatório.");
         RuleFor(c => c.Operador)
             .Must(static codigo => CatalogoDe<Operador>.TentarObter(codigo, out _))

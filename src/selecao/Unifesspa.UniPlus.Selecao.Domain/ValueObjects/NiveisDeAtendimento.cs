@@ -18,7 +18,7 @@ public static class NiveisDeAtendimento
     public const string SemNivelCompleto = "NivelDeAtendimento.SemNivelCompleto";
 
     /// <summary>Acumula toda violação da escala (ADR-0125), inclusive o elemento nulo; a escala ausente ou vazia não declara nada.</summary>
-    public static List<FieldError> Validar(IReadOnlyList<NivelDeAtendimento?>? niveis)
+    public static List<FieldError> Validar(IReadOnlyList<NivelDeAtendimentoDeclarado?>? niveis)
     {
         if (niveis is null || niveis.Count == 0)
         {
@@ -32,7 +32,7 @@ public static class NiveisDeAtendimento
         return erros;
     }
 
-    private static IEnumerable<FieldError> FaltaDoNivelCompleto(IReadOnlyList<NivelDeAtendimento?> niveis)
+    private static IEnumerable<FieldError> FaltaDoNivelCompleto(IReadOnlyList<NivelDeAtendimentoDeclarado?> niveis)
     {
         if (!niveis.Any(static n => n?.Fracao == 1m))
         {
@@ -42,7 +42,7 @@ public static class NiveisDeAtendimento
         }
     }
 
-    private static IEnumerable<FieldError> ValidarNivel(string campo, NivelDeAtendimento? nivel, HashSet<string> rotulos)
+    private static IEnumerable<FieldError> ValidarNivel(string campo, NivelDeAtendimentoDeclarado? nivel, HashSet<string> rotulos)
     {
         if (nivel is null)
         {
@@ -58,15 +58,17 @@ public static class NiveisDeAtendimento
         }
     }
 
-    private static IEnumerable<FieldError> ValidarFracao(string campo, decimal fracao)
+    private static IEnumerable<FieldError> ValidarFracao(string campo, decimal? fracao) =>
+        RecusaDaFracao(fracao) is { } recusa ? [new($"{campo}.fracao", recusa)] : [];
+
+    private static DomainError? RecusaDaFracao(decimal? fracao) => fracao switch
     {
-        if (fracao is < 0m or > 1m || !PrecisaoDecimal.Cabe(fracao, ValorPrecisao, ValorEscala))
-        {
-            yield return new($"{campo}.fracao", new DomainError(
-                CodigosDeValidacao.Formato,
-                "A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1."));
-        }
-    }
+        null => new(CodigosDeValidacao.Obrigatorio, "Informe a fração do nível de atendimento."),
+        < 0m or > 1m => new(FracaoInvalida, "A fração do nível deve ficar entre 0 e 1."),
+        { } valor when !PrecisaoDecimal.Cabe(valor, ValorPrecisao, ValorEscala) =>
+            new(CodigosDeValidacao.Formato, "A fração do nível deve ter no máximo 4 casas decimais."),
+        _ => null,
+    };
 
     private static IEnumerable<FieldError> ValidarRotulo(string campo, string? rotuloInformado, HashSet<string> rotulos)
     {

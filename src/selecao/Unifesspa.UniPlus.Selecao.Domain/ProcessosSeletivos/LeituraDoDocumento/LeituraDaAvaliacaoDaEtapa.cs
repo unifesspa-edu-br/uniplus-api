@@ -21,7 +21,7 @@ internal static class LeituraDaAvaliacaoDaEtapa
         AvaliacaoDaEtapaNoDocumento avaliacao = etapa.Avaliacao;
         ValorLido<ReferenciaRegra?> regra = Regra(etapa, cadastros);
         ItemDeAvaliacao[] itens = [.. avaliacao.Itens.Select(Item)];
-        NivelDeAtendimento?[] niveis = [.. avaliacao.Niveis.Select(Nivel)];
+        NivelDeAtendimentoDeclarado?[] niveis = [.. avaliacao.Niveis.Select(Nivel)];
 
         return new(
             new(etapa.Identificacao.Peso, etapa.Identificacao.NotaMinima, avaliacao.NotaMaxima, avaliacao.PassoDoLancamento, avaliacao.Forma, regra.Valor, niveis),
@@ -33,8 +33,8 @@ internal static class LeituraDaAvaliacaoDaEtapa
     private static ItemDeAvaliacao Item(ItemDeAvaliacaoNoDocumento item) =>
         ItemDeAvaliacao.Criar(ChaveLocal.Criar(item.Chave).Value, new ItemDeAvaliacaoDeclarado(null, item.Rotulo ?? string.Empty, item.PontuacaoMaxima ?? 0m));
 
-    private static NivelDeAtendimento Nivel(NivelDeAtendimentoNoDocumento nivel) =>
-        NivelDeAtendimento.Criar(ChaveLocal.Criar(nivel.Chave).Value, nivel.Rotulo ?? string.Empty, nivel.Fracao ?? 0m);
+    private static NivelDeAtendimentoDeclarado Nivel(NivelDeAtendimentoNoDocumento nivel) =>
+        new(nivel.Rotulo, nivel.Fracao, nivel.Chave);
 
     private static Dictionary<string, Guid> ItensPelaChave(IEnumerable<ItemDeAvaliacao> itens)
     {

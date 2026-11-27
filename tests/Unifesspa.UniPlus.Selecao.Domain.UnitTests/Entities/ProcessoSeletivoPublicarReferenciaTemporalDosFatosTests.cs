@@ -189,7 +189,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvidaQualquer()], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;

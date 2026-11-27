@@ -60,7 +60,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(exigidoNaFaseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, prazo, validade))
             .ComFatos(null)
             .Criar().Value!;
@@ -115,7 +115,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(papel)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, basesLegais ?? []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(obrigatorio, consequencia, basesLegais ?? [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;
@@ -126,7 +126,7 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, gatilhos))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()]))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [BaseLegalResolvida()], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, new PrazoDeEmissaoBuilder().SemPrazo().Construir(), new ValidadeDoDocumentoBuilder().NaoExige().Construir()))
             .ComFatos(null)
             .Criar().Value!;

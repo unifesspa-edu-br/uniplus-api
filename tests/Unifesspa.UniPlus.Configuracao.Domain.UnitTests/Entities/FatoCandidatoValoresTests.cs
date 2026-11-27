@@ -247,5 +247,28 @@ public sealed class FatoCandidatoValoresTests
         resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.OrdemInvalida);
     }
 
+    [Fact(DisplayName = "AdicionarValorDominio sem ordem é recusado no campo ordem e nada é acrescentado")]
+    public void AdicionarValorDominio_OrdemNaoInformada_RecusaNoCampoOrdem()
+    {
+        FatoCandidato fato = Criar().Value!;
+
+        Result resultado = fato.AdicionarValorDominio("PRETA", "Descrição", null, ativo: true);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        (recusa.Field, recusa.Error.Code, recusa.Error.Message).Should()
+            .Be(("ordem", CodigosDeValidacao.Obrigatorio, "Informe a ordem do valor de domínio."));
+        fato.ValoresDominioDeclarados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio com ordem zero é aceito")]
+    public void AdicionarValorDominio_OrdemZero_Aceita()
+    {
+        FatoCandidato fato = Criar().Value!;
+
+        fato.AdicionarValorDominio("PRETA", "Descrição", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        fato.ValoresDominioDeclarados.Single().Ordem.Should().Be(0);
+    }
+
     // ─── Sem remoção lógica (EntityBase puro: o fato é desativado, nunca apagado) ──
 }

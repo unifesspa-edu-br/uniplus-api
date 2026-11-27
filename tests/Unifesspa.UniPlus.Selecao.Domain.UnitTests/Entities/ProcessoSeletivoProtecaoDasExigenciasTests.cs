@@ -47,7 +47,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.De(protecao)))
             .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.CodigoDoPapel(PapelDoFormularioDeTeste.Inscricao)))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(gatilho is { Length: > 0 } ? Aplicabilidade.Condicional : Aplicabilidade.Geral, gatilho ?? []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos(comprova)
             .Criar().Value!;
@@ -172,7 +172,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(Qualquer, null, null, null, null))
             .ComFatos([FatoSensivel, FatoSensivel])
             .Criar();
@@ -184,8 +184,8 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     [Fact]
     public void ValidarFormaBasica_TamanhoDoFatoComprovado_RespeitaLimiteDoCatalogo()
     {
-        DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, fatosComprovados: [new string('A', 50)]).Should().BeEmpty();
-        FieldError erro = DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, fatosComprovados: [new string('A', 51)])
+        DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, [new string('A', 50)], true, false).Should().BeEmpty();
+        FieldError erro = DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, [new string('A', 51)], true, false)
             .Should().ContainSingle().Subject;
 
         erro.Field.Should().Be("fatosComprovados");

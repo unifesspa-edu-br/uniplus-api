@@ -225,7 +225,7 @@ public sealed class ModeloFormularioMappingTests
         [EntradaDoGrupoColetadoDeTeste.Compondo("FAMILIA").ComRotulo("Família").ComOcorrencias(1)
             .ComCampos(ItemMinimoNaEntrada("PARENTESCO", 0)).Construir()],
         ConjuntoDeDocumentosDoModeloBuilder.SoDocumentos(
-            new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModeloInput(true, "ELIMINA_DO_PROCESSO", []), NenhumaEscolha)));
+            new DocumentoExigidoDoModeloInput("INSCRICAO", "RG", null, new IndeferimentoDoDocumentoDoModeloInput(true, "ELIMINA_DO_PROCESSO", [], false), NenhumaEscolha)));
 
     private static PaginaDoFormularioInput PaginaCompletaNaEntrada() =>
         EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS").ComTitulo("Dados").ComDescricao("Dados do candidato").ComAviso("Confira os dados")
@@ -253,13 +253,13 @@ public sealed class ModeloFormularioMappingTests
         "HABILITACAO", "CERTIDAO", QuandoNaEntrada("QUILOMBOLA", true),
         new IndeferimentoDoDocumentoDoModeloInput(
             false, "RETIRA_A_MODALIDADE",
-            [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModeloInput("Portaria 18/2012", "NACIONAL", "VIGENTE", null)]),
+            [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3"), new BaseLegalDoModeloInput("Portaria 18/2012", "NACIONAL", "VIGENTE", null)], false),
         NenhumaEscolha,
         new ExigenciaPorOpcaoInput("OPCAO_DE_CURSO", ["MEDICINA"]));
 
     private static GrupoDeDocumentosDoModeloInput GrupoDeDocumentosCompletoNaEntrada() => new(
         2,
-        new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_A_MODALIDADE", [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")]),
+        new IndeferimentoDoGrupoDeDocumentosDoModeloInput("RETIRA_A_MODALIDADE", [new BaseLegalDoModeloInput("Lei 12.711/2012", "NACIONAL", "VIGENTE", "Art. 3")], false),
         [DocumentoCompletoNaEntrada(), DocumentoCompletoNaEntrada() with { TipoDocumentoCodigo = "RG" }]);
 
     private static PredicadoDnf Quando(string fato, bool valor) =>

@@ -17,7 +17,7 @@ internal sealed class ValoresDoDominioDoFato(FatoCandidato fato, List<FatoValorD
     private static readonly DomainError JaAtivo = new(FatoValorDominioErrorCodes.JaAtivo, "O valor já está ativo.");
     private static readonly DomainError JaDesativado = new(FatoValorDominioErrorCodes.JaDesativado, "O valor já está desativado.");
 
-    internal Result Adicionar(string codigo, string? descricao, int ordem, bool ativo, string? orientacao)
+    internal Result Adicionar(string codigo, string? descricao, int? ordem, bool ativo, string? orientacao)
     {
         if (RecusaDeEstado() is { } recusa)
         {

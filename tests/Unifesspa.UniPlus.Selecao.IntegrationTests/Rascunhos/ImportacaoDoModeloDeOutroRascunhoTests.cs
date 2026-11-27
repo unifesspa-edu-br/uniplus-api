@@ -65,7 +65,7 @@ public sealed class ImportacaoDoModeloDeOutroRascunhoTests(CascadingFixture fixt
         string documento = $$"""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "identificacao": { "nome": "Processo de exemplo", "unidadeAdministradoraCodigo": "CEPS" },
-              "documentosExigidos": { "exigencias": [ { "chave": "declaracao", "modeloId": "{{modelo}}" } ] } }
+              "documentosExigidos": { "exigencias": [ { "chave": "declaracao", {{EscolhasDaExigenciaDeTeste.Json}}, "modeloId": "{{modelo}}" } ] } }
             """;
         using HttpResponseMessage salvo = await _cliente.EnviarAsync(Conta, HttpMethod.Put, $"{Rota}/{origem}", documento, ifMatch: "\"1\"");
         salvo.StatusCode.Should().Be(HttpStatusCode.OK);

@@ -27,7 +27,7 @@ internal sealed record ConjuntoDeDocumentosDoModeloBuilder
     /// <summary>O grupo com a consequência do indeferimento, sem bases legais.</summary>
     public static GrupoDeDocumentosDoModeloInput GrupoComIndeferimento(
         int? quantidadeMinima, string consequencia, params DocumentoExigidoDoModeloInput[] documentos) =>
-        new(quantidadeMinima, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, []), documentos);
+        new(quantidadeMinima, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequencia, [], false), documentos);
 
     /// <summary>Acrescenta documentos avulsos.</summary>
     public ConjuntoDeDocumentosDoModeloBuilder ComDocumentos(params DocumentoExigidoDoModeloInput[] documentos) =>

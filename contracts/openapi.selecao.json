@@ -15360,7 +15360,10 @@
         "type": "object",
         "properties": {
           "clausula": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "fato": {
@@ -19740,7 +19743,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "chave"
+          "chave",
+          "obrigatorio",
+          "abrePrazoParaReenvio"
         ],
         "properties": {
           "id": {
@@ -19847,12 +19852,12 @@
           },
           "obrigatorio": {
             "title": "Obrigat\u00F3rio",
-            "description": "Se a entrega do documento \u00E9 obrigat\u00F3ria.",
+            "description": "Se a entrega do documento \u00E9 obrigat\u00F3ria. \u00C9 obrigat\u00F3rio informar: ausente, o documento \u00E9 recusado, e n\u00E3o vale falso.",
             "type": "boolean"
           },
           "abrePrazoParaReenvio": {
             "title": "Prazo para reenvio",
-            "description": "Indica se ser\u00E1 aberto prazo para reenvio.",
+            "description": "Indica se ser\u00E1 aberto prazo para reenvio. \u00C9 obrigat\u00F3rio informar: ausente, o documento \u00E9 recusado, e n\u00E3o vale falso.",
             "type": "boolean"
           },
           "consequenciaDoDescumprimento": {
@@ -21253,7 +21258,7 @@
           },
           "abrePrazoParaReenvio": {
             "title": "Prazo para reenvio",
-            "description": "Indica se ser\u00E1 aberto prazo para reenvio.",
+            "description": "Indica se o indeferimento abre prazo para reenvio dos documentos. O grupo de itens declara a escolha; a regra de documento a deixa ausente, pois o reenvio \u00E9 da exig\u00EAncia do documento.",
             "type": "boolean"
           },
           "consequenciaDoDescumprimento": {
@@ -24193,12 +24198,16 @@
         "required": [
           "obrigatorio",
           "consequenciaDoDescumprimento",
-          "basesLegais"
+          "basesLegais",
+          "abrePrazoParaReenvio"
         ],
         "type": "object",
         "properties": {
           "obrigatorio": {
-            "type": "boolean"
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "consequenciaDoDescumprimento": {
             "oneOf": [
@@ -24220,8 +24229,10 @@
             }
           },
           "abrePrazoParaReenvio": {
-            "type": "boolean",
-            "default": false
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -24277,8 +24288,10 @@
             }
           },
           "abrePrazoParaReenvio": {
-            "type": "boolean",
-            "default": false
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -26254,7 +26267,10 @@
             "type": "string"
           },
           "fracao": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "chave": {
@@ -29038,7 +29054,10 @@
             "format": "uuid"
           },
           "quantidade": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           }
         }

@@ -60,4 +60,26 @@ public sealed class CombinacaoDoGrupoTests
         resultado.Error.Message.Should().NotContain(consequencia);
     }
 
+
+    [Theory(DisplayName = "A regra de documento aceita o reenvio ausente e falso e recusa o verdadeiro")]
+    [InlineData(null, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void RecusaDoReenvio_RegraDeDocumento(bool? abrePrazoParaReenvio, bool recusada)
+    {
+        DomainError? recusa = CombinacaoDoGrupo.RecusaDoReenvio(FormaDeComprovacao.Documento, abrePrazoParaReenvio);
+
+        (recusa is not null).Should().Be(recusada);
+        recusa?.Code.Should().Be("RegraDeComprovacao.ReenvioProibidoEmRegraDeDocumento");
+    }
+
+    [Theory(DisplayName = "O grupo recusa o reenvio ausente com o código de campo obrigatório e aceita verdadeiro e falso")]
+    [InlineData(FormaDeComprovacao.TodosOsItens)]
+    [InlineData(FormaDeComprovacao.QuantidadeMinimaDeItens)]
+    public void RecusaDoReenvio_Grupo(FormaDeComprovacao forma)
+    {
+        CombinacaoDoGrupo.RecusaDoReenvio(forma, null)!.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+        CombinacaoDoGrupo.RecusaDoReenvio(forma, false).Should().BeNull();
+        CombinacaoDoGrupo.RecusaDoReenvio(forma, true).Should().BeNull();
+    }
 }

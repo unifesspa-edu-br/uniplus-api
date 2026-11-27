@@ -37,7 +37,7 @@
     },
     "abrePrazoParaReenvio": {
       "title": "Prazo para reenvio",
-      "description": "Indica se será aberto prazo para reenvio.",
+      "description": "Indica se o indeferimento abre prazo para reenvio dos documentos. O grupo de itens declara a escolha; a regra de documento a deixa ausente, pois o reenvio é da exigência do documento.",
       "type": "boolean"
     },
     "consequenciaDoDescumprimento": {

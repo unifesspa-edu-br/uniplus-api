@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
             .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), tipoDocumento.Codigo, tipoDocumento.Nome, tipoDocumento.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal))
             .ComMomento(new MomentoDaExigencia(faseId, null, FormularioDeTeste.FormularioDaInscricao))
             .ComAplicabilidade(new AplicabilidadeDaExigencia(Aplicabilidade.Condicional, [condicao]))
-            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, []))
+            .ComIndeferimento(new IndeferimentoDoDocumento(true, null, [], false))
             .ComRequisitos(new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null))
             .ComFatos(null)
             .Criar().Value!;

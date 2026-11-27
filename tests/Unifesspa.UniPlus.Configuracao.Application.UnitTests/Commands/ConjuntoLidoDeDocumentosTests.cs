@@ -30,10 +30,10 @@ public sealed class ConjuntoLidoDeDocumentosTests
 
     private static DocumentoExigidoDoModeloInput Documento(string tipo = "RG") =>
         new("INSCRICAO", tipo, [[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]],
-            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", []));
+            new IndeferimentoDoDocumentoDoModeloInput(true, "RETIRA_O_ACRESCIMO", [], false));
 
     private static Grupo GrupoQueIndefere(string consequenciaDoDescumprimento, params DocumentoExigidoDoModeloInput[] documentos) =>
-        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequenciaDoDescumprimento, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)]), documentos);
+        new(2, new IndeferimentoDoGrupoDeDocumentosDoModeloInput(consequenciaDoDescumprimento, [new BaseLegalDoModeloInput("Lei 12.711/2012", "FEDERAL", "RESOLVIDO", null)], false), documentos);
 
     [Fact(DisplayName = "O grupo lido guarda a quantidade mínima como veio, o indeferimento e os documentos, sem recusa")]
     public void Ler_GrupoValido_GuardaQuantidadeIndeferimentoEDocumentos()

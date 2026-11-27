@@ -211,14 +211,11 @@ public sealed class GrupoRepetivelEndpointTests
     {
         tipoDocumento = new { id = tipoDocumentoId },
         momento = new { faseId = processo.CronogramaFases.Single().Id, formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao },
-        aplicabilidade = new
-        {
-            tipo = "CONDICIONAL",
-            condicoes = new[] { new { clausula = 0, fato = condicao.Fato, operador = condicao.Operador, valor = condicao.Valor } },
-        },
+        aplicabilidade = new { tipo = "CONDICIONAL", condicoes = new[] { new { clausula = 0, fato = condicao.Fato, operador = condicao.Operador, valor = condicao.Valor } } },
         indeferimento = new
         {
             obrigatorio = true,
+            abrePrazoParaReenvio = false,
             basesLegais = new[] { new { referencia = "Res. Unifesspa 532/2021", abrangencia = "INTERNA_NORMA", situacao = "RESOLVIDO" } },
         },
         requisitos = RequisitosDoDocumentoDeTeste.QualquerFormatoEmJson,

@@ -18,7 +18,7 @@ public sealed class ChaveDoNivelDeclaradoTests
         {
             EscalaDeAtendimento = [new NivelDeAtendimentoInput("Completo", 1m, "nivel_existente")],
         };
-        NivelDeAtendimento nivel = EscritaDasEtapasDoProcesso.NiveisDeclarados(entrada)[0];
-        nivel.Chave.Valor.Should().Be("nivel_existente");
+        NivelDeAtendimentoDeclarado nivel = EscritaDasEtapasDoProcesso.NiveisDeclarados(entrada)[0];
+        nivel.Chave.Should().Be("nivel_existente");
     }
 }

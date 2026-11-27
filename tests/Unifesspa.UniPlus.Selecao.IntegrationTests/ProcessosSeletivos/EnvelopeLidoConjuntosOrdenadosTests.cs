@@ -65,7 +65,7 @@ public sealed class EnvelopeLidoConjuntosOrdenadosTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(false, null, []),
+                new IndeferimentoDoDocumento(false, null, [], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!),
                 null)).Value!;
 

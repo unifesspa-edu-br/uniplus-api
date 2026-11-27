@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
@@ -170,7 +171,7 @@ public sealed class LeituraDosDocumentosExigidosTests
     [Fact(DisplayName = "As recusas independentes da mesma exigência se acumulam na ordem citações, formulário, forma e tamanho")]
     public void Recusas_Independentes_SeAcumulam()
     {
-        ExigenciaNoDocumento exigencia = new(0, "a", "TIPO-DIGITADO", FaseDeInscricao, null, null) { TamanhoMaximoBytes = 0, FormatosPermitidos = new(true, []) };
+        ExigenciaNoDocumento exigencia = new(0, "a", "TIPO-DIGITADO", FaseDeInscricao, null, null) { Obrigatorio = true, AbrePrazoParaReenvio = false, TamanhoMaximoBytes = 0, FormatosPermitidos = new(true, []) };
 
         ExigenciasLidas lidas = Ler(exigencia);
 
@@ -192,6 +193,37 @@ public sealed class LeituraDosDocumentosExigidosTests
             "/documentosExigidos/exigencias/0/tipoDocumentoCodigo",
             "/documentosExigidos/exigencias/0/formularioCodigo",
             "/documentosExigidos/exigencias/0/aplicabilidade",
+            "/documentosExigidos/exigencias/0/obrigatorio",
+            "/documentosExigidos/exigencias/0/abrePrazoParaReenvio",
             "/documentosExigidos/exigencias/0/formatosPermitidos");
+    }
+
+    [Fact(DisplayName = "A exigência sem a obrigatoriedade é recusada como informação obrigatória, e não vale falso")]
+    public void ExigenciaSemObrigatorio_RecusaOCampo()
+    {
+        ExigenciasLidas lidas = Ler(Exigencia(0, "a") with { Obrigatorio = null });
+
+        lidas.Exigencias.DocumentosExigidos.Should().BeEmpty();
+        Causas(lidas).Should().Equal(("/documentosExigidos/exigencias/0/obrigatorio", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "A exigência sem a escolha de prazo para reenvio é recusada como informação obrigatória, e não vale falso")]
+    public void ExigenciaSemPrazoParaReenvio_RecusaOCampo()
+    {
+        ExigenciasLidas lidas = Ler(Exigencia(0, "a") with { AbrePrazoParaReenvio = null });
+
+        lidas.Exigencias.DocumentosExigidos.Should().BeEmpty();
+        Causas(lidas).Should().Equal(("/documentosExigidos/exigencias/0/abrePrazoParaReenvio", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Theory(DisplayName = "A exigência com falso informado nas duas escolhas é lida e grava falso")]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void ExigenciaComEscolhasInformadas_GravaOQueFoiInformado(bool obrigatorio, bool abrePrazo)
+    {
+        ExigenciasLidas lidas = Ler(Exigencia(0, "a") with { Obrigatorio = obrigatorio, AbrePrazoParaReenvio = abrePrazo });
+
+        DocumentoExigido documento = lidas.Exigencias.DocumentosExigidos.Should().ContainSingle().Subject;
+        (documento.Obrigatorio, documento.AbrePrazoParaReenvio).Should().Be((obrigatorio, abrePrazo));
     }
 }

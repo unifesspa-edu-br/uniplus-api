@@ -138,7 +138,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true)),
                 new CondicaoPrecondicaoInput("CONDICAO_ATENDIMENTO", "IGUAL", JsonSerializer.SerializeToElement(condicao)),
             ]],
-            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", []));
+            new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [], false));
 
     public static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
         EntradaDoGrupoColetadoDeTeste.Compondo("COMPOSICAO_FAMILIAR", 1).ComRotulo("Composição familiar").NaSecao("DADOS")

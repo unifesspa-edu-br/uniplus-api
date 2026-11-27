@@ -71,7 +71,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(false, null, []),
+                new IndeferimentoDoDocumento(false, null, [], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!),
                 null)).Value!;
     private static DocumentoExigido ComprovanteDeRendaComModelo(FaseCronograma fase) =>
@@ -80,7 +80,7 @@ public sealed class EnvelopeLidoRegrasDeComprovacaoTests
             new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO", ProtecaoDoDocumentoDeTeste.Pessoal),
                 new MomentoDaExigencia(fase.Id, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
                 new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-                new IndeferimentoDoDocumento(false, null, []),
+                new IndeferimentoDoDocumento(false, null, [], false),
                 RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(true, null).Value!, modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeDocumento.Docx, new string('e', 64))),
                 null)).Value!;
 

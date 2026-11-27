@@ -78,7 +78,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
         new DocumentoExigidoDeclarado(new CopiaDoTipoDeDocumento(TipoDocumentoSeed.Itens[0].Id, "AUTODECLARACAO_ETNICO_RACIAL", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(faseId, null, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao)),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(true, null, [BaseLegalDaResolucao()]),
+            new IndeferimentoDoDocumento(true, null, [BaseLegalDaResolucao()], false),
             RequisitosDoDocumentoDeTeste.Com(FormatosPermitidos.Criar(false, [("PDF", null)]).Value!),
             null)).Value!;
 

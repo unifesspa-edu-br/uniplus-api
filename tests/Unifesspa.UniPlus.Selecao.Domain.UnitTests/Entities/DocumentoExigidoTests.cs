@@ -29,7 +29,7 @@ public sealed class DocumentoExigidoTests
             new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(Guid.CreateVersion7(), null, FormularioDeTeste.FormularioDaInscricao),
             new AplicabilidadeDaExigencia(aplicabilidade, condicoes ?? []),
-            new IndeferimentoDoDocumento(obrigatorio, consequenciaDoDescumprimento, basesLegais ?? []),
+            new IndeferimentoDoDocumento(obrigatorio, consequenciaDoDescumprimento, basesLegais ?? [], false),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes, null, null, null),
             null));
 
@@ -47,7 +47,7 @@ public sealed class DocumentoExigidoTests
             new CopiaDoTipoDeDocumento(Guid.Empty, "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal),
             new MomentoDaExigencia(Guid.Empty, null, FormularioDeTeste.FormularioDaInscricao),
             new AplicabilidadeDaExigencia(Aplicabilidade.Geral, []),
-            new IndeferimentoDoDocumento(false, consequencia, []),
+            new IndeferimentoDoDocumento(false, consequencia, [], false),
             new RequisitosDoDocumento(FormatosPermitidos.Criar(true, null).Value!, null, null, null, null),
             null));
 
@@ -202,16 +202,38 @@ public sealed class DocumentoExigidoTests
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0, fatosComprovados: null);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0, fatosComprovados: null, obrigatorio: true, abrePrazoParaReenvio: false);
 
         erros.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "ValidarFormaBasica recusa a escolha ausente do indeferimento no campo dela, com o código de campo obrigatório")]
+    [InlineData(null, false, "obrigatorio")]
+    [InlineData(true, null, "abrePrazoParaReenvio")]
+    public void ValidarFormaBasica_EscolhaAusente_RecusaNoCampo(bool? obrigatorio, bool? abrePrazo, string campo)
+    {
+        List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 0, fatosComprovados: null, obrigatorio, abrePrazo);
+
+        FieldError erro = erros.Should().ContainSingle().Subject;
+        erro.Field.Should().Be(campo);
+        erro.Error.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica acumula as duas escolhas ausentes e aceita falso nas duas")]
+    public void ValidarFormaBasica_DuasEscolhas_AcumulaAusentesEAceitaFalso()
+    {
+        DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, null, obrigatorio: null, abrePrazoParaReenvio: null)
+            .Select(static e => e.Field).Should().Equal("obrigatorio", "abrePrazoParaReenvio");
+        DocumentoExigido.ValidarFormaBasica(Aplicabilidade.Geral, null, 0, null, obrigatorio: false, abrePrazoParaReenvio: false)
+            .Should().BeEmpty();
     }
 
     [Fact(DisplayName = "ValidarFormaBasica com GERAL e quantidadeCondicoes > 0 reporta GeralComCondicao sem precisar de nenhuma condição resolvida")]
     public void ValidarFormaBasica_GeralComQuantidadeCondicoes_ReportaGeralComCondicao()
     {
         List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
-            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 1, fatosComprovados: null);
+            Aplicabilidade.Geral, consequenciaDoDescumprimento: null, quantidadeCondicoes: 1, fatosComprovados: null, obrigatorio: true, abrePrazoParaReenvio: false);
 
         erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.GeralComCondicao"]);
     }

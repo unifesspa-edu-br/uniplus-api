@@ -103,7 +103,7 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
             tipoDocumento = new { id = tipo },
             momento = new { faseId = fase, formularioCodigo = FormulariosDoProcessoDeTeste.Inscricao },
             aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
-            indeferimento = new { obrigatorio = true, basesLegais = Array.Empty<object>() }
+            indeferimento = new { obrigatorio = true, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() }
         },
     };
 

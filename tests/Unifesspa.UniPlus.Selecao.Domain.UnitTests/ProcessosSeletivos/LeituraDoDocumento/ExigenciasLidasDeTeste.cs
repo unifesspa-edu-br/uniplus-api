@@ -15,7 +15,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Leitu
 
 /// <summary>
 /// As exigências, as regras de comprovação e os cadastros que os testes da leitura das exigências montam: o que não declaram tem o
-/// valor de uma exigência completa e conforme, geral, obrigatória e sem restrição de formato.
+/// valor de uma exigência completa e conforme, geral, obrigatória, sem prazo para reenvio e sem restrição de formato.
 /// </summary>
 internal static class ExigenciasLidasDeTeste
 {
@@ -59,6 +59,7 @@ internal static class ExigenciasLidasDeTeste
         {
             Aplicabilidade = Aplicabilidade.Geral,
             Obrigatorio = true,
+            AbrePrazoParaReenvio = false,
             FormatosPermitidos = new(true, []),
         };
 
@@ -79,7 +80,7 @@ internal static class ExigenciasLidasDeTeste
     internal static RegraDeComprovacaoNoDocumento Folha(int posicao, string? exigenciaChave) => new(posicao, FormaDeComprovacao.Documento, exigenciaChave);
 
     internal static RegraDeComprovacaoNoDocumento Grupo(int posicao, FormaDeComprovacao? forma, params RegraDeComprovacaoNoDocumento[] itens) =>
-        new(posicao, forma, null) { Itens = itens };
+        new(posicao, forma, null) { Itens = itens, AbrePrazoParaReenvio = false };
 
     internal static RegraDeComprovacaoNoDocumento ComQuantidade(this RegraDeComprovacaoNoDocumento regra, int? quantidade) => regra with { QuantidadeMinima = quantidade };
 

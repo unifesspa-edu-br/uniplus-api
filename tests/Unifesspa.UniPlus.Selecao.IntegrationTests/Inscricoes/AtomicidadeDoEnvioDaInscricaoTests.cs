@@ -79,7 +79,7 @@ public sealed class AtomicidadeDoEnvioDaInscricaoTests(InscricaoDbFixture fixtur
     private static async Task<ArquivoDaApresentacao> GravarArquivoSemExigenciaAplicavelAsync(UniPlusDbContext db, Guid inscricaoId)
     {
         DocumentoExigido exigencia = new DocumentoExigidoBuilder().ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))
-            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [])).Construir();
+            .ComIndeferimento(new IndeferimentoDoDocumento(false, null, [], false)).Construir();
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, exigencia, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(apresentacao.Id, inscricaoId, exigencia,
             "application/pdf", 1024, DentroDoPeriodo, TimeSpan.FromMinutes(15)).Value!;

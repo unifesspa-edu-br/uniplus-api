@@ -22,7 +22,7 @@ internal static class LeituraDaRegraDeComprovacao
         bool documental = regra.Forma == FormaDeComprovacao.Documento;
         ParteLida<DocumentoExigido> exigencia = documental ? Exigencia(regra.ExigenciaChave, documentos) : ParteLida<DocumentoExigido>.Ausente;
         ParteLida<IReadOnlyList<BaseLegalDaComprovacao>> bases = documental ? ParteLida<IReadOnlyList<BaseLegalDaComprovacao>>.Ausente : LeituraDasBasesLegais.DoGrupo(regra.BasesLegais);
-        FieldError[] recusas = [.. declaracao, .. exigencia.Recusas, .. RecusasDoDocumento(regra, documental), .. Composicao(regra, itens, documental), .. bases.Recusas];
+        FieldError[] recusas = [.. declaracao, .. exigencia.Recusas, .. RecusasDoReenvio(regra), .. Composicao(regra, itens, documental), .. bases.Recusas];
 
         return recusas.Length > 0 || exigencia.Cortada || itens.Any(static item => item.Regra is null)
             ? new(null, recusas)
@@ -38,7 +38,7 @@ internal static class LeituraDaRegraDeComprovacao
             ? RegraDeComprovacao.CriarRegraDeDocumento(
                 exigencia, ordem, declaracao.QuantidadeMinima, regra.CriterioDeDistincao, regra.DataReferencia, OcorrenciasOuNulo(regra), regra.GrupoDoFormularioParaRepeticao)
             : RegraDeComprovacao.CriarGrupo(
-                new(regra.Forma!.Value, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, regra.AbrePrazoParaReenvio),
+                new(regra.Forma!.Value, declaracao.QuantidadeMinima, declaracao.ConsequenciaDoDescumprimento, regra.AbrePrazoParaReenvio is true),
                 ordem,
                 bases!,
                 [.. itens.Select(static item => item.Regra!)],
@@ -70,8 +70,8 @@ internal static class LeituraDaRegraDeComprovacao
             _ => ParteLida<DocumentoExigido>.Recusada([new(CampoDaExigencia, new DomainError(CodigoDaCitacao, "A regra de documento cita uma exigência que o documento não traz."))]),
         };
 
-    private static IEnumerable<FieldError> RecusasDoDocumento(RegraDeComprovacaoNoDocumento regra, bool documental) =>
-        documental && CombinacaoDoGrupo.RecusaDoReenvioEmRegraDeDocumento(regra.AbrePrazoParaReenvio) is { } recusa
+    private static IEnumerable<FieldError> RecusasDoReenvio(RegraDeComprovacaoNoDocumento regra) =>
+        regra.Forma is { } forma && CombinacaoDoGrupo.RecusaDoReenvio(forma, regra.AbrePrazoParaReenvio) is { } recusa
             ? [new("abrePrazoParaReenvio", recusa)]
             : [];
 
