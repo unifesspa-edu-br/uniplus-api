@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
-using System.Globalization;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
@@ -14,49 +12,60 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// </summary>
 public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
 {
+    private const string RetificadoInexistenteMensagem = "O ato retificado informado não corresponde a nenhum ato registrado.";
+
     private const string ClasseDivergenteMensagem =
         "A classe de congelamento do ato que retifica deve coincidir com a do ato retificado: "
         + "um ato não congelante não emenda um congelante, nem o inverso.";
 
     /// <summary>
-    /// Verifica as invariantes da cadeia que dependem do ato retificado. Devolve o
-    /// <see cref="DomainError"/> da primeira violação, ou <see langword="null"/> quando o registro
-    /// não é retificação ou passa em todas. A garantia dura da linearidade contra a corrida é do
-    /// índice único parcial; esta consulta dá a mensagem legível no caso comum.
+    /// Verifica as invariantes da cadeia que dependem do ato retificado e devolve todas as violações:
+    /// ato inexistente, classe de congelamento divergente e ato já retificado. A classe só é conferida
+    /// quando o tipo do ato que retifica foi resolvido. A garantia dura da linearidade contra a corrida
+    /// é do índice único parcial; esta consulta dá a mensagem legível no caso comum.
     /// </summary>
-    public async Task<DomainError?> ConferirAsync(
-        RegistrarAtoNormativoCommand command, bool congelaConfiguracao, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<FieldError>> ConferirAsync(
+        Guid atoRetificadoId, TipoDoAtoNoRegistro? tipo, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command);
-
-        if (command.AtoRetificadoId is not { } retificadoId)
-        {
-            return null;
-        }
-
         AtoNormativo? retificado = await atos
-            .ObterPorIdParaLeituraAsync(retificadoId, cancellationToken)
+            .ObterPorIdParaLeituraAsync(atoRetificadoId, cancellationToken)
             .ConfigureAwait(false);
 
         return retificado is null
-            ? new DomainError(AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado, RetificadoInexistenteMensagem(retificadoId))
-            : await ConferirRetificadoAsync(retificado, congelaConfiguracao, cancellationToken).ConfigureAwait(false);
+            ? [Recusa(AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado, RetificadoInexistenteMensagem)]
+            : await ConferirRetificadoAsync(retificado, tipo, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Indica se as recusas da cadeia não incluem a de ato retificado inexistente.</summary>
+    public static bool RetificadoExiste(IReadOnlyList<FieldError> recusasDaCadeia)
+    {
+        ArgumentNullException.ThrowIfNull(recusasDaCadeia);
+
+        return recusasDaCadeia.All(recusa => recusa.Error.Code != AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado);
+    }
+
+    /// <summary>Os vínculos do ato retificado, que a retificação herda.</summary>
+    public async Task<IReadOnlyList<EntidadeVinculada>> ListarVinculosHerdadosAsync(
+        Guid atoRetificadoId, CancellationToken cancellationToken) =>
+        await atos.ListarVinculosDoAtoAsync(atoRetificadoId, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// A linhagem a que o ato pertence (os ids da cadeia do ato retificado, vazia quando o ato não
-    /// emenda ninguém) e os vínculos que ele passa a ter.
+    /// emenda ninguém) e os vínculos que ele passa a ter: os declarados e os herdados do retificado.
     /// </summary>
     public async Task<LinhagemDoAto> ResolverAsync(
-        RegistrarAtoNormativoCommand command, CancellationToken cancellationToken)
+        Guid? atoRetificadoId,
+        IReadOnlyList<EntidadeVinculada> declarados,
+        IReadOnlyList<EntidadeVinculada> herdados,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(declarados);
+        ArgumentNullException.ThrowIfNull(herdados);
 
-        IReadOnlyList<Guid> ids = command.AtoRetificadoId is { } retificadoId
+        IReadOnlyList<Guid> ids = atoRetificadoId is { } retificadoId
             ? await atos.ListarIdsDaCadeiaAsync(retificadoId, cancellationToken).ConfigureAwait(false)
             : [];
-        return new LinhagemDoAto(
-            ids, await ResolverVinculosAsync(command, cancellationToken).ConfigureAwait(false));
+        return new LinhagemDoAto(ids, VinculosDoAto(declarados, herdados));
     }
 
     /// <summary>
@@ -82,39 +91,14 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
     /// não estética: as vagas do objeto são reservadas nesta ordem, e duas transações que reservem
     /// o mesmo par de objetos em ordens opostas travariam uma na outra.
     /// </remarks>
-    private async Task<IReadOnlyList<EntidadeVinculada>> ResolverVinculosAsync(
-        RegistrarAtoNormativoCommand command, CancellationToken cancellationToken)
-    {
-        List<EntidadeVinculada> vinculos = [.. VinculosDeclarados(command)];
-        if (command.AtoRetificadoId is { } retificadoId)
-        {
-            vinculos.AddRange(await HerdadosSemRepetirAsync(retificadoId, vinculos, cancellationToken).ConfigureAwait(false));
-        }
-
-        return [.. vinculos.OrderBy(v => v.Tipo, StringComparer.Ordinal).ThenBy(v => v.Id)];
-    }
-
-    private async Task<IEnumerable<EntidadeVinculada>> HerdadosSemRepetirAsync(
-        Guid retificadoId,
-        IEnumerable<EntidadeVinculada> declarados,
-        CancellationToken cancellationToken)
+    private static IReadOnlyList<EntidadeVinculada> VinculosDoAto(
+        IReadOnlyList<EntidadeVinculada> declarados, IReadOnlyList<EntidadeVinculada> herdados)
     {
         HashSet<EntidadeVinculada> vistos = [.. declarados];
-        IReadOnlyList<EntidadeVinculada> herdados = await atos
-            .ListarVinculosDoAtoAsync(retificadoId, cancellationToken)
-            .ConfigureAwait(false);
-        return herdados.Where(vistos.Add);
-    }
+        IEnumerable<EntidadeVinculada> todos = declarados.Concat(herdados.Where(vistos.Add));
 
-    /// <summary>
-    /// O elemento nulo já foi recusado pelo validator (422); descartá-lo aqui evita que um chamador
-    /// interno, sem passar pelo HTTP, derrube a montagem com uma referência nula.
-    /// </summary>
-    internal static IEnumerable<EntidadeVinculada> VinculosDeclarados(
-        RegistrarAtoNormativoCommand command) =>
-        (command.Vinculos ?? [])
-            .Where(v => v is not null)
-            .Select(v => new EntidadeVinculada(v.EntidadeTipo, v.EntidadeId));
+        return [.. todos.OrderBy(v => v.Tipo, StringComparer.Ordinal).ThenBy(v => v.Id)];
+    }
 
     /// <summary>
     /// A classe de congelamento do ato que retifica deve coincidir com a do retificado: é essa
@@ -122,28 +106,26 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
     /// (UNI-REQ-0019). Depois, a linearidade: se o ato já foi retificado, a nova retificação
     /// deveria emendar a cabeça da cadeia, e a recusa nomeia quem já a retificou.
     /// </summary>
-    private async Task<DomainError?> ConferirRetificadoAsync(
-        AtoNormativo retificado, bool congelaConfiguracao, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<FieldError>> ConferirRetificadoAsync(
+        AtoNormativo retificado, TipoDoAtoNoRegistro? tipo, CancellationToken cancellationToken)
     {
-        if (retificado.CongelaConfiguracao != congelaConfiguracao)
-        {
-            return new DomainError(AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente, ClasseDivergenteMensagem);
-        }
-
         AtoNormativo? retificador = await atos
             .ObterRetificadorAsync(retificado.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return retificador is null
-            ? null
-            : new DomainError(AtoNormativoErrorCodes.AtoJaRetificado, AtoJaRetificadoMensagem(retificador));
+        return
+        [
+            .. tipo is { } resolvido && resolvido.CongelaConfiguracao != retificado.CongelaConfiguracao
+                ? [Recusa(AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente, ClasseDivergenteMensagem)]
+                : Array.Empty<FieldError>(),
+            .. retificador is null
+                ? Array.Empty<FieldError>()
+                : [Recusa(AtoNormativoErrorCodes.AtoJaRetificado, AtoJaRetificadoMensagem(retificador))],
+        ];
     }
 
-    private static string RetificadoInexistenteMensagem(Guid retificadoId) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "O ato retificado {0} não corresponde a nenhum ato registrado.",
-            retificadoId);
+    private static FieldError Recusa(string codigo, string mensagem) =>
+        new("atoRetificadoId", new DomainError(codigo, mensagem));
 
     private static string AtoJaRetificadoMensagem(AtoNormativo retificador) =>
         $"O ato que se tentou retificar já foi retificado pelo ato {retificador.Numeracao.Descrever()}. "

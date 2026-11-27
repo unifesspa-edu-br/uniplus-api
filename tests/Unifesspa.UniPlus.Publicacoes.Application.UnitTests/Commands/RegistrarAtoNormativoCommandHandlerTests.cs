@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Commands;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RegistrarAtoNormativoCommandHandlerTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -297,26 +291,30 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         _adicionado!.Anexos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Anexo com nome repetido é recusado antes de qualquer ida ao banco")]
-    public async Task Handle_AnexoComNomeDuplicado_RecusaSemTocarOBanco()
+    [Fact(DisplayName = "Anexo com nome repetido é recusado na posição do segundo, sem gravar")]
+    public async Task Handle_AnexoComNomeDuplicado_RecusaNaPosicaoDoSegundo()
     {
+        VigenteComConsequencia(congela: false, efeito: false);
+
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando() with { Anexos = [AnexoPdf("Anexo I.pdf", HashValido), AnexoPdf("Anexo I.pdf", OutroHash)] });
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
-        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("anexos[1].nome", AnexoDoAtoErrorCodes.NomeDuplicado));
         await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Elemento nulo na lista de anexos é recusado, sem descartá-lo")]
     public async Task Handle_AnexoNulo_RecusaSemDescartar()
     {
+        VigenteComConsequencia(congela: false, efeito: false);
+
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando() with { Anexos = [AnexoPdf("Anexo I.pdf", HashValido), null!] });
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.Nulo);
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("anexos[1]", AnexoDoAtoErrorCodes.Nulo));
         await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
     }
 

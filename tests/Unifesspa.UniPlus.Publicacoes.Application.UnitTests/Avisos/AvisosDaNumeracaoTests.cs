@@ -58,7 +58,7 @@ public sealed class AvisosDaNumeracaoTests
         IReadOnlyList<AvisoNumeracao> avisos = await AvisosDaNumeracao.CalcularAsync(_atos, _ato, [], CancellationToken.None);
 
         AvisoNumeracao aviso = avisos.Should().ContainSingle().Which;
-        aviso.Codigo.Should().Be(AtoNormativoRegras.AvisoNumeroDuplicado);
+        aviso.Codigo.Should().Be(AvisosDaNumeracao.AvisoNumeroDuplicado);
         aviso.Mensagem.Should().Be(MensagemDeDoisConflitos);
         aviso.AtosConflitantes.Should().Equal(conflitantes);
     }

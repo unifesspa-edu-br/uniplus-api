@@ -12597,6 +12597,20 @@
       ]
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.ano_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **ano** do ato é zero ou negativo. O ano é obrigatório e deve ser um número maior que zero.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Informe o ano em que o ato foi expedido, como número inteiro maior que zero, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo"
+      ]
+    },
+    {
       "codigo": "uniplus.publicacoes.ato_normativo.ato_ja_retificado",
       "requisitos": [
         "UNI-REQ-0021",
@@ -12657,6 +12671,20 @@
       ]
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.hash_do_documento_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **hash do documento** não foi informado ou não está no formato exigido: SHA-256 em hexadecimal minúsculo, com 64 caracteres. Publicações guarda só o hash e não confere o arquivo.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Calcule o SHA-256 do arquivo do documento, escreva-o em hexadecimal minúsculo, com 64 caracteres, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo"
+      ]
+    },
+    {
       "codigo": "uniplus.publicacoes.ato_normativo.nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
@@ -12687,6 +12715,36 @@
         "Registro de ato normativo, para tipo marcado como único por objeto",
         "Publicação, retificação e fechamento da retificação do processo seletivo",
         "Publicação de documento avulso e de item do edital do processo seletivo"
+      ]
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.retificacao_incompleta",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A retificação foi informada pela metade, ou o identificador do **ato retificado** está vazio. Retificar um ato exige os dois campos juntos: `atoRetificadoId` e `motivoRetificacao`. Um ato que não retifica nada deve omitir os dois.",
+        "O campo da recusa, em `errors[].field`, aponta o que falta: o `atoRetificadoId` ou o `motivoRetificacao`. Um identificador vazio é recusado mesmo quando o motivo não foi informado.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Se o ato retifica outro, informe o identificador do ato retificado e o motivo da retificação. Se não retifica, omita os dois campos."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo, quando o pedido declara retificação"
+      ]
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.texto_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Um texto do ato está **vazio** ou tem **mais caracteres** que o limite do campo. Os campos de texto são o órgão (até 200 caracteres), a série (até 100), o número (até 60, opcional), o assinante (até 200) e o motivo da retificação (até 1000, obrigatório só quando há ato retificado).",
+        "O campo da recusa, em `errors[].field`, diz qual texto está errado. Espaços nas pontas não contam como conteúdo: um texto só com espaços é tratado como vazio.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Preencha o campo indicado em `errors[].field` com um texto dentro do limite e reenvie o pedido inteiro."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo"
       ]
     },
     {
@@ -12731,7 +12789,7 @@
         "O ato normativo pode invocar a versão do objeto que ele governou no\ninstante da publicação, por um par **`{versaoDoObjetoId,\nversaoDoObjetoHash}`**, sem chave estrangeira entre módulos: o\nidentificador aponta a versão no módulo de origem, e o hash serve para\nconferir, nesse módulo, que a definição aplicada não mudou depois. Um ato pode não invocar versão\nnenhuma (ato autônomo, sem vínculo com um objeto versionado), e nesse caso a\nreferência simplesmente não existe.",
         "Publicações confere só a **forma** do par: não verifica, no módulo de\norigem, se a versão existe nem se o hash corresponde a ela. Esta causa cobre\ndois cenários distintos:",
         "1. **A referência está incompleta**: foi informado um identificador sem hash ou um hash sem identificador. Os dois são necessários para identificar a versão e conferir sua integridade.\n2. **A referência está malformada**: o identificador está vazio ou o hash não tem o formato SHA-256 em hexadecimal minúsculo (64 caracteres).",
-        "No registro administrativo de ato, a validação do pedido recusa esses casos\nantes do domínio, com **422** de validação e os problemas em `errors`, uma\nentrada por violação (um mesmo campo pode ter mais de uma). O código desta página chega no campo `code` quando o registro vem\npor um caminho que não passa por essa validação, como o registro feito pelo\ndomínio dono do objeto; nesse caso o `detail` traz a mensagem do par completo ou ausente, quando ele\nveio pela metade, e a do identificador ou do hash, quando veio malformado (se\nos dois estão malformados, é relatado primeiro o identificador)."
+        "No registro administrativo de ato, o domínio confere o par junto com os demais campos do pedido e devolve **422** com uma entrada em `errors` por violação, apontando o campo (`versaoDoObjetoId` ou `versaoDoObjetoHash`): o que falta quando o par veio pela metade, o identificador quando está vazio e o hash quando está malformado. O campo `code` da resposta traz o código da primeira recusa da lista; quando esta é a primeira, ele é o código desta página, e quando há recusas anteriores este código aparece só em `errors`. Quando o registro é feito pelo domínio dono do objeto, as recusas chegam sem campo, na mesma ordem."
       ],
       "comoResolver": [
         "Envie o par `{versaoDoObjetoId, versaoDoObjetoHash}` completo\ne bem formado, com o identificador de uma versão do objeto real e o\nhash SHA-256 correspondente, em hexadecimal minúsculo, ou omita os dois\ncampos por completo quando o ato não invocar nenhuma versão do\nobjeto."
@@ -12763,6 +12821,67 @@
       ]
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_nulo",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A lista de **vínculos** do ato tem um elemento nulo. Cada posição da lista deve trazer o tipo e o identificador de uma entidade; um elemento `null` não vincula nada.",
+        "O campo da recusa, em `errors[].field`, traz a posição do elemento, por exemplo `vinculos[2]`.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Retire o elemento nulo da lista de vínculos ou preencha-o com o tipo e o identificador da entidade, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo, quando o pedido traz vínculos"
+      ]
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_repetido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "A mesma entidade, com o mesmo tipo e o mesmo identificador, foi vinculada **mais de uma vez** ao ato. A recusa de repetição aponta a segunda ocorrência e as seguintes; a primeira não recebe essa recusa, embora possa receber as de tipo ou identificador, se o vínculo também estiver malformado.",
+        "O campo da recusa, em `errors[].field`, traz a posição repetida, por exemplo `vinculos[1]`.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Retire os vínculos repetidos, deixando cada entidade uma só vez, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo, quando o pedido traz vínculos"
+      ]
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_sem_identificador_da_entidade",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O vínculo informa o tipo da entidade, mas o **identificador da entidade** está vazio. Todo vínculo precisa dos dois.",
+        "O campo da recusa, em `errors[].field`, traz a posição do vínculo, por exemplo `vinculos[1].entidadeId`.",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Informe o identificador da entidade no vínculo indicado, ou retire o vínculo, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo, quando o pedido traz vínculos"
+      ]
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_tipo_de_entidade_invalido",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **tipo da entidade vinculada** ao ato está vazio, ultrapassa 60 caracteres ou está fora da forma canônica: começa por letra maiúscula e usa só letras maiúsculas sem acento, algarismos e sublinhado entre palavras. O tipo é conferido exatamente como foi enviado, sem aparar espaços nem trocar a caixa.",
+        "O campo da recusa, em `errors[].field`, traz a posição do vínculo, por exemplo `vinculos[0].entidadeTipo`.",
+        "Esta recusa é a do **registro** do ato (422). A consulta de atos por entidade tem a sua própria, com outro código, porque o tipo chega pela rota (400).",
+        "O registro do ato confere todos os campos do pedido numa só passada: se mais de um campo estiver errado, a resposta traz uma recusa para cada um, na ordem do corpo do pedido, em `errors`. Corrija todos e reenvie."
+      ],
+      "comoResolver": [
+        "Corrija o tipo da entidade no vínculo indicado, na forma canônica, e reenvie o pedido."
+      ],
+      "ondeAparece": [
+        "Registro de ato normativo, quando o pedido traz vínculos"
+      ]
+    },
+    {
       "codigo": "uniplus.publicacoes.tipo_ato.base_legal_tamanho",
       "requisitos": [],
       "oQueAconteceu": [
@@ -12788,7 +12907,8 @@
       ],
       "ondeAparece": [
         "Criação de tipo de ato",
-        "Atualização de tipo de ato"
+        "Atualização de tipo de ato",
+        "Registro de ato normativo"
       ]
     },
     {
@@ -12817,7 +12937,8 @@
       ],
       "ondeAparece": [
         "Criação de tipo de ato",
-        "Atualização de tipo de ato"
+        "Atualização de tipo de ato",
+        "Registro de ato normativo"
       ]
     },
     {

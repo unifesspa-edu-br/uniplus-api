@@ -22,15 +22,18 @@ using static AtoNormativoApoio;
 [Collection(PublicacoesEndpointCollection.Name)]
 public sealed class AtoNormativoRegistroTests
 {
-    private static readonly (string?, string?)[] ErrosEsperadosDoValidator =
+    private const string Prefixo = "uniplus.publicacoes.ato_normativo.";
+
+    private static readonly (string?, string?)[] ErrosEsperadosDoRegistro =
     [
-        ("orgao", "uniplus.validacao.obrigatorio"),
-        ("serie", "uniplus.validacao.tamanho"),
-        ("ano", "uniplus.validacao.faixa"),
-        ("documentoHash", "uniplus.validacao.formato"),
-        ("versaoDoObjetoHash", "uniplus.validacao.regra"),
-        ("vinculos[0].entidadeTipo", "uniplus.validacao.formato"),
-        ("vinculos[0].entidadeId", "uniplus.validacao.obrigatorio"),
+        ("orgao", Prefixo + "texto_invalido"),
+        ("serie", Prefixo + "texto_invalido"),
+        ("ano", Prefixo + "ano_invalido"),
+        ("tipoCodigo", Prefixo + "tipo_sem_versao_vigente"),
+        ("documentoHash", Prefixo + "hash_do_documento_invalido"),
+        ("versaoDoObjetoHash", Prefixo + "versao_do_objeto_incompleta"),
+        ("vinculos[0].entidadeTipo", Prefixo + "vinculo_tipo_de_entidade_invalido"),
+        ("vinculos[0].entidadeId", Prefixo + "vinculo_sem_identificador_da_entidade"),
     ];
 
     private readonly PublicacoesEndpointFixture _fixture;
@@ -136,29 +139,23 @@ public sealed class AtoNormativoRegistroTests
     }
 
     /// <summary>
-    /// O 422 do validator FluentValidation publica cada violação na taxonomia
-    /// <c>uniplus.validacao.*</c> e com o campo no casing do payload — e não o nome da classe
-    /// interna do FluentValidation (<c>NotEmptyValidator</c>, <c>MaximumLengthValidator</c>…)
-    /// nem o nome C# da propriedade, que vazavam para o contrato consumido pelo frontend.
-    /// O payload dispara uma violação de cada categoria, inclusive dentro da coleção de
-    /// vínculos e em regras com <c>OverridePropertyName</c>.
+    /// O registro devolve numa só resposta todas as recusas de forma, cada uma com o código da regra e o campo no
+    /// casing do payload, na ordem do corpo; o código da resposta é o da primeira.
     /// </summary>
-    [Fact(DisplayName = "POST reprovado no validator publica errors[] na taxonomia e com field em camelCase")]
-    public async Task Registrar_ReprovadoNoValidator_ErrorsNaTaxonomiaComFieldEmCamelCase()
+    [Fact(DisplayName = "POST com vários campos inválidos publica todas as recusas em errors[], na ordem do corpo")]
+    public async Task Registrar_VariosCamposInvalidos_PublicaTodasAsRecusasNaOrdemDoCorpo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await PostAtoAsync(client, PayloadReprovadoNoValidator());
+        HttpResponseMessage response = await PostAtoAsync(client, PayloadComVariasRecusas());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.validacao");
-        (string?, string?)[] erros = ExtrairErros(problema);
-        erros.Should().AllSatisfy(e => e.Item2.Should().MatchRegex(@"^uniplus\.validacao\.[a-z_]+$"));
-        erros.Should().BeEquivalentTo(ErrosEsperadosDoValidator);
+        problema.RootElement.GetProperty("code").GetString().Should().Be(Prefixo + "texto_invalido");
+        ExtrairErros(problema).Should().Equal(ErrosEsperadosDoRegistro);
     }
 
-    private static object PayloadReprovadoNoValidator() =>
+    private static object PayloadComVariasRecusas() =>
         new
         {
             orgao = "",

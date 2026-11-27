@@ -49,23 +49,26 @@ public sealed class MontagemDoAtoNormativoTests
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
     }
 
-    [Fact(DisplayName = "O catálogo recebe o código do tipo exatamente como veio, sem aparar espaços")]
-    public async Task Montar_CodigoComEspacos_BuscaNoCatalogoSemAparar()
+    [Fact(DisplayName = "O código do tipo com espaços nas pontas é recusado na forma, sem ler o catálogo")]
+    public async Task Montar_CodigoComEspacos_RecusaSemLerOCatalogo()
     {
         Result<AtoMontado> montado = await Montar(Comando() with { TipoCodigo = " EDITAL_ABERTURA " });
 
-        montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.TipoSemVersaoVigente);
-        await _tipos.Received().ObterVigenteAsync(" EDITAL_ABERTURA ", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+        ResumoDasRecusas(montado).Should().Equal(("tipoCodigo", TipoAtoPublicadoErrorCodes.CodigoFormato));
+        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
 
-    [Fact(DisplayName = "Recusa o ato de processo seletivo fora do registro pelo domínio")]
+    [Fact(DisplayName = "Recusa o ato de processo seletivo fora do registro pelo domínio, sem repetir o tipo recebido")]
     public async Task Montar_VinculoComProcessoSeletivo_RecusaForaDoRegistroPeloDominio()
     {
+        TipoVigente(unicoPorObjeto: false);
+
         Result<AtoMontado> montado = await Montar(
             Comando() with { Vinculos = [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Guid.CreateVersion7())] });
 
-        montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
-        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
+        ResumoDasRecusas(montado).Should().Equal(
+            ("vinculos[0].entidadeTipo", AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio));
+        montado.Error!.Message.Should().NotContain(EntidadesDeRegistroPeloDominio.ProcessoSeletivo);
     }
 
     [Fact(DisplayName = "Recusa a retificação de um ato que já foi retificado")]
@@ -96,6 +99,9 @@ public sealed class MontagemDoAtoNormativoTests
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
         await _atos.DidNotReceive().ReservarVagaAsync(Arg.Any<VagaDeLinhagem>(), Arg.Any<CancellationToken>());
     }
+
+    private static IEnumerable<(string? Campo, string Codigo)> ResumoDasRecusas(Result<AtoMontado> montado) =>
+        montado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code));
 
     private Task<Result<AtoMontado>> Montar(RegistrarAtoNormativoCommand comando) =>
         MontagemDeTeste.Criar(_tipos, _atos).MontarAsync(comando, PublicadoEm, CancellationToken.None);

@@ -71,5 +71,54 @@ internal static class ErrosDoAtoNormativo
                 StatusCodes.Status400BadRequest,
                 "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido",
                 "Tipo de entidade inválido")),
+
+        // 422: o próprio pedido recusa a forma do registro do ato.
+        new(AtoNormativoErrorCodes.TextoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.texto_invalido",
+                "Um texto do ato está vazio ou acima do tamanho máximo")),
+
+        new(AtoNormativoErrorCodes.AnoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.ano_invalido",
+                "O ano do ato deve ser maior que zero")),
+
+        new(AtoNormativoErrorCodes.HashDoDocumentoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.hash_do_documento_invalido",
+                "O hash do documento deve ser um SHA-256 em hexadecimal minúsculo")),
+
+        new(AtoNormativoErrorCodes.RetificacaoIncompleta,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.retificacao_incompleta",
+                "A retificação deve trazer o ato retificado e o motivo, ou nenhum dos dois")),
+
+        new(AtoNormativoErrorCodes.VinculoTipoDeEntidadeInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.vinculo_tipo_de_entidade_invalido",
+                "O tipo da entidade vinculada está vazio ou fora da forma canônica")),
+
+        new(AtoNormativoErrorCodes.VinculoSemIdentificadorDaEntidade,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.vinculo_sem_identificador_da_entidade",
+                "A entidade vinculada deve ter identificador")),
+
+        new(AtoNormativoErrorCodes.VinculoRepetido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.vinculo_repetido",
+                "A mesma entidade foi vinculada mais de uma vez ao ato")),
+
+        new(AtoNormativoErrorCodes.VinculoNulo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.vinculo_nulo",
+                "A lista de vínculos não admite elemento nulo")),
     ];
 }

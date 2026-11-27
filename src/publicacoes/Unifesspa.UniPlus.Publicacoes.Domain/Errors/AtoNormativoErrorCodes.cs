@@ -60,4 +60,34 @@ public static class AtoNormativoErrorCodes
     /// não 422. Sem a recusa, a consulta devolveria a mesma coleção vazia de uma entidade sem atos.
     /// </summary>
     public const string TipoDeEntidadeInvalido = "AtoNormativo.TipoDeEntidadeInvalido";
+
+    /// <summary>
+    /// Um texto do ato (órgão, série, número, assinante ou motivo da retificação) está vazio quando é
+    /// obrigatório, ou passa do tamanho máximo.
+    /// </summary>
+    public const string TextoInvalido = "AtoNormativo.TextoInvalido";
+
+    /// <summary>O ano da numeração do ato não é maior que zero.</summary>
+    public const string AnoInvalido = "AtoNormativo.AnoInvalido";
+
+    /// <summary>O hash do documento não é um SHA-256 em hexadecimal minúsculo.</summary>
+    public const string HashDoDocumentoInvalido = "AtoNormativo.HashDoDocumentoInvalido";
+
+    /// <summary>
+    /// A retificação é o par (ato retificado, motivo): falta um dos dois lados, ou o identificador do ato
+    /// retificado está vazio.
+    /// </summary>
+    public const string RetificacaoIncompleta = "AtoNormativo.RetificacaoIncompleta";
+
+    /// <summary>O tipo da entidade vinculada está vazio ou fora da forma canônica do rótulo.</summary>
+    public const string VinculoTipoDeEntidadeInvalido = "AtoNormativo.VinculoTipoDeEntidadeInvalido";
+
+    /// <summary>O identificador da entidade vinculada está vazio.</summary>
+    public const string VinculoSemIdentificadorDaEntidade = "AtoNormativo.VinculoSemIdentificadorDaEntidade";
+
+    /// <summary>A mesma entidade foi vinculada mais de uma vez ao mesmo ato.</summary>
+    public const string VinculoRepetido = "AtoNormativo.VinculoRepetido";
+
+    /// <summary>A lista de vínculos traz um elemento nulo.</summary>
+    public const string VinculoNulo = "AtoNormativo.VinculoNulo";
 }

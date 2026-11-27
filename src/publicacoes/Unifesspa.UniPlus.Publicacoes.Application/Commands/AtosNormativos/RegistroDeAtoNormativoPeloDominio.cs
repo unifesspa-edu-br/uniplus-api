@@ -25,12 +25,19 @@ internal sealed class RegistroDeAtoNormativoPeloDominio(MontagemDoAtoNormativo m
             .ConfigureAwait(false);
         if (montado.IsFailure)
         {
-            return Result.Failure(montado.Error!);
+            return Result.ValidationFailure(SemCampo(montado.Errors));
         }
 
         await atos.AdicionarAsync(montado.Value!.Ato, cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }
+
+    /// <summary>
+    /// Os campos do corpo do endpoint não existem no pedido de quem publica por esta porta: as causas
+    /// seguem com o mesmo código e a mesma ordem, sem campo.
+    /// </summary>
+    private static FieldError[] SemCampo(IReadOnlyList<FieldError> recusas) =>
+        [.. recusas.Select(recusa => new FieldError(null, recusa.Error))];
 
     public DomainError? TraduzirConflitoDaGravacao(Exception excecao) => ConflitoNaGravacaoDoAto.Traduzir(excecao);
 

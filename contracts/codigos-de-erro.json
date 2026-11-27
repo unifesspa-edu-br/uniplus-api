@@ -3877,6 +3877,11 @@
       "titulo": "O tipo de mídia do anexo deve ter a forma tipo/subtipo"
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.ano_invalido",
+      "status": 422,
+      "titulo": "O ano do ato deve ser maior que zero"
+    },
+    {
       "codigo": "uniplus.publicacoes.ato_normativo.ato_ja_retificado",
       "status": 409,
       "titulo": "O ato que se tentou retificar já foi retificado por outro (a cadeia é linear)"
@@ -3892,6 +3897,11 @@
       "titulo": "A classe de congelamento do ato que retifica deve coincidir com a do ato retificado"
     },
     {
+      "codigo": "uniplus.publicacoes.ato_normativo.hash_do_documento_invalido",
+      "status": 422,
+      "titulo": "O hash do documento deve ser um SHA-256 em hexadecimal minúsculo"
+    },
+    {
       "codigo": "uniplus.publicacoes.ato_normativo.nao_encontrado",
       "status": 404,
       "titulo": "Ato normativo não encontrado"
@@ -3900,6 +3910,16 @@
       "codigo": "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo",
       "status": 409,
       "titulo": "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.retificacao_incompleta",
+      "status": 422,
+      "titulo": "A retificação deve trazer o ato retificado e o motivo, ou nenhum dos dois"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.texto_invalido",
+      "status": 422,
+      "titulo": "Um texto do ato está vazio ou acima do tamanho máximo"
     },
     {
       "codigo": "uniplus.publicacoes.ato_normativo.tipo_de_entidade_invalido",
@@ -3920,6 +3940,26 @@
       "codigo": "uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio",
       "status": 422,
       "titulo": "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_nulo",
+      "status": 422,
+      "titulo": "A lista de vínculos não admite elemento nulo"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_repetido",
+      "status": 422,
+      "titulo": "A mesma entidade foi vinculada mais de uma vez ao ato"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_sem_identificador_da_entidade",
+      "status": 422,
+      "titulo": "A entidade vinculada deve ter identificador"
+    },
+    {
+      "codigo": "uniplus.publicacoes.ato_normativo.vinculo_tipo_de_entidade_invalido",
+      "status": 422,
+      "titulo": "O tipo da entidade vinculada está vazio ou fora da forma canônica"
     },
     {
       "codigo": "uniplus.publicacoes.tipo_ato.base_legal_tamanho",

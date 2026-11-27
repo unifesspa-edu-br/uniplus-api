@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Commands;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -22,10 +20,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// (ADR-0107), do ponto de vista do handler: a herança de vínculos pela retificação, a
 /// reserva da vaga, e a recusa quando o objeto já é tratado por outra linhagem.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RegistrarAtoNormativoVinculosTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -202,24 +196,27 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(ComandoRetificando(retificado));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("atoRetificadoId", AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio));
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O vínculo proibido declarado é recusado antes de qualquer consulta ao banco")]
-    public async Task Handle_VinculoProibidoDeclarado_RecusaAntesDeConsultar()
+    [Fact(DisplayName = "O vínculo proibido declarado é recusado junto com a recusa do ato retificado")]
+    public async Task Handle_VinculoProibidoDeclarado_RecusaJuntoComAsDemais()
     {
+        Vigente(unico: false);
+        Guid inexistente = Guid.CreateVersion7();
+
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando(
                 vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)],
-                atoRetificadoId: Guid.CreateVersion7(),
+                atoRetificadoId: inexistente,
                 motivo: "corrige o anexo"));
 
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
-        resultado.Error.Message.Should().Contain(EntidadesDeRegistroPeloDominio.ProcessoSeletivo);
-        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
-        await _atos.DidNotReceiveWithAnyArgs().ObterPorIdParaLeituraAsync(default, default);
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("atoRetificadoId", AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado),
+            ("vinculos[0].entidadeTipo", AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio));
+        await _atos.DidNotReceiveWithAnyArgs().ListarVinculosDoAtoAsync(default, default);
     }
 
     [Fact(DisplayName = "O registro por mensagem do domínio continua aceitando o vínculo com processo seletivo")]
