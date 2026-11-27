@@ -162,7 +162,7 @@ public static class ConferenciaDasBancas
         }
 
         return MinimoDeBancasPorTipo.Faltas(fase.Bancas.Declaradas, fase.Bancas.Grupos).Select(falta => CronogramaDoProcesso.NaFase(
-            posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{falta.Banca.Posicao}]", MinimoDeBancasPorTipo.Recusa(falta, $"fase '{fase.Codigo}'")));
+            posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{falta.Banca.Posicao}]", MinimoDeBancasPorTipo.Recusa(falta, $"fase {fase.Citacao}")));
     }
 
     private static IEnumerable<FieldError> FaltasDaEtapa(EtapaDeclarada etapa, int posicao)
@@ -188,7 +188,7 @@ public static class ConferenciaDasBancas
 
     private static IEnumerable<FieldError> DeliberacaoDasBancasDasFases(CronogramaDoProcesso cronograma, IReadOnlySet<BancaDeclarada> avaliadorasQueJulgam) =>
         cronograma.Fases.SelectMany((fase, posicao) => fase.Bancas.Declaradas
-            .Select(banca => (Banca: banca, Causa: CausaDaDeliberacao(banca, $"fase '{fase.Codigo}'", avaliadorasQueJulgam)))
+            .Select(banca => (Banca: banca, Causa: CausaDaDeliberacao(banca, $"fase {fase.Citacao}", avaliadorasQueJulgam)))
             .Where(static par => par.Causa is not null)
             .Select(par => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{par.Banca.Posicao}]", par.Causa!)));
 
@@ -225,7 +225,7 @@ public static class ConferenciaDasBancas
             .Select(banca => new BancaJulgadora(
                 erro => CronogramaDoProcesso.NaFase(posicao, $"{FaseDeclarada.ListaDasBancasRequeridas}[{banca.Posicao}]", erro),
                 banca.Citacao,
-                $"fase '{fase.Codigo}'",
+                $"fase {fase.Citacao}",
                 banca.Regra!,
                 banca.Tipo.JulgaAPrimeiraInstancia ? QuemJulgaORecurso.EtapasJulgadasPelaFase(itens, fase) : [])));
 

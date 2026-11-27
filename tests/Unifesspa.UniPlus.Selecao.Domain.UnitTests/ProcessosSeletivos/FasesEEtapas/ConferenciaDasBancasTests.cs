@@ -124,7 +124,7 @@ public sealed class ConferenciaDasBancasTests
             ("fases[0].bancasRequeridas[1]", "Banca.RegraDeDeliberacaoObrigatoria"),
             ("etapas[0].bancas[0]", "Banca.RegraDeDeliberacaoObrigatoria"));
         ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas)[0].Error.Message
-            .Should().Be("A banca 'Banca de correção de redações 1' da fase 'AVALIACAO' não declara a regra de deliberação.");
+            .Should().Be("A banca 'Banca de correção de redações 1' da fase 'Fase de avaliação' não declara a regra de deliberação.");
     }
 
     [Fact(DisplayName = "A banca de recursos da fase com menos integrantes do que os corretores da etapa que julga é recusada")]

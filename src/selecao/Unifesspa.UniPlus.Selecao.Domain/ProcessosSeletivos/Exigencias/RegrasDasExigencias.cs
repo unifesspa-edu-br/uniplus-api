@@ -99,7 +99,7 @@ public static class RegrasDasExigencias
             ? null
             : new DomainError(
                 "DocumentoExigido.PendenciaReenvioExigeComplementacao",
-                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — a abertura de prazo para reenvio exige complementação.");
+                $"A fase {fase.Citacao} (ordem {fase.Ordem}) não permite complementação — a consequência que abre prazo para reenvio exige que a fase permita complementação.");
     }
 
     /// <summary>Verifica se uma fase possui consequência de reenvio declarada.</summary>

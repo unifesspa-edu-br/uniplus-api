@@ -46,7 +46,7 @@ public sealed class ConhecimentoNaExigenciaTests
         conhecimento.Conhecido.Should().BeFalse();
         conhecimento.RecusaDaFase.Should().NotBeNull();
         conhecimento.RecusaDaFase!.Code.Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        conhecimento.RecusaDaFase.Message.Should().Contain("'INSCRICAO'").And.Contain("(ordem 2)").And.Contain("(ordem 1)");
+        conhecimento.RecusaDaFase.Message.Should().Contain("'Inscrição'").And.NotContain("INSCRICAO").And.Contain("(ordem 2)").And.Contain("(ordem 1)");
     }
 
     [Fact(DisplayName = "Com a marca na inscrição, a isenção e a inscrição acontecem juntas e o fato é conhecido")]

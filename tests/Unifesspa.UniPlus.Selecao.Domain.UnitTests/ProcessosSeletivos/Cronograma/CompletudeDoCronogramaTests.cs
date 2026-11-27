@@ -74,10 +74,10 @@ public sealed class CompletudeDoCronogramaTests
         semDataFinal.ItensDaCompletude(Utc).Single(static i => !i.Ok).Codigo.Should().Be("cronograma_fase_sem_definitivo_sem_data_final");
     }
 
-    [Fact(DisplayName = "A fase que não publica definitivo, de data definida na execução e sem data final, é recusada no fim, com o código do tipo de fase")]
+    [Fact(DisplayName = "A fase que não publica definitivo, de data definida na execução e sem data final, é recusada no fim, com o nome da fase")]
     public void ConferirCompletude_FaseSemDefinitivoSemDataFinal_RecusaNoFim()
     {
-        FaseDeclarada semDefinitivo = new ModeloDeFase("PROVA", 1).Declarar();
+        FaseDeclarada semDefinitivo = new ModeloDeFase("PROVA", 1) { Nome = "Prova escrita" }.Declarar();
         FaseDeclarada soComPreliminar = new ModeloDeFase("ANALISE", 2) { Inicio = ModeloDeFase.Abertura }.Publicando(Preliminar("RESULTADO")).Declarar();
 
         Cronograma(semDefinitivo, soComPreliminar).ConferirCompletude(Utc).Should().SatisfyRespectively(
@@ -85,7 +85,7 @@ public sealed class CompletudeDoCronogramaTests
             {
                 primeira.Field.Should().Be("fases[0].fim");
                 primeira.Error.Code.Should().Be("ProcessoSeletivo.FaseSemDefinitivoSemDataFinal");
-                primeira.Error.Message.Should().Contain("'PROVA'");
+                primeira.Error.Message.Should().Contain("'Prova escrita'").And.NotContain("PROVA");
             },
             static segunda => (segunda.Field, segunda.Error.Code).Should().Be(("fases[1].fim", "ProcessoSeletivo.FaseSemDefinitivoSemDataFinal")));
     }

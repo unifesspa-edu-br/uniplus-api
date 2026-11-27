@@ -56,7 +56,7 @@ internal static class ResolucaoDoPeriodoDeInscricao
         {
             return Result<DadosEdital>.Failure(new DomainError(
                 "ProcessoSeletivo.PeriodoInscricaoNaoInformavel",
-                $"O período de inscrição vem da janela da fase '{ancora.Codigo}' do cronograma e não pode ser informado na publicação."));
+                $"O período de inscrição vem da janela da fase {ancora.Citacao} do cronograma e não pode ser informado na publicação."));
         }
 
         return ancora is { Inicio: { } inicio, Fim: { } fim }

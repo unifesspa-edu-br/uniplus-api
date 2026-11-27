@@ -89,7 +89,7 @@ public sealed class ExigenciaDasBancasDaHomologacaoTests
             Error = new
             {
                 Code = CodigoDaHomologacao,
-                Message = "A fase 'HOMOLOGACAO_DAS_INSCRICOES' homologa as inscrições, e nem ela nem as etapas dela preveem banca que julgue a homologação das inscrições. Toda origem de candidatos exige essa banca. Acrescente-a à fase ou a uma etapa dela.",
+                Message = "A fase 'Fase de avaliação' homologa as inscrições, e nem ela nem as etapas dela preveem banca que julgue a homologação das inscrições. Toda origem de candidatos exige essa banca. Acrescente-a à fase ou a uma etapa dela.",
             },
         });
     }

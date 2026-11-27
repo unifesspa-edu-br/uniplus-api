@@ -21,7 +21,7 @@ internal static class FaseEmQueOFatoFicaConhecido
         conhecida.Recusa ?? (conhecida.Fase is { } fase && ordem.Posterior(fase, faseDaExigencia)
             ? new DomainError(
                 DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior,
-                $"O fato '{fato}' só é conhecido na fase '{fase.Codigo}' (ordem {fase.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).")
+                $"O fato '{fato}' só é conhecido na fase {fase.Citacao} (ordem {fase.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).")
             : null);
 
     private static FaseConhecida Resolver(IOrigensDoFato origens, OrdemDoCronograma ordem, string fato, HashSet<string> emAvaliacao)

@@ -59,7 +59,7 @@ public sealed class SegundaInstanciaNaoDecideAPrimeiraTests
         recusa.Field.Should().Be("fases[0].bancasRequeridas");
         recusa.Error.Code.Should().Be(CodigoDoRecursoSemBanca);
         recusa.Error.Message.Should().Be(
-            $"A fase '{Fase}' admite recurso de Homologação das inscrições, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel '{Papel}', e nem a fase nem as etapas dela têm banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
+            $"A fase '{NomeDaFase}' admite recurso de Homologação das inscrições, e nenhuma banca prevista o julga em 1ª instância: a fase não tem banca com o papel '{Papel}', e nem a fase nem as etapas dela têm banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
     }
 
     [Fact(DisplayName = "A etapa com recurso e só a banca de 2ª instância continua com recurso sem banca que o julgue em 1ª instância")]
@@ -72,7 +72,7 @@ public sealed class SegundaInstanciaNaoDecideAPrimeiraTests
         recusa.Field.Should().Be("etapas[0].bancas");
         recusa.Error.Code.Should().Be(CodigoDoRecursoSemBanca);
         recusa.Error.Message.Should().Be(
-            $"A etapa na posição 1 admite recurso de Nota da etapa, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase '{Fase}', em que ela acontece, têm banca com o papel '{Papel}', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
+            $"A etapa na posição 1 admite recurso de Nota da etapa, e nenhuma banca prevista o julga em 1ª instância: nem a etapa nem a fase '{NomeDaFase}', em que ela acontece, têm banca com o papel '{Papel}', e a etapa não tem banca que tenha avaliado esse item. Acrescente uma dessas bancas.");
     }
 
     [Fact(DisplayName = "O recurso sem procedimento declarado, com só a banca de 2ª instância, continua sem banca que o julgue")]
@@ -81,7 +81,7 @@ public sealed class SegundaInstanciaNaoDecideAPrimeiraTests
         Cenario cenario = Montar([FaseComRecurso(Fase, [], true, DaSegundaInstanciaNaFase())], []);
 
         QuemJulgaORecurso.SemBanca(cenario.Cronograma, cenario.Etapas).Should().ContainSingle().Which.Error.Message.Should().Be(
-            $"A fase '{Fase}' admite recurso sem procedimento declarado, e só uma banca com o papel '{Papel}' pode julgá-lo. Acrescente essa banca.");
+            $"A fase '{NomeDaFase}' admite recurso sem procedimento declarado, e só uma banca com o papel '{Papel}' pode julgá-lo. Acrescente essa banca.");
     }
 
     [Fact(DisplayName = "Pela conferência da configuração, só a banca de 2ª instância deixa o recurso sem banca, o item do painel vermelho e sem causa da 2ª instância")]

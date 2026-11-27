@@ -48,6 +48,7 @@ public sealed record FaseDeclarada
         Id = id;
         OrigemId = origem.OrigemId;
         Codigo = origem.Codigo;
+        Citacao = new CitacaoDaFase(origem.Nome);
         _decisoes = decisoes;
         Janela = new JanelaDeTempo(decisoes.Inicio, decisoes.Fim);
         DataFixadaNoEdital = origem.OrigemData == OrigemDataFase.NoEdital;
@@ -66,6 +67,8 @@ public sealed record FaseDeclarada
     public Guid OrigemId { get; }
 
     public string Codigo { get; }
+
+    public CitacaoDaFase Citacao { get; }
 
     public int Ordem => _decisoes.Ordem;
 

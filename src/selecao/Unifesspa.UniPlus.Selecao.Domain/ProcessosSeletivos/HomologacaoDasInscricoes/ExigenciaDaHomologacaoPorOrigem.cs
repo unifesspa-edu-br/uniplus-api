@@ -122,7 +122,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
 
     private static DomainError CicloIncompleto(FaseDeclarada fase) => new(
         ProcessoSeletivoErrorCodes.ImportacaoExternaSemJanelaDeRecurso,
-        $"A fase '{fase.Codigo}' homologa as inscrições e precisa publicar o resultado preliminar e o definitivo do resultado que a regra aponta, com o período de recurso iniciado pelo preliminar.");
+        $"A fase {fase.Citacao} homologa as inscrições e precisa publicar o resultado preliminar e o definitivo do resultado que a regra aponta, com o período de recurso iniciado pelo preliminar.");
 
     // Com nota do ENEM, cada regra aceita precisa conter a confirmação, inclusive quando está vazia.
     // A regra descartada pela leitura deixa a fase sem julgamento, e o item do painel permanece pendente.
@@ -148,7 +148,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
         CampoDasAlternativas,
         new DomainError(
             HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente,
-            $"O processo usa a nota do ENEM, e a regra de homologação da fase '{fase.Codigo}' não tem a confirmação do INEP entre as condições."));
+            $"O processo usa a nota do ENEM, e a regra de homologação da fase {fase.Citacao} não tem a confirmação do INEP entre as condições."));
 
     private enum EstadoDoCiclo
     {

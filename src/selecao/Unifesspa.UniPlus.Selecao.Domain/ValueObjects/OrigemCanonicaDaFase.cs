@@ -18,5 +18,13 @@ public sealed record OrigemCanonicaDaFase(
     bool ColetaSolicitacaoIsencao,
     bool OrganizadaEmChamadas)
 {
-    public string Nome { get; init; } = string.Empty;
+    public required string Nome
+    {
+        get;
+        init
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            field = value;
+        }
+    }
 }

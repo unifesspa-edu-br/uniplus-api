@@ -86,31 +86,31 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
     {
         ProcessoSeletivo processo = ProcessoComCronograma(
             HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(1, "RESULTADO"),
-            new ModeloDeFase("MATRICULA", 2) { ComUnidade = false }.Criar(),
-            new ModeloDeFase("RECURSO", 3) { ComUnidade = false }.Criar());
+            new ModeloDeFase("MATRICULA", 2) { ComUnidade = false, Nome = "Matrícula" }.Criar(),
+            new ModeloDeFase("RECURSO", 3) { ComUnidade = false, Nome = "Recurso" }.Criar());
         ContagemDePrazosDeTeste.DeclararConvencao(processo);
 
         DomainError? pendencia = Pendencia(processo);
 
         pendencia!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
-        pendencia.Message.Should().Contain("MATRICULA").And.NotContain("RECURSO");
+        pendencia.Message.Should().Contain("'Matrícula'").And.NotContain("'Recurso'").And.NotContain("MATRICULA");
     }
 
     [Fact(DisplayName = "A fase sem unidade é apontada pela posição na ordem do documento, e não pela ordem em que foi declarada")]
     public void Publicacao_FasesDeclaradasForaDeOrdem_ApontamAPosicaoNoDocumento()
     {
         ProcessoSeletivo processo = ProcessoComCronograma(
-            new ModeloDeFase("RECURSO", 3) { ComUnidade = false }.Criar(),
+            new ModeloDeFase("RECURSO", 3) { ComUnidade = false, Nome = "Recurso" }.Criar(),
             new ModeloDeFase("RESULTADO", 1).Criar(),
-            new ModeloDeFase("MATRICULA", 2) { ComUnidade = false }.Criar());
+            new ModeloDeFase("MATRICULA", 2) { ComUnidade = false, Nome = "Matrícula" }.Criar());
 
         IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
             ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors, OrigemNoDocumento.Identidade);
 
         causas.Where(static causa => causa.Error.Code == "ProcessoSeletivo.FaseSemUnidadeResponsavel").Select(static causa => (causa.Field, causa.Error.Message))
             .Should().SatisfyRespectively(
-                static primeira => (primeira.Field, primeira.Message.Contains("MATRICULA", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/1/unidadeResponsavelCodigo", true)),
-                static segunda => (segunda.Field, segunda.Message.Contains("RECURSO", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/2/unidadeResponsavelCodigo", true)));
+                static primeira => (primeira.Field, primeira.Message.Contains("'Matrícula'", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/1/unidadeResponsavelCodigo", true)),
+                static segunda => (segunda.Field, segunda.Message.Contains("'Recurso'", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/2/unidadeResponsavelCodigo", true)));
         processo.Declaracao().Cronograma.CronogramaFases.Select(static fase => fase.Codigo).Should().Equal("RESULTADO", "MATRICULA", "RECURSO");
     }
 

@@ -124,7 +124,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
 
         recusas.Should().ContainSingle().Which.Field.Should().Be("fases[0].fim");
         recusas.Single().Error.Code.Should().Be(RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada);
-        recusas.Single().Error.Message.Should().Contain("'INSCRICAO'").And.Contain("'HOMOLOGACAO'");
+        recusas.Single().Error.Message.Should().Contain("'Inscrição'").And.Contain("'Homologacao'").And.NotContain("INSCRICAO");
     }
 
     [Fact(DisplayName = "A fase sem definitivo, iniciada e encerrada, com só uma fase posterior distante iniciada, também não é prorrogada")]
@@ -137,7 +137,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         IReadOnlyList<FieldError> recusas = Conferir([prova, intermediaria, distante], [Prorrogada(prova), intermediaria, distante], Iniciadas(prova, distante));
 
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.ProrrogacaoComFasePosteriorIniciada);
-        recusas.Single().Error.Message.Should().Contain("'MATRICULA'");
+        recusas.Single().Error.Message.Should().Contain("'Matrícula'").And.NotContain("MATRICULA");
     }
 
     [Fact(DisplayName = "A fase nunca iniciada e encerrada é prorrogada, com ou sem fase posterior iniciada")]

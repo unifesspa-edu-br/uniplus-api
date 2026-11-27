@@ -20,7 +20,7 @@ internal sealed class PublicacaoDeDocumentoBuilder
     {
         FaseCronograma fase = _processo.CronogramaFases.Single();
         FaseCronograma semDatas = FaseCronograma.Reidratar(fase.Chave, fase.Id,
-            new(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao, fase.OrganizadaEmChamadas),
+            new(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao, fase.OrganizadaEmChamadas) { Nome = fase.TipoFaseNome },
             new(fase.Ordem, null, null, fase.UnidadeResponsavel),
             new([.. fase.Produtos], fase.EmiteParecerIndividual, fase.RegraRecurso, null, fase.RegraDeHomologacao), [.. fase.BancasRequeridas]);
         _processo.DefinirCronogramaFases([semDatas], []).IsSuccess.Should().BeTrue();

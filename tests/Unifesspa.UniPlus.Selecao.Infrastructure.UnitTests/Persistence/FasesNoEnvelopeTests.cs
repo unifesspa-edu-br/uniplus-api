@@ -112,6 +112,7 @@ public sealed class FasesNoEnvelopeTests
             ["id"] = Guid.Parse("11111111-1111-4111-8111-111111111111"),
             ["tipoFaseOrigemId"] = Guid.Parse("11111111-1111-4111-8111-111111111111"),
             ["codigo"] = "AVALIACAO",
+            ["tipoFaseNome"] = "Avaliação",
             ["inicio"] = inicio,
             ["fim"] = fim,
             ["coletaInscricao"] = false,

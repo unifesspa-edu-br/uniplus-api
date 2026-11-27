@@ -47,7 +47,7 @@ public sealed class MarcaNaPublicacaoPeloEndpointTests(CascadingFixture fixture)
         ErroDaRecusa erro = (await ErrosDaRecusaAsync(recusada)).Should().ContainSingle(e => e.Codigo == Prefixo + "fases_com_precedencia_no_mesmo_momento").Which;
         erro.Campo.Should().Be("/cronograma/fases/1/noMesmoMomentoDaAnterior");
         erro.Identificadores.Should().Equal(new ItemIdentificado("fases", Habilitacao));
-        erro.Mensagem.Should().Contain(ResultadoFinal).And.Contain(Habilitacao);
+        erro.Mensagem.Should().Contain("'Resultado final'").And.Contain("'Habilitação'").And.NotContain(ResultadoFinal).And.NotContain(Habilitacao, "a mensagem cita o nome da fase, nunca o código");
     }
 
     [Fact(DisplayName = "A precedência cadastrada depois da gravação recusa a publicação, e retirada do cadastro a publicação segue")]

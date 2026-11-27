@@ -103,13 +103,16 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "OrganizadaEmChamadas", "Inicio", "Fim",
                 "Produtos", "EmiteParecerIndividual",
                 "BancasRequeridas", "RegraRecurso", "UnidadeResponsavel", "TiposDeDecisao",
+                "TipoFaseNome", "RegraDeHomologacao",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("TipoFaseNome", "Nome copiado do cadastro, ainda não incluído no documento congelado."),
+                ("Citacao", "Derivada de TipoFaseNome — congelá-la duplicaria a fonte de verdade."),
                 ("ProduzResultado", "Derivada de Produtos — a fase produz resultado quando declara ao menos um produto com papel; congelá-la duplicaria a fonte de verdade."),
-                ("RegraDeHomologacao", "Ainda não entra no envelope congelado nem no hash."),
             ]),
+
+        // Citação da fase na mensagem de recusa: derivada de TipoFaseNome, nunca serializada.
+        [typeof(CitacaoDaFase)] = ([], [("Nome", "Derivada de TipoFaseNome da fase — congelá-la duplicaria a fonte de verdade.")]),
 
         // Regra de homologação das inscrições declarada pela fase.
         [typeof(RegraDeHomologacaoDasInscricoes)] = (

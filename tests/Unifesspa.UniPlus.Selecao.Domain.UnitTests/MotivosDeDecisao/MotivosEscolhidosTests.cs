@@ -32,7 +32,7 @@ public sealed class MotivosEscolhidosTests
         recusa.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
         recusa.Field.Should().Be("motivosDeDecisao");
         recusa.Error.Message.Should().Be(
-            "A fase 'INSCRICAO' tem o motivo RENDA_ACIMA_DO_LIMITE, desativado no cadastro depois de escolhido; troque-o antes de publicar.");
+            "A fase 'Inscrição' tem o motivo RENDA_ACIMA_DO_LIMITE, desativado no cadastro depois de escolhido; troque-o antes de publicar.");
     }
 
     [Fact(DisplayName = "O motivo pendente cujo motivo de origem não existe mais no cadastro é recusado como desativado")]
@@ -137,7 +137,7 @@ public sealed class MotivosEscolhidosTests
         IEnumerable<FieldError> recusas = OsMotivos(fora, aceito).Desativados(ProcessoParaMotivos.Lugares(processo));
 
         recusas.Select(static r => r.Error.Message).Should().SatisfyRespectively(
-            primeira => primeira.Should().Contain("Z_ACEITO").And.StartWith("A fase 'INSCRICAO'"),
+            primeira => primeira.Should().Contain("Z_ACEITO").And.StartWith("A fase 'Inscrição'"),
             segunda => segunda.Should().Contain("A_FORA").And.StartWith("O motivo A_FORA"));
     }
 
@@ -165,7 +165,7 @@ public sealed class MotivosEscolhidosTests
         FieldError recusa = OsMotivos(publicado).DeTipoNaoDeclarado(ProcessoParaMotivos.Lugares(processo)).Should().ContainSingle().Subject;
 
         recusa.Error.Message.Should().Be(
-            "A fase 'INSCRICAO' não declara o tipo de decisão ISENCAO_DA_TAXA do motivo RENDA_ACIMA_DO_LIMITE, que já consta do edital publicado e não pode ser retirado; declare o tipo de novo.");
+            "A fase 'Inscrição' não declara o tipo de decisão ISENCAO_DA_TAXA do motivo RENDA_ACIMA_DO_LIMITE, que já consta do edital publicado e não pode ser retirado; declare o tipo de novo.");
     }
 
     [Fact(DisplayName = "O motivo de tipo que o lugar declara não é recusado")]

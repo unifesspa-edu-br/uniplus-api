@@ -113,11 +113,12 @@ internal static class FasesNoEnvelope
         Guid id = leitor.Identificador(item, "id", caminho);
         Guid tipoId = leitor.Identificador(item, "tipoFaseOrigemId", caminho);
         string codigo = leitor.TextoNaoVazio(item, "codigo", caminho, LimitesDoEnvelope.FaseCodigo);
+        string nome = leitor.TextoNaoVazio(item, "tipoFaseNome", caminho, LimitesDoEnvelope.TipoFaseNome);
         UnidadeResponsavelSnapshot? unidade = LeituraDoCronograma.LerUnidadeResponsavel(leitor, item, caminho);
         JanelaDeTempo periodo = LerPeriodo(leitor, item, caminho);
         bool coleta = leitor.Booleano(item, "coletaInscricao", caminho);
         return leitor.Falhou ? null : new FaseDaVersaoPublicada(
-            id, tipoId, codigo, unidade?.OrigemId, periodo, coleta,
+            id, tipoId, codigo, nome, unidade?.OrigemId, periodo, coleta,
             [.. etapas.Where(e => string.Equals(e.FaseCodigo, codigo, StringComparison.Ordinal)).Select(static e => e.Etapa)]);
     }
 

@@ -28,7 +28,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         recusa.Field.Should().Be("fases[0].unidadeResponsavel");
         PonteiroNoDocumento.Converter(recusa.Field, OrigemNoDocumento.Identidade).Should().Be("/cronograma/fases/0/unidadeResponsavelCodigo");
         recusa.Error.Code.Should().Be(CodigoDaTroca);
-        recusa.Error.Message.Should().Contain("HABILITACAO").And.Contain("ordem 1");
+        recusa.Error.Message.Should().Contain("'Habilitação'").And.NotContain("HABILITACAO").And.Contain("ordem 1");
     }
 
     [Fact(DisplayName = "A fase iniciada mantida com a mesma unidade não é recusada")]
@@ -82,7 +82,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             [ComUnidade(resultado, UnidadesDeTeste.Cga), habilitacao, ComUnidade(classificacao, UnidadesDeTeste.Cga)]);
 
         recusas.Select(static r => r.Error.Message).Should().SatisfyRespectively(
-            static primeira => primeira.Should().Contain("CLASSIFICACAO"), static segunda => segunda.Should().Contain("RESULTADO"));
+            static primeira => primeira.Should().Contain("'Classificação'").And.NotContain("CLASSIFICACAO"), static segunda => segunda.Should().Contain("'Resultado'").And.NotContain("RESULTADO"));
         recusas.Select(static r => PonteiroNoDocumento.Converter(r.Field, OrigemNoDocumento.Identidade)).Should().Equal(
             "/cronograma/fases/1/unidadeResponsavelCodigo", "/cronograma/fases/2/unidadeResponsavelCodigo");
     }
@@ -98,7 +98,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         recusa.Field.Should().Be("cronograma.fases");
         PonteiroNoDocumento.Converter(recusa.Field, OrigemNoDocumento.Identidade).Should().Be("/cronograma/fases");
         recusa.Error.Code.Should().Be(CodigoDaRemocaoDaFase);
-        recusa.Error.Message.Should().Contain("HABILITACAO");
+        recusa.Error.Message.Should().Contain("'Habilitação'").And.NotContain("HABILITACAO");
     }
 
     [Fact(DisplayName = "Retirar a fase iniciada e recolocá-la na mesma retificação não é remoção")]
@@ -190,7 +190,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         (EtapaProcesso prova, EtapaProcesso heteroidentificacao, _) = TresEtapas();
         FasesIniciadas iniciadas = new(
             [KeyValuePair.Create<Guid, Guid?>(classificacao.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)],
-            [KeyValuePair.Create(habilitacao.FaseCanonicaOrigemId, habilitacao.Codigo)],
+            [KeyValuePair.Create(habilitacao.FaseCanonicaOrigemId, habilitacao.Citacao)],
             [new EtapaIniciada(heteroidentificacao.Id, heteroidentificacao.Nome, NaVersaoVigente: true)]);
 
         IReadOnlyList<FieldError> recusas = Conferencia(iniciadas, [ComUnidade(classificacao, UnidadesDeTeste.Cga)], [prova]);
@@ -228,7 +228,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
 
     private static FasesIniciadas Iniciadas(params FaseCronograma[] fases) => new(
         [.. fases.Select(static f => KeyValuePair.Create<Guid, Guid?>(f.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId))],
-        [.. fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.Codigo))]);
+        [.. fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.Citacao))]);
 
     private static FasesIniciadas IniciadasComEtapa(EtapaProcesso etapa) =>
         new([], etapas: [new EtapaIniciada(etapa.Id, etapa.Nome, NaVersaoVigente: true)]);

@@ -139,7 +139,7 @@ public static class FaseEfetivaDoFato
             : CitacoesDosFormularios.CitacaoNaoGarantida(
                 configuracao,
                 publicadas,
-                [($"a condição de aplicação de um documento exigido na fase '{ponto.Fase.Codigo}'", fato)],
+                [($"a condição de aplicação de um documento exigido na fase {ponto.Fase.Citacao}", fato)],
                 ponto.Formulario?.Codigo,
                 membroPorAgregado);
 

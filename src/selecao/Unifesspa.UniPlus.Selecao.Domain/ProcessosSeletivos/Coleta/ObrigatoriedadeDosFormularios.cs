@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A obrigatoriedade dos formulários por fase (UNI-REQ-0144). O processo com inscrição pelo sistema tem ao
@@ -100,7 +101,7 @@ public static class ObrigatoriedadeDosFormularios
             .OrderBy(static par => par.fase.Ordem)
             .Select(static par => new FieldError($"fases[{par.posicao}]", new DomainError(
                 FormularioProcessoErrorCodes.ChamadasSemFormularioObrigatorio,
-                $"A fase '{par.fase.Codigo}' é organizada em chamadas e precisa de ao menos um formulário obrigatório.")));
+                $"{CitacaoDaFase.ComArtigo(par.fase.Citacao)} é organizada em chamadas e precisa de ao menos um formulário obrigatório.")));
 
     private static IEnumerable<FieldError> RecusaDaPrimeiraFaseDepoisDaImportacao(ProcessoDosFormularios processo, IReadOnlyList<ColetaDoFormulario> coletas) =>
         processo.PrimeiraFaseDepoisDaImportacaoId is { } faseId && !coletas.Any(coleta => ObrigatorioNaFase(coleta, faseId))

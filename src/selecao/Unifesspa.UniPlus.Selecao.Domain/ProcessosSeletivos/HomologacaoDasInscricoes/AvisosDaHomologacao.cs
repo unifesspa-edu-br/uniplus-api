@@ -21,12 +21,12 @@ internal static class AvisosDaHomologacao
         [
             .. cronograma.Fases
                 .Where(static fase => fase.Atos.RegraDeHomologacao is { HomologaTodaInscricaoEnviada: true } && !fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao))
-                .Select(static fase => AvisoDaFase(fase.Codigo)),
+                .Select(static fase => AvisoDaFase(fase.Citacao)),
         ];
     }
 
-    private static AvisoConformidade AvisoDaFase(string codigoDaFase) => new(
+    private static AvisoConformidade AvisoDaFase(CitacaoDaFase fase) => new(
         CodigosDeAvisoDeConformidade.HomologacaoDasInscricoesSemCondicao,
         DimensaoConformidade.Cronograma,
-        $"A fase '{codigoDaFase}' homologa toda inscrição enviada, porque a regra de homologação não tem condição. Confirme que é isso que o edital prevê.");
+        $"A fase {fase} homologa toda inscrição enviada, porque a regra de homologação não tem condição. Confirme que é isso que o edital prevê.");
 }

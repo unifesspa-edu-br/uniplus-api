@@ -37,7 +37,7 @@ public sealed class ExigenciaDeBancaDeRecursoDoProcessoTests
         DomainError? pendencia = Pendencia(processo);
 
         pendencia!.Code.Should().Be("Cronograma.RecursoSemBanca");
-        pendencia.Message.Should().Contain("RESULTADO_FINAL");
+        pendencia.Message.Should().Contain("'Resultado final'").And.NotContain("RESULTADO_FINAL");
     }
 
     [Fact(DisplayName = "Fase com recurso e banca de análise de recursos declarada é aceita")]
