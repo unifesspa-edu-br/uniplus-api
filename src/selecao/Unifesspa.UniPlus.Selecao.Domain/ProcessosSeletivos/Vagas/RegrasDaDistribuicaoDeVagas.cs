@@ -44,17 +44,22 @@ public static class RegrasDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
+        if (RecusaDoNumeroDeOpcoes(numero) is { } recusa)
         {
-            return Result.ValidationFailure([new FieldError("numero", new DomainError(
-                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
-                "O número de opções de curso deve ser 1 ou 2."))]);
+            return Result.ValidationFailure([recusa]);
         }
 
         return OpcoesDeCursoAcimaDasOfertas(numero, configuracao.Vagas.DistribuicaoVagas.Count)
             ? Result.ValidationFailure([new FieldError("numero", ErroDeOpcoesDeCursoAcimaDasOfertas())])
             : Result.Success();
     }
+
+    internal static FieldError? RecusaDoNumeroDeOpcoes(int numero) =>
+        numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso
+            ? new FieldError("numero", new DomainError(
+                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
+                "O número de opções de curso deve ser 1 ou 2."))
+            : null;
 
     private static DomainError? DistribuicaoVazia(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao) =>
         distribuicao.Count == 0

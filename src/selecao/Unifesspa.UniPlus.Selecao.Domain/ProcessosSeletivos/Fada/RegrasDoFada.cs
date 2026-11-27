@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -22,16 +21,8 @@ internal static class RegrasDoFada
                 "Existe condição citando um município que deixaria a área do Fator de Atenuação das Desigualdades de Acesso (FADA) — ajuste ou remova a condição antes de redefinir o FADA.")
             : null);
 
-    private static DomainError? RecusaDaConfiguracao(bool aplica, ConfiguracaoDoFada? configuracaoDoFada) => (aplica, configuracaoDoFada) switch
-    {
-        (true, null) => new DomainError(
-            ProcessoSeletivoErrorCodes.FadaAplicaSemConfiguracao,
-            "O processo que aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) precisa da configuração do FADA."),
-        (false, not null) => new DomainError(
-            ProcessoSeletivoErrorCodes.FadaNaoAplicaComConfiguracao,
-            "O processo que não aplica o Fator de Atenuação das Desigualdades de Acesso (FADA) não pode ter a configuração do FADA."),
-        _ => null,
-    };
+    private static DomainError? RecusaDaConfiguracao(bool aplica, ConfiguracaoDoFada? configuracaoDoFada) =>
+        DeclaracaoDoFada.Recusa(aplica, configuracaoDoFada is not null);
 
     private static bool MunicipioCitadoForaDaArea(ConfiguracaoDeclarada configuracao, ConfiguracaoDoFada? configuracaoDoFada)
     {

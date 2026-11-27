@@ -67,6 +67,13 @@ public static class PonteiroNoDocumento
         ["distribuicaoVagas[].modalidadeIds"] = "distribuicaoVagas[].modalidades",
         ["distribuicaoVagas[].modalidadeIds[]"] = "distribuicaoVagas[].modalidades[].codigo",
 
+        // O que a distribuição recusa pelo nome do dado que confere: a quantidade de cada linha do quadro é a declarada na modalidade
+        // do documento, e o grupo de área do ENEM vem da oferta de curso citada.
+        ["distribuicaoVagas[].referenciaDemografica"] = "distribuicaoVagas[].referenciaDemograficaCodigo",
+        ["distribuicaoVagas[].regraDeAjuste"] = "distribuicaoVagas[].regraAjuste",
+        ["distribuicaoVagas[].quadro[].quantidade"] = "distribuicaoVagas[].modalidades[].quantidadeDeclarada",
+        ["distribuicaoVagas[].grupoAreaEnem"] = "distribuicaoVagas[].ofertaCursoCodigo",
+
         // A cascata: o destino final tem outro nome, e a ordem do destino não está no documento: a posição do destino na lista a define.
         ["ordemDeRemanejamento.fallbackCodigo"] = "ordemDeRemanejamento.destinoFinalCodigo",
         ["ordemDeRemanejamento.ordens[].ordem"] = "ordemDeRemanejamento.destinos[]",

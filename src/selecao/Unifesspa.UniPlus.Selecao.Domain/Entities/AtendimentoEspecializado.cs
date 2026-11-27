@@ -116,7 +116,7 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
             [.. condicoes.Select(static c => c.CondicaoOrigemId)],
             [.. recursos.Select(static r => r.RecursoOrigemId)],
             [.. tiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)]);
-        RecusarDeficienciaSemCondicaoPcd(recusas, condicoes, tiposDeficiencia);
+        recusas.AddRange(ValidarDeficienciaComCondicaoPcd(condicoes, tiposDeficiencia));
         return recusas.Count > 0
             ? Result<AtendimentoEspecializado>.ValidationFailure(recusas)
             : Result<AtendimentoEspecializado>.Success(new(condicoes, recursos, tiposDeficiencia));
@@ -147,14 +147,16 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         }
     }
 
-    private static void RecusarDeficienciaSemCondicaoPcd(
-        List<FieldError> recusas, IReadOnlyList<CondicaoOfertada> condicoes,
-        IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
+    /// <summary>Confere que tipos de deficiência só são ofertados com a condição PcD, sem depender dos recursos.</summary>
+    public static List<FieldError> ValidarDeficienciaComCondicaoPcd(
+        IReadOnlyList<CondicaoOfertada> condicoes, IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
     {
-        if (tiposDeficiencia.Count > 0 && !OfertaCondicaoPcd(condicoes))
-        {
-            recusas.Add(new("tipoDeficienciaIds", TipoDeficienciaSemCondicaoPcd));
-        }
+        ArgumentNullException.ThrowIfNull(condicoes);
+        ArgumentNullException.ThrowIfNull(tiposDeficiencia);
+
+        return tiposDeficiencia.Count > 0 && !OfertaCondicaoPcd(condicoes)
+            ? [new("tipoDeficienciaIds", TipoDeficienciaSemCondicaoPcd)]
+            : [];
     }
 
     private static bool OfertaCondicaoPcd(IReadOnlyList<CondicaoOfertada> condicoes) =>
