@@ -114,11 +114,11 @@ public sealed class CanonicalizerEProjecaoPuraTests
         BarrarEstadoExterno(Types().That().Are(tipos), "o quadro escrito no envelope é projeção pura (ADR-0109 D6)").Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "Controle: a regra de pureza reprova o handler que define o cronograma, que depende de repositório e de TimeProvider")]
+    [Fact(DisplayName = "Controle: a regra de pureza reprova o handler que gera o envio ao INEP, que depende de repositório e de TimeProvider")]
     public void Controle_RegraReprovaTipoQueDependeDeEstadoExterno()
     {
         GivenTypesConjunction handler = Types().That().HaveFullName(
-            "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.DefinirCronogramaFasesCommandHandler");
+            "Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem.GerarEnvioAoInepCommandHandler");
 
         foreach (string proibida in new[] { typeof(TimeProvider).FullName! })
         {
@@ -127,7 +127,7 @@ public sealed class CanonicalizerEProjecaoPuraTests
         }
 
         IEnumerable<EvaluationResult> porNome = Types().That().HaveFullName(
-            "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.DefinirCronogramaFasesCommandHandler")
+            "Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem.GerarEnvioAoInepCommandHandler")
             .Should().NotDependOnAnyTypesThat().HaveNameContaining("Repository").Evaluate(Arquitetura);
         porNome.Should().Contain(static r => !r.Passed);
     }

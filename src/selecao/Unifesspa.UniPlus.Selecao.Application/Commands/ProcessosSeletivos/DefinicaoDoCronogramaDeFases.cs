@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <summary>
 /// Define o cronograma de fases de um processo já travado para edição: monta as fases (ver
 /// <see cref="MontagemDasFases"/>), entrega ao domínio o grafo de precedências vigente como parâmetro, e não como
-/// navegação (ADR-0042), e delega a validação final ao agregado. O instante vem de quem chama, lido uma vez por
+/// navegação (ADR-0042), e delega a validação final ao agregado. O dia civil vem de quem chama, calculado uma vez por
 /// operação (ADR-0068), e vale para o tipo de ato vigente. A fase que sai leva junto os motivos dela e das etapas dela
 /// (<see cref="MotivosDosLugaresQueSaem"/>).
 /// </summary>
@@ -29,10 +29,10 @@ public sealed class DefinicaoDoCronogramaDeFases(
     MotivosDosLugaresQueSaem motivosDosLugaresQueSaem)
 {
     internal async Task<Result> DefinirAsync(
-        ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateOnly hoje, CancellationToken cancellationToken)
     {
         LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas);
-        Result definido = await MontarEDefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
+        Result definido = await MontarEDefinirAsync(processo, command, hoje, cancellationToken).ConfigureAwait(false);
         if (definido.IsSuccess)
         {
             await motivosDosLugaresQueSaem.RetirarAsync(processo, lugaresAntes, cancellationToken).ConfigureAwait(false);
@@ -43,9 +43,9 @@ public sealed class DefinicaoDoCronogramaDeFases(
 
     // O grafo de precedências é lido depois de as fases serem montadas, e só se elas vieram sem recusa.
     private async Task<Result> MontarEDefinirAsync(
-        ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateOnly hoje, CancellationToken cancellationToken)
     {
-        AtosConsultadosNaEdicao atos = new(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, agora);
+        AtosConsultadosNaEdicao atos = new(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, hoje);
         Result<List<FaseCronograma>> fases = await montagem.MontarAsync(processo, command.Fases, atos, cancellationToken).ConfigureAwait(false);
         if (fases.IsFailure)
         {

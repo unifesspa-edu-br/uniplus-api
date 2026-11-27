@@ -84,7 +84,7 @@ public sealed class MotivosDosLugaresQueSaemTests
 
         Result resultado = await DefinirEtapasCommandHandler.Handle(
             new DefinirEtapasCommand(processo.Id, [etapa]),
-            repositorio, DefinicaoDasEtapasComMotivos(repositorio, _motivos), _unitOfWork, TimeProvider.System, CancellationToken.None);
+            repositorio, DefinicaoDasEtapasComMotivos(repositorio, _motivos), _unitOfWork, InstantesDoRelogioDoSistema(), CancellationToken.None);
         return resultado;
     }
 

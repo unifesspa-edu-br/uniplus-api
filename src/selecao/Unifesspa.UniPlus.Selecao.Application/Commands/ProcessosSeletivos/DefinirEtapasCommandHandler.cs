@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 public static class DefinirEtapasCommandHandler
@@ -23,19 +25,19 @@ public static class DefinirEtapasCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDasEtapas definicao,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
+        LeituraDoInstanteDoComando instantes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(instantes);
 
         Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
-            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, instantes, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> DefinirEGravarAsync(
@@ -43,10 +45,24 @@ public static class DefinirEtapasCommandHandler
         DefinirEtapasCommand command,
         DefinicaoDasEtapas definicao,
         IUnitOfWork unitOfWork,
-        DateTimeOffset agora,
+        LeituraDoInstanteDoComando instantes,
         CancellationToken cancellationToken)
     {
-        Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
+        Result<InstanteDoComando> instante = instantes.Ler();
+        return instante.IsFailure
+            ? Result.Failure(instante.Error!)
+            : await GravarAsync(processo, command, definicao, unitOfWork, instante.Value.Dia, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> GravarAsync(
+        ProcessoSeletivo processo,
+        DefinirEtapasCommand command,
+        DefinicaoDasEtapas definicao,
+        IUnitOfWork unitOfWork,
+        DateOnly hoje,
+        CancellationToken cancellationToken)
+    {
+        Result definida = await definicao.DefinirAsync(processo, command, hoje, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();

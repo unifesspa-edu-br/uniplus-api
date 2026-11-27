@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
@@ -17,19 +19,19 @@ public static class DefinirCronogramaFasesCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDoCronogramaDeFases definicao,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
+        LeituraDoInstanteDoComando instantes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(instantes);
 
         Result<ProcessoSeletivo> obtido = await ProcessoSeletivoEmEdicao.ObterAsync(processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? Result.Failure(obtido.Error!)
-            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, instantes, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> DefinirEGravarAsync(
@@ -37,10 +39,16 @@ public static class DefinirCronogramaFasesCommandHandler
         DefinirCronogramaFasesCommand command,
         DefinicaoDoCronogramaDeFases definicao,
         IUnitOfWork unitOfWork,
-        DateTimeOffset agora,
+        LeituraDoInstanteDoComando instantes,
         CancellationToken cancellationToken)
     {
-        Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
+        Result<InstanteDoComando> instante = instantes.Ler();
+        if (instante.IsFailure)
+        {
+            return Result.Failure(instante.Error!);
+        }
+
+        Result definida = await definicao.DefinirAsync(processo, command, instante.Value.Dia, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
             return Result.ValidationFailure(definida.Errors);

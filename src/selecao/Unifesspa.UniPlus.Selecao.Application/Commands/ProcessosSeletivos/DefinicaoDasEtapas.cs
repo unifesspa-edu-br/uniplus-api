@@ -29,7 +29,7 @@ public sealed class DefinicaoDasEtapas(
     MotivosDosLugaresQueSaem motivosDosLugaresQueSaem)
 {
     internal async Task<Result> DefinirAsync(
-        ProcessoSeletivo processo, DefinirEtapasCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, DefinirEtapasCommand command, DateOnly hoje, CancellationToken cancellationToken)
     {
         Result payload = EscritaDasEtapasDoProcesso.Conferir(command.Etapas);
         if (payload.IsFailure)
@@ -38,7 +38,7 @@ public sealed class DefinicaoDasEtapas(
         }
 
         LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Das(processo.CronogramaFases, processo.Etapas);
-        Result substituida = await SubstituirAsync(NovaEdicao(processo, command, agora), cancellationToken).ConfigureAwait(false);
+        Result substituida = await SubstituirAsync(NovaEdicao(processo, command, hoje), cancellationToken).ConfigureAwait(false);
         if (substituida.IsSuccess)
         {
             await motivosDosLugaresQueSaem.RetirarAsync(processo, lugaresAntes, cancellationToken).ConfigureAwait(false);
@@ -47,12 +47,12 @@ public sealed class DefinicaoDasEtapas(
         return substituida;
     }
 
-    private EdicaoDasEtapas NovaEdicao(ProcessoSeletivo processo, DefinirEtapasCommand command, DateTimeOffset agora) =>
+    private EdicaoDasEtapas NovaEdicao(ProcessoSeletivo processo, DefinirEtapasCommand command, DateOnly hoje) =>
         new(
             processo,
             command,
             new CadastrosDasEtapas(tipoEtapaReader, tipoBancaReader, regraCatalogoReader),
-            new AtosConsultadosNaEdicao(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, agora));
+            new AtosConsultadosNaEdicao(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, hoje));
 
     private static async Task<Result> SubstituirAsync(EdicaoDasEtapas edicao, CancellationToken cancellationToken)
     {
