@@ -33,7 +33,7 @@ public static class SituacoesDaAprovacao
     /// <summary>Resolve um token textual (UPPER_SNAKE) à situação; <see langword="false"/> quando inválido.</summary>
     public static bool TryAnalisar(string? token, out SituacaoDaAprovacao situacao)
     {
-        if (!string.IsNullOrWhiteSpace(token) && DeToken.TryGetValue(token.Trim(), out SituacaoDaAprovacao resolvida))
+        if (token is not null && DeToken.TryGetValue(token, out SituacaoDaAprovacao resolvida))
         {
             situacao = resolvida;
             return true;
@@ -48,6 +48,5 @@ public static class SituacoesDaAprovacao
     public static SituacaoDaAprovacao Analisar(string? token) =>
         TryAnalisar(token, out SituacaoDaAprovacao situacao)
             ? situacao
-            : throw new ArgumentOutOfRangeException(
-                nameof(token), token, "Token de situação da aprovação da proteção fora do domínio fechado.");
+            : throw new ArgumentOutOfRangeException(nameof(token), "Token de situação da aprovação da proteção fora do domínio fechado.");
 }

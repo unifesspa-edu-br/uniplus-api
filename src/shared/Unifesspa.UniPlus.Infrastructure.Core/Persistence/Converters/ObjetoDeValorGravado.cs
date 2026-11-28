@@ -32,6 +32,11 @@ public static class ObjetoDeValorGravado
         }
     }
 
+    /// <summary>Como <see cref="DesserializarDocumento{T}"/>, mas o JSON <c>null</c> falha: coluna nula não vira coleção vazia.</summary>
+    public static T DesserializarDocumentoNaoNulo<T>(Func<T?> desserializacao, string nomeDoValor)
+        where T : class =>
+        DesserializarDocumento(desserializacao, nomeDoValor) ?? throw DadoInvalido(nomeDoValor, "documento JSON nulo");
+
     private static string MotivoDaFalhaDeLeitura(Exception erro) =>
         erro is JsonException ? "documento JSON inválido" : "valor fora do formato esperado";
 

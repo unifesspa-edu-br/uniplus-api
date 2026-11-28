@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -16,6 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed record CriarPesoAreaEnemCommand(
     string? Resolucao,
+    [property: VocabularioFechado(GrupoCurso.Tecnologica, GrupoCurso.HumanisticaI, GrupoCurso.HumanisticaII, GrupoCurso.SaudeEBiologicas)]
     string? GrupoCurso,
     IReadOnlyList<PesoAreaEnemAreaCommand>? Areas,
     string? BaseLegal) : ICommand<Result<Guid>>;

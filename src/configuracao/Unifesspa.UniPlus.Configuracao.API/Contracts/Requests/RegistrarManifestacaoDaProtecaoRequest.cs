@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Corpo da manifestação técnica sobre a proteção de um item com aprovação solicitada. Declara no contrato o

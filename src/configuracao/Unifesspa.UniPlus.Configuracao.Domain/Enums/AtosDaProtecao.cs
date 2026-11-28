@@ -39,7 +39,7 @@ public static class AtosDaProtecao
     /// <summary>Resolve um token textual ao ato; <see langword="false"/> quando inválido.</summary>
     public static bool TryAnalisar(string? token, out AtoDaProtecao ato)
     {
-        if (!string.IsNullOrWhiteSpace(token) && DeToken.TryGetValue(token.Trim(), out AtoDaProtecao resolvido))
+        if (token is not null && DeToken.TryGetValue(token, out AtoDaProtecao resolvido))
         {
             ato = resolvido;
             return true;
@@ -54,5 +54,5 @@ public static class AtosDaProtecao
     public static AtoDaProtecao Analisar(string? token) =>
         TryAnalisar(token, out AtoDaProtecao ato)
             ? ato
-            : throw new ArgumentOutOfRangeException(nameof(token), token, "Token de ato da proteção fora do domínio fechado.");
+            : throw new ArgumentOutOfRangeException(nameof(token), "Token de ato da proteção fora do domínio fechado.");
 }

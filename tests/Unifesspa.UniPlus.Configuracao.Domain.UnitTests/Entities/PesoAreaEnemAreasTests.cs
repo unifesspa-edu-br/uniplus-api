@@ -220,12 +220,16 @@ public sealed class PesoAreaEnemAreasTests
         ]);
     }
 
-    [Fact(DisplayName = "Código da área com espaço em volta é aceito, como resolução e grupo")]
-    public void Criar_CodigoComEspacos_Aceita()
+    [Theory(DisplayName = "Código da área com espaço em volta ou em outra caixa é recusado no campo do código")]
+    [InlineData("  MATEMATICA ")]
+    [InlineData("matematica")]
+    public void Criar_CodigoForaDoFormato_Recusa(string codigo)
     {
-        PesoAreaEnem peso = Criar(ComArea(4, new("  MATEMATICA ", 1.50m, null))).Value!;
+        Result<PesoAreaEnem> resultado = Criar(ComArea(4, new(codigo, 1.50m, null)));
 
-        peso.AreasDaLinha[4].Codigo.Should().Be(PesoAreaEnem.CodigoMatematica);
+        FieldError erro = resultado.Errors.Single(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaForaDoDominio);
+        erro.Field.Should().Be("areas[4].codigo");
+        erro.Error.Message.Should().NotContain(codigo);
     }
 
     [Fact(DisplayName = "Corte fora da faixa numa área que não é a Redação é recusado pela faixa")]

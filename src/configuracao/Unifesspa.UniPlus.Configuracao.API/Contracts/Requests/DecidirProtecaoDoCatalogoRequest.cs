@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;

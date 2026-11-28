@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+namespace Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Declara, na própria propriedade do contrato, o conjunto fechado de valores que ela
@@ -8,9 +8,9 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 /// <remarks>
 /// <para>
 /// Os valores são passados como argumentos, não lidos de um tipo do módulo. É o que permite
-/// a este atributo viver no shared: o vocabulário continua declarado onde a regra mora
-/// (uma constante do domínio de cada módulo), e chega aqui como constante de compilação,
-/// sem inverter a dependência.
+/// a este atributo viver no Kernel e ser usado nos pedidos de qualquer camada: o vocabulário continua
+/// declarado onde a regra mora (uma constante do domínio de cada módulo), e chega aqui como constante
+/// de compilação, sem inverter a dependência.
 /// </para>
 /// <para>
 /// Documenta o contrato; não valida a requisição. Quem recusa valor fora do vocabulário

@@ -37,6 +37,25 @@ public sealed class LeituraDoPredicadoGravadoTests
         mensagem.Should().NotContain("VALOR_FICTICIO_7F3A").And.NotContain("contribuir");
     }
 
+    [Fact(DisplayName = "O JSON null na coluna do predicado falha na leitura, sem virar lista vazia")]
+    public void LerPredicado_JsonNulo_Falha() =>
+        ConferirJsonNulo(() => PredicadoDnfColunaJson.Desserializar("null"), "PredicadoDnf");
+
+    [Fact(DisplayName = "O JSON null na coluna das regras padrão falha na leitura, sem virar lista vazia")]
+    public void LerRegras_JsonNulo_Falha() =>
+        ConferirJsonNulo(() => RegrasPadraoJson.Desserializar("null"), "RegraDerivacao");
+
+    private static void ConferirJsonNulo(Action leitura, string nome) =>
+        leitura.Should().Throw<InvalidOperationException>().Which.Message.Should().Be(
+            $"Dado inválido no banco ao reidratar {nome}: documento JSON nulo. Verifique se houve alteração manual da coluna fora do fluxo da aplicação.");
+
+    [Fact(DisplayName = "A lista vazia gravada como lista vazia continua valendo")]
+    public void Ler_ListaVazia_Vale()
+    {
+        PredicadoDnfColunaJson.Desserializar("[]").Should().NotBeNull();
+        RegrasPadraoJson.Desserializar("[]").Should().BeEmpty();
+    }
+
     [Theory(DisplayName = "JSON inválido não leva conteúdo nem causa")]
     [InlineData(true, "PredicadoDnf")]
     [InlineData(false, "RegraDerivacao")]
