@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -114,6 +115,22 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         _cenario.Processo.DocumentosExigidos.Select(static documento => documento.Chave.Valor)
             .Should().BeEquivalentTo("exigencia_laudo_medico", "exigencia_laudo_medico_2");
         _cenario.Processo.DocumentosExigidos.Should().Contain(documento => documento.Id == mantida.Id && documento.Chave == mantida.Chave);
+    }
+
+    [Fact(DisplayName = "A recusa de uma exigência que o modelo não substitui não é atribuída a um documento do modelo")]
+    public async Task Handle_ExigenciaMantidaRecusada_NaoApontaDocumentoDoModelo()
+    {
+        FaseCronograma inscricao = _cenario.FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
+        _cenario.DeclararAtendimentoEspecializado();
+        _cenario.Processo.DefinirDocumentosExigidosNosFormulariosMinimos([RegraDeComprovacao.CriarRegraDeDocumento(ExigenciaMantida(), 0).Value!]).IsSuccess.Should().BeTrue();
+        _cenario.Processo.DefinirFormulario(
+                FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.Habilitacao, inscricao.Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao))
+            .IsSuccess.Should().BeTrue();
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(DocumentoDoModelo("LAUDO_MEDICO", "PCD")));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+        resultado.Errors.Single().Field.Should().Be("modelo.conjuntoDeDocumentos");
     }
 
     private DocumentoExigido ExigenciaMantida() => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()

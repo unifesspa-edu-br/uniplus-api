@@ -17,19 +17,6 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 /// </summary>
 public sealed class ProcessoSeletivoFormularioDasExigenciasTests
 {
-    private static (ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Isencao) ProcessoComOsDoisFormularios()
-    {
-        FaseCronograma inscricao = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: true);
-        FaseCronograma isencao = FaseQueResponde(2, "SOLICITACAO_ISENCAO", inscricao: true, isencao: true);
-        ProcessoSeletivo processo = ProcessoComFases(inscricao, isencao);
-        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
-        processo.DefinirFormulario(
-                FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa))
-            .IsSuccess.Should().BeTrue();
-
-        return (processo, inscricao, isencao);
-    }
-
     [Fact(DisplayName = "A exigência de um formulário que o processo não tem é recusada")]
     public void DefinirDocumentosExigidos_FormularioInexistente_Recusa()
     {
@@ -73,8 +60,8 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
             Exigencia(isencao.Id, papel: PapelDoFormularioDeTeste.Inscricao));
 
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("exigencias[0].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase),
-            ("exigencias[2].codigoDoFormulario", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase));
+            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase),
+            ("regrasDeComprovacao[2].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase));
     }
 
     [Fact(DisplayName = "Na publicação, a exigência cujo formulário passou para outra fase é recusada")]

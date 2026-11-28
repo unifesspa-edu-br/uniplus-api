@@ -70,6 +70,20 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
             new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
+    /// <summary>Processo com o formulário da inscrição na primeira fase e o da isenção na segunda.</summary>
+    internal static (ProcessoSeletivo Processo, FaseCronograma Inscricao, FaseCronograma Isencao) ProcessoComOsDoisFormularios()
+    {
+        FaseCronograma inscricao = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: true);
+        FaseCronograma isencao = FaseQueResponde(2, "SOLICITACAO_ISENCAO", inscricao: true, isencao: true);
+        ProcessoSeletivo processo = ProcessoComFases(inscricao, isencao);
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+        processo.DefinirFormulario(
+                FormularioDeTeste.DeclaradoNoPapel(PapelDoFormularioDeTeste.IsencaoTaxa, isencao.Id), null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.IsencaoTaxa))
+            .IsSuccess.Should().BeTrue();
+
+        return (processo, inscricao, isencao);
+    }
+
     internal static RegraDeComprovacao RegraDeDocumentoDaFase(Guid exigidoNaFaseId, int ordem) =>
         RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(exigidoNaFaseId), ordem).Value!;
 

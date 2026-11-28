@@ -79,7 +79,7 @@ internal static class CausasQueImpedemCongelar
     // A precedência do cadastro só é julgada quando a operação a leu: a conferência da publicação a repete porque o cadastro muda entre gravar e publicar.
     private static IEnumerable<FieldError> Conjunto(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, PrecedenciasDosCadastros precedencias) =>
     [
-        .. DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos),
+        .. DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count)),
         .. cronograma.ConferirEstrutura(),
         .. precedencias.FoiLida ? cronograma.ConferirPrecedencia(precedencias.Arestas) : [],
         .. etapas.Conferir(),
@@ -90,7 +90,7 @@ internal static class CausasQueImpedemCongelar
     private static IEnumerable<FieldError> Completude(
         ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, ContextoDeContagemDePrazos contexto) =>
     [
-        .. DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos),
+        .. DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count)),
         .. EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas),
         .. etapas.ConferirCompletude(),
         .. cronograma.ConferirCronogramaExigidoPeloProcesso(configuracao.Identidade.OrigemCandidatos, configuracao.Vagas.HaVagasOfertadas),

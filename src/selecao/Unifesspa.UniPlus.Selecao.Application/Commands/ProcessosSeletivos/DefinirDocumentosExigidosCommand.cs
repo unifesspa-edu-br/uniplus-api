@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 /// <summary>
 /// Entrada de uma condição do gatilho DNF, usada por <see cref="AplicabilidadeDaExigenciaInput"/>.
@@ -55,7 +56,7 @@ public sealed record TipoDocumentoDaExigenciaInput(Guid Id);
 public sealed record MomentoDaExigenciaInput(Guid FaseId, Guid? EtapaId = null, [property: ObrigatorioNoContrato] string? FormularioCodigo = null)
 {
     /// <summary>O caminho do código do formulário no pedido.</summary>
-    public const string CaminhoDoFormulario = "momento.formularioCodigo";
+    public const string CaminhoDoFormulario = ConferenciaDasExigenciasDoFormulario.CaminhoDoFormulario;
 }
 
 /// <summary>

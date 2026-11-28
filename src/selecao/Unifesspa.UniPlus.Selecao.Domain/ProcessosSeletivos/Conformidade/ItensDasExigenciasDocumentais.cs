@@ -20,11 +20,11 @@ internal static class ItensDasExigenciasDocumentais
         .. ItensDasConsequenciasDoDescumprimento.Avaliar(configuracao, fatosDeModalidade),
     ];
     private static bool SemCausa(ConfiguracaoDeclarada configuracao, string codigo) =>
-        !DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos)
+        !DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count))
             .Any(causa => causa.Error.Code == codigo);
 
     private static bool ReferenciasResolvidas(ConfiguracaoDeclarada configuracao) =>
-        DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos).Count == 0
+        DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count)).Count == 0
         && SemCausa(configuracao, "DataDeReferenciaDoDocumento.DataDaFaseIndefinida")
         && SemCausa(configuracao, "DataDeReferenciaDoDocumento.FimDasInscricoesIndefinido");
 }

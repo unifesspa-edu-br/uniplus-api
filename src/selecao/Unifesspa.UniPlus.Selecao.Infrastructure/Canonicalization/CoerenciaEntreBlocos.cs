@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -70,7 +71,7 @@ internal static class CoerenciaEntreBlocos
         ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todasAsRegras, blocos.Coleta.GruposColetados);
 
     private static DomainError? PrimeiroVinculoInvalido(BlocosDoEnvelope blocos) =>
-        ValidadorVinculoDaExigencia.RecusasDosVinculos(blocos.Documentos.DocumentosExigidos, [.. blocos.Documentos.DocumentosExigidos.Select(static (_, posicao) => $"exigencias[{posicao}]")], blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas) is [var primeira, ..]
+        ValidadorVinculoDaExigencia.RecusasDosVinculos(blocos.Documentos.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", blocos.Documentos.DocumentosExigidos.Count), blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas) is [var primeira, ..]
             ? primeira.Error
             : null;
 
@@ -79,7 +80,9 @@ internal static class CoerenciaEntreBlocos
     // hash correto reidrataria exigência em formulário inexistente ou de outra fase.
     internal static DomainError? ExigenciaEmFormularioInvalido(IReadOnlyList<DocumentoExigido> exigencias, IReadOnlyList<FormularioProcesso> formularios) =>
         ConferenciaDasExigenciasDoFormulario.Conferir(
-            formularios.Select(static formulario => formulario.Declarado), [.. exigencias.Select(ExigenciaDeDocumentoDoFormulario.De)]).Count > 0
+            formularios.Select(static formulario => formulario.Declarado),
+            [.. exigencias.Select(ExigenciaDeDocumentoDoFormulario.De)],
+            CaminhosDasExigencias.NaLista("exigencias", exigencias.Count)).Count > 0
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'documentosExigidos.exigencias': uma exigência cita formulário que não está no envelope ou que é de outra fase.")
             : null;
 
