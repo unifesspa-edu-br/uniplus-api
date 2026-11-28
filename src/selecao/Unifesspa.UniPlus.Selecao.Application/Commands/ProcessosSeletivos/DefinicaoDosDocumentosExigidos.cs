@@ -43,8 +43,7 @@ internal static class DefinicaoDosDocumentosExigidos
             return Result.ValidationFailure(recusasDeVinculo);
         }
 
-        Result definida = processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
-        return definida.IsFailure ? Result.Failure(definida.Error!) : Result.Success();
+        return processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
     }
 
     // Somente os modelos do processo e os fatos necessários às regras são consultados.

@@ -49,7 +49,7 @@ public static class CriarProcessoSeletivoCommandHandler
             command, processoSeletivoRepository, verificador, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
 
         return novo.IsFailure
-            ? Result<Guid>.Failure(novo.Error!)
+            ? Result<Guid>.ValidationFailure(novo.Errors)
             : await GravarAsync(novo.Value!, processoSeletivoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
@@ -64,14 +64,14 @@ public static class CriarProcessoSeletivoCommandHandler
         Result<IdentificadorLegivel> identificador = await IdentificadorDeQuemPodeCriarAsync(command, verificador, cancellationToken).ConfigureAwait(false);
         if (identificador.IsFailure)
         {
-            return Result<ProcessoSeletivo>.Failure(identificador.Error!);
+            return Result<ProcessoSeletivo>.ValidationFailure(identificador.Errors);
         }
 
         Result<ReferenciasDoNovoProcesso> referencias = await ReferenciasDoNovoProcesso
             .ResolverAsync(command, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
 
         return referencias.IsFailure
-            ? Result<ProcessoSeletivo>.Failure(referencias.Error!)
+            ? Result<ProcessoSeletivo>.ValidationFailure(referencias.Errors)
             : await CriarSeOIdentificadorEstaLivreAsync(
                 command, identificador.Value!, referencias.Value!, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
     }

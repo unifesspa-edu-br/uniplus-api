@@ -53,7 +53,7 @@ internal static class LeituraDasFases
         null,
         new DomainError(
             FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
-            "A fase canônica citada pela fase não foi encontrada ou não está mais viva."));
+            "O tipo de fase citado pela fase não existe no catálogo ou foi removido."));
 
     private static FasesLidas NaOrdemDaConfiguracao(IReadOnlyList<FaseLida> lidas)
     {

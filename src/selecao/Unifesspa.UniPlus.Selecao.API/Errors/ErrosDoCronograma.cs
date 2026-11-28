@@ -84,7 +84,7 @@ internal static class ErrosDoCronograma
     ];
 
     /// <summary>
-    /// As recusas da declaração da fase. Os três "não encontrada" servem à resolução entre módulos da fase canônica, do tipo de banca e da categoria de documento,
+    /// As recusas da declaração da fase. Os três "não encontrada" servem à resolução entre módulos do tipo de fase, do tipo de banca e da categoria de documento,
     /// para o handler recusar um id que não resolve, no mesmo molde da oferta de curso e da regra de distribuição de vagas.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaFase() =>
@@ -93,7 +93,7 @@ internal static class ErrosDoCronograma
         new("FaseCronograma.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.janela_invertida", "A data de término do período da fase é anterior à data de início")),
         new("FaseCronograma.AtoDuplicadoNaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.ato_duplicado_na_fase", "A fase declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
         new("FaseCronograma.ParecerIndividualSemResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado", "A fase promete parecer individual e não publica nenhum resultado")),
-        new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
+        new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Tipo de fase não encontrado no catálogo ou removido")),
         new("FaseCronograma.TipoBancaNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.tipo_banca_nao_encontrado", "O tipo de banca não existe ou está desativado")),
         new("FaseCronograma.CategoriaDocumentoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.categoria_documento_nao_encontrada", "A categoria de documento dos candidatos atendidos não existe ou está desativada")),
     ];

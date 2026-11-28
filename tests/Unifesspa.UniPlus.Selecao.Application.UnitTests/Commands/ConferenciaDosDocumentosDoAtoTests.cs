@@ -31,6 +31,47 @@ public sealed class ConferenciaDosDocumentosDoAtoTests
         resultado.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.AnexoNomeInvalido);
     }
 
+    [Fact(DisplayName = "Documento principal inexistente é recusado apontando documentoPrincipalId, sem citar o identificador")]
+    public async Task ConferirAsync_PrincipalInexistente_ApontaOCampoDoPrincipal()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        Guid principalInexistente = Guid.CreateVersion7();
+
+        Result<DocumentosDoAtoConferidos> resultado = await ConferirAsync(processoId, principalInexistente, [], []);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("documentoPrincipalId");
+        recusa.Error.Code.Should().Be(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado);
+        recusa.Error.Message.Should().Be("O documento principal do ato deve ser um dos documentos deste processo.");
+    }
+
+    [Fact(DisplayName = "Anexo inexistente é recusado apontando a posição dele no pedido, sem citar o identificador")]
+    public async Task ConferirAsync_AnexoInexistente_ApontaOCampoDoAnexo()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        DocumentoAPublicar principal = Documento(processoId);
+        DocumentoAPublicar anexo = Documento(processoId);
+        AnexoSolicitadoDoAto[] pedidos = [new(anexo.Id, "Quadro"), new(Guid.CreateVersion7(), "Lista")];
+
+        Result<DocumentosDoAtoConferidos> resultado = await ConferirAsync(processoId, principal.Id, pedidos, [principal, anexo]);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("anexos[1].documentoId");
+        recusa.Error.Code.Should().Be(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado);
+        recusa.Error.Message.Should().Be("O documento do anexo deve ser um dos documentos deste processo.");
+    }
+
+    private static Task<Result<DocumentosDoAtoConferidos>> ConferirAsync(
+        Guid processoId, Guid principalId, AnexoSolicitadoDoAto[] pedidos, DocumentoAPublicar[] existentes)
+    {
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
+        documentos.ListarDoProcessoAsync(processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(existentes);
+        ConferenciaDosDocumentosDoAto conferencia = new(documentos, Substitute.For<IAtoDoProcessoRepository>());
+
+        return conferencia.ConferirAsync(processoId, principalId, pedidos, CancellationToken.None);
+    }
+
     private static DocumentoAPublicar Documento(Guid processoId)
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(

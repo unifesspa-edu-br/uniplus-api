@@ -72,15 +72,15 @@ public sealed class ReferenciasDoPredicado(
 
     internal static DomainError ModalidadeNaoEncontrada() => new(
         "ObrigatoriedadeLegal.ModalidadeNaoEncontrada",
-        "Modalidade não encontrada entre as modalidades vivas do cadastro.");
+        "A modalidade não existe no cadastro ou foi removida.");
 
     internal static DomainError TipoDocumentoNaoEncontrado() => new(
         "ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado",
-        "Tipo de documento não encontrado entre os tipos vivos do cadastro.");
+        "O tipo de documento não existe no cadastro ou foi removido.");
 
     internal static DomainError TipoDeficienciaNaoEncontrada() => new(
         "ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada",
-        "Tipo de deficiência não encontrado entre os tipos vivos do cadastro.");
+        "O tipo de deficiência não existe no cadastro ou foi removido.");
 
     internal static DomainError CriterioDesempateNaoEncontrado() => new(
         "ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado",

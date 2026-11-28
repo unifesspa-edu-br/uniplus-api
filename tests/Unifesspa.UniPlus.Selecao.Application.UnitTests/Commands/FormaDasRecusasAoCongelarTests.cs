@@ -31,12 +31,17 @@ public sealed class FormaDasRecusasAoCongelarTests
 {
     public static TheoryData<DefeitoDoCongelamento> RecusasDeErroUnico() =>
     [
-        DefeitoDoCongelamento.Documento,
         DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.TiposDeAtoCongelados,
-        DefeitoDoCongelamento.Anexos,
         DefeitoDoCongelamento.ConformidadeLegal,
     ];
+
+    public static TheoryData<DefeitoDoCongelamento, string> RecusasQueApontamOCampoDoPedido() =>
+    new()
+    {
+        { DefeitoDoCongelamento.Documento, "documentoEditalId" },
+        { DefeitoDoCongelamento.Anexos, "anexos[0].documentoId" },
+    };
 
     [Theory(DisplayName = "A recusa de uma conferência de erro único chega sem campo e sem eventos")]
     [MemberData(nameof(RecusasDeErroUnico))]
@@ -45,6 +50,16 @@ public sealed class FormaDasRecusasAoCongelarTests
         (Result resposta, IEnumerable<object> eventos) = await Para(OperacaoQueCongela.Publicar).Com(defeito).ExecutarAsync();
 
         resposta.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "A recusa do documento do edital e a do anexo chegam apontando o campo do pedido, sem eventos")]
+    [MemberData(nameof(RecusasQueApontamOCampoDoPedido))]
+    public async Task ConferenciaDoDocumento_ChegaComOCampoDoPedido(DefeitoDoCongelamento defeito, string campoEsperado)
+    {
+        (Result resposta, IEnumerable<object> eventos) = await Para(OperacaoQueCongela.Publicar).Com(defeito).ExecutarAsync();
+
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be(campoEsperado);
         eventos.Should().BeEmpty();
     }
 

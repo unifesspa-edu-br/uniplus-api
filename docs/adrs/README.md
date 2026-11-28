@@ -51,7 +51,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0020](0020-identity-brokering-govbr.md) | Identity brokering gov.br via Keycloak | accepted | 2026-05-01 |
 | [0021](0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) | Adoção de AwesomeAssertions como biblioteca de assertions de testes | accepted | 2026-05-02 |
 | [0022](0022-contrato-rest-canonico-umbrella.md) | Contrato REST canônico V1 — frame transversal e índice das ADRs filhas | accepted | 2026-05-03 |
-| [0023](0023-wire-formato-erro-rfc-9457.md) | Wire format de erro — RFC 9457 ProblemDetails como único formato — emendada em 2026-11-20: nas recusas da publicação e da retificação, o item de `errors[]` que aponta fase, etapa ou recurso da etapa traz `identificadores` | accepted | 2026-05-03 |
+| [0023](0023-wire-formato-erro-rfc-9457.md) | Wire format de erro — RFC 9457 ProblemDetails como único formato — emendada em 2026-11-20: nas recusas da publicação e da retificação, o item de `errors[]` que aponta fase, etapa ou recurso da etapa traz `identificadores`; emendada em 2026-11-27: a recusa do pedido de publicação ou de retificação aponta o campo do pedido em notação de pontos | accepted | 2026-05-03 |
 | [0024](0024-mapeamento-domain-error-http.md) | Mapeamento `DomainError → HTTP` via `IDomainErrorMapper` registry | accepted | 2026-05-03 |
 | [0025](0025-wire-formato-sucesso-body-direto.md) | Wire format de sucesso — body é a representação direta do recurso | accepted | 2026-05-03 |
 | [0026](0026-paginacao-cursor-opaco-cifrado.md) | Paginação via cursor opaco cifrado e propagação por `Link` header | accepted | 2026-05-03 |

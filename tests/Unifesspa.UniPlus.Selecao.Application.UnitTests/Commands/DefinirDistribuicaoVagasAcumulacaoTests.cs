@@ -186,6 +186,55 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         resultado.Errors.Take(2).Should().OnlyContain(erro => erro.Error.Code == "ConfiguracaoDistribuicaoVagas.QuadroModalidadeNaoSelecionada");
     }
 
+    [Fact(DisplayName = "A modalidade do quadro fora da seleção é citada pelo código e pela descrição do cadastro")]
+    public async Task QuadroComModalidadeNaoSelecionadaComDescricao_CitaCodigoEDescricao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        (Guid selecionada, Guid fora) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.ModalidadeReader.ObterPorIdAsync(fora, Arg.Any<CancellationToken>()).Returns(
+            NovaModalidadeAmpla(fora) with { Codigo = "LB_PPI", Descricao = "Reserva de vagas para pessoa de baixa renda" });
+        ConfiguracaoDistribuicaoVagasInput pedido = Pedido(
+            Guid.CreateVersion7(), "X", [selecionada], new QuantidadeVagaInput(selecionada, 10), new QuantidadeVagaInput(fora, 10));
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(mocks, processo, pedido);
+
+        FieldError recusa = resultado.Errors.Single(static erro => erro.Field == "distribuicaoVagas[0].quadro[1].modalidadeId");
+        recusa.Error.Message.Should().Be("A modalidade 'LB_PPI — Reserva de vagas para pessoa de baixa renda' do quadro deve estar entre as modalidades selecionadas da oferta.");
+        recusa.Error.Message.Should().NotContain(fora.ToString());
+    }
+
+    [Fact(DisplayName = "A modalidade do quadro fora da seleção, sem descrição, é citada só pelo código")]
+    public async Task QuadroComModalidadeNaoSelecionadaSemDescricao_CitaSoOCodigo()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        (Guid selecionada, Guid semDescricao) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.ModalidadeReader.ObterPorIdAsync(semDescricao, Arg.Any<CancellationToken>()).Returns(
+            NovaModalidadeAmpla(semDescricao) with { Codigo = "LB_PPI", Descricao = null });
+        ConfiguracaoDistribuicaoVagasInput pedido = Pedido(
+            Guid.CreateVersion7(), "X", [selecionada], new QuantidadeVagaInput(selecionada, 10), new QuantidadeVagaInput(semDescricao, 10));
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(mocks, processo, pedido);
+
+        FieldError recusa = resultado.Errors.Single(static erro => erro.Field == "distribuicaoVagas[0].quadro[1].modalidadeId");
+        recusa.Error.Message.Should().Be("A modalidade 'LB_PPI' do quadro deve estar entre as modalidades selecionadas da oferta.");
+    }
+
+    [Fact(DisplayName = "A modalidade do quadro fora da seleção, sem registro no cadastro, é recusada sem citação")]
+    public async Task QuadroComModalidadeNaoSelecionadaSemRegistro_NaoCitaAModalidade()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid selecionada = Guid.CreateVersion7();
+        ConfiguracaoDistribuicaoVagasInput pedido = Pedido(
+            Guid.CreateVersion7(), "X", [selecionada], new QuantidadeVagaInput(selecionada, 10), new QuantidadeVagaInput(Guid.CreateVersion7(), 10));
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(NovosMocks(processo, processo.Id), processo, pedido);
+
+        FieldError recusa = resultado.Errors.Single(static erro => erro.Field == "distribuicaoVagas[0].quadro[1].modalidadeId");
+        recusa.Error.Message.Should().Be("A modalidade do quadro deve estar entre as modalidades selecionadas da oferta.");
+    }
+
     [Fact(DisplayName = "A forma de todas as ofertas vem antes do cadastro, e todas as ofertas são resolvidas")]
     public async Task FormaDeTodasAsOfertas_VemAntesDoCadastro()
     {

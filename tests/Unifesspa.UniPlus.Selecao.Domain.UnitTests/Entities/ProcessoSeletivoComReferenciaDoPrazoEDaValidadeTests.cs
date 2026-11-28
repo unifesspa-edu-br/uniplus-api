@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -43,6 +44,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.requisitos.prazoDeEmissao.referencia");
         resultado.Error.Message.Should().Contain("do prazo de emissão");
     }
 
@@ -56,6 +58,7 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.requisitos.validade.referencia");
         resultado.Error.Message.Should().Contain("da validade");
     }
 
@@ -71,6 +74,33 @@ public sealed class ProcessoSeletivoComReferenciaDoPrazoEDaValidadeTests
 
         resultado.Errors.Select(static erro => erro.Error.Code).Should().Equal(
             DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso, DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso);
+        resultado.Errors.Select(static erro => erro.Field).Should().Equal("regrasDeComprovacao[0].documento.requisitos.prazoDeEmissao.referencia", "regrasDeComprovacao[0].documento.requisitos.validade.referencia");
+    }
+
+    [Fact(DisplayName = "O painel de conformidade marca como pendentes as escolhas ausentes, mesmo com a recusa apontando o campo")]
+    public void Painel_EscolhasAusentes_ContinuaPendente()
+    {
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        ProcessoSeletivo processo = ProcessoComFases(fase);
+        ExigirDocumentos(processo, ExigenciaComPrazoEValidade(fase.Id, null, null));
+
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
+
+        itens.Where(static item => item.Codigo is "exigencia_prazo_de_emissao_escolhido" or "exigencia_validade_escolhida")
+            .Select(static item => item.Ok).Should().Equal(false, false);
+        itens.Single(static item => item.Codigo == "exigencia_data_de_referencia_resolvida").Ok.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O painel de conformidade marca como pendente a data de referência indefinida, mesmo com a recusa apontando o campo")]
+    public void Painel_DataDaFaseIndefinida_ContinuaPendente()
+    {
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        ProcessoSeletivo processo = ProcessoComFases(fase);
+        ExigirDocumentos(processo, ExigenciaComPrazoEValidade(fase.Id, PrazoNoFimDaFase(fase.Id), null));
+
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo));
+
+        itens.Single(static item => item.Codigo == "exigencia_data_de_referencia_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Gravar exigência cujo prazo e validade referenciam fases do cronograma é aceito (contraprova)")]

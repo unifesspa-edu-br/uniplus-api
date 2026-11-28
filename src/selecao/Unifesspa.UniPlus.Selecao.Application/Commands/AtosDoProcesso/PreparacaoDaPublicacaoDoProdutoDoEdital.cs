@@ -43,7 +43,7 @@ public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
         Result<DocumentosDoAtoConferidos> conferidos = await documentos
             .ConferirAsync(command.ProcessoSeletivoId, command.DocumentoPrincipalId, command.Anexos ?? [], cancellationToken).ConfigureAwait(false);
         return conferidos.IsFailure
-            ? Result<AtoAPublicar>.Failure(conferidos.Error!)
+            ? Result<AtoAPublicar>.ValidationFailure(conferidos.Errors)
             : Result<AtoAPublicar>.Success(new(command, processo, produto.Tipo, conferidos.Value!, instante, produto.Item, produto.ContaId));
     }
 }

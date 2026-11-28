@@ -4169,7 +4169,7 @@
     {
       "codigo": "uniplus.selecao.atendimento_especializado.condicao_nao_encontrada",
       "status": 422,
-      "titulo": "Condição de atendimento não encontrada ou não está mais viva"
+      "titulo": "Condição de atendimento não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.atendimento_especializado.recurso_duplicado",
@@ -4179,7 +4179,7 @@
     {
       "codigo": "uniplus.selecao.atendimento_especializado.recurso_nao_encontrado",
       "status": 422,
-      "titulo": "Recurso de acessibilidade não encontrado ou não está mais vivo"
+      "titulo": "Recurso de acessibilidade não encontrado no cadastro ou removido"
     },
     {
       "codigo": "uniplus.selecao.atendimento_especializado.tipo_deficiencia_duplicado",
@@ -4189,7 +4189,7 @@
     {
       "codigo": "uniplus.selecao.atendimento_especializado.tipo_deficiencia_nao_encontrado",
       "status": 422,
-      "titulo": "Tipo de deficiência não encontrado ou não está mais vivo"
+      "titulo": "Tipo de deficiência não encontrado no cadastro ou removido"
     },
     {
       "codigo": "uniplus.selecao.atendimento_especializado.tipo_deficiencia_sem_condicao_pcd",
@@ -4874,7 +4874,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_encontrada",
       "status": 422,
-      "titulo": "Modalidade não encontrada ou não está mais viva"
+      "titulo": "Modalidade não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.modalidades_federais_incompletas",
@@ -4889,7 +4889,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.oferta_curso_nao_encontrada",
       "status": 422,
-      "titulo": "Oferta de curso não encontrada ou não está mais viva"
+      "titulo": "Oferta de curso não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.par_cruzado_nao_reciproco",
@@ -4954,7 +4954,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_nao_encontrada",
       "status": 422,
-      "titulo": "Referência de reserva demográfica não encontrada ou não está mais viva"
+      "titulo": "Referência de reserva demográfica não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_obrigatoria",
@@ -5554,7 +5554,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado",
       "status": 422,
-      "titulo": "Exigência CONDICIONAL sem condição viva que determina resultado nunca seria cobrada de ninguém"
+      "titulo": "Exigência CONDICIONAL sem condição ativa que determina resultado nunca seria cobrada de ninguém"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido.consequencia_do_descumprimento_invalida",
@@ -5639,7 +5639,7 @@
     {
       "codigo": "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado",
       "status": 422,
-      "titulo": "Tipo de documento não encontrado ou não está mais vivo"
+      "titulo": "Tipo de documento não encontrado no cadastro ou removido"
     },
     {
       "codigo": "uniplus.selecao.documento_exigido_base_legal.abrangencia_obrigatoria",
@@ -5874,7 +5874,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada",
       "status": 422,
-      "titulo": "Fase canônica não encontrada ou não está mais viva"
+      "titulo": "Tipo de fase não encontrado no catálogo ou removido"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.fase_iniciada_nao_sai_do_cronograma",
@@ -5924,7 +5924,7 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada",
       "status": 422,
-      "titulo": "Unidade responsável da fase não encontrada ou não está mais viva"
+      "titulo": "Unidade responsável da fase não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.fato_coletado.classificacao_protecao_invalida",
@@ -6919,7 +6919,7 @@
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.modalidade_nao_encontrada",
       "status": 422,
-      "titulo": "Modalidade não encontrada entre as vivas do cadastro"
+      "titulo": "Modalidade não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.modalidades_minimas_vazia",
@@ -6964,12 +6964,12 @@
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_deficiencia_nao_encontrada",
       "status": 422,
-      "titulo": "Tipo de deficiência não encontrado entre os vivos do cadastro"
+      "titulo": "Tipo de deficiência não encontrado no cadastro ou removido"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_documento_nao_encontrado",
       "status": 422,
-      "titulo": "Tipo de documento não encontrado entre os vivos do cadastro"
+      "titulo": "Tipo de documento não encontrado no cadastro ou removido"
     },
     {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo",
@@ -7769,7 +7769,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada",
       "status": 422,
-      "titulo": "Unidade administradora não encontrada ou não está mais viva"
+      "titulo": "Unidade administradora não encontrada no cadastro ou removida"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_sem_cidade",

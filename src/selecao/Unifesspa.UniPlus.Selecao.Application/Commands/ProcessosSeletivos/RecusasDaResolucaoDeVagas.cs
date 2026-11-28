@@ -5,10 +5,6 @@ using Kernel.Results;
 /// <summary>As recusas de cadastro com que a resolução de uma distribuição de vagas responde ao pedido.</summary>
 internal static class RecusasDaResolucaoDeVagas
 {
-    internal static DomainError OfertaNaoEncontrada(Guid ofertaCursoId) => new(
-        "ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada",
-        $"Oferta de curso {ofertaCursoId} não encontrada ou não está mais viva.");
-
     internal static DomainError RegraDeDistribuicaoNaoEncontrada() => new(
         "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada",
         "A regra de distribuição na versão informada não foi encontrada no catálogo de regras.");
@@ -25,15 +21,9 @@ internal static class RecusasDaResolucaoDeVagas
         "ConfiguracaoDistribuicaoVagas.RegraAjusteTipoInvalido",
         "A regra informada não é uma regra de ajuste da distribuição de vagas.");
 
-    internal static DomainError ReferenciaDemograficaNaoEncontrada(Guid referenciaId) => new(
-        "ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada",
-        $"Referência de reserva demográfica {referenciaId} não encontrada ou não está mais viva.");
-
-    internal static DomainError ModalidadeNaoEncontrada(Guid modalidadeId) => new(
-        "ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada",
-        $"Modalidade {modalidadeId} não encontrada ou não está mais viva.");
-
-    internal static DomainError QuadroModalidadeNaoSelecionada(Guid modalidadeId) => new(
+    internal static DomainError QuadroModalidadeNaoSelecionada(string? citacaoDaModalidade) => new(
         "ConfiguracaoDistribuicaoVagas.QuadroModalidadeNaoSelecionada",
-        $"A modalidade {modalidadeId} no quadro não está entre as modalidades selecionadas desta oferta.");
+        string.IsNullOrWhiteSpace(citacaoDaModalidade)
+            ? "A modalidade do quadro deve estar entre as modalidades selecionadas da oferta."
+            : $"A modalidade '{citacaoDaModalidade}' do quadro deve estar entre as modalidades selecionadas da oferta.");
 }

@@ -45,7 +45,7 @@ public sealed class ConferenciaDoAtoEDoDocumento(
             .ConfigureAwait(false);
 
         return documento.IsFailure
-            ? Result<AtoEDocumentoConferidos>.Failure(documento.Error!)
+            ? Result<AtoEDocumentoConferidos>.ValidationFailure(documento.Errors)
             : await ConferirOTipoEAVagaAsync(processoId, ato, documento.Value!, origem, cancellationToken).ConfigureAwait(false);
     }
 

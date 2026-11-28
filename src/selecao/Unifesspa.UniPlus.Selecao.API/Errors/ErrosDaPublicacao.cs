@@ -37,7 +37,7 @@ internal static class ErrosDaPublicacao
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> FasesDoCronogramaNaPublicacao() =>
     [
         new("ProcessoSeletivo.FaseSemUnidadeResponsavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel", "Toda fase do cronograma precisa de uma unidade responsável para o processo ser publicado")),
-        new("FaseCronograma.UnidadeResponsavelNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada", "Unidade responsável da fase não encontrada ou não está mais viva")),
+        new("FaseCronograma.UnidadeResponsavelNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada", "Unidade responsável da fase não encontrada no cadastro ou removida")),
     ];
 
     // As regras de contorno da janela de solicitação de isenção (UNI-REQ-0106).

@@ -36,7 +36,7 @@ public static class ProjecaoDaAvaliacaoDaInscricao
         {
             return Result<AvaliacaoDaInscricaoDto>.Failure(new DomainError(
                 InscricaoErrorCodes.FaseNaoEncontrada,
-                $"A fase {faseId} não está no cronograma da versão do formulário que a inscrição fixou."));
+                "A fase pedida deve ser uma das fases do cronograma da versão do formulário que a inscrição fixou."));
         }
 
         return Result<AvaliacaoDaInscricaoDto>.Success(AvaliacaoDaInscricaoDto.De(resultado, fases, acervo.DoModelo, arquivos));

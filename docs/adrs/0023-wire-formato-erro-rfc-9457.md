@@ -110,6 +110,14 @@ Extensions condicionais:
 > **Decisão.** `detail` e `errors[].message` identificam o item de catálogo pelo nome legível que o catálogo lhe dá no instante da recusa, nunca pelo código nem por identificador interno. O nome de um item de catálogo não é dado pessoal nem repete o valor enviado. Nenhum membro novo entra no corpo. Havendo vários itens recusados, a resposta traz uma causa por item. A causa que aponta um campo segue a posição do item no pedido ou no documento enviado; as causas sem `field`, dentro de cada tipo de recusa, seguem a ordem ordinal dos códigos do catálogo. Tipos de recusa diferentes não se reordenam entre si.
 >
 > **Consequências.** O cliente mostra a mensagem como veio. O nome é o do instante da recusa. As recusas que ainda citam código de catálogo se ajustam quando forem alteradas.
+>
+> **Emenda (2026-11-27) — a recusa do pedido de publicação ou de retificação aponta o campo do pedido.**
+>
+> **Contexto.** O documento do edital e os anexos do edital vêm no pedido de publicação ou de retificação, e não no documento da configuração. A emenda de 2026-11-17 deixava a recusa que não nasce de campo do documento sem `field`. Sem o identificador na mensagem, a pessoa não sabe qual documento ou anexo corrigir.
+>
+> **Decisão.** A recusa que nasce do pedido de publicação ou de retificação, fora do documento da configuração, aponta o campo do pedido em notação de pontos, sem ponteiro JSON: `documentoEditalId` para o documento do edital e `anexos[i].documentoId` para o anexo, em que `i` é a posição do anexo no pedido. Com vários anexos recusados, a resposta traz uma causa por anexo. A `message` diz o que se espera e nunca cita o identificador recebido. O código da modalidade é termo oficial do edital e pode ser citado, junto da descrição quando houver; isso ajusta a emenda de 2026-11-26 só nesse ponto.
+>
+> **Consequências.** O ponteiro JSON continua sendo só o campo do documento da configuração. O cliente localiza o anexo recusado pela posição que enviou.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 

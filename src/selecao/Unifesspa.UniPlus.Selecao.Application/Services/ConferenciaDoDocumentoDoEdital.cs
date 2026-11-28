@@ -15,6 +15,7 @@ public static class ConferenciaDoDocumentoDoEdital
 {
     public const string NaoEncontrado = "ProcessoSeletivo.DocumentoNaoEncontrado";
     public const string NaoConfirmado = "ProcessoSeletivo.DocumentoNaoConfirmado";
+    private const string CampoDoDocumento = "documentoEditalId";
     public const string FinalidadeIncompativel = "ProcessoSeletivo.DocumentoNaoEnviadoComoEdital";
 
     /// <param name="usoDoDocumento">Onde o documento é referenciado, para a mensagem: "na publicação", "na retificação"...</param>
@@ -29,12 +30,16 @@ public static class ConferenciaDoDocumentoDoEdital
         ArgumentException.ThrowIfNullOrWhiteSpace(usoDoDocumento);
 
         DocumentoAPublicar? documento = await repositorio.ObterPorIdAsync(documentoId, cancellationToken).ConfigureAwait(false);
-        if (documento is null || documento.ProcessoSeletivoId != processoSeletivoId)
-        {
-            return Result<DocumentoAPublicar>.Failure(new DomainError(
-                NaoEncontrado, $"Documento {documentoId} não encontrado ou não pertence a este processo."));
-        }
 
+        return documento is null || documento.ProcessoSeletivoId != processoSeletivoId
+            ? Result<DocumentoAPublicar>.ValidationFailure([new FieldError(
+                CampoDoDocumento,
+                new DomainError(NaoEncontrado, "O documento do edital deve ser um dos documentos deste processo."))])
+            : ConferirASituacao(documento, usoDoDocumento);
+    }
+
+    private static Result<DocumentoAPublicar> ConferirASituacao(DocumentoAPublicar documento, string usoDoDocumento)
+    {
         if (documento.Situacao != StatusArquivoEnviado.Confirmado)
         {
             return Result<DocumentoAPublicar>.Failure(new DomainError(

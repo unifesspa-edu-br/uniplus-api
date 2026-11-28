@@ -53,28 +53,11 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
 {
     /// <summary>
     /// As causas que saem daqui apontam o documento da configuração pelo ponteiro JSON (<see cref="PonteiroNoDocumento"/>), convertido
-    /// numa saída só: toda causa que a conferência acumula, de qualquer leitura, aprovação, configuração ou operação, passa por ela.
-    /// A causa que não aponta o documento (o ato, o edital, o cadastro) chega sem campo.
+    /// num lugar só, ao montar o resultado. A causa do pedido de publicação ou de retificação (os anexos do edital) não é do documento
+    /// e chega com o campo do pedido em notação de pontos, como em <c>anexos[0].documentoId</c>. A causa que não aponta campo
+    /// (o ato, o cadastro) chega sem campo.
     /// </summary>
     internal async Task<Result<ConfiguracaoConferida>> ConferirAsync(
-        ProcessoSeletivo processo,
-        EditalDeclarado edital,
-        AtoEDocumentoConferidos ato,
-        OrigemDoCongelamento origem,
-        CancellationToken cancellationToken)
-    {
-        Result<ConfiguracaoConferida> conferida = await JulgarAConfiguracaoAsync(processo, edital, ato, origem, cancellationToken).ConfigureAwait(false);
-
-        return conferida.IsFailure
-            ? Result<ConfiguracaoConferida>.ValidationFailure(NoDocumento(conferida.Errors, processo.Declaracao()))
-            : conferida;
-    }
-
-    // Os identificadores se tiram antes da conversão, porque leem o índice canônico que a causa emitiu e o ponteiro o troca pela posição de origem.
-    private static IReadOnlyList<FieldError> NoDocumento(IReadOnlyList<FieldError> causas, ConfiguracaoDeclarada declaracao) =>
-        PonteiroNoDocumento.Converter(IdentificacaoDosItensDaCausa.Identificar(causas, declaracao), declaracao.Origem);
-
-    private async Task<Result<ConfiguracaoConferida>> JulgarAConfiguracaoAsync(
         ProcessoSeletivo processo,
         EditalDeclarado edital,
         AtoEDocumentoConferidos ato,
@@ -84,7 +67,7 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         Result<LeiturasDoCongelamento> lidos = await LerOsCadastrosAsync(processo, ato, origem, cancellationToken).ConfigureAwait(false);
         if (lidos.IsFailure)
         {
-            return Result<ConfiguracaoConferida>.ValidationFailure(lidos.Errors);
+            return Result<ConfiguracaoConferida>.ValidationFailure(NoDocumento(lidos.Errors, processo.Declaracao()));
         }
 
         Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), lidos.Value!.Cadastros);
@@ -94,6 +77,10 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
 
         return Resultado(daConfiguracao, daOperacao, processo, ato, origem, lidos.Value);
     }
+
+    // Os identificadores se tiram antes da conversão, porque leem o índice canônico que a causa emitiu e o ponteiro o troca pela posição de origem.
+    private static IReadOnlyList<FieldError> NoDocumento(IReadOnlyList<FieldError> causas, ConfiguracaoDeclarada declaracao) =>
+        PonteiroNoDocumento.Converter(IdentificacaoDosItensDaCausa.Identificar(causas, declaracao), declaracao.Origem);
 
     // O fuso ausente é defeito de instalação (500), e não causa da configuração: recusa sozinho, sem ler os demais cadastros. O catálogo com a cópia refeita dos dados do item e os
     // tipos que a versão vigente já congelou são leituras independentes e acumulam as causas.
@@ -163,7 +150,13 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         OrigemDoCongelamento origem,
         LeiturasDoCongelamento lidos)
     {
-        IReadOnlyList<FieldError> causas = [.. lidos.CausasDaAprovacao, .. daConfiguracao.Errors, .. daOperacao.Causas];
+        ConfiguracaoDeclarada declaracao = processo.Declaracao();
+        IReadOnlyList<FieldError> causas =
+        [
+            .. NoDocumento([.. lidos.CausasDaAprovacao, .. daConfiguracao.Errors, .. daOperacao.CausasDosDocumentos], declaracao),
+            .. daOperacao.CausasDoPedido,
+            .. NoDocumento(daOperacao.CausasDosFatos, declaracao),
+        ];
 
         return causas.Count > 0
             ? Result<ConfiguracaoConferida>.ValidationFailure(causas)

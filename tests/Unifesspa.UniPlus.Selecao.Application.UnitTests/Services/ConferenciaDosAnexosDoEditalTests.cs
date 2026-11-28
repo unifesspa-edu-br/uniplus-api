@@ -70,7 +70,28 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
             [new AnexoSolicitadoDoEdital(Guid.CreateVersion7(), "Quadro")], []);
 
-        resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.NaoEncontrado);
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("anexos[0].documentoId");
+        recusa.Error.Code.Should().Be(AnexoDoEditalErrorCodes.NaoEncontrado);
+        recusa.Error.Message.Should().Be("O documento do anexo deve ser um dos documentos deste processo.");
+    }
+
+    [Fact(DisplayName = "Cada anexo recusado traz a sua recusa, apontando a posição dele no pedido")]
+    public async Task DocumentosInexistentes_AcumulamUmaRecusaPorAnexo()
+    {
+        DocumentoAPublicar existente = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
+
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
+            [
+                new AnexoSolicitadoDoEdital(Guid.CreateVersion7(), "Primeiro"),
+                new AnexoSolicitadoDoEdital(existente.Id, "Quadro"),
+                new AnexoSolicitadoDoEdital(Guid.CreateVersion7(), "Terceiro"),
+            ],
+            [],
+            existente);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("anexos[0].documentoId", "anexos[2].documentoId");
+        resultado.Errors.Should().OnlyContain(static e => e.Error.Code == AnexoDoEditalErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "Documento ainda pendente é recusado com erro nomeado")]

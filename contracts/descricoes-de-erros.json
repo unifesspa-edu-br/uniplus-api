@@ -13414,10 +13414,11 @@
         "UNI-REQ-0154"
       ],
       "oQueAconteceu": [
-        "Um dos anexos pedidos indica um documento a publicar que não existe ou pertence a outro\nprocesso seletivo. A conferência dos anexos acontece antes de qualquer gravação: versão,\nato e divulgação do edital são gravados juntos, e a recusa não deixa nada gravado. A\nmensagem de detalhe traz o identificador do documento."
+        "Um dos anexos pedidos indica um documento que não existe ou que pertence a outro processo seletivo. Cada anexo recusado vira uma recusa própria em `errors`, com o campo `anexos[n].documentoId`, na posição em que o anexo foi enviado; a mensagem não repete o identificador do documento.",
+        "A conferência dos anexos acontece antes de qualquer gravação: versão, ato e divulgação do edital são gravados juntos, e a recusa não deixa nada gravado."
       ],
       "comoResolver": [
-        "Liste os documentos do processo e use, em cada anexo, o identificador de um documento\nenviado com a finalidade `ANEXO_DO_EDITAL` neste processo. Se o arquivo ainda não foi enviado,\nfaça o envio e a confirmação antes e repita o pedido."
+        "Liste os documentos do processo e use, em cada anexo recusado, o identificador de um documento enviado com a finalidade `ANEXO_DO_EDITAL` neste processo. Se o arquivo ainda não foi enviado, faça o envio e a confirmação antes e repita o pedido."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -13627,7 +13628,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um identificador de `condicaoIds` não corresponde a uma condição de atendimento do cadastro de Configuração, ou ela foi removida depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `condicaoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "Um identificador de `condicaoIds` não corresponde a uma condição de atendimento do cadastro de Configuração, ou ela foi removida depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda existem no cadastro. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `condicaoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
         "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13659,7 +13660,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um identificador de `recursoIds` não corresponde a um recurso de acessibilidade do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `recursoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "Um identificador de `recursoIds` não corresponde a um recurso de acessibilidade do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda existem no cadastro. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `recursoIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
         "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13691,7 +13692,7 @@
         "UNI-REQ-0012"
       ],
       "oQueAconteceu": [
-        "Um identificador de `tipoDeficienciaIds` não corresponde a um tipo de deficiência do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda estão vivos. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `tipoDeficienciaIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
+        "Um identificador de `tipoDeficienciaIds` não corresponde a um tipo de deficiência do cadastro de Configuração, ou ele foi removido depois que a tela carregou a lista. O atendimento especializado do processo congela uma cópia do que existe nos cadastros no momento da definição, por isso só aceita itens que ainda existem no cadastro. Cada identificador sem cadastro é uma recusa própria em `errors`, com o campo do item na posição em que foi enviado (por exemplo, `tipoDeficienciaIds[0]`), sem repetir o identificador. As recusas do pedido vêm juntas, nesta ordem: repetições, tipo de deficiência sem a condição de pessoa com deficiência e, por último, os identificadores sem cadastro, de condições, de recursos e de tipos de deficiência.",
         "A recusa sai com **422**; o `code` da resposta é o da primeira violação. Nada foi gravado: o atendimento especializado anterior do processo continua como estava."
       ],
       "comoResolver": [
@@ -13928,7 +13929,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O documento principal ou um dos anexos indica um documento a publicar que não existe ou\npertence a outro processo seletivo. A mensagem de detalhe traz o identificador. A\nconferência acontece antes de qualquer gravação: o ato é registrado e divulgado na mesma\noperação, e a recusa não deixa nada gravado."
+        "O documento principal ou um dos anexos do ato indica um documento que não existe ou que pertence a outro processo seletivo. A recusa aponta o campo do pedido (`documentoPrincipalId` ou `anexos[n].documentoId`); a mensagem não repete o identificador do documento.",
+        "A conferência acontece antes de qualquer gravação: o ato é registrado e divulgado na mesma operação, e a recusa não deixa nada gravado."
       ],
       "comoResolver": [
         "Liste os documentos do processo e use o identificador de um documento enviado com a\nfinalidade `DOCUMENTO_DE_ATO` neste processo. Se o arquivo ainda não foi enviado, faça o envio\ne a confirmação antes e repita a publicação."
@@ -15970,12 +15972,11 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um dos `modalidadeIds` de uma distribuição de vagas do corpo do pedido não existe no\ncatálogo de modalidades de Configuração, ou existe mas não está mais viva.\nEsta consulta é a que resolve, para cada modalidade selecionada, os campos\nque este catálogo documenta como vindos do cadastro — `codigo`,\n`naturezaLegal`, `composicaoVagas`, `baseLegal`, e a coerência de\ncomposição/remanejamento (ver\n[`modalidade_selecionada.codigo_obrigatorio`](/erros/uniplus.selecao.modalidade_selecionada.codigo_obrigatorio)).\nSem essa resolução bem-sucedida, nenhum desses campos existe para conferir.",
-        "O processamento é sequencial: a **primeira** modalidade do array\n`modalidadeIds` cuja resolução falhar interrompe a passada — as modalidades\nseguintes do mesmo array, e as distribuições seguintes do mesmo corpo do pedido, não\nchegam a ser conferidas."
+        "Uma das modalidades de `modalidadeIds`, numa distribuição de vagas do pedido, não existe no cadastro de modalidades de Configuração ou foi removida. A recusa aponta o item (`modalidadeIds[n]`, na posição em que foi enviado) e a mensagem não repete o identificador. Sem essa resolução, os campos que o catálogo documenta como vindos do cadastro (`codigo`, `naturezaLegal`, `composicaoVagas`, `baseLegal` e a coerência de composição e remanejamento) não existem para conferir.",
+        "Todas as modalidades do pedido são conferidas: cada modalidade não encontrada vira uma recusa própria em `errors`, e as recusas de todas as distribuições saem juntas."
       ],
       "comoResolver": [
-        "Confirme, no catálogo de modalidades de Configuração, que cada `Id`\ndeclarado em `modalidadeIds` existe e está ativo. Se uma modalidade foi\ndesativada recentemente, ou o `Id` está incorreto, corrija o corpo do pedido antes\nde reenviar.",
-        "Como o processamento para na primeira modalidade com problema, corrigir\nesta e reenviar pode revelar uma nova falha numa modalidade seguinte do\nmesmo corpo do pedido — não é garantia de que o restante do corpo do pedido está correto."
+        "Confirme, no cadastro de modalidades de Configuração, que cada modalidade indicada em `modalidadeIds` existe. Se uma modalidade foi removida ou escolhida por engano, corrija o pedido antes de reenviar. Corrija também as demais recusas que a resposta trouxer."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -16018,12 +16019,11 @@
         "UNI-REQ-0134"
       ],
       "oQueAconteceu": [
-        "O `OfertaCursoId` de uma das distribuições de vagas do corpo do pedido não existe no\ncatálogo de ofertas de curso de Configuração, ou existe mas não está mais\nviva. Esta é a primeira consulta cross-módulo do processamento de cada\ndistribuição — roda antes de resolver a regra de distribuição, a referência\ndemográfica e as modalidades da mesma distribuição.",
-        "O processamento é sequencial por distribuição: a primeira distribuição do\ncorpo do pedido cuja oferta não resolve interrompe a passada — as distribuições\nseguintes do mesmo corpo do pedido não chegam a ser conferidas, e a resposta traz só\nesta violação, sem acumular com nenhuma outra."
+        "A oferta de curso (`ofertaCursoId`) de uma das distribuições de vagas do pedido não existe no cadastro de ofertas de curso de Configuração ou foi removida. A mensagem não repete o identificador. Esta é a primeira consulta a outro módulo na resolução de cada distribuição: roda antes de resolver a regra de distribuição, a referência demográfica e as modalidades da mesma distribuição.",
+        "As recusas de todas as distribuições do pedido são reunidas e saem juntas em `errors`, cada uma com o campo da distribuição a que pertence; uma distribuição recusada não impede a conferência das demais."
       ],
       "comoResolver": [
-        "Confirme, no catálogo de ofertas de curso de Configuração, que o\n`OfertaCursoId` declarado existe e está ativo. Se a oferta foi encerrada\nrecentemente, ou o `Id` está incorreto, corrija o corpo do pedido antes de reenviar.",
-        "Como o processamento para na primeira distribuição com problema, corrigir\nesta e reenviar pode revelar uma nova falha numa distribuição seguinte do\nmesmo corpo do pedido — não é garantia de que o restante do corpo do pedido está correto."
+        "Confirme, no cadastro de ofertas de curso de Configuração, que a oferta indicada existe. Se a oferta foi encerrada ou removida, ou foi escolhida por engano, corrija o pedido antes de reenviar. Corrija também as demais recusas que a resposta trouxer."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -16170,11 +16170,11 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_modalidade_nao_selecionada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma das entradas do bloco `quadro` do corpo do pedido traz um `ModalidadeId` que\nnão está entre os `modalidadeIds` selecionados na mesma distribuição. O\n`quadro` só declara quantidade para modalidades que a oferta de fato\nseleciona — uma entrada órfã, sem modalidade correspondente, não tem o que\ndescrever.",
-        "Esta é uma reconciliação de **Ids brutos do corpo do pedido**, sem consultar\nnenhum cadastro — roda antes de qualquer resolução contra o catálogo de\nmodalidades, logo depois de resolver a regra de ajuste (quando informada).\nNão acumula com nenhuma outra violação — é a primeira entrada órfã que\ninterrompe o processamento da distribuição."
+        "Uma das linhas do `quadro` do pedido traz uma modalidade que não está entre as `modalidadeIds` selecionadas na mesma distribuição. O `quadro` só declara quantidade para modalidades que a oferta seleciona; uma linha sem modalidade correspondente não tem o que descrever.",
+        "A recusa aponta a linha (`quadro[n].modalidadeId`) e a mensagem cita a modalidade pelo código do cadastro, seguido da descrição quando há. Para isso o sistema consulta o cadastro só das modalidades fora da seleção; se a modalidade não existe, a mensagem não a cita. Cada linha fora da seleção vira uma recusa própria, e esta conferência não impede as demais da distribuição."
       ],
       "comoResolver": [
-        "Remova do `quadro` qualquer entrada cujo `ModalidadeId` não esteja em\n`modalidadeIds`, ou inclua a modalidade correspondente em `modalidadeIds`\nse a intenção era selecioná-la."
+        "Remova do `quadro` a linha cuja modalidade não esteja em `modalidadeIds`, ou inclua a modalidade correspondente em `modalidadeIds`, se a intenção era selecioná-la."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -16266,12 +16266,11 @@
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `referenciaReservaDemograficaId` de uma das distribuições de vagas do\ncorpo do pedido não existe no catálogo de referências de reserva demográfica, ou\nexiste mas não está mais viva. A referência demográfica traz o Censo de\nreferência e os percentuais (PPI, quilombola, PcD) que fundamentam o\ncálculo do quadro de vagas no ramo federal — obrigatória quando a regra de\ndistribuição é a Lei 12.711 — a obrigatoriedade em si tem causa própria\n(`configuracao_distribuicao_vagas.referencia_demografica_obrigatoria`, ainda\nnão documentada neste catálogo).",
-        "Esta consulta só acontece quando o campo é informado — omiti-lo não dispara\neste código; a obrigatoriedade condicional ao ramo federal é conferida\nseparadamente. O processamento é sequencial por distribuição: a primeira\nque falhar interrompe a passada, sem acumular com nenhuma outra violação."
+        "A referência de reserva demográfica (`referenciaReservaDemograficaId`) de uma das distribuições de vagas do pedido não existe no cadastro de referências de reserva demográfica ou foi removida. A mensagem não repete o identificador. A referência demográfica traz o Censo de referência e os percentuais (PPI, quilombola, PcD) que fundamentam o cálculo do quadro de vagas no ramo federal; ela é obrigatória quando a regra de distribuição é a Lei 12.711, e essa obrigatoriedade tem causa própria (`configuracao_distribuicao_vagas.referencia_demografica_obrigatoria`).",
+        "Esta consulta só acontece quando o campo é informado: omiti-lo não dispara este código. As recusas de todas as distribuições do pedido são reunidas e saem juntas em `errors`."
       ],
       "comoResolver": [
-        "Confirme, no catálogo de referências de reserva demográfica, que o `Id`\ndeclarado existe e está ativo. Se a referência foi descontinuada\nrecentemente (um novo Censo, por exemplo), ou o `Id` está incorreto,\ncorrija o corpo do pedido antes de reenviar.",
-        "Como o processamento para na primeira distribuição com problema, corrigir\nesta e reenviar pode revelar uma nova falha numa distribuição seguinte do\nmesmo corpo do pedido — não é garantia de que o restante do corpo do pedido está correto."
+        "Confirme, no cadastro de referências de reserva demográfica, que a referência indicada existe. Se ela foi descontinuada (um novo Censo, por exemplo) ou removida, escolha outra e corrija o pedido antes de reenviar. Corrija também as demais recusas que a resposta trouxer."
       ],
       "ondeAparece": [
         "Definição de distribuição de vagas do processo seletivo"
@@ -16671,12 +16670,12 @@
       "codigo": "uniplus.selecao.configuracao_do_fada.base_legal_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe um\n`baseLegal.id` que não corresponde a nenhuma base legal ativa no cadastro de\nbases legais do fator, mantido no módulo Configuração. O identificador não existe ou a base\nlegal foi desativada; o sistema responde da mesma forma nos dois casos e não diz qual deles\nocorreu.",
+        "A declaração do Fator de Atenuação das Desigualdades de Acesso (`aplica: true`) trouxe um `baseLegal.id` que não corresponde a nenhuma base legal ativa no cadastro de bases legais do fator, mantido no módulo Configuração. A base legal não existe ou foi desativada; o sistema responde da mesma forma nos dois casos e não diz qual deles ocorreu. A recusa vem em `errors`, com o campo `baseLegal.id`, e a mensagem não repete o identificador.",
         "A base legal é o que traz o instrumento normativo e os municípios abrangidos pelo fator. A\ndeclaração copia esses dados do cadastro no momento em que é gravada.",
         "A conferência vem depois da regra\n([`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_do_fada.regra_nao_encontrada)\ne\n[`regra_tipo_invalido`](/erros/uniplus.selecao.configuracao_do_fada.regra_tipo_invalido))\ne antes dos valores do fator, do teto e do fato de elegibilidade. A primeira recusa\ninterrompe a declaração e nada é gravado."
       ],
       "comoResolver": [
-        "Confira, no cadastro de bases legais do Fator de Atenuação (Configuração), o identificador\nda base legal que o edital cita e se ela continua ativa. Se não houver base legal ativa para\no edital, cadastre uma antes de declarar o fator. Em seguida, reenvie a declaração com o\nidentificador correto.",
+        "Confira, no cadastro de bases legais do Fator de Atenuação (Configuração), a base legal que o edital cita e se ela continua ativa. Se não houver base legal ativa para o edital, cadastre uma antes de declarar o fator. Em seguida, reenvie a declaração com a base legal correta.",
         "Alterar depois a base legal no cadastro não muda o que o processo já declarou: para que o\nprocesso passe a usar a alteração, é preciso declarar o fator de novo."
       ],
       "ondeAparece": [
@@ -17602,7 +17601,7 @@
       "codigo": "uniplus.selecao.data_de_referencia_do_documento.data_da_fase_indefinida",
       "requisitos": [],
       "oQueAconteceu": [
-        "A data da fase de referência não foi definida."
+        "A fase usada como referência do prazo de emissão ou da validade de uma exigência documental não tem a data definida. A recusa aponta a referência e a mensagem cita o documento pelo nome. Na publicação e na retificação, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/prazoDeEmissao/referencia` ou `/documentosExigidos/exigencias/{n}/validade/referencia`."
       ],
       "comoResolver": [
         "Defina a data de início ou término da fase usada pela exigência."
@@ -17642,20 +17641,21 @@
       "codigo": "uniplus.selecao.data_de_referencia_do_documento.fase_nao_pertence_ao_processo",
       "requisitos": [],
       "oQueAconteceu": [
-        "A fase da referência não pertence ao processo."
+        "A fase da data de referência do prazo de emissão ou da validade de uma exigência documental não pertence ao cronograma do processo. A recusa aponta a referência e a mensagem cita o documento pelo nome; cada referência com defeito vira uma recusa própria. Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.requisitos.prazoDeEmissao.referencia` ou `regrasDeComprovacao[a].documento.requisitos.validade.referencia` (com `.itens[b]` depois de `regrasDeComprovacao[a]` no item de um grupo). Na publicação e na retificação, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/prazoDeEmissao/referencia` ou `/documentosExigidos/exigencias/{n}/validade/referencia`."
       ],
       "comoResolver": [
-        "Escolha uma fase do cronograma deste processo."
+        "Escolha, para a referência recusada, uma fase do cronograma deste processo."
       ],
       "ondeAparece": [
-        "Definição dos documentos exigidos do processo seletivo"
+        "Definição dos documentos exigidos do processo seletivo",
+        "Publicação e retificação do processo seletivo."
       ]
     },
     {
       "codigo": "uniplus.selecao.data_de_referencia_do_documento.fim_das_inscricoes_indefinido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O fim das inscrições não foi definido."
+        "A referência do prazo de emissão ou da validade de uma exigência documental é o fim das inscrições, e nenhuma fase que coleta inscrição tem o término definido. A recusa aponta a referência e a mensagem cita o documento pelo nome. Na publicação e na retificação, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/prazoDeEmissao/referencia` ou `/documentosExigidos/exigencias/{n}/validade/referencia`."
       ],
       "comoResolver": [
         "Defina o término de uma fase que coleta inscrição."
@@ -18420,8 +18420,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um documento exigido declara a fase em que é exigido e, opcionalmente, a etapa em que é\ncoletado, e a etapa tem de acontecer na mesma fase da exigência. Isso deixou de valer em uma\ndestas situações:",
-        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A mensagem de\n  detalhe diz que a etapa da exigência não acontece na fase e traz o nome dessa fase, sem o\n  identificador da etapa;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
-        "Na definição dos documentos, o sistema confere o vínculo de cada exigência nesta ordem: a fase,\no formulário a que o documento pertence, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo))\ne a etapa na fase. Esta é a última, e o primeiro defeito encontrado interrompe a definição."
+        "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A recusa aponta o campo `regrasDeComprovacao[a].documento.momento.etapaId` (ou `regrasDeComprovacao[a].itens[b].documento.momento.etapaId`, no item de um grupo), e a mensagem de detalhe cita a etapa pelo nome e a fase pela citação do cronograma, sem identificadores;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
+        "Na definição dos documentos, o sistema confere o vínculo de cada exigência: a fase, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo)) e a etapa na fase. Esta última só é conferida quando a fase e a etapa existem no processo. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`."
       ],
       "comoResolver": [
         "Na definição dos documentos, indique uma etapa que aconteça na fase do documento, ou mude a\nfase do documento para a da etapa.",
@@ -18436,12 +18436,11 @@
       "codigo": "uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo",
       "requisitos": [],
       "oQueAconteceu": [
-        "Um documento exigido pode indicar a etapa em que é coletado. A etapa indicada não está entre as\netapas deste processo.",
-        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a terceira dessas\nconferências: só roda se a fase e o formulário estiverem corretos, e é seguida pela\nconferência de que a etapa acontece na fase da exigência (ver\n[`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)).\nO primeiro defeito encontrado interrompe a definição.",
-        "A mensagem diz que a etapa da exigência não pertence ao processo; ela não traz o identificador\nda etapa."
+        "Um documento exigido pode indicar a etapa em que é coletado. A etapa indicada não está entre as etapas deste processo.",
+        "Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.momento.etapaId` ou, para o documento de um item de grupo, `regrasDeComprovacao[a].itens[b].documento.momento.etapaId`, com a posição da regra e a do item no corpo enviado. Ao ler uma configuração já gravada, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/etapaChave`. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`. Esta conferência vale mesmo quando a fase da exigência também foi recusada; só a conferência de que a etapa acontece na fase (ver [`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)) depende das duas. A mensagem diz que a etapa da exigência deve ser uma das etapas do processo e não traz o identificador da etapa."
       ],
       "comoResolver": [
-        "Na definição, indique uma etapa que seja deste processo ou retire a indicação de etapa do\ndocumento."
+        "Na definição, indique uma etapa que seja deste processo ou retire a indicação de etapa da exigência."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
@@ -18451,12 +18450,12 @@
       "codigo": "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo",
       "requisitos": [],
       "oQueAconteceu": [
-        "Todo documento exigido é exigido numa fase do cronograma do processo. A fase informada para o\ndocumento não está no cronograma deste processo.",
-        "Para cada exigência, o sistema confere o vínculo nesta ordem: a fase, o formulário a que o\ndocumento pertence, a etapa no processo e a etapa na fase. Esta é a primeira dessas\nconferências, e o primeiro defeito encontrado interrompe a definição. Na definição, ela vem\ndepois das conferências de forma e da montagem de cada exigência.",
-        "A mensagem diz que a fase da exigência não pertence ao cronograma do processo; ela não traz o\nidentificador da fase."
+        "Todo documento exigido é exigido numa fase do cronograma do processo. A fase indicada para a exigência não está no cronograma deste processo.",
+        "Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.momento.faseId` ou, para o documento de um item de grupo, `regrasDeComprovacao[a].itens[b].documento.momento.faseId`, com a posição da regra e a do item no corpo enviado. Ao ler uma configuração já gravada, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/faseChave`. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`. A mensagem diz que a fase da exigência deve ser uma das fases do cronograma do processo e não traz o identificador da fase.",
+        "Na definição, esta conferência vem depois das conferências de forma e da montagem de cada exigência."
       ],
       "comoResolver": [
-        "Na definição, informe uma fase que esteja no cronograma deste processo."
+        "Na definição, indique para cada exigência recusada uma fase que esteja no cronograma deste processo."
       ],
       "ondeAparece": [
         "Definição de documentos exigidos do processo seletivo"
@@ -19444,11 +19443,11 @@
       "codigo": "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada fase do cronograma do processo é uma cópia de uma fase canônica do cadastro\ndo módulo Configuração: dela vêm o código da fase, a origem da data, se a fase\ncoleta inscrição ou o pedido de isenção, se agrupa etapas e se permite\ncomplementação de documentos. O pedido de definição do cronograma\n(`PUT .../cronograma-fases`) citou, em `fases[n].faseCanonicaId`, um identificador\nque não corresponde a nenhuma fase canônica, ou que corresponde a uma fase que\nfoi removida do cadastro. A mensagem não repete o identificador; o campo\n`fases[n].faseCanonicaId` indica a fase recusada.",
-        "A recusa **interrompe a montagem do cronograma** na fase citada: sem a fase\ncanônica, não há de onde copiar nem como conferir o resto dessa fase. As fases\nanteriores da lista são montadas normalmente, e as violações que elas já tiveram\n(período, atos, bancas, por exemplo) saem na mesma resposta, no array `errors[]`; as\nfases seguintes não chegam a ser conferidas. Nada é gravado."
+        "Cada fase do cronograma do processo é uma cópia de um tipo de fase do catálogo do módulo Configuração: dele vêm o código da fase, a origem da data, se a fase coleta inscrição ou o pedido de isenção, se agrupa etapas e se permite complementação de documentos. O pedido de definição do cronograma (`PUT .../cronograma-fases`) indicou, em `fases[n].faseCanonicaId`, um tipo de fase que não existe no catálogo ou que foi removido. A mensagem não repete o identificador; o campo `fases[n].faseCanonicaId` indica a fase recusada.",
+        "A recusa **interrompe a montagem do cronograma** na fase citada: sem o tipo de fase, não há de onde copiar nem como conferir o resto dessa fase. As fases\nanteriores da lista são montadas normalmente, e as violações que elas já tiveram\n(período, atos, bancas, por exemplo) saem na mesma resposta, no array `errors[]`; as\nfases seguintes não chegam a ser conferidas. Nada é gravado."
       ],
       "comoResolver": [
-        "Confira, no cadastro de fases canônicas do módulo Configuração, o identificador\nda fase pretendida e use-o em `faseCanonicaId`. Se a fase certa foi removida do\ncadastro, peça a quem o gere que a restabeleça antes de repetir a definição do\ncronograma. Corrija também as demais violações que a resposta trouxer."
+        "Confira, no catálogo de tipos de fase do módulo Configuração, o tipo pretendido e use-o em `faseCanonicaId`. Se o tipo certo foi removido do catálogo, peça a quem o gere que o restabeleça antes de repetir a definição do cronograma. Corrija também as demais recusas que a resposta trouxer."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo"
@@ -19589,10 +19588,10 @@
       "codigo": "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Cada fase do cronograma pode indicar a unidade da Unifesspa que responde por ela. A unidade indicada para uma das fases não existe no cadastro de unidades ou foi desativada. A confirmação é feita no cadastro vivo, a cada definição do cronograma e de novo ao publicar o edital ou divulgar uma retificação, porque a unidade pode ter deixado de existir depois que foi escolhida. A mensagem diz qual fase não encontrou a unidade, sem repetir o identificador da unidade enviado. Nada foi gravado ou publicado."
+        "Cada fase do cronograma pode indicar a unidade da Unifesspa que responde por ela. A unidade indicada para uma das fases não existe no cadastro de unidades ou foi removida. A confirmação é feita no cadastro atual, a cada definição do cronograma e de novo ao publicar o edital ou divulgar uma retificação, porque a unidade pode ter deixado de existir depois que foi escolhida. A mensagem diz em qual fase a unidade não foi encontrada, pelo nome do tipo de fase, sem repetir o identificador da unidade. Nada foi gravado ou publicado."
       ],
       "comoResolver": [
-        "Escolha, na fase indicada, outra unidade que esteja viva no cadastro e repita a operação. Se a unidade certa foi desativada por engano, peça a quem mantém o cadastro de unidades que a reative. Com todas as fases apontando para unidades vivas, a definição e a publicação seguem normalmente."
+        "Escolha, na fase indicada, outra unidade que exista no cadastro e repita a operação. Se a unidade certa foi removida por engano, peça a quem mantém o cadastro de unidades que a restabeleça. Com todas as fases apontando para unidades existentes, a definição e a publicação seguem normalmente."
       ],
       "ondeAparece": [
         "Definição do cronograma de fases do processo seletivo",
@@ -21025,7 +21024,7 @@
       "codigo": "uniplus.selecao.inscricao.fase_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação prévia da inscrição pode ser restrita aos documentos de uma fase\ndo cronograma. A fase pedida não existe no cronograma da versão do formulário\nem que a inscrição está: a versão divulgada, enquanto é rascunho, ou a que o\nprimeiro envio congelou, depois dele. Por isso a fase pode constar no processo\nhoje e, ainda assim, não constar na versão da inscrição enviada."
+        "A avaliação prévia da inscrição pode ser restrita aos documentos de uma fase do cronograma. A fase pedida não existe no cronograma da versão do formulário em que a inscrição está: a versão divulgada, enquanto é rascunho, ou a que o primeiro envio congelou, depois dele. Por isso a fase pode constar no processo hoje e, ainda assim, não constar na versão da inscrição enviada. A mensagem não repete o identificador da fase."
       ],
       "comoResolver": [
         "Peça uma fase que conste no cronograma da versão da inscrição, ou omita a fase\npara receber os documentos de todas elas."
@@ -22966,12 +22965,12 @@
         "UNI-REQ-0018"
       ],
       "oQueAconteceu": [
-        "O predicado da regra legal cita uma **modalidade** por código, e esse código não\ncorresponde a nenhuma modalidade viva no cadastro. Costuma ser erro de digitação\nou referência a uma modalidade que foi removida.",
+        "O predicado da regra legal cita uma **modalidade** por código, e esse código não\ncorresponde a nenhuma modalidade do cadastro. Costuma ser erro de digitação\nou referência a uma modalidade que foi removida.",
         "Uma regra que cita modalidade inexistente nunca poderia ser satisfeita — nenhuma\noferta jamais casaria com aquele código. Antes desta validação, a regra era\naceita e a consequência aparecia lá adiante, na avaliação de conformidade do\nedital, longe de onde o erro foi cometido.",
         "Recusar no cadastro põe a mensagem onde o operador pode agir: no momento em que\nele escreve o código."
       ],
       "comoResolver": [
-        "Confira o código da modalidade no cadastro e corrija o predicado. As modalidades\nvivas estão em `GET /api/configuracao/modalidades`."
+        "Confira o código da modalidade no cadastro e corrija o predicado. As modalidades\ndo cadastro estão em `GET /api/configuracao/modalidades`."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -23128,14 +23127,14 @@
         "UNI-REQ-0018"
       ],
       "oQueAconteceu": [
-        "A exigência de atendimento disponível nomeia um **tipo de deficiência** por\ncódigo, e esse código não corresponde a nenhum tipo vivo no cadastro.",
+        "A exigência de atendimento disponível nomeia um **tipo de deficiência** por\ncódigo, e esse código não corresponde a nenhum tipo do cadastro.",
         "A comparação entre o que a regra exige e o que o processo oferece é feita pelo\ncódigo, caractere a caractere. Um código que não existe no cadastro não casaria\ncom oferta nenhuma, e a regra passaria a vida sem nunca ser satisfeita — sem que\nnada sinalizasse o defeito no momento em que ele foi introduzido.",
         "O nome é rótulo editorial e muda sem aviso. Renomear \"Deficiência visual\" para\n\"Visual\" faria toda regra escrita com o rótulo antigo deixar de casar, e a\ncláusula legal passaria a **reprovar processos conformes** — recusando a\npublicação de quem ofereceu exatamente o atendimento exigido.",
         "O código é o que o cadastro promete manter estável, e é o que a escrita da regra\nconfere."
       ],
       "comoResolver": [
-        "Confira o código do tipo de deficiência no cadastro e corrija o predicado. Os\ntipos vivos estão em `GET /api/configuracao/tipos-deficiencia`.",
-        "Diferença de espaço nas pontas ou de forma Unicode **não** é a causa deste erro:\no código é aparado e normalizado antes da busca, e gravado já normalizado —\njustamente para que a avaliação de conformidade, que compara de forma exata, não\ndeixe de casar depois. Se o erro apareceu, o código realmente não está entre os\ntipos vivos."
+        "Confira o código do tipo de deficiência no cadastro e corrija o predicado. Os\ntipos do cadastro estão em `GET /api/configuracao/tipos-deficiencia`.",
+        "Diferença de espaço nas pontas ou de forma Unicode **não** é a causa deste erro:\no código é aparado e normalizado antes da busca, e gravado já normalizado —\njustamente para que a avaliação de conformidade, que compara de forma exata, não\ndeixe de casar depois. Se o erro apareceu, o código realmente não está entre os\ntipos do cadastro."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -23148,11 +23147,11 @@
         "UNI-REQ-0018"
       ],
       "oQueAconteceu": [
-        "O predicado da regra legal exige um **tipo de documento** por código, e esse\ncódigo não corresponde a nenhum tipo vivo no cadastro.",
+        "O predicado da regra legal exige um **tipo de documento** por código, e esse\ncódigo não corresponde a nenhum tipo do cadastro.",
         "A comparação entre o que a regra exige e o que o edital oferece é feita pelo\ncódigo, caractere a caractere. Um código que não existe no cadastro não casaria\ncom exigência nenhuma, e a regra passaria a vida sem nunca ser satisfeita — sem\nque nada sinalizasse o defeito no momento em que ele foi introduzido."
       ],
       "comoResolver": [
-        "Confira o código do tipo de documento no cadastro e corrija o predicado. Os\ntipos vivos estão em `GET /api/configuracao/tipos-documento`."
+        "Confira o código do tipo de documento no cadastro e corrija o predicado. Os\ntipos do cadastro estão em `GET /api/configuracao/tipos-documento`."
       ],
       "ondeAparece": [
         "Cadastro de uma obrigatoriedade legal",
@@ -23413,7 +23412,7 @@
       "codigo": "uniplus.selecao.prazo_de_emissao.escolha_nao_declarada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O prazo de emissão não foi escolhido."
+        "A exigência documental não declarou se o documento tem prazo de emissão. A recusa aponta o campo `prazoDeEmissao` da exigência, e a mensagem cita o documento pelo nome. Na publicação e na retificação, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/prazoDeEmissao`."
       ],
       "comoResolver": [
         "Escolha se o documento tem prazo de emissão."
@@ -23958,7 +23957,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.documento_nao_encontrado",
       "requisitos": [],
       "oQueAconteceu": [
-        "O identificador indicado como documento do edital não corresponde a nenhum documento a\npublicar deste processo: ou o documento não existe, ou foi enviado para outro processo\nseletivo. A resposta não distingue os dois casos. A conferência acontece antes de qualquer gravação e é a\nmesma na publicação e na retificação em ato único.\nA recusa sai com **422**."
+        "O documento indicado como documento do edital (campo `documentoEditalId`) não existe ou foi enviado para outro processo seletivo. A resposta não distingue os dois casos e a mensagem não repete o identificador. A conferência acontece antes de qualquer gravação e é a mesma na publicação e na retificação em ato único.\nA recusa sai com **422**."
       ],
       "comoResolver": [
         "Use o identificador de um documento enviado, neste processo, com a finalidade de\ndocumento do edital. Se o arquivo ainda não foi enviado, faça o envio, confirme-o e\nrepita a operação com o identificador recebido. Um documento enviado para outro\nprocesso não serve: envie-o de novo neste.",
@@ -25817,12 +25816,12 @@
         "UNI-REQ-0098"
       ],
       "oQueAconteceu": [
-        "Ao criar o processo seletivo, o tipo de processo informado não existe no\ncadastro ou foi desativado. Só tipo ativo pode ser vinculado a um novo processo.\nA mensagem da resposta traz o identificador do tipo informado. Nada é criado.",
+        "Ao criar o processo seletivo, o tipo de processo informado em `tipoProcessoOrigemId` não existe no cadastro ou foi desativado. Só tipo ativo pode ser vinculado a um novo processo. A recusa vem em `errors`, com esse campo; a mensagem não repete o identificador. Nada é criado.",
         "A conferência do tipo vem depois das de permissão na unidade, de identificador\nlegível, de unidade administradora e de localidade do processo, e antes da de\nidentificador legível já em uso. Quando algum desses pontos anteriores também\nestá errado, é ele que responde primeiro.",
         "Desativar um tipo não afeta os processos que já o usam: o tipo só deixa de\nestar disponível para novos processos."
       ],
       "comoResolver": [
-        "Confira o identificador do tipo na listagem de tipos de processo e use o de um\ntipo ativo. Se o tipo desejado foi desativado, quem mantém o cadastro de tipos\nde processo pode reativá-lo; o código do tipo continua o mesmo."
+        "Confira o tipo na listagem de tipos de processo e use um tipo ativo. Se o tipo desejado foi desativado, quem mantém o cadastro de tipos de processo pode reativá-lo; o código do tipo continua o mesmo."
       ],
       "ondeAparece": [
         "Criação do processo seletivo"
@@ -25883,11 +25882,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "Ao criar o processo seletivo, a unidade administradora informada não foi\nencontrada no cadastro de unidades ou não está mais disponível nele, por\nexemplo porque foi removida. A mensagem da resposta traz o identificador\ninformado. Nada é criado.",
-        "A conferência acontece depois de a permissão de configurar processos naquela\nunidade ser verificada e de o identificador legível ser conferido, e antes das\nconferências de cidade da unidade, de localidade e de tipo do processo."
+        "Ao criar o processo seletivo, a unidade administradora informada em `unidadeAdministradoraOrigemId` não existe no cadastro de unidades ou foi removida. A recusa vem em `errors`, com esse campo; a mensagem não repete o identificador. Nada é criado.",
+        "A conferência acontece depois de a permissão de configurar processos naquela unidade ser verificada e de o identificador legível ser conferido, e antes das conferências de cidade da unidade, de localidade e de tipo do processo."
       ],
       "comoResolver": [
-        "Confira o identificador da unidade administradora e use o de uma unidade\ndisponível no cadastro. Se a unidade deveria existir e não aparece, o problema\nestá no cadastro de unidades e a verificação é de quem o mantém."
+        "Confira a unidade administradora escolhida e use uma unidade que exista no cadastro. Se a unidade deveria existir e não aparece, o problema está no cadastro de unidades e a verificação é de quem o mantém."
       ],
       "ondeAparece": [
         "Criação do processo seletivo"
@@ -26525,7 +26524,7 @@
       "codigo": "uniplus.selecao.referencia_temporal_fatos.fase_nao_pertence_ao_processo",
       "requisitos": [],
       "oQueAconteceu": [
-        "Os tipos `INICIO_FASE` e `FIM_FASE` da referência temporal dos fatos contam a idade do candidato a\npartir do início ou do fim de uma fase, e a fase informada não está no cronograma deste processo. A\nmensagem traz o identificador da fase recusada. Nada foi alterado.",
+        "Os tipos `INICIO_FASE` e `FIM_FASE` da referência temporal dos fatos contam a idade do candidato a\npartir do início ou do fim de uma fase, e a fase informada não está no cronograma deste processo. A\nrecusa vem em `errors`, com o campo `faseId`; a mensagem não repete o identificador da fase. Nada foi alterado.",
         "A referência temporal dos fatos é a política, no nível do processo, que define a referência para apurar a faixa\netária do candidato: de onde vem a data em que a idade é contada. Uma única política vale para todas\nas regras do processo que citam a idade. Ela é dada por um tipo (`FIM_INSCRICAO`, `INICIO_FASE`,\n`FIM_FASE` ou `DATA_ESPECIFICA`) e, conforme o tipo, por uma data ou por uma fase do cronograma. Para\nremover a referência, o pedido omite o tipo, a data e a fase; o tipo omitido com data ou fase presentes\né recusado antes, na validação do pedido, e não chega às conferências desta página.",
         "A conferência vem depois das de forma do tipo, da data e da fase\n([`fase_incoerente_com_tipo`](/erros/uniplus.selecao.referencia_temporal_fatos.fase_incoerente_com_tipo)),\ne depois da verificação de que a edição está liberada (processo em rascunho). Ela vale só para esses dois tipos; `FIM_INSCRICAO` e `DATA_ESPECIFICA` não\nusam fase. Quando a fase estava no cronograma na definição e saiu dele depois, a recusa é outra, na\npublicação\n([`referencia_temporal_fatos_fase_inexistente`](/erros/uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fase_inexistente))."
       ],
@@ -27855,7 +27854,7 @@
       "codigo": "uniplus.selecao.validade_do_documento.escolha_nao_declarada",
       "requisitos": [],
       "oQueAconteceu": [
-        "A validade do documento não foi escolhida."
+        "A exigência documental não declarou se o documento precisa estar válido. A recusa aponta o campo `validade` da exigência, e a mensagem cita o documento pelo nome. Na publicação e na retificação, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/validade`."
       ],
       "comoResolver": [
         "Escolha se o documento precisa estar válido."

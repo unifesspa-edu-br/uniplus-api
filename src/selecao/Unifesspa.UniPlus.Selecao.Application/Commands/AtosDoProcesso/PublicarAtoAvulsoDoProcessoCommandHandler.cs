@@ -38,7 +38,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result<AtoAPublicar> ato = await preparacao.PrepararAsync(command, cancellationToken).ConfigureAwait(false);
         return ato.IsFailure
-            ? (Result<AtoPublicadoDto>.Failure(ato.Error!), [])
+            ? (Result<AtoPublicadoDto>.ValidationFailure(ato.Errors), [])
             : await publicacao.PublicarAsync(ato.Value!, cancellationToken).ConfigureAwait(false);
     }
 }
