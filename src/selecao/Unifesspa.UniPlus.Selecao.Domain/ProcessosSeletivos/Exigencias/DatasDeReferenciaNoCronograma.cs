@@ -14,58 +14,78 @@ internal static class DatasDeReferenciaNoCronograma
 {
     private const string CampoDoPrazo = "do prazo de emissão";
     private const string CampoDaValidade = "da validade";
+    private const string NomeDoPrazo = "prazoDeEmissao";
+    private const string NomeDaValidade = "validade";
+    private const string DaReferencia = "referencia";
 
-    /// <summary>Uma recusa por exigência e campo cuja fase de referência não pertence ao cronograma.</summary>
-    internal static IReadOnlyList<FieldError> ConferirConjunto(IReadOnlyList<FaseCronograma> fases, IEnumerable<DocumentoExigido> documentos) =>
-        [.. documentos.SelectMany(documento => ReferenciasDoDocumento(documento)
+    /// <summary>
+    /// Uma recusa por exigência e campo cuja fase de referência não pertence ao cronograma. Os campos apontam
+    /// <c>exigencias[i]</c>, ou o caminho de <paramref name="caminhosDosRequisitos"/> (o dos requisitos de cada exigência no
+    /// pedido) quando informado.
+    /// </summary>
+    internal static IReadOnlyList<FieldError> ConferirConjunto(
+        IReadOnlyList<FaseCronograma> fases, IEnumerable<DocumentoExigido> documentos, IReadOnlyList<string>? caminhosDosRequisitos = null) =>
+        [.. documentos.SelectMany((documento, indice) => ReferenciasDoDocumento(documento)
             .Where(referenciada => referenciada.Referencia.FaseId is not null && !fases.Any(fase => referenciada.Referencia.UsaAFase(fase.Id)))
-            .Select(referenciada => new FieldError(null, new DomainError(
-                DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso,
-                $"A fase de referência {referenciada.Campo} do documento '{documento.TipoDocumentoNome}' não pertence ao cronograma deste processo."))))];
+            .Select(referenciada => new FieldError(
+                PonteiroDaReferencia(Prefixo(caminhosDosRequisitos, indice), referenciada.Nome),
+                new DomainError(
+                    DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso,
+                    $"A fase de referência {referenciada.Campo} do documento '{documento.TipoDocumentoNome}' não pertence ao cronograma deste processo."))))];
 
     internal static IReadOnlyList<FieldError> ConferirCompletude(IReadOnlyList<FaseCronograma> fases, IEnumerable<DocumentoExigido> documentos) =>
-        [.. documentos.SelectMany(documento => CompletudeDoDocumento(fases, documento))];
+        [.. documentos.SelectMany((documento, indice) => CompletudeDoDocumento(fases, documento, Prefixo(null, indice)))];
 
-    private static IEnumerable<FieldError> CompletudeDoDocumento(IReadOnlyList<FaseCronograma> fases, DocumentoExigido documento)
+    private static string Prefixo(IReadOnlyList<string>? caminhos, int indice) => caminhos is null ? $"exigencias[{indice}]" : caminhos[indice];
+
+    private static IEnumerable<FieldError> CompletudeDoDocumento(IReadOnlyList<FaseCronograma> fases, DocumentoExigido documento, string prefixo)
     {
         if (documento.PrazoDeEmissao is null)
-            yield return Recusa("PrazoDeEmissao.EscolhaNaoDeclarada", documento, CampoDoPrazo, "Faça a escolha");
-        else if (documento.PrazoDeEmissao.Referencia is { } prazo && RecusaDaReferencia(fases, documento, CampoDoPrazo, prazo) is { } recusaDoPrazo)
+            yield return RecusaDaEscolha("PrazoDeEmissao.EscolhaNaoDeclarada", documento, prefixo, (CampoDoPrazo, NomeDoPrazo));
+        else if (documento.PrazoDeEmissao.Referencia is { } prazo && RecusaDaReferencia(fases, documento, prefixo, (CampoDoPrazo, NomeDoPrazo, prazo)) is { } recusaDoPrazo)
             yield return recusaDoPrazo;
         if (documento.Validade is null)
-            yield return Recusa("ValidadeDoDocumento.EscolhaNaoDeclarada", documento, CampoDaValidade, "Faça a escolha");
-        else if (documento.Validade.Referencia is { } validade && RecusaDaReferencia(fases, documento, CampoDaValidade, validade) is { } recusaDaValidade)
+            yield return RecusaDaEscolha("ValidadeDoDocumento.EscolhaNaoDeclarada", documento, prefixo, (CampoDaValidade, NomeDaValidade));
+        else if (documento.Validade.Referencia is { } validade && RecusaDaReferencia(fases, documento, prefixo, (CampoDaValidade, NomeDaValidade, validade)) is { } recusaDaValidade)
             yield return recusaDaValidade;
     }
 
-    private static FieldError? RecusaDaReferencia(IReadOnlyList<FaseCronograma> fases, DocumentoExigido documento, string campo, DataDeReferenciaDoDocumento referencia)
+    private static FieldError? RecusaDaReferencia(
+        IReadOnlyList<FaseCronograma> fases, DocumentoExigido documento, string prefixo, (string Campo, string Nome, DataDeReferenciaDoDocumento Referencia) referenciada)
     {
+        DataDeReferenciaDoDocumento referencia = referenciada.Referencia;
+        string ponteiro = PonteiroDaReferencia(prefixo, referenciada.Nome);
         if (referencia.Tipo == TipoDaDataDeReferencia.FimDasInscricoes && !fases.Any(static fase => fase.ColetaInscricao && fase.Fim.HasValue))
-            return Recusa("DataDeReferenciaDoDocumento.FimDasInscricoesIndefinido", documento, campo, "Defina o término de uma fase que coleta inscrição");
+            return Recusa(ponteiro, "DataDeReferenciaDoDocumento.FimDasInscricoesIndefinido", documento, referenciada.Campo, "Defina o término de uma fase que coleta inscrição");
         FaseCronograma? fase = fases.FirstOrDefault(fase => referencia.UsaAFase(fase.Id));
         if (fase is not null && ((referencia.Tipo == TipoDaDataDeReferencia.InicioDaFase && fase.Inicio is null)
             || (referencia.Tipo == TipoDaDataDeReferencia.FimDaFase && fase.Fim is null)))
-            return Recusa("DataDeReferenciaDoDocumento.DataDaFaseIndefinida", documento, campo, "Defina a data da fase de referência");
+            return Recusa(ponteiro, "DataDeReferenciaDoDocumento.DataDaFaseIndefinida", documento, referenciada.Campo, "Defina a data da fase de referência");
         return null;
     }
 
-    private static FieldError Recusa(string codigo, DocumentoExigido documento, string campo, string orientacao) =>
-        new(null, new DomainError(codigo, $"{orientacao} {campo} do documento '{documento.TipoDocumentoNome}'."));
+    private static FieldError RecusaDaEscolha(string codigo, DocumentoExigido documento, string prefixo, (string Campo, string Nome) campo) =>
+        Recusa($"{prefixo}.{campo.Nome}", codigo, documento, campo.Campo, "Faça a escolha");
+
+    private static FieldError Recusa(string ponteiro, string codigo, DocumentoExigido documento, string campo, string orientacao) =>
+        new(ponteiro, new DomainError(codigo, $"{orientacao} {campo} do documento '{documento.TipoDocumentoNome}'."));
+
+    private static string PonteiroDaReferencia(string prefixo, string nome) => $"{prefixo}.{nome}.{DaReferencia}";
 
     /// <summary>O campo da exigência (prazo de emissão ou validade) que usa a fase como referência; nulo quando nenhum usa.</summary>
     internal static string? CampoQueUsaAFase(DocumentoExigido documento, Guid faseId) =>
         ReferenciasDoDocumento(documento).FirstOrDefault(referenciada => referenciada.Referencia.UsaAFase(faseId)).Campo;
 
-    private static IEnumerable<(string Campo, DataDeReferenciaDoDocumento Referencia)> ReferenciasDoDocumento(DocumentoExigido documento)
+    private static IEnumerable<(string Campo, string Nome, DataDeReferenciaDoDocumento Referencia)> ReferenciasDoDocumento(DocumentoExigido documento)
     {
         if (documento.PrazoDeEmissao?.Referencia is { } doPrazo)
         {
-            yield return (CampoDoPrazo, doPrazo);
+            yield return (CampoDoPrazo, NomeDoPrazo, doPrazo);
         }
 
         if (documento.Validade?.Referencia is { } daValidade)
         {
-            yield return (CampoDaValidade, daValidade);
+            yield return (CampoDaValidade, NomeDaValidade, daValidade);
         }
     }
 }

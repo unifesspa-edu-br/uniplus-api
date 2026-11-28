@@ -62,7 +62,20 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
-        resultado.Error.Message.Should().NotContainEquivalentOf(etapaDoPedido.ToString()).And.NotContainEquivalentOf("e7a9a000");
+        resultado.Error.Message.Should().Be("A etapa da exigência deve ser uma das etapas do processo.");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.momento.etapaId");
+    }
+
+    [Fact(DisplayName = "Fase e etapa que o processo não tem são recusadas juntas, cada uma apontando o campo da exigência")]
+    public void DefinirDocumentosExigidos_FaseEEtapaDeOutroProcesso_RecusaAsDuas()
+    {
+        ProcessoSeletivo processo = ProcessoComFases(Fase(1, "HABILITACAO"));
+
+        Result resultado = DefinirRegrasDeDocumento(processo, ExigenciaNaEtapa(Guid.CreateVersion7(), Guid.CreateVersion7(), PapelDoFormularioDeTeste.Habilitacao));
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
+            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAoProcesso"));
     }
 
     /// <summary>
@@ -81,7 +94,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
-        resultado.Error.Message.Should().NotContainEquivalentOf(prova.Id.ToString()).And.NotContain("Prova objetiva");
+        resultado.Error.Message.Should().Be($"A etapa 'Prova objetiva' não acontece na fase '{habilitacao.TipoFaseNome}'.");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.momento.etapaId");
     }
 
     /// <summary>

@@ -20,16 +20,16 @@ public static class ReferenciaTemporalDosFatos
 {
     private const string FaixaEtaria = "FAIXA_ETARIA";
 
-    internal static DomainError? RecusaDaFaseForaDoCronograma(ConfiguracaoDeclarada configuracao, ReferenciaTemporalFatos? referencia)
+    internal static Result RecusaDaFaseForaDoCronograma(ConfiguracaoDeclarada configuracao, ReferenciaTemporalFatos? referencia)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
         return referencia is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } and { FaseId: { } faseId }
             && !configuracao.Cronograma.CronogramaFases.Any(f => f.Id == faseId)
-                ? new DomainError(
+                ? Result.ValidationFailure([new FieldError("faseId", new DomainError(
                     "ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso",
-                    $"A fase {faseId} não pertence ao cronograma deste processo.")
-                : null;
+                    "A fase de referência da data deve ser uma das fases do cronograma do processo."))])
+                : Result.Success();
     }
 
     /// <summary>

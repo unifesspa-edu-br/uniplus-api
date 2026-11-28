@@ -8,8 +8,14 @@ using Kernel.Results;
 internal sealed record OperacaoConferida(
     DocumentosConferidos Documentos, FatosConferidos Fatos)
 {
-    /// <summary>As causas na ordem da conferência: o edital e os documentos, e depois os fatos.</summary>
-    public IReadOnlyList<FieldError> Causas => [.. Documentos.Causas, .. Fatos.Causas];
+    /// <summary>As causas que apontam o documento da configuração: o edital e os documentos, na ordem da conferência.</summary>
+    public IReadOnlyList<FieldError> CausasDosDocumentos => Documentos.Causas;
+
+    /// <summary>As causas que apontam o campo do pedido, e não o documento da configuração.</summary>
+    public IReadOnlyList<FieldError> CausasDoPedido => Documentos.CausasDoPedido;
+
+    /// <summary>As causas dos fatos que a versão congela.</summary>
+    public IReadOnlyList<FieldError> CausasDosFatos => Fatos.Causas;
 }
 
 /// <summary>

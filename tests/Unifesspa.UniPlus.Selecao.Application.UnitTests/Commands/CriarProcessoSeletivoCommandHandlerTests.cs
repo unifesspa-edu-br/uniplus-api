@@ -103,6 +103,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada");
+        result.Error.Message.Should().Be("A unidade administradora deve existir no cadastro de unidades.");
+        result.Errors.Should().ContainSingle().Which.Field.Should().Be("unidadeAdministradoraOrigemId");
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -119,6 +121,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraSemCidade");
+        result.Errors.Should().ContainSingle().Which.Field.Should().Be("unidadeAdministradoraOrigemId");
+        result.Error.Message.Should().NotContain(UnidadeId.ToString());
         await _tipoProcessoReader.DidNotReceive().ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -134,6 +138,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo");
+        result.Error.Message.Should().Be("O tipo de processo seletivo deve existir no cadastro de tipos de processo e estar ativo.");
+        result.Errors.Should().ContainSingle().Which.Field.Should().Be("tipoProcessoOrigemId");
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
     }
     /// <summary>

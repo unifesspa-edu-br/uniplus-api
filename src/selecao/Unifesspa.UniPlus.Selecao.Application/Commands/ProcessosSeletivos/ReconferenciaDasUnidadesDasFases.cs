@@ -19,7 +19,7 @@ internal static class ReconferenciaDasUnidadesDasFases
 {
     /// <summary>
     /// Recusa, no mesmo lote, toda fase cuja unidade não existe mais (ADR-0125). Sem recusa, devolve as
-    /// unidades vivas que o agregado copia para as fases; o agregado não muda aqui. A unidade é resolvida
+    /// unidades do cadastro atual que o agregado copia para as fases; o agregado não muda aqui. A unidade é resolvida
     /// uma vez por id.
     /// </summary>
     public static async Task<Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>> ConferirAsync(
@@ -64,18 +64,18 @@ internal static class ReconferenciaDasUnidadesDasFases
         Dictionary<Guid, UnidadeResponsavelSnapshot?> resolvidas,
         CancellationToken cancellationToken)
     {
-        if (!resolvidas.TryGetValue(unidadeId, out UnidadeResponsavelSnapshot? viva))
+        if (!resolvidas.TryGetValue(unidadeId, out UnidadeResponsavelSnapshot? atual))
         {
-            viva = await resolvedor.ResolverAsync(unidadeId, cancellationToken).ConfigureAwait(false);
-            resolvidas[unidadeId] = viva;
+            atual = await resolvedor.ResolverAsync(unidadeId, cancellationToken).ConfigureAwait(false);
+            resolvidas[unidadeId] = atual;
         }
 
-        return viva;
+        return atual;
     }
 
     private static FieldError UnidadeNaoEncontrada(int indice, FaseCronograma fase) => new(
         $"fases[{indice}].unidadeResponsavel",
         new DomainError(
             "FaseCronograma.UnidadeResponsavelNaoEncontrada",
-            $"Unidade responsável '{fase.UnidadeResponsavel!.Sigla}' (código '{fase.UnidadeResponsavel.Codigo}') da fase {fase.Citacao} não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
+            $"A unidade responsável '{fase.UnidadeResponsavel!.Sigla}' da fase {fase.Citacao} não existe no cadastro de unidades ou foi removida. Escolha outra unidade para a fase."));
 }

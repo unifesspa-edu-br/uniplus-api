@@ -62,6 +62,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(Guid.CreateVersion7(), "X", [Guid.CreateVersion7()])));
 
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada");
+        result.Error.Message.Should().Be("A oferta de curso deve ser uma do cadastro de ofertas.");
     }
 
     [Fact(DisplayName = "Handle com modalidade inexistente recusa")]
@@ -75,6 +76,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, DistribuicaoSemQuadro(ofertaCursoId, RegraDeDistribuicaoDeVagas.Institucional.Codigo(), [Guid.CreateVersion7()])));
 
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada");
+        result.Error.Message.Should().Be("A modalidade não existe no cadastro ou foi removida.");
     }
 
     [Fact(DisplayName = "Handle com referência demográfica inexistente recusa")]
@@ -92,6 +94,7 @@ public sealed class DefinirDistribuicaoVagasRecusasTests
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await mocks.DefinirAsync(ComandoDaDistribuicao(processo, distribuicao));
 
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada");
+        result.Error.Message.Should().Be("A referência de reserva demográfica não existe no cadastro ou foi removida.");
     }
 
     /// <summary>Dois ids diferentes resolvendo para o mesmo código: a duplicidade que a configuração rejeita só é visível pelo código, não pelo id.</summary>

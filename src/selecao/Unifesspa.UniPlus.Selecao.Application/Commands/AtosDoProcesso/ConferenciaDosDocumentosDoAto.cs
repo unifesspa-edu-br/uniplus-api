@@ -54,17 +54,17 @@ public sealed class ConferenciaDosDocumentosDoAto(
         IReadOnlyList<DocumentoAPublicar> encontrados = await documentoRepository
             .ListarDoProcessoAsync(processoId, ids, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, DocumentoAPublicar> porId = encontrados.ToDictionary(static d => d.Id);
-        DomainError? recusa = ConferirEnvios(ids, porId);
+        FieldError? recusa = ConferirEnvios(ids, porId);
         return recusa is not null
-            ? Result<DocumentosDoAtoConferidos>.Failure(recusa)
+            ? Result<DocumentosDoAtoConferidos>.ValidationFailure([recusa])
             : await ConferirPrincipalEAnexosAsync(processoId, ids, porId, anexos, cancellationToken).ConfigureAwait(false);
     }
 
-    private static DomainError? ConferirEnvios(Guid[] ids, Dictionary<Guid, DocumentoAPublicar> documentos)
+    private static FieldError? ConferirEnvios(Guid[] ids, Dictionary<Guid, DocumentoAPublicar> documentos)
     {
-        foreach (Guid id in ids)
+        for (int posicao = 0; posicao < ids.Length; posicao++)
         {
-            DomainError? recusa = ConferirEnvio(documentos.GetValueOrDefault(id));
+            FieldError? recusa = ConferirEnvio(documentos.GetValueOrDefault(ids[posicao]), posicao);
             if (recusa is not null)
             {
                 return recusa;
@@ -73,15 +73,22 @@ public sealed class ConferenciaDosDocumentosDoAto(
         return null;
     }
 
-    private static DomainError? ConferirEnvio(DocumentoAPublicar? documento) => documento switch
+    // A posição 0 é o documento principal; as seguintes são os anexos, na ordem do pedido.
+    private static FieldError? ConferirEnvio(DocumentoAPublicar? documento, int posicao) => documento switch
     {
-        null => new(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado, "Documento não encontrado ou não pertence a este processo."),
-        { Situacao: not StatusArquivoEnviado.Confirmado } => new(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
-            "Somente um documento confirmado pode ser referenciado no ato."),
-        { Finalidade: not FinalidadeDoDocumento.DocumentoDeAto } => new(AtoDoProcessoErrorCodes.DocumentoNaoEnviadoComoDocumentoDeAto,
-            "Somente um documento enviado para um ato pode ser o principal ou o anexo de um ato."),
+        null => DocumentoNaoEncontrado(posicao),
+        { Situacao: not StatusArquivoEnviado.Confirmado } => new(null, new(AtoDoProcessoErrorCodes.DocumentoNaoConfirmado,
+            "Somente um documento confirmado pode ser referenciado no ato.")),
+        { Finalidade: not FinalidadeDoDocumento.DocumentoDeAto } => new(null, new(AtoDoProcessoErrorCodes.DocumentoNaoEnviadoComoDocumentoDeAto,
+            "Somente um documento enviado para um ato pode ser o principal ou o anexo de um ato.")),
         _ => null,
     };
+
+    private static FieldError DocumentoNaoEncontrado(int posicao) => posicao == 0
+        ? new("documentoPrincipalId", new(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado,
+            "O documento principal do ato deve ser um dos documentos deste processo."))
+        : new($"anexos[{posicao - 1}].documentoId", new(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado,
+            "O documento do anexo deve ser um dos documentos deste processo."));
 
     private async Task<Result<DocumentosDoAtoConferidos>> ConferirPrincipalEAnexosAsync(
         Guid processoId, Guid[] ids, Dictionary<Guid, DocumentoAPublicar> documentos,

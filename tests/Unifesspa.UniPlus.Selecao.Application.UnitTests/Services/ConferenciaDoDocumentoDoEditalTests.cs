@@ -36,8 +36,16 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
     {
         DocumentoAPublicar documento = Documento(TiposDeMidiaDeDocumento.Pdf, confirmado: true);
 
-        (await ConferirAsync(null, ProcessoId)).Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
-        (await ConferirAsync(documento, Guid.CreateVersion7())).Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
+        ExigirRecusaDoDocumentoDoEdital(await ConferirAsync(null, ProcessoId));
+        ExigirRecusaDoDocumentoDoEdital(await ConferirAsync(documento, Guid.CreateVersion7()));
+    }
+
+    private static void ExigirRecusaDoDocumentoDoEdital(Result<DocumentoAPublicar> resultado)
+    {
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("documentoEditalId");
+        recusa.Error.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
+        recusa.Error.Message.Should().Be("O documento do edital deve ser um dos documentos deste processo.");
     }
 
     [Fact(DisplayName = "Id de documento vazio é recusado como documento inexistente, sem recusa própria")]
@@ -48,7 +56,7 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
         Result<DocumentoAPublicar> resultado = await ConferenciaDoDocumentoDoEdital.ConferirAsync(
             repositorio, ProcessoId, Guid.Empty, "na publicação", CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
+        ExigirRecusaDoDocumentoDoEdital(resultado);
     }
 
     [Fact(DisplayName = "Documento pendente é recusado, com o uso na mensagem")]

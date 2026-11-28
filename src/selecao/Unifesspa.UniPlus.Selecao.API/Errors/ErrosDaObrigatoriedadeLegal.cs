@@ -57,13 +57,13 @@ internal static class ErrosDaObrigatoriedadeLegal
                 "Exigência de atendimento disponível sem nenhum tipo de deficiência")),
     ];
 
-    // Referências do predicado e do tipo de processo a cadastros vivos.
+    // Referências do predicado e do tipo de processo aos cadastros.
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DasReferenciasAosCadastros() =>
     [
         new("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
         new("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
-        new("ObrigatoriedadeLegal.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidade_nao_encontrada", "Modalidade não encontrada entre as vivas do cadastro")),
-        new("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_documento_nao_encontrado", "Tipo de documento não encontrado entre os vivos do cadastro")),
+        new("ObrigatoriedadeLegal.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidade_nao_encontrada", "Modalidade não encontrada no cadastro ou removida")),
+        new("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_documento_nao_encontrado", "Tipo de documento não encontrado no cadastro ou removido")),
     ];
 
     // Referências do predicado a tipos de deficiência e a critérios de desempate do catálogo.
@@ -73,7 +73,7 @@ internal static class ErrosDaObrigatoriedadeLegal
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.selecao.obrigatoriedade_legal.tipo_deficiencia_nao_encontrada",
-                "Tipo de deficiência não encontrado entre os vivos do cadastro")),
+                "Tipo de deficiência não encontrado no cadastro ou removido")),
         new("ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado",
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

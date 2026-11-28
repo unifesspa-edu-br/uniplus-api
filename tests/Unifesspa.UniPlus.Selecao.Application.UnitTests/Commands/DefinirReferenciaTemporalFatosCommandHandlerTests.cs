@@ -115,7 +115,8 @@ public sealed class DefinirReferenciaTemporalFatosCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso");
-        result.Errors.Should().ContainSingle();
+        result.Error.Message.Should().Be("A fase de referência da data deve ser uma das fases do cronograma do processo.");
+        result.Errors.Should().ContainSingle().Which.Field.Should().Be("faseId");
         processo.ReferenciaTemporalFatos.Should().BeNull();
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

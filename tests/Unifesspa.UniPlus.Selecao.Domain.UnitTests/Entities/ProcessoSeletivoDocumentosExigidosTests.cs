@@ -35,6 +35,32 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    [Fact(DisplayName = "Fase fora do cronograma em item de grupo aponta a regra e o item no corpo do pedido")]
+    public void DefinirDocumentosExigidos_FaseDeOutroProcessoEmItemDeGrupo_ApontaARegraEOItem()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        RegraDeComprovacao avulsa = RegraDeDocumentoEmFaseInexistente(Guid.CreateVersion7(), 0);
+        RegraDeComprovacao grupo = GrupoComDocumentosEmUmaFaseInexistente(1);
+
+        Result resultado = processo.DefinirDocumentosExigidos([avulsa, grupo]);
+
+        resultado.Errors.Select(static erro => erro.Field).Should().Equal(
+            "regrasDeComprovacao[0].documento.momento.faseId",
+            "regrasDeComprovacao[1].itens[0].documento.momento.faseId",
+            "regrasDeComprovacao[1].itens[1].documento.momento.faseId");
+    }
+
+    private static RegraDeComprovacao RegraDeDocumentoEmFaseInexistente(Guid faseId, int ordem) =>
+        RegraDeComprovacao.CriarRegraDeDocumento(Exigencia(faseId), ordem).Value!;
+
+    private static RegraDeComprovacao GrupoComDocumentosEmUmaFaseInexistente(int ordem)
+    {
+        Guid faseDoGrupo = Guid.CreateVersion7();
+        return RegraDeComprovacao.CriarGrupo(
+            new(FormaDeComprovacao.TodosOsItens, null, null), ordem, [],
+            [RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 0), RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 1)]).Value!;
+    }
+
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {
@@ -45,7 +71,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
-        resultado.Error.Message.Should().NotContainEquivalentOf(faseDoPedido.ToString()).And.NotContainEquivalentOf("f1a5e000");
+        resultado.Error.Message.Should().Be("A fase da exigência deve ser uma das fases do cronograma do processo.");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.momento.faseId");
     }
 
     [Fact(DisplayName = "Fase viva do cronograma do próprio processo é aceita")]

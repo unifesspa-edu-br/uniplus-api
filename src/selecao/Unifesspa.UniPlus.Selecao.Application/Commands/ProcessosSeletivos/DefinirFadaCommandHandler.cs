@@ -129,7 +129,7 @@ public static class DefinirFadaCommandHandler
             .ConfigureAwait(false);
         if (baseLegal.IsFailure)
         {
-            return Result<ConfiguracaoDoFada>.Failure(baseLegal.Error!);
+            return Result<ConfiguracaoDoFada>.ValidationFailure(baseLegal.Errors);
         }
 
         return ConfiguracaoDoFada.Criar(regra.Value!, declarada.Fator, declarada.Teto, declarada.FatoElegibilidadeCodigo, baseLegal.Value!);
@@ -166,9 +166,11 @@ public static class DefinirFadaCommandHandler
             .ConfigureAwait(false);
 
         return baseLegal is null
-            ? Falha<BaseLegalCongelada>(
-                "ConfiguracaoDoFada.BaseLegalNaoEncontrada",
-                $"Base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) {baseLegalId} não encontrada ou desativada.")
+            ? Result<BaseLegalCongelada>.ValidationFailure([new FieldError(
+                "baseLegal.id",
+                new DomainError(
+                    "ConfiguracaoDoFada.BaseLegalNaoEncontrada",
+                    "A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve ser uma das bases legais do cadastro."))])
             : Result<BaseLegalCongelada>.Success(CopiaDosCadastrosDasVagas.BaseLegalDoFada(baseLegal));
     }
 

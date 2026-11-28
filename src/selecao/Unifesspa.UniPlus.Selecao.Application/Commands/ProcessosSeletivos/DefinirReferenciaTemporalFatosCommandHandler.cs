@@ -61,7 +61,6 @@ public static class DefinirReferenciaTemporalFatosCommandHandler
             return Result.ValidationFailure(declarada.Errors);
         }
 
-        Result definido = processo.DefinirReferenciaTemporalFatos(declarada?.Value);
-        return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
+        return processo.DefinirReferenciaTemporalFatos(declarada?.Value);
     }
 }

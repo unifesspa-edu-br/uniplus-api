@@ -264,9 +264,17 @@ public sealed class DefinirFadaCommandHandlerTests
         Result result = await Handle(command, mocks);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ConfiguracaoDoFada.BaseLegalNaoEncontrada");
+        ExigirRecusaDaBaseLegalNaoEncontrada(result);
         processo.Fada.Should().BeNull();
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private static void ExigirRecusaDaBaseLegalNaoEncontrada(Result result)
+    {
+        FieldError recusa = result.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("baseLegal.id");
+        recusa.Error.Code.Should().Be("ConfiguracaoDoFada.BaseLegalNaoEncontrada");
+        recusa.Error.Message.Should().Be("A base legal do Fator de Atenuação das Desigualdades de Acesso (FADA) deve ser uma das bases legais do cadastro.");
     }
 
     [Fact(DisplayName =

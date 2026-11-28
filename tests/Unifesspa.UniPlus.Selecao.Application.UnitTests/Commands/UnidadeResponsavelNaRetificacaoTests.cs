@@ -24,7 +24,8 @@ public sealed class UnidadeResponsavelNaRetificacaoTests
         (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
 
         resposta.Error!.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
-        resposta.Error.Message.Should().Contain(UnidadesDeTeste.Ceps.Sigla).And.Contain(UnidadesDeTeste.Ceps.Codigo)
+        resposta.Error.Message.Should().Contain(UnidadesDeTeste.Ceps.Sigla)
+            .And.NotContainEquivalentOf("viva").And.Contain("Escolha outra unidade para a fase.")
             .And.NotContain(UnidadesDeTeste.Ceps.OrigemId.ToString());
         resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("/cronograma/fases/0/unidadeResponsavelCodigo");
         eventos.Should().BeEmpty();

@@ -70,10 +70,10 @@ internal static class ErrosDaDistribuicaoDeVagas
     /// <summary>Oferta, regra, referência demográfica e modalidade que a configuração cita e não existem.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DasReferenciasNaoEncontradas() =>
     [
-        new("ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.oferta_curso_nao_encontrada", "Oferta de curso não encontrada ou não está mais viva")),
+        new("ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.oferta_curso_nao_encontrada", "Oferta de curso não encontrada no cadastro ou removida")),
         new("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.regra_distribuicao_nao_encontrada", "Regra de distribuição não encontrada no catálogo de regras")),
         new("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.regra_distribuicao_tipo_invalido", "A regra referenciada não é uma regra de distribuição de vagas")),
-        new("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_nao_encontrada", "Referência de reserva demográfica não encontrada ou não está mais viva")),
-        new("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_encontrada", "Modalidade não encontrada ou não está mais viva")),
+        new("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_nao_encontrada", "Referência de reserva demográfica não encontrada no cadastro ou removida")),
+        new("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_encontrada", "Modalidade não encontrada no cadastro ou removida")),
     ];
 }

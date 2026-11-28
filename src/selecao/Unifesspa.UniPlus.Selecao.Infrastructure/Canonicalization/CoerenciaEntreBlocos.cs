@@ -65,9 +65,14 @@ internal static class CoerenciaEntreBlocos
     // da escrita. Sem elas, uma exigência apontando para fase ou etapa que o envelope não repõe atravessa a
     // leitura e morre na chave estrangeira.
     private static DomainError? VinculoOuRepeticaoInvalidos(BlocosDoEnvelope blocos, IReadOnlyList<RegraDeComprovacao> todasAsRegras) =>
-        ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(blocos.Documentos.DocumentosExigidos, blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas)
+        PrimeiroVinculoInvalido(blocos)
         ?? ExigenciaEmFormularioInvalido(blocos.Documentos.DocumentosExigidos, blocos.Documentos.Formularios)
         ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todasAsRegras, blocos.Coleta.GruposColetados);
+
+    private static DomainError? PrimeiroVinculoInvalido(BlocosDoEnvelope blocos) =>
+        ValidadorVinculoDaExigencia.RecusasDosVinculos(blocos.Documentos.DocumentosExigidos, [.. blocos.Documentos.DocumentosExigidos.Select(static (_, posicao) => $"exigencias[{posicao}]")], blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas) is [var primeira, ..]
+            ? primeira.Error
+            : null;
 
     // A exigência cita um formulário que o envelope repõe e que é o da fase dela, pela mesma conferência da
     // escrita e da publicação. O código lido só tem o formato conferido; sem esta checagem, um envelope de

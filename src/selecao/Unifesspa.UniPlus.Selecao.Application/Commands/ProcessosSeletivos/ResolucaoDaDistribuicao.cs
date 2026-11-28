@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Domain.ProcessosSeletivos.Vagas;
 using Domain.ValueObjects;
 
@@ -38,6 +39,7 @@ internal sealed class ResolucaoDaDistribuicao(
     private readonly List<ModalidadeSelecionada> _modalidades = [];
     private readonly List<FieldError> _recusasDoCadastro = [];
     private readonly HashSet<DadoDaDistribuicaoDeVagas> _recusados = [];
+    private IReadOnlyDictionary<Guid, string?> _citacoesDoQuadroForaDaSelecao = new Dictionary<Guid, string?>();
 
     /// <summary>A forma do pedido, que não depende de nenhum cadastro.</summary>
     internal IReadOnlyList<FieldError> RecusasDaForma { get; private set; } = [];
@@ -59,6 +61,7 @@ internal sealed class ResolucaoDaDistribuicao(
         Recusar(DadoDaDistribuicaoDeVagas.ReferenciaDemografica, "referenciaReservaDemograficaId", await ResolverReferenciaDemograficaAsync(cancellationToken).ConfigureAwait(false));
         await ResolverModalidadesAsync(cancellationToken).ConfigureAwait(false);
 
+        _citacoesDoQuadroForaDaSelecao = await CitarAsModalidadesDoQuadroForaDaSelecaoAsync(cancellationToken).ConfigureAwait(false);
         RecusasDaForma = ConferirForma();
         RecusasDaDeclaracao = ConfiguracaoDistribuicaoVagas.ConferirDeclaracao(Declarada(), FatosDoCadastro());
     }
@@ -91,7 +94,7 @@ internal sealed class ResolucaoDaDistribuicao(
             .ObterPorIdAsync(pedido.OfertaCursoId, cancellationToken).ConfigureAwait(false);
         if (oferta is null)
         {
-            Recusar("ofertaCursoId", RecusasDaResolucaoDeVagas.OfertaNaoEncontrada(pedido.OfertaCursoId));
+            Recusar("ofertaCursoId", RecusasDeCadastroDasVagas.OfertaNaoEncontrada());
             return;
         }
 
@@ -150,7 +153,7 @@ internal sealed class ResolucaoDaDistribuicao(
         ReferenciaReservaDemograficaView? view = await referenciaReservaDemograficaReader
             .ObterPorIdAsync(referenciaId, cancellationToken).ConfigureAwait(false);
         return view is null
-            ? RecusasDaResolucaoDeVagas.ReferenciaDemograficaNaoEncontrada(referenciaId)
+            ? RecusasDeCadastroDasVagas.ReferenciaDemograficaNaoEncontrada()
             : CongelarReferenciaDemografica(view);
     }
 
@@ -189,9 +192,26 @@ internal sealed class ResolucaoDaDistribuicao(
     {
         ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(modalidadeId, cancellationToken).ConfigureAwait(false);
         return view is null
-            ? Result<ModalidadeSelecionada>.Failure(RecusasDaResolucaoDeVagas.ModalidadeNaoEncontrada(modalidadeId))
+            ? Result<ModalidadeSelecionada>.Failure(RecusasDeCadastroDasVagas.ModalidadeNaoEncontrada())
             : ModalidadeSelecionada.Criar(CopiaDosCadastrosDasVagas.Modalidade(view), pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
     }
+
+    // A recusa cita a modalidade pelo código do cadastro, seguido da descrição quando há; só as linhas fora da
+    // seleção são consultadas, e sem registro a recusa não cita a modalidade.
+    private async Task<IReadOnlyDictionary<Guid, string?>> CitarAsModalidadesDoQuadroForaDaSelecaoAsync(CancellationToken cancellationToken)
+    {
+        Dictionary<Guid, string?> citacoes = [];
+        foreach (Guid id in pedido.Quadro.Select(static linha => linha.ModalidadeId).Except(pedido.ModalidadeIds))
+        {
+            ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
+            citacoes[id] = view is null ? null : CitacaoDaModalidade(view);
+        }
+
+        return citacoes;
+    }
+
+    private static string CitacaoDaModalidade(ModalidadeView view) =>
+        string.IsNullOrWhiteSpace(view.Descricao) ? view.Codigo : $"{view.Codigo} — {view.Descricao}";
 
     // A forma do pedido é do domínio; o quadro que traz uma modalidade fora das selecionadas é reconciliação
     // de ids crus, e é da aplicação.
@@ -207,7 +227,7 @@ internal sealed class ResolucaoDaDistribuicao(
             .Where(par => !pedido.ModalidadeIds.Contains(par.linha.ModalidadeId))
             .Select(par => new FieldError(
                 $"quadro[{par.indice}].modalidadeId",
-                RecusasDaResolucaoDeVagas.QuadroModalidadeNaoSelecionada(par.linha.ModalidadeId))),
+                RecusasDaResolucaoDeVagas.QuadroModalidadeNaoSelecionada(_citacoesDoQuadroForaDaSelecao.GetValueOrDefault(par.linha.ModalidadeId)))),
     ];
 
     private DistribuicaoDeVagasDeclarada Declarada() => new()

@@ -31,5 +31,5 @@ internal static class LeituraDaUnidadeResponsavel
         null,
         new DomainError(
             FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
-            "A unidade responsável citada pela fase não foi encontrada ou não está mais viva."));
+            "A unidade responsável citada pela fase não existe no cadastro de unidades ou foi removida."));
 }

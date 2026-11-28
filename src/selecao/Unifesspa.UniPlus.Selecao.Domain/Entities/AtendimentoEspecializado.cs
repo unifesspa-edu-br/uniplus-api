@@ -58,17 +58,17 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
         "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.");
 
-    /// <summary>Recusa de uma condição de atendimento que o cadastro não tem ou não está mais viva.</summary>
+    /// <summary>Recusa de uma condição de atendimento que o cadastro não tem ou que foi removida.</summary>
     public static DomainError CondicaoNaoEncontrada() => new(
-        "AtendimentoEspecializado.CondicaoNaoEncontrada", "Condição de atendimento não encontrada ou não está mais viva.");
+        "AtendimentoEspecializado.CondicaoNaoEncontrada", "A condição de atendimento deve ser uma do cadastro e não pode ter sido removida.");
 
-    /// <summary>Recusa de um recurso de acessibilidade que o cadastro não tem ou não está mais vivo.</summary>
+    /// <summary>Recusa de um recurso de acessibilidade que o cadastro não tem ou que foi removido.</summary>
     public static DomainError RecursoNaoEncontrado() => new(
-        "AtendimentoEspecializado.RecursoNaoEncontrado", "Recurso de acessibilidade não encontrado ou não está mais vivo.");
+        "AtendimentoEspecializado.RecursoNaoEncontrado", "O recurso de acessibilidade deve ser um do cadastro e não pode ter sido removido.");
 
-    /// <summary>Recusa de um tipo de deficiência que o cadastro não tem ou não está mais vivo.</summary>
+    /// <summary>Recusa de um tipo de deficiência que o cadastro não tem ou que foi removido.</summary>
     public static DomainError TipoDeficienciaNaoEncontrado() => new(
-        "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado", "Tipo de deficiência não encontrado ou não está mais vivo.");
+        "AtendimentoEspecializado.TipoDeficienciaNaoEncontrado", "O tipo de deficiência deve ser um do cadastro e não pode ter sido removido.");
 
     public Guid ProcessoSeletivoId { get; private set; }
 

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
 /// <summary>
-/// As fases de uma edição do cronograma enquanto são montadas a partir do payload, resolvendo no cadastro vivo a
+/// As fases de uma edição do cronograma enquanto são montadas a partir do payload, resolvendo no cadastro atual a
 /// fase canônica, a unidade responsável, as bancas, os produtos, a regra de recurso e o vocabulário de fatos do enquadramento
 /// da regra de homologação (ADR-0125). Guarda o que a
 /// edição acumula, as fases montadas e as recusas, e por isso vive só pela duração dela.
@@ -168,7 +168,7 @@ internal sealed class FasesEmMontagem
         return canonica is null
             ? InterrupcaoDaEdicao.Com<InsumosDaFase>($"fases[{indice}].faseCanonicaId", new DomainError(
                 FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
-                "Fase canônica não encontrada ou não está mais viva."))
+                "O tipo de fase escolhido não existe no catálogo ou foi removido."))
             : await ResolverInsumosDaFaseAsync(input, indice, canonica, cancellationToken).ConfigureAwait(false);
     }
 
@@ -192,7 +192,7 @@ internal sealed class FasesEmMontagem
     private IReadOnlyCollection<BancaRequerida> BancasGravadasDaFase(Guid faseCanonicaId) =>
         _fasesGravadas.FirstOrDefault(fase => fase.FaseCanonicaOrigemId == faseCanonicaId)?.BancasRequeridas ?? [];
 
-    // A unidade é resolvida no cadastro vivo a cada definição; a fase sem unidade declarada não consulta o cadastro.
+    // A unidade é resolvida no cadastro atual a cada definição; a fase sem unidade declarada não consulta o cadastro.
     private async Task<Result<UnidadeResponsavelSnapshot?>> UnidadeAsync(
         Guid? unidadeId, int indice, FaseCanonicaView canonica, CancellationToken cancellationToken)
     {
@@ -205,7 +205,7 @@ internal sealed class FasesEmMontagem
         return unidade is null
             ? InterrupcaoDaEdicao.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
                 FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
-                $"Unidade responsável da fase {new CitacaoDaFase(canonica.Nome)} não encontrada ou não está mais viva."))
+                $"A unidade responsável escolhida para a fase {new CitacaoDaFase(canonica.Nome)} não existe no cadastro de unidades ou foi removida. Escolha outra unidade."))
             : Result<UnidadeResponsavelSnapshot?>.Success(unidade);
     }
 

@@ -94,7 +94,7 @@ internal static class LeituraDaIdentificacao
 
     private static DomainError UnidadeNaoEncontrada { get; } = new(
         ProcessoSeletivoErrorCodes.UnidadeAdministradoraNaoEncontrada,
-        "A unidade administradora citada na identificação não foi encontrada ou não está mais viva.");
+        "A unidade administradora citada na identificação não existe no cadastro de unidades ou foi removida.");
 
     private static DomainError MunicipioNaoEncontrado { get; } = new(
         MunicipioErrorCodes.NaoEncontrado,

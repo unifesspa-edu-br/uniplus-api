@@ -67,29 +67,23 @@ public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository r
     private static Result<IReadOnlyList<AnexoDoEdital>> AnexosDosPedidos(
         IReadOnlyList<AnexoSolicitadoDoEdital> solicitados, IReadOnlyList<DocumentoAPublicar> documentos, IReadOnlyList<AnexoDoEdital> vigentes)
     {
-        List<AnexoDoEdital> anexos = [];
-        foreach (AnexoSolicitadoDoEdital pedido in solicitados)
-        {
-            Result<AnexoDoEdital> anexo = AnexoDoPedido(pedido, documentos);
-            if (anexo.IsFailure)
-            {
-                return Result<IReadOnlyList<AnexoDoEdital>>.Failure(anexo.Error!);
-            }
+        Result<AnexoDoEdital>[] conferidos = [.. solicitados.Select((pedido, posicao) => AnexoDoPedido(pedido, posicao, documentos))];
+        FieldError[] recusas = [.. conferidos.SelectMany(static c => c.Errors)];
 
-            anexos.Add(ComAIdentidadeDoQueContinua(anexo.Value!, vigentes));
-        }
-
-        return Result<IReadOnlyList<AnexoDoEdital>>.Success(anexos);
+        return recusas.Length > 0
+            ? Result<IReadOnlyList<AnexoDoEdital>>.ValidationFailure(recusas)
+            : Result<IReadOnlyList<AnexoDoEdital>>.Success([.. conferidos.Select(c => ComAIdentidadeDoQueContinua(c.Value!, vigentes))]);
     }
 
-    private static Result<AnexoDoEdital> AnexoDoPedido(AnexoSolicitadoDoEdital pedido, IReadOnlyList<DocumentoAPublicar> documentos)
+    private static Result<AnexoDoEdital> AnexoDoPedido(
+        AnexoSolicitadoDoEdital pedido, int posicao, IReadOnlyList<DocumentoAPublicar> documentos)
     {
         DocumentoAPublicar? documento = documentos.FirstOrDefault(d => d.Id == pedido.DocumentoId);
 
         return documento is null
-            ? Result<AnexoDoEdital>.Failure(new DomainError(
-                AnexoDoEditalErrorCodes.NaoEncontrado,
-                $"Documento {pedido.DocumentoId} não encontrado ou não pertence a este processo."))
+            ? Result<AnexoDoEdital>.ValidationFailure([new FieldError(
+                $"anexos[{posicao}].documentoId",
+                new DomainError(AnexoDoEditalErrorCodes.NaoEncontrado, "O documento do anexo deve ser um dos documentos deste processo."))])
             : AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, pedido.Nome);
     }
 

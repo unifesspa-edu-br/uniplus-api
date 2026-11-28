@@ -29,31 +29,31 @@ internal sealed record ReferenciasDoNovoProcesso(
             .ConfigureAwait(false);
         if (origem.IsFailure)
         {
-            return Result<ReferenciasDoNovoProcesso>.Failure(origem.Error!);
+            return Result<ReferenciasDoNovoProcesso>.ValidationFailure(origem.Errors);
         }
 
         Result<TipoProcessoSnapshot> tipo = await TipoAtivoAsync(command.TipoProcessoOrigemId, tipoProcessoReader, cancellationToken)
             .ConfigureAwait(false);
 
         return tipo.IsFailure
-            ? Result<ReferenciasDoNovoProcesso>.Failure(tipo.Error!)
+            ? Result<ReferenciasDoNovoProcesso>.ValidationFailure(tipo.Errors)
             : Montar(origem.Value.Unidade, origem.Value.Localidade, tipo.Value!);
     }
 
     private static async Task<Result<(UnidadeView Unidade, LocalidadeRegente Localidade)>> UnidadeELocalidadeAsync(
         CriarProcessoSeletivoCommand command, IUnidadeReader unidadeReader, CancellationToken cancellationToken)
     {
-        Result<UnidadeView> unidade = await UnidadeVivaComCidadeAsync(command.UnidadeAdministradoraOrigemId, unidadeReader, cancellationToken)
+        Result<UnidadeView> unidade = await UnidadeComCidadeAsync(command.UnidadeAdministradoraOrigemId, unidadeReader, cancellationToken)
             .ConfigureAwait(false);
         if (unidade.IsFailure)
         {
-            return Result<(UnidadeView, LocalidadeRegente)>.Failure(unidade.Error!);
+            return Result<(UnidadeView, LocalidadeRegente)>.ValidationFailure(unidade.Errors);
         }
 
         Result<LocalidadeRegente> localidade = LocalidadeDeclarada(command);
 
         return localidade.IsFailure
-            ? Result<(UnidadeView, LocalidadeRegente)>.Failure(localidade.Error!)
+            ? Result<(UnidadeView, LocalidadeRegente)>.ValidationFailure(localidade.Errors)
             : Result<(UnidadeView, LocalidadeRegente)>.Success((unidade.Value!, localidade.Value!));
     }
 
@@ -63,22 +63,25 @@ internal sealed record ReferenciasDoNovoProcesso(
     /// cidade é opcional no cadastro da Unidade e exigida aqui, ao usá-la como administradora do processo,
     /// porque o snapshot a carrega (UNI-REQ-0119).
     /// </summary>
-    private static async Task<Result<UnidadeView>> UnidadeVivaComCidadeAsync(
+    private static async Task<Result<UnidadeView>> UnidadeComCidadeAsync(
         Guid unidadeId, IUnidadeReader unidadeReader, CancellationToken cancellationToken)
     {
         UnidadeView? unidade = await unidadeReader.ObterPorIdAsync(unidadeId, cancellationToken).ConfigureAwait(false);
 
         return unidade switch
         {
-            null => Result<UnidadeView>.Failure(new DomainError(
+            null => RecusaDaUnidade(
                 "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada",
-                $"Unidade administradora {unidadeId} não encontrada ou não está mais viva.")),
-            _ when string.IsNullOrWhiteSpace(unidade.CidadeCodigoIbge) => Result<UnidadeView>.Failure(new DomainError(
+                "A unidade administradora deve existir no cadastro de unidades."),
+            _ when string.IsNullOrWhiteSpace(unidade.CidadeCodigoIbge) => RecusaDaUnidade(
                 "ProcessoSeletivo.UnidadeAdministradoraSemCidade",
-                $"Unidade administradora {unidadeId} não tem cidade cadastrada — obrigatória para criar processo seletivo.")),
+                "A unidade administradora escolhida não tem cidade cadastrada, que é obrigatória para criar o processo seletivo."),
             _ => Result<UnidadeView>.Success(unidade),
         };
     }
+
+    private static Result<UnidadeView> RecusaDaUnidade(string codigo, string mensagem) =>
+        Result<UnidadeView>.ValidationFailure([new FieldError("unidadeAdministradoraOrigemId", new DomainError(codigo, mensagem))]);
 
     /// <summary>
     /// A ausência é erro nomeado, e não validação de contrato: é este o código que o catálogo público publica para
@@ -98,9 +101,9 @@ internal sealed record ReferenciasDoNovoProcesso(
         TipoProcessoView? tipo = await tipoProcessoReader.ObterAtivoPorIdAsync(tipoProcessoId, cancellationToken).ConfigureAwait(false);
 
         return tipo is null
-            ? Result<TipoProcessoSnapshot>.Failure(new DomainError(
+            ? Result<TipoProcessoSnapshot>.ValidationFailure([new FieldError("tipoProcessoOrigemId", new DomainError(
                 "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo",
-                $"Tipo de processo seletivo {tipoProcessoId} não encontrado ou não está ativo."))
+                "O tipo de processo seletivo deve existir no cadastro de tipos de processo e estar ativo."))])
             : TipoProcessoSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
     }
 
@@ -111,7 +114,7 @@ internal sealed record ReferenciasDoNovoProcesso(
             new CidadeCopiadaDaUnidade(unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf));
 
         return snapshot.IsFailure
-            ? Result<ReferenciasDoNovoProcesso>.Failure(snapshot.Error!)
+            ? Result<ReferenciasDoNovoProcesso>.ValidationFailure(snapshot.Errors)
             : Result<ReferenciasDoNovoProcesso>.Success(new ReferenciasDoNovoProcesso(unidade.Id, snapshot.Value!, localidade, tipo));
     }
 }

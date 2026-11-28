@@ -53,7 +53,11 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         ];
 
         Projetar(documentos, FaseDaHabilitacao.Id).Value!.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("HABILITACAO");
-        Projetar(documentos, Guid.CreateVersion7()).Error!.Code.Should().Be(InscricaoErrorCodes.FaseNaoEncontrada);
+        Result<AvaliacaoDaInscricaoDto> recusa = Projetar(documentos, Guid.CreateVersion7());
+
+        recusa.Error!.Code.Should().Be(InscricaoErrorCodes.FaseNaoEncontrada);
+        recusa.Error.Message.Should().Be("A fase pedida deve ser uma das fases do cronograma da versão do formulário que a inscrição fixou.");
+        recusa.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
     }
 
     [Fact(DisplayName = "O modelo da exigência vem com o endereço no acervo do ato que publicou a versão")]

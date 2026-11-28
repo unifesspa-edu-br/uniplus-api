@@ -56,7 +56,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.FaseCanonicaNaoEncontrada");
-        resultado.Error.Message.Should().Be("Fase canônica não encontrada ou não está mais viva.")
+        resultado.Error.Message.Should().Be("O tipo de fase escolhido não existe no catálogo ou foi removido.")
             .And.NotContainEquivalentOf("fa5ec0de");
     }
 

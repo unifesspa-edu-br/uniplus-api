@@ -53,6 +53,8 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso");
+        resultado.Error.Message.Should().Be("A fase de referência da data deve ser uma das fases do cronograma do processo.");
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("faseId");
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase do próprio cronograma é aceita (contraprova)")]

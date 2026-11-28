@@ -352,7 +352,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     [Fact(DisplayName = "Documento inexistente ou de outro processo é recusado")]
     public async Task DocumentoInexistente_Recusa()
     {
-        await ExigirRecusa(Comando(principalId: Guid.CreateVersion7()), AtoDoProcessoErrorCodes.DocumentoNaoEncontrado);
+        await ExigirRecusa(Comando(principalId: Guid.CreateVersion7()), AtoDoProcessoErrorCodes.DocumentoNaoEncontrado, "documentoPrincipalId");
     }
 
     [Fact(DisplayName = "Documento não confirmado é recusado")]
@@ -428,12 +428,12 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         await ExigirRecusa(Comando(anexos: anexos), AtoDoProcessoErrorCodes.QuantidadeDeAnexosExcedida);
     }
 
-    private async Task ExigirRecusa(PublicarAtoAvulsoDoProcessoCommand comando, string codigoEsperado)
+    private async Task ExigirRecusa(PublicarAtoAvulsoDoProcessoCommand comando, string codigoEsperado, string? campoEsperado = null)
     {
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(comando);
 
         resposta.IsFailure.Should().BeTrue();
-        resposta.Errors.Should().ContainSingle();
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be(campoEsperado);
         resposta.Error!.Code.Should().Be(codigoEsperado);
         mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
         await NadaFoiEscrito();

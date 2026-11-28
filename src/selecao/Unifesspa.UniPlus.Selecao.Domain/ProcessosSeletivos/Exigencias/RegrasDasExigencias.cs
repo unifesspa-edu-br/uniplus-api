@@ -22,7 +22,7 @@ public static class RegrasDasExigencias
             .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
             .Select(static regra => regra.DocumentoExigido!)];
 
-        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos);
+        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos, CaminhosDosDocumentos(regrasSemGrupo, "regrasDeComprovacao"));
         return recusas.Count == 0
             ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, documentos))
             : Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
@@ -30,19 +30,26 @@ public static class RegrasDasExigencias
 
     // Na ordem em que orientam: o vínculo com a fase e a etapa, o formulário, a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
     private static IReadOnlyList<FieldError> Recusas(
-        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos)
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhos)
     {
         Func<IReadOnlyList<FieldError>>[] conferencias =
         [
-            () => Unica(ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas)),
+            () => ValidadorVinculoDaExigencia.RecusasDosVinculos(documentos, caminhos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas),
             () => FormularioDasExigencias(configuracao, documentos),
             () => Unica(ConferirRepeticaoPorGrupo(configuracao, regras)),
-            () => DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos),
+            () => DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos, [.. caminhos.Select(static caminho => caminho + ".requisitos")]),
             () => Unica(RecusaDaPendenciaDeReenvio(configuracao, regras)),
         ];
 
         return conferencias.Select(static conferir => conferir()).FirstOrDefault(static recusas => recusas.Count > 0) ?? [];
     }
+
+    // O caminho de cada documento no pedido, na ordem em que as regras o enumeram: o da regra de documento na posição dela, e o do
+    // documento de um item de grupo dentro de itens[].
+    private static List<string> CaminhosDosDocumentos(IEnumerable<RegraDeComprovacao> regras, string lista) =>
+        [.. regras.SelectMany((regra, posicao) => regra.Forma == FormaDeComprovacao.Documento
+            ? [$"{lista}[{posicao}].documento"]
+            : CaminhosDosDocumentos(regra.Itens, $"{lista}[{posicao}].itens"))];
 
     private static IReadOnlyList<FieldError> Unica(DomainError? recusa) => recusa is null ? [] : [new FieldError(null, recusa)];
 

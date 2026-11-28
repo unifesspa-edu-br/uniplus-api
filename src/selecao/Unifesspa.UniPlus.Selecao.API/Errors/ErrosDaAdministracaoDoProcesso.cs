@@ -19,7 +19,7 @@ internal static class ErrosDaAdministracaoDoProcesso
 
     private static KeyValuePair<string, DomainErrorMapping>[] ReferenciasAosCadastros() =>
     [
-        new("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada", "Unidade administradora não encontrada ou não está mais viva")),
+        new("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada", "Unidade administradora não encontrada no cadastro ou removida")),
         new("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
         new("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
         new("ProcessoSeletivo.UnidadeAdministradoraSemCidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_sem_cidade", "Unidade administradora não tem cidade cadastrada")),
