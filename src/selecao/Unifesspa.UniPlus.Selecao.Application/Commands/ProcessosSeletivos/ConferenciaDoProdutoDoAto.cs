@@ -33,10 +33,10 @@ internal static class ConferenciaDoProdutoDoAto
     /// de resultado (UNI-REQ-0157).
     /// </summary>
     public static DomainError? RecusaDoPapel(
-        PapelDaPublicacaoPrevista? papel, ClassificacaoDoTipoDeAto classificacao, RotuloDoDonoDoProduto dono) =>
-        papel is not null && !classificacao.EhResultado
+        PapelDaPublicacaoPrevista? papel, ClassificacaoDoAtoConsultado.Conhecida tipo, RotuloDoDonoDoProduto dono) =>
+        papel is not null && !tipo.Classificacao.EhResultado
             ? new DomainError(
                 dono.CodigoDoPapelEmAtoQueNaoEhResultado,
-                $"O tipo de ato declarado{dono.Qualificador} não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.")
-            : classificacao.ViolacaoDoProduto(papel);
+                $"O tipo de ato '{tipo.Nome}'{dono.Qualificador} não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.")
+            : tipo.Classificacao.ViolacaoDoProduto(papel, tipo.Nome);
 }

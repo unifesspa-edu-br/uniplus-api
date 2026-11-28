@@ -31,13 +31,15 @@ public static class ConferenciaDoCicloNovoDaRetificacao
     /// <param name="etapasNovas">As etapas do cronograma que a retificação propõe.</param>
     /// <param name="declarados">Os itens que o bloco da retificação declara como novo ciclo.</param>
     /// <param name="fatos">O que a execução já fez, lido depois da trava.</param>
+    /// <param name="nomesDaVersaoPublicada">Os nomes que a cópia de cada tipo de ato guarda na versão publicada, e não os do catálogo vigente.</param>
     public static ResultadoDoCicloNovo Conferir(
         IReadOnlyCollection<FaseCronograma> fasesDaBase,
         IReadOnlyCollection<EtapaProcesso> etapasDaBase,
         IReadOnlyCollection<FaseCronograma> fasesNovas,
         IReadOnlyCollection<EtapaProcesso> etapasNovas,
         IReadOnlySet<IdentidadeDoItemDoEdital> declarados,
-        FatosDaExecucao fatos)
+        FatosDaExecucao fatos,
+        NomesDosTiposDeAto nomesDaVersaoPublicada)
     {
         ArgumentNullException.ThrowIfNull(fasesDaBase);
         ArgumentNullException.ThrowIfNull(etapasDaBase);
@@ -45,12 +47,13 @@ public static class ConferenciaDoCicloNovoDaRetificacao
         ArgumentNullException.ThrowIfNull(etapasNovas);
         ArgumentNullException.ThrowIfNull(declarados);
         ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(nomesDaVersaoPublicada);
 
         HashSet<IdentidadeDoItemDoEdital> abertos = PreliminaresComCicloAberto(fasesDaBase, etapasDaBase, fatos);
         IEnumerable<IdentidadeDoItemDoEdital> piso = PisoDoCicloNovo.Preliminares(fasesDaBase, etapasDaBase, fasesNovas, etapasNovas, abertos);
 
         return new(
-            [.. RecusasDoPisoNaoDeclarado(piso, declarados), .. RecusasDosDeclaradosSemCicloAberto(declarados, abertos)],
+            [.. RecusasDoPisoNaoDeclarado(piso, declarados, nomesDaVersaoPublicada), .. RecusasDosDeclaradosSemCicloAberto(declarados, abertos)],
             [.. EmOrdem(declarados.Where(abertos.Contains))]);
     }
 
@@ -59,13 +62,16 @@ public static class ConferenciaDoCicloNovoDaRetificacao
         [.. ConferenciaDoCicloRecursalAberto.CiclosAbertos(fasesDaBase, etapasDaBase, fatos.ItensPublicados).Select(static ciclo => ciclo.Preliminar)];
 
     private static IEnumerable<FieldError> RecusasDoPisoNaoDeclarado(
-        IEnumerable<IdentidadeDoItemDoEdital> piso, IReadOnlySet<IdentidadeDoItemDoEdital> declarados) =>
-        EmOrdem(piso.Where(item => !declarados.Contains(item))).Select(static item => new FieldError(
+        IEnumerable<IdentidadeDoItemDoEdital> piso, IReadOnlySet<IdentidadeDoItemDoEdital> declarados, NomesDosTiposDeAto nomes) =>
+        EmOrdem(piso.Where(item => !declarados.Contains(item))).Select(item => new FieldError(
             null,
             new DomainError(
                 RetificacaoErrorCodes.CicloNovoNaoDeclarado,
-                $"A retificação muda a regra ou os dados de entrada do resultado preliminar '{item.AtoCodigo}', que já foi publicado, "
+                $"A retificação muda a regra ou os dados de entrada {PreliminarCitado(nomes.NomeDe(item.AtoCodigo))}, que já foi publicado, "
                 + "e exige declarar o novo ciclo no pedido: o novo preliminar é publicado antes do definitivo.")));
+
+    private static string PreliminarCitado(string? nomeDoTipo) =>
+        nomeDoTipo is null ? "de um resultado preliminar" : $"do resultado preliminar '{nomeDoTipo}'";
 
     private static IEnumerable<FieldError> RecusasDosDeclaradosSemCicloAberto(
         IReadOnlySet<IdentidadeDoItemDoEdital> declarados, HashSet<IdentidadeDoItemDoEdital> abertos) =>

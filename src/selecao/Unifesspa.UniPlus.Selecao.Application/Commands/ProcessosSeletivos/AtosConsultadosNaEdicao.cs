@@ -40,12 +40,12 @@ internal sealed class AtosConsultadosNaEdicao
         _tiposVigentes.ObterAsync(atoCodigo, cancellationToken);
 
     /// <summary>
-    /// A classificação do tipo de ato: a congelada na versão publicada ou, para o tipo novo, a do catálogo
-    /// vigente. Falha quando a versão publicada não é legível.
+    /// A classificação e o nome do tipo de ato: os da cópia guardada na versão publicada ou, para o tipo novo, os do
+    /// catálogo vigente. Falha quando a versão publicada não é legível.
     /// </summary>
     public async Task<Result<ClassificacaoDoAtoConsultado>> ClassificacaoAsync(string atoCodigo, CancellationToken cancellationToken)
     {
-        Result<ClassificacaoDoTipoDeAto?> congelada = await Congelados
+        Result<TipoDeAtoCongelado?> congelada = await Congelados
             .DoTipoJaDeclaradoAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
         if (congelada.IsFailure)
         {
@@ -53,7 +53,7 @@ internal sealed class AtosConsultadosNaEdicao
         }
 
         return congelada.Value is { } daVersaoPublicada
-            ? Result<ClassificacaoDoAtoConsultado>.Success(new ClassificacaoDoAtoConsultado.Conhecida(daVersaoPublicada))
+            ? Result<ClassificacaoDoAtoConsultado>.Success(new ClassificacaoDoAtoConsultado.Conhecida(daVersaoPublicada.Classificacao, daVersaoPublicada.Nome))
             : await ClassificacaoDoCatalogoAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
     }
 
@@ -62,6 +62,6 @@ internal sealed class AtosConsultadosNaEdicao
         TipoAtoPublicadoView? vigente = await TipoVigenteAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
         return Result<ClassificacaoDoAtoConsultado>.Success(vigente is null
             ? new ClassificacaoDoAtoConsultado.SemVersaoVigente()
-            : new ClassificacaoDoAtoConsultado.Conhecida(ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(vigente)));
+            : new ClassificacaoDoAtoConsultado.Conhecida(ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(vigente), vigente.Nome));
     }
 }

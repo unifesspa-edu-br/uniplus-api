@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -181,8 +182,22 @@ public sealed class EtapasDoProcessoTests
             new ModeloDeEtapa("B") { Produtos = [Preliminar("RESULTADO"), Preliminar("GABARITO"), Definitivo("GABARITO")] }.Declarar(),
         ]);
 
-        etapas.ConferirFechamentoDoCiclo().Select(static r => (r.Field, r.Error.Code))
+        etapas.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static r => (r.Field, r.Error.Code))
             .Should().Equal(("etapas[1].produtos", "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo"));
+    }
+
+    [Fact(DisplayName = "A recusa do preliminar sem definitivo cita o tipo de ato pelo nome, e pelo texto sem nome quando o tipo não tem nome")]
+    public void ConferirFechamentoDoCiclo_CitaOTipoPeloNome()
+    {
+        EtapasDoProcesso etapas = new([new ModeloDeEtapa("B") { Produtos = [Preliminar("RESULTADO")] }.Declarar()]);
+
+        string comNome = etapas.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Com(("RESULTADO", "Resultado preliminar"))).Single().Error.Message;
+        string semNome = etapas.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Single().Error.Message;
+
+        comNome.Should().Be("A etapa 'B' publica o resultado preliminar do ato 'Resultado preliminar' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria etapa.");
+        semNome.Should().Be("A etapa 'B' publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato. Publique o resultado definitivo na própria etapa.");
+        comNome.Should().NotContain("RESULTADO");
+        semNome.Should().NotContain("RESULTADO");
     }
 
     [Fact(DisplayName = "Toda etapa sem fase declarada é recusada na completude, na ordem das posições")]

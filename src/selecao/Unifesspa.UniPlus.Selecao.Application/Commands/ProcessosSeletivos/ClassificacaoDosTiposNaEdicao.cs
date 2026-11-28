@@ -25,31 +25,30 @@ internal sealed class ClassificacaoDosTiposNaEdicao(
     private Result<EnvelopeReidratado?>? _versaoPublicada;
 
     /// <summary>
-    /// A classificação congelada do tipo, ou <c>null</c> quando o tipo não consta na versão publicada
-    /// e a classificação vale pelo catálogo.
+    /// A cópia que a versão publicada guarda do tipo (nome e classificação), ou <c>null</c> quando o tipo
+    /// não consta nela e a classificação vale pelo catálogo.
     /// </summary>
-    public async Task<Result<ClassificacaoDoTipoDeAto?>> DoTipoJaDeclaradoAsync(string codigo, CancellationToken cancellationToken)
+    public async Task<Result<TipoDeAtoCongelado?>> DoTipoJaDeclaradoAsync(string codigo, CancellationToken cancellationToken)
     {
         Result<EnvelopeReidratado?> versao = await LerAsync(cancellationToken).ConfigureAwait(false);
         if (versao.IsFailure)
         {
-            return Result<ClassificacaoDoTipoDeAto?>.Failure(versao.Error!);
+            return Result<TipoDeAtoCongelado?>.Failure(versao.Error!);
         }
 
         if (versao.Value is not { } envelope)
         {
-            return Result<ClassificacaoDoTipoDeAto?>.Success(null);
+            return Result<TipoDeAtoCongelado?>.Success(null);
         }
 
-        return ClassificacaoDoTipo(codigo, envelope);
+        return CopiaDoTipo(codigo, envelope);
     }
 
-    private static Result<ClassificacaoDoTipoDeAto?> ClassificacaoDoTipo(string codigo, EnvelopeReidratado envelope)
+    private static Result<TipoDeAtoCongelado?> CopiaDoTipo(string codigo, EnvelopeReidratado envelope)
     {
         IReadOnlyDictionary<string, TipoDeAtoCongelado> congelados = CongelamentoDosTiposDeAto
             .DoEnvelope(Result<EnvelopeReidratado>.Success(envelope)).Value!;
-        return Result<ClassificacaoDoTipoDeAto?>.Success(
-            congelados.TryGetValue(codigo, out TipoDeAtoCongelado? congelado) ? congelado.Classificacao : null);
+        return Result<TipoDeAtoCongelado?>.Success(congelados.GetValueOrDefault(codigo));
     }
 
     /// <summary>

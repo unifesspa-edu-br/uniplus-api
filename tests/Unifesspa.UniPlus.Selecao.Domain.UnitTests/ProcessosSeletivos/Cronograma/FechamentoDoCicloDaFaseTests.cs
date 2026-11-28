@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using Xunit;
 
@@ -13,18 +14,28 @@ using static ModeloDeFase;
 public sealed class FechamentoDoCicloDaFaseTests
 {
     private static (string? Campo, string Codigo)[] Fechamento(params FaseDeclarada[] fases) =>
-        [.. Cronograma(fases).ConferirFechamentoDoCiclo().Select(static r => (r.Field, r.Error.Code))];
+        [.. Cronograma(fases).ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static r => (r.Field, r.Error.Code))];
 
     [Fact(DisplayName = "A fase que publica só o preliminar é recusada nos produtos, com o tipo de ato e a fase na mensagem")]
     public void PreliminarSemDefinitivo_RecusaNosProdutos()
     {
         FaseDeclarada fase = new ModeloDeFase("PROVA", 1) { Nome = "Prova escrita" }.Publicando(Preliminar("GABARITO")).Declarar();
 
-        FieldError recusa = Cronograma(fase).ConferirFechamentoDoCiclo().Should().ContainSingle().Subject;
+        FieldError recusa = Cronograma(fase).ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Com(("GABARITO", "Gabarito da prova"))).Should().ContainSingle().Subject;
 
         recusa.Field.Should().Be("fases[0].produtos");
         recusa.Error.Code.Should().Be("ProcessoSeletivo.FaseComPreliminarSemDefinitivo");
-        recusa.Error.Message.Should().Contain("'Prova escrita'").And.NotContain("'PROVA'").And.Contain("'GABARITO'");
+        recusa.Error.Message.Should().Contain("'Prova escrita'").And.NotContain("'PROVA'").And.Contain("'Gabarito da prova'").And.NotContain("GABARITO");
+    }
+
+    [Fact(DisplayName = "O tipo sem nome é citado sem nome nem código, e a recusa continua")]
+    public void PreliminarSemDefinitivo_TipoSemNome_NaoCitaOTipo()
+    {
+        FaseDeclarada fase = new ModeloDeFase("PROVA", 1) { Nome = "Prova escrita" }.Publicando(Preliminar("GABARITO")).Declarar();
+
+        FieldError recusa = Cronograma(fase).ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Should().ContainSingle().Subject;
+
+        recusa.Error.Message.Should().Contain("publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato").And.NotContain("GABARITO");
     }
 
     [Fact(DisplayName = "O definitivo de outra fase, ou de outro tipo de ato, não fecha o ciclo: cada tipo de ato aberto gera uma recusa")]

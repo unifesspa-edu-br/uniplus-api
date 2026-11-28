@@ -16,13 +16,35 @@ public static class ConferenciaDosTiposDeAto
 {
     public static IReadOnlyList<FieldError> ConferirResultadosSemPapel(
         CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, TiposDeAtoUnicosPorObjeto tipos) =>
-        ViolacoesDoProduto(cronograma, etapas, tipos, static (classificacao, produto) =>
-            classificacao.ViolacaoDoResultadoSemPapel(produto.Papel));
+        ViolacoesDoProduto(cronograma, etapas, tipos, static (classificacao, produto, nome) =>
+            classificacao.ViolacaoDoResultadoSemPapel(produto.Papel, nome));
 
     public static IReadOnlyList<FieldError> ConferirTiposQueCongelamComoResultado(
         CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, TiposDeAtoUnicosPorObjeto tipos) =>
-        ViolacoesDoProduto(cronograma, etapas, tipos, static (classificacao, produto) =>
-            classificacao.ViolacaoDoTipoQueCongelaComPapel(produto.Papel));
+        ViolacoesDoProduto(cronograma, etapas, tipos, static (classificacao, produto, nome) =>
+            classificacao.ViolacaoDoTipoQueCongelaComPapel(produto.Papel, nome));
+
+    /// <summary>
+    /// O produto que declara um tipo sem versão vigente no catálogo nem cópia na versão publicada: a publicação congela a
+    /// classificação de cada tipo declarado, e sem ela não há o que congelar. Uma recusa por produto, no campo do tipo, sem
+    /// nome nem código — o tipo não tem nome a citar, e o campo aponta o item.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ConferirTiposSemVersaoVigente(
+        CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, TiposDeAtoUnicosPorObjeto tipos)
+    {
+        ArgumentNullException.ThrowIfNull(tipos);
+
+        return
+        [
+            .. ProdutosDeclarados(cronograma, etapas)
+                .Where(produto => tipos.ClassificacaoDe(produto.AtoCodigo) is null)
+                .Select(static produto => new FieldError(produto.CampoDoAto, TipoSemVersaoVigente())),
+        ];
+    }
+
+    internal static DomainError TipoSemVersaoVigente() => new(
+        ProcessoSeletivoErrorCodes.TipoDeAtoSemVersaoVigente,
+        "O tipo de ato declarado no item não tem versão vigente no catálogo de Publicações, e a publicação congela a classificação de cada tipo declarado.");
 
     /// <summary>
     /// O tipo único declarado mais de uma vez, contando os produtos das fases e das etapas e a vaga que o ato da operação e os
@@ -40,7 +62,7 @@ public static class ConferenciaDosTiposDeAto
             .. OcorrenciasDeTipoUnico(cronograma, etapas, tipos)
                 .GroupBy(static ocorrencia => ocorrencia.AtoCodigo, StringComparer.Ordinal)
                 .Where(static grupo => grupo.Count() > 1)
-                .SelectMany(grupo => CausasDoTipoRepetido(tipos.NomeDe(grupo.Key), [.. grupo])),
+                .SelectMany(grupo => CausasDoTipoRepetido(tipos.Nomes.NomeDe(grupo.Key)!, [.. grupo])),
         ];
     }
 
@@ -89,14 +111,14 @@ public static class ConferenciaDosTiposDeAto
         CronogramaDoProcesso cronograma,
         EtapasDoProcesso etapas,
         TiposDeAtoUnicosPorObjeto tipos,
-        Func<ClassificacaoDoTipoDeAto, ProdutoDeclarado, DomainError?> violacao)
+        Func<ClassificacaoDoTipoDeAto, ProdutoDeclarado, string, DomainError?> violacao)
     {
         ArgumentNullException.ThrowIfNull(tipos);
 
         return
         [
             .. ProdutosDeclarados(cronograma, etapas)
-                .Select(produto => (produto, erro: tipos.ClassificacaoDe(produto.AtoCodigo) is { } classificacao ? violacao(classificacao, produto) : null))
+                .Select(produto => (produto, erro: tipos.ClassificacaoDe(produto.AtoCodigo) is { } classificacao ? violacao(classificacao, produto, tipos.Nomes.NomeDe(produto.AtoCodigo)!) : null))
                 .Where(static par => par.erro is not null)
                 .Select(static par => new FieldError(par.produto.Campo, par.erro!)),
         ];

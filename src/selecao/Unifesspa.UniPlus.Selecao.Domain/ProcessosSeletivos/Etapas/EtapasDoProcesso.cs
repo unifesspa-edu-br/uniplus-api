@@ -116,11 +116,16 @@ public sealed record EtapasDoProcesso
         Conferir().Count == 0);
 
     /// <summary>O preliminar de um tipo de ato exige o definitivo do mesmo tipo dentro da própria etapa.</summary>
-    public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
-    [
-        .. Etapas.SelectMany(static (etapa, posicao) =>
-            ProdutosJulgaveis(etapa).Select(tipo => NaEtapa(posicao, "produtos", PreliminarSemDefinitivo(etapa.Nome, tipo)))),
-    ];
+    public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo(NomesDosTiposDeAto nomes)
+    {
+        ArgumentNullException.ThrowIfNull(nomes);
+
+        return
+        [
+            .. Etapas.SelectMany((etapa, posicao) =>
+                ProdutosJulgaveis(etapa).Select(tipo => NaEtapa(posicao, "produtos", PreliminarSemDefinitivo(etapa.Nome, nomes.NomeDe(tipo))))),
+        ];
+    }
 
     // O ciclo de um preliminar sem definitivo lê a lista dos produtos inteira: com parte recusada, o definitivo pode ser ela.
     private static IReadOnlyList<string> ProdutosJulgaveis(EtapaDeclarada etapa) =>
@@ -162,9 +167,11 @@ public sealed record EtapasDoProcesso
 
     public IReadOnlyList<ItemConformidade> ItensDaAvaliacao(CitacoesDeNota citacoes) => ConformidadeDaAvaliacaoDasEtapas.ItensDaAvaliacao(Etapas, citacoes);
 
-    internal static DomainError PreliminarSemDefinitivo(string nomeDaEtapa, string tipo) => new(
+    internal static DomainError PreliminarSemDefinitivo(string nomeDaEtapa, string? nomeDoTipo) => new(
         ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo,
-        $"A etapa '{nomeDaEtapa}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria etapa.");
+        nomeDoTipo is null
+            ? $"A etapa '{nomeDaEtapa}' publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato. Publique o resultado definitivo na própria etapa."
+            : $"A etapa '{nomeDaEtapa}' publica o resultado preliminar do ato '{nomeDoTipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria etapa.");
 
     internal static DomainError EtapaSemFaseDeclarada(string nomeDaEtapa) => new(
         "ProcessoSeletivo.EtapaSemFaseDeclarada",

@@ -85,6 +85,7 @@ public static class ProcessoSeletivoErrorCodes
     public const string RegraIncoerenteComANatureza = "ProcessoSeletivo.RegraIncoerenteComANatureza";
     public const string TipoDeAtoUnicoDeclaradoMaisDeUmaVez = "ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez";
     public const string ResultadoDeclaradoSemPapel = "ProcessoSeletivo.ResultadoDeclaradoSemPapel";
+    public const string TipoDeAtoSemVersaoVigente = "ProcessoSeletivo.TipoDeAtoSemVersaoVigente";
     public const string TipoQueCongelaDeclaradoComoResultado = "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado";
     public const string RetificacaoDesfazCicloRecursalAberto = "ProcessoSeletivo.RetificacaoDesfazCicloRecursalAberto";
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";

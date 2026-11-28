@@ -51,7 +51,7 @@ internal static class ErrosDaPublicacao
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AtoDaConfiguracao() =>
     [
-        new("ProcessoSeletivo.TipoDeAtoSemVersaoVigente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_sem_versao_vigente", "Não há versão vigente do tipo de ato na data da publicação")),
+        new(ProcessoSeletivoErrorCodes.TipoDeAtoSemVersaoVigente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_sem_versao_vigente", "Não há versão vigente do tipo de ato na data da publicação")),
         new("ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_nao_congela_configuracao", "O ato que cria a versão da configuração precisa ser de um tipo que congela configuração")),
         new("ProcessoSeletivo.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
     ];

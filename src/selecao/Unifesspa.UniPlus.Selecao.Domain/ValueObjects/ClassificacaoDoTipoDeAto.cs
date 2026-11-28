@@ -20,25 +20,25 @@ public sealed record ClassificacaoDoTipoDeAto(bool EhResultado, bool CongelaConf
     /// O tipo é resultado e o produto não declara papel. O resultado sem preliminar é declarado
     /// definitivo: só o ato que não é resultado fica sem papel.
     /// </summary>
-    public DomainError? ViolacaoDoResultadoSemPapel(PapelDaPublicacaoPrevista? papel) =>
+    public DomainError? ViolacaoDoResultadoSemPapel(PapelDaPublicacaoPrevista? papel, string nomeDoTipo) =>
         papel is null && EhResultado
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.ResultadoDeclaradoSemPapel,
-                "O tipo de ato declarado é resultado no catálogo e precisa de papel: o resultado sem preliminar é declarado definitivo.")
+                $"O tipo de ato '{nomeDoTipo}' é resultado no catálogo e precisa de papel: o resultado sem preliminar é declarado definitivo.")
             : null;
 
     /// <summary>
     /// O tipo congela a configuração e o produto o declara como item de resultado. A correção de
     /// um resultado não cria versão nova, então um tipo que congela não teria correção possível.
     /// </summary>
-    public DomainError? ViolacaoDoTipoQueCongelaComPapel(PapelDaPublicacaoPrevista? papel) =>
+    public DomainError? ViolacaoDoTipoQueCongelaComPapel(PapelDaPublicacaoPrevista? papel, string nomeDoTipo) =>
         papel is not null && CongelaConfiguracao
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.TipoQueCongelaDeclaradoComoResultado,
-                "O tipo de ato declarado congela a configuração e não pode ser item de resultado: a correção de um resultado não cria versão nova.")
+                $"O tipo de ato '{nomeDoTipo}' congela a configuração e não pode ser item de resultado: a correção de um resultado não cria versão nova.")
             : null;
 
     /// <summary>A primeira das duas violações, ou nulo quando o produto é coerente com o catálogo.</summary>
-    public DomainError? ViolacaoDoProduto(PapelDaPublicacaoPrevista? papel) =>
-        ViolacaoDoResultadoSemPapel(papel) ?? ViolacaoDoTipoQueCongelaComPapel(papel);
+    public DomainError? ViolacaoDoProduto(PapelDaPublicacaoPrevista? papel, string nomeDoTipo) =>
+        ViolacaoDoResultadoSemPapel(papel, nomeDoTipo) ?? ViolacaoDoTipoQueCongelaComPapel(papel, nomeDoTipo);
 }

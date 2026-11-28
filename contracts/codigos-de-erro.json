@@ -7129,17 +7129,17 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal",
       "status": 422,
-      "titulo": "Uma modalidade SegueCascata está numa oferta que não usa regra de distribuição do ramo federal (Lei 12.711)"
+      "titulo": "Uma modalidade com a regra 'Segue a ordem de remanejamento' está numa oferta que não usa regra de distribuição do ramo federal (Lei 12.711)"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.cascata_origem_ausente",
       "status": 422,
-      "titulo": "Uma modalidade SegueCascata não tem sequência de destinos declarada na cascata do processo"
+      "titulo": "Uma modalidade com a regra 'Segue a ordem de remanejamento' não tem sequência de destinos declarada na cascata do processo"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata",
       "status": 422,
-      "titulo": "A cascata declara origem que nenhuma oferta do processo marca como SegueCascata"
+      "titulo": "A cascata declara origem que nenhuma oferta do processo marca com a regra 'Segue a ordem de remanejamento'"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.condicao_atendimento_referenciada_por_exigencia_viva",

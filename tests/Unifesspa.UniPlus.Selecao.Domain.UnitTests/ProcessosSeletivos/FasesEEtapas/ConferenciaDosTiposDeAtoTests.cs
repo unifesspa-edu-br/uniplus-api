@@ -26,7 +26,8 @@ public sealed class ConferenciaDosTiposDeAtoTests
         {
             ["RESULTADO_FINAL"] = new(EhResultado: true, CongelaConfiguracao: false),
             ["EDITAL"] = new(EhResultado: false, CongelaConfiguracao: true),
-        });
+        },
+        new Dictionary<string, string> { ["EDITAL"] = "Edital", ["RESULTADO_FINAL"] = "Resultado final" });
 
     private static ModeloDeFase FaseCom(params ProdutoDaFase[] produtos) => new ModeloDeFase("RESULTADO", 1).Publicando(produtos);
 
@@ -42,7 +43,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
             ("fases[0].produtos[1].papel", "ProcessoSeletivo.ResultadoDeclaradoSemPapel"),
             ("etapas[0].produtos[0].papel", "ProcessoSeletivo.ResultadoDeclaradoSemPapel"));
         ConferenciaDosTiposDeAto.ConferirResultadosSemPapel(cronograma, etapas, Catalogo).Select(static recusa => recusa.Error.Message)
-            .Should().OnlyContain(static mensagem => mensagem == "O tipo de ato declarado é resultado no catálogo e precisa de papel: o resultado sem preliminar é declarado definitivo.");
+            .Should().OnlyContain(static mensagem => mensagem == "O tipo de ato 'Resultado final' é resultado no catálogo e precisa de papel: o resultado sem preliminar é declarado definitivo.");
     }
 
     [Fact(DisplayName = "O resultado com papel e o ato que não é resultado sem papel não são recusados")]
@@ -61,7 +62,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
         Causas(ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, Etapas(), Catalogo))
             .Should().Equal(("fases[0].produtos[0].papel", "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado"));
         ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(cronograma, Etapas(), Catalogo).Single().Error.Message
-            .Should().Be("O tipo de ato declarado congela a configuração e não pode ser item de resultado: a correção de um resultado não cria versão nova.");
+            .Should().Be("O tipo de ato 'Edital' congela a configuração e não pode ser item de resultado: a correção de um resultado não cria versão nova.");
         ConferenciaDosTiposDeAto.ConferirTiposQueCongelamComoResultado(Fases(FaseCom(ProdutoDaFase.Criar("EDITAL", null))), Etapas(), Catalogo).Should().BeEmpty();
     }
 

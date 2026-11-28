@@ -165,7 +165,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
             {
                 [codigo] = new(ehResultado, congela),
-            });
+            },
+            new Dictionary<string, string>(StringComparer.Ordinal) { [codigo] = "Tipo de ato de teste" });
 
     private static FaseCronograma FaseComProdutos(params ProdutoDaFase[] produtos) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
         OrigensDoTipoDeFaseDeTeste.Da(

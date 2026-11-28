@@ -15,18 +15,26 @@ public static class ChecklistDeConformidade
     /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela coincide
     /// com a conferência da configuração e um aviso nunca recusa uma publicação.
     /// </summary>
-    public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(ConfiguracaoDeclarada configuracao)
+    public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(ConfiguracaoDeclarada configuracao, NomesDosTiposDeAto nomes)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(nomes);
 
         return [
             .. CicloRecursal.DefinitivosEmMaisDeUmLugar(TiposDeAtoDoCronograma.DeclaracoesDeAtos(configuracao))
-                .Select(static repetido => new AvisoConformidade(
+                .Select(repetido => new AvisoConformidade(
                     CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar,
                     DimensaoConformidade.Cronograma,
-                    $"O tipo de ato '{repetido.AtoCodigo}' está declarado como resultado definitivo em mais de uma fase ou etapa ({JuntarLugares(repetido.Lugares)}). Confirme que o edital quer fechar mais de um ciclo com o mesmo tipo.")),
+                    MensagemDoDefinitivoEmMaisDeUmLugar(nomes.NomeDe(repetido.AtoCodigo), repetido.Lugares))),
             .. AvisosDaHomologacao.Da(CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases, configuracao.Origem)),
         ];
+    }
+
+    private static string MensagemDoDefinitivoEmMaisDeUmLugar(string? nomeDoTipo, IReadOnlyList<string> lugares)
+    {
+        string tipo = nomeDoTipo is null ? "Um tipo de ato" : $"O tipo de ato '{nomeDoTipo}'";
+
+        return $"{tipo} está declarado como resultado definitivo em mais de uma fase ou etapa ({JuntarLugares(lugares)}). Confirme que o edital quer fechar mais de um ciclo com o mesmo tipo.";
     }
 
     internal static string JuntarLugares(IReadOnlyList<string> lugares) =>

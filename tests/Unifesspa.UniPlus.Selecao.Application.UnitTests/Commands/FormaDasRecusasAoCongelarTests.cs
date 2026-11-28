@@ -32,7 +32,6 @@ public sealed class FormaDasRecusasAoCongelarTests
     public static TheoryData<DefeitoDoCongelamento> RecusasDeErroUnico() =>
     [
         DefeitoDoCongelamento.TipoDeAto,
-        DefeitoDoCongelamento.TiposDeAtoCongelados,
         DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
@@ -60,6 +59,17 @@ public sealed class FormaDasRecusasAoCongelarTests
         (Result resposta, IEnumerable<object> eventos) = await Para(OperacaoQueCongela.Publicar).Com(defeito).ExecutarAsync();
 
         resposta.Errors.Should().ContainSingle().Which.Field.Should().Be(campoEsperado);
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Cada produto cujo tipo de ato não tem versão vigente chega como uma recusa no campo do tipo, sem eventos")]
+    public async Task TiposSemVersaoVigente_ChegamUmaRecusaPorProduto()
+    {
+        (Result resposta, IEnumerable<object> eventos) = await Para(OperacaoQueCongela.Publicar)
+            .Com(DefeitoDoCongelamento.TiposDeAtoCongelados).ExecutarAsync();
+
+        resposta.Errors.Should().NotBeEmpty().And.OnlyContain(static e => e.Error.Code == "ProcessoSeletivo.TipoDeAtoSemVersaoVigente");
+        resposta.Errors.Should().OnlyContain(static e => e.Field != null && e.Field.EndsWith("/atoCodigo", StringComparison.Ordinal));
         eventos.Should().BeEmpty();
     }
 

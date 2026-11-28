@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -22,7 +23,7 @@ public sealed class CicloRecursalDoProcessoTests
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("RESULTADO", 1).Publicando(ModeloDeFase.Preliminar("RESULTADO")));
         EtapasDoProcesso etapas = Etapas(new ModeloDeEtapa("Prova") { Produtos = [ModeloDeEtapa.Preliminar("GABARITO")] });
 
-        Causas(CicloRecursalDoProcesso.Conferir(cronograma, etapas)).Should().Equal(
+        Causas(CicloRecursalDoProcesso.Conferir(cronograma, etapas, NomesDosTiposDeAtoDeTeste.Nenhum)).Should().Equal(
             ("fases[0].produtos", "ProcessoSeletivo.FaseComPreliminarSemDefinitivo"),
             ("etapas[0].produtos", "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo"));
     }
@@ -33,8 +34,8 @@ public sealed class CicloRecursalDoProcessoTests
         CronogramaDoProcesso cronograma = Fases(new ModeloDeFase("RESULTADO", 1).Publicando(ModeloDeFase.Preliminar("RESULTADO"), ModeloDeFase.Definitivo("RESULTADO")));
         EtapasDoProcesso etapas = Etapas(new ModeloDeEtapa("Prova") { Produtos = [ModeloDeEtapa.Preliminar("GABARITO"), ModeloDeEtapa.Definitivo("GABARITO")] });
 
-        CicloRecursalDoProcesso.Conferir(cronograma, etapas).Should().BeEmpty();
-        CicloRecursalDoProcesso.Item(cronograma, etapas).Ok.Should().BeTrue();
+        CicloRecursalDoProcesso.Conferir(cronograma, etapas, NomesDosTiposDeAtoDeTeste.Nenhum).Should().BeEmpty();
+        CicloRecursalDoProcesso.Item(cronograma, etapas, NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeTrue();
     }
 
     [Fact(DisplayName = "O item do ciclo fica vermelho com causa na fase ou na etapa, e tem o código e o texto do checklist")]
@@ -44,9 +45,9 @@ public sealed class CicloRecursalDoProcessoTests
         CronogramaDoProcesso comCausa = Fases(new ModeloDeFase("RESULTADO", 1).Publicando(ModeloDeFase.Preliminar("RESULTADO")));
         EtapasDoProcesso etapaComCausa = Etapas(new ModeloDeEtapa("Prova") { Produtos = [ModeloDeEtapa.Preliminar("GABARITO")] });
 
-        CicloRecursalDoProcesso.Item(comCausa, Etapas()).Ok.Should().BeFalse();
-        CicloRecursalDoProcesso.Item(conforme, etapaComCausa).Ok.Should().BeFalse();
-        CicloRecursalDoProcesso.Item(conforme, Etapas()).Codigo.Should().Be("cronograma_conclusao_do_ciclo_recursal");
-        CicloRecursalDoProcesso.Item(conforme, Etapas()).Mensagem.Should().StartWith("Cronograma: a fase ou a etapa que publica resultado preliminar");
+        CicloRecursalDoProcesso.Item(comCausa, Etapas(), NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeFalse();
+        CicloRecursalDoProcesso.Item(conforme, etapaComCausa, NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeFalse();
+        CicloRecursalDoProcesso.Item(conforme, Etapas(), NomesDosTiposDeAtoDeTeste.Nenhum).Codigo.Should().Be("cronograma_conclusao_do_ciclo_recursal");
+        CicloRecursalDoProcesso.Item(conforme, Etapas(), NomesDosTiposDeAtoDeTeste.Nenhum).Mensagem.Should().StartWith("Cronograma: a fase ou a etapa que publica resultado preliminar");
     }
 }

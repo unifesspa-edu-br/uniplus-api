@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -100,9 +101,9 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
 
         CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].produtos"));
 
-        CronogramaDoProcesso.Do(fases).ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should()
+        CronogramaDoProcesso.Do(fases).ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static recusa => recusa.Field).Should()
             .Equal("fases[0].produtos", "fases[1].produtos");
-        cronograma.ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should().Equal("fases[1].produtos");
+        cronograma.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static recusa => recusa.Field).Should().Equal("fases[1].produtos");
     }
 
     [Fact(DisplayName = "O item do fechamento do ciclo fica pendente, e não aprovado, quando a lista dos produtos de uma fase tem parte recusada")]
@@ -111,8 +112,8 @@ public sealed class SuspensaoPorParteRecusadaDaFaseTests
         FaseCronograma[] fases = [new ModeloDeFase("INSCRICAO", 1).Janela(1, 5).Adotada()];
         EtapasDoProcesso semEtapas = EtapasDoProcesso.Das([]);
 
-        CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases), semEtapas).Ok.Should().BeTrue();
-        CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].produtos")), semEtapas).Ok.Should().BeFalse();
+        CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases), semEtapas, NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeTrue();
+        CicloRecursalDoProcesso.Item(CronogramaDoProcesso.Do(fases, ComPartesRecusadas("fases[0].produtos")), semEtapas, NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "O recurso sem banca de análise não é julgado na fase cuja lista das bancas tem parte recusada, e o item do painel fica pendente")]

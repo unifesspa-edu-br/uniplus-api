@@ -45,7 +45,7 @@ public sealed class ConferenciaDoProdutoDoAtoTests
     }
 
     [Fact]
-    public async Task Handle_PapelEmAtoQueNaoEhResultado_RecusaSemRepetirOCodigoDoAto()
+    public async Task Handle_PapelEmAtoQueNaoEhResultado_RecusaCitandoONomeDoTipo()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDoComunicado());
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Produtos = [ProdutoDoComunicado("DEFINITIVO")] };
@@ -53,7 +53,8 @@ public sealed class ConferenciaDoProdutoDoAtoTests
         Result resultado = await cenario.DefinirFasesAsync(fase);
 
         DomainError erro = resultado.Errors.Single(e => e.Error.Code == "ProdutoDaFase.PapelEmAtoQueNaoEhResultado").Error;
-        erro.Message.Should().Be("O tipo de ato declarado não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.");
+        erro.Message.Should().Be("O tipo de ato 'Comunicado' não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.");
+        erro.Message.Should().NotContain("COMUNICADO");
     }
 
     private static void ConferirRecusaDoPapel(Result resultado, string codigo)

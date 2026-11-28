@@ -170,9 +170,8 @@ public sealed class ConferenciaDoProdutoDoEdital(
         ArgumentNullException.ThrowIfNull(cadeias);
         SituacaoDoProdutoPrevisto situacao = ProjecaoDosProdutosPrevistos.SituacaoDe(cadeias.PrimeiraPublicacaoDe(produto.Item));
 
-        // O tipo vigente já foi conferido no dia da publicação; a consulta não escolhe esse dia.
         ImpedimentoDoProdutoDto? impedimento = ProjecaoDosProdutosPrevistos
-            .ImpedimentoDe(produto, situacao, configuracaoPublicada, cadeias, tipoVigente: true);
+            .ImpedimentoDe(produto, situacao, configuracaoPublicada, cadeias);
 
         return impedimento is null
             ? Result.Success()

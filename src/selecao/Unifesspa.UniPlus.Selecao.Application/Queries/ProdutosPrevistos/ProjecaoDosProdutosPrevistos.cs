@@ -75,40 +75,39 @@ internal static class ProjecaoDosProdutosPrevistos
         new(produto.Id, produto.AtoCodigo, produto.Papel, IdentidadeDoItemDoEdital.DaEtapa(etapa, produto));
 
     public static ProdutosPrevistosDoProcessoDto Projetar(
-        int numeroDaVersao,
-        ConfiguracaoPublicada configuracaoPublicada,
+        ConfiguracaoVigente vigente,
         CadeiasDosProdutosPrevistos cadeias,
-        IReadOnlyDictionary<string, string> tiposVigentes,
+        IReadOnlySet<string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
     {
-        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
+        ArgumentNullException.ThrowIfNull(vigente);
         ArgumentNullException.ThrowIfNull(cadeias);
         ArgumentNullException.ThrowIfNull(tiposVigentes);
         ArgumentNullException.ThrowIfNull(projetarAto);
 
         return new ProdutosPrevistosDoProcessoDto(
-            numeroDaVersao,
-            PoliticaDeDivulgacaoDaVersao(configuracaoPublicada),
-            [.. configuracaoPublicada.Cronograma.CronogramaFases.OrderBy(static f => f.Ordem).Select(f => Fase(f, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))],
-            [.. configuracaoPublicada.Avaliacao.Etapas
-                .Where(static e => e.FaseCodigo is null)
-                .OrderBy(static e => e.Ordem)
-                .ThenBy(static e => e.Nome, StringComparer.Ordinal)
-                .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
+            vigente.NumeroDaVersao,
+            PoliticaDeDivulgacaoDaVersao(vigente.Configuracao),
+            [.. vigente.Configuracao.Cronograma.CronogramaFases.OrderBy(static f => f.Ordem).Select(f => Fase(f, vigente, cadeias, tiposVigentes, projetarAto))],
+            EtapasDaFase(null, vigente, cadeias, tiposVigentes, projetarAto));
     }
 
-    private static EtapaComProdutosPrevistosDto Etapa(EtapaProcesso etapa, ConfiguracaoPublicada configuracaoPublicada,
-        CadeiasDosProdutosPrevistos cadeias, IReadOnlyDictionary<string, string> tiposVigentes,
-        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(etapa.Id, etapa.Nome, etapa.Ordem,
-        Produtos([.. etapa.Produtos.Select(p => DeclaradoDaEtapa(etapa, p))], configuracaoPublicada, cadeias, tiposVigentes, projetarAto));
-
-    private static FaseComProdutosPrevistosDto Fase(FaseCronograma fase, ConfiguracaoPublicada configuracaoPublicada,
-        CadeiasDosProdutosPrevistos cadeias, IReadOnlyDictionary<string, string> tiposVigentes,
-        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(fase.Id, fase.Codigo, fase.Ordem,
-        Produtos([.. fase.Produtos.Select(p => DeclaradoDaFase(fase, p))], configuracaoPublicada, cadeias, tiposVigentes, projetarAto),
-        [.. configuracaoPublicada.Avaliacao.Etapas.Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
+    private static List<EtapaComProdutosPrevistosDto> EtapasDaFase(string? faseCodigo, ConfiguracaoVigente vigente,
+        CadeiasDosProdutosPrevistos cadeias, IReadOnlySet<string> tiposVigentes, Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) =>
+        [.. vigente.Configuracao.Avaliacao.Etapas.Where(e => string.Equals(e.FaseCodigo, faseCodigo, StringComparison.Ordinal))
             .OrderBy(static e => e.Ordem).ThenBy(static e => e.Nome, StringComparer.Ordinal)
-            .Select(e => Etapa(e, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))]);
+            .Select(e => Etapa(e, vigente, cadeias, tiposVigentes, projetarAto))];
+
+    private static EtapaComProdutosPrevistosDto Etapa(EtapaProcesso etapa, ConfiguracaoVigente vigente,
+        CadeiasDosProdutosPrevistos cadeias, IReadOnlySet<string> tiposVigentes,
+        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(etapa.Id, etapa.Nome, etapa.Ordem,
+        Produtos([.. etapa.Produtos.Select(p => DeclaradoDaEtapa(etapa, p))], vigente, cadeias, tiposVigentes, projetarAto));
+
+    private static FaseComProdutosPrevistosDto Fase(FaseCronograma fase, ConfiguracaoVigente vigente,
+        CadeiasDosProdutosPrevistos cadeias, IReadOnlySet<string> tiposVigentes,
+        Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) => new(fase.Id, fase.Codigo, fase.Ordem,
+        Produtos([.. fase.Produtos.Select(p => DeclaradoDaFase(fase, p))], vigente, cadeias, tiposVigentes, projetarAto),
+        EtapasDaFase(fase.Codigo, vigente, cadeias, tiposVigentes, projetarAto));
 
     /// <summary>
     /// A política de divulgação do certame como a versão congelou, e não como o cadastro está hoje.
@@ -125,27 +124,27 @@ internal static class ProjecaoDosProdutosPrevistos
 
     private static List<ProdutoPrevistoDto> Produtos(
         List<Declarado> declarados,
-        ConfiguracaoPublicada configuracaoPublicada,
+        ConfiguracaoVigente vigente,
         CadeiasDosProdutosPrevistos cadeias,
-        IReadOnlyDictionary<string, string> tiposVigentes,
+        IReadOnlySet<string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) =>
-        [.. declarados.Select(d => Produto(d, configuracaoPublicada, cadeias, tiposVigentes, projetarAto))];
+        [.. declarados.Select(d => Produto(d, vigente, cadeias, tiposVigentes, projetarAto))];
 
     private static ProdutoPrevistoDto Produto(
         Declarado produto,
-        ConfiguracaoPublicada configuracaoPublicada,
+        ConfiguracaoVigente vigente,
         CadeiasDosProdutosPrevistos cadeias,
-        IReadOnlyDictionary<string, string> tiposVigentes,
+        IReadOnlySet<string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
     {
         AtoDoProcesso? primeira = cadeias.PrimeiraPublicacaoDe(produto.Item);
         SituacaoDoProdutoPrevisto situacao = SituacaoDe(primeira);
-        bool tipoVigente = tiposVigentes.ContainsKey(produto.AtoCodigo);
-        ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, configuracaoPublicada, cadeias, tipoVigente);
+        string? nomeDoTipo = vigente.TiposDeAto.GetValueOrDefault(produto.AtoCodigo)?.Nome ?? primeira?.TipoNome;
+        ImpedimentoDoProdutoDto? impedimento = ImpedimentoParaPublicar(produto, situacao, vigente, cadeias, tiposVigentes, nomeDoTipo);
         return new ProdutoPrevistoDto(
             produto.Id,
             produto.AtoCodigo,
-            tiposVigentes.GetValueOrDefault(produto.AtoCodigo) ?? primeira?.TipoNome,
+            nomeDoTipo,
             ProjecaoDoPapelDaPublicacao.De(produto.Papel),
             CodigoComRotulo<SituacaoDoProdutoPrevisto>.De(situacao),
             primeira is null ? null : projetarAto(primeira),
@@ -166,8 +165,7 @@ internal static class ProjecaoDosProdutosPrevistos
         Declarado produto,
         SituacaoDoProdutoPrevisto situacao,
         ConfiguracaoPublicada configuracaoPublicada,
-        CadeiasDosProdutosPrevistos cadeias,
-        bool tipoVigente)
+        CadeiasDosProdutosPrevistos cadeias)
     {
         if (situacao == SituacaoDoProdutoPrevisto.Publicado)
         {
@@ -179,10 +177,28 @@ internal static class ProjecaoDosProdutosPrevistos
             return doPreliminar;
         }
 
-        return tipoVigente
-            ? null
-            : new(ImpedimentoDoProduto.TipoDeAtoNaoVigente, $"O tipo de ato '{produto.AtoCodigo}' não tem versão vigente no catálogo de Publicações.");
+        return null;
     }
+
+    private static ImpedimentoDoProdutoDto? ImpedimentoParaPublicar(
+        Declarado produto,
+        SituacaoDoProdutoPrevisto situacao,
+        ConfiguracaoVigente vigente,
+        CadeiasDosProdutosPrevistos cadeias,
+        IReadOnlySet<string> tiposVigentes,
+        string? nomeDoTipo) =>
+        ImpedimentoDe(produto, situacao, vigente.Configuracao, cadeias)
+            ?? ImpedimentoDaVigencia(tiposVigentes.Contains(produto.AtoCodigo), nomeDoTipo);
+
+    private static ImpedimentoDoProdutoDto? ImpedimentoDaVigencia(bool tipoVigente, string? nomeDoTipo) =>
+        tipoVigente
+            ? null
+            : new(ImpedimentoDoProduto.TipoDeAtoNaoVigente, MensagemDoTipoSemVersaoVigente(nomeDoTipo));
+
+    private static string MensagemDoTipoSemVersaoVigente(string? nomeDoTipo) =>
+        nomeDoTipo is null
+            ? "O tipo de ato do item não tem versão vigente no catálogo de Publicações."
+            : $"O tipo de ato '{nomeDoTipo}' não tem versão vigente no catálogo de Publicações.";
 
     private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, ConfiguracaoPublicada configuracaoPublicada, CadeiasDosProdutosPrevistos cadeias)
     {
