@@ -117,7 +117,7 @@ public static class ConferenciaDoConteudoDoModelo
     /// <summary>A forma de um campo do modelo, item ou campo de grupo, no caminho dele.</summary>
     private static IEnumerable<FieldError> ConferirCampo(ItemDoModelo campo, string caminho) =>
         NoCaminho(
-            FormaDoItem.Conferir(campo.FatoCodigo, campo.Ordem, campo.Apresentacao, campo.Formato, campo.Regras),
+            FormaDoItem.Conferir(campo.FatoCodigo, campo.Ordem, campo.Apresentacao, campo.Formato, RegrasLidasDoCampo.De(campo.Regras)),
             caminho);
 
     /// <summary>A forma do grupo, a do candidato como membro quando ele o inclui e a de cada campo do grupo.</summary>

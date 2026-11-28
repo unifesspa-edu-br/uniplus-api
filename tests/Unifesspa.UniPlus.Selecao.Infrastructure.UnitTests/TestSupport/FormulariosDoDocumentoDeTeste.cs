@@ -35,6 +35,17 @@ internal static class FormulariosDoDocumentoDeTeste
             cronograma);
     }
 
+    /// <summary>
+    /// Um documento cuja única fase não coleta a inscrição, com <c>HABILITACAO</c> nela: o formulário em que o impedimento
+    /// do item é recusado.
+    /// </summary>
+    internal static FormulariosDoDocumento ComFormularioForaDaInscricao()
+    {
+        FaseCronograma fase = Fase(coletaInscricao: false);
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do([fase]);
+        return new FormulariosDoDocumento([Formulario(CodigoDaHabilitacao, fase.Id, cronograma)], cronograma);
+    }
+
     /// <summary>As páginas mínimas de um formulário: uma seção de dados e a revisão e aceite por último.</summary>
     internal static IReadOnlyList<PaginaDoFormulario> Paginas() =>
     [

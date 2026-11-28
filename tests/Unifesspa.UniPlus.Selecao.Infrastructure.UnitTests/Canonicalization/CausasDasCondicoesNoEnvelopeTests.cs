@@ -17,11 +17,11 @@ public sealed class CausasDasCondicoesNoEnvelopeTests
     [InlineData(false, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public void LerObrigatoriedadeRecusandoNaHora_CondicoesInvalidas_PropagaCausas(bool separadas, bool unica)
+    public void LerObrigatoriedade_CondicoesInvalidas_DevolveCausasNoCaminhoDoItem(bool separadas, bool unica)
     {
         JsonObject documento = new() { ["obrigatoriedade"] = new JsonObject { ["tipo"] = "QUANDO", ["quando"] = CondicoesNoEnvelope.Invalidas(separadas, unica) } };
         LeitorEnvelope leitor = new();
-        LeituraDasCondicoes.LerObrigatoriedadeRecusandoNaHora(leitor, documento, "item");
+        leitor.Propagar<object>(LeituraDasCondicoes.LerObrigatoriedade(leitor, documento, "item")!.Errors, "item");
         CondicoesNoEnvelope.Conferir(new JsonObject { ["item"] = documento }, leitor, "item.obrigatoriedade.quando", separadas, unica);
     }
 
@@ -29,11 +29,11 @@ public sealed class CausasDasCondicoesNoEnvelopeTests
     [InlineData(false, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public void LerImpedimento_CondicoesInvalidas_PropagaCausas(bool separadas, bool unica)
+    public void LerImpedimento_CondicoesInvalidas_DevolveCausasNoCaminhoDoItem(bool separadas, bool unica)
     {
         JsonObject documento = new() { ["impedimento"] = new JsonObject { ["mensagem"] = "Mensagem", ["quando"] = CondicoesNoEnvelope.Invalidas(separadas, unica) } };
         LeitorEnvelope leitor = new();
-        LeituraDasCondicoes.LerImpedimento(leitor, documento, "item");
+        leitor.Propagar<object>(LeituraDasCondicoes.LerImpedimento(leitor, documento, "item")!.Errors, "item");
         CondicoesNoEnvelope.Conferir(new JsonObject { ["item"] = documento }, leitor, "item.impedimento.quando", separadas, unica);
     }
 

@@ -177,7 +177,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(regras);
         ExigirCopiaCompleta(copia);
 
-        List<FieldError> erros = ConferirFormaECopia(fatoCodigo, ordem, apresentacao, regras, copia);
+        List<FieldError> erros = ConferirForma(fatoCodigo, ordem, apresentacao, RegrasLidasDoCampo.De(regras), copia);
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
@@ -195,7 +195,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ExigirCopiaCompleta(copia);
 
         // A mesma forma e o mesmo vocabulário que Criar confere.
-        List<FieldError> erros = ConferirFormaECopia(FatoCodigo, Ordem, Apresentacao, Regras, copia);
+        List<FieldError> erros = ConferirForma(FatoCodigo, Ordem, Apresentacao, RegrasLidasDoCampo.De(Regras), copia);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
@@ -209,12 +209,19 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// A forma do item e o vocabulário fechado da cópia do catálogo, uma só para a criação e para a
-    /// cópia refeita.
+    /// A forma do item e o vocabulário fechado da cópia do catálogo, uma só para a criação, para a cópia refeita e para
+    /// quem lê o item com parte das regras recusada: a parte recusada vem nula em <paramref name="regras"/> e não é
+    /// conferida aqui.
     /// </summary>
-    private static List<FieldError> ConferirFormaECopia(
-        string fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, RegrasDoCampo regras, CopiaDoItemNoCatalogo copia) =>
-        [.. FormaDoItem.Conferir(fatoCodigo, ordem, apresentacao, copia.Formato, regras), .. copia.ConferirVocabulario()];
+    public static List<FieldError> ConferirForma(
+        string fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, RegrasLidasDoCampo regras, CopiaDoItemNoCatalogo copia)
+    {
+        ArgumentNullException.ThrowIfNull(apresentacao);
+        ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(copia);
+
+        return [.. FormaDoItem.Conferir(fatoCodigo, ordem, apresentacao, copia.Formato, regras), .. copia.ConferirVocabulario()];
+    }
 
     private void AdotarApresentacao(ApresentacaoDoCampo apresentacao)
     {
