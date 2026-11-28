@@ -198,13 +198,13 @@ internal static class LeituraDosFormularios
         }
 
         leitor.ExigirChaves(item, pathPagina, "codigo", "ordem", "tipo", "bloco", "titulo", "descricao", "aviso", "exibicao");
-        DeclaracaoPagina d = LerDeclaracaoDaPagina(leitor, item, pathPagina);
+        DeclaracaoPagina declaracaoDaPagina = LerDeclaracaoDaPagina(leitor, item, pathPagina);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        return CriarPagina(leitor, pathPagina, ordemAnterior, d);
+        return CriarPagina(leitor, pathPagina, ordemAnterior, declaracaoDaPagina);
     }
 
     private sealed record DeclaracaoPagina(string Codigo, int Ordem, TipoPaginaFormulario Tipo, BlocoSistema? Bloco, string Titulo, string? Descricao,
@@ -220,32 +220,24 @@ internal static class LeituraDosFormularios
         leitor.TextoOpcional(item, "aviso", path, LimitesDoEnvelope.TextoPaginaFormulario),
         LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path));
 
-    private static PaginaDoFormulario? CriarPagina(LeitorEnvelope leitor, string pathPagina, int? ordemAnterior, DeclaracaoPagina d)
+    private static PaginaDoFormulario? CriarPagina(LeitorEnvelope leitor, string pathPagina, int? ordemAnterior, DeclaracaoPagina declaracaoDaPagina)
     {
-        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
-        if (exibicaoLida.IsFailure)
-        {
-            return leitor.Propagar<PaginaDoFormulario?>(exibicaoLida.Errors, $"{pathPagina}.exibicao");
-        }
-
-        return MontarPagina(leitor, pathPagina, ordemAnterior, d, exibicaoLida.Value);
-    }
-
-    private static PaginaDoFormulario? MontarPagina(
-        LeitorEnvelope leitor, string pathPagina, int? ordemAnterior, DeclaracaoPagina d, PredicadoDnf? exibicao)
-    {
-        // O encoder emite as páginas em ordem estritamente crescente; outra forma só vem de envelope
-        // adulterado e não reproduziria os bytes.
-        if (d.Ordem <= ordemAnterior)
-        {
-            return leitor.Recusar<PaginaDoFormulario?>($"'{pathPagina}' quebra a ordem crescente das páginas.");
-        }
-
+        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(declaracaoDaPagina.Exibicao);
+        // A forma da página não depende da exibição recusada; ela é conferida com uma condição que não acusa nada.
         Result<PaginaDoFormulario> pagina = PaginaDoFormulario.Criar(
-            new PaginaEstrutura(d.Codigo, d.Ordem, d.Tipo, d.Bloco),
-            d.Titulo, d.Descricao, d.Aviso, exibicao);
-        return pagina.IsFailure ? leitor.Propagar<PaginaDoFormulario?>(pagina.Errors, pathPagina) : pagina.Value;
+            new PaginaEstrutura(declaracaoDaPagina.Codigo, declaracaoDaPagina.Ordem, declaracaoDaPagina.Tipo, declaracaoDaPagina.Bloco), declaracaoDaPagina.Titulo, declaracaoDaPagina.Descricao, declaracaoDaPagina.Aviso,
+            exibicao.Value ?? (declaracaoDaPagina.Exibicao.Count > 0 ? PredicadoDnf.SemClausula : null));
+        IReadOnlyList<FieldError> causas = [.. exibicao.Errors.Select(causa => causa.NoCaminhoDoItem("exibicao")),
+            .. pagina.Errors, .. RecusaDaOrdem(pagina.IsSuccess, pathPagina, ordemAnterior, declaracaoDaPagina.Ordem)];
+        return causas.Count > 0 ? leitor.PropagarCausasDoItem<PaginaDoFormulario?>(causas, pathPagina) : pagina.Value;
     }
+
+    // O encoder emite as páginas em ordem estritamente crescente; outra forma só vem de envelope
+    // adulterado e não reproduziria os bytes. Página de forma recusada não tem ordem confiável para comparar.
+    private static IEnumerable<FieldError> RecusaDaOrdem(bool formaValida, string pathPagina, int? ordemAnterior, int ordem) =>
+        formaValida && ordem <= ordemAnterior
+            ? [new FieldError(null, new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathPagina}' quebra a ordem crescente das páginas."))]
+            : [];
 
     private static TermoExigidoFormulario? LerTermoExigido(
         LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario)
