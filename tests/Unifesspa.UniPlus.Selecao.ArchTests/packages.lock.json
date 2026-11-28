@@ -16,9 +16,9 @@
       },
       "Meziantou.Analyzer": {
         "type": "Direct",
-        "requested": "[3.0.321, )",
-        "resolved": "3.0.321",
-        "contentHash": "aFP7GiBBIb2x9rBTuUpw/jSs0JVbTofADlt6WxmYVYQ24KPAjFYyxcnNNVVf4F/eqKyzjik170nOpURmmyJDKg=="
+        "requested": "[3.0.342, )",
+        "resolved": "3.0.342",
+        "contentHash": "g8p2VDRGOui0eTVEOG0MOS6ib4IPNVDwSSier3o95S1xeJltMF8ntpuBWzzmn6A6Y5a0VcEmeGkrMLNXPs/QeQ=="
       },
       "Microsoft.CodeAnalysis.BannedApiAnalyzers": {
         "type": "Direct",
@@ -1310,75 +1310,6 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
-      "unifesspa.uniplus.autorizacao.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Autorizacao.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )",
-          "WolverineFx.RabbitMQ": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.autorizacao.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
-          "Unifesspa.UniPlus.Autorizacao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.autorizacao.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.autorizacao.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Design": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Unifesspa.UniPlus.Autorizacao.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.configuracao.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.configuracao.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )"
-        }
-      },
       "unifesspa.uniplus.configuracao.contracts": {
         "type": "Project",
         "dependencies": {
@@ -1387,96 +1318,10 @@
           "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
       },
-      "unifesspa.uniplus.configuracao.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.Regras": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.configuracao.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Confluent.Kafka": "[2.16.0, )",
-          "Confluent.SchemaRegistry": "[2.16.0, )",
-          "Confluent.SchemaRegistry.Serdes.Avro": "[2.16.0, )",
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Design": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Npgsql": "[10.0.3, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.21.0, )",
-          "OpenTelemetry.Extensions.Hosting": "[1.21.0, )",
-          "OpenTelemetry.Instrumentation.AspNetCore": "[1.21.0, )",
-          "OpenTelemetry.Instrumentation.Http": "[1.21.0, )",
-          "OpenTelemetry.Instrumentation.Runtime": "[1.21.0, )",
-          "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )",
-          "WolverineFx.EntityFrameworkCore": "[5.41.0, )",
-          "WolverineFx.FluentValidation": "[5.41.0, )",
-          "WolverineFx.Kafka": "[5.41.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.discentes.api": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Discentes.Infrastructure": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.discentes.application": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Discentes.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.discentes.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.discentes.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Microsoft.Extensions.Http.Resilience": "[10.10.0, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Refit": "[15.2.0, )",
-          "Refit.HttpClientFactory": "[15.2.0, )",
-          "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Discentes.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
       "unifesspa.uniplus.governance.contracts": {
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.host": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Autorizacao.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Discentes.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Ingresso.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Monolito.Persistencia": "[1.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.API": "[1.0.0, )",
-          "Unifesspa.UniPlus.Selecao.API": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
         }
       },
       "unifesspa.uniplus.infrastructure.core": {
@@ -1549,149 +1394,10 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
-      "unifesspa.uniplus.monolito.persistencia": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Configuracao.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Discentes.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.Ingresso.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )",
-          "Unifesspa.UniPlus.Selecao.Infrastructure": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.organizacaoinstitucional.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.organizacaoinstitucional.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.Domain": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.organizacaoinstitucional.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.organizacaoinstitucional.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Portal.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Portal.Infrastructure": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.Portal.Domain": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Microsoft.Extensions.Http.Resilience": "[10.10.0, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Refit": "[15.2.0, )",
-          "Refit.HttpClientFactory": "[15.2.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.Portal.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Portal.Domain": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.publicacoes.api": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )"
-        }
-      },
-      "unifesspa.uniplus.publicacoes.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )"
-        }
-      },
       "unifesspa.uniplus.publicacoes.contracts": {
         "type": "Project",
         "dependencies": {
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.publicacoes.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.publicacoes.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.15, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.15, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
-          "WolverineFx.EntityFrameworkCore": "[5.41.0, )"
         }
       },
       "unifesspa.uniplus.regras": {
@@ -1752,21 +1458,6 @@
           "Refit.HttpClientFactory": "[15.2.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.verificador": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.Hosting": "[10.0.0, )",
-          "Minio": "[7.0.0, )",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.21.0, )",
-          "OpenTelemetry.Extensions.Hosting": "[1.21.0, )",
-          "OpenTelemetry.Instrumentation.Runtime": "[1.21.0, )",
-          "PdfPig": "[0.1.16, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
-          "WolverineFx": "[5.41.0, )",
-          "WolverineFx.RabbitMQ": "[5.41.0, )"
         }
       },
       "unifesspa.uniplus.verificador.contratos": {
@@ -2047,12 +1738,6 @@
         "dependencies": {
           "OpenTelemetry.Api": "[1.21.0, 2.0.0)"
         }
-      },
-      "PdfPig": {
-        "type": "CentralTransitive",
-        "requested": "[0.1.16, )",
-        "resolved": "0.1.16",
-        "contentHash": "qQcbsNMYVY+K5ELptax2S8thNMk0+rSQq3H/KdYj3LLcko8yTCz8y5KIvsKxIyAuTN0ZYNnfsZkM+0EvxTwHVA=="
       },
       "Refit": {
         "type": "CentralTransitive",
