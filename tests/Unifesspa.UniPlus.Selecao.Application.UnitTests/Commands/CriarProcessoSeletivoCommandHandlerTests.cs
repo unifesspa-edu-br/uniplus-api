@@ -276,6 +276,70 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 
+    private void ConcederResultadoDoAcesso(ResultadoDoAcesso resultado) =>
+        _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>()).Returns(resultado);
+
+    private async Task NadaFoiLidoNemGravadoAsync()
+    {
+        await _unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await _tipoProcessoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
+        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Sem permissão na unidade, dados inválidos são recusados por falta de permissão, sem apontar campo nem ler nada")]
+    public async Task Handle_SemPermissaoEDadosInvalidos_RecusaSoPorFaltaDePermissao()
+    {
+        ConcederResultadoDoAcesso(ResultadoDoAcesso.Negado);
+        CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = string.Empty, OrigemCandidatos = "origemQueNaoExiste" };
+
+        Result<Guid> result = await CriarAsync(command);
+
+        result.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(recusa =>
+            recusa.Field == null && recusa.Error.Code == ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
+        await NadaFoiLidoNemGravadoAsync();
+    }
+
+    [Fact(DisplayName = "Com identidade incompleta, dados inválidos também recebem a recusa de identidade, e não a dos dados")]
+    public async Task Handle_IdentidadeIncompletaEDadosInvalidos_RecusaAIdentidade()
+    {
+        ConcederResultadoDoAcesso(ResultadoDoAcesso.IdentidadeIncompleta);
+
+        Result<Guid> result = await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = string.Empty });
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentidadeIncompleta);
+    }
+
+    [Fact(DisplayName = "Com permissão na unidade, todos os dados inválidos saem juntos, cada um no seu campo, sem ler nada nem persistir")]
+    public async Task Handle_ComPermissaoEDadosInvalidos_RecusaTodasAsCausasJuntas()
+    {
+        CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with
+        {
+            Nome = string.Empty,
+            TipoProcessoOrigemId = Guid.Empty,
+            OrigemCandidatos = null,
+        };
+
+        Result<Guid> result = await CriarAsync(command);
+
+        result.Errors.Select(static erro => erro.Field).Should().Equal("nome", "tipoProcessoOrigemId", "origemCandidatos");
+        await NadaFoiLidoNemGravadoAsync();
+    }
+
+    [Fact(DisplayName = "Sem unidade informada não há permissão a decidir: a falta da unidade sai com as demais causas")]
+    public async Task Handle_SemUnidade_NaoConsultaAPermissaoERecusaOsDados()
+    {
+        CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with
+        {
+            UnidadeAdministradoraOrigemId = Guid.Empty,
+            Nome = string.Empty,
+        };
+
+        Result<Guid> result = await CriarAsync(command);
+
+        result.Errors.Select(static erro => erro.Field).Should().Equal("nome", "unidadeAdministradoraOrigemId");
+        await _verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
+    }
+
     [Fact(DisplayName = "Handle responde identidade incompleta, e não negativa, quando o token não identifica quem cria")]
     public async Task Handle_IdentidadeIncompleta_RecusaComOCodigoProprio()
     {

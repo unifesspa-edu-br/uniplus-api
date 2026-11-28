@@ -36,7 +36,7 @@ public static class ValidationErrorCodes
     public const string Obrigatorio = CodigosDeValidacao.Obrigatorio;
 
     /// <summary><c>Length</c>, <c>MinimumLength</c>, <c>MaximumLength</c> e o tamanho exato.</summary>
-    public const string Tamanho = "uniplus.validacao.tamanho";
+    public const string Tamanho = CodigosDeValidacao.Tamanho;
 
     /// <summary><c>Matches</c>, <c>EmailAddress</c> e <c>PrecisionScale</c> (quantidade de dígitos e casas decimais).</summary>
     public const string Formato = CodigosDeValidacao.Formato;
@@ -45,7 +45,7 @@ public static class ValidationErrorCodes
     public const string Faixa = "uniplus.validacao.faixa";
 
     /// <summary><c>Must</c> e qualquer outra regra — o destino de todo validator que as demais categorias não descrevem.</summary>
-    public const string Regra = "uniplus.validacao.regra";
+    public const string Regra = CodigosDeValidacao.Regra;
 
     /// <summary>
     /// Instala <see cref="Resolve"/> como <see cref="ValidatorConfiguration.ErrorCodeResolver"/>

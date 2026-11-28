@@ -26082,7 +26082,7 @@
         "UNI-REQ-0119"
       ],
       "oQueAconteceu": [
-        "Ao criar o processo seletivo, a unidade administradora escolhida não tem cidade\ncadastrada. O processo guarda uma cópia dos dados da unidade, inclusive a cidade,\ne a unidade sem cidade no cadastro é recusada. A mensagem da resposta traz o\nidentificador da unidade. Nada é criado.",
+        "Ao criar o processo seletivo, a unidade administradora escolhida não tem cidade\ncadastrada. O processo guarda uma cópia dos dados da unidade, inclusive a cidade,\ne a unidade sem cidade no cadastro é recusada. A mensagem não repete o\nidentificador da unidade. Nada é criado.",
         "Essa cidade é a da unidade e não se confunde com a localidade que rege a contagem\ndos prazos do processo, que é declarada na própria criação e tem recusa à parte\n([localidade ausente](/erros/uniplus.selecao.processo_seletivo.localidade_ausente)).\nA correção desta recusa fica no cadastro da unidade, e não no formulário do\nprocesso."
       ],
       "comoResolver": [
