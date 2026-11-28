@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Leitura <b>fechada</b> de um envelope canônico: cada objeto declara o conjunto
-/// exato das suas chaves, cada valor é lido na forma exata em que foi escrito, e o
-/// primeiro desvio para a leitura inteira; uma factory pode devolver várias causas desse desvio.
+/// exato das suas chaves, cada valor é lido na forma exata em que foi escrito, e a
+/// leitura devolve todas as causas do item recusado e para no primeiro item recusado.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// menos é erro, e um objeto sem parâmetros tem de ser exatamente <c>{}</c>.
 /// </para>
 /// <para>
-/// <b>Registra a primeira falha em vez de propagar <c>Result</c> a cada leitura.</b> A
+/// <b>Registra a recusa do item em vez de propagar <c>Result</c> a cada leitura.</b> A
 /// alternativa — encadear dezenas de <c>Result</c> — produziria um decoder onde o
 /// caminho de erro é mais longo que o de sucesso, e é no caminho de erro que os
 /// buracos se escondem. O contrato é: o chamador verifica <see cref="Falhou"/> antes
@@ -244,14 +244,20 @@ internal sealed class LeitorEnvelope
         [.. causas.Select(static causa => causa with { Field = null })];
 
     /// <summary>Preserva todas as causas do domínio para situá-las no item do envelope.</summary>
-    public T Propagar<T>(IReadOnlyList<FieldError> causas, string caminhoDoItem)
-    {
-        if (!Falhou)
-        {
-            _erros = [.. causas.Select(causa => causa.NoCaminhoDoItem(caminhoDoItem))];
-            _erro = _erros[0].Error;
-        }
+    public T Propagar<T>(IReadOnlyList<FieldError> causas, string caminhoDoItem) =>
+        Falhou ? default! : PropagarCausasDoItem<T>(causas, caminhoDoItem);
 
+    /// <summary>
+    /// Situa no item todas as causas juntadas pela leitura dele. Pré-condição: <paramref name="causas"/> não é vazia.
+    /// Se a leitura do item já registrou uma recusa depois de juntar essas causas (formato de outra chave ou campo
+    /// de dentro do item), as causas do item entram antes dela, e a recusa anterior continua no fim da lista.
+    /// </summary>
+    public T PropagarCausasDoItem<T>(IReadOnlyList<FieldError> causas, string caminhoDoItem)
+    {
+        IReadOnlyList<FieldError> doItem = [.. causas.Select(causa => causa.NoCaminhoDoItem(caminhoDoItem))];
+        IReadOnlyList<FieldError> anteriores = _erro is null ? [] : _erros ?? [new FieldError(null, _erro)];
+        _erros = [.. doItem, .. anteriores];
+        _erro = _erros[0].Error;
         return default!;
     }
 }
