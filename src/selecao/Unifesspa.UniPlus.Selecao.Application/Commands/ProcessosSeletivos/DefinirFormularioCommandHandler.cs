@@ -100,7 +100,7 @@ public static class DefinirFormularioCommandHandler
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
-        return LerContraOCatalogo(command, declarado, processo, new PaginasEmLeitura(entradas.Count, lidas, daSecao, criaInscricao), ContextoDoCatalogo.De(processo, catalogo));
+        return LerContraOCatalogo(command, declarado, processo, new PaginasEmLeitura(lidas, daSecao, criaInscricao), ContextoDoCatalogo.De(processo, catalogo));
     }
 
     private static FormularioLido LerContraOCatalogo(
@@ -111,7 +111,7 @@ public static class DefinirFormularioCommandHandler
         ItensLidos? lidosDaCriacao = paginas.CriaInscricao ? LeituraDosItensDoFormulario.Ler(ConjuntoBasicoDaInscricao.Itens, contexto) : null;
         List<FatoColetado>? itensDaCriacao = lidosDaCriacao is null ? null : ResolverItensDaCriacao(lidosDaCriacao, contexto, erros);
         return new FormularioLido(
-            paginas.QuantidadeEnviada, [.. paginas.Lidas.Paginas], itensDaCriacao, erros, consequencia.Value,
+            paginas.Lidas, itensDaCriacao, erros, consequencia.Value,
             RecusasDoVinculoNovo(processo, contexto, paginas.Lidas, lidosDaCriacao));
     }
 
@@ -136,37 +136,35 @@ public static class DefinirFormularioCommandHandler
                     .Select(static c => (c.Fato, c.Valor)))).Errors];
 
     /// <summary>
-    /// As recusas do formulário somam-se às das páginas (ADR-0125). A estrutura só é conferida com todas as páginas montadas,
-    /// e a exibição já recusada pela semântica não é recusada de novo pela posição.
+    /// As recusas do formulário somam-se às das páginas (ADR-0125). Cada página montada é conferida contra as outras na posição
+    /// do pedido; o que conclui algo sobre o formulário inteiro só é conferido com todas as páginas montadas, e a exibição já
+    /// recusada pela semântica não é recusada de novo pela posição.
     /// </summary>
     private static IEnumerable<FieldError> ConferirEstrutura(DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, FormularioLido lido)
     {
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), declarado, command.Titulo, lido.Paginas, lido.PaginasCompletas, lido.ItensDaCriacao)
+                processo.Declaracao(), declarado, command.Titulo, lido.Paginas.PorPosicao, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 
     private static Result Gravar(DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, FormularioLido lido)
     {
-        Result definido = processo.DefinirFormulario(declarado, command.Titulo, lido.Paginas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
+        Result definido = processo.DefinirFormulario(declarado, command.Titulo, lido.Paginas.Montadas, lido.ItensDaCriacao, lido.ConsequenciaDaFaltaDeEnvio);
         return definido.IsFailure ? Result.ValidationFailure(definido.Errors) : Result.Success();
     }
 
-    /// <summary>As páginas lidas pela forma, a quantidade enviada, as recusas da seção dos dados básicos e se o formulário nasce com os itens dela.</summary>
-    private sealed record PaginasEmLeitura(int QuantidadeEnviada, PaginasDoFormularioLidas Lidas, List<FieldError> DaSecao, bool CriaInscricao);
+    /// <summary>As páginas lidas pela forma, as recusas da seção dos dados básicos e se o formulário nasce com os itens dela.</summary>
+    private sealed record PaginasEmLeitura(PaginasDoFormularioLidas Lidas, List<FieldError> DaSecao, bool CriaInscricao);
 
     /// <summary>
-    /// As páginas montadas, os itens da criação do formulário de inscrição, as recusas da leitura e as do vínculo novo ao
-    /// catálogo; as páginas estão completas quando nenhuma entrada foi recusada.
+    /// As páginas lidas por posição, os itens da criação do formulário de inscrição, as recusas da leitura e as do vínculo
+    /// novo ao catálogo.
     /// </summary>
     private sealed record FormularioLido(
-        int QuantidadeEnviada, List<PaginaDoFormulario> Paginas, List<FatoColetado>? ItensDaCriacao, List<FieldError> Erros,
-        ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio, List<FieldError> RecusasDoVinculoNovo)
-    {
-        public bool PaginasCompletas => Paginas.Count == QuantidadeEnviada;
-    }
+        PaginasDoFormularioLidas Paginas, List<FatoColetado>? ItensDaCriacao, List<FieldError> Erros,
+        ConsequenciaDoDescumprimento? ConsequenciaDaFaltaDeEnvio, List<FieldError> RecusasDoVinculoNovo);
 }
 
 /// <summary>Remove o formulário do código; a regra de só em rascunho é do processo.</summary>
