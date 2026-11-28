@@ -107,8 +107,8 @@
     <!-- Validador de JSON Schema (MIT) dos testes de contrato das mensagens publicadas. -->
     <PackageVersion Include="JsonSchema.Net" Version="8.0.5" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
-    <PackageVersion Include="Testcontainers" Version="4.16.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.16.0" />
+    <PackageVersion Include="Testcontainers" Version="4.17.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.17.0" />
     <!--
       SSH.NET chega como dependência transitiva do Testcontainers, que ainda resolve a
       2025.1.0 — alcançada pelo aviso GHSA-q939-rpr3-3284 (escrita arbitrária de arquivo
