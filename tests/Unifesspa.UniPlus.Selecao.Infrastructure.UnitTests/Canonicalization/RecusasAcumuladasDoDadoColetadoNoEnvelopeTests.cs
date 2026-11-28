@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
@@ -15,7 +16,7 @@ public sealed class RecusasAcumuladasDoDadoColetadoNoEnvelopeTests
     private const string Item = "dadosDosFormularios[0]";
     private const string CondicaoIncoerente = "CondicaoDnf.FormaIncoerenteComOperador";
     private const string Malformado = ErrosCodecEnvelope.EnvelopeMalformado;
-    private static readonly string[] ValoresInjetados = ["VALOR_FICTICIO_X", "TIPO_INEXISTENTE", "HIPOTESE_FORA", "OUTRO_FORMULARIO", "COMPONENTE_FORA"];
+    private static readonly string[] ValoresInjetados = ["VALOR_FICTICIO_X", "TIPO_INEXISTENTE", "HIPOTESE_FORA", "OUTRO_FORMULARIO", "COMPONENTE_FORA", "CLASSIFICACAO_FORA", "FORMATO_FORA"];
 
     [Fact]
     public void LerFatosColetados_ExibicaoObrigatoriedadeSegundaRestricaoEImpedimentoInvalidos_PropagaTodasNaOrdem()
@@ -86,6 +87,79 @@ public sealed class RecusasAcumuladasDoDadoColetadoNoEnvelopeTests
         campo["hipoteseLegal"] = "HIPOTESE_FORA";
         campo["tipoDeCampo"] = "TIPO_INEXISTENTE";
         Conferir(Padrao, campo, (Item + ".hipoteseLegal", Malformado), (Item + ".tipoDeCampo", Malformado));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEOrdemNegativa_PropagaAmbasNaOrdem()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["ordem"] = -1;
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado), (Item + ".ordem", ItemFormularioErrorCodes.OrdemInvalida));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEClassificacaoDeProtecaoInvalida_PropagaAmbas()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["classificacaoProtecao"] = "CLASSIFICACAO_FORA";
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado), (Item + ".classificacaoProtecao", FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEExibicaoInvalida_PropagaAmbasCadaUmaNoSeuCaminho()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["exibicao"] = CondicoesNoEnvelope.Invalidas(false, true);
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado), (Item + ".exibicao[0][0].valor", CondicaoIncoerente));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEExibicaoQueCitaOProprioDado_PropagaAmbas()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["exibicao"] = new JsonArray(new JsonArray(CondicoesNoEnvelope.Condicao("IGUAL", JsonValue.Create("A"))));
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado), (Item, ItemFormularioErrorCodes.RegraAutorreferente));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioComRestricoesEImpedimentoValidos_NaoGeraRecusaExtra()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["restricoes"] = new JsonArray(Tamanho(1, 5), new JsonObject { ["tipo"] = "FAIXA_NUMERICA", ["minimo"] = "1.0000", ["maximo"] = "2.0000" });
+        campo["impedimento"] = new JsonObject { ["mensagem"] = "Mensagem", ["quando"] = new JsonArray(new JsonArray(CondicoesNoEnvelope.Condicao("IGUAL", JsonValue.Create(true)))) };
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado));
+    }
+
+    [Fact]
+    public void LerFatosColetados_SoTipoDeCampoForaDoVocabulario_DevolveCodigoETextoDeSempre()
+    {
+        IReadOnlyList<FieldError> causas = Conferir(Padrao, ComTipoDeCampoDesconhecido(), (Item + ".tipoDeCampo", Malformado));
+        causas[0].Error.Message.Should().StartWith($"'{Item}.tipoDeCampo' fora dos tipos de campo aceitos: ");
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEFormatoInvalido_NaoConfereOFormato()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["formato"] = "FORMATO_FORA";
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado));
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEValoresSelecionaveisNumericos_PropagaAmbas()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["valoresSelecionaveis"] = 7;
+        IReadOnlyList<FieldError> causas = Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado), (null, Malformado));
+        causas[1].Error.Message.Should().Contain($"{Item}.valoresSelecionaveis");
+    }
+
+    [Fact]
+    public void LerFatosColetados_TipoDeCampoForaDoVocabularioEOpcoesDeLista_NaoLeAsOpcoes()
+    {
+        JsonObject campo = ComTipoDeCampoDesconhecido();
+        campo["valoresSelecionaveis"] = new JsonArray();
+        Conferir(Padrao, campo, (Item + ".tipoDeCampo", Malformado));
     }
 
     [Fact]
@@ -171,6 +245,13 @@ public sealed class RecusasAcumuladasDoDadoColetadoNoEnvelopeTests
     {
         JsonObject campo = Campo();
         campo["exibicao"] = CondicoesNoEnvelope.Invalidas(false, true);
+        return campo;
+    }
+
+    private static JsonObject ComTipoDeCampoDesconhecido()
+    {
+        JsonObject campo = Campo();
+        campo["tipoDeCampo"] = "TIPO_INEXISTENTE";
         return campo;
     }
 

@@ -37,6 +37,17 @@ public sealed class GrupoColetadoTests
             .Should().Throw<ArgumentException>();
     }
 
+    [Fact(DisplayName = "A conferência da forma não lança com campos de formulários diferentes e acusa a forma do grupo")]
+    public void ConferirForma_CamposDeFormulariosDiferentes_ConfereAFormaSemLancar()
+    {
+        FatoColetado[] campos = CamposDe(
+            LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Inscricao), LigacaoAoFormulario.FormularioNoPapel(PapelDoFormularioDeTeste.Habilitacao));
+
+        List<FieldError> erros = GrupoColetado.ConferirForma(" ", 0, "Composição familiar", ZeroACinco, SempreNunca, campos);
+
+        erros.Select(static e => e.Error.Code).Should().Equal(GrupoFormularioErrorCodes.CodigoInvalido);
+    }
+
     [Fact(DisplayName = "A forma recusada devolve a falha antes de olhar o formulário dos campos")]
     public void Criar_FormaRecusadaComFormulariosDiferentes_DevolveAFalha()
     {
