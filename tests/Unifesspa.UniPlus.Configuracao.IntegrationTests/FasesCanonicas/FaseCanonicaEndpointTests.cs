@@ -103,12 +103,11 @@ public sealed class FaseCanonicaEndpointTests
         await LiberarSlotDoSeedAsync("CHAMADA");
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        Guid id = await CriarAsync(client, new
+        Guid id = await CriarAsync(client, new CorpoDoTipoDeFase
         {
-            codigo = "CHAMADA",
-            nome = "Chamada",
-            descricao = "Convocação de aprovados",
-            origemData = "NO_EDITAL",
+            Codigo = "CHAMADA",
+            Nome = "Chamada",
+            Descricao = "Convocação de aprovados",
         });
 
         JsonElement root = await ObterAsync(client, id);
@@ -135,7 +134,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código fora do conjunto canônico retorna 422")]
     public async Task Criar_ForaDoCanonico_Retorna422()
     {
-        var body = new { codigo = "ENTREVISTA_FINAL", nome = "x" };
+        var body = new CorpoDoTipoDeFase { Codigo = "ENTREVISTA_FINAL", Nome = "x" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -146,7 +145,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com agrupar etapas fora da avaliação retorna 422 (coerência de domínio)")]
     public async Task Criar_AgrupaEtapasIncoerente_Retorna422()
     {
-        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", agrupaEtapas = true };
+        var body = new CorpoDoTipoDeFase { Codigo = "HOMOLOGACAO_INSCRICOES", Nome = "Homologação", AgrupaEtapas = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -159,7 +158,7 @@ public sealed class FaseCanonicaEndpointTests
     [InlineData("DELEGADA")]
     public async Task Criar_OrigemDataComTokenAntigo_Retorna422DeOrigemInvalida(string origemData)
     {
-        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", origemData };
+        var body = new CorpoDoTipoDeFase { Codigo = "HOMOLOGACAO_INSCRICOES", Nome = "Homologação", OrigemData = origemData };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -175,7 +174,7 @@ public sealed class FaseCanonicaEndpointTests
     {
         await LiberarSlotDoSeedAsync("LISTA_ESPERA");
 
-        var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", origemData = "NO_EDITAL" };
+        var body = new CorpoDoTipoDeFase { Codigo = "LISTA_ESPERA", Nome = "Lista de espera" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
@@ -188,7 +187,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código e nome ausentes ao mesmo tempo acumula as duas violações em errors[]")]
     public async Task Criar_CodigoENomeAusentes_AcumulaAsDuasViolacoesEmErrors()
     {
-        var body = new { origemData = "NO_EDITAL" };
+        var body = new CorpoDoTipoDeFase { Nome = null };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -205,7 +204,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código inválido e AgrupaEtapas=true não soma a coerência dependente do código em errors[]")]
     public async Task Criar_CodigoInvalidoComAgrupaEtapas_NaoSomaCoerenciaDependenteEmErrors()
     {
-        var body = new { codigo = "ENTREVISTA_FINAL", nome = "x", origemData = "NO_EDITAL", agrupaEtapas = true };
+        var body = new CorpoDoTipoDeFase { Codigo = "ENTREVISTA_FINAL", Nome = "x", AgrupaEtapas = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -217,12 +216,11 @@ public sealed class FaseCanonicaEndpointTests
             "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável e não deve somar ao erro de código");
     }
 
-    private static object DadosAvaliacaoBiopsicossocial() => new
+    private static CorpoDoTipoDeFase DadosAvaliacaoBiopsicossocial() => new()
     {
-        codigo = "AVALIACAO_BIOPSICOSSOCIAL",
-        nome = "Avaliação biopsicossocial",
-        descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
-        origemData = "NO_EDITAL",
+        Codigo = "AVALIACAO_BIOPSICOSSOCIAL",
+        Nome = "Avaliação biopsicossocial",
+        Descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
     };
 
     private static void ConfirmarChamadaSemSinalizadoresLigados(JsonElement fase)

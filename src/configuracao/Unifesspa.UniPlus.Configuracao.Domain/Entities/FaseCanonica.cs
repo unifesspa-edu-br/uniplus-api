@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Fase canônica (UNI-REQ-0064): nomeia, em domínio fechado, os momentos do ciclo
+/// Tipo de fase (UNI-REQ-0139): nomeia, em domínio fechado, os momentos do ciclo
 /// de vida de um processo seletivo (inscrição, homologação, avaliação, recursos,
 /// resultado, matrícula…). Dado institucional de referência sem PII (LGPD
 /// inaplicável). Não é Etapa — a Etapa pontuada pertence a outro requisito; aqui o
@@ -115,13 +115,13 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Recusa o que o corpo da atualização decide sem o código da fase: os quatro campos comuns
-    /// (nome, descrição, base legal e origem da data) e a exclusividade entre coletar inscrição e
-    /// coletar solicitação de isenção, acumulados nesta ordem. Sem mutar nada e sem depender de
+    /// (nome, descrição, base legal e origem da data), a ausência de cada sinalizador e a
+    /// exclusividade entre coletar inscrição e coletar solicitação de isenção, acumulados nesta ordem. Sem mutar nada e sem depender de
     /// I/O — existe para o handler de atualização falhar rápido antes de buscar a fase por Id.
     /// O que depende do código gravado fica para <see cref="Atualizar"/>.
     /// </summary>
     public static Result ValidarOQueNaoDependeDoCodigo(
-        string? nome, string? descricao, string? baseLegal, string? origemData, SinalizadoresDaFase sinalizadores)
+        string? nome, string? descricao, string? baseLegal, string? origemData, SinalizadoresInformados sinalizadores)
     {
         ArgumentNullException.ThrowIfNull(sinalizadores);
         List<FieldError> erros =
@@ -157,7 +157,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria uma nova fase canônica. Valida o código (formato + pertença ao conjunto
+    /// Cria um novo tipo de fase. Valida o código (formato + pertença ao conjunto
     /// canônico), os quatro campos comuns e os <paramref name="sinalizadores"/> — a coerência
     /// deles com o código só é conferida quando o código é reconhecido —, acumulando toda
     /// violação na mesma resposta. A unicidade do código entre vivos é responsabilidade do handler.
@@ -168,7 +168,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         string? descricao,
         string? baseLegal,
         string? origemData,
-        SinalizadoresDaFase sinalizadores)
+        SinalizadoresInformados sinalizadores)
     {
         ArgumentNullException.ThrowIfNull(sinalizadores);
         Result<CodigoFase> codigoResult = ValidarCodigo(codigo);
@@ -198,7 +198,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         string? descricao,
         string? baseLegal,
         string? origemData,
-        SinalizadoresDaFase sinalizadores)
+        SinalizadoresInformados sinalizadores)
     {
         ArgumentNullException.ThrowIfNull(sinalizadores);
         Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comuns =
@@ -216,12 +216,13 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     private void AplicarCampos(
         (string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData) comuns,
-        SinalizadoresDaFase sinalizadores)
+        SinalizadoresInformados sinalizadores)
     {
         (Nome, Descricao, BaseLegal, OrigemData) = comuns;
-        if (Sinalizadores != sinalizadores)
+        SinalizadoresDaFase confirmados = sinalizadores.Confirmados();
+        if (Sinalizadores != confirmados)
         {
-            Sinalizadores = sinalizadores;
+            Sinalizadores = confirmados;
         }
     }
 
@@ -241,7 +242,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         if (string.IsNullOrWhiteSpace(nome))
         {
             erros.Add(new("nome", new DomainError(
-                FaseCanonicaErrorCodes.NomeObrigatorio, "Nome da fase canônica é obrigatório.")));
+                FaseCanonicaErrorCodes.NomeObrigatorio, "Nome do tipo de fase é obrigatório.")));
             return null;
         }
 

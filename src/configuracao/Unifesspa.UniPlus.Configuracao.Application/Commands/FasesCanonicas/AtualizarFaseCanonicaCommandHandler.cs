@@ -10,8 +10,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Antes de buscar a fase, recusa o que o
-/// corpo decide sem o código: os campos comuns e a exclusividade entre coletar inscrição e coletar
-/// solicitação de isenção, para a validação vencer a inexistência (ADR-0125). Encontrada a fase,
+/// corpo decide sem o código: os campos comuns, a ausência de sinalizador e a exclusividade entre
+/// coletar inscrição e coletar solicitação de isenção, para a validação vencer a inexistência
+/// (ADR-0125). Encontrada a fase,
 /// <c>Atualizar</c> confere o corpo inteiro contra o código gravado, que o comando não traz por
 /// ser imutável: agrupamento de etapas, complementação documental e marca de solicitação de
 /// isenção. A troca da unidade sugerida é conferida no

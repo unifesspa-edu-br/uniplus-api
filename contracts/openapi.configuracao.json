@@ -16788,7 +16788,14 @@
       },
       "AtualizarFaseCanonicaCommand": {
         "required": [
-          "id"
+          "id",
+          "nome",
+          "origemData",
+          "agrupaEtapas",
+          "permiteComplementacao",
+          "coletaInscricao",
+          "coletaSolicitacaoIsencao",
+          "organizadaEmChamadas"
         ],
         "type": "object",
         "properties": {
@@ -16802,38 +16809,6 @@
               "string"
             ]
           },
-          "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "agrupaEtapas": {
-            "type": "boolean",
-            "default": false
-          },
-          "permiteComplementacao": {
-            "type": "boolean",
-            "default": false
-          },
-          "baseLegal": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "coletaInscricao": {
-            "type": "boolean",
-            "default": false
-          },
-          "coletaSolicitacaoIsencao": {
-            "type": "boolean",
-            "default": false
-          },
-          "organizadaEmChamadas": {
-            "type": "boolean",
-            "default": false
-          },
           "origemData": {
             "oneOf": [
               {
@@ -16842,6 +16817,38 @@
               {
                 "$ref": "#/components/schemas/OrigemDataFaseCodigo"
               }
+            ]
+          },
+          "agrupaEtapas": {
+            "type": "boolean",
+            "description": "Se o tipo de fase agrupa as etapas pontuadas. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "permiteComplementacao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase admite complementa\u00E7\u00E3o documental. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "coletaInscricao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase coleta inscri\u00E7\u00F5es. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "coletaSolicitacaoIsencao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase coleta a solicita\u00E7\u00E3o de isen\u00E7\u00E3o da taxa. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "organizadaEmChamadas": {
+            "type": "boolean",
+            "description": "Se o tipo de fase \u00E9 organizada em chamadas. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": [
+              "null",
+              "string"
             ]
           },
           "unidadeSugeridaId": {
@@ -18789,7 +18796,14 @@
       },
       "CriarFaseCanonicaCommand": {
         "required": [
-          "codigo"
+          "codigo",
+          "nome",
+          "origemData",
+          "agrupaEtapas",
+          "permiteComplementacao",
+          "coletaInscricao",
+          "coletaSolicitacaoIsencao",
+          "organizadaEmChamadas"
         ],
         "type": "object",
         "properties": {
@@ -18805,38 +18819,6 @@
               "string"
             ]
           },
-          "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "agrupaEtapas": {
-            "type": "boolean",
-            "default": false
-          },
-          "permiteComplementacao": {
-            "type": "boolean",
-            "default": false
-          },
-          "baseLegal": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "coletaInscricao": {
-            "type": "boolean",
-            "default": false
-          },
-          "coletaSolicitacaoIsencao": {
-            "type": "boolean",
-            "default": false
-          },
-          "organizadaEmChamadas": {
-            "type": "boolean",
-            "default": false
-          },
           "origemData": {
             "oneOf": [
               {
@@ -18845,6 +18827,38 @@
               {
                 "$ref": "#/components/schemas/OrigemDataFaseCodigo"
               }
+            ]
+          },
+          "agrupaEtapas": {
+            "type": "boolean",
+            "description": "Se o tipo de fase agrupa as etapas pontuadas. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "permiteComplementacao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase admite complementa\u00E7\u00E3o documental. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "coletaInscricao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase coleta inscri\u00E7\u00F5es. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "coletaSolicitacaoIsencao": {
+            "type": "boolean",
+            "description": "Se o tipo de fase coleta a solicita\u00E7\u00E3o de isen\u00E7\u00E3o da taxa. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "organizadaEmChamadas": {
+            "type": "boolean",
+            "description": "Se o tipo de fase \u00E9 organizada em chamadas. Obrigat\u00F3rio: ausente ou nulo \u00E9 recusado (422)."
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": [
+              "null",
+              "string"
             ]
           },
           "unidadeSugeridaId": {

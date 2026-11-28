@@ -236,7 +236,7 @@ public sealed class FaseCanonicaTests
         Result<FaseCanonica> resultado = Criar(nome: "  ");
 
         UnicaRecusa(resultado).Should().Be(
-            ("nome", FaseCanonicaErrorCodes.NomeObrigatorio, "Nome da fase canônica é obrigatório."));
+            ("nome", FaseCanonicaErrorCodes.NomeObrigatorio, "Nome do tipo de fase é obrigatório."));
     }
 
     [Fact(DisplayName = "Nome com 201 caracteres recusa com a mensagem de tamanho do nome")]

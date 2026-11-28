@@ -20,7 +20,7 @@ public sealed class RemoverFaseCanonicaCommandHandlerTests
     private static FaseCanonica Fase() =>
         FaseCanonica.Criar(
             "INSCRICAO", "Inscrição", null, null, "NO_EDITAL",
-            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
+            new SinalizadoresInformados(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 
     [Fact(DisplayName = "Fase existente faz soft-delete (Remover + Salvar), nunca bloqueada")]
     public async Task Handle_Existente_FazSoftDelete()

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
 /// <summary>
-/// Códigos de erro de domínio da <see cref="Entities.FaseCanonica"/> (UNI-REQ-0064),
+/// Códigos de erro de domínio da <see cref="Entities.FaseCanonica"/> (UNI-REQ-0139),
 /// prefixados por <c>FaseCanonica.</c>. Mapeados para status HTTP em
 /// <c>ConfiguracaoDomainErrorRegistration</c>:
 /// <list type="bullet">

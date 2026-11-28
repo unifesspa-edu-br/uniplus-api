@@ -127,7 +127,7 @@ public sealed class FasesCanonicasController : ControllerBase
         return resultado.ToCreatedResult(this, nameof(ObterPorId), _mapper);
     }
 
-    /// <summary>Atualiza uma fase canônica existente, substituindo tudo o que é editável pelo corpo: o que ele omite fica falso ou vazio, inclusive os sinalizadores. O código é imutável. Exige a permissão de manutenção.</summary>
+    /// <summary>Atualiza um tipo de fase existente, substituindo tudo o que é editável pelo corpo. Enviam-se sempre o nome, a origem da data e os cinco sinalizadores (agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao e organizadaEmChamadas); o que falta é recusado com 422. Descrição, base legal e unidade sugerida omitidas são apagadas. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/fases-canonicas/{id:guid}")]
     [EndpointName("AlterarTipoDeFase")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
