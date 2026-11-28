@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -21,6 +22,7 @@ internal static class DeclaracoesObrigatoriasDeTeste
     {
         ArgumentNullException.ThrowIfNull(processo);
         DeclararProvaPresencial(processo);
+        DeclararImportacaoDoResultado(processo);
 
         DeclararOpcoesDeCurso(processo, opcoesDeCurso);
         DeclararFada(processo, fada);
@@ -62,6 +64,44 @@ internal static class DeclaracoesObrigatoriasDeTeste
         {
             ExigirSucesso(processo.DefinirProvaPresencial(false, [], 100));
         }
+    }
+
+    /// <summary>
+    /// O processo de resultado importado declara a importação na primeira fase do cronograma e a coleta com um
+    /// formulário obrigatório, quando o cronograma já tem fase e a importação ainda não foi declarada.
+    /// </summary>
+    internal static void DeclararImportacaoDoResultado(ProcessoSeletivo processo)
+    {
+        if (processo.OrigemCandidatos != OrigemCandidatos.ImportacaoExterna || processo.ImportacaoDoResultado is not null || processo.CronogramaFases.Count == 0)
+        {
+            return;
+        }
+
+        Guid faseId = processo.CronogramaFases.OrderBy(static fase => fase.Ordem).First().Id;
+        ExigirSucesso(processo.DefinirImportacaoDoResultado([new RelatorioInformado("RELATORIO_DE_TESTE", "v1")], faseId));
+        if (processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao) is null)
+        {
+            ExigirSucesso(processo.DefinirFormulario(PapelDoFormularioDeTeste.Habilitacao, faseId, null, FormularioDeTeste.Paginas(PapelDoFormularioDeTeste.Habilitacao)));
+        }
+    }
+
+    /// <summary>
+    /// Tira o formulário e a declaração da importação que dependem de uma fase que o cronograma novo não tem,
+    /// para o cronograma poder ser trocado; <see cref="DeclararImportacaoDoResultado"/> os repõe depois.
+    /// </summary>
+    internal static void DesfazerImportacaoDaFaseQueSai(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fasesNovas)
+    {
+        if (processo.ImportacaoDoResultado?.PrimeiraFaseDepoisDaImportacaoId is not { } faseId || fasesNovas.Any(fase => fase.Id == faseId))
+        {
+            return;
+        }
+
+        if (processo.FormularioDe(PapelDoFormularioDeTeste.Habilitacao)?.FaseId == faseId)
+        {
+            ExigirSucesso(processo.RemoverFormulario(PapelDoFormularioDeTeste.Habilitacao));
+        }
+
+        ExigirSucesso(processo.DefinirImportacaoDoResultado([], null));
     }
 
     private static void ExigirSucesso(Unifesspa.UniPlus.Kernel.Results.Result resultado)

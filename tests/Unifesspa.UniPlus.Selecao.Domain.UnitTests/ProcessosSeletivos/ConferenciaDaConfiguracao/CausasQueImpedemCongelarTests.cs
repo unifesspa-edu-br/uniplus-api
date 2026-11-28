@@ -98,7 +98,7 @@ public sealed class CausasQueImpedemCongelarTests
     public void Paridade_CicloDaImportacaoExterna()
     {
         ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
-        processo.DefinirCronogramaFases([ApoioConformidadePublicabilidadeEstrutural.FaseBase()], []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [ApoioConformidadePublicabilidadeEstrutural.FaseBase()]).IsSuccess.Should().BeTrue();
 
         VermelhosDaHomologacao(processo).Should().Equal(ItemDoCiclo);
         CausasDaCompletude(processo).Select(static causa => causa.Error.Code).Should().Equal(ProcessoSeletivoErrorCodes.ImportacaoExternaSemJanelaDeRecurso);

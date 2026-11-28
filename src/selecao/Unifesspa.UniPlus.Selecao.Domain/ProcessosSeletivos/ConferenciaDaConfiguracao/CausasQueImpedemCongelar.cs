@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConsequenciasDoDescumprimento;
@@ -13,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -51,6 +53,8 @@ internal static class CausasQueImpedemCongelar
             .. ConferenciaDaProvaPresencial.Conferir(c.Configuracao.ProvaPresencial, c.Cadastros.MunicipiosDoGeo, c.Cadastros.LimiteDeMunicipiosDeProva),
             .. CidadeDeProvaNosFormularios.Conferir(c.Configuracao),
         ]),
+        new(NomeDoAssunto.ImportacaoDoResultado, static c => ConferenciaDaImportacaoDoResultado.Conferir(
+            ProcessoDosFormularios.De(c.Configuracao), c.Configuracao.ImportacaoDoResultado, c.Configuracao.Cronograma.CronogramaFases)),
     ];
 
     internal static IReadOnlyList<FieldError> De(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>

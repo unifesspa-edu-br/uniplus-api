@@ -78,6 +78,9 @@ public static class PonteiroNoDocumento
         ["ordemDeRemanejamento.fallbackCodigo"] = "ordemDeRemanejamento.destinoFinalCodigo",
         ["ordemDeRemanejamento.ordens[].ordem"] = "ordemDeRemanejamento.destinos[]",
 
+        // A importação do resultado: a primeira fase depois da importação é citada pela chave da fase.
+        ["importacao.primeiraFaseDepoisDaImportacao"] = "importacao.primeiraFaseDepoisDaImportacaoChave",
+
         // O FADA e o atendimento: o dado de elegibilidade e a base legal vão pelo código, e cada lista de ids vira a lista de códigos.
         ["fada.fatoElegibilidadeCodigo"] = "fada.codigoDoDadoDeElegibilidade",
         ["fada.baseLegalId"] = "fada.baseLegalCodigo",

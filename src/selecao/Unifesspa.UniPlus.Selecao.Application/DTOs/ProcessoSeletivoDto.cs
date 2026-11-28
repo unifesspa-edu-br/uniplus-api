@@ -37,6 +37,8 @@ public sealed record ProcessoSeletivoDto(
     // declarada; nome é copiado do Geo na última publicação ou retificação e fica null antes
     // da cópia e a cada nova declaração durante uma retificação.
     ProvaPresencialDto? ProvaPresencial,
+    // Importação do resultado: null é por declarar, e o processo de resultado importado não publica sem ela.
+    ImportacaoDoResultadoDto? ImportacaoDoResultado,
     // Cadastro de reserva por chamada: lista vazia é o processo sem reserva em nenhuma chamada, na ordem crescente do número da chamada, com a participação da reserva só na chamada que tem reserva.
     IReadOnlyList<CadastroDeReservaDaChamadaDto> CadastroDeReserva,
     // Como o edital prevê a manifestação de interesse: null é a manifestação não prevista, e o rótulo é só de leitura.

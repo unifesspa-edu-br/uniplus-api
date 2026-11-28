@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -206,5 +207,9 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         [typeof(AtendimentoDisponivel)] = (["Necessidades"], []),
         [typeof(ConcorrenciaDuplaObrigatoria)] = ([], []),
         [typeof(Customizado)] = (["Parametros"], []),
+
+        // Importação do resultado: os relatórios do processo e a fase que vem depois da importação.
+        [typeof(DeclaracaoDaImportacaoDoResultado)] = (["Relatorios", "PrimeiraFaseDepoisDaImportacaoId"], []),
+        [typeof(RelatorioDeclarado)] = (["LeiauteCodigo", "LeiauteVersao", "Posicao"], []),
     };
 }

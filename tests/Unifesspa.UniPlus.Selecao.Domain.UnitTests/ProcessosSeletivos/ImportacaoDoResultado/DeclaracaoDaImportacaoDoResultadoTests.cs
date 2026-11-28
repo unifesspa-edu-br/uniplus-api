@@ -23,7 +23,7 @@ public sealed class DeclaracaoDaImportacaoDoResultadoTests
             [Relatorio("CHAMADA_REGULAR"), Relatorio("LISTA_DE_ESPERA", "v2")], PrimeiraFase);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Relatorios.Should().Equal(new RelatorioDeclarado("CHAMADA_REGULAR", "v1"), new RelatorioDeclarado("LISTA_DE_ESPERA", "v2"));
+        resultado.Value!.Relatorios.Should().Equal(new RelatorioDeclarado("CHAMADA_REGULAR", "v1", 1), new RelatorioDeclarado("LISTA_DE_ESPERA", "v2", 2));
         resultado.Value.PrimeiraFaseDepoisDaImportacaoId.Should().Be(PrimeiraFase);
     }
 
@@ -36,6 +36,46 @@ public sealed class DeclaracaoDaImportacaoDoResultadoTests
         resultado.Value!.Relatorios.Should().BeEmpty();
         resultado.Value.PrimeiraFaseDepoisDaImportacaoId.Should().BeNull();
     }
+
+    [Theory(DisplayName = "O código do leiaute fora da forma de código de catálogo é recusado no campo do código")]
+    [InlineData("MEU LEIAUTE")]
+    [InlineData("LEIAUTE\u0301")]
+    [InlineData("_INICIAL")]
+    [InlineData("LEIAUTÉ")]
+    [InlineData("01234567-89ab-cdef-0123-456789abcdef")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
+    public void CodigoForaDaForma_Recusa(string codigo)
+    {
+        Result<DeclaracaoDaImportacaoDoResultado> resultado = DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio(codigo)], null);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("importacao.relatorios[0].leiauteCodigo", ImportacaoDoResultadoErrorCodes.RelatorioSemLeiaute));
+    }
+
+    [Fact(DisplayName = "A versão do leiaute com 16 caracteres é aceita e com 17 é recusada no campo da versão")]
+    public void VersaoNoLimite_AceitaEAcimaRecusa()
+    {
+        DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio("A", new string('1', 16))], null).IsSuccess.Should().BeTrue();
+
+        Result<DeclaracaoDaImportacaoDoResultado> acima = DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio("A", new string('1', 17))], null);
+
+        acima.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("importacao.relatorios[0].leiauteVersao", ImportacaoDoResultadoErrorCodes.RelatorioSemLeiaute));
+    }
+
+    [Fact(DisplayName = "O código do leiaute com 50 caracteres é aceito e com 51 é recusado")]
+    public void CodigoNoLimite_AceitaEAcimaRecusa()
+    {
+        DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio(new string('A', 50))], null).IsSuccess.Should().BeTrue();
+        DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio(new string('A', 51))], null).IsFailure.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "O código do leiaute na forma de código de catálogo é aceito")]
+    [InlineData("INEP_RETORNO_ENEM")]
+    [InlineData("inep.retorno-2026")]
+    [InlineData("A")]
+    public void CodigoNaForma_Aceita(string codigo) =>
+        DeclaracaoDaImportacaoDoResultado.Declarar([Relatorio(codigo)], null).IsSuccess.Should().BeTrue();
 
     [Theory(DisplayName = "Relatório sem código ou sem versão de leiaute é recusado no campo que falta")]
     [InlineData(null, "v1", "importacao.relatorios[0].leiauteCodigo")]

@@ -80,7 +80,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         FaseCronograma faseSemExtremo = FaseDeHomologacaoNaOrdem2();
-        processo.DefinirCronogramaFases([FaseBaseDaImportacao(), faseSemExtremo], [])
+        FormularioDeTeste.TrocarCronograma(processo, [FaseBaseDaImportacao(), faseSemExtremo])
             .IsSuccess.Should().BeTrue();
 
         Guid faseComExigenciaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
@@ -273,14 +273,14 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ProcessoSeletivo processo = ProcessoConforme();
         FaseCronograma faseComExigencia = FaseBaseDaImportacao();
         FaseCronograma faseAncora = FaseDeHomologacao();
-        processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [])
+        FormularioDeTeste.TrocarCronograma(processo, [faseComExigencia, faseAncora])
             .IsSuccess.Should().BeTrue();
 
         ExigirDeclaracaoDeMaioridade(processo, faseComExigencia.Id);
 
         ReferenciarOFimDaFase(processo, faseAncora);
 
-        processo.DefinirCronogramaFases([faseComExigencia], [])
+        FormularioDeTeste.TrocarCronograma(processo, [faseComExigencia])
             .IsSuccess.Should().BeTrue();
 
         return processo;

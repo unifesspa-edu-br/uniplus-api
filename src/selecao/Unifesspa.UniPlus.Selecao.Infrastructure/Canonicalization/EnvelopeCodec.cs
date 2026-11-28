@@ -21,6 +21,7 @@ public sealed class EnvelopeCodec : IRegistroCodecsEnvelope
     [
         "motivosDeDecisao",
         "provaPresencial",
+        "importacaoDoResultado",
         "cadastroDeReserva",
         "manifestacaoDeInteresse",
         "tipoProcesso",

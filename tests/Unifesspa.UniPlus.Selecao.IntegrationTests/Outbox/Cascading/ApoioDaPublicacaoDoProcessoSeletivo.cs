@@ -87,28 +87,33 @@ internal sealed class ApoioDaPublicacaoDoProcessoSeletivo
         return await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
     }
 
-    internal static object NovoCorpoPublicacao(Guid documentoEditalId, string? numero = null) => new
-    {
-        numero,
-        documentoEditalId,
-        ato = new
+    internal static object NovoCorpoPublicacao(
+        Guid documentoEditalId, string? numero = null, DateTimeOffset? periodoInscricaoInicio = null, DateTimeOffset? periodoInscricaoFim = null) => new
         {
-            orgao = "CEPS",
-            serie = "EDITAL",
-            ano = 2026,
-            dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            assinante = "Diretor do CEPS",
-            tipoAtoCodigo = "EDITAL_ABERTURA",
-        },
-    };
+            numero,
+            documentoEditalId,
+            periodoInscricaoInicio,
+            periodoInscricaoFim,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_ABERTURA",
+            },
+        };
 
     internal static async Task<HttpResponseMessage> PostPublicarAsync(
-        HttpClient client, Guid processoId, Guid documentoEditalId, string idempotencyKey)
+        HttpClient client, Guid processoId, Guid documentoEditalId, string idempotencyKey, bool comPeriodoDeInscricao = false)
     {
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
         {
-            Content = JsonContent.Create(NovoCorpoPublicacao(documentoEditalId)),
+            Content = JsonContent.Create(comPeriodoDeInscricao
+                ? NovoCorpoPublicacao(documentoEditalId, periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)))
+                : NovoCorpoPublicacao(documentoEditalId)),
         };
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);

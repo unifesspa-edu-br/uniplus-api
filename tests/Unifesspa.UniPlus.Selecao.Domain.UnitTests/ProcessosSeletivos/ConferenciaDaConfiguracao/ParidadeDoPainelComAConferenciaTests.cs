@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -93,9 +94,25 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         dasCausas.Should().Equal(doPainel.Select(static item => ((string?)item.Codigo, (string?)item.Bloco)));
     }
 
-    [Fact(DisplayName = "O catálogo de itens pendentes por assunto cobre exatamente os assuntos da conferência")]
+    [Fact(DisplayName = "No processo de resultado importado com a importação por completar, só o item da importação pende no painel e só o assunto da importação tem causa")]
+    public void ImportacaoPorCompletar_PendeSoOItemEOAssuntoDaImportacao()
+    {
+        ProcessoSeletivo processo = ProcessoDaImportacaoDeTeste.ImportadoConforme();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirImportacaoDoResultado(ProcessoDaImportacaoDeTeste.UmRelatorio, null).IsSuccess.Should().BeTrue();
+        CadastrosDaConfiguracao cadastros = CadastrosDeTeste.Para(processo);
+        ContextoDaConferencia contexto = ContextoDaConferencia.De(processo.Declaracao(), cadastros);
+
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), cadastros).Where(static item => !item.Ok).Select(static item => item.Codigo)
+            .Should().Equal("importacao_do_resultado");
+        CausasQueImpedemCongelar.Assuntos.Where(assunto => assunto.Causas(contexto).Any()).Select(static assunto => assunto.Nome)
+            .Should().Equal(NomeDoAssunto.ImportacaoDoResultado);
+    }
+
+    [Fact(DisplayName = "O catálogo de itens pendentes por assunto cobre exatamente os assuntos da conferência que o cenário de inscrição própria quebra")]
     public void ItensPendentesPorAssunto_CobremOsAssuntosDaConferencia() =>
-        ItensPendentesPorAssunto.Keys.Should().BeEquivalentTo(CausasQueImpedemCongelar.Assuntos.Select(static assunto => assunto.Nome));
+        ItensPendentesPorAssunto.Keys.Should().BeEquivalentTo(
+            CausasQueImpedemCongelar.Assuntos.Select(static assunto => assunto.Nome).Except(CenarioDeCongelamentoPorAssunto.AssuntosSoDoResultadoImportado));
 
     public static TheoryData<string> AssuntosDoPainel => [.. ItensPendentesPorAssunto.Keys];
 

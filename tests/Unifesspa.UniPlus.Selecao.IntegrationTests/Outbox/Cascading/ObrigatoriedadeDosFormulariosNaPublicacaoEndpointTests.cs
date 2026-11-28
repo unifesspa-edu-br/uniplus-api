@@ -106,7 +106,7 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
     {
         IReadOnlySet<string> recusas = await PublicarEListarRecusasAsync(
             nameof(ResultadoImportadoComFormularioNaFaseDeInscricao_RecusaAPublicacao),
-            ProcessoImportado(static p => DefinirFormularioDaInscricao(p, p.CronogramaFases.Single().Id)));
+            ProcessoImportado(static p => DefinirFormularioDaInscricao(p, p.CronogramaFases.Single().Id), comInscricaoNaFase: true));
 
         recusas.Should().Contain(InscricaoEmResultadoImportado);
     }
@@ -120,11 +120,13 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
         recusas.Should().NotContain(InscricaoEmResultadoImportado);
     }
 
-    private static OpcoesDoProcessoSeletivoPublicavel ProcessoImportado(Action<ProcessoSeletivo>? complementar) => new()
+    private static OpcoesDoProcessoSeletivoPublicavel ProcessoImportado(Action<ProcessoSeletivo>? complementar, bool comInscricaoNaFase = false) => new()
     {
         Nome = string.Empty,
         Origem = OrigemCandidatos.ImportacaoExterna,
         ComBancaDeImportacaoDeCandidatos = true,
+        ComCicloDeRecurso = true,
+        ComInscricaoNaFaseDeResultado = comInscricaoNaFase,
         Complementar = complementar,
     };
 

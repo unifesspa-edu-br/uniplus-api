@@ -69,7 +69,7 @@ public sealed class EdicaoDoExameDaHomologacaoNaConferenciaTests
     {
         ProcessoSeletivo processo = ProcessoComAsEdicoes("2024");
 
-        Result salvo = processo.DefinirCronogramaFases([FaseQueConfirmaOInepDe(2023)], []);
+        Result salvo = FormularioDeTeste.TrocarCronograma(processo, [FaseQueConfirmaOInepDe(2023)]);
 
         salvo.IsSuccess.Should().BeTrue(salvo.Error?.Message);
         CausasDaEdicao(processo).Should().ContainSingle("a recusa fica para a publicação e a retificação");

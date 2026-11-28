@@ -119,3 +119,15 @@ Pela [ADR-0179](0179-consequencia-do-descumprimento-declarada-na-parte-do-proces
 - A espera do Geo não fica presa à trava da linha do rascunho.
 - A página do código de Geo indisponível passa a descrever também a configuração do processo.
 - Quem configura o processo pode fazer o Geo ser consultado numa substituição recusada depois, até o limite de municípios por requisição, o mesmo custo de uma substituição aceita.
+
+## Emenda (2026-11-28) — importação do resultado e primeira fase depois da importação
+
+**Contexto.** A primeira fase depois da importação não fazia parte da configuração do processo, e a recusa do formulário obrigatório dessa fase nunca era devolvida, porque a conferência recebia a fase sempre nula.
+
+**Decisão.** A declaração da importação do resultado, com os relatórios pelo leiaute e a primeira fase depois da importação, integra a configuração e o documento congelado. A conferência ganha o assunto «importação do resultado», depois da prova presencial: o processo com inscrição pelo sistema que a declara é recusado, o de resultado importado sem ela é recusado como por declarar, e, havendo declaração, são recusados o relatório ausente, o leiaute mal formado ou repetido e a primeira fase por declarar ou fora do cronograma. A gravação confere só o que já vale sobre o rascunho, e a publicação repete isso, porque o cronograma e a origem dos candidatos mudam entre gravar e congelar. O painel ganha os itens `importacao_do_resultado` e `formulario_pos_importacao_sem_obrigatorio`, este com condição própria na publicação, fora dos itens da inscrição e da isenção. A fase fora do cronograma corta só a recusa do formulário. A conferência do leiaute contra o catálogo entra quando existir o catálogo de leiautes de relatório; até lá, a declaração é conferida só pela forma.
+
+**Consequências.**
+
+- As primeiras causas não mudam para quem já declarava tudo.
+- O hash do envelope muda, e o envelope `0.0.57` é editado no lugar, sem leitor da forma antiga, porque não há produção.
+- Sete códigos de erro novos, com prefixo `uniplus.selecao.importacao_resultado.`, ganham página no portal depois do merge da API.

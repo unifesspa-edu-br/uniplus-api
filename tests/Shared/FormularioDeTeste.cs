@@ -227,7 +227,8 @@ internal static class FormularioDeTeste
 
     /// <summary>
     /// Troca o cronograma do processo: o formulário de inscrição sai antes, porque é respondido
-    /// numa fase que a troca remove, e volta depois, na fase de inscrição do cronograma novo.
+    /// numa fase que a troca remove, e volta depois, na fase de inscrição do cronograma novo. A importação do
+    /// resultado que depende de fase removida também sai antes e é declarada de novo na primeira fase nova.
     /// </summary>
     public static Result TrocarCronograma(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
@@ -250,12 +251,14 @@ internal static class FormularioDeTeste
         ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
         List<EtapaProcesso> etapasAntes = [.. processo.Etapas];
+        DeclaracoesObrigatoriasDeTeste.DesfazerImportacaoDaFaseQueSai(processo, fases);
         Result trocado = processo.DefinirCronogramaFases(fases, []);
         if (trocado.IsSuccess)
         {
             ReporEtapasDeFaseQueContinua(processo, etapasAntes, fases);
         }
 
+        DeclaracoesObrigatoriasDeTeste.DeclararImportacaoDoResultado(processo);
         return trocado;
     }
 

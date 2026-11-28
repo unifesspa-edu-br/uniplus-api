@@ -25,6 +25,7 @@ public sealed class ProjecaoDaVersaoPublicada(IEsquemaDoDocumentoDaConfiguracao 
         ("atendimento", ProjecaoDeAtendimento.Projetar),
         ("fada", ProjecaoDeFada.Projetar),
         ("provaPresencial", ProjecaoDeProvaPresencial.Projetar),
+        ("importacao", ProjecaoDeImportacaoDoResultado.Projetar),
         ("cadastroDeReserva", ProjecaoDeCadastroDeReserva.Projetar),
         ("manifestacaoDeInteresse", ProjecaoDeManifestacaoDeInteresse.Projetar),
     ];

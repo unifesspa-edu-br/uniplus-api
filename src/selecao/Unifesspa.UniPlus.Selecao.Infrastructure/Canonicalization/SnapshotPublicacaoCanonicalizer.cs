@@ -150,6 +150,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProcessoSeletivo processo = entrada.Processo;
         ConfiguracaoPublicada? publicada = entrada.ConfiguracaoPublicada;
         payload["provaPresencial"] = SerializacaoDaProvaPresencial.Serializar(publicada is null ? processo.ProvaPresencial : publicada.ProvaPresencial);
+        payload["importacaoDoResultado"] = SerializacaoDaImportacaoDoResultado.Serializar(publicada is null ? processo.ImportacaoDoResultado : publicada.ImportacaoDoResultado);
         payload["cadastroDeReserva"] = SerializacaoDoCadastroDeReserva.Serializar(publicada?.CadastroDeReserva ?? processo.CadastroDeReserva);
         payload["manifestacaoDeInteresse"] = SerializacaoDaManifestacaoDeInteresse.Serializar(publicada is null ? processo.ManifestacaoDeInteresse : publicada.ManifestacaoDeInteresse);
     }

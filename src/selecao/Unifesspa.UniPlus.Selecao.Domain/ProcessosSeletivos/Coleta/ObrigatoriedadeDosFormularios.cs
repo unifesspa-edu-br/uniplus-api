@@ -35,7 +35,7 @@ public static class ObrigatoriedadeDosFormularios
             .. RecusasDaInscricao(processo, formularios, fasesDeInscricao),
             .. RecusasDaJanelaDeIsencao(processo, formularios, fasesDeInscricao, fasesDaJanela),
             .. RecusasDasFasesOrganizadasEmChamadas(formularios, cronograma),
-            .. RecusaDaPrimeiraFaseDepoisDaImportacao(processo, coletas),
+            .. RecusaDaPrimeiraFaseDepoisDaImportacao(processo, coletas, cronograma),
         ];
     }
 
@@ -103,8 +103,11 @@ public static class ObrigatoriedadeDosFormularios
                 FormularioProcessoErrorCodes.ChamadasSemFormularioObrigatorio,
                 $"{CitacaoDaFase.ComArtigo(par.fase.Citacao)} é organizada em chamadas e precisa de ao menos um formulário obrigatório.")));
 
-    private static IEnumerable<FieldError> RecusaDaPrimeiraFaseDepoisDaImportacao(ProcessoDosFormularios processo, IReadOnlyList<ColetaDoFormulario> coletas) =>
-        processo.PrimeiraFaseDepoisDaImportacaoId is { } faseId && !coletas.Any(coleta => ObrigatorioNaFase(coleta, faseId))
+    private static IEnumerable<FieldError> RecusaDaPrimeiraFaseDepoisDaImportacao(
+        ProcessoDosFormularios processo, IReadOnlyList<ColetaDoFormulario> coletas, IReadOnlyCollection<FaseCronograma> cronograma) =>
+        processo.PrimeiraFaseDepoisDaImportacaoId is { } faseId
+        && cronograma.Any(fase => fase.Id == faseId)
+        && !coletas.Any(coleta => ObrigatorioNaFase(coleta, faseId))
             ? [new FieldError(CampoDosFormularios, new DomainError(
                 FormularioProcessoErrorCodes.PosImportacaoSemFormularioObrigatorio,
                 "A primeira fase depois da importação precisa de formulário obrigatório que coleta os dados que a importação não traz."))]

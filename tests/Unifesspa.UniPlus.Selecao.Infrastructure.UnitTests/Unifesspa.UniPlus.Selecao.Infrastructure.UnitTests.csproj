@@ -33,6 +33,7 @@
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
     <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
+    <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/ItemBasicoDeTeste.cs" Link="ItemBasicoDeTeste.cs" />
     <Compile Include="../Shared/GrupoColetadoDeTeste.cs" Link="GrupoColetadoDeTeste.cs" />
     <Compile Include="../Shared/DocumentoExigidoDeTeste.cs" Link="DocumentoExigidoDeTeste.cs" />

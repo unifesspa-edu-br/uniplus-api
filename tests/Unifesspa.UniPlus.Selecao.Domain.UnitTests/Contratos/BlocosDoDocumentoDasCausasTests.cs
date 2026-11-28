@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -88,6 +89,20 @@ public sealed class BlocosDoDocumentoDasCausasTests
             "/cronograma/fases/0/bancasRequeridas/0/categoriasDocumentoCodigos", "/etapas/1/faseChave", "/etapas/1/chave",
         ];
         causas.Select(static causa => causa.Field).Should().Contain(traduzidos);
+        CaminhosAusentes(causas).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O campo da causa da primeira fase depois da importação, no processo de resultado importado, existe no esquema publicado, o caminho inteiro")]
+    public void CampoDaCausaDaImportacaoDoResultado_ExisteNoEsquema()
+    {
+        ProcessoSeletivo processo = ProcessoDaImportacaoDeTeste.ImportadoConforme();
+        processo.RemoverFormulario(PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirImportacaoDoResultado(ProcessoDaImportacaoDeTeste.UmRelatorio, null).IsSuccess.Should().BeTrue();
+
+        IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
+            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Para(processo)).Errors, OrigemNoDocumento.Identidade);
+
+        causas.Select(static causa => causa.Field).Should().Contain("/importacao/primeiraFaseDepoisDaImportacaoChave");
         CaminhosAusentes(causas).Should().BeEmpty();
     }
 

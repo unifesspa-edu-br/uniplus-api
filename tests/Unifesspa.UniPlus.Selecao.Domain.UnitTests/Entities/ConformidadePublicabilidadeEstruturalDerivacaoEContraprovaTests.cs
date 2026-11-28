@@ -140,6 +140,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
             raiz.Vagas, raiz.Exigencias, raiz.Coleta, raiz.DivulgacaoETaxa)
         {
             ProvaPresencial = raiz.ProvaPresencial,
+            ImportacaoDoResultado = raiz.ImportacaoDoResultado,
             MotivosDeDecisao = raiz.MotivosDeDecisao,
             Origem = raiz.Origem,
         };

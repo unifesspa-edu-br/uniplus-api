@@ -21,6 +21,8 @@ public sealed class ProjecaoDasPartesPublicadasTests
     [InlineData("taxaDeInscricao", """{"taxaInscricao":{"presente":true,"cobra":false,"valor":null,"fundamentos":[]}}""", """{"cobra":false,"fundamentos":[]}""")]
     [InlineData("divulgacao", """{"divulgacao":{"camposPublicos":["NUMERO_INSCRICAO"],"regraNomeAbreviado":null,"justificativa":null}}""", """{"camposPublicos":["NUMERO_INSCRICAO"]}""")]
     [InlineData("provaPresencial", """{"provaPresencial":{"temProvaPresencial":false,"municipios":[]}}""", """{"temProvaPresencial":false,"municipios":[]}""")]
+    [InlineData("importacao", """{"cronogramaFases":{"fases":[{"id":"11111111-1111-1111-1111-111111111111","chave":"fase_resultado"}]},"importacaoDoResultado":{"relatorios":[{"leiauteCodigo":"INEP_RETORNO_ENEM","leiauteVersao":"v1"}],"primeiraFaseDepoisDaImportacaoId":"11111111-1111-1111-1111-111111111111"}}""", """{"relatorios":[{"leiauteCodigo":"INEP_RETORNO_ENEM","leiauteVersao":"v1"}],"primeiraFaseDepoisDaImportacaoChave":"fase_resultado"}""")]
+    [InlineData("importacao", """{"importacaoDoResultado":{"relatorios":[{"leiauteCodigo":"INEP_RETORNO_ENEM","leiauteVersao":"v1"}],"primeiraFaseDepoisDaImportacaoId":null}}""", """{"relatorios":[{"leiauteCodigo":"INEP_RETORNO_ENEM","leiauteVersao":"v1"}]}""")]
     [InlineData("cadastroDeReserva", """{"cadastroDeReserva":[]}""", """[]""")]
     [InlineData("manifestacaoDeInteresse", """{"manifestacaoDeInteresse":"UMA_VEZ"}""", "\"UMA_VEZ\"")]
     [InlineData("manifestacaoDeInteresse", """{"manifestacaoDeInteresse":"CONFIRMA_A_CADA_CHAMADA"}""", "\"CONFIRMA_A_CADA_CHAMADA\"")]
