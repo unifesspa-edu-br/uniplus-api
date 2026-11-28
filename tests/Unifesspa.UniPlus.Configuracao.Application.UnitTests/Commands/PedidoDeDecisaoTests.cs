@@ -20,7 +20,7 @@ public sealed class PedidoDeDecisaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("AJUSTE_RECOMENDADO", id, " DADO_DO_CANDIDATO ", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
+        PedidoDeDecisao pedido = PedidoDeDecisao.Ler(Comando("AJUSTE_RECOMENDADO", id, "DADO_DO_CANDIDATO", "SENSIVEL", "  Traz dado de saúde.  ")).Value!;
 
         (pedido.Item.Cadastro, pedido.Item.ItemId).Should().Be((CadastroDoCatalogo.Fato, id));
         (pedido.Decisao.Ato, pedido.Decisao.ClassificacaoRecomendada, pedido.Decisao.Justificativa!.Valor)
@@ -53,6 +53,8 @@ public sealed class PedidoDeDecisaoTests
     [InlineData("DEVOLVER")]
     [InlineData("SOLICITACAO")]
     [InlineData("ACEITE")]
+    [InlineData(" APROVACAO ")]
+    [InlineData("aprovacao")]
     public void Ler_DecisaoForaDoVoculario_Recusa(string decisao) =>
         PedidoDeDecisao.Ler(Comando(decisao, justificativa: "Motivo.")).Errors
             .Should().ContainSingle(e => e.Field == "decisao" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.DecisaoInvalida);

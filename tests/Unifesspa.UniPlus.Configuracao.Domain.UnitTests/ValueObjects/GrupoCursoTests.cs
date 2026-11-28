@@ -32,19 +32,14 @@ public sealed class GrupoCursoTests
         resultado.Value.Rotulo.Should().Be(rotulo);
     }
 
-    [Fact(DisplayName = "Criar normaliza espaços nas bordas (Trim)")]
-    public void Criar_ComEspacos_Normaliza()
-    {
-        Result<GrupoCurso> resultado = GrupoCurso.Criar("  TECNOLOGICA  ");
-
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Codigo.Should().Be(GrupoCurso.Tecnologica);
-    }
-
     [Theory(DisplayName = "Criar recusa o que não é código de um dos quatro grupos, inclusive o rótulo")]
     [InlineData("Tecnológica")]
     [InlineData("Humanística I")]
     [InlineData("tecnologica")]
+    [InlineData("Tecnologica")]
+    [InlineData("  TECNOLOGICA  ")]
+    [InlineData(" HUMANISTICA_I")]
+    [InlineData("SAUDE_E_BIOLOGICAS ")]
     [InlineData("ENGENHARIAS")]
     [InlineData("HUMANISTICA_III")]
     [InlineData("")]

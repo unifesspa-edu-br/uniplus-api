@@ -148,20 +148,6 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         await _tipos.DidNotReceiveWithAnyArgs().ListarPendentesPorIdAsync(default!, default);
     }
 
-    [Fact(DisplayName = "O cadastro é comparado sem os espaços das pontas e só os ids pedidos são lidos")]
-    public async Task Handle_CadastroComEspacos_LeSoOsIdsPedidos()
-    {
-        TipoDocumento laudo = NovoTipo();
-        PendentesDeTipo(laudo);
-
-        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto(" TIPO_DOCUMENTO ", laudo.Id));
-
-        resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(1, 0));
-        await _tipos.Received(1).ListarPendentesPorIdAsync(
-            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == laudo.Id), Arg.Any<CancellationToken>());
-    }
-
     [Fact(DisplayName = "O item sem id é recusado no campo do item, sem ler nada")]
     public async Task Handle_ItemSemId_RecusaNoCampo()
     {
@@ -174,11 +160,14 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         await _tipos.DidNotReceiveWithAnyArgs().ListarPendentesPorIdAsync(default!, default);
     }
 
-    [Fact(DisplayName = "O cadastro fora do vocabulário é recusado no campo do item")]
-    public async Task Handle_CadastroInvalido_RecusaNoCampo()
+    [Theory(DisplayName = "O cadastro fora do vocabulário, com espaços nas pontas ou em outra caixa é recusado no campo do item")]
+    [InlineData("MODALIDADE")]
+    [InlineData(" TIPO_DOCUMENTO ")]
+    [InlineData("tipo_documento")]
+    public async Task Handle_CadastroInvalido_RecusaNoCampo(string cadastro)
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto("MODALIDADE", Guid.NewGuid()));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto(cadastro, Guid.NewGuid()));
 
         resposta.Errors.Should().ContainSingle(e => e.Field == "itens[0].cadastro")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);

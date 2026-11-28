@@ -31,7 +31,7 @@ public static class CadastrosDoCatalogo
     /// <summary>Resolve um token textual ao cadastro; <see langword="false"/> quando inválido.</summary>
     public static bool TryAnalisar(string? token, out CadastroDoCatalogo cadastro)
     {
-        if (!string.IsNullOrWhiteSpace(token) && DeToken.TryGetValue(token.Trim(), out CadastroDoCatalogo resolvido))
+        if (token is not null && DeToken.TryGetValue(token, out CadastroDoCatalogo resolvido))
         {
             cadastro = resolvido;
             return true;
@@ -46,6 +46,5 @@ public static class CadastrosDoCatalogo
     public static CadastroDoCatalogo Analisar(string? token) =>
         TryAnalisar(token, out CadastroDoCatalogo cadastro)
             ? cadastro
-            : throw new ArgumentOutOfRangeException(
-                nameof(token), token, "Token de cadastro do catálogo fora do domínio fechado.");
+            : throw new ArgumentOutOfRangeException(nameof(token), "Token de cadastro do catálogo fora do domínio fechado.");
 }

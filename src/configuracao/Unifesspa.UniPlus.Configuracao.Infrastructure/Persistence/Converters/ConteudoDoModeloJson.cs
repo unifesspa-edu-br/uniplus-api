@@ -299,8 +299,14 @@ internal static class ConteudoDoModeloJson
         where TEnum : struct, Enum =>
         Texto(objeto, chave) is { } codigo ? CatalogoDe<TEnum>.Obter(codigo) : null;
 
+    /// <summary>Só a chave ausente ou o nulo explícito é ausência; qualquer outro valor que não seja objeto falha.</summary>
     private static JsonElement? Objeto(JsonElement pai, string chave) =>
-        pai.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.Object ? valor : null;
+        Presente(pai, chave) is { ValueKind: not JsonValueKind.Object }
+            ? throw new InvalidOperationException($"O documento do modelo traz '{chave}' que não é um objeto.")
+            : Presente(pai, chave);
+
+    private static JsonElement? Presente(JsonElement pai, string chave) =>
+        pai.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind != JsonValueKind.Null ? valor : null;
 
     private static BaseLegalDoModelo BaseLegalDeJson(JsonElement baseLegal) => new(
         baseLegal.GetProperty("referencia").GetString()!,
@@ -309,7 +315,7 @@ internal static class ConteudoDoModeloJson
         Texto(baseLegal, "observacao"));
 
     private static ExigenciaPorOpcao? PorOpcaoDeJson(JsonElement documento) =>
-        documento.TryGetProperty("porOpcao", out JsonElement porOpcao) && porOpcao.ValueKind == JsonValueKind.Object
+        Objeto(documento, "porOpcao") is { } porOpcao
             ? new ExigenciaPorOpcao(
                 porOpcao.GetProperty("codigoDoDado").GetString()!,
                 [.. porOpcao.GetProperty("exceto").EnumerateArray().Select(static valor => valor.GetString()!)])
@@ -322,8 +328,9 @@ internal static class ConteudoDoModeloJson
     private static string? TextoOuNulo(JsonElement valor) =>
         valor.ValueKind == JsonValueKind.Null ? null : valor.GetString();
 
+    /// <summary>Só a chave ausente ou o nulo explícito é ausência; qualquer outro valor que não seja texto falha.</summary>
     private static string? Texto(JsonElement objeto, string chave) =>
-        objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
+        Presente(objeto, chave)?.GetString();
 
     private static PredicadoDnf? Predicado(JsonElement objeto, string chave) =>
         objeto.TryGetProperty(chave, out JsonElement valor) && valor.ValueKind != JsonValueKind.Null

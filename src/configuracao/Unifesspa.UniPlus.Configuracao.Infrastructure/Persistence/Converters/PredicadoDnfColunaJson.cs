@@ -28,7 +28,7 @@ internal static class PredicadoDnfColunaJson
 
     public static PredicadoDnf Desserializar(string json) =>
         PredicadoDnfGravado.Remontar(
-            ObjetoDeValorGravado.DesserializarDocumento(
-                () => JsonSerializer.Deserialize<IReadOnlyList<IReadOnlyList<PredicadoDnfGravado.CondicaoGravada>>>(json, Opcoes) ?? [],
+            ObjetoDeValorGravado.DesserializarDocumentoNaoNulo(
+                () => JsonSerializer.Deserialize<IReadOnlyList<IReadOnlyList<PredicadoDnfGravado.CondicaoGravada>>>(json, Opcoes),
                 nameof(PredicadoDnf)));
 }

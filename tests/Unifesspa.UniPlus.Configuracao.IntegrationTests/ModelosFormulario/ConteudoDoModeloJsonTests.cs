@@ -144,16 +144,25 @@ public sealed class ConteudoDoModeloJsonTests
         ler.Should().Throw<ArgumentException>();
     }
 
-    [Theory(DisplayName = "A exigência por opção ausente, ou presente e que não é um objeto, é lida como ausente")]
-    [InlineData("")]
+    [Fact(DisplayName = "A exigência por opção ausente é lida como ausente")]
+    public void Desserializar_PorOpcaoAusente_LeComoAusente()
+    {
+        string json = JsonDocumentoLegado.Replace(",\"porOpcao\":null", string.Empty, StringComparison.Ordinal);
+
+        ConteudoDoModeloJson.Serializar(ConteudoDoModeloJson.Desserializar(json)).Should().Be(JsonDocumentoLegadoRegravado);
+    }
+
+    [Theory(DisplayName = "A exigência por opção presente e que não é um objeto falha na leitura")]
     [InlineData(",\"porOpcao\":\"MEDICINA\"")]
     [InlineData(",\"porOpcao\":3")]
     [InlineData(",\"porOpcao\":[]")]
-    public void Desserializar_PorOpcaoAusenteOuQueNaoEObjeto_LeComoAusente(string porOpcao)
+    public void Desserializar_PorOpcaoQueNaoEObjeto_Falha(string porOpcao)
     {
         string json = JsonDocumentoLegado.Replace(",\"porOpcao\":null", porOpcao, StringComparison.Ordinal);
 
-        ConteudoDoModeloJson.Serializar(ConteudoDoModeloJson.Desserializar(json)).Should().Be(JsonDocumentoLegadoRegravado);
+        Action ler = () => ConteudoDoModeloJson.Desserializar(json);
+
+        ler.Should().Throw<InvalidOperationException>();
     }
 
     [Fact(DisplayName = "O máximo de ocorrências do grupo é lido como inteiro")]

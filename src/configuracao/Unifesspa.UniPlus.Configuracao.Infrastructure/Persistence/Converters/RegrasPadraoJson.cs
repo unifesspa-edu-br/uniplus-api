@@ -33,8 +33,8 @@ internal static class RegrasPadraoJson
 
     public static IReadOnlyList<RegraDerivacao> Desserializar(string json)
     {
-        IReadOnlyList<RegraGravada> gravadas = ObjetoDeValorGravado.DesserializarDocumento(
-            () => JsonSerializer.Deserialize<IReadOnlyList<RegraGravada>>(json, Opcoes) ?? [], nameof(RegraDerivacao));
+        IReadOnlyList<RegraGravada> gravadas = ObjetoDeValorGravado.DesserializarDocumentoNaoNulo(
+            () => JsonSerializer.Deserialize<IReadOnlyList<RegraGravada>>(json, Opcoes), nameof(RegraDerivacao));
         return [.. gravadas.Select(Remontar)];
     }
 

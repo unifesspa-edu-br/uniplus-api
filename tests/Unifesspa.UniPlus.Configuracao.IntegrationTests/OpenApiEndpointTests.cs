@@ -208,6 +208,18 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
         ReferenciasDe(bloco.GetProperty("regra")).Should().Contain("#/components/schemas/RegraRemanejamentoCodigo");
     }
 
+    [Theory(DisplayName = "O grupo de área do ENEM dos pedidos lista os quatro códigos, na ordem de exibição")]
+    [InlineData("CriarPesoAreaEnemCommand", "grupoCurso")]
+    [InlineData("CriarCursoCommand", "grupoAreaEnem")]
+    [InlineData("AtualizarCursoCommand", "grupoAreaEnem")]
+    public async Task PedidoComGrupoDeArea_ListaOsCodigosDeGrupoCurso(string pedido, string campo)
+    {
+        JsonElement propriedade = (await ObterSchemasAsync()).GetProperty(pedido).GetProperty("properties").GetProperty(campo);
+
+        propriedade.GetProperty("enum").EnumerateArray().Select(c => c.GetString())
+            .Should().Equal("TECNOLOGICA", "HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS");
+    }
+
     private async Task ConferirComponenteDeCodigosAsync(string componente, string[] codigosEsperados)
     {
         JsonElement codigos = (await ObterSchemasAsync()).GetProperty(componente);

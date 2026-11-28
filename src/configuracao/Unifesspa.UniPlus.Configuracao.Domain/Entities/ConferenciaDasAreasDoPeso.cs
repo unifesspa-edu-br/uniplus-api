@@ -64,7 +64,7 @@ internal sealed class ConferenciaDasAreasDoPeso
 
     private void ConferirArea(string campo, AreaInformada informada)
     {
-        AreaEnemDescrita? descrita = Identificar(campo, informada.Codigo?.Trim());
+        AreaEnemDescrita? descrita = Identificar(campo, informada.Codigo);
         bool repetida = RecusarSeRepetida(campo, descrita);
 
         // A área repetida continua conhecida: peso e corte dela são conferidos pela regra da própria
@@ -87,7 +87,7 @@ internal sealed class ConferenciaDasAreasDoPeso
             return PesoAreaEnem.Areas[ordem];
         }
 
-        Recusar($"{campo}.codigo", PesoAreaEnemErrorCodes.AreaForaDoDominio, string.IsNullOrEmpty(codigo)
+        Recusar($"{campo}.codigo", PesoAreaEnemErrorCodes.AreaForaDoDominio, string.IsNullOrWhiteSpace(codigo)
             ? $"Informe o código da área. Aceitas: {AreasAceitas}."
             : $"A área informada não pertence às áreas do Peso por Área. Aceitas: {AreasAceitas}.");
         return null;
