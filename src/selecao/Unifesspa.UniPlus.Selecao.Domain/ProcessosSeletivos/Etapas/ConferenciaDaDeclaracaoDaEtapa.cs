@@ -98,13 +98,13 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     internal static IReadOnlyList<FieldError> AtosRepetidos(IReadOnlyList<ProdutoDaEtapa> produtos) =>
     [
         .. ProdutosPublicados.PosicoesRepetidas(produtos, HashCanonicalComputer.NormalizeNfc)
-            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado(produtos[posicao].AtoCodigo))),
+            .Select(posicao => new FieldError($"produtos[{posicao}]", AtoDuplicado())),
     ];
 
-    private static DomainError AtoDuplicado(string atoCodigo) =>
+    private static DomainError AtoDuplicado() =>
         new(
             "EtapaProcesso.AtoDuplicadoNaEtapa",
-            $"A etapa declara o ato '{atoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.");
+            "Na etapa, há ato declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.");
 
     internal static DomainError? JanelaInvertida(JanelaDeTempo janela) =>
         janela.Invertida

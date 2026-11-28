@@ -34,7 +34,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FieldError recusa = resultado.Recusas.Should().ContainSingle().Subject;
         recusa.Field.Should().BeNull("o ciclo novo é declarado no pedido, e não no documento");
         recusa.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
-        recusa.Error.Message.Should().Contain(Materia).And.Contain("exige declarar o novo ciclo");
+        recusa.Error.Message.Should().Contain("do resultado preliminar 'Resultado da prova'").And.Contain("exige declarar o novo ciclo");
         resultado.CiclosRecursaisRefeitos.Should().BeEmpty();
     }
 
@@ -155,8 +155,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         IdentidadeDoItemDoEdital item = Item(prova, preliminar);
         FaseCronograma[] novas = [ComJanela(prova, UmDiaDepois, UmDiaDepois.AddDays(8))];
 
-        ResultadoDoCicloNovo semDeclarar = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
-        ResultadoDoCicloNovo declarado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [], novas, [], new HashSet<IdentidadeDoItemDoEdital> { item }, Fatos(Iniciadas(), item));
+        ResultadoDoCicloNovo semDeclarar = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
+        ResultadoDoCicloNovo declarado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [], novas, [], new HashSet<IdentidadeDoItemDoEdital> { item }, Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
 
         semDeclarar.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
         declarado.Recusas.Should().BeEmpty();
@@ -184,8 +184,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FaseCronograma prova = Fase(1, "PROVA");
         IdentidadeDoItemDoEdital item = PreliminarDaEtapa(publicada);
 
-        ResultadoDoCicloNovo recusado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
-        ResultadoDoCicloNovo declarado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital> { item }, Fatos(Iniciadas(), item));
+        ResultadoDoCicloNovo recusado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
+        ResultadoDoCicloNovo declarado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital> { item }, Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
 
         recusado.Recusas.Should().ContainSingle().Which.Field.Should().BeNull();
         declarado.Recusas.Should().BeEmpty();
@@ -201,9 +201,9 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FaseCronograma prova = Fase(1, "PROVA");
         IdentidadeDoItemDoEdital item = PreliminarDaEtapa(publicada);
 
-        ResultadoDoCicloNovo trocado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
+        ResultadoDoCicloNovo trocado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
         ResultadoDoCicloNovo mantido = ConferenciaDoCicloNovoDaRetificacao.Conferir(
-            [prova], [publicada], [prova], [EtapaDaProvaComProcedimento(etapaId, RegraDeProcedimentoDoRecurso.Recalculo.Codigo())], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
+            [prova], [publicada], [prova], [EtapaDaProvaComProcedimento(etapaId, RegraDeProcedimentoDoRecurso.Recalculo.Codigo())], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item), NomesDaVersaoPublicada);
 
         trocado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
         mantido.Recusas.Should().BeEmpty();
@@ -218,7 +218,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FaseCronograma[] novas = [ComJanela(inscricao, UmDiaDepois, UmDiaDepois.AddDays(8)), prova];
         FatosDaExecucao fatos = Fatos(Iniciadas(), PreliminarDaEtapa(etapa));
 
-        ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir([inscricao, prova], [etapa], novas, [etapa], new HashSet<IdentidadeDoItemDoEdital>(), fatos);
+        ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir([inscricao, prova], [etapa], novas, [etapa], new HashSet<IdentidadeDoItemDoEdital>(), fatos, NomesDaVersaoPublicada);
 
         resultado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
     }
@@ -231,7 +231,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FaseCronograma[] novas = [ComJanela(prova, UmDiaDepois, UmDiaDepois.AddDays(8))];
         FatosDaExecucao fatos = Fatos(Iniciadas(), PreliminarDaEtapa(etapa));
 
-        ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [etapa], novas, [etapa], new HashSet<IdentidadeDoItemDoEdital>(), fatos);
+        ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [etapa], novas, [etapa], new HashSet<IdentidadeDoItemDoEdital>(), fatos, NomesDaVersaoPublicada);
 
         resultado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
     }
@@ -245,7 +245,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         FaseCronograma[] novas = [ComJanela(isencao, UmDiaDepois, UmDiaDepois.AddDays(8)), inscricao];
 
         ResultadoDoCicloNovo resultado = ConferenciaDoCicloNovoDaRetificacao.Conferir(
-            [isencao, inscricao], [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), Item(inscricao, preliminar)));
+            [isencao, inscricao], [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), Item(inscricao, preliminar)), NomesDaVersaoPublicada);
 
         resultado.Recusas.Should().BeEmpty();
     }
@@ -270,7 +270,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
     private static void ConferirAtosCitadosSoNoPiso(string[] mensagens, IdentidadeDoItemDoEdital[] piso, IdentidadeDoItemDoEdital[] declarados)
     {
         mensagens.Take(2).Zip(AtosEmOrdem(piso))
-            .Should().OnlyContain(static par => par.First.Contains($"'{par.Second}'", StringComparison.Ordinal));
+            .Should().OnlyContain(par => par.First.Contains($"'{NomesDaVersaoPublicada.NomeDe(par.Second)}'", StringComparison.Ordinal)
+                && !par.First.Contains(par.Second, StringComparison.Ordinal));
         mensagens.Skip(2).Zip(AtosEmOrdem(declarados))
             .Should().OnlyContain(static par => !par.First.Contains(par.Second, StringComparison.Ordinal));
     }
@@ -353,6 +354,6 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
 
         internal ResultadoDoCicloNovo Conferir(FaseCronograma[] novas, IdentidadeDoItemDoEdital[] declarados, params IdentidadeDoItemDoEdital[] publicados) =>
             ConferenciaDoCicloNovoDaRetificacao.Conferir(
-                Fases, [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(declarados), Fatos(Iniciadas(), publicados));
+                Fases, [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(declarados), Fatos(Iniciadas(), publicados), NomesDaVersaoPublicada);
     }
 }

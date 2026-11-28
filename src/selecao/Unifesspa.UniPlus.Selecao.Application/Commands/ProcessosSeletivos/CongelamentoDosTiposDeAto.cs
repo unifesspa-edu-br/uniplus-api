@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 /// <summary>
 /// A classificação, na data da publicação, de cada tipo de ato que o cronograma declara, para ir ao
@@ -51,35 +53,28 @@ internal static class CongelamentoDosTiposDeAto
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(tipos);
-        return CongelarTodos(processo, tipos);
+
+        ConfiguracaoDeclarada declarada = processo.Declaracao();
+        IReadOnlyList<FieldError> recusas = ConferenciaDosTiposDeAto.ConferirTiposSemVersaoVigente(
+            CronogramaDoProcesso.Do(declarada.Cronograma.CronogramaFases, declarada.Origem),
+            EtapasDoProcesso.Das(declarada.Avaliacao.Etapas, declarada.Origem),
+            tipos);
+        return recusas.Count > 0
+            ? Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.ValidationFailure(recusas)
+            : Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(CongelarTodos(declarada, tipos));
     }
 
-    private static Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> CongelarTodos(
-        ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto tipos)
-    {
-        Dictionary<string, TipoDeAtoCongelado> congelados = new(StringComparer.Ordinal);
-        foreach (string codigo in TiposDeAtoDoCronograma.DeclaracoesDeAtos(processo.Declaracao()).Select(static d => d.AtoCodigo).Distinct(StringComparer.Ordinal))
-        {
-            Result<TipoDeAtoCongelado> congelado = Congelar(codigo, tipos);
-            if (congelado.IsFailure)
-            {
-                return Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Failure(congelado.Error!);
-            }
-            congelados[codigo] = congelado.Value!;
-        }
+    private static Dictionary<string, TipoDeAtoCongelado> CongelarTodos(ConfiguracaoDeclarada declarada, TiposDeAtoUnicosPorObjeto tipos) =>
+        TiposDeAtoDoCronograma.DeclaracoesDeAtos(declarada)
+            .Select(static declaracao => declaracao.AtoCodigo)
+            .Distinct(StringComparer.Ordinal)
+            .Where(codigo => tipos.ClassificacaoDe(codigo) is not null)
+            .ToDictionary(static codigo => codigo, codigo => Congelar(codigo, tipos), StringComparer.Ordinal);
 
-        return Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(congelados);
-    }
-
-    private static Result<TipoDeAtoCongelado> Congelar(string codigo, TiposDeAtoUnicosPorObjeto tipos)
+    private static TipoDeAtoCongelado Congelar(string codigo, TiposDeAtoUnicosPorObjeto tipos)
     {
-        if (tipos.ClassificacaoDe(codigo) is not { } classificacao)
-        {
-            return Result<TipoDeAtoCongelado>.Failure(new DomainError(
-                "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-                $"Não há versão vigente do tipo de ato '{codigo}', declarado no cronograma, e a publicação congela a classificação de cada tipo declarado."));
-        }
-        return Result<TipoDeAtoCongelado>.Success(new TipoDeAtoCongelado(
-            codigo, tipos.NomeDe(codigo), tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao));
+        ClassificacaoDoTipoDeAto classificacao = tipos.ClassificacaoDe(codigo)!;
+        return new TipoDeAtoCongelado(
+            codigo, tipos.Nomes.NomeDe(codigo)!, tipos.EhUnico(codigo), classificacao.EhResultado, classificacao.CongelaConfiguracao);
     }
 }

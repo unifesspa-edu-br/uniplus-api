@@ -18878,7 +18878,7 @@
         "Publicar o preliminar e o definitivo da mesma matéria **não** cai aqui: a etapa declara o\nmesmo tipo de ato duas vezes, uma com o papel preliminar e outra com o papel definitivo. É o\ntipo de ato que liga o definitivo ao preliminar que ele espera. A regra é a mesma da [`fase\ndo cronograma`](/erros/uniplus.selecao.fase_cronograma.ato_duplicado_na_fase)."
       ],
       "comoResolver": [
-        "Remova a declaração repetida. A mensagem da recusa nomeia o código do ato que aparece mais\nde uma vez com o mesmo papel na etapa.",
+        "Remova a declaração repetida. A mensagem da recusa diz que há ato declarado mais de uma vez com o mesmo papel na etapa, sem\nrepetir o código do ato; o campo aponta o produto repetido.",
         "Se a intenção era anunciar duas publicações diferentes da etapa, declare o tipo de ato de\ncada uma. Se era anunciar o preliminar e o definitivo da mesma matéria, declare o mesmo tipo\nde ato duas vezes, uma com cada papel."
       ],
       "ondeAparece": [
@@ -23679,8 +23679,8 @@
         "UNI-REQ-0056"
       ],
       "oQueAconteceu": [
-        "Uma oferta de curso tem modalidade com `regraRemanejamento` igual a\n`SEGUE_ORDEM_DE_REMANEJAMENTO`, mas a oferta não usa a regra de distribuição de vagas da\nLei 12.711/2012 (cascata de remanejamento de cotas, UNI-REQ-0056). A cascata do processo é a sequência legal\nde remanejamento das cotas reservadas dessa lei — fora desse regime, não\nhá reserva legal cuja vaga não preenchida precise ser remanejada por uma\nsequência congelada; `SEGUE_ORDEM_DE_REMANEJAMENTO` não tem o que resolver ali.",
-        "Roda como parte da conferência de conformidade estrutural para publicação\n(`PendenciaDaCascata`), avaliada oferta por oferta, em ordem determinística\n(por `OfertaCursoOrigemId`). É a primeira condição conferida para cada\noferta com ao menos uma modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` — antes de checar se o\nprocesso tem cascata configurada. Cada oferta com essa inconsistência gera uma causa e, para ela, as demais conferências da\ncascata não se aplicam; as causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a oferta tem modalidade\ncom `SEGUE_ORDEM_DE_REMANEJAMENTO` fora do regime federal, sem nomear a oferta nem a modalidade."
+        "Uma oferta de curso tem modalidade com a opção de remanejamento 'Segue a ordem de remanejamento', mas a oferta não usa a regra de distribuição de vagas da\nLei 12.711/2012 (cascata de remanejamento de cotas, UNI-REQ-0056). A cascata do processo é a sequência legal\nde remanejamento das cotas reservadas dessa lei — fora desse regime, não\nhá reserva legal cuja vaga não preenchida precise ser remanejada por uma\nsequência congelada; a opção 'Segue a ordem de remanejamento' não tem o que resolver ali.",
+        "Roda como parte da conferência de conformidade estrutural para publicação\n(`PendenciaDaCascata`), avaliada oferta por oferta, em ordem determinística\n(por `OfertaCursoOrigemId`). É a primeira condição conferida para cada\noferta com ao menos uma modalidade com a opção 'Segue a ordem de remanejamento' — antes de checar se o\nprocesso tem cascata configurada. Cada oferta com essa inconsistência gera uma causa e, para ela, as demais conferências da\ncascata não se aplicam; as causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a oferta tem modalidade\ncom a regra 'Segue a ordem de remanejamento', pelo nome legível da opção, mas não usa regra de distribuição do ramo federal, sem nomear a oferta nem a modalidade."
       ],
       "comoResolver": [
         "Se a modalidade de fato pertence a uma cota reservada da Lei 12.711/2012,\nconfirme que a oferta está configurada com a regra de distribuição de\nvagas correspondente. Se a oferta não segue esse regime, corrija o\n`remanejamento.regra` da modalidade para `DESTINO_UNICO` ou `CRUZADO`."
@@ -23696,12 +23696,12 @@
         "UNI-REQ-0056"
       ],
       "oQueAconteceu": [
-        "Uma modalidade com `regraRemanejamento` igual a `SEGUE_ORDEM_DE_REMANEJAMENTO` não tem\nnenhuma sequência de destinos declarada para ela na cascata do processo\n(cascata de remanejamento de cotas, UNI-REQ-0056). Essa causa cobre dois cenários distintos:",
+        "Uma modalidade com a opção de remanejamento 'Segue a ordem de remanejamento' não tem\nnenhuma sequência de destinos declarada para ela na cascata do processo\n(cascata de remanejamento de cotas, UNI-REQ-0056). Essa causa cobre dois cenários distintos:",
         "- O processo **não tem cascata de remanejamento configurada** —\n  nenhuma modalidade pode seguir uma cascata que não existe.\n- O processo **tem** cascata, mas ela não declara o código dessa\n  modalidade específica como origem — ela cobre outras origens, mas não\n  esta.",
-        "O primeiro cenário é conferido uma vez por oferta, antes de examinar cada\nmodalidade individualmente — a partir daí, se o processo tiver cascata, o\nsegundo cenário é conferido para cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` da\noferta, em ordem determinística (por código). Cada oferta ou modalidade com essa\ninconsistência gera uma causa na avaliação de conformidade estrutural para publicação, e\nas causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz qual dos dois cenários ocorreu (o processo não\ntem cascata, ou a cascata não declara destino para a modalidade), sem nomear a oferta nem a\nmodalidade."
+        "O primeiro cenário é conferido uma vez por oferta, antes de examinar cada\nmodalidade individualmente — a partir daí, se o processo tiver cascata, o\nsegundo cenário é conferido para cada modalidade com a opção 'Segue a ordem de remanejamento' da\noferta, em ordem determinística (por código). Cada oferta ou modalidade com essa\ninconsistência gera uma causa na avaliação de conformidade estrutural para publicação, e\nas causas de todas as ofertas e modalidades se acumulam em `errors[]`, com as demais desta série. A mensagem diz qual dos dois cenários ocorreu (o processo não\ntem cascata, ou a cascata não declara destino para a modalidade), citando a opção pelo nome legível 'Segue a ordem de remanejamento', sem nomear a oferta nem a\nmodalidade."
       ],
       "comoResolver": [
-        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione na cascata já configurada, como origem, cada modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` que ainda\nnão consta nela (a mensagem não nomeia a modalidade) —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `remanejamento.regra` dela."
+        "Configure a cascata de remanejamento do processo, se ainda não existir, ou\nadicione na cascata já configurada, como origem, cada modalidade com a opção 'Segue a ordem de remanejamento' que ainda\nnão consta nela (a mensagem não nomeia a modalidade) —\ncom ao menos um destino em sua fila. Se a modalidade não deveria seguir a\ncascata, corrija o `remanejamento.regra` dela."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -23714,11 +23714,11 @@
         "UNI-REQ-0056"
       ],
       "oQueAconteceu": [
-        "A cascata do processo declara, como origem, um código de modalidade que\nnenhuma oferta do processo marca com `regraRemanejamento` igual a\n`SEGUE_ORDEM_DE_REMANEJAMENTO`. É a conferência inversa de\n[`cascata_origem_ausente`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_ausente):\nlá, a modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` existe mas a cascata não a cobre; aqui, a\ncascata cobre uma origem que nenhuma modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` de fato\nusa — a fila de destinos daquela origem não tem para quê existir.",
-        "Diferente das causas anteriores desta série, que são avaliadas oferta por oferta, esta é avaliada\nsobre o conjunto do processo: percorre os destinos da cascata, em ordem determinística, e confere\na origem de cada um contra o conjunto de todos os códigos de modalidade `SEGUE_ORDEM_DE_REMANEJAMENTO` do\nprocesso, somando todas as ofertas. Cada destino cuja origem tem essa inconsistência gera uma causa, e as\ncausas se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a cascata declara\numa origem que nenhuma oferta marca como `SEGUE_ORDEM_DE_REMANEJAMENTO`, sem trazer o código da\norigem."
+        "A cascata do processo declara, como origem, um código de modalidade que\nnenhuma oferta do processo marca com a opção de remanejamento\n'Segue a ordem de remanejamento'. É a conferência inversa de\n[`cascata_origem_ausente`](/erros/uniplus.selecao.processo_seletivo.cascata_origem_ausente):\nlá, a modalidade com essa opção existe mas a cascata não a cobre; aqui, a\ncascata cobre uma origem que nenhuma modalidade com essa opção de fato\nusa — a fila de destinos daquela origem não tem para quê existir.",
+        "Diferente das causas anteriores desta série, que são avaliadas oferta por oferta, esta é avaliada\nsobre o conjunto do processo: percorre os destinos da cascata, em ordem determinística, e confere\na origem de cada um contra o conjunto de todos os códigos de modalidade com a opção 'Segue a ordem de remanejamento' do\nprocesso, somando todas as ofertas. Cada destino cuja origem tem essa inconsistência gera uma causa, e as\ncausas se acumulam em `errors[]`, com as demais desta série. A mensagem diz que a cascata declara\numa origem que nenhuma oferta do processo marca com a regra 'Segue a ordem de remanejamento', pelo nome legível da opção, sem trazer o código da\norigem."
       ],
       "comoResolver": [
-        "Como a mensagem não traz o código da origem, confira as origens da cascata contra as modalidades\n`SEGUE_ORDEM_DE_REMANEJAMENTO` das ofertas. Remova da cascata a origem que nenhuma modalidade usa, ou configure alguma modalidade do\nprocesso com `remanejamento.regra` igual a `SEGUE_ORDEM_DE_REMANEJAMENTO` e o mesmo código\ndessa origem."
+        "Como a mensagem não traz o código da origem, confira as origens da cascata contra as modalidades\ncom a opção 'Segue a ordem de remanejamento' das ofertas. Remova da cascata a origem que nenhuma modalidade usa, ou configure alguma modalidade do\nprocesso com a opção 'Segue a ordem de remanejamento' no `remanejamento.regra` e o mesmo código\ndessa origem."
       ],
       "ondeAparece": [
         "Publicação inicial do processo seletivo",
@@ -24026,7 +24026,7 @@
       ],
       "oQueAconteceu": [
         "Uma etapa do processo publica o resultado **preliminar** de um tipo de ato e não publica o\nresultado **definitivo** do mesmo tipo. O preliminar abre um ciclo de recurso, e sem o\ndefinitivo a matéria fica aberta, sem desfecho previsto para o candidato.",
-        "Como na [fase do cronograma](/erros/uniplus.selecao.processo_seletivo.fase_com_preliminar_sem_definitivo),\nnão existe outra fase que conclua o ciclo: ele fecha dentro da própria etapa. Por isso o definitivo precisa estar nos produtos da própria etapa, com o\nmesmo tipo de ato do preliminar. Um definitivo de outro tipo não fecha o ciclo, porque a\nmatéria é o tipo de ato. A mensagem de detalhe nomeia a etapa e o tipo de ato."
+        "Como na [fase do cronograma](/erros/uniplus.selecao.processo_seletivo.fase_com_preliminar_sem_definitivo),\nnão existe outra fase que conclua o ciclo: ele fecha dentro da própria etapa. Por isso o definitivo precisa estar nos produtos da própria etapa, com o\nmesmo tipo de ato do preliminar. Um definitivo de outro tipo não fecha o ciclo, porque a\nmatéria é o tipo de ato. A mensagem de detalhe nomeia a etapa e cita o tipo de ato pelo nome que ele tem na versão publicada ou no catálogo, nunca pelo código; quando nenhum dos dois traz o nome, diz só que a etapa publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato."
       ],
       "comoResolver": [
         "Acrescente aos produtos da etapa o resultado definitivo do mesmo tipo de ato do preliminar,\ncom papel definitivo. Se o edital não quer ciclo de recurso para aquela matéria na etapa, retire o\nresultado preliminar. O painel de conformidade mostra esta pendência antes da publicação, no item\n`cronograma_conclusao_do_ciclo_recursal`."
@@ -24352,7 +24352,7 @@
       "oQueAconteceu": [
         "Uma fase do cronograma publica o resultado **preliminar** de um tipo de ato e não publica o resultado **definitivo** do mesmo tipo. O preliminar abre um ciclo de recurso, e sem o definitivo a matéria fica aberta, sem desfecho previsto para o candidato (UNI-REQ-0157 e UNI-REQ-0211). Toda fase que publica um resultado preliminar publica, nela mesma, o definitivo do mesmo tipo de ato: não existe outra fase que conclua o ciclo. Um definitivo de outro tipo de ato não fecha o ciclo, porque a matéria é o tipo de ato.",
         "A conferência roda na publicação inicial e na retificação em ato único; a gravação do cronograma não a faz. A recusa vem como o código desta página no corpo da resposta, e não na lista `errors[]`. O campo é `/cronograma/fases/{i}/produtos`, em que `i` é a posição da fase no documento, e a resposta traz o código da fase em `identificadores`, no formato `[{\"lista\": \"fases\", \"identificador\": \"<código da fase>\"}]`. Se a lista de produtos da fase tem parte recusada, a conferência espera essa parte ser corrigida.",
-        "A mensagem da resposta diz: \"A fase '*nome da fase*' publica o resultado preliminar do ato '*tipo de ato*' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.\""
+        "A mensagem da resposta diz: \"A fase '*nome da fase*' publica o resultado preliminar do ato '*nome do tipo de ato*' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.\" O tipo é citado pelo nome que ele tem na versão publicada ou no catálogo, nunca pelo código. Quando nenhum dos dois traz o nome, a mensagem diz só que a fase publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato."
       ],
       "comoResolver": [
         "Acrescente aos produtos da fase o resultado definitivo do mesmo tipo de ato do preliminar, com o papel definitivo. Se o edital não quer ciclo de recurso para aquela matéria, retire o resultado preliminar. O painel de conformidade mostra esta pendência antes da publicação, no item `cronograma_conclusao_do_ciclo_recursal`. Para a etapa, a recusa equivalente é [etapa com preliminar sem definitivo](/erros/uniplus.selecao.processo_seletivo.etapa_com_preliminar_sem_definitivo)."
@@ -25626,8 +25626,8 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "Uma fase ou uma etapa declara, entre os atos que publica, um tipo de ato que o catálogo\nclassifica como **resultado**, mas não diz se o produto é preliminar ou definitivo. Para o\nresultado o papel é obrigatório: é ele que diz se a publicação abre um ciclo de recurso ou\nse encerra a matéria. A mensagem de detalhe não nomeia o tipo de ato nem o lugar; o campo do erro aponta o produto\nsem papel, declarado na fase ou na etapa.",
-        "A classificação vem do catálogo de tipos de ato, na data da conferência. Um tipo que não é\nresultado, como um aviso ou um parecer, não declara papel."
+        "Uma fase ou uma etapa declara, entre os atos que publica, um tipo de ato que o catálogo\nclassifica como **resultado**, mas não diz se o produto é preliminar ou definitivo. Para o\nresultado o papel é obrigatório: é ele que diz se a publicação abre um ciclo de recurso ou\nse encerra a matéria. A mensagem de detalhe cita o tipo de ato pelo nome que a unidade viu ao publicar (o guardado na versão publicada da configuração, quando o tipo já consta nela; senão, o do catálogo vigente), sem o código, e não nomeia o lugar; o campo do erro aponta o produto\nsem papel, declarado na fase ou na etapa.",
+        "A classificação vem do catálogo de tipos de ato, na data da conferência, exceto no tipo que a\nversão publicada já guardou, que mantém a classificação guardada. Um tipo que não é\nresultado, como um aviso ou um parecer, não declara papel."
       ],
       "comoResolver": [
         "Declare o papel do produto. O resultado que não tem preliminar é declarado **definitivo**; o\nresultado que admite recurso é declarado **preliminar**, com o definitivo do mesmo tipo de\nato na própria fase ou etapa que publica o preliminar. Se o ato não é de fato um resultado, em\nvez de mudar o edital peça ao administrador do catálogo que revise a classificação do tipo,\ne depois repita a operação. O preflight de conformidade mostra esta pendência no item\n`cronograma_resultado_declarado_com_papel`."
@@ -25724,10 +25724,10 @@
         "Publicar ou retificar um processo seletivo registra um ato normativo em\nPublicações, na mesma operação que grava a versão da configuração e a\ndivulgação do certame. Nessa operação, o tipo de ato declarado é conferido\nno catálogo: ele precisa ter versão vigente **no dia da divulgação**.",
         "O dia que vale é o dia civil do instante em que o sistema divulga o ato,\nno fuso institucional (UNI-REQ-0111). A data que o documento declara, a\nimpressa nele, **não escolhe** a versão do tipo (UNI-REQ-0406): um\ndocumento datado de uma semana atrás não busca a versão que vigorava\nentão.",
         "A recusa é **síncrona**: chega na própria resposta da publicação, antes de\nqualquer gravação. **Nada fica gravado**: nenhuma versão, nenhum ato,\nnenhuma divulgação. O rascunho é preservado, e a operação pode ser\nrepetida assim que o tipo tiver versão vigente.",
-        "A recusa vale também para os **tipos de ato que o cronograma declara**. Ao\npublicar, e ao retificar com um tipo declarado pela primeira vez, a\nclassificação de cada tipo (se congela a configuração, se é único, se é\nresultado) é lida do catálogo na data de hoje e congelada na versão\npublicada. Tipo declarado sem versão vigente hoje não tem classificação a\ncongelar. O tipo que a versão vigente já congelou não é relido na\nretificação (UNI-REQ-0163)."
+        "A recusa vale também para os **tipos de ato que o cronograma declara**. Ao\npublicar, e ao retificar com um tipo declarado pela primeira vez, a\nclassificação de cada tipo (se congela a configuração, se é único, se é\nresultado) é lida do catálogo na data de hoje e congelada na versão\npublicada. Tipo declarado sem versão vigente hoje não tem classificação a\ncongelar. O tipo que a versão vigente já congelou não é relido na\nretificação (UNI-REQ-0163). Para o tipo declarado no cronograma ou nas etapas, a recusa não traz nome nem código do tipo: o campo `/cronograma/fases/{i}/publicacoesPrevistas/{p}/atoCodigo` (fase) ou `/etapas/{i}/publicacoesPrevistas/{p}/atoCodigo` (etapa) aponta o item, e há uma recusa para cada item nessa condição, todas na mesma resposta."
       ],
       "comoResolver": [
-        "Confirme, no catálogo de tipos de ato de Publicações, que o código tem uma\nversão vigente no dia da divulgação, que é hoje: tipos de ato têm vigência\nprópria. Cadastre uma versão vigente ou escolha outro tipo de ato. Para o\ntipo declarado no cronograma pela primeira vez vale a mesma regra: vigente\nhoje, ou declare outro tipo no cronograma.",
+        "Confirme, no catálogo de tipos de ato de Publicações, que o código tem uma\nversão vigente no dia da divulgação, que é hoje: tipos de ato têm vigência\nprópria. Cadastre uma versão vigente ou escolha outro tipo de ato. Para o\ntipo declarado no cronograma ou nas etapas pela primeira vez vale a mesma regra: vigente\nhoje, ou declare outro tipo. A mensagem desses itens não traz nome nem código; use o campo para achar o item.",
         "Se o tipo de ato não existe no catálogo, é preciso cadastrá-lo antes; ver\n[`tipo_ato.nao_encontrado`](/erros/uniplus.publicacoes.tipo_ato.nao_encontrado)\npara o comportamento equivalente no cadastro direto de Publicações."
       ],
       "ondeAparece": [
@@ -25835,7 +25835,7 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "Uma fase ou uma etapa declara, com papel preliminar ou definitivo, um tipo de ato que o\ncatálogo marca como **congelador de configuração**, como o edital de abertura ou a\nretificação do edital. Esses tipos criam uma versão nova da configuração do processo ao\nserem publicados. A correção de um resultado, ao contrário, é uma errata ou retificação do\nato e não cria versão nova; um tipo que congela não teria correção possível como resultado.\nA mensagem de detalhe não nomeia o tipo de ato nem o lugar; o campo do erro aponta o produto\ncom papel, declarado na fase ou na etapa."
+        "Uma fase ou uma etapa declara, com papel preliminar ou definitivo, um tipo de ato que o\ncatálogo marca como **congelador de configuração**, como o edital de abertura ou a\nretificação do edital. Esses tipos criam uma versão nova da configuração do processo ao\nserem publicados. A correção de um resultado, ao contrário, é uma errata ou retificação do\nato e não cria versão nova; um tipo que congela não teria correção possível como resultado.\nA mensagem de detalhe cita o tipo de ato pelo nome que a unidade viu ao publicar (o guardado na versão publicada da configuração, quando o tipo já consta nela; senão, o do catálogo vigente), sem o código, e não nomeia o lugar; o campo do erro aponta o produto\ncom papel, declarado na fase ou na etapa."
       ],
       "comoResolver": [
         "Escolha para o produto um tipo de ato de resultado que não congele a configuração. Se o\nproduto só precisa constar no cronograma como publicação esperada, declare-o sem papel. Um\nato que muda a configuração do processo se publica pela publicação ou pela retificação do\nedital, e não como item de resultado. O preflight de conformidade mostra esta pendência no\nitem `cronograma_tipo_que_congela_nao_eh_resultado`."
@@ -25944,7 +25944,7 @@
       ],
       "oQueAconteceu": [
         "Um dos produtos que a etapa declara publicar cita um tipo de ato que não tem versão\nvigente no catálogo de tipos de ato publicados na data de hoje. Ou o código não existe\nno catálogo, ou existe e nenhuma versão dele está vigente agora.",
-        "A etapa não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a etapa apontando\npara um modelo que ninguém consegue emitir."
+        "A etapa não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a etapa apontando\npara um modelo que ninguém consegue emitir. A mesma recusa vale para o tipo de ato novo declarado como evento que inicia o prazo do recurso da etapa: sem versão vigente, não há como conferir a irreversibilidade dele."
       ],
       "comoResolver": [
         "A mensagem da recusa não repete o código declarado, e o campo indica qual produto de qual\netapa o trouxe. Três desfechos possíveis:",
@@ -25984,7 +25984,7 @@
         "Dar papel a um ato que não é resultado misturaria as duas: o edital estaria\nreclassificando o catálogo. O recurso cabe contra a decisão, não contra o documento\nque a executa ou corrige."
       ],
       "comoResolver": [
-        "A mensagem da recusa não repete o código do ato; o campo indica o produto. Três desfechos possíveis:",
+        "A mensagem da recusa cita o tipo de ato pelo nome que a unidade viu ao publicar (o guardado na versão publicada da configuração, quando o tipo já consta nela; senão, o do catálogo vigente), sem o código; o campo indica o produto. Três desfechos possíveis:",
         "- **O ato de fato não é resultado** — é aviso, convocação ou publicação semelhante.\n  Apenas omita o papel: a etapa continua declarando que publica esse ato.\n- **O ato deveria ser resultado.** Corrija a classificação no cadastro do tipo de ato,\n  no módulo Publicações. A correção vale para todos os processos, porque a\n  classificação é do tipo.\n- **O ato citado não era o pretendido.** Declare o tipo de ato de resultado que a\n  etapa publica, e dê a ele o papel.",
         "O mesmo problema na fase tem\n[página própria](/erros/uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado)."
       ],
@@ -25999,7 +25999,7 @@
       ],
       "oQueAconteceu": [
         "Um dos produtos que a fase declara publicar cita um tipo de ato que não tem versão\nvigente no catálogo de tipos de ato publicados na data de hoje. Ou o código não\nexiste no catálogo, ou existe e nenhuma versão dele está vigente agora.",
-        "A fase não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a fase apontando\npara um modelo que ninguém consegue emitir."
+        "A fase não descreve o documento que vai publicar por texto livre: ela referencia um\ntipo de ato do catálogo, que é o que fixa o modelo, os campos e a classificação\ndaquela publicação. Referenciar um tipo sem versão vigente deixaria a fase apontando\npara um modelo que ninguém consegue emitir. A mesma recusa vale para o tipo de ato novo declarado como evento que inicia o prazo do recurso da fase: sem versão vigente, não há como conferir a irreversibilidade dele."
       ],
       "comoResolver": [
         "A mensagem da recusa não repete o código declarado, e o campo indica qual produto de\nqual fase o trouxe. Três desfechos possíveis:",
@@ -26042,7 +26042,7 @@
         "- **Convocação e chamada** concedem o direito de ocupar a vaga, ato que não se\n  desfaz. O recurso do candidato não é contra a convocação — é contra a não\n  comprovação, o resultado da habilitação, que a antecede.\n- **Errata** que corrige resultado já publicado altera a situação do\n  candidato, mas o recurso cabe contra o **resultado corrigido**, não contra a\n  errata."
       ],
       "comoResolver": [
-        "A mensagem da recusa não repete o código do ato; o campo indica o produto. Três desfechos possíveis:",
+        "A mensagem da recusa cita o tipo de ato pelo nome que a unidade viu ao publicar (o guardado na versão publicada da configuração, quando o tipo já consta nela; senão, o do catálogo vigente), sem o código; o campo indica o produto. Três desfechos possíveis:",
         "- **O ato de fato não é resultado** — é aviso, convocação ou publicação semelhante.\n  Apenas omita o papel: a fase continua declarando que publica esse ato.\n- **O ato deveria ser resultado.** Corrija a classificação no cadastro do tipo de\n  ato, no módulo Publicações. A correção vale para todos os processos, porque a\n  classificação é do tipo.\n- **O ato citado não era o pretendido.** Declare o tipo de ato de resultado que a\n  fase publica, e dê a ele o papel."
       ],
       "ondeAparece": [
@@ -26269,7 +26269,7 @@
         "O ato que congela a configuração fixa as regras do certame e não é uma decisão sobre\ncandidato. Contar o prazo a partir dele faria a regra de recurso depender de um ato que\nnunca é resultado, e a configuração de que a regra faz parte deixaria de ser\nreproduzível. O recurso cabível é contra o **resultado preliminar** da etapa, e é\nda publicação dele que o prazo começa."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o tipo de ato declarado como início do prazo. Aponte a regra\npara o resultado preliminar que a própria etapa publica.",
+        "A mensagem da recusa cita pelo nome, sem o código, o tipo de ato declarado como evento que inicia o prazo do recurso. Aponte a regra\npara o resultado preliminar que a própria etapa publica.",
         "Se esse resultado ainda não está entre os produtos da etapa, acrescente-o, com papel\npreliminar, e conte o prazo a partir dele. Se o prazo na verdade corre da comunicação do parecer ao\ncandidato, declare a ciência individual como início do prazo, em vez de um ato publicado."
       ],
       "ondeAparece": [
@@ -26288,7 +26288,7 @@
         "A classificação é lida do catálogo a cada configuração, e não de uma cópia guardada\nna etapa: se o cadastro do tipo de ato muda, a conferência acompanha."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o tipo de ato declarado como início do prazo. Aponte a regra\npara o resultado preliminar que fundamenta aquele ato e que a **própria etapa**\npublica. Se ele ainda não está entre os produtos da etapa, acrescente-o, com papel\npreliminar, e conte o prazo a partir dele.",
+        "A mensagem da recusa cita pelo nome, sem o código, o tipo de ato declarado como evento que inicia o prazo do recurso. Aponte a regra\npara o resultado preliminar que fundamenta aquele ato e que a **própria etapa**\npublica. Se ele ainda não está entre os produtos da etapa, acrescente-o, com papel\npreliminar, e conte o prazo a partir dele.",
         "Se quem publica esse resultado é outra fase ou etapa, a regra de recurso pertence a\nela: mova a regra para lá. O mesmo problema na fase tem\n[página própria](/erros/uniplus.selecao.regra_recurso_fase.ancora_em_ato_irreversivel)."
       ],
       "ondeAparece": [
@@ -27259,7 +27259,7 @@
         "O ato que congela a configuração fixa as regras do certame e não é uma decisão sobre\ncandidato. Contar o prazo a partir dele faria a regra de recurso depender de um ato que nunca\né resultado, e a configuração de que a regra faz parte deixaria de ser\nreproduzível. O recurso cabível é contra o **resultado preliminar** da fase, e é nele\nque o prazo começa a correr."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o tipo de ato declarado como início do prazo. Aponte o prazo para o\nresultado preliminar que a **própria fase** publica. Se ele ainda não está entre os\nprodutos da fase, acrescente-o, com papel preliminar, e conte o prazo a partir dele.",
+        "A mensagem da recusa cita pelo nome, sem o código, o tipo de ato declarado como evento que inicia o prazo do recurso. Aponte o prazo para o\nresultado preliminar que a **própria fase** publica. Se ele ainda não está entre os\nprodutos da fase, acrescente-o, com papel preliminar, e conte o prazo a partir dele.",
         "Se o resultado preliminar é publicado por outra fase, a regra de recurso pertence a\nela: mova a regra para lá. O mesmo problema na regra de recurso da etapa tem\n[página própria](/erros/uniplus.selecao.recurso_da_etapa.ancora_em_ato_congelante)."
       ],
       "ondeAparece": [
@@ -27278,7 +27278,7 @@
         "A classificação é lida do catálogo a cada configuração do cronograma, e não de uma\ncópia guardada na fase: se o cadastro do tipo de ato muda, a conferência acompanha."
       ],
       "comoResolver": [
-        "A mensagem da recusa nomeia o tipo de ato que inicia o prazo. Aponte o prazo para o resultado\npreliminar que fundamenta aquele ato — o prazo começa sempre a partir de um dos produtos da\n**própria fase** que declara a regra de recurso. O prazo nunca começa a partir de publicação de outra fase:\no prazo corre a partir do instante em que aquela fase publica.",
+        "A mensagem da recusa cita pelo nome, sem o código, o tipo de ato declarado como evento que inicia o prazo do recurso. Aponte o prazo para o resultado\npreliminar que fundamenta aquele ato — o prazo começa sempre a partir de um dos produtos da\n**própria fase** que declara a regra de recurso. O prazo nunca começa a partir de publicação de outra fase:\no prazo corre a partir do instante em que aquela fase publica.",
         "Dois caminhos, conforme onde esse preliminar sai:",
         "- **A própria fase o publica.** Conte o prazo a partir dele. Se ele ainda não está declarado,\n  acrescente-o aos produtos da fase, com papel preliminar, e conte o prazo a partir dele.\n- **Quem o publica é outra fase.** Mova para lá a regra de recurso — é a fase que\n  publica o preliminar que inicia o prazo de interposição, e é da publicação dela\n  que o prazo do candidato conta."
       ],
@@ -27496,7 +27496,7 @@
       ],
       "oQueAconteceu": [
         "A retificação muda a regra ou os dados de entrada de um resultado preliminar que já foi publicado, e o pedido não declara o novo ciclo desse resultado. O novo resultado preliminar precisa ser publicado antes do definitivo, e por isso o pedido declara o novo ciclo de cada resultado nessa condição.",
-        "A recusa é **422** e não aponta campo: a mensagem cita o código do ato do resultado preliminar que ficou sem declaração. Uma recusa é devolvida para cada resultado nessa condição, em ordem do identificador do item, e as recusas de ciclo declarado sem preliminar aberto vêm depois."
+        "A recusa é **422** e não aponta campo: a mensagem cita o nome do tipo de ato do resultado preliminar que ficou sem declaração, o nome guardado na versão publicada, e não o do catálogo vigente. Se a versão publicada não guarda o nome, a mensagem diz só que a retificação muda um resultado preliminar. Uma recusa é devolvida para cada resultado nessa condição, em ordem do identificador do item, e as recusas de ciclo declarado sem preliminar aberto vêm depois."
       ],
       "comoResolver": [
         "Declare, no pedido de retificação, o novo ciclo de cada resultado preliminar citado na mensagem. Se a mudança não deveria alterar o resultado já publicado, ajuste a retificação para não mexer na regra nem nos dados de entrada daquele resultado."

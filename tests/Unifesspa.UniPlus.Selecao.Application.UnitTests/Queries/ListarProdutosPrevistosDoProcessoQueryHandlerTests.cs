@@ -42,6 +42,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     private readonly IResolvedorFusoInstitucional _fuso = Substitute.For<IResolvedorFusoInstitucional>();
     private readonly List<DocumentoAPublicar> _documentosDoProcesso = [];
     private readonly List<AtoDoProcesso> _atosDoProcesso = [];
+    private readonly Dictionary<string, string> _nomesDasCopias = new(StringComparer.Ordinal);
     private Dictionary<Guid, IdentidadeDoItemDoEdital> _itensDoCronograma = [];
 
     public ListarProdutosPrevistosDoProcessoQueryHandlerTests()
@@ -70,7 +71,13 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(Envelope(processo, fases, etapas, divulgacao)));
     }
 
-    private static EnvelopeReidratado Envelope(
+    private Dictionary<string, TipoDeAtoCongelado> CopiasDosTiposDeclarados(IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas) =>
+        fases.SelectMany(static f => f.Produtos.Select(static p => p.AtoCodigo))
+            .Concat((etapas ?? []).SelectMany(static e => e.Produtos.Select(static p => p.AtoCodigo)))
+            .Distinct(StringComparer.Ordinal)
+            .ToDictionary(static c => c, c => new TipoDeAtoCongelado(c, _nomesDasCopias.GetValueOrDefault(c) ?? $"Cópia de {c}", false, true, false), StringComparer.Ordinal);
+
+    private EnvelopeReidratado Envelope(
         ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas, ConfiguracaoDivulgacao? divulgacao) =>
         new(new ConfiguracaoPublicada(
             new CronogramaDeclarado(ConfiguracaoPublicadaDeTeste.Localidade, null, fases),
@@ -82,7 +89,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
                 [], [], null),
             new DivulgacaoETaxaDeclaradas(divulgacao, null), null),
             DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada());
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, dadosDeCatalogo: new DadosDeCatalogoDaConfiguracaoPublicada(TiposDeAtoCongelados: CopiasDosTiposDeclarados(fases, etapas)));
 
     private static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseDeOrigem(Guid.CreateVersion7(), codigo, ordem, produtos);
@@ -307,6 +314,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     public async Task Handle_TipoNaoVigente_Impede()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        _nomesDasCopias[Materia] = "Resultado da homologação";
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
         TiposVigentes();
 
@@ -314,7 +322,21 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
         doPreliminar.PodePublicar.Should().BeFalse();
         doPreliminar.Impedimento!.Motivo.Codigo.Should().Be("TIPO_DE_ATO_NAO_VIGENTE");
-        doPreliminar.TipoNome.Should().BeNull();
+        doPreliminar.Impedimento.Mensagem.Should().Be("O tipo de ato 'Resultado da homologação' não tem versão vigente no catálogo de Publicações.");
+        doPreliminar.TipoNome.Should().Be("Resultado da homologação");
+    }
+
+    [Fact(DisplayName = "O nome do tipo no item é o da cópia guardada na versão publicada, ainda que o catálogo vigente o chame de outro nome")]
+    public async Task Handle_CatalogoMudouONome_ItemUsaONomeDaCopia()
+    {
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        _nomesDasCopias[Materia] = "Resultado da homologação";
+        Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
+
+        ProdutoPrevistoDto item = await ItemDaFase(preliminar.Id);
+
+        item.TipoNome.Should().Be("Resultado da homologação").And.NotBe($"Nome de {Materia}");
+        item.Impedimento.Should().BeNull();
     }
 
     [Fact(DisplayName = "Duas versões vigentes do mesmo tipo no catálogo não derrubam a consulta")]
@@ -328,7 +350,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
                 new TipoAtoPublicadoView(Materia, "Segunda versão", false, true, false, true),
             ]);
 
-        (await ItemDaFase(preliminar.Id)).TipoNome.Should().Be("Primeira versão");
+        (await ItemDaFase(preliminar.Id)).PodePublicar.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Processo sem versão vigente devolve a recusa nomeada, e processo inexistente devolve não encontrado")]

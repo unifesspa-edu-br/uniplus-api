@@ -72,7 +72,8 @@ public sealed class EtapaProcessoProdutosTests
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("produtos[1]");
         recusa.Error.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
-        recusa.Error.Message.Should().Contain($"'{AtoDecomposto}'");
+        recusa.Error.Message.Should().Be("Na etapa, há ato declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.")
+            .And.NotContain(AtoDecomposto);
     }
 
     [Fact(DisplayName = "O par repetido A, B, B, A recusa o segundo B e o segundo A, cada um no seu produto")]
@@ -83,8 +84,7 @@ public sealed class EtapaProcessoProdutosTests
 
         resultado.Errors.Select(static e => e.Field).Should().Equal("produtos[2]", "produtos[3]");
         resultado.Errors.Select(static e => e.Error.Code).Should().AllBe("EtapaProcesso.AtoDuplicadoNaEtapa");
-        resultado.Errors[0].Error.Message.Should().Contain("'ATO_B'");
-        resultado.Errors[1].Error.Message.Should().Contain("'ATO_A'");
+        resultado.Errors.Select(static e => e.Error.Message).Should().AllSatisfy(static mensagem => mensagem.Should().NotContain("ATO_"));
     }
 
     [Fact(DisplayName = "O par repetido A, B, A recusa só o terceiro produto, e o primeiro A segue valendo")]

@@ -104,6 +104,12 @@ public sealed class ProcessoSeletivoCascataTests
                 Destino(ModalidadesFederaisLei12711.LbPpi, 2, "DESTINO_QUE_NAO_EXISTE"),
             ]).Value!;
 
+    private static void ConferirQueCitaAOpcaoPeloNome(DomainError causa)
+    {
+        causa.Message.Should().Contain($"'{RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento.Rotulo()}'");
+        causa.Message.Should().NotContain("SegueCascata").And.NotContain("SEGUE_ORDEM_DE_REMANEJAMENTO");
+    }
+
     private static DomainError? PrimeiraCausa(ProcessoSeletivo processo) =>
         CoberturaDaCascata.CausasDaCascata(processo.Declaracao()) is { Count: > 0 } causas ? causas[0].Error : null;
 
@@ -148,6 +154,7 @@ public sealed class ProcessoSeletivoCascataTests
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataOrigemAusente");
         pendencia.Message.Should().NotContain(oferta.OfertaCursoOrigemId.ToString());
+        ConferirQueCitaAOpcaoPeloNome(pendencia);
     }
 
     [Fact(DisplayName = "CausasDaCascata com SegueCascata fora do regime federal (institucional) recusa com CascataForaDoRegimeFederal")]
@@ -166,6 +173,7 @@ public sealed class ProcessoSeletivoCascataTests
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataForaDoRegimeFederal");
         pendencia.Message.Should().NotContain(ModalidadesFederaisLei12711.LbPpi).And.NotContain(ofertaInstitucional.OfertaCursoOrigemId.ToString());
+        ConferirQueCitaAOpcaoPeloNome(pendencia);
     }
 
     [Fact(DisplayName = "CausasDaCascata com fallback da cascata fora das modalidades da oferta recusa com CascataFallbackNaoSelecionadoNaOferta")]
@@ -205,7 +213,7 @@ public sealed class ProcessoSeletivoCascataTests
 
     private static void ConferirMensagemDasOrigensSemDestino(IReadOnlyList<FieldError> causas, ConfiguracaoDistribuicaoVagas oferta) =>
         causas.Where(static causa => causa.Error.Code == "ProcessoSeletivo.CascataOrigemAusente").Select(static causa => causa.Error.Message)
-            .Should().OnlyContain(mensagem => mensagem == "A oferta tem modalidade com SegueCascata, mas a cascata não declara nenhum destino para ela."
+            .Should().OnlyContain(mensagem => mensagem == $"A oferta tem modalidade com a regra '{RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento.Rotulo()}', mas a cascata não declara nenhum destino para ela."
                 && !mensagem.Contains(ModalidadesFederaisLei12711.LbPpi, StringComparison.Ordinal)
                 && !mensagem.Contains(oferta.OfertaCursoOrigemId.ToString(), StringComparison.OrdinalIgnoreCase));
 
@@ -255,6 +263,11 @@ public sealed class ProcessoSeletivoCascataTests
         : origem == ModalidadesFederaisLei12711.LbPpi ? FilaLegalDaOrigem(origem).Append(Destino(origem, OrigensDaCascataFederal.Length, "DESTINO_QUE_NAO_EXISTE"))
         : FilaLegalDaOrigem(origem);
 
+    private static ConfiguracaoCascataRemanejamento CascataComOrigemQueNenhumaOfertaMarca() =>
+        ConfiguracaoCascataRemanejamento.Criar(
+            RegraCascata(), ModalidadesFederaisLei12711.Ac,
+            [Destino(ModalidadesFederaisLei12711.LbPpi, 1, ModalidadesFederaisLei12711.Ac)]).Value!;
+
     [Fact(DisplayName = "CausasDaCascata com origem que nenhuma oferta marca como SegueCascata recusa com CascataOrigemNaoSegueCascata")]
     public void CausasDaCascata_OrigemNaoSegueCascataEmNenhumaOferta_Recusa()
     {
@@ -262,16 +275,14 @@ public sealed class ProcessoSeletivoCascataTests
         // oferta não recusa nada; a checagem global (origens declaradas na cascata vs.
         // origens SegueCascata em alguma oferta) é quem detecta a origem morta.
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaSoDeAmpla());
-        ConfiguracaoCascataRemanejamento cascataComOrigemMorta = ConfiguracaoCascataRemanejamento.Criar(
-            RegraCascata(), ModalidadesFederaisLei12711.Ac,
-            [Destino(ModalidadesFederaisLei12711.LbPpi, 1, ModalidadesFederaisLei12711.Ac)]).Value!;
-        processo.DefinirCascataRemanejamento(cascataComOrigemMorta).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataComOrigemQueNenhumaOfertaMarca()).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PrimeiraCausa(processo);
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.CascataOrigemNaoSegueCascata");
         pendencia.Message.Should().NotContain(ModalidadesFederaisLei12711.LbPpi);
+        ConferirQueCitaAOpcaoPeloNome(pendencia);
     }
 
     // LB_PPI mantém os 7 destinos legais (todos resolvíveis nesta oferta — o
@@ -313,6 +324,19 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+    }
+
+    [Fact(DisplayName = "Os itens do painel sobre a cascata citam a opção de remanejamento pelo nome, sem o nome de código")]
+    public void AvaliarConformidade_ItensDaCascata_CitamAOpcaoPeloNome()
+    {
+        ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
+        string[] codigos = ["cascata_modalidade_fora_do_regime_federal", "cascata_origem_ausente", "cascata_origem_nao_segue_cascata"];
+
+        IEnumerable<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Where(item => codigos.Contains(item.Codigo));
+
+        itens.Should().HaveCount(3).And.OnlyContain(item => item.Mensagem.Contains(RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento.Rotulo(), StringComparison.Ordinal)
+            && !item.Mensagem.Contains("SegueCascata", StringComparison.Ordinal));
     }
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,

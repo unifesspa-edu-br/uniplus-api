@@ -52,9 +52,8 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandler(
             ProjecaoDosProdutosPrevistos.TiposDeAtoDeclarados(vigente.Configuracao),
             ResolucaoDosTiposDeAtoUnicos.Hoje(relogio, fuso), cancellationToken).ConfigureAwait(false);
         return Result<ProdutosPrevistosDoProcessoDto>.Success(ProjecaoDosProdutosPrevistos.Projetar(
-            vigente.NumeroDaVersao, vigente.Configuracao, cadeias,
-            tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
-                .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
+            vigente, cadeias,
+            tipos.Select(static t => t.Codigo).ToHashSet(StringComparer.Ordinal),
             ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId)));
     }
 

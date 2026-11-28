@@ -203,7 +203,8 @@ internal sealed class CenarioDeCongelamentoPorAssunto
             classificacoes[ResultadoClassificacao] = new ClassificacaoDoTipoDeAto(EhResultado: false, CongelaConfiguracao: true);
         }
 
-        return TiposDeAtoUnicosPorObjeto.ParaChecklist(unicos, [], classificacoes);
+        Dictionary<string, string> nomes = classificacoes.Keys.ToDictionary(static codigo => codigo, static codigo => $"Nome de {codigo}", StringComparer.Ordinal);
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(unicos, [], classificacoes, nomes);
     }
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>

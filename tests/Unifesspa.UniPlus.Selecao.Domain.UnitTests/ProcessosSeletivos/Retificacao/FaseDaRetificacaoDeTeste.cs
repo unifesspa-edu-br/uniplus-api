@@ -13,6 +13,13 @@ internal static class FaseDaRetificacaoDeTeste
 {
     internal static readonly DateTimeOffset Instante = new(2027, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
+    /// <summary>Os nomes que a cópia da versão publicada guarda para os tipos de ato dos testes.</summary>
+    internal static NomesDosTiposDeAto NomesDaVersaoPublicada { get; } = new(new Dictionary<string, string>
+    {
+        ["RESULTADO_PROVA"] = "Resultado da prova",
+        ["RESULTADO_ANALISE"] = "Resultado da análise",
+    });
+
     private static readonly Guid TipoDaEtapaDeTeste = Guid.Parse("0197d6f0-0000-7000-8000-00000000e7a0");
 
     internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelDaPublicacaoPrevista.Preliminar);

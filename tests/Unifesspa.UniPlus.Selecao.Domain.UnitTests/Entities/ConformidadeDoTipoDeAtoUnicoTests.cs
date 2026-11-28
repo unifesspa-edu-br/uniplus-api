@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -247,11 +248,23 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
-        AvisoConformidade aviso = ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().ContainSingle().Subject;
+        AvisoConformidade aviso = ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), NomesDoResultadoDeClassificacao).Should().ContainSingle().Subject;
 
         aviso.Codigo.Should().Be(CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
         aviso.Dimensao.Should().Be(DimensaoConformidade.Cronograma);
-        aviso.Mensagem.Should().Contain("'RESULTADO_CLASSIFICACAO'").And.Contain("na fase 'Classificação' e na fase 'Habilitação'");
+        aviso.Mensagem.Should().Contain("'Resultado da classificação'").And.NotContain("RESULTADO_CLASSIFICACAO").And.Contain("na fase 'Classificação' e na fase 'Habilitação'");
+    }
+
+    [Fact(DisplayName = "Aviso: o tipo sem nome no catálogo nem na cópia é citado como um tipo de ato, sem o código, e o aviso continua")]
+    public void Aviso_TipoSemNome_CitaSemNomeNemCodigo()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
+
+        AvisoConformidade aviso = ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), NomesDosTiposDeAtoDeTeste.Nenhum).Should().ContainSingle().Subject;
+
+        aviso.Mensagem.Should().StartWith("Um tipo de ato está declarado como resultado definitivo em mais de uma fase ou etapa (").And.NotContain("RESULTADO_CLASSIFICACAO");
     }
 
     [Fact(DisplayName = "Aviso: o mesmo tipo definitivo numa fase e numa etapa gera o aviso nomeando a etapa")]
@@ -265,7 +278,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().ContainSingle().Which.Mensagem
+        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), NomesDoResultadoDeClassificacao).Should().ContainSingle().Which.Mensagem
             .Should().Contain("na fase 'Classificação' e na etapa 'Prova Objetiva' (ordem 1)");
     }
 
@@ -277,7 +290,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
-        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().BeEmpty();
+        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), NomesDoResultadoDeClassificacao).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Aviso nunca impede a publicação: o processo com o aviso publica e o checklist não tem item vermelho por causa dele")]
@@ -287,9 +300,12 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)),
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelDaPublicacaoPrevista.Definitivo)));
 
-        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao()).Should().NotBeEmpty();
+        ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), NomesDoResultadoDeClassificacao).Should().NotBeEmpty();
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
             .Where(static i => i.Codigo.StartsWith("cronograma_", StringComparison.Ordinal)).Should().OnlyContain(static i => i.Ok);
         PublicarComUnicos(processo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
     }
+
+    private static NomesDosTiposDeAto NomesDoResultadoDeClassificacao { get; } =
+        NomesDosTiposDeAtoDeTeste.Com(("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 }

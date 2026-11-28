@@ -4,12 +4,15 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 
 /// <summary>
 /// Recusas da cascata de remanejamento de cotas (UNI-REQ-0056) e da coerência dela com as ofertas do processo.
 /// </summary>
 internal static class ErrosDaCascataDeRemanejamento
 {
+    private static string Opcao => CoberturaDaCascata.OpcaoDaCascataCitada;
+
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
         .. DaRegraDaCascata(),
@@ -45,10 +48,10 @@ internal static class ErrosDaCascataDeRemanejamento
     /// <summary>Origem, fallback e destino da cascata diante das ofertas do processo.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaCascataNoProcesso() =>
     [
-        new("ProcessoSeletivo.CascataOrigemAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_origem_ausente", "Uma modalidade SegueCascata não tem sequência de destinos declarada na cascata do processo")),
-        new("ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fallback_nao_selecionado_na_oferta", "O fallback (ou o destino resolvível) da cascata não é modalidade selecionada na oferta")),
-        new("ProcessoSeletivo.CascataDestinoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_destino_desconhecido", "A cascata declara destino que não é modalidade selecionada em nenhuma oferta do processo")),
-        new("ProcessoSeletivo.CascataOrigemNaoSegueCascata", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata", "A cascata declara origem que nenhuma oferta do processo marca como SegueCascata")),
+        new(CascataDeRemanejamentoErrorCodes.OrigemAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_origem_ausente", $"Uma modalidade com a regra {Opcao} não tem sequência de destinos declarada na cascata do processo")),
+        new(CascataDeRemanejamentoErrorCodes.FallbackNaoSelecionadoNaOferta, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fallback_nao_selecionado_na_oferta", "O fallback (ou o destino resolvível) da cascata não é modalidade selecionada na oferta")),
+        new(CascataDeRemanejamentoErrorCodes.DestinoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_destino_desconhecido", "A cascata declara destino que não é modalidade selecionada em nenhuma oferta do processo")),
+        new(CascataDeRemanejamentoErrorCodes.OrigemNaoSegueCascata, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata", $"A cascata declara origem que nenhuma oferta do processo marca com a regra {Opcao}")),
     ];
 
     /// <summary>Coerência das regras de aplicabilidade e de remanejamento com a natureza da modalidade e com a lei.</summary>
@@ -59,6 +62,6 @@ internal static class ErrosDaCascataDeRemanejamento
         new(ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.remanejamento_incoerente_com_a_natureza", "A regra de remanejamento de uma modalidade ofertada não é a que a natureza dela pede")),
         new(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.regra_de_modalidade_cita_fato_nao_coletado", "A regra de aplicabilidade de uma modalidade ofertada cita um fato que o processo não coleta nem deriva")),
         new(ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cotas_da_lei_diferentes_entre_ofertas", "Os cursos do processo ofertam conjuntos diferentes de cotas da lei")),
-        new("ProcessoSeletivo.CascataForaDoRegimeFederal", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal", "Uma modalidade SegueCascata está numa oferta que não usa regra de distribuição do ramo federal (Lei 12.711)")),
+        new(CascataDeRemanejamentoErrorCodes.ForaDoRegimeFederal, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal", $"Uma modalidade com a regra {Opcao} está numa oferta que não usa regra de distribuição do ramo federal (Lei 12.711)")),
     ];
 }

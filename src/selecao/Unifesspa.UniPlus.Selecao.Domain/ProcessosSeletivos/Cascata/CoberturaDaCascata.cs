@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -13,6 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class CoberturaDaCascata
 {
+    /// <summary>A opção de remanejamento que usa a cascata, pelo nome que a unidade vê, entre aspas simples.</summary>
+    public static string OpcaoDaCascataCitada { get; } = $"'{RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento.Rotulo()}'";
+
     /// <summary>
     /// Todas as causas de cobertura da cascata de remanejamento, com erro nomeado. Pública porque a conferência da configuração
     /// a avalia depois dos assuntos do cronograma. Cada oferta e cada destino deixam de ser avaliados só no que lê o dado
@@ -67,16 +71,16 @@ public static class CoberturaDaCascata
         : [];
 
     private static DomainError ForaDoRegimeFederal() => new(
-        "ProcessoSeletivo.CascataForaDoRegimeFederal",
-        "A oferta tem modalidade com SegueCascata, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
+        CascataDeRemanejamentoErrorCodes.ForaDoRegimeFederal,
+        $"A oferta tem modalidade com a regra {OpcaoDaCascataCitada}, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
 
     private static DomainError SemCascata() => new(
-        "ProcessoSeletivo.CascataOrigemAusente",
-        "A oferta tem modalidade com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
+        CascataDeRemanejamentoErrorCodes.OrigemAusente,
+        $"A oferta tem modalidade com a regra {OpcaoDaCascataCitada}, mas o processo não tem cascata de remanejamento configurada.");
 
     private static DomainError OrigemSemDestino() => new(
-        "ProcessoSeletivo.CascataOrigemAusente",
-        "A oferta tem modalidade com SegueCascata, mas a cascata não declara nenhum destino para ela.");
+        CascataDeRemanejamentoErrorCodes.OrigemAusente,
+        $"A oferta tem modalidade com a regra {OpcaoDaCascataCitada}, mas a cascata não declara nenhum destino para ela.");
 
     private static DomainError DestinoNaoResolvivel() => new(
         "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
@@ -109,8 +113,8 @@ public static class CoberturaDaCascata
         if (!origensSegueCascata.Contains(destino.ModalidadeOrigemCodigo))
         {
             yield return new DomainError(
-                "ProcessoSeletivo.CascataOrigemNaoSegueCascata",
-                "A cascata declara uma origem que nenhuma oferta do processo marca como SegueCascata.");
+                CascataDeRemanejamentoErrorCodes.OrigemNaoSegueCascata,
+                $"A cascata declara uma origem que nenhuma oferta do processo marca com a regra {OpcaoDaCascataCitada}.");
         }
 
         if (!codigosOfertados.Contains(destino.ModalidadeDestinoCodigo))

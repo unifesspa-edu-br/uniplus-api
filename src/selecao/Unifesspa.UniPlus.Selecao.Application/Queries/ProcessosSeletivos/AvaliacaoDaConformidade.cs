@@ -74,7 +74,7 @@ public sealed class AvaliacaoDaConformidade(
             .. ConferenciaDaAprovacaoDaProtecao.Conferir(processo, catalogo.TiposVivos, catalogo.Fatos).Errors.Select(ItemDaProtecaoPendente),
             .. ItemDaVersaoIlegivel(publicada.Falha),
         ];
-        AvisoConformidadeDto[] avisos = [.. ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao())
+        AvisoConformidadeDto[] avisos = [.. ChecklistDeConformidade.AvaliarAvisos(processo.Declaracao(), leituras.TiposDeAtoUnicos.Nomes)
             .Select(static aviso => new AvisoConformidadeDto(aviso.Codigo, aviso.Dimensao, aviso.Mensagem))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens, avisos);

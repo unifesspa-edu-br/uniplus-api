@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -63,7 +64,7 @@ public sealed class ConferenciaDoTipoDeAto(ITipoAtoPublicadoReader reader)
 
         return tipo is null
             ? Result<TipoAtoPublicadoView>.Failure(new DomainError(
-                "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
+                ProcessoSeletivoErrorCodes.TipoDeAtoSemVersaoVigente,
                 $"Não há versão vigente do tipo de ato na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
             : Result<TipoAtoPublicadoView>.Success(tipo);
     }

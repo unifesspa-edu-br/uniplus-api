@@ -55,8 +55,8 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         tipos.ClassificacaoDe("SEM_VERSAO_VIGENTE").Should().BeNull();
     }
 
-    [Fact(DisplayName = "Congela a classificação de cada tipo declarado, e recusa o tipo declarado que o catálogo não tem")]
-    public void Congelamento_UmaEntradaPorTipoDeclarado_ERecusaOSemVersaoVigente()
+    [Fact(DisplayName = "Congela a classificação de cada tipo declarado, uma entrada por tipo")]
+    public void Congelamento_UmaEntradaPorTipoDeclarado()
     {
         ProcessoSeletivo processo = ProcessoQueProduz(
             ("RESULTADO_X", PapelDaPublicacaoPrevista.Preliminar), ("RESULTADO_X", PapelDaPublicacaoPrevista.Definitivo), ("AVISO_UNICO", null));
@@ -68,10 +68,21 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         congelados.Value!.Should().HaveCount(2, "o tipo declarado duas vezes congela uma só entrada");
         congelados.Value["RESULTADO_X"].Should().Be(new Application.Abstractions.TipoDeAtoCongelado("RESULTADO_X", Nome: "Nome do ato", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
         congelados.Value["AVISO_UNICO"].UnicoPorObjeto.Should().BeTrue();
+    }
 
-        Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> semVersao = CongelamentoDosTiposDeAto.Resolver(
-            processo, TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string>(StringComparer.Ordinal), [], new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)));
-        semVersao.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoSemVersaoVigente");
+    [Fact(DisplayName = "Cada produto que declara tipo sem versão vigente é uma recusa, sem nome nem código do tipo")]
+    public void Congelamento_TipoSemVersaoVigente_UmaRecusaPorProduto()
+    {
+        ProcessoSeletivo processo = ProcessoQueProduz(
+            ("RESULTADO_X", PapelDaPublicacaoPrevista.Preliminar), ("RESULTADO_X", PapelDaPublicacaoPrevista.Definitivo), ("AVISO_UNICO", null));
+        TiposDeAtoUnicosPorObjeto semCatalogo = TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string>(StringComparer.Ordinal), [], new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal));
+
+        Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> semVersao = CongelamentoDosTiposDeAto.Resolver(processo, semCatalogo);
+
+        semVersao.Errors.Should().HaveCount(3, "cada produto sem versão vigente é uma recusa, sem parar na primeira");
+        semVersao.Errors.Should().OnlyContain(static recusa => recusa.Error.Code == "ProcessoSeletivo.TipoDeAtoSemVersaoVigente");
+        semVersao.Errors.Select(static recusa => recusa.Field).Should().OnlyContain(static campo => campo!.EndsWith(".atoCodigo", StringComparison.Ordinal));
+        semVersao.Errors.Should().OnlyContain(static recusa => !recusa.Error.Message.Contains("RESULTADO_X", StringComparison.Ordinal) && !recusa.Error.Message.Contains("AVISO_UNICO", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Na retificação, o tipo já congelado na versão vigente mantém a classificação congelada, ainda que o catálogo tenha mudado, e a versão nova a congela de novo")]
@@ -212,9 +223,9 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     private static void AfirmarAUnicidadeDoLote(TiposDeAtoUnicosPorObjeto unicos)
     {
         unicos.EhUnico("ATO_QUE_O_CATALOGO_DECLARA_UNICO").Should().BeTrue();
-        unicos.NomeDe("ATO_QUE_O_CATALOGO_DECLARA_UNICO").Should().Be("Ato único");
+        unicos.Nomes.NomeDe("ATO_QUE_O_CATALOGO_DECLARA_UNICO").Should().Be("Ato único");
         unicos.EhUnico("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().BeFalse();
-        unicos.NomeDe("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().Be("Ato comum");
+        unicos.Nomes.NomeDe("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().Be("Ato comum");
         unicos.EhUnico("EDITAL_DA_OPERACAO").Should().BeTrue("a unicidade do ato da operação vem do tipo já conferido, sem reler o catálogo");
         unicos.VagaOcupada("EDITAL_JA_REGISTRADO").Should().BeTrue();
         unicos.EhUnico("EDITAL_JA_REGISTRADO").Should().BeTrue("o código ocupado entra na leitura em lote do catálogo, que decide a unicidade");

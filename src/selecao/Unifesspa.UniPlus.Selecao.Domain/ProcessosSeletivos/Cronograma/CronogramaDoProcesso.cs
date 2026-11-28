@@ -196,19 +196,26 @@ public sealed record CronogramaDoProcesso
     /// O preliminar de um tipo de ato exige o definitivo do mesmo tipo na própria fase. A ligação é pelo tipo de ato dentro do mesmo
     /// lugar que o publica, e o alvo do procedimento de recurso não entra: duas fases que publicam o mesmo tipo não se ligam.
     /// </summary>
-    public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
-    [
-        .. Fases.SelectMany(static (fase, posicao) =>
-            TiposJulgaveis(fase).Select(tipo => NaFase(posicao, FaseDeclarada.ListaDosProdutos, PreliminarSemDefinitivo(fase.Citacao, tipo)))),
-    ];
+    public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo(NomesDosTiposDeAto nomes)
+    {
+        ArgumentNullException.ThrowIfNull(nomes);
+
+        return
+        [
+            .. Fases.SelectMany((fase, posicao) =>
+                TiposJulgaveis(fase).Select(tipo => NaFase(posicao, FaseDeclarada.ListaDosProdutos, PreliminarSemDefinitivo(fase.Citacao, nomes.NomeDe(tipo))))),
+        ];
+    }
 
     // O ciclo de um preliminar sem definitivo lê a lista dos produtos inteira: com parte recusada, o definitivo pode ser ela.
     private static IReadOnlyList<string> TiposJulgaveis(FaseDeclarada fase) =>
         fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos) ? [] : fase.Atos.TiposComCicloAberto();
 
-    private static DomainError PreliminarSemDefinitivo(CitacaoDaFase fase, string tipo) => new(
+    private static DomainError PreliminarSemDefinitivo(CitacaoDaFase fase, string? nomeDoTipo) => new(
         ProcessoSeletivoErrorCodes.FaseComPreliminarSemDefinitivo,
-        $"A fase {fase} publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.");
+        nomeDoTipo is null
+            ? $"A fase {fase} publica um resultado preliminar e não publica o definitivo do mesmo tipo de ato. Publique o resultado definitivo na própria fase."
+            : $"A fase {fase} publica o resultado preliminar do ato '{nomeDoTipo}' e não publica o definitivo do mesmo tipo. Publique o resultado definitivo na própria fase.");
 
     /// <exception cref="InvalidOperationException">Há fase que coleta isenção com janela a conferir e o fuso institucional não foi informado.</exception>
     public IReadOnlyList<FieldError> ConferirCompletude(TimeZoneInfo? fuso) => CompletudeDoCronograma.Recusas(this, fuso);

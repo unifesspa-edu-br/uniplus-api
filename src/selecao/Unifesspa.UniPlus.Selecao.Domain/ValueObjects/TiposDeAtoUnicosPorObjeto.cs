@@ -16,10 +16,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class TiposDeAtoUnicosPorObjeto
 {
     private readonly Dictionary<string, string> _nomePorCodigo;
-    private readonly Dictionary<string, string> _nomes;
     private readonly HashSet<string> _ocupados;
     private readonly Dictionary<string, ClassificacaoDoTipoDeAto> _classificacoes;
-    private readonly string? _nomeDoAtoDaOperacao;
 
     private TiposDeAtoUnicosPorObjeto(
         IReadOnlyDictionary<string, string> nomePorCodigo,
@@ -33,13 +31,12 @@ public sealed class TiposDeAtoUnicosPorObjeto
         ArgumentNullException.ThrowIfNull(nomePorCodigo);
         ArgumentNullException.ThrowIfNull(ocupados);
         _nomePorCodigo = new Dictionary<string, string>(nomePorCodigo, StringComparer.Ordinal);
-        _nomes = new Dictionary<string, string>(nomes ?? nomePorCodigo, StringComparer.Ordinal);
         _classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(
             classificacoes ?? new Dictionary<string, ClassificacaoDoTipoDeAto>(), StringComparer.Ordinal);
         _ocupados = new HashSet<string>(ocupados, StringComparer.Ordinal);
         AtoDaOperacaoCodigo = atoDaOperacaoCodigo;
         AtoDaOperacaoEhUnico = atoDaOperacaoEhUnico;
-        _nomeDoAtoDaOperacao = nomeDoAtoDaOperacao;
+        Nomes = NomesDosTipos(nomes ?? nomePorCodigo, atoDaOperacaoCodigo, nomeDoAtoDaOperacao, _classificacoes.Keys);
     }
 
     /// <summary>
@@ -97,9 +94,30 @@ public sealed class TiposDeAtoUnicosPorObjeto
     public ClassificacaoDoTipoDeAto? ClassificacaoDe(string codigo) =>
         _classificacoes.GetValueOrDefault(codigo);
 
-    /// <summary>O nome do tipo no catálogo, ou o código quando não foi informado.</summary>
-    public string NomeDe(string codigo) =>
-        _nomes.GetValueOrDefault(
-            codigo,
-            string.Equals(codigo, AtoDaOperacaoCodigo, StringComparison.Ordinal) ? _nomeDoAtoDaOperacao ?? codigo : codigo);
+    /// <summary>
+    /// Os nomes dos tipos que o processo cita: o do catálogo vigente ou, para o tipo que a versão
+    /// publicada já congelou, o da cópia.
+    /// </summary>
+    public NomesDosTiposDeAto Nomes { get; }
+
+    // O nome do ato da operação só vale quando o tipo dele não tem nome na leitura: a cópia guardada vence.
+    private static NomesDosTiposDeAto NomesDosTipos(
+        IReadOnlyDictionary<string, string> nomes,
+        string? atoDaOperacaoCodigo,
+        string? nomeDoAtoDaOperacao,
+        IEnumerable<string> codigosClassificados)
+    {
+        Dictionary<string, string> nomePorCodigo = new(nomes, StringComparer.Ordinal);
+        if (atoDaOperacaoCodigo is not null && nomeDoAtoDaOperacao is not null)
+        {
+            nomePorCodigo.TryAdd(atoDaOperacaoCodigo, nomeDoAtoDaOperacao);
+        }
+
+        if (codigosClassificados.Any(codigo => !nomePorCodigo.ContainsKey(codigo)))
+        {
+            throw new ArgumentException("Todo tipo de ato com classificação precisa de nome.", nameof(nomes));
+        }
+
+        return new NomesDosTiposDeAto(nomePorCodigo);
+    }
 }

@@ -22,7 +22,7 @@ internal static class ItensDoCronograma
         [
             .. DaPublicacao(configuracao, cronograma, etapas, cadastros.ContagemDePrazos),
             cronograma.ItemDaPrecedenciaEntreFases(cadastros.Precedencias),
-            .. DoCicloRecursal(configuracao, cronograma, etapas),
+            .. DoCicloRecursal(configuracao, cronograma, etapas, cadastros.TiposDeAtoUnicos.Nomes),
             .. DasBancasEDaJanelaDasEtapas(configuracao, cronograma, etapas, cadastros.Corretores),
             .. ConferenciaDosTiposDeAto.Itens(cronograma, etapas, cadastros.TiposDeAtoUnicos),
         ];
@@ -44,9 +44,10 @@ internal static class ItensDoCronograma
         cronograma.ItemDasVagasOfertadas(configuracao.Vagas.HaVagasOfertadas),
     ];
 
-    private static ItemConformidade[] DoCicloRecursal(ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+    private static ItemConformidade[] DoCicloRecursal(
+        ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, NomesDosTiposDeAto nomes) =>
     [
-        CicloRecursalDoProcesso.Item(cronograma, etapas),
+        CicloRecursalDoProcesso.Item(cronograma, etapas, nomes),
         cronograma.ItemDaAncoraDoRecurso(),
         etapas.ItemDaAncoraDoRecurso(),
         cronograma.ItemDosCandidatosAtendidos(),

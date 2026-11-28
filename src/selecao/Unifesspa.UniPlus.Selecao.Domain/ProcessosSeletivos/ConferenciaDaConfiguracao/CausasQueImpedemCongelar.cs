@@ -37,7 +37,7 @@ internal static class CausasQueImpedemCongelar
         new(NomeDoAssunto.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
         new(NomeDoAssunto.ReferenciasDeRegra, static c => ConferenciaDasReferenciasDeRegra.Conferir(c.Configuracao, c.Cadastros)),
         new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.Precedencias)),
-        new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
+        new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos, c.Cadastros.TiposDeAtoUnicos.Nomes)),
         new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),
         new(NomeDoAssunto.Bancas, static c => Bancas(c.Configuracao.Identidade.OrigemCandidatos, c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
         new(NomeDoAssunto.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
@@ -88,7 +88,8 @@ internal static class CausasQueImpedemCongelar
     ];
 
     private static IEnumerable<FieldError> Completude(
-        ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, ContextoDeContagemDePrazos contexto) =>
+        ConfiguracaoDeclarada configuracao, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, ContextoDeContagemDePrazos contexto,
+        NomesDosTiposDeAto nomes) =>
     [
         .. DatasDeReferenciaNoCronograma.ConferirCompletude(configuracao.Cronograma.CronogramaFases, configuracao.Exigencias.DocumentosExigidos, CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count)),
         .. EtapasNoCronograma.ConferirFasesQueAgrupamEtapas(cronograma, etapas),
@@ -97,7 +98,7 @@ internal static class CausasQueImpedemCongelar
         .. ExigenciaDaHomologacaoPorOrigem.Causas(configuracao.Identidade.OrigemCandidatos, cronograma, etapas),
         .. EdicoesDoExameDaHomologacao.Causas(cronograma, configuracao.Coleta.OpcoesDeclaradas),
         .. cronograma.ConferirCompletude(contexto.FusoInstitucional),
-        .. CicloRecursalDoProcesso.Conferir(cronograma, etapas),
+        .. CicloRecursalDoProcesso.Conferir(cronograma, etapas, nomes),
     ];
 
     private static IEnumerable<FieldError> Recursos(ConfiguracaoDeclarada configuracao) =>

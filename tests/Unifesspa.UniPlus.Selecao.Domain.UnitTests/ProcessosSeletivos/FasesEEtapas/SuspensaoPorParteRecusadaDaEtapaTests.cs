@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -31,8 +32,8 @@ public sealed class SuspensaoPorParteRecusadaDaEtapaTests
         EtapasDoProcesso lidas = EtapasDoProcesso.Das(etapas);
         EtapasDoProcesso comParteRecusada = EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].produtos"));
 
-        lidas.ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should().Equal("etapas[0].produtos", "etapas[1].produtos");
-        comParteRecusada.ConferirFechamentoDoCiclo().Select(static recusa => recusa.Field).Should().Equal("etapas[1].produtos");
+        lidas.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static recusa => recusa.Field).Should().Equal("etapas[0].produtos", "etapas[1].produtos");
+        comParteRecusada.ConferirFechamentoDoCiclo(NomesDosTiposDeAtoDeTeste.Nenhum).Select(static recusa => recusa.Field).Should().Equal("etapas[1].produtos");
     }
 
     [Fact(DisplayName = "O item do ciclo recursal fica pendente, e não aprovado, quando a lista dos produtos de uma etapa tem parte recusada")]
@@ -41,8 +42,8 @@ public sealed class SuspensaoPorParteRecusadaDaEtapaTests
         EtapaProcesso[] etapas = [new ModeloDeEtapa("Prova") { Ordem = 1 }.Adotada()];
         CronogramaDoProcesso semFases = CronogramaDoProcesso.Do([new ModeloDeFase("INSCRICAO", 1).Janela(1, 5).Adotada()]);
 
-        CicloRecursalDoProcesso.Item(semFases, EtapasDoProcesso.Das(etapas)).Ok.Should().BeTrue();
-        CicloRecursalDoProcesso.Item(semFases, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].produtos"))).Ok.Should().BeFalse();
+        CicloRecursalDoProcesso.Item(semFases, EtapasDoProcesso.Das(etapas), NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeTrue();
+        CicloRecursalDoProcesso.Item(semFases, EtapasDoProcesso.Das(etapas, ComPartesRecusadas("etapas[0].produtos")), NomesDosTiposDeAtoDeTeste.Nenhum).Ok.Should().BeFalse();
     }
 
     [Theory(DisplayName = "A âncora da janela de recurso que não é produto preliminar não é julgada quando a lista dos produtos ou a dos recursos tem parte recusada")]

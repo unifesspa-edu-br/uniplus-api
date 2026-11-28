@@ -74,7 +74,7 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
         ResultadoDoCicloNovo resultado = ConferirEtapas(prova, [objetiva, analise], [objetivaComTipos, analise], ItemPreliminarDaEtapa(objetiva), ItemPreliminarDaEtapa(analise));
 
         FieldError recusa = resultado.Recusas.Should().ContainSingle().Which;
-        recusa.Error.Message.Should().Contain($"'{Materia}'").And.NotContain($"'{OutraMateria}'");
+        recusa.Error.Message.Should().Contain("'Resultado da prova'").And.NotContain("'Resultado da análise'").And.NotContain(Materia);
     }
 
     [Fact(DisplayName = "Declarar os mesmos tipos de decisão da etapa em outra ordem não exige declarar o novo ciclo")]
@@ -100,12 +100,12 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
 
     private static ResultadoDoCicloNovo Conferir(FaseCronograma[] publicadas, FaseCronograma[] novas, IdentidadeDoItemDoEdital publicado) =>
         ConferenciaDoCicloNovoDaRetificacao.Conferir(
-            publicadas, [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), publicado));
+            publicadas, [], novas, [], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), publicado), NomesDaVersaoPublicada);
 
     private static ResultadoDoCicloNovo ConferirEtapas(
         FaseCronograma fase, EtapaProcesso[] publicadas, EtapaProcesso[] novas, params IdentidadeDoItemDoEdital[] publicados) =>
         ConferenciaDoCicloNovoDaRetificacao.Conferir(
-            [fase], publicadas, [fase], novas, new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), publicados));
+            [fase], publicadas, [fase], novas, new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), publicados), NomesDaVersaoPublicada);
 
     private static IdentidadeDoItemDoEdital ItemPreliminarDaEtapa(EtapaProcesso etapa) =>
         IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelDaPublicacaoPrevista.Preliminar));
