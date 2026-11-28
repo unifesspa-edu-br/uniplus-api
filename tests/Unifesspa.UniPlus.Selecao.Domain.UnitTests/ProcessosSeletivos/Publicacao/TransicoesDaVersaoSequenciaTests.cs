@@ -92,6 +92,31 @@ public sealed class TransicoesDaVersaoSequenciaTests
         TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Situacao, versao, "Correção do prazo").IsSuccess.Should().BeTrue();
     }
 
+    [Theory(DisplayName = "O motivo em branco é recusado apontando o campo motivo, com o código próprio")]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ConferirEstadoParaRetificar_MotivoEmBranco_ApontaOCampo(string motivo)
+    {
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao);
+
+        Result recusa = TransicoesDaVersao.ConferirEstadoParaRetificar(publicado.Id, publicado.Situacao, versao, motivo);
+
+        recusa.Errors.Should().ContainSingle().Which.Field.Should().Be("motivo");
+        recusa.Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
+    }
+
+    [Fact(DisplayName = "O estado que não é publicado impede a retificação antes do motivo, sem apontar campo")]
+    public void ConferirEstadoParaRetificar_Rascunho_ImpedePeloEstadoMesmoSemMotivo()
+    {
+        ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
+        _ = ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao);
+
+        Result recusa = TransicoesDaVersao.ConferirEstadoParaRetificar(rascunho.Id, rascunho.Situacao, versao, " ");
+
+        recusa.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
+        recusa.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
+    }
+
     [Fact(DisplayName = "A versão corrente de outro processo lança sem mutar o processo")]
     public void ConferirEstado_VersaoDeOutroProcesso_Lanca()
     {

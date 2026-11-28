@@ -25,7 +25,10 @@ internal static class EscritaDasEtapasDoProcesso
             return Result.Failure(EtapasDoProcesso.IdRepetido());
         }
 
-        List<FieldError> erros = [.. etapas.SelectMany(ErrosDoPayloadDaEtapa)];
+        List<List<FieldError>> formas = [.. etapas.Select(FormaDaEtapa)];
+        bool formaRecusada = formas.Exists(static forma => forma.Count > 0);
+        List<FieldError> erros = [.. etapas.SelectMany((etapa, indice) => ComIndice(
+            formaRecusada ? formas[indice].Concat(PeriodoInvertido(etapa)) : formas[indice], indice))];
 
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
@@ -48,11 +51,16 @@ internal static class EscritaDasEtapasDoProcesso
         EtapaProcessoInput input, FormaDeAvaliacao? forma, ReferenciaRegra? regraConsolidacao) =>
         new(input.Peso, input.NotaMinima, input.NotaMaxima, input.PassoDoLancamento, forma, regraConsolidacao, NiveisDeclarados(input));
 
-    private static IReadOnlyList<FieldError> ErrosDoPayloadDaEtapa(EtapaProcessoInput etapa, int indice) =>
-        ComIndice(FormaDaEtapa(etapa), indice);
-
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             etapa.Nome, CodigoLidoDoPedido.Ler<CaraterEtapa>(etapa.Carater), etapa.Ordem,
             DeclaracaoDaAvaliacao(etapa, forma: null, regraConsolidacao: null), ItensDeclarados(etapa));
+
+    // Com a forma de alguma etapa recusada, o pedido não segue para a conferência do tipo, que é quem recusa o período
+    // invertido; por isso ele é somado aqui, para vir junto das outras recusas. Sem recusa de forma, segue adiante e
+    // é somado às recusas do tipo, no mesmo lugar de sempre.
+    private static IEnumerable<FieldError> PeriodoInvertido(EtapaProcessoInput etapa) =>
+        ConferenciaDaDeclaracaoDaEtapa.JanelaInvertida(new JanelaDeTempo(etapa.Inicio, etapa.Fim)) is { } invertida
+            ? [new FieldError("fim", invertida)]
+            : [];
 }

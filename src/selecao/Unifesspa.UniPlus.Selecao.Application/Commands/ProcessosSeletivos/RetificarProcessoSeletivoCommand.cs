@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </param>
 public sealed record RetificarProcessoSeletivoCommand(
     Guid ProcessoSeletivoId,
-    string Motivo,
+    string? Motivo,
     string? Numero,
     DateTimeOffset? PeriodoInscricaoInicio,
     DateTimeOffset? PeriodoInscricaoFim,

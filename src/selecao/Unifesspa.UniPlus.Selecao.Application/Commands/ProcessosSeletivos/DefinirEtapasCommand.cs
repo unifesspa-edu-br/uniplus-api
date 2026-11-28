@@ -79,7 +79,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
-    string Nome,
+    [property: ObrigatorioNoContrato, Description("Obrigatório; ausente ou nulo é recusado (422).")] string? Nome,
     [property: AceitaCodigosDe<CaraterEtapa>] string? Carater,
     Guid TipoEtapaOrigemId,
     decimal? Peso,

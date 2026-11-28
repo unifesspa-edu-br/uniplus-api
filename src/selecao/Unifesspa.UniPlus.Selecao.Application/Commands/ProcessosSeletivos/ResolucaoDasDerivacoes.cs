@@ -36,7 +36,7 @@ internal static class ResolucaoDasDerivacoes
         HashSet<string> universo = new(
             DerivacoesDaOferta.Efetivas([], processo.DistribuicaoVagas).Select(static d => d.CodigoFato), StringComparer.Ordinal);
         universo.UnionWith(processo.FatosColetados.Select(static f => f.FatoCodigo));
-        universo.UnionWith(entradas.Select(static e => e.CodigoFato));
+        universo.UnionWith(entradas.Select(static e => e.CodigoFato).OfType<string>());
 
         return universo;
     }

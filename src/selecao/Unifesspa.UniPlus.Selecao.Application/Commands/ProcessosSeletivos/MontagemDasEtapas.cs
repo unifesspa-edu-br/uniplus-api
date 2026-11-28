@@ -87,7 +87,7 @@ internal static class MontagemDasEtapas
 
     // O caráter já foi conferido pela forma da etapa, antes de qualquer leitura.
     private static IdentificacaoDaEtapa IdentificacaoDeclarada(EtapaConferida conferida, TipoEtapaSnapshot tipo) =>
-        new(conferida.Declarada.Nome, conferida.Carater!.Value, tipo, conferida.Declarada.Ordem, conferida.Declarada.FaseCodigo);
+        new(conferida.Declarada.Nome!, conferida.Carater!.Value, tipo, conferida.Declarada.Ordem, conferida.Declarada.FaseCodigo);
 
     private static DeclaracaoDaAvaliacaoDaEtapa AvaliacaoDeclarada(EtapaConferida conferida) =>
         EscritaDasEtapasDoProcesso.DeclaracaoDaAvaliacao(conferida.Declarada, conferida.Forma, conferida.Consolidacao);

@@ -27,11 +27,14 @@ public sealed record ProvaPresencialLida(DeclaracaoDaProvaPresencial? Declaracao
 
         return declaracao.IsSuccess
             ? new(declaracao.Value, OrigemNoDocumento.Identidade, limiteDeMunicipios)
-            : new(
-                null,
-                OrigemNoDocumento.SoComPartesRecusadas([.. declaracao.Errors.Select(static causa => ParteRecusada.DoBloco(DeclaracaoDaProvaPresencial.Campo, causa))]),
-                limiteDeMunicipios);
+            : Recusada(declaracao, limiteDeMunicipios);
     }
+
+    private static ProvaPresencialLida Recusada(Result<DeclaracaoDaProvaPresencial> declaracao, int limiteDeMunicipios) =>
+        new(
+            null,
+            OrigemNoDocumento.SoComPartesRecusadas([.. declaracao.Errors.Select(static causa => ParteRecusada.DoBloco(DeclaracaoDaProvaPresencial.Campo, causa))]),
+            limiteDeMunicipios);
 
     /// <summary>As causas que a conferência da prova presencial aponta no documento: as da leitura, se a recusou, ou as da conferência com o Geo.</summary>
     public IReadOnlyList<FieldError> Causas(MunicipiosConferidosNoGeo conferidos)

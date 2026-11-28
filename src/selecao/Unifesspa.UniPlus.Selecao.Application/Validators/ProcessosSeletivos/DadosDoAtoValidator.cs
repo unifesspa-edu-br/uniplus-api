@@ -25,6 +25,8 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
     private const int AssinanteMaxLength = 200;
     private const int TipoCodigoMaxLength = 60;
 
+    // Texto ausente, nulo ou em branco é recusado na conferência do ato, com o código de campo obrigatório;
+    // aqui, só o tamanho do que veio.
     public DadosDoAtoValidator()
     {
         ValidarOrgaoESerie();
@@ -36,14 +38,10 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
     private void ValidarOrgaoESerie()
     {
         RuleFor(x => x.Orgao)
-            .NotEmpty()
-            .WithMessage("Órgão publicador do ato é obrigatório.")
             .MaximumLength(OrgaoMaxLength)
             .WithMessage($"Órgão publicador deve ter no máximo {OrgaoMaxLength} caracteres.");
 
         RuleFor(x => x.Serie)
-            .NotEmpty()
-            .WithMessage("Série do ato é obrigatória.")
             .MaximumLength(SerieMaxLength)
             .WithMessage($"Série do ato deve ter no máximo {SerieMaxLength} caracteres.");
     }
@@ -64,8 +62,6 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
     private void ValidarAssinante()
     {
         RuleFor(x => x.Assinante)
-            .NotEmpty()
-            .WithMessage("Assinante do ato é obrigatório.")
             .MaximumLength(AssinanteMaxLength)
             .WithMessage($"Assinante deve ter no máximo {AssinanteMaxLength} caracteres.");
     }
@@ -73,8 +69,6 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
     private void ValidarTipoDoAto()
     {
         RuleFor(x => x.TipoAtoCodigo)
-            .NotEmpty()
-            .WithMessage("Tipo do ato é obrigatório.")
             .MaximumLength(TipoCodigoMaxLength)
             .WithMessage($"Tipo do ato deve ter no máximo {TipoCodigoMaxLength} caracteres.");
     }

@@ -25,8 +25,12 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
     Guid OfertaCursoId,
     int VagasOfertadasBase,
     decimal? PercentualDaReservaLegal,
-    string RegraDistribuicaoCodigo,
-    string RegraDistribuicaoVersao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraDistribuicaoCodigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraDistribuicaoVersao,
     string? RegraAjusteCodigo,
     string? RegraAjusteVersao,
     Guid? ReferenciaReservaDemograficaId,

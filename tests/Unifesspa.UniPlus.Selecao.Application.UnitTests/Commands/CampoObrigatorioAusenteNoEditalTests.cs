@@ -12,7 +12,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeR
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
 
 /// <summary>
-/// A publicação e a retificação do edital com o documento, o bloco do ato, o ano, a data ou o documento de um anexo
+/// A publicação e a retificação do edital com o documento, o bloco do ato, o órgão, a série, o ano, a data, o assinante, o tipo ou o documento de um anexo
 /// ausentes: a recusa é 422 com o código de campo obrigatório, um item por campo no campo do pedido, acumulada com a
 /// recusa do tipo do ato, que não depende deles. O que depende do campo ausente não é conferido, e nada é gravado.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class CampoObrigatorioAusenteNoEditalTests
         TheoryData<OperacaoQueCongela, string> dados = [];
         foreach (OperacaoQueCongela operacao in Enum.GetValues<OperacaoQueCongela>())
         {
-            foreach (string campo in new[] { "documentoEditalId", "ato", "ato.ano", "ato.dataDoAto" })
+            foreach (string campo in new[] { "documentoEditalId", "ato", "ato.orgao", "ato.serie", "ato.ano", "ato.dataDoAto", "ato.assinante", "ato.tipoAtoCodigo" })
             {
                 dados.Add(operacao, campo);
             }
@@ -73,6 +73,32 @@ public sealed class CampoObrigatorioAusenteNoEditalTests
         resposta.Errors.Should().OnlyContain(static e => e.Error.Code == CodigosDeValidacao.Obrigatorio);
     }
 
+    [Theory(DisplayName = "O órgão em branco e o ano ausente acumulam numa resposta só, na ordem do bloco")]
+    [InlineData(OperacaoQueCongela.Publicar)]
+    [InlineData(OperacaoQueCongela.Retificar)]
+    public async Task OrgaoEmBrancoEAnoAusente_Acumulam(OperacaoQueCongela operacao)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao);
+
+        (Result resposta, _) = await ExecutarAsync(cenario, operacao, Guid.CreateVersion7(), NovoAto() with { Orgao = "   ", Ano = null });
+
+        Recusa(resposta).Should().Equal(
+            ("ato.orgao", CodigosDeValidacao.Obrigatorio), ("ato.ano", CodigosDeValidacao.Obrigatorio));
+        await cenario.Servicos.NadaFoiGravadoAsync();
+    }
+
+    [Theory(DisplayName = "O tipo do ato em branco é recusado no campo e o catálogo de tipos não é consultado")]
+    [InlineData(OperacaoQueCongela.Publicar)]
+    [InlineData(OperacaoQueCongela.Retificar)]
+    public async Task TipoEmBranco_NaoConsultaOCatalogo(OperacaoQueCongela operacao)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.TipoDeAto);
+
+        (Result resposta, _) = await ExecutarAsync(cenario, operacao, Guid.CreateVersion7(), NovoAto() with { TipoAtoCodigo = " " });
+
+        Recusa(resposta).Should().Equal(("ato.tipoAtoCodigo", CodigosDeValidacao.Obrigatorio));
+    }
+
     [Theory(DisplayName = "A ausência acumula com a recusa do tipo do ato, que não depende dela, e a ausência vem primeiro")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
@@ -119,7 +145,11 @@ public sealed class CampoObrigatorioAusenteNoEditalTests
     {
         "documentoEditalId" => (null, NovoAto()),
         "ato" => (Guid.CreateVersion7(), null),
+        "ato.orgao" => (Guid.CreateVersion7(), NovoAto() with { Orgao = null }),
+        "ato.serie" => (Guid.CreateVersion7(), NovoAto() with { Serie = null }),
         "ato.ano" => (Guid.CreateVersion7(), NovoAto() with { Ano = null }),
+        "ato.assinante" => (Guid.CreateVersion7(), NovoAto() with { Assinante = null }),
+        "ato.tipoAtoCodigo" => (Guid.CreateVersion7(), NovoAto() with { TipoAtoCodigo = null }),
         "ato.dataDoAto" => (Guid.CreateVersion7(), NovoAto() with { DataDoAto = null }),
         _ => throw new ArgumentOutOfRangeException(nameof(campo), campo, "Campo que o pedido não declara."),
     };

@@ -27,7 +27,10 @@ public static class TransicoesDaVersao
     {
         ArgumentNullException.ThrowIfNull(versaoAtual);
 
-        return ComoResultado(RecusaDaRetificacao(processoId, situacao, versaoAtual, motivo));
+        DomainError? recusa = RecusaDaRetificacao(processoId, situacao, versaoAtual, motivo);
+        return recusa?.Code == CodigoDoMotivoObrigatorio
+            ? Result.ValidationFailure([new FieldError("motivo", recusa)])
+            : ComoResultado(recusa);
     }
 
     internal static Result<VersaoEmitida> Publicar(Guid processoId, SituacaoDoProcessoSeletivo situacao, PedidoDeCongelamento pedido)

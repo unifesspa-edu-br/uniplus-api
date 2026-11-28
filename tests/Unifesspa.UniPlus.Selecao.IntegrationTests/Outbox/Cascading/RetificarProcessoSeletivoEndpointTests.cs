@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -225,6 +226,57 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
             .Should().Be("uniplus.selecao.processo_seletivo.nao_encontrado");
+    }
+
+    [Theory(DisplayName =
+        "POST /processos-seletivos/{id}/retificacoes com motivo ausente, nulo, vazio ou em branco retorna 422 apontando o campo motivo")]
+    [InlineData("ausente")]
+    [InlineData("nulo")]
+    [InlineData("vazio")]
+    [InlineData("em branco")]
+    public async Task Retificar_MotivoOmitidoOuEmBranco_Retorna422ApontandoOMotivo(string situacaoDoMotivo)
+    {
+        CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+        Guid processoId = await SemearEPublicarAsync(api, client, nameof(Retificar_MotivoOmitidoOuEmBranco_Retorna422ApontandoOMotivo));
+        Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
+        JsonObject corpo = JsonSerializer.SerializeToNode(NovoCorpoRetificacao(documentoRetificacao, "motivo"))!.AsObject();
+        DefinirMotivo(corpo, situacaoDoMotivo);
+
+        HttpResponseMessage response = await PostRetificarCorpoAsync(client, processoId, corpo);
+
+        await RecusaDeCampoObrigatorioNoDominio.ConferirRecusasAsync(
+            response, ("motivo", "uniplus.selecao.processo_seletivo.motivo_retificacao_obrigatorio"));
+    }
+
+    private static void DefinirMotivo(JsonObject corpo, string situacaoDoMotivo)
+    {
+        if (situacaoDoMotivo == "ausente")
+        {
+            corpo.Remove("motivo");
+            return;
+        }
+
+        corpo["motivo"] = situacaoDoMotivo switch
+        {
+            "nulo" => null,
+            "vazio" => string.Empty,
+            _ => "   ",
+        };
+    }
+
+    private static async Task<HttpResponseMessage> PostRetificarCorpoAsync(HttpClient client, Guid processoId, JsonObject corpo)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post,
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/retificacoes", UriKind.Relative))
+        {
+            Content = JsonContent.Create(corpo),
+        };
+        AppendTestAuth(request);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+        return await client.SendAsync(request).ConfigureAwait(false);
     }
 
     private static object NovoCorpoRetificacao(Guid documentoEditalId, string motivo) => new

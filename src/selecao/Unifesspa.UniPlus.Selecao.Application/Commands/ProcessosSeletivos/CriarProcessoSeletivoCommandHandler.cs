@@ -109,7 +109,7 @@ public static class CriarProcessoSeletivoCommandHandler
         return emUso
             ? Result<ProcessoSeletivo>.Failure(IdentificadorLegivelEmUso(identificador))
             : Result<ProcessoSeletivo>.Success(ProcessoSeletivo.Criar(
-                command.Nome, referencias.Tipo, CatalogoDe<OrigemCandidatos>.Obter(command.OrigemCandidatos!), referencias.UnidadeId, referencias.Unidade,
+                command.Nome!, referencias.Tipo, CatalogoDe<OrigemCandidatos>.Obter(command.OrigemCandidatos!), referencias.UnidadeId, referencias.Unidade,
                 referencias.Localidade, identificador));
     }
 

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 using Domain.Enums;
@@ -24,7 +25,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="LocalidadeUf">UF da localidade regente — cache de exibição.</param>
 [method: JsonConstructor]
 public sealed record CriarProcessoSeletivoCommand(
-    string Nome,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Nome,
     Guid TipoProcessoOrigemId,
     [property: AceitaCodigosDe<OrigemCandidatos>] string? OrigemCandidatos,
     Guid UnidadeAdministradoraOrigemId,

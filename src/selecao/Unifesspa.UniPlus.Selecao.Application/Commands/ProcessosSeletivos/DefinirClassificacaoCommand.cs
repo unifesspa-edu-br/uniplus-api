@@ -1,10 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
+
 using Domain.ValueObjects;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Item de entrada de uma regra de eliminação, usado por
@@ -47,13 +50,21 @@ public sealed record RegraEliminacaoInput(
 /// </param>
 public sealed record DefinirClassificacaoCommand(
     Guid ProcessoSeletivoId,
-    string RegraCalculoCodigo,
-    string RegraCalculoVersao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraCalculoCodigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraCalculoVersao,
     string? RegraArredondamentoCodigo,
     string? RegraArredondamentoVersao,
     int? CasasArredondamento,
-    string RegraOrdemAlocacaoCodigo,
-    string RegraOrdemAlocacaoVersao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraOrdemAlocacaoCodigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraOrdemAlocacaoVersao,
     IReadOnlyList<RegraEliminacaoInput>? RegrasEliminacao,
     bool? BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,

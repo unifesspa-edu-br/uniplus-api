@@ -22,11 +22,17 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando nome é vazio")]
-    public void Rejeita_NomeVazio()
+    [Theory(DisplayName = "Validator falha quando nome é ausente, nulo, vazio ou só com espaços")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Rejeita_NomeAusenteOuVazio(string? nome)
     {
-        ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand(string.Empty, TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+        CriarProcessoSeletivoCommand comando = new CriarProcessoSeletivoCommand(
+            "PS 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026") with
+        { Nome = nome };
+
+        ValidationResult result = new CriarProcessoSeletivoCommandValidator().Validate(comando);
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().ContainSingle(e => e.PropertyName == "Nome");

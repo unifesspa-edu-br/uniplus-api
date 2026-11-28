@@ -51,13 +51,22 @@ public sealed class DadosDoAtoValidatorTests
     public void AnoEDataAusentes_NaoSaoDoValidator() =>
         _validator.Validate(Valido() with { Ano = null, DataDoAto = null }).IsValid.Should().BeTrue();
 
-    [Theory(DisplayName = "Órgão e assinante em branco são recusados")]
+    [Theory(DisplayName = "Texto ausente, nulo ou em branco não é do validator: a conferência do ato o recusa com o código de campo obrigatório")]
+    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void OrgaoEmBranco_Recusa(string orgao)
+    public void TextoAusenteOuEmBranco_NaoEDoValidator(string? texto) =>
+        _validator.Validate(Valido() with { Orgao = texto, Serie = texto, Assinante = texto, TipoAtoCodigo = texto }).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "Órgão, série, assinante e tipo acima do tamanho do registro são recusados, cada um no seu campo")]
+    public void TextoAcimaDoTamanho_Recusa()
     {
-        _validator.Validate(Valido() with { Orgao = orgao }).IsValid.Should().BeFalse();
-        _validator.Validate(Valido() with { Assinante = orgao }).IsValid.Should().BeFalse();
+        string longo = new('a', 201);
+
+        ValidationResult resultado = _validator.Validate(Valido() with { Orgao = longo, Serie = longo, Assinante = longo, TipoAtoCodigo = longo });
+
+        resultado.Errors.Select(static e => e.PropertyName).Should().BeEquivalentTo(
+            [nameof(DadosDoAto.Orgao), nameof(DadosDoAto.Serie), nameof(DadosDoAto.Assinante), nameof(DadosDoAto.TipoAtoCodigo)]);
     }
 
     [Fact(DisplayName = "O catálogo confere o formato do tipo de ato e recusa tipo sem versão vigente")]

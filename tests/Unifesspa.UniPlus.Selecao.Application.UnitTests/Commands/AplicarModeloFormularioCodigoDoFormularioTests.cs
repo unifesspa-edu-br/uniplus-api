@@ -22,13 +22,14 @@ public sealed class AplicarModeloFormularioCodigoDoFormularioTests
 {
     private readonly CenarioDaAplicacaoDoModeloDeFormulario _cenario = new();
 
-    [Fact(DisplayName = "Aplicar o modelo a formulário que o processo não tem é recusado antes de ler o modelo")]
-    public async Task Handle_FormularioInexistente_RecusaAntesDoModelo()
+    [Fact(DisplayName = "Aplicar o modelo a formulário que o processo não tem é recusado junto com o modelo inexistente")]
+    public async Task Handle_FormularioInexistente_AcumulaComOModelo()
     {
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Guid.NewGuid(), "FORMULARIO_QUE_NAO_EXISTE");
 
-        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
-            recusa => recusa.Field == "formularioCodigo" && recusa.Error.Code == FormularioProcessoErrorCodes.FormularioInexistente);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("formularioCodigo", FormularioProcessoErrorCodes.FormularioInexistente),
+            ("modeloId", AplicacaoDeModeloErrorCodes.ModeloInexistente));
     }
 
     [Fact(DisplayName = "Aplicar o modelo a código fora do formato é recusado no próprio código")]
@@ -36,15 +37,34 @@ public sealed class AplicarModeloFormularioCodigoDoFormularioTests
     {
         Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Guid.NewGuid(), "inscricao");
 
-        resultado.Error!.Code.Should().Be(CodigoDoFormularioErrorCodes.FormatoInvalido);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("formularioCodigo", CodigoDoFormularioErrorCodes.FormatoInvalido),
+            ("modeloId", AplicacaoDeModeloErrorCodes.ModeloInexistente));
     }
 
-    [Fact(DisplayName = "Aplicar o modelo a código em branco é recusado como código obrigatório")]
-    public async Task Handle_CodigoEmBranco_RecusaOCodigo()
+    [Theory(DisplayName = "Aplicar o modelo a código ausente, nulo, vazio ou em branco é recusado no campo, como código obrigatório")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task Handle_CodigoAusenteOuEmBranco_RecusaOCampo(string? codigo)
     {
-        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(Guid.NewGuid(), " ");
+        ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO", 0)]);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo.Id, codigo);
 
-        resultado.Error!.Code.Should().Be(CodigoDoFormularioErrorCodes.Obrigatorio);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("formularioCodigo", CodigoDoFormularioErrorCodes.Obrigatorio),
+            ("modeloId", AplicacaoDeModeloErrorCodes.ModeloInexistente));
+    }
+
+    [Fact(DisplayName = "O código ausente com o modelo existente é a única recusa do pedido")]
+    public async Task Handle_CodigoAusenteComModeloExistente_RecusaSoOCodigo()
+    {
+        ModeloFormularioView modelo = Modelo(PapelDoFormularioDeTeste.Habilitacao, [Item("CERTIFICADO", 0)]);
+        _ = await _cenario.AplicarAsync(PapelDoFormularioDeTeste.Habilitacao, modelo);
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(modelo.Id, null);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("formularioCodigo", CodigoDoFormularioErrorCodes.Obrigatorio));
     }
 
     [Fact(DisplayName = "O relatório da aplicação devolve o código do formulário que recebeu a cópia")]

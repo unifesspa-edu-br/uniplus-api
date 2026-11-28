@@ -44,6 +44,19 @@ public sealed class LeituraDaBaseDaRetificacaoTests
         resposta.Value.VersaoVigente.Should().BeSameAs(vigente);
     }
 
+    [Fact(DisplayName = "O motivo ausente chega à base como texto vazio, e quem recusa é a conferência do estado")]
+    public async Task MotivoAusente_ChegaVazioABase()
+    {
+        DependenciasDosHandlersQueCongelam publicado = DependenciasDosHandlersQueCongelam.ParaProcessoPublicado();
+
+        Result<BaseDaRetificacao> resposta = await publicado.Servicos.LeituraDaBase()
+            .DaVersaoPublicadaAsync(publicado.Processo, null, CancellationToken.None);
+
+        resposta.Value!.Motivo.Should().BeEmpty();
+        new RetificacaoDeAtoUnico(resposta.Value).ConferirEstado(publicado.Processo).Errors
+            .Should().ContainSingle().Which.Field.Should().Be("motivo");
+    }
+
     [Fact(DisplayName = "O ciclo recursal aberto recusa com todos os erros da conferência, na ordem")]
     public async Task CicloRecursalAberto_RecusaComOsErrosDaConferencia()
     {

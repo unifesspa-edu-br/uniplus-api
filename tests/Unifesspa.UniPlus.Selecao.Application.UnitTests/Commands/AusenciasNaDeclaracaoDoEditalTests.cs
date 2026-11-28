@@ -9,7 +9,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O que a publicação e a retificação do edital recusam quando o pedido não traz o documento do edital, o bloco do ato,
-/// o ano, a data ou o documento de um anexo: um item por campo, no campo do pedido, com o código de campo obrigatório.
+/// o órgão, a série, o ano, a data, o assinante, o tipo ou o documento de um anexo: um item por campo, no campo do pedido, com o código de campo obrigatório.
 /// </summary>
 public sealed class AusenciasNaDeclaracaoDoEditalTests
 {
@@ -31,6 +31,28 @@ public sealed class AusenciasNaDeclaracaoDoEditalTests
     public void AnoEDataAusentes_SaemJuntos() =>
         Campos(AusenciasNaDeclaracaoDoEdital.Listar(Documento, NovoAto() with { Ano = null, DataDoAto = null }, null))
             .Should().Equal("ato.ano", "ato.dataDoAto");
+
+    [Theory(DisplayName = "O órgão, a série, o assinante e o tipo ausentes, nulos ou em branco são recusados cada um no seu campo")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void TextoAusenteOuEmBranco_RecusaCadaCampo(string? texto)
+    {
+        IReadOnlyList<FieldError> ausencias = AusenciasNaDeclaracaoDoEdital.Listar(
+            Documento, NovoAto() with { Orgao = texto, Serie = texto, Assinante = texto, TipoAtoCodigo = texto }, null);
+
+        Campos(ausencias).Should().Equal("ato.orgao", "ato.serie", "ato.assinante", "ato.tipoAtoCodigo");
+        ausencias.Should().OnlyContain(static e => e.Error.Code == CodigosDeValidacao.Obrigatorio);
+    }
+
+    [Fact(DisplayName = "O texto ausente acumula com o ano e a data ausentes, na ordem do bloco, e nenhuma mensagem repete o valor")]
+    public void TextoEAnoAusentes_AcumulamNaOrdemDoBloco()
+    {
+        IReadOnlyList<FieldError> ausencias = AusenciasNaDeclaracaoDoEdital.Listar(
+            Documento, NovoAto() with { Orgao = null, Ano = null, Assinante = "  " }, null);
+
+        Campos(ausencias).Should().Equal("ato.orgao", "ato.ano", "ato.assinante");
+    }
 
     [Fact(DisplayName = "Cada anexo sem documento é recusado na sua posição, e o que tem documento não")]
     public void AnexoSemDocumento_RecusaNaPosicao() =>
@@ -55,6 +77,17 @@ public sealed class AusenciasNaDeclaracaoDoEditalTests
         completos.Should().NotBeNull();
         completos!.Ano.Should().Be(2026);
         completos.DataDoAto.Should().Be(new DateOnly(2026, 1, 1));
+    }
+
+    [Theory(DisplayName = "Texto ausente ou em branco no bloco do ato não deixa dados completos")]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void Completar_ComTextoAusente_DevolveNulo(string? texto)
+    {
+        AusenciasNaDeclaracaoDoEdital.Completar(NovoAto() with { Orgao = texto }).Should().BeNull();
+        AusenciasNaDeclaracaoDoEdital.Completar(NovoAto() with { Serie = texto }).Should().BeNull();
+        AusenciasNaDeclaracaoDoEdital.Completar(NovoAto() with { Assinante = texto }).Should().BeNull();
+        AusenciasNaDeclaracaoDoEdital.Completar(NovoAto() with { TipoAtoCodigo = texto }).Should().BeNull();
     }
 
     [Theory(DisplayName = "Sem o bloco, o ano ou a data não há dados completos")]

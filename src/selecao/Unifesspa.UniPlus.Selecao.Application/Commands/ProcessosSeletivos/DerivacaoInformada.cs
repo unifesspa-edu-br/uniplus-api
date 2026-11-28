@@ -22,7 +22,7 @@ internal sealed class DerivacaoInformada
 {
     private readonly ConfiguracaoDerivacaoInput _entrada;
     private readonly List<RegraDeDerivacaoInformada> _regras;
-    private readonly bool _fatoAlvoBemFormado;
+    private readonly string? _fatoAlvo;
     private readonly List<FieldError> _recusasDeForma;
 
     private DerivacaoInformada(ConfiguracaoDerivacaoInput entrada)
@@ -37,7 +37,7 @@ internal sealed class DerivacaoInformada
             _recusasDeForma.Add(new("codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao()));
         }
 
-        _fatoAlvoBemFormado = !string.IsNullOrWhiteSpace(entrada.CodigoFato) && !daOferta;
+        _fatoAlvo = !string.IsNullOrWhiteSpace(entrada.CodigoFato) && !daOferta ? entrada.CodigoFato : null;
         _recusasDeForma.AddRange(_regras.SelectMany(static (regra, i) => regra.RecusasDeForma.Select(erro => erro.NoCaminhoDe($"regras[{i}]"))));
     }
 
@@ -55,12 +55,12 @@ internal sealed class DerivacaoInformada
     public ResolucaoDaDerivacao Resolver(ContextoDoCatalogo contexto, IReadOnlySet<string> universo)
     {
         List<FieldError> semantica = [.. RecusasDoFatoAlvo(contexto.Fatos), .. RecusasDoPredicadoDasRegras(contexto, universo)];
-        if (_recusasDeForma.Count > 0 || semantica.Count > 0)
+        if (_fatoAlvo is null || _recusasDeForma.Count > 0 || semantica.Count > 0)
         {
             return new(_recusasDeForma, semantica, [], null);
         }
 
-        Result<ConfiguracaoDerivacaoFato> montada = Montar(contexto.Fatos[_entrada.CodigoFato], contexto.DominiosDinamicos);
+        Result<ConfiguracaoDerivacaoFato> montada = Montar(_fatoAlvo, contexto.Fatos[_fatoAlvo], contexto.DominiosDinamicos);
         return montada.IsSuccess
             ? new(_recusasDeForma, semantica, [], montada.Value)
             : new(_recusasDeForma, semantica, [new FieldError("regras", montada.Error!)], null);
@@ -70,12 +70,12 @@ internal sealed class DerivacaoInformada
     // (REGRA_DE_CALCULO:{codigo}); um fato declarado, ou derivado por outro mecanismo, não tem regras configuráveis.
     private IEnumerable<FieldError> RecusasDoFatoAlvo(IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
-        if (!_fatoAlvoBemFormado)
+        if (_fatoAlvo is null)
         {
             return [];
         }
 
-        return !catalogo.TryGetValue(_entrada.CodigoFato, out FatoCandidatoView? alvo)
+        return !catalogo.TryGetValue(_fatoAlvo, out FatoCandidatoView? alvo)
             ? [new FieldError("codigoFato", new DomainError(
                 DerivabilidadeDeFato.FatoDesconhecido,
                 "O fato não pertence ao vocabulário de fatos do candidato."))]
@@ -94,7 +94,7 @@ internal sealed class DerivacaoInformada
         _regras.SelectMany((regra, i) => regra.RecusasDeSemantica(contexto.Vocabulario, universo, contexto.DominiosDinamicos)
             .Select(erro => erro.NoCaminhoDe($"regras[{i}]")));
 
-    private Result<ConfiguracaoDerivacaoFato> Montar(FatoCandidatoView alvo, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    private Result<ConfiguracaoDerivacaoFato> Montar(string codigoFato, FatoCandidatoView alvo, IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
     {
         List<RegraDerivacaoConfigurada> regras = [];
         foreach (RegraDeDerivacaoInformada informada in _regras)
@@ -108,7 +108,7 @@ internal sealed class DerivacaoInformada
             regras.Add(regra.Value!);
         }
 
-        Result<ConfiguracaoDerivacaoFato> configuracao = ConfiguracaoDerivacaoFato.Criar(_entrada.CodigoFato, regras);
+        Result<ConfiguracaoDerivacaoFato> configuracao = ConfiguracaoDerivacaoFato.Criar(codigoFato, regras);
         return configuracao.IsFailure ? configuracao : ConferirComODominioDoFato(configuracao.Value!, alvo, dominiosDinamicos);
     }
 

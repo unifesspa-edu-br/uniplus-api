@@ -76,7 +76,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo)
             .Concat(formulario.Itens.Itens.Select(static i => i.FatoCodigo)), StringComparer.Ordinal);
         HashSet<string> universo = new(coletados.Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
-            .Concat(escolhidas.ACopiar.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
+            .Concat(escolhidas.ACopiar.Select(static d => d.CodigoFato).OfType<string>()), StringComparer.Ordinal);
         DerivacoesResolvidas resolvidas = derivacoes.Resolver(escolhidas.ACopiar, universo);
         TermosResolvidos termosResolvidos = SelecaoDosTermosDoModelo.Resolver(termos, contexto,
             new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal));

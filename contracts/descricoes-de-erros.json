@@ -15804,8 +15804,8 @@
       "codigo": "uniplus.selecao.configuracao_derivacao_fato.codigo_fato_obrigatorio",
       "requisitos": [],
       "oQueAconteceu": [
-        "Na definição das regras de derivação do processo, uma configuração da lista `configuracoes`\nveio sem `codigoFato`, com o campo vazio ou só com espaços. Cada configuração diz de qual\nfato derivado as suas regras são a resolução, e sem esse código não há o que configurar.",
-        "A recusa vem no campo `configuracoes[i].codigoFato` e faz parte da conferência de forma, que\nacumula no array `errors[]` todas as violações de todas as configurações e regras do pedido\nantes de consultar o catálogo de fatos. Por isso ela aparece junto de\n[`sem_regras`](/erros/uniplus.selecao.configuracao_derivacao_fato.sem_regras),\n[`ordem_regra_duplicada`](/erros/uniplus.selecao.configuracao_derivacao_fato.ordem_regra_duplicada)\ne\n[`regras_com_e_sem_codigo`](/erros/uniplus.selecao.configuracao_derivacao_fato.regras_com_e_sem_codigo)\nquando elas também ocorrem, e as recusas que dependem do catálogo\n([`fato_desconhecido`](/erros/uniplus.selecao.configuracao_derivacao_fato.fato_desconhecido),\n[`fato_nao_derivavel`](/erros/uniplus.selecao.configuracao_derivacao_fato.fato_nao_derivavel))\nsó aparecem depois que a forma estiver correta."
+        "Na definição das regras de derivação do processo, uma configuração da lista `configuracoes`\nveio com o `codigoFato` ausente ou nulo, ou com o campo vazio ou só com espaços. Cada configuração diz de qual\nfato derivado as suas regras são a resolução, e sem esse código não há o que configurar.",
+        "A recusa vem no campo `configuracoes[i].codigoFato` e faz parte da conferência de forma, que\nacumula no array `errors[]` todas as violações de todas as configurações e regras do pedido.\nPor isso ela aparece junto de\n[`sem_regras`](/erros/uniplus.selecao.configuracao_derivacao_fato.sem_regras),\n[`ordem_regra_duplicada`](/erros/uniplus.selecao.configuracao_derivacao_fato.ordem_regra_duplicada)\ne\n[`regras_com_e_sem_codigo`](/erros/uniplus.selecao.configuracao_derivacao_fato.regras_com_e_sem_codigo)\nquando elas também ocorrem, e as recusas que dependem do catálogo\n([`fato_desconhecido`](/erros/uniplus.selecao.configuracao_derivacao_fato.fato_desconhecido),\n[`fato_nao_derivavel`](/erros/uniplus.selecao.configuracao_derivacao_fato.fato_nao_derivavel))\nsão conferidas contra o catálogo na mesma resposta, mesmo quando há recusa de forma, mas só para a\nconfiguração que informa `codigoFato` (a que não o informa, como esta, não é conferida contra o catálogo).\nAssim, a resposta pode trazer esta recusa e a de fato desconhecido de outra configuração do mesmo pedido."
       ],
       "comoResolver": [
         "Informe, em cada configuração, o `codigoFato` do fato derivado cujas regras estão sendo\ndefinidas. O código deve ser o de um fato do catálogo de fatos do candidato que seja derivado\npor regra de derivação."
@@ -19107,7 +19107,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma das etapas do pedido de definição de etapas\n(`PUT .../processos-seletivos/{id}/etapas`) foi declarada com período próprio\n(`inicio` e `fim`), e o `fim` é anterior ao `inicio`. O período com fim igual ao\ninício é aceito; só o fim anterior ao início é recusado.",
-        "A recusa **não é acumulada** com as demais: ela vem depois da conferência da\nforma, do caráter e da avaliação de todas as etapas, e é conferida etapa por\netapa, na ordem do pedido, depois da declaração dos atos de cada etapa\n([`ato_duplicado_na_etapa`](/erros/uniplus.selecao.etapa_processo.ato_duplicado_na_etapa))\ne antes da declaração das bancas. A primeira etapa com problema interrompe a\nconferência e a resposta traz só essa recusa, sem indicar qual é a etapa; as\netapas seguintes só são conferidas depois que ela for corrigida. Nada é\ngravado.",
+        "Quando alguma etapa do pedido tem outra recusa de forma (por exemplo,\n[`nome_obrigatorio`](/erros/uniplus.selecao.etapa_processo.nome_obrigatorio)), o período\ninvertido vem junto dessas recusas, no mesmo `errors[]`, no campo `etapas[n].fim`, e\nvale também para as outras etapas do mesmo pedido que tenham `inicio` e `fim` e estejam\ninvertidas, mesmo quando elas próprias não têm outra recusa de forma. Nesse caso nada\nmais é conferido até a forma ser corrigida.",
+        "Quando nenhuma etapa tem recusa de forma, a recusa **não é acumulada** com as demais: ela vem depois da conferência da\nforma, do caráter e da avaliação de todas as etapas, e é conferida etapa por\netapa, na ordem do pedido, depois da declaração dos atos de cada etapa\n([`ato_duplicado_na_etapa`](/erros/uniplus.selecao.etapa_processo.ato_duplicado_na_etapa))\ne antes da declaração das bancas. A primeira etapa com problema interrompe a\nconferência e a resposta traz só essa recusa, sem indicar qual é a etapa; as\netapas seguintes só são conferidas depois que ela for corrigida. Nada é\ngravado.",
         "A conferência de que o período da etapa cabe dentro do período da fase é outra, com\nrecusa própria."
       ],
       "comoResolver": [
@@ -19123,7 +19124,7 @@
         "UNI-REQ-0015"
       ],
       "oQueAconteceu": [
-        "Uma das etapas do corpo do pedido de definição de etapas não tem `nome`, ou tem o\ncampo vazio, ou só com espaços em branco.",
+        "Uma das etapas do corpo do pedido de definição de etapas veio com o `nome` ausente\nou nulo, ou com o campo vazio, ou só com espaços em branco.",
         "Esta conferência faz parte da conferência de **forma** das etapas: ela roda numa\nprimeira passada que confere todas as etapas do corpo do pedido **antes** de resolver\nqualquer uma contra o catálogo de tipos de etapa. Em cada etapa, a passada\nconfere, nesta ordem:",
         "- o `nome`: ausente ou em branco (este código) ou com mais de 300 caracteres\n  ([`nome_tamanho`](/erros/uniplus.selecao.etapa_processo.nome_tamanho)); os dois\n  são mutuamente exclusivos, e a mesma etapa nunca aciona os dois;\n- o `carater`: ausente ou fora das opções\n  ([`carater_obrigatorio`](/erros/uniplus.selecao.etapa_processo.carater_obrigatorio));\n- o `peso`: menor ou igual a zero\n  ([`peso_invalido`](/erros/uniplus.selecao.etapa_processo.peso_invalido)) ou\n  informado em etapa apenas eliminatória\n  (`uniplus.selecao.etapa_processo.peso_sem_carater_que_pontua`);\n- a `notaMinima`: negativa\n  ([`nota_minima_invalida`](/erros/uniplus.selecao.etapa_processo.nota_minima_invalida))\n  ou informada em etapa apenas classificatória\n  (`uniplus.selecao.etapa_processo.nota_minima_sem_carater_que_elimina`);\n- a escala da nota: `notaMaxima` menor ou igual a zero\n  ([`nota_maxima_invalida`](/erros/uniplus.selecao.etapa_processo.nota_maxima_invalida)),\n  `passoDoLancamento` menor ou igual a zero\n  ([`passo_do_lancamento_invalido`](/erros/uniplus.selecao.etapa_processo.passo_do_lancamento_invalido)),\n  nota mínima acima da máxima\n  ([`nota_minima_acima_da_nota_maxima`](/erros/uniplus.selecao.etapa_processo.nota_minima_acima_da_nota_maxima))\n  e nota máxima que não é múltipla do passo\n  ([`nota_maxima_fora_do_passo`](/erros/uniplus.selecao.etapa_processo.nota_maxima_fora_do_passo));\n- a `ordem`: ausente ou menor ou igual a zero\n  ([`ordem_invalida`](/erros/uniplus.selecao.etapa_processo.ordem_invalida));\n- os itens de avaliação da etapa (rótulo inválido ou repetido, `id` repetido,\n  pontuação máxima inválida ou fora do passo), com os códigos\n  `uniplus.selecao.item_de_avaliacao.*`;\n- a escala de atendimento da etapa (rótulo inválido ou repetido, fração fora de\n  0 a 1, ausência de um nível de fração 1), com os códigos\n  `uniplus.selecao.nivel_de_atendimento.*`.",
         "A passada acumula toda violação de forma encontrada, de todas as etapas, em vez\nde recusar na primeira: um corpo do pedido com uma etapa sem nome e outra com peso\nnegativo devolve as duas violações juntas, no array `errors[]` do corpo de\nerro — cada item com seu `field` (`etapas[<índice>].nome`, por exemplo) e seu\npróprio `code`. O `type`/`title` da raiz do corpo de erro refletem a\n**primeira** violação encontrada: entre etapas, a ordem do array do corpo do pedido;\ndentro de uma etapa, a ordem da lista acima."
@@ -19919,6 +19920,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Todo formulário do processo é identificado por um código, e o pedido não informou o código do formulário ou o informou em branco. A falta aparece ao aplicar um modelo de formulário (`POST .../formularios/aplicacoes-de-modelo`, campo `formularioCodigo`) e ao dizer a que formulário pertence cada documento exigido (campo `momento.formularioCodigo`). Nada foi alterado.",
+        "Na aplicação de um modelo de formulário, a resposta aponta o campo `formularioCodigo` e traz esta recusa junto com a do modelo, quando o modelo informado também não pode ser aplicado (por exemplo, modelo inexistente): as duas aparecem no mesmo `errors[]`.",
         "Nas rotas de formulário o código vem no caminho (`.../formularios/{codigo}`); um caminho sem código nem chega a ser reconhecido como rota de formulário."
       ],
       "comoResolver": [
@@ -23434,7 +23436,7 @@
       "codigo": "uniplus.selecao.opcao_declarada_fato.codigo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O processo declara as opções de um fato cuja fonte dos valores é o próprio\nprocesso, como as edições do ENEM aceitas. Cada opção tem um código, e o código\nde pelo menos uma das opções enviadas não pode ser usado: veio em branco, só\ncom espaços, ou passou de 60 caracteres. Os espaços do início e do fim não\ncontam.",
+        "O processo declara as opções de um fato cuja fonte dos valores é o próprio\nprocesso, como as edições do ENEM aceitas. Cada opção tem um código, e o código\nde pelo menos uma das opções enviadas não pode ser usado: veio ausente, nulo,\nem branco, só com espaços, ou passou de 60 caracteres. Os espaços do início e do\nfim não contam.",
         "A conferência percorre a lista inteira antes de recusar. A resposta traz um\nerro por opção com problema, cada um indicando a posição da opção na lista\n(`opcoes[n].codigo`), e nada foi gravado, nem das opções que estavam corretas."
       ],
       "comoResolver": [
@@ -23537,7 +23539,7 @@
       "codigo": "uniplus.selecao.opcao_declarada_fato.rotulo_invalido",
       "requisitos": [],
       "oQueAconteceu": [
-        "O processo declara as opções de um fato cuja fonte dos valores é o próprio\nprocesso, como as edições do ENEM aceitas. Cada opção tem um rótulo, que é o\ntexto com que ela aparece para quem escolhe. O rótulo de pelo menos uma das\nopções enviadas não pode ser usado: veio em branco, só com espaços, ou passou de\n300 caracteres. Os espaços do início e do fim não contam.",
+        "O processo declara as opções de um fato cuja fonte dos valores é o próprio\nprocesso, como as edições do ENEM aceitas. Cada opção tem um rótulo, que é o\ntexto com que ela aparece para quem escolhe. O rótulo de pelo menos uma das\nopções enviadas não pode ser usado: veio ausente, nulo, em branco, só com\nespaços, ou passou de 300 caracteres. Os espaços do início e do fim não contam.",
         "A conferência percorre a lista inteira antes de recusar. A resposta traz um\nerro por opção com problema, cada um indicando a posição da opção na lista\n(`opcoes[n].rotulo`), e nada foi gravado, nem das opções que estavam corretas."
       ],
       "comoResolver": [
@@ -25245,7 +25247,8 @@
         "UNI-REQ-0021"
       ],
       "oQueAconteceu": [
-        "O comando de **retificação em ato único**\n(`POST .../retificacoes`) foi enviado sem o motivo, ou com o motivo em branco\n(vazio ou só espaços). O motivo fica congelado, junto com a nova versão, como\nparte permanente do histórico do processo (UNI-REQ-0019): é o registro de por\nque a configuração mudou depois de publicada."
+        "O comando de **retificação em ato único**\n(`POST .../retificacoes`) foi enviado sem o motivo, ou com o motivo em branco\n(ausente, nulo, vazio ou só espaços). O motivo fica congelado, junto com a nova versão, como\nparte permanente do histórico do processo (UNI-REQ-0019): é o registro de por\nque a configuração mudou depois de publicada.",
+        "A resposta aponta o campo `motivo`. Esta recusa vem da conferência do estado do\nprocesso, que impede todas as demais recusas do pedido (ADR-0174): enquanto o motivo\nestiver faltando, as recusas do ato e dos outros campos não aparecem, e só são\nconferidas depois que o motivo for informado."
       ],
       "comoResolver": [
         "Na retificação em ato único, envie o campo de motivo preenchido com um texto não\nvazio, descrevendo por que a retificação está sendo feita. Um valor só com\nespaços em branco é tratado como ausente."
@@ -28288,6 +28291,7 @@
         "PUT /api/selecao/processos-seletivos/`{id}`/atendimento-especializado",
         "PUT /api/selecao/processos-seletivos/`{id}`/fatos/`{fatoCodigo}`/opcoes",
         "PUT /api/selecao/processos-seletivos/`{id}`/distribuicao-vagas",
+        "POST /api/selecao/processos-seletivos/`{id}`/distribuicao-vagas/simulacao",
         "PUT /api/selecao/processos-seletivos/`{id}`/regras-derivacao",
         "POST /api/selecao/processos-seletivos/`{id}`/publicacao",
         "POST /api/selecao/processos-seletivos/`{id}`/retificacoes",

@@ -12,13 +12,21 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// retificar um edital).
 /// </summary>
 public sealed record DadosDoAtoRequest(
-    string Orgao,
-    string Serie,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Orgao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Serie,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
     int? Ano,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
     DateOnly? DataDoAto,
-    string Assinante,
-    string TipoAtoCodigo);
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Assinante,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? TipoAtoCodigo);

@@ -111,7 +111,7 @@ internal sealed class ResolucaoDaDistribuicao(
     private async Task<DomainError?> ResolverRegraDeDistribuicaoAsync(CancellationToken cancellationToken)
     {
         RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(pedido.RegraDistribuicaoCodigo, pedido.RegraDistribuicaoVersao, cancellationToken).ConfigureAwait(false);
+            .ObterAsync(pedido.RegraDistribuicaoCodigo!, pedido.RegraDistribuicaoVersao!, cancellationToken).ConfigureAwait(false);
         DomainError? recusa = ConferirRegraDeDistribuicao(regra);
         _regra = recusa is null ? regra : null;
         return recusa;

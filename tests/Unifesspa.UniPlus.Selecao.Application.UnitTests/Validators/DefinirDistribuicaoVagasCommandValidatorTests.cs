@@ -106,6 +106,31 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
+    [Theory(DisplayName = "Código e versão da regra de distribuição ausentes, nulos, vazios ou em branco são recusados no campo da configuração")]
+    [InlineData(null, "v1", "RegraDistribuicaoCodigo")]
+    [InlineData("", "v1", "RegraDistribuicaoCodigo")]
+    [InlineData("DISTRIBUICAO_LEI_12711", null, "RegraDistribuicaoVersao")]
+    [InlineData("DISTRIBUICAO_LEI_12711", "  ", "RegraDistribuicaoVersao")]
+    public void Validar_RegraDeDistribuicaoAusente_RecusaOCampo(string? codigo, string? versao, string campo)
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { RegraDistribuicaoCodigo = codigo, RegraDistribuicaoVersao = versao };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.Errors.Should().ContainSingle().Which.PropertyName.Should().EndWith(campo);
+    }
+
+    [Fact(DisplayName = "Código e versão da regra de distribuição ausentes juntos são recusados numa resposta só")]
+    public void Validar_CodigoEVersaoAusentes_Acumula()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { RegraDistribuicaoCodigo = null, RegraDistribuicaoVersao = null };
+
+        ValidationResult resultado = _validator.Validate(new DefinirDistribuicaoVagasCommand(Guid.CreateVersion7(), [item]));
+
+        resultado.Errors.Select(static e => e.PropertyName).Should().HaveCount(2);
+    }
+
     [Fact(DisplayName = "Quadro nulo passa pelo validator, sem lançar exceção: a recusa como obrigatório é do domínio")]
     public void Validar_QuadroNulo_SegueParaODominioSemLancarExcecao()
     {

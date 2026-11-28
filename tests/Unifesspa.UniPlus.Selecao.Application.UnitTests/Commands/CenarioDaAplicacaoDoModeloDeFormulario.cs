@@ -226,7 +226,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     }
 
     /// <summary>Aplica o modelo ao formulário do código, que pode não existir no processo.</summary>
-    public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId, string formularioCodigo) =>
+    public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId, string? formularioCodigo) =>
         AplicarAoProcessoAsync(Processo.Id, modeloId, formularioCodigo);
 
     /// <summary>Aplica o modelo a um processo que o repositório não conhece.</summary>
@@ -241,7 +241,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
         return AplicarAoProcessoAsync(publicado.Id, modeloId, PapelDoFormularioDeTeste.Inscricao.Codigo());
     }
 
-    private Task<Result<AplicacaoDeModeloDto>> AplicarAoProcessoAsync(Guid processoId, Guid modeloId, string formularioCodigo) =>
+    private Task<Result<AplicacaoDeModeloDto>> AplicarAoProcessoAsync(Guid processoId, Guid modeloId, string? formularioCodigo) =>
         AplicarModeloFormularioCommandHandler.Handle(
             new AplicarModeloFormularioCommand(processoId, modeloId, formularioCodigo),
             _repository,

@@ -28,13 +28,21 @@ using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 /// </para>
 /// </remarks>
 public sealed record DefinirClassificacaoRequest(
-    string RegraCalculoCodigo,
-    string RegraCalculoVersao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraCalculoCodigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraCalculoVersao,
     string? RegraArredondamentoCodigo,
     string? RegraArredondamentoVersao,
     int? CasasArredondamento,
-    string RegraOrdemAlocacaoCodigo,
-    string RegraOrdemAlocacaoVersao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraOrdemAlocacaoCodigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? RegraOrdemAlocacaoVersao,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhuma.")]
     IReadOnlyList<RegraEliminacaoInput>? RegrasEliminacao,

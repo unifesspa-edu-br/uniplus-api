@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </param>
 /// <param name="PeriodoInscricaoFim">Idem <paramref name="PeriodoInscricaoInicio"/>.</param>
 public sealed record RetificarProcessoSeletivoRequest(
-    string Motivo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Motivo,
     string? Numero,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
