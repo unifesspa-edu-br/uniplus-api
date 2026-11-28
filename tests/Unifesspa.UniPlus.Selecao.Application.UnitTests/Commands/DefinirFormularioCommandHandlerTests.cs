@@ -126,6 +126,89 @@ public sealed class DefinirFormularioCommandHandlerTests
             .Contain(("paginas[1].apresentacao.titulo", EstruturaFormularioErrorCodes.PaginaTituloInvalido));
     }
 
+    [Fact(DisplayName = "Página de tipo inválido e códigos repetidos nas outras saem juntos, na posição do pedido e na ordem das posições")]
+    public async Task Handle_PaginaRecusadaECodigoRepetido_AcumulaNaOrdemDasPosicoes()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
+
+        Result result = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null,
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).ComTitulo("Dados").Construir(),
+            PaginaDeTipoInvalido("OUTRA", 1),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 2).ComTitulo("Dados").Construir());
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("paginas[1].tipo", EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio),
+            ("paginas[2].codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado));
+    }
+
+    [Fact(DisplayName = "Com página recusada, o formulário sem revisão e aceite não recebe a recusa do bloco exigido")]
+    public async Task Handle_PaginaRecusadaSemRevisaoEAceite_NaoRecusaOBlocoExigido()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out Guid faseDeInscricao);
+
+        Result result = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null,
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).ComTitulo("Dados").Construir(), PaginaDeTipoInvalido("OUTRA", 1));
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[1].tipo", EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio));
+    }
+
+    [Fact(DisplayName = "Com página recusada, o item de uma seção que o pedido não traz não recebe a recusa de item fora de seção")]
+    public async Task Handle_PaginaRecusadaEItemComSecao_NaoRecusaOItem()
+    {
+        ProcessoSeletivo processo = ProcessoComItemNaSecao("DADOS", out Guid faseDeInscricao);
+        PaginaDoFormularioInput outra = EntradaDaPaginaDoFormularioDeTeste.Secao("OUTRA", 0).ComTitulo("Outra").Construir();
+
+        Result recusada = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null, outra, PaginaDeTipoInvalido("FIM", 1));
+        Result completa = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null, outra, Revisao(1));
+
+        recusada.Errors.Select(static e => e.Error.Code).Should().Equal(EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio);
+        completa.Errors.Select(static e => e.Error.Code).Should().Equal(EstruturaFormularioErrorCodes.ItemForaDeSecao);
+    }
+
+    [Fact(DisplayName = "Com página recusada, a exibição que cita fato de seção posterior continua sem ser conferida pela posição")]
+    public async Task Handle_PaginaRecusadaEExibicaoPelaPosicao_NaoConfereAPosicao()
+    {
+        ProcessoSeletivo processo = ProcessoComItemNaSecao("POSTERIOR", out Guid faseDeInscricao);
+        PaginaDoFormularioInput exibida = EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).ComTitulo("Dados")
+            .ExibidaQuando([[new CondicaoPrecondicaoInput("CONDICAO_DA_HABILITACAO", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]).Construir();
+        PaginaDoFormularioInput posterior = EntradaDaPaginaDoFormularioDeTeste.Secao("POSTERIOR", 1).ComTitulo("Posterior").Construir();
+        IReadOnlyList<FatoCandidatoView> catalogo = [CondicaoDaHabilitacaoNoCatalogo()];
+
+        Result recusada = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null, [exibida, posterior, PaginaDeTipoInvalido("FIM", 2)], catalogo);
+        Result completa = await DefinirAsync(processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null, [exibida, posterior, Revisao(2)], catalogo);
+
+        recusada.Errors.Select(static e => e.Error.Code).Should().Equal(EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio);
+        completa.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[0].exibicao", "GrafoFormulario.CitaFatoPosterior"));
+    }
+
+    private static FatoCandidatoView CondicaoDaHabilitacaoNoCatalogo() => CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with
+    {
+        Codigo = "CONDICAO_DA_HABILITACAO",
+        Binding = "CAMPO_FORMULARIO:CONDICAO_DA_HABILITACAO",
+    };
+
+    private static PaginaDoFormularioInput PaginaDeTipoInvalido(string codigo, int ordem) =>
+        EntradaDaPaginaDoFormularioDeTeste.Secao(codigo, ordem).ComTitulo("Página").Construir() with { Tipo = "secao" };
+
+    private static PaginaDoFormularioInput Revisao(int ordem) =>
+        EntradaDaPaginaDoFormularioDeTeste.BlocoDeSistema("REVISAO", ordem, "REVISAO_E_ACEITE").ComTitulo("Revisão e aceite").Construir();
+
+    /// <summary>O formulário de habilitação com as seções DADOS e POSTERIOR, a revisão e aceite, e um item na seção dada.</summary>
+    private static ProcessoSeletivo ProcessoComItemNaSecao(string secao, out Guid faseDeInscricao)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Formulário", out faseDeInscricao);
+        Result definido = DefinirAsync(
+            processo, PapelDoFormularioDeTeste.Habilitacao, faseDeInscricao, null,
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).ComTitulo("Dados").Construir(),
+            EntradaDaPaginaDoFormularioDeTeste.Secao("POSTERIOR", 1).ComTitulo("Posterior").Construir(),
+            Revisao(2)).GetAwaiter().GetResult();
+        definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+        processo.DefinirItens(
+            [FatoColetadoDeTeste.Coletando("CONDICAO_DA_HABILITACAO", 0).DoTipo(TipoDeCampo.SimOuNao).NaSecao(secao).Construir()],
+            papel: PapelDoFormularioDeTeste.Habilitacao).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
     [Fact(DisplayName = "Criar o formulário de inscrição põe a seção dos dados básicos em primeiro, com os itens dela")]
     public async Task Handle_CriarInscricao_TrazASecaoDosDadosBasicos()
     {

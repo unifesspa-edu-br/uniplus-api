@@ -43,6 +43,58 @@ public sealed class EstruturaFormularioTests
             [Secao("DADOS", 0), Bloco(BlocoSistema.ModalidadesCalculadas, 1), Bloco(BlocoSistema.RevisaoEAceite, 2)])
             .Should().BeEmpty();
 
+    [Fact(DisplayName = "A página recusada não muda a posição das outras: o código repetido aponta a posição do pedido")]
+    public void ValidarCadaPagina_PaginaRecusadaNaoMudaAPosicao() =>
+        EstruturaFormulario.ValidarCadaPagina(ServeAInscricao, [Secao("DADOS", 0), null, Secao("DADOS", 2)])
+            .Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[2].codigo", EstruturaFormularioErrorCodes.PaginaCodigoDuplicado));
+
+    [Fact(DisplayName = "Cada página não confere o conjunto: sem revisão e aceite e com página recusada não há bloco exigido ausente nem revisão fora do fim")]
+    public void ValidarCadaPagina_NaoConfereOConjunto() =>
+        EstruturaFormulario.ValidarCadaPagina(ServeAInscricao, [Secao("DADOS", 0), null]).Should().BeEmpty();
+
+    [Fact(DisplayName = "Cada página não confere a revisão e aceite no fim, que só se conclui com todas as páginas")]
+    public void ValidarCadaPagina_NaoConfereARevisaoNoFim() =>
+        EstruturaFormulario.ValidarCadaPagina(ServeAInscricao, [Bloco(BlocoSistema.RevisaoEAceite, 0), null, Secao("DADOS", 2)]).Should().BeEmpty();
+
+    [Fact(DisplayName = "A seção com bloco é recusada ao lado de página recusada")]
+    public void ValidarCadaPagina_SecaoComBloco() =>
+        EstruturaFormulario.ValidarCadaPagina(
+            ServeAInscricao, [null, new PaginaEstrutura("DADOS", 1, TipoPaginaFormulario.Secao, BlocoSistema.ComprovacaoDocumental)])
+            .Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[1].bloco", EstruturaFormularioErrorCodes.SecaoComBloco));
+
+    [Fact(DisplayName = "O bloco não admitido é recusado ao lado de página recusada")]
+    public void ValidarCadaPagina_BlocoNaoAdmitido() =>
+        EstruturaFormulario.ValidarCadaPagina(ObrigatorioForaDaInscricao, [null, Bloco(BlocoSistema.ModalidadesCalculadas, 1)])
+            .Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[1].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido));
+
+    [Fact(DisplayName = "O bloco repetido é recusado na segunda posição, ao lado de página recusada")]
+    public void ValidarCadaPagina_BlocoRepetido() =>
+        EstruturaFormulario.ValidarCadaPagina(
+            ServeAInscricao, [Bloco(BlocoSistema.ComprovacaoDocumental, 0), null, new PaginaEstrutura("OUTRO", 2, TipoPaginaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental)])
+            .Select(static e => (e.Field, e.Error.Code)).Should().Equal(("paginas[2].bloco", EstruturaFormularioErrorCodes.BlocoRepetido));
+
+    [Theory(DisplayName = "As recusas com uma página trocada por nula estão contidas nas do pedido completo, no mesmo campo e código")]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void ValidarCadaPagina_SubconjuntoDoPedidoCompleto(int posicaoRecusada)
+    {
+        PaginaEstrutura?[] completo =
+        [
+            Secao("DADOS", 0), Secao("DADOS", 0), Bloco(BlocoSistema.ModalidadesCalculadas, 2), Bloco(BlocoSistema.ModalidadesCalculadas, 3),
+        ];
+        PaginaEstrutura?[] comRecusada = [.. completo];
+        comRecusada[posicaoRecusada] = null;
+
+        IEnumerable<(string?, string)> doPedidoCompleto = EstruturaFormulario.ValidarPaginas(ObrigatorioForaDaInscricao, [.. completo.OfType<PaginaEstrutura>()])
+            .Select(static e => (e.Field, e.Error.Code));
+        IEnumerable<(string?, string)> comPaginaRecusada = EstruturaFormulario.ValidarCadaPagina(ObrigatorioForaDaInscricao, comRecusada)
+            .Select(static e => (e.Field, e.Error.Code));
+
+        comPaginaRecusada.Should().BeSubsetOf(doPedidoCompleto);
+    }
+
     [Theory(DisplayName = "A declaração decide os blocos: o formulário que não serve à fase de inscrição recusa as modalidades calculadas")]
     [InlineData(false, true)]
     [InlineData(false, false)]

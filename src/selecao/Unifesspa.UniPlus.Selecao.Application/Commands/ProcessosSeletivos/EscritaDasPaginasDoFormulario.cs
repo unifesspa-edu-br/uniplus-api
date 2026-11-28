@@ -13,8 +13,15 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-/// <summary>As páginas lidas pela forma, sem leitura externa, com a exibição de cada posição da entrada.</summary>
-internal sealed record PaginasDoFormularioLidas(IReadOnlyList<PaginaDoFormulario> Paginas, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros);
+/// <summary>
+/// As páginas lidas pela forma, sem leitura externa, na posição da entrada (nulo na página recusada), com a
+/// exibição de cada posição.
+/// </summary>
+internal sealed record PaginasDoFormularioLidas(IReadOnlyList<PaginaDoFormulario?> PorPosicao, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros)
+{
+    /// <summary>As páginas que a forma aceitou, sem a posição das recusadas.</summary>
+    public IReadOnlyList<PaginaDoFormulario> Montadas => [.. PorPosicao.OfType<PaginaDoFormulario>()];
+}
 
 /// <summary>A página lida de uma posição da entrada: a página criada, a exibição lida e as recusas das duas.</summary>
 internal sealed record PaginaLida(PaginaDoFormulario? Pagina, PredicadoDnf? Exibicao, IReadOnlyList<FieldError> Erros);
@@ -31,7 +38,7 @@ internal static class EscritaDasPaginasDoFormulario
         ArgumentNullException.ThrowIfNull(entradas);
         List<PaginaLida> lidas = [.. entradas.Select((entrada, i) => LerPagina(entrada, $"{EstruturaFormulario.CaminhoDasPaginas}[{i}]"))];
         return new PaginasDoFormularioLidas(
-            [.. lidas.Select(static l => l.Pagina).OfType<PaginaDoFormulario>()],
+            [.. lidas.Select(static l => l.Pagina)],
             [.. lidas.Select(static l => l.Exibicao)],
             [.. lidas.SelectMany(static l => l.Erros)]);
     }

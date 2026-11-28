@@ -67,14 +67,16 @@ public static class RegrasDosFormularios
 
     /// <summary>
     /// A fase do formulário, se informada, está no cronograma; as páginas têm estrutura válida, acomodam
-    /// os itens e só citam fatos que o formulário conhece antes delas.
+    /// os itens e só citam fatos que o formulário conhece antes delas. A lista vem na posição do pedido,
+    /// com nulo na página recusada: cada página montada é conferida contra as outras montadas, e o que
+    /// conclui algo sobre o formulário inteiro (blocos exigidos, revisão e aceite no fim, itens, exibição
+    /// pela posição) só é conferido com todas as páginas.
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirFormulario(
         ConfiguracaoDeclarada configuracao,
         FormularioDeclarado declarado,
         string? titulo,
-        IReadOnlyList<PaginaDoFormulario> paginas,
-        bool paginasCompletas = true,
+        IReadOnlyList<PaginaDoFormulario?> paginas,
         IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
@@ -83,11 +85,7 @@ public static class RegrasDosFormularios
 
         List<FieldError> recusas = FormaDoCabecalho.ValidarTitulo(titulo);
         AcrescentarRecusaDaFase(recusas, configuracao, declarado.FaseId);
-
-        if (paginasCompletas)
-        {
-            recusas.AddRange(RecusasDasPaginas(configuracao, declarado, paginas, itensDaCriacao));
-        }
+        recusas.AddRange(RecusasDasPaginas(configuracao, declarado, paginas, itensDaCriacao));
 
         return recusas;
     }
@@ -101,6 +99,12 @@ public static class RegrasDosFormularios
     }
 
     private static List<FieldError> RecusasDasPaginas(
+        ConfiguracaoDeclarada configuracao, FormularioDeclarado declarado, IReadOnlyList<PaginaDoFormulario?> paginas, IReadOnlyList<FatoColetado>? itensDaCriacao) =>
+        paginas.Any(static p => p is null)
+            ? [.. EstruturaFormulario.ValidarCadaPagina(configuracao.Estrutura(declarado), [.. paginas.Select(static p => p?.Estrutura)])]
+            : RecusasDoFormularioCompleto(configuracao, declarado, [.. paginas.OfType<PaginaDoFormulario>()], itensDaCriacao);
+
+    private static List<FieldError> RecusasDoFormularioCompleto(
         ConfiguracaoDeclarada configuracao, FormularioDeclarado declarado, IReadOnlyList<PaginaDoFormulario> paginas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
         IReadOnlyList<PaginaEstrutura> estrutura = [.. paginas.Select(static e => e.Estrutura)];

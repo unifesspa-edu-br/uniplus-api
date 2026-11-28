@@ -21,7 +21,7 @@ public sealed class EscritaDasPaginasDoFormularioTests
         ]);
 
         lidas.Erros.Should().BeEmpty();
-        lidas.Paginas.Select(static e => (e.Tipo, e.Bloco)).Should().Equal(
+        lidas.Montadas.Select(static e => (e.Tipo, e.Bloco)).Should().Equal(
             (TipoPaginaFormulario.Secao, (BlocoSistema?)null), (TipoPaginaFormulario.Bloco, BlocoSistema.RevisaoEAceite));
     }
 
@@ -32,7 +32,8 @@ public sealed class EscritaDasPaginasDoFormularioTests
 
         PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler([pagina]);
 
-        lidas.Paginas.Should().BeEmpty();
+        lidas.PorPosicao.Should().ContainSingle().Which.Should().BeNull();
+        lidas.Montadas.Should().BeEmpty();
         lidas.Erros.Select(static e => (e.Field!, e.Error.Code)).Should().Equal(
             ("paginas[0].tipo", EstruturaFormularioErrorCodes.TipoDePaginaObrigatorio),
             ("paginas[0].bloco", EstruturaFormularioErrorCodes.BlocoNaoAdmitido));
@@ -45,7 +46,24 @@ public sealed class EscritaDasPaginasDoFormularioTests
 
         PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler([pagina]);
 
-        lidas.Paginas.Should().BeEmpty();
+        lidas.PorPosicao.Should().ContainSingle().Which.Should().BeNull();
+        lidas.Montadas.Should().BeEmpty();
         lidas.Erros.Select(static e => (e.Field!, e.Error.Code)).Should().Equal(("paginas[0].codigo", EstruturaFormularioErrorCodes.PaginaCodigoInvalido));
+    }
+
+    [Fact(DisplayName = "A página recusada mantém a posição nula e as montadas não a incluem")]
+    public void Ler_PaginaRecusadaNoMeio_MantemAPosicaoENaoEntraNasMontadas()
+    {
+        PaginaDoFormularioInput recusada = EntradaDaPaginaDoFormularioDeTeste.Secao("MEIO", 1).Construir() with { Tipo = "secao" };
+
+        PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler(
+        [
+            EntradaDaPaginaDoFormularioDeTeste.Secao("DADOS", 0).Construir(),
+            recusada,
+            EntradaDaPaginaDoFormularioDeTeste.Secao("FIM", 2).Construir(),
+        ]);
+
+        lidas.PorPosicao.Select(static p => p?.Codigo).Should().Equal("DADOS", null, "FIM");
+        lidas.Montadas.Select(static p => p.Codigo).Should().Equal("DADOS", "FIM");
     }
 }

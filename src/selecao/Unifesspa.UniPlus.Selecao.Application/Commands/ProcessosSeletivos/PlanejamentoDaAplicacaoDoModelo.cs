@@ -101,7 +101,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
     private static IEnumerable<(string Fato, JsonElement Valor)> CondicoesDaCopia(FormularioSelecionado formulario, PartesResolvidas copia) =>
         formulario.Itens.Itens.SelectMany(static i => i.Condicoes)
             .Concat(formulario.Grupos.Grupos.SelectMany(static g => g.Condicoes))
-            .Concat(formulario.Paginas.Paginas.SelectMany(static e => e.Condicoes))
+            .Concat(formulario.Paginas.Montadas.SelectMany(static e => e.Condicoes))
             .Concat(copia.Termos.SelectMany(static t => t.Condicoes))
             .Select(static c => (c.Fato, c.Valor))
             .Concat(copia.Derivacoes.SelectMany(static d => d.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)));
@@ -114,7 +114,7 @@ internal sealed class PlanejamentoDaAplicacaoDoModelo(
         IReadOnlyList<FatoCandidatoView> catalogo) =>
         new(
             new CopiaDeModeloDeFormulario(
-                formularioDoProcesso.Codigo, conteudo.Titulo, formulario.Paginas.Paginas, formulario.Itens.Itens, formulario.Grupos.Grupos,
+                formularioDoProcesso.Codigo, conteudo.Titulo, formulario.Paginas.Montadas, formulario.Itens.Itens, formulario.Grupos.Grupos,
                 copia.Termos, copia.Derivacoes, new ModeloDeOrigem(modelo.Id, modelo.Codigo, modelo.Nome)),
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),
             _relatorio,

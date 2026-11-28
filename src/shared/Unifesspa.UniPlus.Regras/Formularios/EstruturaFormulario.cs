@@ -75,18 +75,28 @@ public static class EstruturaFormulario
     {
         ArgumentNullException.ThrowIfNull(paginas);
 
-        IReadOnlySet<BlocoSistema> admitidos = BlocosAdmitidos(declaracao);
-        List<FieldError> erros = [.. paginas.SelectMany((_, i) => ConferirPagina(paginas, i, admitidos))];
-        erros.AddRange(ConferirBlocosDoFormulario(paginas, admitidos));
-
-        return erros;
+        return [.. ValidarCadaPagina(declaracao, paginas), .. ConferirBlocosDoFormulario(paginas, BlocosAdmitidos(declaracao))];
     }
 
-    private static IEnumerable<FieldError> ConferirPagina(IReadOnlyList<PaginaEstrutura> paginas, int posicao, IReadOnlySet<BlocoSistema> admitidos)
+    /// <summary>
+    /// Confere cada página contra as outras: código e ordem únicos, seção sem bloco, bloco admitido e não
+    /// repetido. A lista vem na posição do pedido; a posição nula é a página recusada, que não entra na
+    /// comparação e não desloca a posição das demais. Não confere o conjunto (blocos exigidos, revisão e
+    /// aceite no fim), que só se conclui com todas as páginas.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ValidarCadaPagina(DeclaracaoDoFormulario declaracao, IReadOnlyList<PaginaEstrutura?> paginas)
     {
-        PaginaEstrutura pagina = paginas[posicao];
+        ArgumentNullException.ThrowIfNull(paginas);
+
+        IReadOnlySet<BlocoSistema> admitidos = BlocosAdmitidos(declaracao);
+        return [.. paginas.SelectMany((pagina, i) => pagina is null ? [] : ConferirPagina(paginas, i, pagina, admitidos))];
+    }
+
+    private static IEnumerable<FieldError> ConferirPagina(
+        IReadOnlyList<PaginaEstrutura?> paginas, int posicao, PaginaEstrutura pagina, IReadOnlySet<BlocoSistema> admitidos)
+    {
         string campo = $"{CaminhoDasPaginas}[{posicao}]";
-        IEnumerable<PaginaEstrutura> anteriores = paginas.Take(posicao);
+        PaginaEstrutura[] anteriores = [.. paginas.Take(posicao).OfType<PaginaEstrutura>()];
         FieldError?[] recusas =
         [
             anteriores.Any(a => string.Equals(a.Codigo, pagina.Codigo, StringComparison.Ordinal))
