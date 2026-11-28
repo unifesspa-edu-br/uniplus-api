@@ -49,21 +49,25 @@ public static class DefinirClassificacaoCommandHandler
     private static async Task<Result> DefinirAsync(
         ProcessoSeletivo processo, DefinirClassificacaoCommand command, CadastrosDaClassificacao cadastros, CancellationToken cancellationToken)
     {
-        Result<DeclaracaoDaClassificacao> regras = await cadastros.ResolverRegrasAsync(command, cancellationToken).ConfigureAwait(false);
-        if (regras.IsFailure)
-        {
-            return Result.Failure(regras.Error!);
-        }
+        RegrasCitadasNaClassificacao regras = await cadastros.ResolverRegrasAsync(command, cancellationToken).ConfigureAwait(false);
+        QuadroDePesosResolvido quadro = await cadastros.ResolverQuadroAsync(regras.Calculo, command, cancellationToken).ConfigureAwait(false);
 
-        QuadroDePesosResolvido quadro = await cadastros.ResolverQuadroAsync(regras.Value!.RegraCalculo, command, cancellationToken).ConfigureAwait(false);
-        Result<ConfiguracaoClassificacao> configuracao = ConfiguracaoClassificacao.Criar(quadro.DeclaracaoCompleta(regras.Value));
-        return DefinirNoProcesso(processo, configuracao, quadro);
+        return regras.TodasResolvidas
+            ? DefinirNoProcesso(processo, ConfiguracaoClassificacao.Criar(regras.Declaracao(command, quadro)), quadro)
+            : Result.ValidationFailure(RecusasDoPedido(regras.Campos(command, quadro), regras, quadro));
     }
+
+    // Os campos primeiro, depois o cadastro de Pesos por Área, depois o catálogo; nada é criado nem gravado.
+    private static List<FieldError> RecusasDoPedido(CamposDaClassificacao campos, RegrasCitadasNaClassificacao regras, QuadroDePesosResolvido quadro) =>
+    [
+        .. quadro.RecusasJuntoCom(ConfiguracaoClassificacao.ConferirCampos(campos)),
+        .. regras.Recusas,
+    ];
 
     private static Result DefinirNoProcesso(
         ProcessoSeletivo processo, Result<ConfiguracaoClassificacao> configuracao, QuadroDePesosResolvido quadro)
     {
-        List<FieldError> erros = quadro.RecusasJuntoCom(configuracao);
+        List<FieldError> erros = quadro.RecusasJuntoCom(configuracao.IsFailure ? configuracao.Errors : []);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);

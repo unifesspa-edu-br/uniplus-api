@@ -103,7 +103,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     public async Task Handle_FaltaEmDiaDeProvaEnemComParametros_Recusa(bool comEtapaRef, bool comNotaMinima, bool comMinimo, bool comArea)
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
-        CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo());
+        CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo()).ComResolucaoDosPesos();
         RegraEliminacaoInput eliminacao = new(
             RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "v1",
             comEtapaRef ? Guid.CreateVersion7() : null,
@@ -153,7 +153,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     public async Task Handle_CorteEmAreaIncompleto_Recusa(string? area, double? minimo, bool comEtapaRef)
     {
         ProcessoSeletivo processo = NovoProcessoEnem();
-        CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo());
+        CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo()).ComResolucaoDosPesos();
         RegraEliminacaoInput eliminacao = new(
             RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem.Codigo(), "v1", comEtapaRef ? Guid.CreateVersion7() : null, null, (decimal?)minimo, area);
 

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -40,9 +41,18 @@ public sealed record DeclaracaoDaClassificacao
     /// <summary>Escala em que a nota final é publicada; ausente na classificação importada.</summary>
     public decimal? EscalaNotaFinal { get; init; }
 
-    /// <summary>A resolução sem as bordas em branco, ou nula quando ela é só branco.</summary>
-    internal string? ResolucaoAparada =>
-        string.IsNullOrWhiteSpace(ResolucaoPesoAreaEnem) ? null : ResolucaoPesoAreaEnem.Trim();
+    /// <summary>Os campos declarados, como <see cref="ConfiguracaoClassificacao.ConferirCampos"/> os confere.</summary>
+    internal CamposDaClassificacao Campos => new()
+    {
+        RegraCalculo = RegraCalculo,
+        ArredondamentoDeclarado = RegraArredondamento is not null,
+        CasasArredondamento = CasasArredondamento,
+        Eliminacoes = RegrasEliminacao is { } regras ? EliminacoesDeclaradas.DasRegras(regras) : null,
+        BaseadoEmEnem = BaseadoEmEnem,
+        ResolucaoPesoAreaEnem = ResolucaoPesoAreaEnem,
+        QuadroPesoAreaEnem = QuadroPesoAreaEnem,
+        EscalaNotaFinal = EscalaNotaFinal,
+    };
 
     /// <summary>
     /// A resolução em NFC, como o cadastro de Pesos por Área a grava e o envelope canônico a
@@ -51,5 +61,5 @@ public sealed record DeclaracaoDaClassificacao
     /// conseguiria tratar.
     /// </summary>
     internal string? ResolucaoNormalizada =>
-        ResolucaoAparada is { } resolucao ? TextoCongelado.Normalizar(resolucao) : null;
+        ConferenciasDoQuadroDePesosPorArea.Aparar(ResolucaoPesoAreaEnem) is { } resolucao ? TextoCongelado.Normalizar(resolucao) : null;
 }

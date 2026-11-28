@@ -5,47 +5,38 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// As conferências que a criação da classificação acumula, em vez de parar na primeira
+/// As conferências dos campos da classificação, que a criação acumula, em vez de parar na primeira
 /// (ADR-0125), na ordem em que o operador as corrige. A ausência de se a classificação é baseada em ENEM
 /// e da lista de eliminações é recusada primeiro, e as regras que dependem do campo ausente não são conferidas.
 /// </summary>
 internal static class ConferenciasDaClassificacao
 {
-    internal static List<FieldError> Conferir(DeclaracaoDaClassificacao declaracao) =>
+    internal static List<FieldError> Conferir(CamposDaClassificacao campos) =>
     [
-        .. RecusasDaAusencia(declaracao),
-        .. ConferenciasDoCalculoDaNota.Conferir(
-            declaracao.RegraCalculo,
-            declaracao.RegraArredondamento,
-            declaracao.CasasArredondamento,
-            declaracao.RegrasEliminacao?.Count ?? 0,
-            declaracao.EscalaNotaFinal),
-        .. RecusasDasEliminacoes(declaracao),
-        .. RecusasDoQuadroDePesos(declaracao),
+        .. RecusasDaAusencia(campos),
+        .. ConferenciasDoCalculoDaNota.Conferir(campos),
+        .. ConferenciasDasEliminacoes.Conferir(campos),
+        .. RecusasDoQuadroDePesos(campos),
     ];
 
-    private static List<FieldError> RecusasDasEliminacoes(DeclaracaoDaClassificacao declaracao) =>
-        declaracao.RegrasEliminacao is { } regras
-            ? ConferenciasDasEliminacoes.Conferir(regras, declaracao.RegraCalculo, declaracao.BaseadoEmEnem, declaracao.QuadroPesoAreaEnem)
-            : [];
-
-    private static List<FieldError> RecusasDoQuadroDePesos(DeclaracaoDaClassificacao declaracao) =>
-        declaracao.BaseadoEmEnem is { } baseadoEmEnem
+    // Quem decide se o quadro é exigido é a fórmula da nota: sem ela confirmada, nada se afirma sobre o quadro.
+    private static List<FieldError> RecusasDoQuadroDePesos(CamposDaClassificacao campos) =>
+        campos is { RegraCalculo: { } regraCalculo, BaseadoEmEnem: { } baseadoEmEnem }
             ? ConferenciasDoQuadroDePesosPorArea.Conferir(
-                ConferenciasDoQuadroDePesosPorArea.Exige(declaracao.RegraCalculo, baseadoEmEnem),
-                declaracao.ResolucaoAparada,
-                declaracao.QuadroPesoAreaEnem)
+                ConferenciasDoQuadroDePesosPorArea.Exige(regraCalculo, baseadoEmEnem),
+                ConferenciasDoQuadroDePesosPorArea.Aparar(campos.ResolucaoPesoAreaEnem),
+                campos.QuadroPesoAreaEnem)
             : [];
 
-    private static List<FieldError> RecusasDaAusencia(DeclaracaoDaClassificacao declaracao)
+    private static List<FieldError> RecusasDaAusencia(CamposDaClassificacao campos)
     {
         List<FieldError> erros = [];
-        if (declaracao.BaseadoEmEnem is null)
+        if (campos.BaseadoEmEnem is null)
         {
             erros.Add(new("baseadoEmEnem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se a classificação é baseada em ENEM.")));
         }
 
-        if (declaracao.RegrasEliminacao is null)
+        if (campos.Eliminacoes is null)
         {
             erros.Add(new("regrasEliminacao", new DomainError(
                 CodigosDeValidacao.Obrigatorio, "Informe as regras de eliminação; envie [] quando não houver nenhuma.")));

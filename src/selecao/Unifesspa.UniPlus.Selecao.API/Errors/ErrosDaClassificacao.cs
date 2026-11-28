@@ -46,7 +46,6 @@ internal static class ErrosDaClassificacao
         new("ConfiguracaoClassificacao.CasasArredondamentoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.casas_arredondamento_obrigatorio", "Cálculo local exige casas decimais de arredondamento maior que zero")),
         new("ConfiguracaoClassificacao.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.regra_nao_encontrada", "Regra não encontrada no catálogo de regras")),
         new("ConfiguracaoClassificacao.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.regra_tipo_invalido", "A regra referenciada não é do tipo esperado")),
-        new("ConfiguracaoClassificacao.RegraArredondamentoVersaoObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.regra_arredondamento_versao_obrigatoria", "Versão da regra de arredondamento é obrigatória quando o código é informado")),
     ];
 
     /// <summary>Resolução de Pesos por Área declarada e congelada na classificação baseada em ENEM.</summary>
