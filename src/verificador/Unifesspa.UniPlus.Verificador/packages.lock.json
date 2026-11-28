@@ -99,9 +99,9 @@
       },
       "WolverineFx": {
         "type": "Direct",
-        "requested": "[5.41.0, )",
-        "resolved": "5.41.0",
-        "contentHash": "bOFNyk+q2uUOV5bgRNrRK78EjiV+BiM0W7/HSOubGlJ0rTpmyjxfYBApxPUMnLUMFJHebXEhYSfON71VxowNtA==",
+        "requested": "[5.41.1, )",
+        "resolved": "5.41.1",
+        "contentHash": "FHlBnASS5KEHV1Yt1uSSN8w+MqaFbhOib0JpgzDs7ZOQh2CwPjwIyAfVJ7xn0ti7bCHaPn/p9SLSLq+MRtROEg==",
         "dependencies": {
           "JasperFx": "1.31.0",
           "JasperFx.Events": "1.36.0",
@@ -122,12 +122,12 @@
       },
       "WolverineFx.RabbitMQ": {
         "type": "Direct",
-        "requested": "[5.41.0, )",
-        "resolved": "5.41.0",
-        "contentHash": "FEzP/EozvI6fxLl1MT5CtbtDE82Dz0q1FetDnOucAcszqsTQgmZR2/Kre4zRnXS9C2GujvIljVFeg9Z0iXYfjA==",
+        "requested": "[5.41.1, )",
+        "resolved": "5.41.1",
+        "contentHash": "iWQvND7u+COXJyQCDm12rDIGLRr+urwIwBYNEqfBPCERCeyXKSYVm4IJkaALLy61XW5RHUz4PZnASKepvll1zg==",
         "dependencies": {
           "RabbitMQ.Client": "7.1.2",
-          "WolverineFx": "5.41.0"
+          "WolverineFx": "5.41.1"
         }
       },
       "CommunityToolkit.HighPerformance": {
