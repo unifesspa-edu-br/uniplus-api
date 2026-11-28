@@ -17,8 +17,8 @@ public static class PendenciasDasExigencias
     }
 
     /// <summary>
-    /// O formulário de cada exigência continua sendo um formulário do processo, ligado à fase dela: a escrita
-    /// confere, e o formulário pode ter mudado de fase ou saído depois.
+    /// O formulário de cada exigência é um formulário do processo, ligado à fase dela: a escrita confere só a
+    /// fase, e a existência do formulário é exigida aqui, na publicação e na retificação.
     /// </summary>
     internal static DomainError? PendenciaDoFormularioDasExigencias(ConfiguracaoDeclarada configuracao) =>
         RegrasDasExigencias.FormularioDasExigencias(

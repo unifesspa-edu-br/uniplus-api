@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Fase fora do cronograma em item de grupo aponta a regra e o item no corpo do pedido, e o formulário que o processo não tem sai junto")]
+    [Fact(DisplayName = "Fase fora do cronograma em item de grupo aponta a regra e o item no corpo do pedido")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcessoEmItemDeGrupo_ApontaARegraEOItem()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -48,10 +48,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
             ("regrasDeComprovacao[1].itens[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[1].itens[1].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
-            ("regrasDeComprovacao[1].itens[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
-            ("regrasDeComprovacao[1].itens[1].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+            ("regrasDeComprovacao[1].itens[1].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"));
     }
 
     private static RegraDeComprovacao RegraDeDocumentoEmFaseInexistente(Guid faseId, int ordem) =>
@@ -65,7 +62,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             [RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 0), RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 1)]).Value!;
     }
 
-    [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada, sem esconder a recusa do formulário que o processo não tem")]
+    [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada, e o formulário que o processo não tem não recusa a gravação")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -77,8 +74,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
         resultado.Error.Message.Should().Be("A fase da exigência deve ser uma das fases do cronograma do processo.");
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"));
     }
 
     [Fact(DisplayName = "Fase fora do cronograma com o formulário que o processo tem recebe só a recusa da fase")]

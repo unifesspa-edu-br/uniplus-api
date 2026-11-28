@@ -126,7 +126,7 @@ internal static class ConferenciaDasCondicoesDaExigencia
 
     // A fase efetiva do fato, e o formulário que a exigência cita, são conferidos por
     // ProcessoSeletivo.RecusaDeFaseDoGatilho. A fase da própria exigência fora do cronograma, e o código do
-    // formulário que falta ou que a fase não responde, são decididos por DefinirDocumentosExigidos.
+    // formulário que a fase não responde, são decididos por DefinirDocumentosExigidos; o formulário que falta só é recusado na publicação.
     private static Result ConferirFaseDoGatilho(
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput documento, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {

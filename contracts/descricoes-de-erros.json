@@ -19997,7 +19997,7 @@
       ],
       "oQueAconteceu": [
         "O documento exigido é cobrado numa fase do cronograma, e o formulário em que o candidato o apresenta tem de ser respondido na mesma fase. O formulário citado pela exigência é ligado a outra fase, ou ainda a nenhuma. A mensagem aponta a exigência pela posição dela.",
-        "A exigência cuja fase não pertence ao cronograma do processo não recebe esta recusa, porque não há fase para comparar: ela recebe a recusa da fase (`documento_exigido.fase_nao_pertence_ao_processo`) e, se o formulário citado também não existe, a de formulário inexistente. Na definição dos documentos as recusas de exigências diferentes e de assuntos diferentes saem juntas.",
+        "A exigência cuja fase não pertence ao cronograma do processo não recebe esta recusa, porque não há fase para comparar: ela recebe a recusa da fase (`documento_exigido.fase_nao_pertence_ao_processo`) e, na publicação, se o formulário citado também não existe, a de formulário inexistente. Na definição dos documentos as recusas de exigências diferentes e de assuntos diferentes saem juntas.",
         "O formulário pode ser obrigatório ou facultativo: o pedido de isenção, que é facultativo, exige o comprovante. Dois formulários podem dividir a mesma fase, e por isso a exigência cita o formulário, e não só a fase."
       ],
       "comoResolver": [
@@ -20017,13 +20017,12 @@
       ],
       "oQueAconteceu": [
         "Todo documento exigido diz em que formulário o candidato o apresenta (campo `momento.formularioCodigo`), e esse formulário tem de existir no processo. O código informado por uma exigência não é o de nenhum formulário do processo. A mensagem aponta a exigência pela posição dela.",
-        "A recusa sai na definição dos documentos exigidos e, com a configuração toda, na publicação, na retificação em ato único e na leitura do documento de configuração. Nada é gravado nem congelado."
+        "A gravação dos documentos exigidos em rascunho aceita a exigência que cita um formulário que o processo ainda não tem, porque o formulário pode ser criado depois. A recusa sai com a configuração toda, na publicação, na retificação em ato único e na leitura do documento de configuração, e o painel de conformidade a aponta. Nada é congelado."
       ],
       "comoResolver": [
-        "Informe o código de um formulário que o processo tem, ou grave antes o formulário que a exigência cita (`PUT .../formularios/{codigo}`) e repita a operação."
+        "Informe o código de um formulário que o processo tem, ou grave o formulário que a exigência cita (`PUT .../formularios/{codigo}`) e repita a operação."
       ],
       "ondeAparece": [
-        "Definição de documentos exigidos do processo seletivo",
         "Publicação inicial do processo seletivo",
         "Retificação em ato único",
         "Leitura do documento de configuração do processo seletivo"

@@ -26,17 +26,19 @@ public sealed class ExigenciaEAceiteDoFormularioNoModeloTests
         propriedade.GetMaxLength().Should().Be(TamanhoMaximoDoCodigoDoFormulario);
     }
 
-    [Fact(DisplayName = "A exigência de documento liga o formulário do mesmo processo e não o apaga em cascata")]
-    public void Exigencia_Formulario_ChaveComposta_SemCascata()
+    [Fact(DisplayName = "A exigência de documento cita o formulário só pelo código, sem chave estrangeira nem índice próprio")]
+    public void Exigencia_Formulario_SemChaveEstrangeiraNemIndice()
     {
-        IForeignKey chave = ModeloDaSelecao.Entidade(typeof(DocumentoExigido)).GetForeignKeys()
-            .Single(static f => f.PrincipalEntityType.ClrType == typeof(FormularioProcesso));
+        IEntityType exigencia = ModeloDaSelecao.Entidade(typeof(DocumentoExigido));
 
-        chave.Properties.Select(static p => p.Name).Should().Equal(nameof(DocumentoExigido.ProcessoSeletivoId), nameof(DocumentoExigido.FormularioCodigo));
-        chave.PrincipalKey.Properties.Select(static p => p.Name).Should().Equal(nameof(FormularioProcesso.ProcessoSeletivoId), nameof(FormularioProcesso.Codigo));
-        chave.GetConstraintName().Should().Be("fk_documentos_exigidos_formulario");
-        chave.DeleteBehavior.Should().Be(DeleteBehavior.NoAction);
+        exigencia.GetForeignKeys().Should().NotContain(static f => f.PrincipalEntityType.ClrType == typeof(FormularioProcesso));
+        exigencia.GetIndexes().Should().NotContain(static i => i.Properties.Any(static p => p.Name == nameof(DocumentoExigido.FormularioCodigo)));
     }
+
+    [Fact(DisplayName = "A exigência de documento só admite o código do formulário na forma do código")]
+    public void Exigencia_CodigoDoFormulario_TemRestricaoDeFormato() =>
+        ModeloDaSelecao.SqlDaRestricao(typeof(DocumentoExigido), "ck_documentos_exigidos_formulario_codigo_formato")
+            .Should().StartWith("formulario_codigo ~ '");
 
     [Fact(DisplayName = "A coluna do formulário da exigência de documento tem comentário")]
     public void Exigencia_ColunaDoFormulario_TemComentario() =>

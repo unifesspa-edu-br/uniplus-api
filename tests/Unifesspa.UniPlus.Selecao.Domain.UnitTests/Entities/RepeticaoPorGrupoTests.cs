@@ -60,6 +60,26 @@ public sealed class RepeticaoPorGrupoTests
             .IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Repetir na inscrição por grupo cujos campos só se conhecem na habilitação recusa cada campo, e não só o primeiro")]
+    public void DefinirDocumentosExigidos_CamposDoGrupoDeFasePosterior_RecusaTodos()
+    {
+        (ProcessoSeletivo processo, FaseCronograma inscricao, _) = Processo();
+        GrupoColetado grupo = GrupoColetadoDeTeste.Agrupando(Composicao, 0)
+            .ComOcorrencias(1, 10)
+            .ComObrigatoriedade(Obrigatoriedade.Sempre)
+            .ComCampos(
+                FatoColetadoDeTeste.Coletando("SOB_GUARDA", 0).ComRotulo("Sob guarda").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir(),
+                FatoColetadoDeTeste.Coletando("MORA_JUNTO", 1).ComRotulo("Mora junto").ComObrigatoriedade(Obrigatoriedade.Sempre).Construir())
+            .Construir();
+        processo.DefinirFatosColetados(PapelDoFormularioDeTeste.Habilitacao, [], [grupo]).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos(
+            [RegraDeComprovacao.CriarRegraDeDocumento(Documento(inscricao.Id, PapelDoFormularioDeTeste.Inscricao), 0, grupoDoFormularioParaRepeticao: Composicao).Value!]);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(
+            DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior, DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
+    }
+
     [Theory(DisplayName = "Na fase que divide inscrição e isenção, repetir pelo grupo coletado só na isenção vale só no documento da isenção")]
     [InlineData(PapelDoFormularioDeTeste.IsencaoTaxa, true)]
     [InlineData(PapelDoFormularioDeTeste.Inscricao, false)]

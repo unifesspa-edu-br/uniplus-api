@@ -33,6 +33,7 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
     private const string TaxaSemFormularioDeIsencao = Prefixo + "taxa_sem_formulario_de_isencao";
     private const string FormularioDaIsencaoObrigatorio = Prefixo + "formulario_da_isencao_obrigatorio";
     private const string InscricaoEmResultadoImportado = Prefixo + "inscricao_em_resultado_importado";
+    private const string ExigenciaEmFormularioInexistente = Prefixo + "exigencia_em_formulario_inexistente";
     private const string FaseDeIsencao = "SOLICITACAO_DE_ISENCAO";
 
     private readonly CascadingFixture _fixture;
@@ -118,6 +119,34 @@ public sealed class ObrigatoriedadeDosFormulariosNaPublicacaoEndpointTests
             nameof(ResultadoImportadoSemFormularioNaFaseDeInscricao_NaoRecusaPorIsso), ProcessoImportado(complementar: null));
 
         recusas.Should().NotContain(InscricaoEmResultadoImportado);
+    }
+
+    [Fact(DisplayName = "A exigência declarada no rascunho com formulário que o processo não tem é recusada na publicação")]
+    public async Task ExigenciaEmFormularioQueNaoExiste_RecusaAPublicacao()
+    {
+        IReadOnlySet<string> recusas = await PublicarEListarRecusasAsync(
+            nameof(ExigenciaEmFormularioQueNaoExiste_RecusaAPublicacao),
+            new OpcoesDoProcessoSeletivoPublicavel
+            {
+                Nome = string.Empty,
+                Complementar = static p => ExigenciaNoFormularioDeTeste.Exigir(p, "FORMULARIO_QUE_NAO_EXISTE", p.CronogramaFases.Single().Id),
+            });
+
+        recusas.Should().Contain(ExigenciaEmFormularioInexistente);
+    }
+
+    [Fact(DisplayName = "A exigência declarada no formulário que o processo tem não é recusada por falta de formulário")]
+    public async Task ExigenciaEmFormularioQueExiste_NaoRecusaPorFaltaDele()
+    {
+        IReadOnlySet<string> recusas = await PublicarEListarRecusasAsync(
+            nameof(ExigenciaEmFormularioQueExiste_NaoRecusaPorFaltaDele),
+            new OpcoesDoProcessoSeletivoPublicavel
+            {
+                Nome = string.Empty,
+                Complementar = static p => ExigenciaNoFormularioDeTeste.Exigir(p, FormulariosDoProcessoDeTeste.Inscricao, p.CronogramaFases.Single().Id),
+            });
+
+        recusas.Should().NotContain(ExigenciaEmFormularioInexistente);
     }
 
     private static OpcoesDoProcessoSeletivoPublicavel ProcessoImportado(Action<ProcessoSeletivo>? complementar, bool comInscricaoNaFase = false) => new()

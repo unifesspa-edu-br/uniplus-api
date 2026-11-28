@@ -144,4 +144,39 @@ public sealed class ConferenciaDasExigenciasDoFormularioTests
         ConferenciaDasExigenciasDoFormulario.ConferirRemocao([Codigo("DADOS_COMPLEMENTARES")], [Exigencia("INSCRICAO", FaseDaInscricao)])
             .Should().BeEmpty();
     }
+
+    private static IReadOnlyList<FieldError> ConferirConjunto(IEnumerable<FormularioDeclarado> formularios, ExigenciaDeDocumentoDoFormulario[] exigencias) =>
+        ConferenciaDasExigenciasDoFormulario.ConferirConjunto(formularios, exigencias, CaminhosDasExigencias.NaLista("exigencias", exigencias.Length));
+
+    [Fact(DisplayName = "A conferência da gravação aceita a exigência que cita formulário que o processo ainda não tem")]
+    public void Conjunto_FormularioInexistente_SemRecusa()
+    {
+        IReadOnlyList<FieldError> recusas = ConferirConjunto(
+            [Formulario("INSCRICAO", FaseDaInscricao)], [Exigencia("HABILITACAO", FaseDaHabilitacao)]);
+
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A conferência da gravação recusa o formulário de outra fase e deixa passar o que não existe, na ordem das exigências")]
+    public void Conjunto_FormularioDeOutraFaseEInexistente_RecusaSoOutraFase()
+    {
+        IReadOnlyList<FieldError> recusas = ConferirConjunto(
+            [Formulario("INSCRICAO", FaseDaInscricao)],
+            [Exigencia("HABILITACAO", FaseDaHabilitacao), Exigencia("INSCRICAO", FaseDaHabilitacao), Exigencia("INSCRICAO", FaseDaInscricao)]);
+
+        recusas.Should().ContainSingle().Which.Should().Match<FieldError>(recusa =>
+            recusa.Field == "exigencias[1].momento.formularioCodigo" && recusa.Error.Code == FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+    }
+
+    [Fact(DisplayName = "A conferência da publicação continua recusando a exigência cujo formulário não existe, junto da de outra fase")]
+    public void Completa_FormularioInexistenteEDeOutraFase_RecusaAsDuas()
+    {
+        IReadOnlyList<FieldError> recusas = Conferir(
+            [Formulario("INSCRICAO", FaseDaInscricao)],
+            [Exigencia("HABILITACAO", FaseDaHabilitacao), Exigencia("INSCRICAO", FaseDaHabilitacao)]);
+
+        recusas.Select(static recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("exigencias[0].momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
+            ("exigencias[1].momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase));
+    }
 }

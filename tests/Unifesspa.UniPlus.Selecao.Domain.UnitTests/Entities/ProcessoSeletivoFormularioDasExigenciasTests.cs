@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -17,15 +18,16 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumen
 /// </summary>
 public sealed class ProcessoSeletivoFormularioDasExigenciasTests
 {
-    [Fact(DisplayName = "A exigência de um formulário que o processo não tem é recusada")]
-    public void DefinirDocumentosExigidos_FormularioInexistente_Recusa()
+    [Fact(DisplayName = "A exigência de um formulário que o processo ainda não tem é aceita e guardada na gravação")]
+    public void DefinirDocumentosExigidos_FormularioInexistente_Aceita()
     {
         FaseCronograma fase = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: false);
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
         Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, papel: PapelDoFormularioDeTeste.Inscricao));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "A exigência de um formulário ligado a outra fase é recusada")]
@@ -77,5 +79,24 @@ public sealed class ProcessoSeletivoFormularioDasExigenciasTests
 
         PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao())!.Code
             .Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+    }
+
+    [Fact(DisplayName = "A exigência declarada antes do formulário é recusada na publicação e no painel até o formulário da fase ser criado")]
+    public void PendenciaDoFormularioDasExigencias_FormularioCriadoDepois_RecusaAteCriar()
+    {
+        FaseCronograma fase = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: false);
+        ProcessoSeletivo processo = ProcessoComFases(fase);
+        DefinirRegrasDeDocumento(processo, Exigencia(fase.Id, papel: PapelDoFormularioDeTeste.Inscricao)).IsSuccess.Should().BeTrue();
+
+        PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao())!.Code
+            .Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Single(static item => item.Codigo == "exigencia_no_formulario_da_sua_fase").Ok.Should().BeFalse();
+
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+
+        PendenciasDasExigencias.PendenciaDoFormularioDasExigencias(processo.Declaracao()).Should().BeNull();
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo))
+            .Single(static item => item.Codigo == "exigencia_no_formulario_da_sua_fase").Ok.Should().BeTrue();
     }
 }

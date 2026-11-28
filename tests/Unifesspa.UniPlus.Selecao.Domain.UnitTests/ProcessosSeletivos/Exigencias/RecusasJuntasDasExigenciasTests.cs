@@ -53,8 +53,8 @@ public sealed class RecusasJuntasDasExigenciasTests
     private static IEnumerable<(string? Campo, string Codigo)> Recusas(Result resultado) =>
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code));
 
-    [Fact(DisplayName = "A fase fora do cronograma de uma exigência e o formulário inexistente de outra saem juntos, cada um no campo da sua exigência")]
-    public void FaseForaEFormularioInexistenteEmExigenciasDiferentes_SaemJuntos()
+    [Fact(DisplayName = "A fase fora do cronograma de uma exigência é recusada, e o formulário inexistente de outra não recusa a gravação")]
+    public void FaseForaComOutraExigenciaEmFormularioInexistente_RecusaSoAFase()
     {
         FaseCronograma inscricao = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: false);
         ProcessoSeletivo processo = ProcessoComFases(inscricao);
@@ -64,8 +64,7 @@ public sealed class RecusasJuntasDasExigenciasTests
             [Regra(Guid.CreateVersion7(), 0), Regra(inscricao.Id, 1, PapelDoFormularioDeTeste.Habilitacao)]);
 
         Recusas(resultado).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.faseId", FaseFora),
-            ("regrasDeComprovacao[1].documento.momento.formularioCodigo", FormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.faseId", FaseFora));
         processo.DocumentosExigidos.Should().BeEmpty();
     }
 
@@ -104,8 +103,8 @@ public sealed class RecusasJuntasDasExigenciasTests
             ("regrasDeComprovacao[1].documento.momento.formularioCodigo", FormularioDeOutraFase));
     }
 
-    [Fact(DisplayName = "A fase fora do cronograma e o formulário inexistente da mesma exigência saem juntos")]
-    public void FaseForaComFormularioInexistente_SaemAsDuas()
+    [Fact(DisplayName = "A fase fora do cronograma é recusada, e o formulário inexistente da mesma exigência não recusa a gravação")]
+    public void FaseForaComFormularioInexistente_RecusaSoAFase()
     {
         FaseCronograma inscricao = FaseQueResponde(1, "INSCRICAO", inscricao: true, isencao: false);
         ProcessoSeletivo processo = ProcessoComFases(inscricao);
@@ -114,8 +113,7 @@ public sealed class RecusasJuntasDasExigenciasTests
         Result resultado = processo.DefinirDocumentosExigidos([Regra(Guid.CreateVersion7(), 0, PapelDoFormularioDeTeste.Habilitacao)]);
 
         Recusas(resultado).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.faseId", FaseFora),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.faseId", FaseFora));
     }
 
     [Fact(DisplayName = "O assunto vem antes da posição: a fase fora do cronograma da segunda exigência sai antes do reenvio sem complementação da primeira")]

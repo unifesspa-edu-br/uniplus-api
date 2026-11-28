@@ -93,8 +93,8 @@ public sealed class FormularioDaExigenciaEndpointTests
         problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.codigo_obrigatorio");
     }
 
-    [Fact(DisplayName = "O documento exigido que cita um formulário que o processo não tem é recusado com 422 e o código do erro diz que o formulário não existe")]
-    public async Task DefinirDocumentosExigidos_FormularioInexistente_Recusa()
+    [Fact(DisplayName = "O documento exigido que cita um formulário que o processo ainda não tem é aceito com 204 na gravação do rascunho")]
+    public async Task DefinirDocumentosExigidos_FormularioInexistente_Aceita()
     {
         (ProcessoSeletivo processo, Guid tipoDocumentoId, string bolsista) = await SemearCenarioAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -102,13 +102,11 @@ public sealed class FormularioDaExigenciaEndpointTests
         HttpResponseMessage resposta = await PutDocumentosExigidosAsync(
             client, processo.Id, [RegraDoDocumentoCondicionadaA(bolsista, tipoDocumentoId, processo.CronogramaFases.Single().Id, "FORMULARIO_QUE_NAO_EXISTE")]);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
-        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente");
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
     }
 
-    [Fact(DisplayName = "A fase fora do cronograma de uma exigência e o formulário inexistente de outra saem juntos com 422, cada um no campo da sua exigência")]
-    public async Task DefinirDocumentosExigidos_FaseForaEFormularioInexistenteEmExigenciasDiferentes_RecusaAsDuas()
+    [Fact(DisplayName = "A fase fora do cronograma de uma exigência é recusada com 422, e o formulário inexistente de outra não recusa a gravação")]
+    public async Task DefinirDocumentosExigidos_FaseForaEFormularioInexistenteEmExigenciasDiferentes_RecusaSoAFase()
     {
         (ProcessoSeletivo processo, Guid tipoDocumentoId, string bolsista) = await SemearCenarioAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -123,8 +121,7 @@ public sealed class FormularioDaExigenciaEndpointTests
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
         erros.Select(static erro => (erro.GetProperty("field").GetString(), erro.GetProperty("code").GetString())).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.faseId", "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo"),
-            ("regrasDeComprovacao[1].documento.momento.formularioCodigo", "uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente"));
+            ("regrasDeComprovacao[0].documento.momento.faseId", "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo"));
     }
 
     [Fact(DisplayName = "Fato omitido na condição do gatilho é recusado com 400 no envelope e o ponteiro com os índices")]
