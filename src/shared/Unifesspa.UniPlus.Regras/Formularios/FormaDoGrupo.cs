@@ -92,14 +92,14 @@ public static class FormaDoGrupo
         {
             yield return new($"subitens[{indice}].paginaCodigo", new DomainError(
                 GrupoFormularioErrorCodes.CampoComSecaoPropria,
-                $"O campo '{subitem.FatoCodigo}' segue a seção do grupo e não declara seção própria."));
+                "O campo segue a seção do grupo e não declara seção própria."));
         }
 
         if (subitem.TemImpedimento)
         {
             yield return new($"subitens[{indice}].{FatoColetadoInput.CaminhoDasRegras}.impedimento", new DomainError(
                 GrupoFormularioErrorCodes.CampoComImpedimento,
-                $"O campo '{subitem.FatoCodigo}' é de membro: o impedimento é da inscrição do candidato, não de um membro."));
+                "O campo é de membro: o impedimento é da inscrição do candidato, não de um membro."));
         }
     }
 
@@ -119,11 +119,11 @@ public static class FormaDoGrupo
 
     private static IEnumerable<FieldError> RecusasDaRegraQueCitaOGrupo(string campo, IEnumerable<string> citados, HashSet<string> doGrupo)
     {
-        if (citados.FirstOrDefault(doGrupo.Contains) is { } citado)
+        if (citados.Any(doGrupo.Contains))
         {
             yield return new(campo, new DomainError(
                 GrupoFormularioErrorCodes.RegraAutorreferente,
-                $"Uma regra do grupo cita '{citado}', do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências."));
+                "Uma regra do grupo cita um dado do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências."));
         }
     }
 }

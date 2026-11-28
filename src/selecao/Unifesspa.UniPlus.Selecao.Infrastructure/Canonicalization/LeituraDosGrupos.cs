@@ -81,60 +81,65 @@ internal static class LeituraDosGrupos
                 : declaracao;
     }
 
+    /// <summary>
+    /// Todas as recusas do grupo saem juntas: a exibição, a obrigatoriedade, a forma do grupo e, só se a forma passou,
+    /// o campo de outro formulário. A recusa de formato encerra o item e fica depois delas.
+    /// </summary>
     private static GrupoColetado? CriarGrupo(
         LeitorEnvelope leitor,
-        DeclaracaoDoGrupo d,
+        DeclaracaoDoGrupo declaracaoDoGrupo,
         JsonObject item,
         string path,
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
         FormulariosDoDocumento formularios)
     {
-        if (LerRegrasDoGrupo(leitor, d, item, path) is not { } regras
-            || LerCamposDoGrupo(leitor, d, path, valoresSelecionaveis, formularios) is not { } campos)
+        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(declaracaoDoGrupo.Exibicao);
+        if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
         {
-            return null;
+            return PropagarSeHouver(leitor, new RegrasDoGrupoLidas(exibicao, null).Recusas, path);
+        }
+
+        RegrasDoGrupoLidas regras = new(exibicao, obrigatoriedade);
+        IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, declaracaoDoGrupo.Subitens, $"{path}.subitens", valoresSelecionaveis, formularios);
+        return leitor.Falhou ? PropagarSeHouver(leitor, regras.Recusas, path) : CriarComOsCampos(leitor, declaracaoDoGrupo, path, regras, campos);
+    }
+
+    private static GrupoColetado? CriarComOsCampos(
+        LeitorEnvelope leitor, DeclaracaoDoGrupo declaracaoDoGrupo, string path, RegrasDoGrupoLidas regras, IReadOnlyList<FatoColetado> campos)
+    {
+        // O grupo lança exceção com campos de formulários diferentes; nesse caso ele não é criado.
+        if (campos.Any(campo => campo.FormularioId != declaracaoDoGrupo.Formulario!.Id))
+        {
+            return PropagarSeHouver(leitor, [.. regras.Recusas, CampoDeOutroFormulario(path)], path);
         }
 
         Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            d.Codigo, d.Ordem, d.PaginaCodigo, d.Rotulo, new OcorrenciasDoGrupo(d.Minimo, d.Maximo, d.IncluiCandidato), regras, campos);
-        return grupo.IsFailure ? leitor.Propagar<GrupoColetado?>(CausasDoGrupoNoDocumento(grupo.Errors), path) : grupo.Value;
+            declaracaoDoGrupo.Codigo, declaracaoDoGrupo.Ordem, declaracaoDoGrupo.PaginaCodigo, declaracaoDoGrupo.Rotulo, new OcorrenciasDoGrupo(declaracaoDoGrupo.Minimo, declaracaoDoGrupo.Maximo, declaracaoDoGrupo.IncluiCandidato), regras.ParaConferirAForma, campos);
+        IReadOnlyList<FieldError> causas = [.. regras.Recusas, .. CausasDoGrupoNoDocumento(grupo.Errors)];
+        return causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : grupo.Value;
     }
+
+    private static GrupoColetado? PropagarSeHouver(LeitorEnvelope leitor, IReadOnlyList<FieldError> causas, string path) =>
+        causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : null;
+
+    private static FieldError CampoDeOutroFormulario(string path) => new(
+        "subitens",
+        new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo."));
 
     private static IReadOnlyList<FieldError> CausasDoGrupoNoDocumento(IReadOnlyList<FieldError> causas) =>
         [.. causas.Select(static causa => causa.Field is { } campo
             && (campo.StartsWith("ocorrencias.", StringComparison.Ordinal) || campo.Contains("regras.", StringComparison.Ordinal))
                 ? LeitorEnvelope.NoProprioItem([causa])[0] : causa)];
 
-    private static ExibicaoEObrigatoriedade? LerRegrasDoGrupo(LeitorEnvelope leitor, DeclaracaoDoGrupo d, JsonObject item, string path)
+    /// <summary>A exibição e a obrigatoriedade lidas do grupo, com as recusas de regra de cada uma no caminho a partir do grupo.</summary>
+    private sealed record RegrasDoGrupoLidas(Result<PredicadoDnf?> Exibicao, Result<Obrigatoriedade>? Obrigatoriedade)
     {
-        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(d.Exibicao);
-        if (exibicao.IsFailure)
-        {
-            return leitor.Propagar<ExibicaoEObrigatoriedade?>(exibicao.Errors, $"{path}.exibicao");
-        }
+        public IReadOnlyList<FieldError> Recusas =>
+            [.. Exibicao.Errors.Select(static causa => causa.NoCaminhoDoItem("exibicao")), .. Obrigatoriedade?.Errors ?? []];
 
-        return LeituraDasCondicoes.LerObrigatoriedadeRecusandoNaHora(leitor, item, path) is { } obrigatoriedade
-            ? new ExibicaoEObrigatoriedade(exibicao.Value, obrigatoriedade)
-            : null;
-    }
-
-    private static IReadOnlyList<FatoColetado>? LerCamposDoGrupo(
-        LeitorEnvelope leitor,
-        DeclaracaoDoGrupo d,
-        string path,
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
-        FormulariosDoDocumento formularios)
-    {
-        IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, d.Subitens, $"{path}.subitens", valoresSelecionaveis, formularios);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        return campos.FirstOrDefault(c => c.FormularioId != d.Formulario!.Id || c.PaginaCodigo is not null) is { } foraDoGrupo
-            ? leitor.Recusar<IReadOnlyList<FatoColetado>?>(
-                $"'{path}.subitens': um campo tem formulário ou seção própria, mas o campo do grupo segue o grupo.")
-            : campos;
+        /// <summary>As regras que não foram recusadas; a exibição ou a obrigatoriedade recusada não acusa nada na forma do grupo.</summary>
+        public ExibicaoEObrigatoriedade ParaConferirAForma =>
+            ExibicaoEObrigatoriedade.ParaConferirAForma(Exibicao.Value, Obrigatoriedade?.Value);
     }
 
     private static DeclaracaoDoGrupo LerCamposDaDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios) => new()

@@ -17,6 +17,13 @@ public sealed record ExibicaoEObrigatoriedade
         Obrigatoriedade = obrigatoriedade;
     }
 
+    /// <summary>
+    /// As regras para conferir só a forma do grupo quando a leitura delas foi recusada: a obrigatoriedade recusada ou
+    /// ausente vale <c>Nunca</c> e a exibição recusada fica ausente, para não acusar o que a recusa própria já cobre.
+    /// </summary>
+    public static ExibicaoEObrigatoriedade ParaConferirAForma(PredicadoDnf? exibicao, Obrigatoriedade? obrigatoriedade) =>
+        new(exibicao, obrigatoriedade ?? Obrigatoriedade.Nunca);
+
     /// <summary>Quando o grupo aparece; nulo quando aparece sempre.</summary>
     public PredicadoDnf? Exibicao { get; }
 

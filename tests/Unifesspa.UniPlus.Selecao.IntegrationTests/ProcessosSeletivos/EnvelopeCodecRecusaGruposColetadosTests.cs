@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using Xunit;
@@ -94,7 +95,7 @@ public sealed class EnvelopeCodecRecusaGruposColetadosTests
             envelope["gruposDosFormularios"]!.AsArray().Single()!["subitens"]!.AsArray()[0]!["paginaCodigo"] = "DADOS");
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Code.Should().Be(GrupoFormularioErrorCodes.CampoComSecaoPropria);
     }
 
     /// <summary>Os agregados citam os campos pelo código: sem eles, a recusa é a da colisão.</summary>
