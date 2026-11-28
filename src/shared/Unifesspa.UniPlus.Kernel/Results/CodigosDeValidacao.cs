@@ -6,4 +6,8 @@ public static class CodigosDeValidacao
     public const string Obrigatorio = "uniplus.validacao.obrigatorio";
 
     public const string Formato = "uniplus.validacao.formato";
+
+    public const string Tamanho = "uniplus.validacao.tamanho";
+
+    public const string Regra = "uniplus.validacao.regra";
 }

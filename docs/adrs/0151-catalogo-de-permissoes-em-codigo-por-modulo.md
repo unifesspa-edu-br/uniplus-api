@@ -87,3 +87,12 @@ A migração dos `[Authorize(Roles = …)]` existentes é feita por módulo, em 
 ## Emenda (2026-11-22) — projeto de testes
 
 A construção dos atributos de permissão é conferida em `Unifesspa.UniPlus.Contratos.UnitTests`.
+
+## Emenda (2026-11-28) — a permissão na unidade do corpo vem antes dos dados do pedido
+
+A decisão permanece. O filtro de permissão roda antes de ler o corpo do pedido, mas na criação do processo seletivo o escopo da permissão, a unidade, vem no corpo, porque o recurso ainda não existe.
+
+- Nessa criação, a permissão é decidida no handler, antes de qualquer conferência dos dados do pedido. O comando não tem validador automático: as regras de dado rodam no handler depois da permissão, com todas as causas juntas ([ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md)).
+- Quem não tem a permissão recebe a recusa de acesso (403) qualquer que seja o estado dos demais dados, e a resposta não aponta campo, não indica se a unidade existe nem repete valor recebido.
+- Sem unidade informada não há permissão a decidir: a falta dela é causa de dado do pedido.
+- Corpo que não pode ser lido, ou unidade que não converte para identificador, continua recusado antes (400), porque sem ler o corpo não se sabe a unidade.

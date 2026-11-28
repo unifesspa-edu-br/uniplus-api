@@ -13,8 +13,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Cria a raiz do agregado <c>ProcessoSeletivo</c> em rascunho (CA-01).
-/// Validado pelo middleware FluentValidation do Wolverine via
-/// <c>CriarProcessoSeletivoCommandValidator</c>.
+/// Não tem validador automático: o handler decide a permissão na unidade do comando e só depois confere os dados.
 /// </summary>
 /// <param name="TipoProcessoOrigemId">Id de um tipo de processo ativo em Configuração, resolvido e congelado na criação.</param>
 /// <param name="OrigemCandidatos">Código de <see cref="Domain.Enums.OrigemCandidatos"/>: de onde vêm os candidatos, exigido na criação.</param>
