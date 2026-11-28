@@ -6,12 +6,15 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ApoioDosComandosDeFaseCanonica;
 
 public sealed class AtualizarFaseCanonicaCommandHandlerTests
 {
@@ -22,18 +25,28 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
         FaseCanonica.Criar(
             codigo, "Ensalamento", null, null, "NO_EDITAL",
-            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
+            new SinalizadoresInformados(false, false, false, false, false)).Value!;
 
     private Task<Result> Executar(AtualizarFaseCanonicaCommand comando) =>
         AtualizarFaseCanonicaCommandHandler.Handle(comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
-    [Fact(DisplayName = "Os sinalizadores do comando de atualização levam a marca de organizada em chamadas à fase")]
-    public void Sinalizadores_LevamAMarcaDeOrganizadaEmChamadas()
+    [Fact(DisplayName = "Os sinalizadores do comando de atualização levam cada marca informada à fase, sem assumir valor")]
+    public void Sinalizadores_LevamCadaMarcaInformada()
     {
-        new AtualizarFaseCanonicaCommand(Guid.NewGuid(), OrganizadaEmChamadas: true).Sinalizadores()
-            .OrganizadaEmChamadas.Should().BeTrue();
-        new AtualizarFaseCanonicaCommand(Guid.NewGuid()).Sinalizadores()
-            .OrganizadaEmChamadas.Should().BeFalse();
+        AtualizarFaseCanonicaCommand comando = Atualizacao(Guid.NewGuid()) with { OrganizadaEmChamadas = true, ColetaInscricao = null };
+
+        comando.Sinalizadores().Should().Be(new SinalizadoresInformados(false, false, null, false, true));
+    }
+
+    [Fact(DisplayName = "Sinalizador ausente com fase inexistente recusa o sinalizador (422) sem consultar o repositório")]
+    public async Task Handle_SinalizadorAusenteEFaseInexistente_RecusaSemConsultarORepositorio()
+    {
+        Result resultado = await Executar(Atualizacao(Guid.CreateVersion7()) with { AgrupaEtapas = null });
+
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("agrupaEtapas", CodigosDeValidacao.Obrigatorio));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Fase inexistente retorna NaoEncontrada (404)")]
@@ -43,7 +56,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((FaseCanonica?)null);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(id, Nome: "x", OrigemData: "NO_EDITAL"), _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+            Atualizacao(id) with { Nome = "x" }, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NaoEncontrada);
@@ -56,8 +69,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         FaseCanonica existente = Existente("ENSALAMENTO");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        var comando = new AtualizarFaseCanonicaCommand(
-            existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL");
+        AtualizarFaseCanonicaCommand comando = Atualizacao(existente.Id) with { Nome = "Ensalamento (novo)" };
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -74,8 +86,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         FaseCanonica existente = Existente("HOMOLOGACAO_INSCRICOES");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        var comando = new AtualizarFaseCanonicaCommand(
-            existente.Id, Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
+        AtualizarFaseCanonicaCommand comando = Atualizacao(existente.Id) with { Nome = "Homologação", AgrupaEtapas = true };
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -90,8 +101,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Nome ausente (independente do código) retorna a violação sem buscar a fase por Id")]
     public async Task Handle_NomeAusente_RetornaViolacaoSemBuscarPorId()
     {
-        var comando = new AtualizarFaseCanonicaCommand(
-            Guid.CreateVersion7(), Nome: "", OrigemData: "NO_EDITAL");
+        AtualizarFaseCanonicaCommand comando = Atualizacao(Guid.CreateVersion7()) with { Nome = "" };
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -105,12 +115,11 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Nome ausente com inscrição e isenção ligadas acumula as duas recusas sem buscar a fase por Id")]
     public async Task Handle_NomeAusenteEAsDuasMarcas_AcumulaSemBuscarPorId()
     {
-        var comando = new AtualizarFaseCanonicaCommand(
-            Guid.CreateVersion7(), Nome: "", ColetaInscricao: true, ColetaSolicitacaoIsencao: true, OrigemData: "NO_EDITAL");
+        AtualizarFaseCanonicaCommand comando = Atualizacao(Guid.CreateVersion7()) with { Nome = "", ColetaInscricao = true, ColetaSolicitacaoIsencao = true };
 
         Result resultado = await Executar(comando);
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
             ("nome", FaseCanonicaErrorCodes.NomeObrigatorio),
             ("coletaSolicitacaoIsencao", FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas));
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
@@ -126,7 +135,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _unidadeReader.ObterPorIdAsync(cga.Id, Arg.Any<CancellationToken>()).Returns(cga);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento", OrigemData: "NO_EDITAL", UnidadeSugeridaId: cga.Id),
+            Atualizacao(existente.Id) with { Nome = "Ensalamento", UnidadeSugeridaId = cga.Id },
             _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -142,7 +151,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento", OrigemData: "NO_EDITAL"),
+            Atualizacao(existente.Id) with { Nome = "Ensalamento" },
             _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -159,7 +168,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento", OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente),
+            Atualizacao(existente.Id) with { Nome = "Ensalamento", UnidadeSugeridaId = ausente },
             _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -177,8 +186,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         _unidadeReader.ObterPorIdAsync(gravada.OrigemId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
 
-        Result resultado = await Executar(new AtualizarFaseCanonicaCommand(
-            existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL", UnidadeSugeridaId: gravada.OrigemId));
+        Result resultado = await Executar(Atualizacao(existente.Id) with { Nome = "Ensalamento (novo)", UnidadeSugeridaId = gravada.OrigemId });
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Nome.Should().Be("Ensalamento (novo)");
@@ -196,7 +204,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
 
         Result resultado = await Executar(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente));
+            Atualizacao(existente.Id) with { Nome = "Ensalamento (novo)", UnidadeSugeridaId = ausente });
 
         resultado.IsFailure.Should().BeTrue();
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -210,7 +218,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result resultado = await Executar(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL"));
+            Atualizacao(existente.Id) with { Nome = "Homologação", AgrupaEtapas = true });
 
         resultado.IsFailure.Should().BeTrue();
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -226,8 +234,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
 
         Result resultado = await Executar(
-            new AtualizarFaseCanonicaCommand(
-                existente.Id, Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente));
+            Atualizacao(existente.Id) with { Nome = "Homologação", AgrupaEtapas = true, UnidadeSugeridaId = ausente });
 
         resultado.Errors.Select(e => e.Field).Should().Equal("agrupaEtapas", "unidadeSugeridaId");
     }
@@ -239,7 +246,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         await Executar(
-            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento", OrigemData: "NO_EDITAL"));
+            Atualizacao(existente.Id) with { Nome = "Ensalamento" });
 
         _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
     }

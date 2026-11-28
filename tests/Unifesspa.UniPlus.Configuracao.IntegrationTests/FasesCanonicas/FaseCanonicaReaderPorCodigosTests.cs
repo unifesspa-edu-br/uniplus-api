@@ -121,7 +121,7 @@ public sealed class FaseCanonicaReaderPorCodigosTests : IAsyncLifetime
     private static FaseCanonica Fase(string codigo) =>
         FaseCanonica.Criar(
             codigo, $"Fase {codigo}", null, null, "NO_EDITAL",
-            new SinalizadoresDaFase(
+            new SinalizadoresInformados(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 }

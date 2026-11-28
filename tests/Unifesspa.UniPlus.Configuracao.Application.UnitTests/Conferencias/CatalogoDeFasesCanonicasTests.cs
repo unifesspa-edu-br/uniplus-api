@@ -55,7 +55,7 @@ public sealed class CatalogoDeFasesCanonicasTests
         item.Descricao,
         item.BaseLegal,
         item.OrigemData.Codigo(),
-        new SinalizadoresDaFase(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao, item.OrganizadaEmChamadas));
+        new SinalizadoresInformados(item.AgrupaEtapas, item.PermiteComplementacao, item.ColetaInscricao, item.ColetaSolicitacaoIsencao, item.OrganizadaEmChamadas));
 
     [Fact(DisplayName = "Os identificadores do seed são únicos e do prefixo determinístico")]
     public void Seed_IdentificadoresDeterministicos()

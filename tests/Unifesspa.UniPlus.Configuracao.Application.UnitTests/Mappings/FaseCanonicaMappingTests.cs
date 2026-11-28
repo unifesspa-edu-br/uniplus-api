@@ -31,7 +31,7 @@ public sealed class FaseCanonicaMappingTests
     {
         FaseCanonica fase = FaseCanonica.Criar(
             "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, baseLegal: null, origemData: "NO_EDITAL",
-            sinalizadores: new SinalizadoresDaFase(
+            sinalizadores: new SinalizadoresInformados(
                 AgrupaEtapas: false, PermiteComplementacao: true, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 
         FaseCanonicaDto dto = fase.ToDto();
@@ -47,7 +47,7 @@ public sealed class FaseCanonicaMappingTests
     {
         FaseCanonica fase = FaseCanonica.Criar(
             "HABILITACAO", "Habilitação", null, baseLegal: null, origemData: "NO_EDITAL",
-            sinalizadores: new SinalizadoresDaFase(
+            sinalizadores: new SinalizadoresInformados(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: organizada)).Value!;
 
         fase.ToDto().OrganizadaEmChamadas.Should().Be(organizada);
@@ -76,6 +76,6 @@ public sealed class FaseCanonicaMappingTests
     private static FaseCanonica CriarFaseSemSinalizadores(string codigo) =>
         FaseCanonica.Criar(
             codigo, "Fase de teste", null, baseLegal: null, origemData: "NO_EDITAL",
-            sinalizadores: new SinalizadoresDaFase(
+            sinalizadores: new SinalizadoresInformados(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false)).Value!;
 }

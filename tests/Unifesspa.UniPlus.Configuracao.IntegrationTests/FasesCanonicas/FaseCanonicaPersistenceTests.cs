@@ -186,7 +186,7 @@ public sealed class FaseCanonicaPersistenceTests
         FaseCanonica.Criar(
             codigo, nome, null, null, "NO_EDITAL",
             // A marca acompanha o código: a factory recusa a fase de isenção sem ela.
-            new SinalizadoresDaFase(
+            new SinalizadoresInformados(
                 AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
                 ColetaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, OrganizadaEmChamadas: false)).Value!;
 }
