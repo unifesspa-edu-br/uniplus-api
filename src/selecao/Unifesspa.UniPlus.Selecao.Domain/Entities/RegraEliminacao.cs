@@ -42,7 +42,7 @@ public sealed class RegraEliminacao : EntityBase
         DomainError? recusa = regra.Codigo == parametros.RegraCorrespondente().Codigo()
             ? parametros.RecusaDosValores()
             : new DomainError("RegraEliminacao.ParametrosIncompativeisComRegra",
-                $"Os parâmetros informados não correspondem à regra {regra.Codigo}.");
+                "Os parâmetros informados não são os da regra de eliminação escolhida. Use só os parâmetros que ela pede.");
         return recusa is null
             ? Result<RegraEliminacao>.Success(new RegraEliminacao { Regra = regra, Parametros = parametros })
             : Result<RegraEliminacao>.Failure(recusa);

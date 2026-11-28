@@ -73,6 +73,16 @@ public sealed class DefinirClassificacaoRecusasSomadasEndpointTests
         await ConferirCausasAsync(resposta, ("regraOrdemAlocacaoCodigo", RegraNaoEncontrada));
     }
 
+    [Fact(DisplayName = "Parâmetros recusados no item 0 e falta em dia de prova repetida no item 2 saem juntos, cada um no seu item")]
+    public async Task EliminacaoComParametrosRecusadosEOutraRepetida_422ComOsDoisItens()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(EliminacaoComParametrosRecusadosEOutraRepetida_422ComOsDoisItens));
+        using HttpResponseMessage resposta = await ctx.PutAsync(Corpo(
+            calculo: CalculoLocal, arredondamento: ArredondamentoExistente, casas: 2, ordem: OrdemExistente, escala: null, FaltaComEtapaERepetida()));
+
+        (await CamposDosItensDeEliminacaoAsync(resposta)).Should().Equal("regrasEliminacao[2]", "regrasEliminacao[0]");
+    }
+
     [Fact(DisplayName = "Depois de recusas somadas, a classificação do processo continua a que já estava")]
     public async Task AposRecusasSomadas_NadaEGravado()
     {
@@ -127,6 +137,26 @@ public sealed class DefinirClassificacaoRecusasSomadasEndpointTests
 
     private static string OrdemExistente => Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeOrdemDeAlocacao.PrimeiraOpcaoPrioritaria);
 
+    private static object[] FaltaComEtapaERepetida()
+    {
+        string falta = Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato.CodigoDeContratoExtensions.Codigo(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem);
+        return
+        [
+            new { regraCodigo = falta, regraVersao = "v1", etapaRef = Guid.CreateVersion7() },
+            new { regraCodigo = falta, regraVersao = "v1" },
+            new { regraCodigo = falta, regraVersao = "v1" },
+        ];
+    }
+
+    private static async Task<string?[]> CamposDosItensDeEliminacaoAsync(HttpResponseMessage resposta)
+    {
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        return [.. problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(static e => e.GetProperty("field").GetString())
+            .Where(static campo => campo is not null && campo.StartsWith("regrasEliminacao[", StringComparison.Ordinal))];
+    }
+
     private static async Task ConferirCausasAsync(HttpResponseMessage resposta, params (string Campo, string Codigo)[] causas)
     {
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -152,7 +182,7 @@ public sealed class DefinirClassificacaoRecusasSomadasEndpointTests
     // para a prova de que a mensagem não devolve nenhum dos dois.
     private static string VersaoDe(string codigo) => codigo == CodigoForaDoCatalogo ? VersaoForaDoCatalogo : "v1";
 
-    private static object Corpo(string calculo, string? arredondamento, int? casas, string ordem, decimal? escala) => new
+    private static object Corpo(string calculo, string? arredondamento, int? casas, string ordem, decimal? escala, object[]? eliminacoes = null) => new
     {
         regraCalculoCodigo = calculo,
         regraCalculoVersao = VersaoDe(calculo),
@@ -161,7 +191,7 @@ public sealed class DefinirClassificacaoRecusasSomadasEndpointTests
         casasArredondamento = casas,
         regraOrdemAlocacaoCodigo = ordem,
         regraOrdemAlocacaoVersao = VersaoDe(ordem),
-        regrasEliminacao = Array.Empty<object>(),
+        regrasEliminacao = eliminacoes ?? [],
         baseadoEmEnem = false,
         escalaNotaFinal = escala,
     };

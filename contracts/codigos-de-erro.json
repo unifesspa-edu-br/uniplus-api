@@ -8179,7 +8179,7 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios",
       "status": 422,
-      "titulo": "AreaCodigo e Minimo são obrigatórios para a regra ELIMINACAO_CORTE_EM_AREA"
+      "titulo": "Informe a área e o mínimo na eliminação por corte em área e retire a etapa e a nota mínima"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.area_invalida",
@@ -8189,12 +8189,12 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios",
       "status": 422,
-      "titulo": "EtapaRef e NotaMinima são obrigatórios para a regra ELIMINACAO_NOTA_MINIMA_ETAPA"
+      "titulo": "Informe a etapa e a nota mínima na eliminação por nota mínima e retire o mínimo e a área"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_obrigatorio",
       "status": 422,
-      "titulo": "EtapaRef é obrigatório para a regra ELIMINACAO_AUSENCIA_NA_ETAPA"
+      "titulo": "Informe a etapa na eliminação por ausência e retire a nota mínima, o mínimo e a área"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.minimo_invalido",
@@ -8209,7 +8209,7 @@
     {
       "codigo": "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra",
       "status": 422,
-      "titulo": "Os parâmetros informados não correspondem à regra referenciada"
+      "titulo": "A regra de eliminação escolhida não recebe parâmetros: retire os que foram informados"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.regra_nao_encontrada",

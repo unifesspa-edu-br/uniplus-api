@@ -31,6 +31,21 @@ public sealed class DefinirClassificacaoRecusasSomadasTests
     private static (string? Campo, string Codigo)[] Recusas(Result result) =>
         [.. result.Errors.Select(static erro => (erro.Field, erro.Error.Code))];
 
+    private static RegraEliminacaoInput FaltaEmDiaDeProva =>
+        new(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), "v1", null, null, null, null);
+
+    private static (CenarioDaClassificacao Cenario, ProcessoSeletivo Processo) ComCatalogoDeEliminacoesDoEnem()
+    {
+        ProcessoSeletivo processo = NovoProcessoEnem();
+        CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas().ComResolucaoDosPesos()
+            .ComRegra(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), TipoRegra.RegraEliminacao)
+            .ComRegra(RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem.Codigo(), TipoRegra.RegraEliminacao);
+        return (cenario, processo);
+    }
+
+    private static DefinirClassificacaoCommand ComItensDeEliminacao(ProcessoSeletivo processo, params RegraEliminacaoInput[] itens) =>
+        ComandoEnemLocalComEliminacao(processo.Id, itens[0]) with { RegrasEliminacao = itens };
+
     private static (CenarioDaClassificacao Cenario, ProcessoSeletivo Processo) ComCatalogoBasico()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.IndigenaEQuilombola);
@@ -172,7 +187,7 @@ public sealed class DefinirClassificacaoRecusasSomadasTests
         await cenario.NaoConsultouOCadastroDePesosAsync();
     }
 
-    [Fact(DisplayName = "Regra de eliminação inexistente sai depois das recusas dos campos e sem o campo")]
+    [Fact(DisplayName = "Regra de eliminação inexistente sai depois das recusas dos campos, no campo do código do item")]
     public async Task EliminacaoInexistenteEEscalaInvalida_SaiDepoisDosCampos()
     {
         (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoBasico();
@@ -183,7 +198,7 @@ public sealed class DefinirClassificacaoRecusasSomadasTests
 
         Recusas(result).Should().Equal(
             ("escalaNotaFinal", "ConfiguracaoClassificacao.EscalaNotaFinalInvalida"),
-            ((string?)null, "RegraEliminacao.RegraNaoEncontrada"));
+            ("regrasEliminacao[0].regraCodigo", "RegraEliminacao.RegraNaoEncontrada"));
         await NadaFoiGravadoAsync(cenario, processo);
     }
 
@@ -201,6 +216,72 @@ public sealed class DefinirClassificacaoRecusasSomadasTests
         Result result = await cenario.DefinirAsync(command);
 
         Recusas(result).Should().Equal(("regraCalculoCodigo", "ConfiguracaoClassificacao.RegraNaoEncontrada"));
+    }
+
+    [Fact(DisplayName = "Zero em área com etapa no item 0 e falta repetida no item 2 recusa os dois itens na mesma resposta")]
+    public async Task ParametrosRecusadosEItemRepetido_SomaOsDoisItens()
+    {
+        (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoDeEliminacoesDoEnem();
+        RegraEliminacaoInput zeroComEtapa = new(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem.Codigo(), "v1", Guid.NewGuid(), null, null, null);
+
+        Result result = await cenario.DefinirAsync(ComItensDeEliminacao(processo, zeroComEtapa, FaltaEmDiaDeProva, FaltaEmDiaDeProva));
+
+        Recusas(result).Should().Equal(
+            ("regrasEliminacao[2]", "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida"),
+            ("regrasEliminacao[0]", "RegraEliminacao.ParametrosIncompativeisComRegra"));
+        await NadaFoiGravadoAsync(cenario, processo);
+    }
+
+    [Fact(DisplayName = "Duas regras de eliminação inexistentes saem juntas, cada uma no campo do código do seu item")]
+    public async Task DuasEliminacoesInexistentes_SomamAsDuasRecusas()
+    {
+        (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoBasico();
+        RegraEliminacaoInput inexistente = new(RegraInexistente, "v1", null, null, null, null);
+        DefinirClassificacaoCommand command = ComandoComEliminacao(processo.Id, inexistente) with { RegrasEliminacao = [inexistente, inexistente] };
+
+        Result result = await cenario.DefinirAsync(command);
+
+        Recusas(result).Should().Equal(
+            ("regrasEliminacao[0].regraCodigo", "RegraEliminacao.RegraNaoEncontrada"),
+            ("regrasEliminacao[1].regraCodigo", "RegraEliminacao.RegraNaoEncontrada"));
+    }
+
+    [Fact(DisplayName = "O código de eliminação que o sistema não conhece sai com as recusas do catálogo, na ordem dos itens")]
+    public async Task CodigoDeEliminacaoDesconhecido_SaiComAsRecusasDoCatalogoNaOrdemDosItens()
+    {
+        (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoBasico();
+        cenario.ComRegra("CODIGO_DESCONHECIDO", TipoRegra.RegraEliminacao);
+        RegraEliminacaoInput inexistente = new(RegraInexistente, "v1", null, null, null, null);
+        RegraEliminacaoInput desconhecida = new("CODIGO_DESCONHECIDO", "v1", null, null, null, null);
+        DefinirClassificacaoCommand command = ComandoComEliminacao(processo.Id, inexistente) with { RegrasEliminacao = [inexistente, desconhecida] };
+
+        Result result = await cenario.DefinirAsync(command);
+
+        Recusas(result).Should().Equal(
+            ("regrasEliminacao[0].regraCodigo", "RegraEliminacao.RegraNaoEncontrada"),
+            ("regrasEliminacao[1].regraCodigo", "RegraEliminacao.RegraTipoInvalido"));
+    }
+
+    [Fact(DisplayName = "Item recusado não desloca a posição dos demais: a repetição sai na posição real")]
+    public async Task ItemRecusadoNoMeio_MantemAsPosicoes()
+    {
+        (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoDeEliminacoesDoEnem();
+
+        Result result = await cenario.DefinirAsync(ComItensDeEliminacao(processo, FaltaEmDiaDeProva, FaltaEmDiaDeProva with { Minimo = 1m }, FaltaEmDiaDeProva));
+
+        Recusas(result).Should().Equal(
+            ("regrasEliminacao[2]", "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida"),
+            ("regrasEliminacao[1]", "RegraEliminacao.ParametrosIncompativeisComRegra"));
+    }
+
+    [Fact(DisplayName = "Só o item recusado sai: a falta em dia de prova do item seguinte não é tratada como repetição")]
+    public async Task PrimeiroItemRecusado_SegundoNaoEhRepeticao()
+    {
+        (CenarioDaClassificacao cenario, ProcessoSeletivo processo) = ComCatalogoDeEliminacoesDoEnem();
+
+        Result result = await cenario.DefinirAsync(ComItensDeEliminacao(processo, FaltaEmDiaDeProva with { Minimo = 1m }, FaltaEmDiaDeProva));
+
+        Recusas(result).Should().Equal(("regrasEliminacao[0]", "RegraEliminacao.ParametrosIncompativeisComRegra"));
     }
 
     [Fact(DisplayName = "Nenhuma recusa repete o código nem a versão enviados")]

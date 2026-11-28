@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 
-using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -50,7 +50,8 @@ internal static class LeituraDasRegrasDeEliminacao
 
     private static Result<RegraEliminacao> Criar(RegraDeEliminacaoNoDocumento regra, ReferenciaRegra referencia, Guid? etapaRef)
     {
-        Result<ParametrosRegraEliminacao> parametros = Parametros(regra, referencia.Codigo, etapaRef);
+        Result<ParametrosRegraEliminacao> parametros = ParametrosDeclaradosDaEliminacao.Montar(
+            referencia.Codigo, etapaRef, regra.NotaMinima, regra.Minimo, regra.AreaCodigo);
         if (parametros.IsFailure)
         {
             return Recusa(regra, null, parametros.Error!);
@@ -66,48 +67,6 @@ internal static class LeituraDasRegrasDeEliminacao
         { Tipo: not TipoRegra.RegraEliminacao } => new DomainError("RegraEliminacao.RegraTipoInvalido", "A regra não é do tipo regra_eliminacao."),
         _ => null,
     };
-
-    private static Result<ParametrosRegraEliminacao> Parametros(RegraDeEliminacaoNoDocumento regra, string codigo, Guid? etapaRef) =>
-        CatalogoDe<RegraDeEliminacaoPorCalculo>.TentarObter(codigo, out RegraDeEliminacaoPorCalculo tipo)
-            ? DoTipo(regra, tipo, etapaRef)
-            : Falha("RegraEliminacao.RegraTipoInvalido", "O código da regra de eliminação não é conhecido.");
-
-    private static Result<ParametrosRegraEliminacao> DoTipo(RegraDeEliminacaoNoDocumento regra, RegraDeEliminacaoPorCalculo tipo, Guid? etapaRef) =>
-        tipo switch
-        {
-            RegraDeEliminacaoPorCalculo.NotaMinimaNaEtapa => NotaMinimaNaEtapa(regra, etapaRef),
-            RegraDeEliminacaoPorCalculo.CorteEmAreaDoEnem => CorteEmArea(regra, etapaRef),
-            RegraDeEliminacaoPorCalculo.AusenciaNaEtapa => AusenciaNaEtapa(regra, etapaRef),
-            RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem => SemParametros(regra, etapaRef, new ParametrosEliminacaoPorZeroEmAreaDoEnem()),
-            RegraDeEliminacaoPorCalculo.FaltaEmDiaDeProvaDoEnem => SemParametros(regra, etapaRef, new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem()),
-            _ => throw new ArgumentOutOfRangeException(nameof(tipo)),
-        };
-
-    private static Result<ParametrosRegraEliminacao> NotaMinimaNaEtapa(RegraDeEliminacaoNoDocumento regra, Guid? etapaRef) =>
-        etapaRef is { } etapa && regra.NotaMinima is { } notaMinima && regra.Minimo is null && regra.AreaCodigo is null
-            ? Sucesso(new ParametrosEliminacaoPorNotaMinimaNaEtapa(etapa, notaMinima))
-            : Falha("RegraEliminacao.EtapaRefENotaMinimaObrigatorios", "A regra de eliminação por nota mínima exige a etapa e a nota mínima, e não aceita mínimo nem área.");
-
-    private static Result<ParametrosRegraEliminacao> CorteEmArea(RegraDeEliminacaoNoDocumento regra, Guid? etapaRef) =>
-        regra.AreaCodigo is { } area && regra.Minimo is { } minimo && etapaRef is null && regra.NotaMinima is null
-            ? Sucesso(new ParametrosEliminacaoPorCorteEmAreaDoEnem(area, minimo))
-            : Falha("RegraEliminacao.AreaEMinimoObrigatorios", "A regra de eliminação por corte em área exige a área e o mínimo, e não aceita etapa nem nota mínima.");
-
-    private static Result<ParametrosRegraEliminacao> AusenciaNaEtapa(RegraDeEliminacaoNoDocumento regra, Guid? etapaRef) =>
-        etapaRef is { } etapa && regra.NotaMinima is null && regra.Minimo is null && regra.AreaCodigo is null
-            ? Sucesso(new ParametrosEliminacaoPorAusenciaNaEtapa(etapa))
-            : Falha("RegraEliminacao.EtapaRefObrigatorio", "A regra de eliminação por ausência exige a etapa, e não aceita nota mínima, mínimo nem área.");
-
-    private static Result<ParametrosRegraEliminacao> SemParametros(RegraDeEliminacaoNoDocumento regra, Guid? etapaRef, ParametrosRegraEliminacao parametros) =>
-        etapaRef is null && regra.NotaMinima is null && regra.Minimo is null && regra.AreaCodigo is null
-            ? Sucesso(parametros)
-            : Falha("RegraEliminacao.ParametrosIncompativeisComRegra", "A regra de eliminação não aceita parâmetros.");
-
-    private static Result<ParametrosRegraEliminacao> Sucesso(ParametrosRegraEliminacao parametros) =>
-        Result<ParametrosRegraEliminacao>.Success(parametros);
-
-    private static Result<ParametrosRegraEliminacao> Falha(string codigo, string mensagem) =>
-        Result<ParametrosRegraEliminacao>.Failure(new DomainError(codigo, mensagem));
 
     private static Result<RegraEliminacao> Recusa(RegraDeEliminacaoNoDocumento regra, string? campoNaRegra, DomainError erro) =>
         Result<RegraEliminacao>.ValidationFailure(

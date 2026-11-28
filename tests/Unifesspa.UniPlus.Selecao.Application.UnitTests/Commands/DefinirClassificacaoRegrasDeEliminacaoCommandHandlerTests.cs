@@ -48,6 +48,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefENotaMinimaObrigatorios");
+        result.Errors.Single().Field.Should().Be("regrasEliminacao[0]");
     }
 
     [Fact(DisplayName = "Handle com ELIMINACAO_AUSENCIA_NA_ETAPA e a etapa citada grava a regra")]
@@ -161,6 +162,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.AreaEMinimoObrigatorios");
+        result.Errors.Single().Field.Should().Be("regrasEliminacao[0]");
     }
 
     [Fact(DisplayName = "Corte em área fora do quadro da resolução sai no campo da área do item")]

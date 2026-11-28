@@ -27259,11 +27259,11 @@
       "codigo": "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma regra de eliminação com o código `ELIMINACAO_CORTE_EM_AREA` foi enviada com os\ncampos errados. Essa regra elimina o candidato cuja nota em uma área do ENEM\nfica abaixo de um mínimo, e por isso exige `areaCodigo` e `minimo`. O erro\nocorre quando falta um dos dois, ou quando a regra traz `etapaRef` ou\n`notaMinima`, que pertencem a `ELIMINACAO_NOTA_MINIMA_ETAPA` e não se aplicam aqui.\nAs condições são conferidas juntas.",
-        "Esta conferência só verifica que os campos certos foram informados. Se o\n`areaCodigo` está escrito num formato inválido, ou se o `minimo` é negativo,\na recusa vem de causas próprias, que aparecem depois desta.\nA primeira regra com problema interrompe a conferência, sem acumular com as\ndemais. Nada foi gravado."
+        "Uma regra de eliminação por corte em área foi enviada com os campos errados. Essa regra elimina o candidato cuja nota em uma área do ENEM\nfica abaixo de um mínimo, e por isso exige `areaCodigo` e `minimo`. O erro\nocorre quando falta um dos dois, ou quando a regra traz `etapaRef` ou\n`notaMinima`, que pertencem à eliminação por nota mínima na etapa e não se aplicam aqui.\nAs condições são conferidas juntas.",
+        "Esta conferência só verifica que os campos certos foram informados. Se o\n`areaCodigo` está escrito num formato inválido, ou se o `minimo` é negativo,\na recusa vem de causas próprias, que aparecem depois desta.\nCada regra com problema é recusada no próprio item, no campo `regrasEliminacao[i]` (`i` é a posição da regra no pedido), e a recusa sai junto com as dos demais itens e dos demais campos. Nada foi gravado."
       ],
       "comoResolver": [
-        "Para toda regra `ELIMINACAO_CORTE_EM_AREA`, informe `areaCodigo` e `minimo`, e não\ninforme `etapaRef` nem `notaMinima`."
+        "Para toda regra de eliminação por corte em área, informe `areaCodigo` e `minimo`, e não\ninforme `etapaRef` nem `notaMinima`."
       ],
       "ondeAparece": [
         "Definição de classificação do processo seletivo (`PUT /api/selecao/processos-seletivos/{id}/classificacao`)"
@@ -27274,7 +27274,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma regra de eliminação `ELIMINACAO_CORTE_EM_AREA` informou, em `areaCodigo`, um código\nde área que não tem a forma exigida. Esse código identifica a área do ENEM em que\no candidato precisa atingir o mínimo, e deve ter até 30 caracteres, formados só\npor letras maiúsculas sem acento, algarismos e sublinhado. Um código em branco\ntambém é recusado.",
-        "Esta conferência olha só a forma do código. Se a classificação usa o quadro de\npesos por área, a área do corte ainda precisa existir nesse quadro, e essa\nconferência é outra, com recusa própria. A primeira regra com problema\ninterrompe a conferência, sem acumular com as demais. Nada foi gravado."
+        "Esta conferência olha só a forma do código. Se a classificação usa o quadro de\npesos por área, a área do corte ainda precisa existir nesse quadro, e essa\nconferência é outra, com recusa própria. Cada regra com problema é recusada no próprio item, no campo `regrasEliminacao[i]` (`i` é a posição da regra no pedido), e a recusa sai junto com as dos demais itens e dos demais campos. Nada foi gravado."
       ],
       "comoResolver": [
         "Corrija o `areaCodigo` da regra para um código de área bem formado, em letras maiúsculas, sem acento e sem espaços. Quando a classificação já tem quadro de pesos por área, escreva o código exatamente como o quadro o define."
@@ -27287,11 +27287,11 @@
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios",
       "requisitos": [],
       "oQueAconteceu": [
-        "Uma regra de eliminação com o código `ELIMINACAO_NOTA_MINIMA_ETAPA` não informou\n`etapaRef`, não informou `notaMinima`, ou informou `minimo` — campo que\npertence a `ELIMINACAO_CORTE_EM_AREA`, não a esta regra. As três condições são\nconferidas juntas: `etapaRef` e `notaMinima` precisam estar presentes, e\n`minimo` precisa estar ausente.",
-        "Esta conferência verifica se os campos foram informados nos lugares certos. O valor de `notaMinima` precisa ser não negativo, conforme [`nota_minima_invalida`](/erros/uniplus.selecao.regra_eliminacao.nota_minima_invalida), e a existência de `etapaRef` no processo é conferida separadamente. A primeira falha interrompe o processamento."
+        "Uma regra de eliminação por nota mínima na etapa não informou\n`etapaRef`, não informou `notaMinima`, ou informou `minimo` ou `areaCodigo` — campos que\npertencem à eliminação por corte em área, não a esta regra. As condições são\nconferidas juntas: `etapaRef` e `notaMinima` precisam estar presentes, e\n`minimo` e `areaCodigo` precisam estar ausentes.",
+        "Esta conferência verifica se os campos foram informados nos lugares certos. O valor de `notaMinima` precisa ser não negativo, conforme [`nota_minima_invalida`](/erros/uniplus.selecao.regra_eliminacao.nota_minima_invalida), e a existência de `etapaRef` no processo é conferida separadamente. Cada regra com problema é recusada no próprio item, no campo `regrasEliminacao[i]` (`i` é a posição da regra no pedido), e a recusa sai junto com as dos demais itens e dos demais campos."
       ],
       "comoResolver": [
-        "Informe `etapaRef` e `notaMinima`, e não informe `minimo`, para toda regra\nde eliminação com o código `ELIMINACAO_NOTA_MINIMA_ETAPA`."
+        "Informe `etapaRef` e `notaMinima`, e não informe `minimo` nem `areaCodigo`, para toda regra\nde eliminação por nota mínima na etapa."
       ],
       "ondeAparece": [
         "Definição de classificação do processo seletivo"
@@ -27303,8 +27303,8 @@
         "UNI-REQ-0175"
       ],
       "oQueAconteceu": [
-        "Uma regra de eliminação com o código `ELIMINACAO_AUSENCIA_NA_ETAPA` não informou `etapaRef`, ou\ninformou `notaMinima`, `minimo` ou `areaCodigo`, campos que pertencem a outras regras de\neliminação. A regra tem um único parâmetro: a etapa à qual a ausência elimina.",
-        "Esta conferência verifica só que os campos foram informados nos lugares certos. Que a etapa\nexista no processo e não seja a de nota do ENEM é conferido separadamente, ver\n[`etapa_ref_eliminacao_inexistente`](/erros/uniplus.selecao.processo_seletivo.etapa_ref_eliminacao_inexistente)\ne\n[`ausencia_na_etapa_do_enem`](/erros/uniplus.selecao.processo_seletivo.ausencia_na_etapa_do_enem).\nRoda na montagem dos argumentos da regra e não acumula com outra violação: a primeira que\nfalhar interrompe o processamento."
+        "Uma regra de eliminação por ausência na etapa não informou `etapaRef`, ou\ninformou `notaMinima`, `minimo` ou `areaCodigo`, campos que pertencem a outras regras de\neliminação. A regra tem um único parâmetro: a etapa à qual a ausência elimina.",
+        "Esta conferência verifica só que os campos foram informados nos lugares certos. Que a etapa\nexista no processo e não seja a de nota do ENEM é conferido separadamente, ver\n[`etapa_ref_eliminacao_inexistente`](/erros/uniplus.selecao.processo_seletivo.etapa_ref_eliminacao_inexistente)\ne\n[`ausencia_na_etapa_do_enem`](/erros/uniplus.selecao.processo_seletivo.ausencia_na_etapa_do_enem).\nCada regra com problema é recusada no próprio item, no campo `regrasEliminacao[i]` (`i` é a posição da regra no pedido), e a recusa sai junto com as dos demais itens e dos demais campos."
       ],
       "comoResolver": [
         "Informe `etapaRef` com o identificador da etapa e deixe `notaMinima`, `minimo` e\n`areaCodigo` sem valor."
@@ -27318,7 +27318,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma regra de eliminação com o código `ELIMINACAO_CORTE_EM_AREA` informou\n`minimo` negativo. Esta regra elimina o candidato que não atingir a nota\nmínima na área do ENEM — um corte negativo não tem interpretação válida.",
-        "O processamento é sequencial por regra: a primeira com valor inválido\ninterrompe a passada, sem acumular com nenhuma outra violação.",
+        "Cada regra com problema é recusada no próprio item, no campo `regrasEliminacao[i]` (`i` é a posição da regra no pedido), e a recusa sai junto com as dos demais itens e dos demais campos.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada regra de eliminação a partir do que foi\ncongelado — a mesma conferência roda de novo."
       ],
       "comoResolver": [
@@ -27335,7 +27335,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Uma regra de eliminação com o código `ELIMINACAO_NOTA_MINIMA_ETAPA` informou\n`notaMinima` negativa. Esta regra elimina o candidato que não atingir a\nnota mínima numa etapa específica — um corte negativo não tem\ninterpretação válida.",
-        "Um processo pode ter mais de uma regra `ELIMINACAO_NOTA_MINIMA_ETAPA`\nindependente (por exemplo, uma para a prova objetiva e outra para a\nredação) — o processamento é sequencial por regra: a primeira com valor\ninválido interrompe a passada, sem acumular com nenhuma outra violação.",
+        "Um processo pode ter mais de uma regra `ELIMINACAO_NOTA_MINIMA_ETAPA`\nindependente (por exemplo, uma para a prova objetiva e outra para a\nredação) — cada regra com valor inválido é recusada no próprio item, no campo `regrasEliminacao[i]`, e a recusa sai junto com as dos demais itens e dos demais campos.",
         "Este código também aparece na **retificação em ato único**: antes de\ncongelar a versão nova, o sistema lê as versões já publicadas do processo,\ne essa leitura recria cada regra de eliminação a partir do que foi\ncongelado — a mesma conferência roda de novo."
       ],
       "comoResolver": [
@@ -27351,7 +27351,7 @@
       "codigo": "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra",
       "requisitos": [],
       "oQueAconteceu": [
-        "As regras `ELIMINACAO_ZERO_EM_AREA` e `ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM` não recebem parâmetros. A definição da classificação é recusada se alguma delas declarar `etapaRef`, `notaMinima`, `minimo` ou `areaCodigo`."
+        "As regras de eliminação por zero em área do ENEM e por falta em dia de prova do ENEM não recebem parâmetros. A definição da classificação é recusada se alguma delas declarar `etapaRef`, `notaMinima`, `minimo` ou `areaCodigo`. A recusa sai no campo `regrasEliminacao[i]` do item (`i` é a posição da regra no pedido) e junto com as dos demais itens e dos demais campos."
       ],
       "comoResolver": [
         "Remova esses campos da regra que não aceita parâmetros. Se a intenção era usar outra regra, reveja o código declarado e informe os campos exigidos por ela."
@@ -27364,13 +27364,13 @@
       "codigo": "uniplus.selecao.regra_eliminacao.regra_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O `regraCodigo`/`regraVersao` de uma das regras de eliminação do corpo do pedido\nnão existe no `rol_de_regras` — o mesmo catálogo interno ao módulo Seleção\nde onde vêm as demais regras tipadas do processo (distribuição de vagas,\ndesempate, cálculo e ordem de alocação da classificação). Esta resolução\nroda depois das regras de cálculo, arredondamento e ordem de alocação da\nprópria classificação já terem sido resolvidas.",
-        "O processamento é sequencial por regra de eliminação: a primeira que\nfalhar interrompe a passada — as regras seguintes do mesmo corpo do pedido não\nchegam a ser conferidas, e a resposta traz só esta violação, sem acumular\ncom nenhuma outra.",
+        "O `regraCodigo`/`regraVersao` de uma das regras de eliminação do corpo do pedido\nnão existe no `rol_de_regras` — o mesmo catálogo interno ao módulo Seleção\nde onde vêm as demais regras tipadas do processo (distribuição de vagas,\ndesempate, cálculo e ordem de alocação da classificação). Cada regra de eliminação é consultada\nno catálogo por si: a recusa de uma não impede a consulta das outras, nem a das\nregras de cálculo, de arredondamento e de ordem de alocação da própria classificação.",
+        "Cada regra de eliminação é conferida por si: a recusa sai no campo\n`regrasEliminacao[i].regraCodigo` (`i` é a posição da regra no pedido) e junto com as\ndos demais itens e dos demais campos.",
         "Esta causa não aparece na leitura de versões já publicadas, inclusive na retificação em ato único: a versão guarda código, versão e hash da regra, sem consultar novamente o `rol_de_regras`."
       ],
       "comoResolver": [
         "Confirme, no catálogo de regras, que o código e a versão da regra de\neliminação declarados existem. Se a regra foi descontinuada recentemente,\nou o código está incorreto, corrija o corpo do pedido antes de reenviar.",
-        "Como o processamento para na primeira regra com problema, corrigir esta e\nreenviar pode revelar uma nova falha numa regra seguinte do mesmo corpo do pedido\n— não é garantia de que o restante do corpo do pedido está correto."
+        "Corrija todas as regras apontadas em `regrasEliminacao[i].regraCodigo` antes de reenviar."
       ],
       "ondeAparece": [
         "Definição de classificação do processo seletivo"
@@ -27382,11 +27382,11 @@
       "oQueAconteceu": [
         "Este código cobre duas situações distintas, ambas sobre a coerência de tipo\nda regra referenciada:",
         "- O `regraCodigo`/`regraVersao` de uma regra de eliminação existe no\n  `rol_de_regras`, mas o tipo cadastrado da regra não é `REGRA_ELIMINACAO`.\n  O catálogo é compartilhado por vários tipos de regra do módulo Seleção —\n  o código sozinho não garante o tipo certo.\n- A regra existe e é do tipo `REGRA_ELIMINACAO`, mas o código dela não\n  corresponde a nenhuma das variantes reconhecidas\n  (`ELIMINACAO_NOTA_MINIMA_ETAPA`, `ELIMINACAO_CORTE_EM_AREA`, `ELIMINACAO_ZERO_EM_AREA`,\n  `ELIMINACAO_FALTA_EM_DIA_DE_PROVA_ENEM` e `ELIMINACAO_AUSENCIA_NA_ETAPA`) — o\n  vocabulário do tipo `REGRA_ELIMINACAO` é fechado.",
-        "Roda logo depois de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.regra_eliminacao.regra_nao_encontrada)\nresolver a existência da regra. O processamento é sequencial por regra de\neliminação: a primeira que falhar interrompe a passada, sem acumular com\nnenhuma outra violação.",
+        "Roda logo depois de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.regra_eliminacao.regra_nao_encontrada)\nresolver a existência da regra. Cada regra de eliminação é conferida por si: a recusa sai no campo\n`regrasEliminacao[i].regraCodigo` (`i` é a posição da regra no pedido) e junto com as\ndos demais itens e dos demais campos.",
         "Esta causa não aparece na leitura de versões já publicadas, inclusive na retificação em ato único: a regra guardada não é consultada novamente no catálogo. Um código desconhecido na configuração publicada recebe `envelope_codec.regra_desconhecida`."
       ],
       "comoResolver": [
-        "Confirme, no catálogo de regras, que o código e a versão declarados são de\nfato uma regra do tipo `REGRA_ELIMINACAO`, com um código de uma das três\nvariantes reconhecidas. Se a intenção era outra regra (distribuição de\nvagas, desempate, cálculo, ordem de alocação), reveja qual referência\npertence a qual campo do corpo do pedido."
+        "Confirme, no catálogo de regras, que o código e a versão declarados são de\nfato uma regra do tipo `REGRA_ELIMINACAO`, com um código de uma das cinco\nvariantes reconhecidas. Se a intenção era outra regra (distribuição de\nvagas, desempate, cálculo, ordem de alocação), reveja qual referência\npertence a qual campo do corpo do pedido."
       ],
       "ondeAparece": [
         "Definição de classificação do processo seletivo"
