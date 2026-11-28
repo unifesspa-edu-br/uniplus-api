@@ -28065,13 +28065,15 @@
       "codigo": "uniplus.validacao.obrigatorio",
       "requisitos": [],
       "oQueAconteceu": [
-        "Na validação do pedido, um campo obrigatório está ausente ou vazio. Este código aparece em uma entrada de `errors[]` da resposta de [validação](/erros/uniplus.validacao). O campo `field` identifica o campo e `message` descreve a correção necessária."
+        "Na validação do pedido, um campo obrigatório está ausente ou vazio. Este código aparece em uma entrada de `errors[]` da resposta de [validação](/erros/uniplus.validacao); quando a ausência é a primeira recusa do pedido, ele também é o código principal da resposta. O campo `field` identifica o campo e `message` descreve a correção necessária."
       ],
       "comoResolver": [
         "Consulte a mensagem da entrada, corrija os dados indicados e envie o pedido novamente."
       ],
       "ondeAparece": [
         "POST /api/selecao/processos-seletivos",
+        "POST /api/configuracao/admin/fases-canonicas",
+        "PUT /api/configuracao/admin/fases-canonicas/`{id}`",
         "Outras operações com validação da mesma categoria"
       ]
     },

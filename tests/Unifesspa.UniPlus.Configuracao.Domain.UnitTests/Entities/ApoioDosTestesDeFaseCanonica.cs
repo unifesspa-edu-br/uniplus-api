@@ -13,7 +13,7 @@ internal static class ApoioDosTestesDeFaseCanonica
         string? descricao = null,
         string? baseLegal = null,
         string? origemData = "NO_EDITAL",
-        SinalizadoresDaFase? sinalizadores = null) =>
+        SinalizadoresInformados? sinalizadores = null) =>
         FaseCanonica.Criar(
             codigo, nome, descricao, baseLegal, origemData,
             // A marca acompanha o código por definição: os testes só a informam quando querem
@@ -21,11 +21,12 @@ internal static class ApoioDosTestesDeFaseCanonica
             sinalizadores ?? Sinalizadores(
                 coletaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao));
 
-    internal static SinalizadoresDaFase Sinalizadores(
-        bool agrupaEtapas = false,
-        bool permiteComplementacao = false,
-        bool coletaInscricao = false,
-        bool coletaSolicitacaoIsencao = false,
-        bool organizadaEmChamadas = false) =>
+    /// <summary>Os cinco sinalizadores informados: falsos, salvo o que o teste liga ou deixa ausente (<see langword="null"/>).</summary>
+    internal static SinalizadoresInformados Sinalizadores(
+        bool? agrupaEtapas = false,
+        bool? permiteComplementacao = false,
+        bool? coletaInscricao = false,
+        bool? coletaSolicitacaoIsencao = false,
+        bool? organizadaEmChamadas = false) =>
         new(agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao, organizadaEmChamadas);
 }

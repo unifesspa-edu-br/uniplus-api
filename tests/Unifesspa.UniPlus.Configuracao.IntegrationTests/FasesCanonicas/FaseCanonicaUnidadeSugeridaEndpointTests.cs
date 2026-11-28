@@ -41,7 +41,7 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
         await LiberarSlotDoSeedAsync("HABILITACAO");
         Unidade cga = await SemearUnidadeAsync("Centro de Gestão Acadêmica", "CGA");
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarFaseAsync(client, new { codigo = "HABILITACAO", nome = "Habilitação", origemData = "NA_EXECUCAO", unidadeSugeridaId = cga.Id });
+        Guid id = await CriarFaseAsync(client, new CorpoDoTipoDeFase { Codigo = "HABILITACAO", Nome = "Habilitação", OrigemData = "NA_EXECUCAO", UnidadeSugeridaId = cga.Id });
 
         JsonElement unidade = (await ObterAsync(client, id)).GetProperty("unidadeSugerida");
         unidade.GetProperty("origemId").GetGuid().Should().Be(cga.Id);
@@ -55,11 +55,11 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
         await LiberarSlotDoSeedAsync("CLASSIFICACAO");
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new CorpoDoTipoDeFase
         {
-            codigo = "CLASSIFICACAO",
-            nome = "Classificação",
-            origemData = "NA_EXECUCAO",
+            Codigo = "CLASSIFICACAO",
+            Nome = "Classificação",
+            OrigemData = "NA_EXECUCAO",
         });
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
@@ -72,12 +72,12 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
     public async Task Criar_UnidadeSugeridaInexistente_Retorna422NoCampo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, new
+        HttpResponseMessage response = await EnviarPostAdmin(client, new CorpoDoTipoDeFase
         {
-            codigo = "MATRICULA",
-            nome = "Matrícula",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = Guid.NewGuid(),
+            Codigo = "MATRICULA",
+            Nome = "Matrícula",
+            OrigemData = "NA_EXECUCAO",
+            UnidadeSugeridaId = Guid.NewGuid(),
         });
 
         await ConferirRecusaDaUnidadeSugeridaAsync(response);
@@ -89,12 +89,12 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
         Unidade extinta = await SemearUnidadeAsync("Coordenação extinta", "COEXT", inativa: true);
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, new
+        HttpResponseMessage response = await EnviarPostAdmin(client, new CorpoDoTipoDeFase
         {
-            codigo = "MATRICULA",
-            nome = "Matrícula",
-            origemData = "NA_EXECUCAO",
-            unidadeSugeridaId = extinta.Id,
+            Codigo = "MATRICULA",
+            Nome = "Matrícula",
+            OrigemData = "NA_EXECUCAO",
+            UnidadeSugeridaId = extinta.Id,
         });
 
         await ConferirRecusaDaUnidadeSugeridaAsync(response);
@@ -106,7 +106,7 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
         await LiberarSlotDoSeedAsync("ENSALAMENTO");
         Unidade cga = await SemearUnidadeAsync("Centro de Gestão Acadêmica", "CGA");
         using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarFaseAsync(client, new { codigo = "ENSALAMENTO", nome = "Ensalamento", origemData = "NA_EXECUCAO" });
+        Guid id = await CriarFaseAsync(client, new CorpoDoTipoDeFase { Codigo = "ENSALAMENTO", Nome = "Ensalamento", OrigemData = "NA_EXECUCAO" });
 
         await SugerirUnidadeAsync(client, id, cga.Id);
         (await ObterAsync(client, id)).GetProperty("unidadeSugerida").GetProperty("sigla").GetString().Should().Be(cga.Sigla);
@@ -125,7 +125,7 @@ public sealed class FaseCanonicaUnidadeSugeridaEndpointTests
     private static async Task SugerirUnidadeAsync(HttpClient client, Guid id, Guid? unidadeSugeridaId)
     {
         using HttpResponseMessage atualizar = await EnviarPutAdmin(
-            client, id, new { id, nome = "Ensalamento", origemData = "NA_EXECUCAO", unidadeSugeridaId });
+            client, id, new CorpoDoTipoDeFase { Id = id, Nome = "Ensalamento", OrigemData = "NA_EXECUCAO", UnidadeSugeridaId = unidadeSugeridaId });
 
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }

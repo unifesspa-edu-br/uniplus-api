@@ -9,9 +9,9 @@ using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDosTe
 
 public sealed class FaseCanonicaOrganizadaEmChamadasTests
 {
-    [Fact(DisplayName = "A fase nasce sem a marca de organizada em chamadas quando ela não é informada")]
-    public void Criar_SemAMarca_NaoOrganizaEmChamadas() =>
-        Criar().Value!.Sinalizadores.OrganizadaEmChamadas.Should().BeFalse();
+    [Fact(DisplayName = "A marca de organizada em chamadas ausente é recusada, não assumida como falsa")]
+    public void Criar_SemAMarca_Recusa() =>
+        Criar(sinalizadores: Sinalizadores(organizadaEmChamadas: null)).IsFailure.Should().BeTrue();
 
     [Theory(DisplayName = "A marca de organizada em chamadas é aceita em qualquer fase e guardada como foi informada")]
     [InlineData("HABILITACAO")]

@@ -10,6 +10,37 @@ using Npgsql;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
+/// <summary>
+/// Corpo completo e válido de criação ou atualização de tipo de fase: os cinco sinalizadores
+/// informados como falsos. Cada teste muda só o que exercita.
+/// </summary>
+internal sealed record CorpoDoTipoDeFase
+{
+    public Guid? Id { get; init; }
+
+    public string? Codigo { get; init; }
+
+    public string? Nome { get; init; } = "Fase de teste";
+
+    public string? Descricao { get; init; }
+
+    public string? BaseLegal { get; init; }
+
+    public string? OrigemData { get; init; } = "NO_EDITAL";
+
+    public bool? AgrupaEtapas { get; init; } = false;
+
+    public bool? PermiteComplementacao { get; init; } = false;
+
+    public bool? ColetaInscricao { get; init; } = false;
+
+    public bool? ColetaSolicitacaoIsencao { get; init; } = false;
+
+    public bool? OrganizadaEmChamadas { get; init; } = false;
+
+    public Guid? UnidadeSugeridaId { get; init; }
+}
+
 internal static class ApoioDosEndpointsDeFaseCanonica
 {
     internal static async Task<Guid> CriarAsync(HttpClient client, object body)

@@ -61,13 +61,13 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
         string codigo, bool agrupaEtapas, bool permiteComplementacao, bool coletaInscricao)
     {
         await LiberarSlotAsync(codigo);
-        var sinalizadores = new SinalizadoresDaFase(agrupaEtapas, permiteComplementacao, coletaInscricao, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false);
+        SinalizadoresInformados sinalizadores = new(agrupaEtapas, permiteComplementacao, coletaInscricao, ColetaSolicitacaoIsencao: false, OrganizadaEmChamadas: false);
         FaseCanonica fase = FaseCanonica.Criar(codigo, "Fase", null, null, "NO_EDITAL", sinalizadores).Value!;
         await GravarComoAsync("admin-a", fase);
 
         FaseCanonica lida = await LerAsync(fase.Id);
 
-        lida.Sinalizadores.Should().Be(sinalizadores);
+        lida.Sinalizadores.Should().Be(fase.Sinalizadores);
     }
 
     [Theory(DisplayName = "A marca de organizada em chamadas grava na coluna própria e volta igual na leitura")]
@@ -76,7 +76,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
     public async Task OrganizadaEmChamadas_GravaEVolta(bool organizada)
     {
         await LiberarSlotAsync("HABILITACAO");
-        var sinalizadores = new SinalizadoresDaFase(false, false, false, false, organizada);
+        SinalizadoresInformados sinalizadores = new(false, false, false, false, organizada);
         FaseCanonica fase = FaseCanonica.Criar("HABILITACAO", "Habilitação", null, null, "NO_EDITAL", sinalizadores).Value!;
         await GravarComoAsync("admin-a", fase);
 
@@ -90,10 +90,10 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
     {
         await LiberarSlotAsync("HOMOLOGACAO_INSCRICOES");
         FaseCanonica fase = FaseCanonica.Criar(
-            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, null, "NO_EDITAL", new SinalizadoresDaFase(false, false, false, false, false)).Value!;
+            "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições", null, null, "NO_EDITAL", new SinalizadoresInformados(false, false, false, false, false)).Value!;
         await GravarComoAsync("admin-a", fase);
 
-        await AtualizarComoAsync("admin-b", fase.Id, new SinalizadoresDaFase(false, true, false, false, false));
+        await AtualizarComoAsync("admin-b", fase.Id, new SinalizadoresInformados(false, true, false, false, false));
 
         FaseCanonica lida = await LerAsync(fase.Id);
         lida.Sinalizadores.PermiteComplementacao.Should().BeTrue();
@@ -112,7 +112,7 @@ public sealed class FaseCanonicaSinalizadoresPersistenceTests
         await escrita.SaveChangesAsync();
     }
 
-    private async Task AtualizarComoAsync(string usuario, Guid id, SinalizadoresDaFase sinalizadores)
+    private async Task AtualizarComoAsync(string usuario, Guid id, SinalizadoresInformados sinalizadores)
     {
         await using UniPlusDbContext edicao = _fixture.CreateDbContext(usuario);
         FaseCanonica rastreada = await edicao.FasesCanonicas.SingleAsync(f => f.Id == id);

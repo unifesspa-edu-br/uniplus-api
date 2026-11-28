@@ -112,14 +112,6 @@ public sealed class FaseCanonicaCoerenciaDosSinalizadoresTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
     }
 
-    [Fact(DisplayName = "Agrupar etapas é falso por omissão")]
-    public void Criar_SemAgrupaEtapas_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação").Value!;
-
-        f.Sinalizadores.AgrupaEtapas.Should().BeFalse();
-    }
-
     // ── Coerência permite_complementacao ⇒ fases permitidas ────────────────────
 
     [Fact(DisplayName = "Permitir complementação verdadeiro em fase permitida é aceito")]
@@ -139,22 +131,6 @@ public sealed class FaseCanonicaCoerenciaDosSinalizadoresTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas);
-    }
-
-    [Fact(DisplayName = "Permitir complementação é falso por omissão")]
-    public void Criar_SemComplementacao_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HABILITACAO", nome: "Habilitação").Value!;
-
-        f.Sinalizadores.PermiteComplementacao.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Coletar inscrição é falso por omissão")]
-    public void Criar_SemColetaInscricao_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HABILITACAO", nome: "Habilitação").Value!;
-
-        f.Sinalizadores.ColetaInscricao.Should().BeFalse();
     }
 
     // ── Atualização e acumulação ───────────────────────────────────────────────

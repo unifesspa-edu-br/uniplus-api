@@ -18,14 +18,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.ApoioDosComandosDeFaseCanonica;
+
 public sealed class CriarFaseCanonicaCommandHandlerTests
 {
     private readonly IFaseCanonicaRepository _repository = Substitute.For<IFaseCanonicaRepository>();
     private readonly IUnidadeReader _unidadeReader = Substitute.For<IUnidadeReader>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private static CriarFaseCanonicaCommand Comando() =>
-        new("INSCRICAO", Nome: "Inscrição", OrigemData: "NO_EDITAL");
+    private static CriarFaseCanonicaCommand Comando() => Criacao("INSCRICAO") with { Nome = "Inscrição" };
 
     [Fact(DisplayName = "Código livre cria a fase, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -54,19 +55,31 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<FaseCanonica>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Os sinalizadores do comando levam a marca de organizada em chamadas à fase")]
-    public void Sinalizadores_LevamAMarcaDeOrganizadaEmChamadas()
+    [Fact(DisplayName = "Os sinalizadores do comando levam cada marca informada à fase, sem assumir valor")]
+    public void Sinalizadores_LevamCadaMarcaInformada()
     {
-        new CriarFaseCanonicaCommand("HABILITACAO", Nome: "x", OrganizadaEmChamadas: true).Sinalizadores()
-            .OrganizadaEmChamadas.Should().BeTrue();
-        new CriarFaseCanonicaCommand("HABILITACAO", Nome: "x").Sinalizadores()
-            .OrganizadaEmChamadas.Should().BeFalse();
+        CriarFaseCanonicaCommand comando = Criacao("HABILITACAO") with { OrganizadaEmChamadas = true, ColetaInscricao = null };
+
+        comando.Sinalizadores().Should().Be(new SinalizadoresInformados(false, false, null, false, true));
+    }
+
+    [Fact(DisplayName = "Sinalizador ausente é recusado no campo dele, sem consultar unicidade nem persistir")]
+    public async Task Handle_SinalizadorAusente_RecusaSemConsultarUnicidadeNemPersistir()
+    {
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            Comando() with { OrganizadaEmChamadas = null }, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
+            ("organizadaEmChamadas", CodigosDeValidacao.Obrigatorio));
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
     public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", OrigemData: "NO_EDITAL");
+        CriarFaseCanonicaCommand comando = Criacao("ENTREVISTA_FINAL") with { Nome = "x" };
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -83,7 +96,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
-        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO_INSCRICOES", Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
+        CriarFaseCanonicaCommand comando = Criacao("HOMOLOGACAO_INSCRICOES") with { Nome = "Homologação", AgrupaEtapas = true };
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -96,13 +109,12 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Código fora do conjunto canônico com inscrição e isenção ligadas acumula o código e a exclusividade, sem persistir")]
     public async Task Handle_ForaDoCanonicoComAsDuasMarcas_AcumulaCodigoEExclusividade()
     {
-        var comando = new CriarFaseCanonicaCommand(
-            "ENTREVISTA_FINAL", Nome: "Entrevista", ColetaInscricao: true, ColetaSolicitacaoIsencao: true, OrigemData: "NO_EDITAL");
+        CriarFaseCanonicaCommand comando = Criacao("ENTREVISTA_FINAL") with { Nome = "Entrevista", ColetaInscricao = true, ColetaSolicitacaoIsencao = true };
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
-        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+        resultado.Errors.Select(recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
             ("codigo", FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico),
             ("coletaSolicitacaoIsencao", FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas));
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -111,7 +123,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
     public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
     {
-        var comando = new CriarFaseCanonicaCommand(null, Nome: "", OrigemData: "NO_EDITAL");
+        CriarFaseCanonicaCommand comando = Criacao(null) with { Nome = "" };
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
@@ -168,7 +180,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         Guid ausente = Guid.CreateVersion7();
         _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
-        var comando = new CriarFaseCanonicaCommand("INSCRICAO", Nome: "", OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente);
+        CriarFaseCanonicaCommand comando = Criacao("INSCRICAO") with { Nome = "", UnidadeSugeridaId = ausente };
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
