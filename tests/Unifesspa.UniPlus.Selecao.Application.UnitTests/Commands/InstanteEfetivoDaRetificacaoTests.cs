@@ -63,7 +63,7 @@ public sealed class InstanteEfetivoDaRetificacaoTests
             new BaseDaRetificacao(vigente, "Correção do prazo", servicos.Codecs.Reidratar(vigente)));
 
         Result<AtoEDocumentoConferidos> conferidos = await servicos.AtoEDocumento()
-            .ConferirAsync(processo.Id, Guid.CreateVersion7(), NovoAto(), null, retificacao, CancellationToken.None);
+            .ConferirAsync(processo.Id, new EditalDeclarado(null, null, null, Guid.CreateVersion7(), null), NovoAto(), retificacao, CancellationToken.None);
 
         conferidos.Value.Publicacao.Instante.Should().Be(vigente.VigenteAPartirDe);
         conferidos.Value.Publicacao.Dia.Should().Be(new DateOnly(2026, 1, 1));
@@ -77,7 +77,7 @@ public sealed class InstanteEfetivoDaRetificacaoTests
             .ComRelogio(new RelogioFixo(Agora.AddHours(-10)));
 
         Result<AtoEDocumentoConferidos> conferidos = await servicos.AtoEDocumento()
-            .ConferirAsync(processo.Id, Guid.CreateVersion7(), NovoAto(), null, new PrimeiraPublicacao(), CancellationToken.None);
+            .ConferirAsync(processo.Id, new EditalDeclarado(null, null, null, Guid.CreateVersion7(), null), NovoAto(), new PrimeiraPublicacao(), CancellationToken.None);
 
         conferidos.Value.Publicacao.Instante.Should().Be(Agora.AddHours(-10));
     }

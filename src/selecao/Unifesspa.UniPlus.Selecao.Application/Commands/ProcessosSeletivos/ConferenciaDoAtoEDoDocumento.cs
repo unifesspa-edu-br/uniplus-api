@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -27,42 +28,24 @@ internal readonly record struct AtoEDocumentoConferidos(
 /// confirmado e o tipo do ato no catálogo de Publicações. A vaga que a linhagem reserva sobre o certame é conferida
 /// pelo registro do ato, na mesma transação da publicação. Os atributos conferidos do tipo seguem ao registro por
 /// valor, porque reler o catálogo faria a decisão valer outra coisa. O instante da operação é lido aqui, uma só vez,
-/// depois da trava do processo que o handler já tomou, e o tipo do ato vigora no dia civil dele no fuso institucional: a
-/// data que o documento declara não escolhe o tipo. A origem diz qual instante vale: na retificação, o efetivo, que não
-/// precede a vigência da versão sucedida. O campo obrigatório ausente (o documento do edital, o bloco do ato, o ano, a data e o documento de cada anexo) acumula com a recusa do
-/// tipo do ato e corta o que depende dele; o documento recusado impede o resto.
+/// depois da trava do processo que o handler já tomou e antes de qualquer consulta, e o tipo do ato vigora no dia
+/// civil dele no fuso institucional: a data que o documento declara não escolhe o tipo. A origem diz qual instante
+/// vale: na retificação, o efetivo, que não precede a vigência da versão sucedida. Sem o fuso institucional, a falha
+/// é da instituição e responde sozinha. Com o instante, a forma do pedido, o documento do edital e o tipo do ato não
+/// dependem uns dos outros: as recusas de cada um se somam na mesma resposta, cada uma no campo do pedido que a
+/// corrige, e a falta do campo de um só impede a consulta dele.
 /// </summary>
 public sealed class ConferenciaDoAtoEDoDocumento(
     IDocumentoAPublicarRepository documentos,
     IProcessoSeletivoRepository processos,
     ConferenciaDoTipoDeAto tiposDeAto,
+    ConferenciaDosAnexosDoEdital anexos,
     LeituraDoInstanteDoComando instantes)
 {
     internal async Task<Result<AtoEDocumentoConferidos>> ConferirAsync(
         Guid processoId,
-        Guid? documentoEditalId,
+        EditalDeclarado edital,
         DadosDoAto? ato,
-        IReadOnlyList<AnexoSolicitadoDoEdital>? anexos,
-        OrigemDoCongelamento origem,
-        CancellationToken cancellationToken)
-    {
-        FieldError[] ausentes = [.. AusenciasNaDeclaracaoDoEdital.Listar(documentoEditalId, ato, anexos)];
-        Result<DocumentoAPublicar>? documento = documentoEditalId is { } id
-            ? await ConferenciaDoDocumentoDoEdital
-                .ConferirAsync(documentos, processoId, id, origem.DescricaoDaOperacao, cancellationToken)
-                .ConfigureAwait(false)
-            : null;
-
-        return documento is { IsFailure: true }
-            ? Result<AtoEDocumentoConferidos>.ValidationFailure([.. ausentes, .. documento.Errors])
-            : await ConferirOTipoEAVagaAsync(processoId, ausentes, ato, documento?.Value, origem, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoEAVagaAsync(
-        Guid processoId,
-        FieldError[] ausentes,
-        DadosDoAto? ato,
-        DocumentoAPublicar? documento,
         OrigemDoCongelamento origem,
         CancellationToken cancellationToken)
     {
@@ -70,29 +53,68 @@ public sealed class ConferenciaDoAtoEDoDocumento(
 
         return instante.IsFailure
             ? Result<AtoEDocumentoConferidos>.Failure(instante.Error!)
-            : await ConferirOTipoNoDiaAsync(processoId, ausentes, ato, documento, instante.Value, cancellationToken).ConfigureAwait(false);
+            : await ConferirNoInstanteAsync(processoId, edital, ato, origem, instante.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    // A ausência de um campo acumula com a recusa do tipo, que não depende dele; sem causa, o documento e o tipo existem.
-    private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoNoDiaAsync(
+    private async Task<Result<AtoEDocumentoConferidos>> ConferirNoInstanteAsync(
         Guid processoId,
-        FieldError[] ausentes,
+        EditalDeclarado edital,
         DadosDoAto? ato,
-        DocumentoAPublicar? documento,
+        OrigemDoCongelamento origem,
         InstanteDoComando instante,
         CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView>? tipoDoAto = string.IsNullOrWhiteSpace(ato?.TipoAtoCodigo)
-            ? null
-            : await tiposDeAto.CongelaConfiguracaoAsync(ato.TipoAtoCodigo, instante.Dia, cancellationToken).ConfigureAwait(false);
-        FieldError[] causas = [.. ausentes, .. tipoDoAto?.Errors ?? []];
+        IReadOnlyList<FieldError> ausentes = AusenciasNaDeclaracaoDoEdital.Listar(edital.DocumentoEditalId, ato, edital.Anexos);
+        Result<DocumentoAPublicar>? documento = await ConferirODocumentoAsync(processoId, edital, origem, cancellationToken).ConfigureAwait(false);
+        Result<TipoAtoPublicadoView>? tipoDoAto = await ConferirOTipoAsync(ato, instante, cancellationToken).ConfigureAwait(false);
+        FieldError[] causas = [.. ausentes, .. documento?.Errors ?? [], .. tipoDoAto?.Errors ?? []];
 
         return causas.Length > 0
-            ? Result<AtoEDocumentoConferidos>.ValidationFailure(causas)
+            ? Result<AtoEDocumentoConferidos>.ValidationFailure([.. causas, .. await ConferirOsAnexosAsync(processoId, edital, cancellationToken).ConfigureAwait(false)])
             : await ReunirALinhagemAsync(
-                processoId, AusenciasNaDeclaracaoDoEdital.Completar(ato)!, documento!, tipoDoAto!.Value!, instante, cancellationToken)
+                processoId, AusenciasNaDeclaracaoDoEdital.Completar(ato)!, documento!.Value!, tipoDoAto!.Value!, instante, cancellationToken)
                 .ConfigureAwait(false);
     }
+
+    // Os anexos não dependem do documento do edital nem do tipo do ato: com qualquer outra recusa, a deles sai junto. Sem recusa, a
+    // conferência dos anexos acontece depois, na conferência da configuração, que monta o edital com eles.
+    private async Task<IReadOnlyList<FieldError>> ConferirOsAnexosAsync(
+        Guid processoId, EditalDeclarado edital, CancellationToken cancellationToken)
+    {
+        if (edital.Anexos is not { } pedidos)
+        {
+            return [];
+        }
+
+        Result<IReadOnlyList<AnexoDoEdital>> conferidos = await anexos
+            .ConferirAsync(processoId, pedidos, [], cancellationToken)
+            .ConfigureAwait(false);
+
+        return conferidos.IsSuccess ? [] : conferidos.Errors;
+    }
+
+    // Sem o documento no pedido, não há o que consultar: a ausência já saiu na forma.
+    private async Task<Result<DocumentoAPublicar>?> ConferirODocumentoAsync(
+        Guid processoId, EditalDeclarado edital, OrigemDoCongelamento origem, CancellationToken cancellationToken) =>
+        edital.DocumentoEditalId is { } id
+            ? await ConferenciaDoDocumentoDoEdital
+                .ConferirAsync(documentos, processoId, id, origem.DescricaoDaOperacao, cancellationToken)
+                .ConfigureAwait(false)
+            : null;
+
+    private async Task<Result<TipoAtoPublicadoView>?> ConferirOTipoAsync(
+        DadosDoAto? ato, InstanteDoComando instante, CancellationToken cancellationToken) =>
+        string.IsNullOrWhiteSpace(ato?.TipoAtoCodigo)
+            ? null
+            : TipoNoCampoDoPedido(
+                await tiposDeAto.CongelaConfiguracaoAsync(ato.TipoAtoCodigo, instante.Dia, cancellationToken).ConfigureAwait(false));
+
+    // A conferência do tipo é partilhada com o ato avulso e não sabe de que campo do pedido ele veio: quem a chama o aponta.
+    private static Result<TipoAtoPublicadoView> TipoNoCampoDoPedido(Result<TipoAtoPublicadoView> tipo) =>
+        tipo.IsSuccess
+            ? tipo
+            : Result<TipoAtoPublicadoView>.ValidationFailure(
+                [.. tipo.Errors.Select(static causa => causa with { Field = AusenciasNaDeclaracaoDoEdital.CampoDoTipoDoAto })]);
 
     private async Task<Result<AtoEDocumentoConferidos>> ReunirALinhagemAsync(
         Guid processoId,

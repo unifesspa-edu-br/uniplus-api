@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeRecusaNoCongelamento;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
@@ -109,11 +110,11 @@ public sealed class CampoObrigatorioAusenteNoEditalTests
         (Result resposta, _) = await ExecutarAsync(cenario, operacao, Guid.CreateVersion7(), NovoAto() with { Ano = null });
 
         Recusa(resposta).Should().Equal(
-            ("ato.ano", CodigosDeValidacao.Obrigatorio), (null, CodigoDa(DefeitoDoCongelamento.TipoDeAto)));
+            ("ato.ano", CodigosDeValidacao.Obrigatorio), ("ato.tipoAtoCodigo", CodigoDa(DefeitoDoCongelamento.TipoDeAto)));
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
 
-    [Theory(DisplayName = "O documento recusado impede o tipo do ato, e a ausência acumula com ele")]
+    [Theory(DisplayName = "O documento e o tipo do ato recusados acumulam com a ausência, na ordem do pedido")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
     public async Task AusenciaEDocumentoRecusado_Acumulam(OperacaoQueCongela operacao)
@@ -123,22 +124,77 @@ public sealed class CampoObrigatorioAusenteNoEditalTests
         (Result resposta, _) = await ExecutarAsync(cenario, operacao, Guid.CreateVersion7(), NovoAto() with { DataDoAto = null });
 
         Recusa(resposta).Should().Equal(
-            ("ato.dataDoAto", CodigosDeValidacao.Obrigatorio), ("documentoEditalId", CodigoDa(DefeitoDoCongelamento.Documento)));
+            ("ato.dataDoAto", CodigosDeValidacao.Obrigatorio),
+            ("documentoEditalId", CodigoDa(DefeitoDoCongelamento.Documento)),
+            ("ato.tipoAtoCodigo", CodigoDa(DefeitoDoCongelamento.TipoDeAto)));
     }
 
-    [Theory(DisplayName = "O anexo sem documento é recusado na posição dele e a lista de documentos não é lida")]
+    [Theory(DisplayName = "O anexo sem documento é recusado na posição dele, e os outros anexos seguem conferidos na mesma resposta")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    public async Task AnexoSemDocumento_RecusaNaPosicao(OperacaoQueCongela operacao)
+    public async Task AnexoSemDocumento_RecusaNaPosicaoEConfereOsDemais(OperacaoQueCongela operacao)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao);
+        Guid documentoDoPrimeiro = Guid.CreateVersion7();
+
+        (Result resposta, _) = await ExecutarAsync(
+            cenario, operacao, Guid.CreateVersion7(), NovoAto(), [new(documentoDoPrimeiro, "A"), new(null, "B")]);
+
+        Recusa(resposta).Should().Equal(
+            ("anexos[1].documentoId", CodigosDeValidacao.Obrigatorio),
+            ("anexos[0].documentoId", AnexoDoEditalErrorCodes.NaoEncontrado));
+        await cenario.Servicos.Documentos.Received(1).ListarDoProcessoAsync(
+            Arg.Any<Guid>(),
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 1 && ids.Contains(documentoDoPrimeiro)),
+            Arg.Any<CancellationToken>());
+        await cenario.Servicos.NadaFoiGravadoAsync();
+    }
+
+    [Theory(DisplayName = "O anexo sem documento não impede a recusa do nome do anexo seguinte, que sai na mesma resposta")]
+    [InlineData(OperacaoQueCongela.Publicar)]
+    [InlineData(OperacaoQueCongela.Retificar)]
+    public async Task AnexoSemDocumento_NaoEscondeAsRecusasDosDemais(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
 
         (Result resposta, _) = await ExecutarAsync(
-            cenario, operacao, Guid.CreateVersion7(), NovoAto(), [new(Guid.CreateVersion7(), "A"), new(null, "B")]);
+            cenario, operacao, Guid.CreateVersion7(), NovoAto(), [new(null, "A"), new(Guid.CreateVersion7(), "B")]);
 
-        Recusa(resposta).Should().Equal(("anexos[1].documentoId", CodigosDeValidacao.Obrigatorio));
-        await cenario.Servicos.Documentos.DidNotReceive().ListarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
-        await cenario.Servicos.NadaFoiGravadoAsync();
+        Recusa(resposta).Select(static r => r.Campo).Should().Equal("anexos[0].documentoId", "anexos[1].documentoId");
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(CodigosDeValidacao.Obrigatorio, AnexoDoEditalErrorCodes.NaoEncontrado);
+    }
+
+    [Theory(DisplayName = "Todas as recusas independentes saem juntas, na ordem do pedido: ausências, tipo do ato e anexos")]
+    [InlineData(OperacaoQueCongela.Publicar)]
+    [InlineData(OperacaoQueCongela.Retificar)]
+    public async Task TodasAsRecusasIndependentes_SaemJuntas(OperacaoQueCongela operacao)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.TipoDeAto);
+
+        (Result resposta, _) = await ExecutarAsync(
+            cenario, operacao, null, NovoAto() with { Ano = null }, [new(null, "A"), new(Guid.CreateVersion7(), "B")]);
+
+        Recusa(resposta).Should().Equal(
+            ("documentoEditalId", CodigosDeValidacao.Obrigatorio),
+            ("ato.ano", CodigosDeValidacao.Obrigatorio),
+            ("anexos[0].documentoId", CodigosDeValidacao.Obrigatorio),
+            ("ato.tipoAtoCodigo", CodigoDa(DefeitoDoCongelamento.TipoDeAto)),
+            ("anexos[1].documentoId", AnexoDoEditalErrorCodes.NaoEncontrado));
+    }
+
+    [Theory(DisplayName = "O documento do edital recusado não esconde a recusa dos anexos")]
+    [InlineData(OperacaoQueCongela.Publicar)]
+    [InlineData(OperacaoQueCongela.Retificar)]
+    public async Task DocumentoRecusado_NaoEscondeAsRecusasDosAnexos(OperacaoQueCongela operacao)
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.Documento);
+
+        (Result resposta, _) = await ExecutarAsync(
+            cenario, operacao, Guid.CreateVersion7(), NovoAto(), [new(Guid.CreateVersion7(), "A")]);
+
+        Recusa(resposta).Should().Equal(
+            ("documentoEditalId", CodigoDa(DefeitoDoCongelamento.Documento)),
+            ("anexos[0].documentoId", AnexoDoEditalErrorCodes.NaoEncontrado));
     }
 
     private static (Guid? Documento, DadosDoAto? Ato) SemOCampo(string campo) => campo switch

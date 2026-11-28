@@ -57,9 +57,9 @@ public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository r
                 $"O edital aceita no máximo {AnexoDoEdital.QuantidadeMaxima} anexos."));
         }
 
-        // O documento ausente já foi recusado na conferência do ato: aqui todo anexo tem documento, e o padrão só satisfaz o tipo.
+        // O anexo sem documento é recusado como ausente na conferência do ato e não é consultado aqui; os demais seguem conferidos.
         IReadOnlyList<DocumentoAPublicar> documentos = await repositorio
-            .ListarDoProcessoAsync(processoSeletivoId, [.. solicitados.Select(static s => s.DocumentoId.GetValueOrDefault()).Distinct()], cancellationToken)
+            .ListarDoProcessoAsync(processoSeletivoId, [.. solicitados.Select(static s => s.DocumentoId).OfType<Guid>().Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
         return AnexosDosPedidos(solicitados, documentos, vigentes);
@@ -68,7 +68,13 @@ public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository r
     private static Result<IReadOnlyList<AnexoDoEdital>> AnexosDosPedidos(
         IReadOnlyList<AnexoSolicitadoDoEdital> solicitados, IReadOnlyList<DocumentoAPublicar> documentos, IReadOnlyList<AnexoDoEdital> vigentes)
     {
-        Result<AnexoDoEdital>[] conferidos = [.. solicitados.Select((pedido, posicao) => AnexoDoPedido(pedido, posicao, documentos))];
+        Result<AnexoDoEdital>[] conferidos =
+        [
+            .. solicitados
+                .Select((pedido, posicao) => (pedido, posicao))
+                .Where(static par => par.pedido.DocumentoId is not null)
+                .Select(par => AnexoDoPedido(par.pedido, par.posicao, documentos)),
+        ];
         FieldError[] recusas = [.. conferidos.SelectMany(static c => c.Errors)];
 
         return recusas.Length > 0

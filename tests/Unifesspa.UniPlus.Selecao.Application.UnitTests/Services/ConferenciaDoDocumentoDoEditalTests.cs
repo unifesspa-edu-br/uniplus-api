@@ -43,7 +43,7 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
     private static void ExigirRecusaDoDocumentoDoEdital(Result<DocumentoAPublicar> resultado)
     {
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("documentoEditalId");
+        recusa.Field.Should().Be(ConferenciaDoDocumentoDoEdital.CampoDoDocumento);
         recusa.Error.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
         recusa.Error.Message.Should().Be("O documento do edital deve ser um dos documentos deste processo.");
     }
@@ -64,6 +64,7 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
     {
         Result<DocumentoAPublicar> resultado = await ConferirAsync(Documento(TiposDeMidiaDeDocumento.Pdf, confirmado: false), ProcessoId);
 
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be(ConferenciaDoDocumentoDoEdital.CampoDoDocumento);
         resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoConfirmado);
         resultado.Error.Message.Should().Contain("na retificação");
     }
@@ -76,6 +77,7 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
         Result<DocumentoAPublicar> resultado = await ConferirAsync(
             Documento(TiposDeMidiaDeDocumento.Pdf, confirmado: true, finalidade), ProcessoId);
 
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be(ConferenciaDoDocumentoDoEdital.CampoDoDocumento);
         resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.FinalidadeIncompativel);
     }
 

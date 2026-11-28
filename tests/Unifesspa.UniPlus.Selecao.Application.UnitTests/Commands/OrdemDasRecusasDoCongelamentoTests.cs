@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeRecusaNoCongelamento;
 
 /// <summary>
-/// A ordem das recusas ao congelar, em cada uma das três operações: o defeito que impede as conferências seguintes recusa sozinho, os que se
-/// acumulam saem todos na ordem em que a conferência os julga, e a recusa não deixa nada canonicalizado, transitado
+/// A ordem das recusas ao congelar, em cada uma das três operações: o defeito que impede as conferências seguintes recusa sozinho, o documento e o
+/// tipo do ato impedem a configuração mas se somam entre si, os que se acumulam saem todos na ordem em que a conferência os julga, e a recusa não deixa nada canonicalizado, transitado
 /// nem gravado. Cada defeito sozinho recusa com o código que lhe cabe, para que o par não passe por recusa nenhuma.
 /// </summary>
 public sealed class OrdemDasRecusasDoCongelamentoTests
@@ -45,7 +45,7 @@ public sealed class OrdemDasRecusasDoCongelamentoTests
         return defeitos;
     }
 
-    [Theory(DisplayName = "Com dois defeitos, o que recusa sozinho impede os demais, e os outros se acumulam na ordem da conferência, sem nada gravado")]
+    [Theory(DisplayName = "Com dois defeitos, o que impede o outro o esconde, e os outros se acumulam na ordem da conferência, sem nada gravado")]
     [MemberData(nameof(Pares))]
     public async Task DoisDefeitos_RecusaSozinhoOuAcumulaNaOrdem(OperacaoQueCongela operacao, DefeitoDoCongelamento primeiro, DefeitoDoCongelamento segundo)
     {
@@ -77,7 +77,7 @@ public sealed class OrdemDasRecusasDoCongelamentoTests
     {
         string[] codigos = [.. resposta.Errors.Select(static e => e.Error.Code)];
         codigos.First().Should().Be(CodigoDa(primeiro));
-        if (RecusaSozinho(primeiro) || ConformidadeLegalSemEdital(primeiro, segundo))
+        if (ImpedeOSegundo(primeiro, segundo) || ConformidadeLegalSemEdital(primeiro, segundo))
         {
             codigos.Should().NotContain(CodigoDa(segundo));
         }

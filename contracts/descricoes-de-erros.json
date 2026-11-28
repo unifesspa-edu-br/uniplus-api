@@ -24121,7 +24121,8 @@
       "codigo": "uniplus.selecao.processo_seletivo.documento_nao_confirmado",
       "requisitos": [],
       "oQueAconteceu": [
-        "O documento indicado como documento do edital existe e é do processo, mas o envio dele\nainda não foi confirmado. A conferência acontece antes de qualquer gravação e é a mesma\nna publicação e na retificação em ato único; a mensagem de detalhe diz em qual dos dois o documento foi referenciado. A recusa sai\ncom **422**."
+        "O documento indicado como documento do edital existe e é do processo, mas o envio dele\nainda não foi confirmado. A conferência acontece antes de qualquer gravação e é a mesma\nna publicação e na retificação em ato único; a mensagem de detalhe diz em qual dos dois o documento foi referenciado. A recusa sai\ncom **422**.",
+        "A recusa aponta o campo `documentoEditalId`. Se o tipo do ato também for recusado no mesmo pedido, as duas recusas vêm juntas na resposta, cada uma no seu campo. O código da resposta é o da primeira causa da lista, na ordem dos campos do pedido: as ausências de campo vêm antes da recusa do documento e da do tipo."
       ],
       "comoResolver": [
         "Confirme o envio do documento e repita a operação. Se o envio não chegou a ser concluído, inicie um novo envio como documento do edital, confirme e use o novo identificador.",
@@ -24154,7 +24155,8 @@
         "UNI-REQ-0154"
       ],
       "oQueAconteceu": [
-        "O documento indicado como documento do edital existe, é do processo e está confirmado, mas\nfoi enviado com outra finalidade: como anexo do edital ou como documento de ato. A\nfinalidade é declarada no início do envio e não muda. Só o documento enviado como\n`DOCUMENTO_DO_EDITAL` pode ser o PDF principal do edital de abertura ou de retificação. A\nconferência é a mesma na publicação, na retificação e no fechamento da retificação, e\nacontece antes de qualquer gravação."
+        "O documento indicado como documento do edital existe, é do processo e está confirmado, mas\nfoi enviado com outra finalidade: como anexo do edital ou como documento de ato. A\nfinalidade é declarada no início do envio e não muda. Só o documento enviado como\n`DOCUMENTO_DO_EDITAL` pode ser o PDF principal do edital de abertura ou de retificação. A\nconferência é a mesma na publicação, na retificação e no fechamento da retificação, e\nacontece antes de qualquer gravação.",
+        "A recusa aponta o campo `documentoEditalId`. Se o tipo do ato também for recusado no mesmo pedido, as duas recusas vêm juntas na resposta, cada uma no seu campo. O código da resposta é o da primeira causa da lista, na ordem dos campos do pedido: as ausências de campo vêm antes da recusa do documento e da do tipo."
       ],
       "comoResolver": [
         "Indique como documento do edital um documento enviado com a finalidade `DOCUMENTO_DO_EDITAL`.\nSe o arquivo certo foi enviado com outra finalidade, inicie um novo envio dele como\ndocumento do edital, confirme e use o novo identificador. O que foi enviado como anexo\ncontinua válido como anexo: veja\n[`anexo_do_edital.finalidade_incompativel`](/erros/uniplus.selecao.anexo_do_edital.finalidade_incompativel)."
@@ -25881,7 +25883,8 @@
       "oQueAconteceu": [
         "Publicar ou retificar um processo seletivo sempre congela uma nova\n`VersaoConfiguracao` (UNI-REQ-0019) — não é uma característica opcional do ato, é o\nque a transição faz por definição. O tipo de ato declarado no comando não\nestá marcado, no catálogo de Publicações, como um tipo que congela\nconfiguração (`congela_configuracao`).",
         "A regra não compara o código do tipo contra uma lista fixa em código —\npergunta ao catálogo se aquele tipo congela. Um tipo de ato pensado para\noutro propósito (por exemplo, uma comunicação informativa, sem efeito sobre a\nconfiguração) não serve para publicar nem retificar, mesmo que o código exista\ne esteja vigente.",
-        "Sem esta conferência, a inconsistência não ficaria parada: a próxima\nretificação, com um tipo congelante de verdade, seria recusada por classe de\nato divergente — deixando a retificação publicada sem ato correspondente."
+        "Sem esta conferência, a inconsistência não ficaria parada: a próxima\nretificação, com um tipo congelante de verdade, seria recusada por classe de\nato divergente — deixando a retificação publicada sem ato correspondente.",
+        "Na publicação e na retificação do edital, a recusa aponta o campo `ato.tipoAtoCodigo` e sai junto da recusa do documento do edital, quando ela também acontece no mesmo pedido."
       ],
       "comoResolver": [
         "Use um tipo de ato marcado como congelante no cadastro de Publicações para\npublicar ou retificar. Se o tipo de ato que você pretendia usar não deveria\ncongelar configuração, ele não é adequado para este comando — publicações e\nretificações de processo seletivo sempre exigem um tipo congelante, por\ndefinição de UNI-REQ-0019."
@@ -25904,7 +25907,8 @@
         "O dia que vale é o dia civil do instante em que o sistema divulga o ato,\nno fuso institucional (UNI-REQ-0111). A data que o documento declara, a\nimpressa nele, **não escolhe** a versão do tipo (UNI-REQ-0406): um\ndocumento datado de uma semana atrás não busca a versão que vigorava\nentão.",
         "A recusa é **síncrona**: chega na própria resposta da publicação, antes de\nqualquer gravação. **Nada fica gravado**: nenhuma versão, nenhum ato,\nnenhuma divulgação. O rascunho é preservado, e a operação pode ser\nrepetida assim que o tipo tiver versão vigente.",
         "A recusa vale também para os **tipos de ato que o cronograma declara**. Ao\npublicar, e ao retificar com um tipo declarado pela primeira vez, a\nclassificação de cada tipo (se congela a configuração, se é único, se é\nresultado) é lida do catálogo na data de hoje e congelada na versão\npublicada. Tipo declarado sem versão vigente hoje não tem classificação a\ncongelar. O tipo que a versão vigente já congelou não é relido na\nretificação (UNI-REQ-0163). Para o tipo declarado no cronograma ou nas etapas, a recusa não traz nome nem código do tipo: o campo `/cronograma/fases/{i}/publicacoesPrevistas/{p}/atoCodigo` (fase) ou `/etapas/{i}/publicacoesPrevistas/{p}/atoCodigo` (etapa) aponta o item, e há uma recusa para cada item nessa condição, todas na mesma resposta.",
-        "Na publicação de documento avulso, a recusa aponta o campo `tipoAtoCodigo`; na publicação de\nitem do edital, o tipo vem do item que a rota escolhe, e a recusa não tem campo."
+        "Na publicação de documento avulso, a recusa aponta o campo `tipoAtoCodigo`; na publicação de\nitem do edital, o tipo vem do item que a rota escolhe, e a recusa não tem campo.",
+        "Na publicação e na retificação do edital, a recusa do tipo do ato aponta o campo `ato.tipoAtoCodigo` e sai junto da recusa do documento do edital, quando ela também acontece no mesmo pedido."
       ],
       "comoResolver": [
         "Confirme, no catálogo de tipos de ato de Publicações, que o código tem uma\nversão vigente no dia da divulgação, que é hoje: tipos de ato têm vigência\nprópria. Cadastre uma versão vigente ou escolha outro tipo de ato. Para o\ntipo declarado no cronograma ou nas etapas pela primeira vez vale a mesma regra: vigente\nhoje, ou declare outro tipo. A mensagem desses itens não traz nome nem código; use o campo para achar o item.",

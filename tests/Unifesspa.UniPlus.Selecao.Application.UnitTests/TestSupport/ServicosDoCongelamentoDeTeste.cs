@@ -97,6 +97,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     private IResolvedorFusoInstitucional? FusoDaConferencia { get; set; }
 
+    private IResolvedorFusoInstitucional? FusoDoInstante { get; set; }
+
     /// <summary>Os serviços de um processo que o repositório devolve para mutação, com o documento do edital confirmado.</summary>
     public static ServicosDoCongelamentoDeTeste Para(ProcessoSeletivo processo) =>
         new ServicosDoCongelamentoDeTeste().ComProcesso(processo);
@@ -257,6 +259,14 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
+    /// <summary>O fuso que o instante único da operação lê, antes de qualquer consulta.</summary>
+    public ServicosDoCongelamentoDeTeste ComFusoDoInstante(IResolvedorFusoInstitucional fuso)
+    {
+        FusoDoInstante = fuso;
+
+        return this;
+    }
+
     public ServicosDoCongelamentoDeTeste ComRelogio(TimeProvider relogio)
     {
         Relogio = relogio;
@@ -264,9 +274,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public LeituraDoInstanteDoComando LeituraDoInstante() => new(Relogio, Fuso);
+    public LeituraDoInstanteDoComando LeituraDoInstante() => new(Relogio, FusoDoInstante ?? Fuso);
 
-    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, new ConferenciaDoTipoDeAto(TiposDeAto), LeituraDoInstante());
+    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, new ConferenciaDoTipoDeAto(TiposDeAto), Anexos(), LeituraDoInstante());
 
     public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs);
 

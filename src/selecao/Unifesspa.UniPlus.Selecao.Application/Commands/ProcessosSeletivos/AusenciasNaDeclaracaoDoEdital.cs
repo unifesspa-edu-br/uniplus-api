@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>
 /// O que a publicação e a retificação do edital recusam quando o pedido não traz um campo obrigatório: o documento do
 /// edital, o bloco do ato e, dentro dele, o órgão, a série, o ano, a data, o assinante e o tipo do ato, e o documento de cada anexo. Ausente e nulo são a mesma coisa. As regras que
@@ -9,9 +11,12 @@ using Kernel.Results;
 /// </summary>
 internal static class AusenciasNaDeclaracaoDoEdital
 {
+    /// <summary>O campo do pedido que traz o tipo do ato, onde a ausência e a recusa do tipo se corrigem.</summary>
+    public const string CampoDoTipoDoAto = "ato.tipoAtoCodigo";
+
     public static IReadOnlyList<FieldError> Listar(Guid? documentoEditalId, DadosDoAto? ato, IReadOnlyList<AnexoSolicitadoDoEdital>? anexos) =>
     [
-        .. documentoEditalId is null ? [Ausencia("documentoEditalId", "Informe o documento do edital.")] : Array.Empty<FieldError>(),
+        .. documentoEditalId is null ? [Ausencia(ConferenciaDoDocumentoDoEdital.CampoDoDocumento, "Informe o documento do edital.")] : Array.Empty<FieldError>(),
         .. ato is null ? [Ausencia("ato", "Informe os dados do ato do edital.")] : AusenciasDoAto(ato),
         .. AusenciasDosAnexos(anexos ?? []),
     ];
@@ -30,7 +35,7 @@ internal static class AusenciasNaDeclaracaoDoEdital
         .. ato.Ano is null ? [Ausencia("ato.ano", "Informe o ano do ato.")] : Array.Empty<FieldError>(),
         .. ato.DataDoAto is null ? [Ausencia("ato.dataDoAto", "Informe a data do ato declarada pelo documento.")] : Array.Empty<FieldError>(),
         .. AusenciaDoTexto(ato.Assinante, "ato.assinante", "Informe o assinante do ato."),
-        .. AusenciaDoTexto(ato.TipoAtoCodigo, "ato.tipoAtoCodigo", "Informe o tipo do ato."),
+        .. AusenciaDoTexto(ato.TipoAtoCodigo, CampoDoTipoDoAto, "Informe o tipo do ato."),
     ];
 
     private static FieldError[] AusenciaDoTexto(string? valor, string campo, string mensagem) =>

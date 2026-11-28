@@ -15,8 +15,8 @@ public static class ConferenciaDoDocumentoDoEdital
 {
     public const string NaoEncontrado = "ProcessoSeletivo.DocumentoNaoEncontrado";
     public const string NaoConfirmado = "ProcessoSeletivo.DocumentoNaoConfirmado";
-    private const string CampoDoDocumento = "documentoEditalId";
     public const string FinalidadeIncompativel = "ProcessoSeletivo.DocumentoNaoEnviadoComoEdital";
+    public const string CampoDoDocumento = "documentoEditalId";
 
     /// <param name="usoDoDocumento">Onde o documento é referenciado, para a mensagem: "na publicação", "na retificação"...</param>
     public static async Task<Result<DocumentoAPublicar>> ConferirAsync(
@@ -32,9 +32,7 @@ public static class ConferenciaDoDocumentoDoEdital
         DocumentoAPublicar? documento = await repositorio.ObterPorIdAsync(documentoId, cancellationToken).ConfigureAwait(false);
 
         return documento is null || documento.ProcessoSeletivoId != processoSeletivoId
-            ? Result<DocumentoAPublicar>.ValidationFailure([new FieldError(
-                CampoDoDocumento,
-                new DomainError(NaoEncontrado, "O documento do edital deve ser um dos documentos deste processo."))])
+            ? Recusa(NaoEncontrado, "O documento do edital deve ser um dos documentos deste processo.")
             : ConferirASituacao(documento, usoDoDocumento);
     }
 
@@ -42,13 +40,15 @@ public static class ConferenciaDoDocumentoDoEdital
     {
         if (documento.Situacao != StatusArquivoEnviado.Confirmado)
         {
-            return Result<DocumentoAPublicar>.Failure(new DomainError(
-                NaoConfirmado, $"Somente um documento confirmado pode ser referenciado {usoDoDocumento}."));
+            return Recusa(NaoConfirmado, $"Somente um documento confirmado pode ser referenciado {usoDoDocumento}.");
         }
 
         return documento.Finalidade == FinalidadeDoDocumento.DocumentoDoEdital
             ? Result<DocumentoAPublicar>.Success(documento)
-            : Result<DocumentoAPublicar>.Failure(new DomainError(
-                FinalidadeIncompativel, "Somente um documento enviado como edital pode ser o documento do edital."));
+            : Recusa(FinalidadeIncompativel, "Somente um documento enviado como edital pode ser o documento do edital.");
     }
+
+    // Toda recusa do documento aponta o campo do pedido em que se corrige, para sair na lista junto das recusas do tipo do ato.
+    private static Result<DocumentoAPublicar> Recusa(string codigo, string mensagem) =>
+        Result<DocumentoAPublicar>.ValidationFailure([new FieldError(CampoDoDocumento, new DomainError(codigo, mensagem))]);
 }

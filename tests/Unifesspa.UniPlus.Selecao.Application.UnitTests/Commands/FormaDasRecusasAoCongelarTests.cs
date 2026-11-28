@@ -31,7 +31,6 @@ public sealed class FormaDasRecusasAoCongelarTests
 {
     public static TheoryData<DefeitoDoCongelamento> RecusasDeErroUnico() =>
     [
-        DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
@@ -39,6 +38,7 @@ public sealed class FormaDasRecusasAoCongelarTests
     new()
     {
         { DefeitoDoCongelamento.Documento, "documentoEditalId" },
+        { DefeitoDoCongelamento.TipoDeAto, "ato.tipoAtoCodigo" },
         { DefeitoDoCongelamento.Anexos, "anexos[0].documentoId" },
     };
 
@@ -52,7 +52,7 @@ public sealed class FormaDasRecusasAoCongelarTests
         eventos.Should().BeEmpty();
     }
 
-    [Theory(DisplayName = "A recusa do documento do edital e a do anexo chegam apontando o campo do pedido, sem eventos")]
+    [Theory(DisplayName = "A recusa do documento do edital, a do tipo do ato e a do anexo chegam apontando o campo do pedido, sem eventos")]
     [MemberData(nameof(RecusasQueApontamOCampoDoPedido))]
     public async Task ConferenciaDoDocumento_ChegaComOCampoDoPedido(DefeitoDoCongelamento defeito, string campoEsperado)
     {
