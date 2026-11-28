@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class SimularDistribuicaoVagasQueryHandlerTests
 {
@@ -57,11 +58,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado");
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
-        id, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
+        id, "AC", "Ampla concorrência", "Vagas sem reserva", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
         null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012");
 
     private static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
-        id, codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
+        id, codigo, ModalidadesNoCadastroDeTeste.NomeDe(codigo), null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
         null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 
     private static readonly IReadOnlyDictionary<string, int> QuadroDaFormulaDoArtigo10 = new Dictionary<string, int>

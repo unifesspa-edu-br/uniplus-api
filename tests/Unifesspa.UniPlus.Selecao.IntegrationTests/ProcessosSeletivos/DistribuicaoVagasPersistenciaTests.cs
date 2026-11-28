@@ -8,15 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using NSubstitute;
+
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -124,6 +129,56 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.VagasOfertadas.Should().HaveCount(2);
         distribuicao.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "QUIL" && v.Quantidade == 20);
         distribuicao.VagasOfertadas.Should().Contain(v => v.ModalidadeCodigo == "IND" && v.Quantidade == 25);
+    }
+
+    /// <summary>
+    /// A Seleção copia o nome da modalidade na gravação e não relê o cadastro ao carregar: com o cadastro já renomeado
+    /// (o leitor devolve o nome novo, provado na releitura do cadastro), o que volta do banco é o nome copiado.
+    /// </summary>
+    [Fact(DisplayName = "O nome da modalidade copiado do cadastro não muda quando o cadastro é renomeado depois da gravação")]
+    public async Task NomeDaModalidade_CadastroRenomeadoDepoisDaGravacao_SelecaoEProjecaoMantemONomeCopiado()
+    {
+        IModalidadeReader leitor = Substitute.For<IModalidadeReader>();
+        LeituraDosCadastrosDasVagasCitados cadastros = LeitorDosCadastrosDasVagas(leitor);
+        Guid processoId = await GravarComAModalidadeLidaAsync(leitor, cadastros, "Vaga para indígenas");
+
+        DevolverDoCadastro(leitor, "Reserva para indígenas, nome novo");
+        ModalidadeNoCadastro renomeada = await LerAModalidadeAsync(cadastros);
+        renomeada.Nome.Should().Be("Reserva para indígenas, nome novo");
+        renomeada.Id.Should().Be(IdDaModalidadeIndigena);
+        ProcessoSeletivo recarregado = await RecarregarComDistribuicaoAsync(processoId);
+
+        recarregado.DistribuicaoVagas.Single().Modalidades.Single().ModalidadeOrigemId.Should().Be(IdDaModalidadeIndigena);
+        recarregado.DistribuicaoVagas.Single().Modalidades.Single().Nome.Should().Be("Vaga para indígenas");
+        SerializacaoDasVagas.SerializarModalidades(recarregado).Single()!["nome"]!.GetValue<string>().Should().Be("Vaga para indígenas");
+    }
+
+    private static LeituraDosCadastrosDasVagasCitados LeitorDosCadastrosDasVagas(IModalidadeReader modalidades) => new(
+        Substitute.For<IOfertaCursoReader>(), modalidades, Substitute.For<IReferenciaReservaDemograficaReader>(), Substitute.For<ICondicaoAtendimentoReader>(),
+        Substitute.For<IRecursoAcessibilidadeReader>(), Substitute.For<ITipoDeficienciaReader>(), Substitute.For<IBaseLegalDoFadaReader>());
+
+    private static readonly Guid IdDaModalidadeIndigena = Guid.Parse("0197c0de-0000-7000-8000-000000000001");
+
+    private static void DevolverDoCadastro(IModalidadeReader leitor, string nome)
+    {
+        ModalidadeView view = new(
+            IdDaModalidadeIndigena, "IND", nome, null, NaturezaLegalModalidade.AcaoAfirmativa.Codigo(), ComposicaoVagasModalidade.SuplementarAoTotal.Codigo(),
+            null, null, null, null, null, PredicadoDnf.SemClausula, null, "Lei 12.711/2012");
+        leitor.ListarVivosPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns<IReadOnlyList<ModalidadeView>>([view]);
+    }
+
+    private static async Task<ModalidadeNoCadastro> LerAModalidadeAsync(LeituraDosCadastrosDasVagasCitados cadastros) =>
+        (await cadastros.LerAsync(new CodigosCitadosPorCadastro([], null, [], [], [], null, [], []) { Modalidades = ["IND"] }, CancellationToken.None)).Modalidades["IND"];
+
+    private async Task<Guid> GravarComAModalidadeLidaAsync(IModalidadeReader leitor, LeituraDosCadastrosDasVagasCitados cadastros, string nome)
+    {
+        DevolverDoCadastro(leitor, nome);
+        ModalidadeSelecionada copiada = ModalidadeSelecionada.Criar(await LerAModalidadeAsync(cadastros), 60).Value!;
+        ProcessoSeletivo processo = NovoProcessoComEtapa(TiposDeProcessoDeTeste.IndigenaEQuilombola);
+        processo.DefinirDistribuicaoVagas([OfertaInstitucional(Guid.CreateVersion7(), 60, 'b', [copiada])], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        await _apoio.GravarAsync(processo);
+
+        return processo.Id;
     }
 
     [Fact(DisplayName = "O banco recusa código de oferta fora do formato em inserção direta")]
@@ -283,9 +338,16 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             "a regra de aplicabilidade congelada volta do banco como foi gravada");
         retiradaDeOutraModalidade.QuantidadeDeclarada.Should().Be(2);
 
+        ConferirACotaReservadaEOQuadro(distribuicao);
+    }
+
+    private static void ConferirACotaReservadaEOQuadro(ConfiguracaoDistribuicaoVagas distribuicao)
+    {
         ModalidadeSelecionada cotaReservada = distribuicao.Modalidades.Single(m => m.Codigo == "LB_PPI");
         cotaReservada.RegraRemanejamento.Should().Be(RegraRemanejamentoModalidade.SegueOrdemDeRemanejamento);
         cotaReservada.QuantidadeDeclarada.Should().BeNull("sub-reserva federal é calculada, não fixada pelo edital");
+        cotaReservada.Nome.Should().Be("Escola pública, renda de até 1 salário mínimo por pessoa, pretos, pardos e indígenas",
+            "o nome copiado do cadastro volta do banco como foi gravado");
 
         distribuicao.VagasOfertadas.Should().HaveCount(10);
         distribuicao.VagasOfertadas.Single(v => v.ModalidadeCodigo == "V").Quantidade.Should().Be(2);

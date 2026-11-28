@@ -11,11 +11,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// o remanejamento das vagas sai como um bloco, nulo quando a modalidade não remaneja. A regra de
 /// aplicabilidade sai como OU de cláusulas, cada uma o E de condições; vazia na incondicional.
 /// <c>LegalFixa</c> diz se a modalidade é do catálogo legal fixo, cuja estrutura e regra vêm da
-/// norma e só aceitam editar a descrição e a base legal.
+/// norma e só aceitam editar o nome, a descrição e a base legal.
 /// </summary>
 public sealed record ModalidadeDto(
     Guid Id,
     string Codigo,
+    string Nome,
     bool LegalFixa,
     string? Descricao,
     CodigoComRotulo<NaturezaLegal> NaturezaLegal,

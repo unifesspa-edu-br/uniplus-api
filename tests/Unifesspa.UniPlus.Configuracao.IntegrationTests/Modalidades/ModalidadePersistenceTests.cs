@@ -73,6 +73,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         ModalidadeView? view = await new ModalidadeReader(context).ObterPorIdAsync(modalidade.Id);
         view.Should().NotBeNull();
         view!.Codigo.Should().Be(codigo);
+        view.Nome.Should().Be(NomeDe(codigo));
         view.NaturezaLegal.Should().Be("COTA_RESERVADA");
         view.RegraRemanejamento.Should().Be("SEGUE_ORDEM_DE_REMANEJAMENTO");
     }
@@ -94,6 +95,49 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
         pg.ConstraintName.Should().Be(RestricoesDoBanco.ModalidadeCodigoAtivos);
+    }
+
+    [Fact(DisplayName = "UNIQUE parcial do nome rejeita segunda modalidade viva com o mesmo nome")]
+    public async Task UniquePartial_Nome_RejeitaDuplicataAtiva()
+    {
+        string codigo = CodigoUnico();
+        await GravarAsync(_fixture, Ampla(codigo));
+
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        ctx2.Modalidades.Add(ModalidadeComONome(CodigoUnico(), NomeDe(codigo)));
+
+        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.ModalidadeNomeAtivos);
+    }
+
+    [Fact(DisplayName = "Soft-delete libera o nome para outra modalidade viva")]
+    public async Task SoftDelete_LiberaONome()
+    {
+        string codigo = CodigoUnico();
+        Modalidade modalidade = Ampla(codigo);
+        await GravarAsync(_fixture, modalidade);
+        await RemoverAsync(_fixture, modalidade.Id);
+
+        await GravarAsync(_fixture, ModalidadeComONome(CodigoUnico(), NomeDe(codigo)));
+    }
+
+    [Fact(DisplayName = "O repositório encontra o nome entre as modalidades vivas, sem contar a própria")]
+    public async Task Repositorio_NomeExisteEntreVivos_ExcluiAPropria()
+    {
+        string codigo = CodigoUnico();
+        Modalidade modalidade = Ampla(codigo);
+        await GravarAsync(_fixture, modalidade);
+        await using UniPlusDbContext context = _fixture.CreateDbContext(userId: null);
+        ModalidadeRepository repositorio = new(context);
+
+        (await repositorio.NomeExisteEntreVivosAsync(NomeDe(codigo), null, default)).Should().BeTrue();
+        (await repositorio.NomeExisteEntreVivosAsync($"  {NomeDe(codigo)}  ", null, default)).Should().BeTrue("o nome é aparado antes de comparar");
+        (await repositorio.NomeExisteEntreVivosAsync(NomeDe(codigo), modalidade.Id, default)).Should().BeFalse();
+        (await repositorio.NomeExisteEntreVivosAsync(NomeDe(codigo).ToUpperInvariant(), null, default)).Should().BeFalse("a comparação é exata");
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]
@@ -121,7 +165,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, nome, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Nome de teste"}, {"INVALIDA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de natureza_legal impede o INSERT direto");
@@ -133,7 +177,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, nome, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"Nome de teste"}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z0-9_]+$' impede o INSERT direto");
@@ -145,7 +189,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRADA_DE_OUTRA_MODALIDADE"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, nome, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Nome de teste"}, {"AMPLA"}, {"RETIRADA_DE_OUTRA_MODALIDADE"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK (composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL) impede o INSERT direto");
@@ -157,7 +201,7 @@ public sealed class ModalidadePersistenceTests(ConfiguracaoDbFixture fixture)
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, nome, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Nome de teste"}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência RETIRADA_DE_OUTRA_MODALIDADE⟺origem impede o INSERT direto");

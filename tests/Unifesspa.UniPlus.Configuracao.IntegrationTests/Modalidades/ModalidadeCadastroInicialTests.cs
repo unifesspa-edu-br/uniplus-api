@@ -46,6 +46,45 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
         ConferirCotasFederais(semeadas);
     }
 
+    [Fact(DisplayName = "Seed: as 12 modalidades têm nome não vazio, até 200 caracteres, e os nomes não se repetem")]
+    public void Seed_Nomes_SaoUnicosENaoVazios()
+    {
+        ModalidadeSeed.Itens.Should().HaveCount(12);
+        ModalidadeSeed.Itens.Select(item => item.Nome).Should()
+            .OnlyContain(nome => !string.IsNullOrWhiteSpace(nome) && nome.Length <= 200)
+            .And.OnlyHaveUniqueItems();
+    }
+
+    private static readonly Dictionary<string, string> NomesEsperados = new()
+    {
+        ["AC"] = "Ampla concorrência",
+        ["LB_PPI"] = "Escola pública, renda de até 1 salário mínimo por pessoa, pretos, pardos e indígenas",
+        ["LB_Q"] = "Escola pública, renda de até 1 salário mínimo por pessoa, quilombolas",
+        ["LB_PCD"] = "Escola pública, renda de até 1 salário mínimo por pessoa, pessoas com deficiência",
+        ["LB_EP"] = "Escola pública, renda de até 1 salário mínimo por pessoa",
+        ["LI_PPI"] = "Escola pública, qualquer renda, pretos, pardos e indígenas",
+        ["LI_Q"] = "Escola pública, qualquer renda, quilombolas",
+        ["LI_PCD"] = "Escola pública, qualquer renda, pessoas com deficiência",
+        ["LI_EP"] = "Escola pública, qualquer renda",
+        ["AC_PCD"] = "Ampla concorrência, ação afirmativa da Unifesspa para pessoas com deficiência",
+        ["AC_I"] = "Ampla concorrência, ação afirmativa da Unifesspa para indígenas",
+        ["AC_Q"] = "Ampla concorrência, ação afirmativa da Unifesspa para quilombolas",
+    };
+
+    [Fact(DisplayName = "Seed: o banco guarda o nome de cada modalidade semeada")]
+    public async Task Seed_Banco_GuardaOsNomes()
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Dictionary<string, string> gravados = await ctx.Modalidades.AsNoTracking()
+            .ToDictionaryAsync(m => m.Codigo.Valor, m => m.Nome);
+
+        foreach ((string codigo, string nome) in NomesEsperados)
+        {
+            gravados[codigo].Should().Be(nome, $"o nome de '{codigo}' vem do cadastro inicial");
+        }
+    }
+
     private static void ConferirCodigos(List<Modalidade> semeadas)
     {
         string[] codigos = [.. semeadas.Select(m => m.Codigo.Valor).OrderBy(c => c, StringComparer.Ordinal)];
@@ -136,7 +175,7 @@ public sealed class ModalidadeCadastroInicialTests(ConfiguracaoDbFixture fixture
     private static Result<Modalidade> CriarModalidade(ModalidadeSeedItem item) => Modalidade.Criar(
         item.Codigo,
         new DeclaracaoDaModalidade(
-            item.Descricao, item.Natureza.Codigo(),
+            item.Nome, item.Descricao, item.Natureza.Codigo(),
             item.Composicao.Codigo(), item.ComposicaoOrigem,
             item.Regra?.Codigo(),
             item.RemanejamentoParametros.Destino, item.RemanejamentoParametros.Par, item.RemanejamentoParametros.DestinoFinal,

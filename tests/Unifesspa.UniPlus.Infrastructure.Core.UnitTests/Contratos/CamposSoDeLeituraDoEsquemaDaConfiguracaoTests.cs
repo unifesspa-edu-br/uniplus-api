@@ -45,6 +45,7 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("distribuicao-de-vagas.schema.json", "properties/turnos")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/quadro")]
     [InlineData("distribuicao-de-vagas.schema.json", "properties/totalDeVagasDoEdital")]
+    [InlineData("distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/nome")]
     [InlineData("distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/descricao")]
     [InlineData("exigencias.schema.json", "$defs/exigencia/properties/aplicabilidadeRotulo")]
     [InlineData("exigencias.schema.json", "$defs/exigencia/properties/modelo/properties/formatoRotulo")]

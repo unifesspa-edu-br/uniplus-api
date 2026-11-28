@@ -82,7 +82,7 @@ public sealed class ModalidadeReferenciasTests(ConfiguracaoDbFixture fixture)
 
     private static Modalidade Cruzada(string codigo, string referencia, bool destinoFinal)
     {
-        DeclaracaoDaModalidade declaracao = new(null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
+        DeclaracaoDaModalidade declaracao = new(NomeDe(codigo), null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
             null, destinoFinal ? "OUTRA" : referencia, destinoFinal ? referencia : null, SementeDeAplicabilidadeLegal.AcI, null, null);
         Result<Modalidade> resultado = Modalidade.Criar(codigo, declaracao);
         resultado.IsSuccess.Should().BeTrue();

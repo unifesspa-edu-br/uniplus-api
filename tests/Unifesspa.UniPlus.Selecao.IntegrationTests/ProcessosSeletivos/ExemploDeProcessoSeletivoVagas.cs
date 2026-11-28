@@ -71,7 +71,7 @@ internal static class ExemploDeProcessoSeletivoVagas
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
         Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
-        int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoExemplo) =>
+        int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoExemplo, string? nomeDaModalidadeAmpla = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
             new DistribuicaoDeVagasDeclarada
             {
@@ -80,7 +80,7 @@ internal static class ExemploDeProcessoSeletivoVagas
                 RegraDeDistribuicao = Regra(RegraDeDistribuicaoDeVagas.Lei12711.Codigo(), '7'),
                 RegraDeAjuste = Regra(RegraDeAjusteDaDistribuicaoDeVagas.AjusteDoTotalPeloArtigo11.Codigo(), '0'),
                 ReferenciaDemografica = ReferenciaDemograficaDaLei(),
-                Modalidades = [ModalidadeAmplaDaLei(), .. ModalidadesFederais()],
+                Modalidades = [ModalidadeAmplaDaLei(nomeDaModalidadeAmpla), .. ModalidadesFederais()],
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
@@ -93,8 +93,8 @@ internal static class ExemploDeProcessoSeletivoVagas
             pcdPercentual: 8.40m,
             baseLegal: "Lei 12.711/2012 art. 3º").Value!;
 
-    internal static ModalidadeSelecionada ModalidadeAmplaDaLei() =>
-        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = new Guid("2222bbbb-0000-4000-8000-000000000001"), Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
+    internal static ModalidadeSelecionada ModalidadeAmplaDaLei(string? nome = null) =>
+        ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Id = new Guid("2222bbbb-0000-4000-8000-000000000001"), Nome = nome ?? ModalidadesNoCadastroDeTeste.NomeDe("AC"), Descricao = "Ampla concorrência", RegraRemanejamento = null, BaseLegal = "Lei 12.711/2012 art. 1º" }).Value!;
 
     // As 8 federais. Toda cota reservada obriga SEGUE_ORDEM_DE_REMANEJAMENTO.
     internal static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>

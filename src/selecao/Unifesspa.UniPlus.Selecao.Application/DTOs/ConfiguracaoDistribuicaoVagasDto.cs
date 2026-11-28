@@ -11,6 +11,7 @@ public sealed record ModalidadeSelecionadaDto(
     Guid Id,
     Guid ModalidadeOrigemId,
     string Codigo,
+    string Nome,
     string? Descricao,
     CodigoComRotulo<NaturezaLegalModalidade> NaturezaLegal,
     CodigoComRotulo<ComposicaoVagasModalidade> ComposicaoVagas,

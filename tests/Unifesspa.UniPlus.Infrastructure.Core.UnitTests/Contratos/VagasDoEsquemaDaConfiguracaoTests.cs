@@ -69,14 +69,16 @@ public sealed class VagasDoEsquemaDaConfiguracaoTests
         CaminhosComErro(Alterada(propriedade, valor), Distribuicao).Should().Contain("/" + propriedade);
     }
 
-    [Fact(DisplayName = "A modalidade em minúsculas ou com a natureza copiada do cadastro é recusada; a descrição nula valida")]
+    [Fact(DisplayName = "A modalidade em minúsculas ou com a natureza copiada do cadastro é recusada; a descrição nula valida e o nome acima de 200 caracteres é recusado")]
     public void Modalidade_Invalida_Recusa()
     {
-        JsonNode semDescricao = Alterada("modalidades", Documento("""[ { "codigo": "AC", "descricao": null } ]"""));
+        JsonNode semDescricao = Alterada("modalidades", Documento("""[ { "codigo": "AC", "nome": "Ampla concorrência", "descricao": null } ]"""));
+        JsonNode nomeLongo = Alterada("modalidades", Documento("[ { \"codigo\": \"AC\", \"nome\": \"" + new string('N', 201) + "\" } ]"));
         JsonNode minuscula = Alterada("modalidades", Documento("""[ { "codigo": "ac" } ]"""));
         JsonNode natureza = Alterada("modalidades", Documento("""[ { "codigo": "AC", "naturezaLegal": "AMPLA" } ]"""));
 
         CaminhosComErro(semDescricao, Distribuicao).Should().BeEmpty();
+        CaminhosComErro(nomeLongo, Distribuicao).Should().Contain("/modalidades/0/nome");
         CaminhosComErro(minuscula, Distribuicao).Should().Contain("/modalidades/0/codigo");
         CaminhosComErro(natureza, Distribuicao).Should().Contain("/modalidades/0/naturezaLegal");
     }

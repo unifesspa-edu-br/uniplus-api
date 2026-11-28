@@ -12,6 +12,7 @@ internal static class ColunasDosLimitesDoEnvelope
         (nameof(LimitesDoEnvelope.NomeDoProcesso), typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.Nome)),
         (nameof(LimitesDoEnvelope.EtapaNome), typeof(EtapaProcesso), nameof(EtapaProcesso.Nome)),
         (nameof(LimitesDoEnvelope.ModalidadeCodigo), typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Codigo)),
+        (nameof(LimitesDoEnvelope.ModalidadeNome), typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Nome)),
         (nameof(LimitesDoEnvelope.ModalidadeDescricao), typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.Descricao)),
         (nameof(LimitesDoEnvelope.Token), typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.AcaoQuandoIndeferido)),
         (nameof(LimitesDoEnvelope.BaseLegal), typeof(ModalidadeSelecionada), nameof(ModalidadeSelecionada.BaseLegal)),

@@ -11,6 +11,7 @@ internal static class QuadroDeConfrontoDosLimites
         new(nameof(LimitesDoEnvelope.TipoEtapaCodigo), LimitesDoEnvelope.TipoEtapaCodigo, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.TipoEtapaNome), LimitesDoEnvelope.TipoEtapaNome, ClasseDeConfrontoDoLimite.TipoEmbutido),
         new(nameof(LimitesDoEnvelope.ModalidadeCodigo), LimitesDoEnvelope.ModalidadeCodigo, ClasseDeConfrontoDoLimite.Comprimento),
+        new(nameof(LimitesDoEnvelope.ModalidadeNome), LimitesDoEnvelope.ModalidadeNome, ClasseDeConfrontoDoLimite.Comprimento),
         new(nameof(LimitesDoEnvelope.ModalidadeDescricao), LimitesDoEnvelope.ModalidadeDescricao, ClasseDeConfrontoDoLimite.Comprimento),
         new(nameof(LimitesDoEnvelope.Token), LimitesDoEnvelope.Token, ClasseDeConfrontoDoLimite.Comprimento),
         new(nameof(LimitesDoEnvelope.BaseLegal), LimitesDoEnvelope.BaseLegal, ClasseDeConfrontoDoLimite.Comprimento),

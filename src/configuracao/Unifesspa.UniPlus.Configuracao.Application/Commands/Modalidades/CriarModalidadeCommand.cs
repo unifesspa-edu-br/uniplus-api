@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Cria uma modalidade de concorrência (UNI-REQ-0011): código (chave natural
-/// imutável), descrição opcional, e os campos de cota, em que os enums chegam como código de contrato
+/// imutável), nome obrigatório, descrição opcional, e os campos de cota, em que os enums chegam como código de contrato
 /// (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>, a regra do bloco <c>Remanejamento</c> e
 /// <c>AcaoQuandoIndeferido</c>). Quando ausentes, <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume
 /// RESTANTE_DAS_VAGAS_OFERTADAS; sem o bloco <c>Remanejamento</c>, a modalidade não remaneja.
@@ -20,15 +20,16 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
-/// <c>Codigo</c> é <c>string?</c>, não <c>string</c> (ADR-0125): sem validator
+/// <c>Codigo</c> e <c>Nome</c> são <c>string?</c>, não <c>string</c> (ADR-0125): sem validator
 /// FluentValidation garantindo não-nulo a montante, o model binding automático do
 /// <c>[ApiController]</c> interceptaria um campo ausente/nulo com um 400 genérico
 /// do ASP.NET, antes de o domínio rodar. Sem valor default (diferente dos demais
-/// campos), para que o schema OpenAPI continue listando-o como obrigatório —
+/// campos), para que o schema OpenAPI continue listando-os como obrigatórios —
 /// mesmo padrão de Curso, TipoDeficiencia e Campus.
 /// </remarks>
 public sealed record CriarModalidadeCommand(
     string? Codigo,
+    string? Nome,
     string? Descricao = null,
     [property: AceitaCodigosDe<NaturezaLegal>] string? NaturezaLegal = null,
     [property: AceitaCodigosDe<ComposicaoVagas>] string? ComposicaoVagas = null,
@@ -40,6 +41,6 @@ public sealed record CriarModalidadeCommand(
 {
     /// <summary>Os campos editáveis como o agregado os recebe, com a regra de aplicabilidade já montada.</summary>
     public DeclaracaoDaModalidade Declaracao(PredicadoDnf? regraDeAplicabilidade) => new(
-        Descricao, NaturezaLegal, ComposicaoVagas, ComposicaoOrigem, Remanejamento?.Regra, Remanejamento?.Destino,
+        Nome, Descricao, NaturezaLegal, ComposicaoVagas, ComposicaoOrigem, Remanejamento?.Regra, Remanejamento?.Destino,
         Remanejamento?.Par, Remanejamento?.Fallback, regraDeAplicabilidade, AcaoQuandoIndeferido, BaseLegal);
 }

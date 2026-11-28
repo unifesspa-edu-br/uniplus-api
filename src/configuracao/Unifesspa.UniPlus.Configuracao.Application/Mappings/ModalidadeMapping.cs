@@ -12,7 +12,7 @@ public static class ModalidadeMapping
         ArgumentNullException.ThrowIfNull(modalidade);
         return new ModalidadeDto(
             modalidade.Id,
-            modalidade.Codigo.Valor,
+            modalidade.Codigo.Valor, modalidade.Nome,
             modalidade.Codigo.EhLegalFixa,
             modalidade.Descricao,
             CodigoComRotulo<NaturezaLegal>.De(modalidade.NaturezaLegal),

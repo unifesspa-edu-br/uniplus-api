@@ -83,6 +83,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
             {
                 Id = Guid.CreateVersion7(),
                 Codigo = codigo,
+                Nome = ModalidadesNoCadastroDeTeste.NomeDe(codigo),
                 NaturezaLegal = natureza,
                 ComposicaoVagas = natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.DentroDaReservaLegal,
                 RegraRemanejamento = remanejamento,

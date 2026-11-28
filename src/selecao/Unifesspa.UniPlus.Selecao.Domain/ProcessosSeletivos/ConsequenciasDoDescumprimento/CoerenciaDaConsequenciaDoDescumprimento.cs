@@ -182,5 +182,5 @@ internal static class CoerenciaDaConsequenciaDoDescumprimento
         "ConsequenciasDoDescumprimento.AcrescimoNaoOferecido", $"{sujeito} determina retirar o acréscimo, mas o Fator de Atenuação das Desigualdades de Acesso não é oferecido."));
 
     private static FieldError Incoerencia(string campo, string origem, ModalidadeSelecionada modalidade) => new(campo, new DomainError(
-        $"{origem}.ConsequenciaIncoerenteComAcaoDaVaga", $"A consequência não corresponde à ação de indeferimento da modalidade {(string.IsNullOrWhiteSpace(modalidade.Descricao) ? "selecionada" : modalidade.Descricao)}."));
+        $"{origem}.ConsequenciaIncoerenteComAcaoDaVaga", $"A consequência não corresponde à ação de indeferimento da modalidade {modalidade.CodigoENome}."));
 }

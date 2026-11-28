@@ -87,6 +87,7 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(CopiaDaOfertaDeCurso.TamanhoMaximoDoTurno), CopiaDaOfertaDeCurso.TamanhoMaximoDoTurno, Distribuicao, "/properties/turnos/items", true),
         (nameof(LimitesDoEnvelope.CensoReferencia), LimitesDoEnvelope.CensoReferencia, Distribuicao, "/properties/referenciaDemograficaCodigo", true),
         (nameof(LimitesDoEnvelope.ModalidadeCodigo), LimitesDoEnvelope.ModalidadeCodigo, Distribuicao, "/$defs/modalidade/properties/codigo", true),
+        (nameof(LimitesDoEnvelope.ModalidadeNome), LimitesDoEnvelope.ModalidadeNome, Distribuicao, "/$defs/modalidade/properties/nome", true),
         (nameof(LimitesDoEnvelope.ModalidadeDescricao), LimitesDoEnvelope.ModalidadeDescricao, Distribuicao, "/$defs/modalidade/properties/descricao", true),
         ($"{nameof(DestinoRemanejamento)}.{nameof(DestinoRemanejamento.CodigoMaxLength)}", DestinoRemanejamento.CodigoMaxLength, "ordem-de-remanejamento.schema.json", "/properties/destinoFinalCodigo", true),
         // O nome do cadastro vem de colunas de 200 caracteres; o codec guarda a cópia em coluna de 300, folga que o esquema não usa.

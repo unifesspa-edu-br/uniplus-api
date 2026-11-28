@@ -68,7 +68,7 @@ internal static class ProjecaoDasVagas
         demografica.BaseLegal);
 
     private static ModalidadeSelecionadaDto ProjetarModalidade(ModalidadeSelecionada m) => new(
-        m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, CodigoComRotulo<NaturezaLegalModalidade>.De(m.NaturezaLegal), CodigoComRotulo<ComposicaoVagasModalidade>.De(m.ComposicaoVagas),
+        m.Id, m.ModalidadeOrigemId, m.Codigo, m.Nome, m.Descricao, CodigoComRotulo<NaturezaLegalModalidade>.De(m.NaturezaLegal), CodigoComRotulo<ComposicaoVagasModalidade>.De(m.ComposicaoVagas),
         m.ComposicaoOrigemCodigo, m.RegraRemanejamento is { } regra ? CodigoComRotulo<RegraRemanejamentoModalidade>.De(regra) : null, m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
         m.RegraDeAplicabilidade.ToDto(), m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada);
 

@@ -76,7 +76,7 @@ internal static class CadastrosDasVagasDoRascunhoDeTeste
     ];
 
     private static ModalidadeView Modalidade(string codigo, string descricao, string natureza, string composicao, string? origem) => new(
-        Guid.CreateVersion7(), codigo, descricao, natureza, composicao, origem, null, null, null, null,
+        Guid.CreateVersion7(), codigo, ModalidadesNoCadastroDeTeste.NomeDe(codigo), descricao, natureza, composicao, origem, null, null, null, null,
         RegrasDeAplicabilidadeDeTeste.DaNatureza(CatalogoDe<NaturezaLegalModalidade>.Obter(natureza)), null, "Lei de teste");
 
     private static RegraCatalogo Regra()

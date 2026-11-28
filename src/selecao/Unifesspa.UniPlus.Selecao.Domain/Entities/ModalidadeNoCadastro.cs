@@ -7,6 +7,7 @@ public sealed record ModalidadeNoCadastro
 {
     public required Guid Id { get; init; }
     public required string Codigo { get; init; }
+    public required string Nome { get; init; }
     public string? Descricao { get; init; }
     public required NaturezaLegalModalidade? NaturezaLegal { get; init; }
     public required ComposicaoVagasModalidade? ComposicaoVagas { get; init; }

@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -325,7 +326,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
 
     private static Modalidade ModalidadeQueCitaOptou(bool repetir = false) =>
         Modalidade.Criar("PSVR_AMPLA", new DeclaracaoDaModalidade(
-            "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
+            ModalidadesDeTeste.Nome, "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
             PredicadoDnf.CriarDeCondicoesAgrupadas(
             [
                 (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!),

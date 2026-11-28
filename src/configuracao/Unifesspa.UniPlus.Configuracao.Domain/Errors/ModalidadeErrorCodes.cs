@@ -6,6 +6,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 /// <c>ConfiguracaoDomainErrorRegistration</c>:
 /// <list type="bullet">
 ///   <item><description><see cref="CodigoJaExiste"/> → 409 Conflict</description></item>
+///   <item><description><see cref="NomeJaExiste"/> → 409 Conflict</description></item>
 ///   <item><description><see cref="RemocaoBloqueadaPorReferencia"/> → 409 Conflict</description></item>
 ///   <item><description><see cref="RemocaoBloqueadaCodigoProtegido"/> → 409 Conflict</description></item>
 ///   <item><description><see cref="CriacaoBloqueadaCodigoProtegido"/> → 409 Conflict</description></item>
@@ -18,6 +19,9 @@ public static class ModalidadeErrorCodes
     public const string CodigoObrigatorio = "Modalidade.CodigoObrigatorio";
     public const string CodigoFormatoInvalido = "Modalidade.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "Modalidade.CodigoJaExiste";
+    public const string NomeObrigatorio = "Modalidade.NomeObrigatorio";
+    public const string NomeTamanho = "Modalidade.NomeTamanho";
+    public const string NomeJaExiste = "Modalidade.NomeJaExiste";
     public const string DescricaoTamanho = "Modalidade.DescricaoTamanho";
     public const string NaturezaInvalida = "Modalidade.NaturezaInvalida";
     public const string ComposicaoVagasInvalida = "Modalidade.ComposicaoVagasInvalida";
@@ -32,7 +36,7 @@ public static class ModalidadeErrorCodes
 
     /// <summary>
     /// Tentativa de alterar natureza, composição, remanejamento, critérios ou ação no
-    /// indeferimento de uma modalidade do catálogo legal fixo — nessas, só descrição e
+    /// indeferimento de uma modalidade do catálogo legal fixo — nessas, só nome, descrição e
     /// base legal são editáveis.
     /// </summary>
     public const string EstruturaProtegidaNaoEditavel = "Modalidade.EstruturaProtegidaNaoEditavel";

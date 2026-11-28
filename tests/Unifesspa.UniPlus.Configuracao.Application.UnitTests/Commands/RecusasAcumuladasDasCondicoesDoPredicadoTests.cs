@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -28,7 +29,7 @@ public sealed class RecusasAcumuladasDasCondicoesDoPredicadoTests
 
     private static async Task<Result<Guid>> CriarModalidadeAsync(IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>> regra) =>
         await CriarModalidadeCommandHandler.Handle(
-            new CriarModalidadeCommand("PSVR_AMPLA", NaturezaLegal: "AMPLA", RegraDeAplicabilidade: regra),
+            new CriarModalidadeCommand("PSVR_AMPLA", Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: regra),
             Substitute.For<IModalidadeRepository>(),
             Substitute.For<IFatoCandidatoRepository>(),
             Substitute.For<IPrecedenciaFaseRepository>(),

@@ -102,6 +102,7 @@ internal sealed class ModalidadeReader : IModalidadeReader
         new(
             m.Id,
             m.Codigo.Valor,
+            m.Nome,
             m.Descricao,
             m.NaturezaLegal.Codigo(),
             m.ComposicaoVagas.Codigo(),

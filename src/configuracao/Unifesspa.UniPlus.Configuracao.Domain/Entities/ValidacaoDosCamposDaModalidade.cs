@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class ValidacaoDosCamposDaModalidade
 {
+    private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 300;
     private const int BaseLegalMaxLength = 500;
 
@@ -68,24 +69,36 @@ public static class ValidacaoDosCamposDaModalidade
     /// </summary>
     internal static CamposValidadosDaModalidade ValidarCamposIndependentes(DeclaracaoDaModalidade declaracao)
     {
+        string? nome = NormalizarOpcional(declaracao.Nome);
         string? descricao = NormalizarOpcional(declaracao.Descricao);
         string? baseLegal = NormalizarOpcional(declaracao.BaseLegal);
         string? origem = string.IsNullOrWhiteSpace(declaracao.ComposicaoOrigem) ? null : declaracao.ComposicaoOrigem;
         CodigosResolvidosDaModalidade codigos = CodigosResolvidosDaModalidade.De(declaracao);
+        return new(
+            RecusasDosCampos(declaracao, codigos, nome, descricao, baseLegal),
+            codigos.Reconhecidos,
+            CamposResolvidos(declaracao, codigos, nome, descricao, origem, baseLegal));
+    }
+
+    private static List<FieldError> RecusasDosCampos(
+        DeclaracaoDaModalidade declaracao, CodigosResolvidosDaModalidade codigos, string? nome, string? descricao, string? baseLegal)
+    {
         FieldError?[] recusas =
         [
+            RecusaDoNome(nome),
             RecusaDeTamanho(descricao, DescricaoMaxLength, "descricao", ModalidadeErrorCodes.DescricaoTamanho, "Descrição da modalidade"),
             RecusaDeTamanho(baseLegal, BaseLegalMaxLength, "baseLegal", ModalidadeErrorCodes.BaseLegalTamanho, "Base legal da modalidade"),
             .. codigos.Recusas,
             .. RecusasDasReferencias(declaracao),
             RecusaDaRegraDeAplicabilidade(declaracao.RegraDeAplicabilidade),
         ];
-        return new([.. recusas.OfType<FieldError>()], codigos.Reconhecidos, CamposResolvidos(declaracao, codigos, descricao, origem, baseLegal));
+        return [.. recusas.OfType<FieldError>()];
     }
 
     private static CamposResolvidosDaModalidade CamposResolvidos(
-        DeclaracaoDaModalidade declaracao, CodigosResolvidosDaModalidade codigos, string? descricao, string? origem, string? baseLegal) =>
+        DeclaracaoDaModalidade declaracao, CodigosResolvidosDaModalidade codigos, string? nome, string? descricao, string? origem, string? baseLegal) =>
         new(
+            nome,
             descricao,
             codigos.Natureza,
             codigos.Composicao,
@@ -95,6 +108,11 @@ public static class ValidacaoDosCamposDaModalidade
             declaracao.RegraDeAplicabilidade,
             codigos.Acao,
             baseLegal);
+
+    private static FieldError? RecusaDoNome(string? nome) =>
+        nome is null
+            ? new FieldError("nome", new DomainError(ModalidadeErrorCodes.NomeObrigatorio, "O nome da modalidade é obrigatório."))
+            : RecusaDeTamanho(nome, NomeMaxLength, "nome", ModalidadeErrorCodes.NomeTamanho, "Nome da modalidade");
 
     private static FieldError? RecusaDeTamanho(string? valor, int maximo, string campo, string codigoDaRecusa, string rotulo) =>
         valor is { } texto && texto.Length > maximo

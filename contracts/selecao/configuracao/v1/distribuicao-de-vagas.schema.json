@@ -152,6 +152,13 @@
           ],
           "minimum": 0
         },
+        "nome": {
+          "title": "Nome da modalidade",
+          "description": "Nome da modalidade no cadastro. Campo só de leitura: ignorado na importação.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        },
         "descricao": {
           "title": "Descrição da modalidade",
           "description": "Descrição da modalidade no cadastro. Campo só de leitura: ignorado na importação.",

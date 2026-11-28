@@ -50,6 +50,15 @@ public interface IModalidadeRepository
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Verifica se existe modalidade viva com o <paramref name="nome"/> (comparação exata, sobre o valor
+    /// aparado), excluindo opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
+    /// </summary>
+    Task<bool> NomeExisteEntreVivosAsync(
+        string nome,
+        Guid? excluirId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Indica se <b>todos</b> os <paramref name="codigos"/> informados correspondem
     /// a modalidades vivas — integridade referencial dos códigos citados em
     /// <c>ComposicaoOrigem</c> e <c>RemanejamentoParametros</c>. Coleção vazia retorna

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>Os campos editáveis da modalidade já normalizados, com os tokens resolvidos para os enums.</summary>
 public sealed record CamposResolvidosDaModalidade(
+    string? Nome,
     string? Descricao,
     NaturezaLegal NaturezaLegal,
     ComposicaoVagas ComposicaoVagas,

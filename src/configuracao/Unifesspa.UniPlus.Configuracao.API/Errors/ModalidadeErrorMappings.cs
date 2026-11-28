@@ -28,6 +28,24 @@ internal static class ModalidadeErrorMappings
                 "uniplus.configuracao.modalidade.codigo_ja_existe",
                 "Já existe uma modalidade ativa com este código")),
 
+        new(ModalidadeErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.nome_obrigatorio",
+                "Nome da modalidade é obrigatório")),
+
+        new(ModalidadeErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.nome_tamanho",
+                "Tamanho do nome da modalidade inválido")),
+
+        new(ModalidadeErrorCodes.NomeJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modalidade.nome_ja_existe",
+                "Já existe uma modalidade ativa com este nome")),
+
         new(ModalidadeErrorCodes.DescricaoTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -122,7 +140,7 @@ internal static class ModalidadeErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel",
-                "A modalidade legal fixa admite alteração apenas de descrição e base legal")),
+                "A modalidade legal fixa admite alteração apenas de nome, descrição e base legal")),
 
         new(ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido,
             new DomainErrorMapping(

@@ -104,7 +104,7 @@ public sealed class CausasDasVagasNoEnvelopeTests
         "ofertas":[{"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","ofertaCursoCodigo":"VALOR_FICTICIO_X",
         "cursoNome":"Curso fictício","cursoGrau":"Grau","unidadeOfertanteNome":"Unidade","turnos":["MATUTINO"]}],
         "modalidades":[{"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","modalidadeOrigemId":"22222222-2222-2222-2222-222222222222",
-        "codigo":"AC","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",
+        "codigo":"AC","nome":"Ampla concorrência","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",
         "composicaoOrigemCodigo":null,"regraRemanejamento":null,"remanejamentoDestino":null,"remanejamentoPar":null,
         "remanejamentoDestinoFinal":null,"regraDeAplicabilidade":null,"acaoQuandoIndeferido":null,"baseLegal":"Norma","quantidadeDeclarada":40}],
         "vagas":[{"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","quadro":[{"modalidadeCodigo":"AC","quantidade":40}],

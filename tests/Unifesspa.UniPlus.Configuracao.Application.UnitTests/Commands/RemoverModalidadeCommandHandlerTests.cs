@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -20,7 +21,7 @@ public sealed class RemoverModalidadeCommandHandlerTests
 
     private static Modalidade Modalidade(string codigo = CodigoInstitucional) =>
         Domain.Entities.Modalidade.Criar(codigo, new Domain.Entities.DeclaracaoDaModalidade(
-            null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
+            ModalidadesDeTeste.Nome, null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
             Regras.ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null))
             .Value!;
 

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261127232136_Inicial")]
+    [Migration("20261128025027_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -6713,6 +6713,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("natureza_legal")
                         .HasComment("Natureza legal da modalidade. Códigos: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
 
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome")
+                        .HasComment("Nome da modalidade para apresentação.");
+
                     b.Property<string>("RegraDeAplicabilidade")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -6742,6 +6749,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("Codigo")
                         .IsUnique()
                         .HasDatabaseName("ux_modalidades_codigo_ativos")
+                        .HasFilter("is_deleted = false");
+
+                    b.HasIndex("Nome")
+                        .IsUnique()
+                        .HasDatabaseName("ux_modalidades_nome_ativos")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("modalidades", "configuracao", t =>
@@ -6778,6 +6790,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Ampla concorrência",
                             IsDeleted = false,
                             NaturezaLegal = "AMPLA",
+                            Nome = "Ampla concorrência",
                             RegraDeAplicabilidade = "[]"
                         },
                         new
@@ -6790,6 +6803,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, renda de até 1 salário mínimo por pessoa, pretos, pardos e indígenas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6803,6 +6817,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, renda de até 1 salário mínimo por pessoa, quilombolas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6816,6 +6831,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, renda de até 1 salário mínimo por pessoa, pessoas com deficiência",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6829,6 +6845,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — baixa renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, renda de até 1 salário mínimo por pessoa",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6842,6 +6859,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, qualquer renda, pretos, pardos e indígenas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"ALGUM_DE\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6855,6 +6873,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, qualquer renda, quilombolas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6868,6 +6887,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, qualquer renda, pessoas com deficiência",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6881,6 +6901,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Cota — independente de renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            Nome = "Escola pública, qualquer renda",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_ORDEM_DE_REMANEJAMENTO"
                         },
@@ -6895,6 +6916,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Ampla Concorrência – Pessoa com Deficiência (V)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            Nome = "Ampla concorrência, ação afirmativa da Unifesspa para pessoas com deficiência",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "DESTINO_UNICO"
                         },
@@ -6908,6 +6930,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Vaga por acréscimo — candidato indígena (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            Nome = "Ampla concorrência, ação afirmativa da Unifesspa para indígenas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"codigoDoDado\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO"
                         },
@@ -6921,6 +6944,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Descricao = "Vaga por acréscimo — candidato quilombola (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            Nome = "Ampla concorrência, ação afirmativa da Unifesspa para quilombolas",
                             RegraDeAplicabilidade = "[[{\"codigoDoDado\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"codigoDoDado\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"codigoDoDado\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO"
                         });
@@ -14094,6 +14118,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("natureza_legal")
                         .HasComment("Natureza legal da modalidade. Códigos: COTA_RESERVADA, AMPLA, ACAO_AFIRMATIVA.");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome")
+                        .HasComment("Nome da modalidade copiado do cadastro.");
 
                     b.Property<int?>("QuantidadeDeclarada")
                         .HasColumnType("integer")

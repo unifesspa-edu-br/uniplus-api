@@ -35,6 +35,8 @@ public static class RestricoesDoBanco
 
     public const string ModalidadeCodigoAtivos = "ux_modalidades_codigo_ativos";
 
+    public const string ModalidadeNomeAtivos = "ux_modalidades_nome_ativos";
+
     public const string PesoPorAreaDoEnemResolucaoGrupoAtivos = "ux_pesos_por_area_do_enem_resolucao_grupo_ativos";
 
     public const string PrecedenciaEntreFasesParAtivos = "ux_precedencias_entre_fases_par_ativos";

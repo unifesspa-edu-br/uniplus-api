@@ -19088,6 +19088,13 @@
             ],
             "minimum": 0
           },
+          "nome": {
+            "title": "Nome da modalidade",
+            "description": "Nome da modalidade no cadastro. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
+            "type": "string",
+            "maxLength": 200,
+            "readOnly": true
+          },
           "descricao": {
             "title": "Descri\u00E7\u00E3o da modalidade",
             "description": "Descri\u00E7\u00E3o da modalidade no cadastro. Campo s\u00F3 de leitura: ignorado na importa\u00E7\u00E3o.",
@@ -25701,6 +25708,7 @@
           "id",
           "modalidadeOrigemId",
           "codigo",
+          "nome",
           "descricao",
           "naturezaLegal",
           "composicaoVagas",
@@ -25725,6 +25733,9 @@
             "format": "uuid"
           },
           "codigo": {
+            "type": "string"
+          },
+          "nome": {
             "type": "string"
           },
           "descricao": {

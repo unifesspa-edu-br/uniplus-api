@@ -5422,7 +5422,7 @@
         "A regra de aplicabilidade da ação afirmativa não tem a forma exigida para essa modalidade. Nada foi gravado.",
         "Em uma ação afirmativa em geral, quem optou pelas cotas da Lei 12.711 não concorre a ela. Cada alternativa da regra deve exigir que o candidato não tenha optado.",
         "A reserva de vagas para pessoa com deficiência se soma às cotas da lei: sua regra deve ter condições e valer tanto para quem optou pelas cotas quanto para quem não optou (UNI-REQ-0142 e UNI-REQ-0266).",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Para uma ação afirmativa em geral, inclua em cada alternativa da regra a condição de que o candidato não optou pelas cotas da Lei 12.711.",
@@ -5455,7 +5455,7 @@
       ],
       "oQueAconteceu": [
         "A modalidade tem natureza **ampla concorrência** (`AMPLA`, que é o valor assumido quando `naturezaLegal` é omitida) e, ainda assim, traz cláusulas em `regraDeAplicabilidade`. A ampla concorrência vale para todo candidato: toda pessoa inscrita concorre a ela, e por isso ela não pode filtrar ninguém. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Envie `regraDeAplicabilidade` como `[]` na ampla concorrência. Se a modalidade deve valer só para um grupo de candidatos, ela não é ampla concorrência: ajuste `naturezaLegal` para a natureza correta."
@@ -5528,7 +5528,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O campo `composicaoOrigem` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica de qual modalidade as vagas são retiradas, na composição \"retira de\". Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Informe em `composicaoOrigem` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
@@ -5561,7 +5561,7 @@
       ],
       "oQueAconteceu": [
         "Uma alternativa da regra de aplicabilidade da cota reservada não exige que o candidato tenha optado pelas cotas da Lei 12.711. Uma regra sem alternativas também é recusada, pois deixaria a cota aberta a todo candidato. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Inclua, em cada alternativa da regra, a condição de que o candidato optou pelas cotas da Lei 12.711, junto das demais condições que definem o grupo da cota (renda, origem escolar, raça ou etnia, deficiência)."
@@ -5590,7 +5590,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A **descrição** da modalidade excede o tamanho máximo aceito: 300\ncaracteres.",
-        "A descrição é um dos dois campos editáveis mesmo numa modalidade do catálogo\nlegal fixo (o outro é a base legal) — esta validação de tamanho vale para\ntodas as modalidades, fixas ou não."
+        "A descrição é um dos três campos editáveis mesmo numa modalidade do catálogo\nlegal fixo (os outros são o nome e a base legal) — esta validação de tamanho vale para\ntodas as modalidades, fixas ou não."
       ],
       "comoResolver": [
         "Reduza a descrição para até 300 caracteres."
@@ -5604,11 +5604,11 @@
       "codigo": "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel",
       "requisitos": [],
       "oQueAconteceu": [
-        "A modalidade é uma das doze do **catálogo legal fixo** — as oito cotas da Lei 12.711/2012 (redação da Lei 14.723/2023), a ampla\nconcorrência (`AC`) e as três ações afirmativas institucionais da\nResolução nº 532/2021 (`AC_PCD`, `AC_I` e `AC_Q`) — e a atualização tentou mudar um campo além de descrição\ne base legal.",
-        "Nessas doze, a estrutura de vagas (natureza legal, composição, remanejamento,\ncritérios cumulativos, ação no indeferimento) vem da norma que institui a\nmodalidade — a lei de cotas ou a resolução do conselho superior —, não do\ncadastro administrativo, e só nasce do seed. Só descrição e base legal permanecem\neditáveis por cadastro; qualquer divergência em outro campo é recusada antes\nmesmo de conferir se o valor enviado seria, isoladamente, coerente."
+        "A modalidade é uma das doze do **catálogo legal fixo** — as oito cotas da Lei 12.711/2012 (redação da Lei 14.723/2023), a ampla\nconcorrência (`AC`) e as três ações afirmativas institucionais da\nResolução nº 532/2021 (`AC_PCD`, `AC_I` e `AC_Q`) — e a atualização tentou mudar um campo além de nome,\ndescrição e base legal.",
+        "Nessas doze, a estrutura de vagas (natureza legal, composição, remanejamento,\ncritérios cumulativos, ação no indeferimento) vem da norma que institui a\nmodalidade — a lei de cotas ou a resolução do conselho superior —, não do\ncadastro administrativo, e só nasce do seed. Só nome, descrição e base legal permanecem\neditáveis por cadastro; qualquer divergência em outro campo é recusada antes\nmesmo de conferir se o valor enviado seria, isoladamente, coerente."
       ],
       "comoResolver": [
-        "Envie a atualização só com descrição e/ou base legal. Mudar a estrutura de\numa modalidade legal fixa exige alteração no seed e migração — o mesmo canal\nque a criou, não o cadastro administrativo."
+        "Envie a atualização só com nome, descrição e/ou base legal. Mudar a estrutura de\numa modalidade legal fixa exige alteração no seed e migração — o mesmo canal\nque a criou, não o cadastro administrativo."
       ],
       "ondeAparece": [
         "Atualização de uma modalidade do catálogo legal fixo"
@@ -5657,6 +5657,51 @@
       ],
       "comoResolver": [
         "Ajuste a regra de remanejamento conforme a natureza legal da modalidade, de\nacordo com a tabela acima."
+      ],
+      "ondeAparece": [
+        "Criação de uma modalidade de concorrência",
+        "Atualização de uma modalidade de concorrência"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_ja_existe",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "Já existe uma modalidade **viva** com o nome informado. O nome é aparado (espaços no início e no fim são ignorados) e a comparação é exata, letra por letra.",
+        "A unicidade é sobre modalidades vivas: o nome de uma modalidade removida pode ser reutilizado. A conferência cobre o caminho comum (consulta prévia) e a corrida entre duas gravações concorrentes com o mesmo nome: o índice único parcial do banco garante a exclusividade, e uma violação nele é traduzida para este mesmo erro. Na atualização, a própria modalidade pode manter o seu nome. Nada foi gravado."
+      ],
+      "comoResolver": [
+        "Use um nome diferente para a modalidade."
+      ],
+      "ondeAparece": [
+        "Criação de uma modalidade de concorrência",
+        "Atualização de uma modalidade de concorrência"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_obrigatorio",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **nome** da modalidade não foi informado, está vazio ou tem só espaços. O nome é o texto que as pessoas veem ao lado do código da modalidade. Nada foi gravado.",
+        "O nome é obrigatório também na atualização, que substitui a modalidade inteira: reenvie o nome mesmo quando ele não muda."
+      ],
+      "comoResolver": [
+        "Informe o nome da modalidade, com até 200 caracteres."
+      ],
+      "ondeAparece": [
+        "Criação de uma modalidade de concorrência",
+        "Atualização de uma modalidade de concorrência"
+      ]
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_tamanho",
+      "requisitos": [],
+      "oQueAconteceu": [
+        "O **nome** da modalidade excede o tamanho máximo aceito: 200 caracteres, contados depois de aparar os espaços do início e do fim.",
+        "O nome é editável mesmo numa modalidade do catálogo legal fixo, e esta validação de tamanho vale para todas as modalidades, fixas ou não. Nada foi gravado."
+      ],
+      "comoResolver": [
+        "Reduza o nome para até 200 caracteres."
       ],
       "ondeAparece": [
         "Criação de uma modalidade de concorrência",
@@ -5730,7 +5775,7 @@
       "oQueAconteceu": [
         "Há uma recusa por condição, no campo `regraDeAplicabilidade[c][i].fato`, com cláusula e condição contadas a partir de zero.",
         "Alguma condição de `regraDeAplicabilidade` cita um fato do candidato que foi **desativado**. Fato desativado não pode entrar em regra nova. Na atualização, uma citação que já existia na regra vigente é tolerada: a recusa vale para citações novas. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Remova a citação do fato desativado, use outro fato, ou reative o fato em `POST /api/configuracao/admin/fatos-candidato/{id}/ativacao`. A reativação só existe para fatos criados pela administração; um fato de sistema não é desativado nem reativado."
@@ -5748,7 +5793,7 @@
       "oQueAconteceu": [
         "Há uma recusa por condição, no campo `regraDeAplicabilidade[c][i].fato`, com cláusula e condição contadas a partir de zero.",
         "Alguma condição de `regraDeAplicabilidade` cita um fato que o Uni+ não admite em regra: fatos de **texto livre**, de **data**, de **endereço**, fatos de **membro de grupo** e fatos **categóricos sem valores cadastrados**. Esses fatos não têm comparação objetiva possível numa regra de aplicabilidade. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Use um fato derivado que traduza a informação, como a UF ou o município do endereço, ou a faixa etária no lugar da data de nascimento. Se o fato é categórico, cadastre os valores admitidos antes de citá-lo."
@@ -5766,7 +5811,7 @@
         "Alguma condição de `regraDeAplicabilidade` cita um fato que o Uni+ não consegue afirmar que já é conhecido **na inscrição**. A regra de aplicabilidade decide a quais modalidades o candidato concorre no momento em que ele se inscreve, e só aceita fato cujo ponto de resolução é a própria inscrição ou uma fase que a precede. A recusa fecha por padrão e vale em dois casos:",
         "- o fato é resolvido numa fase posterior à inscrição, como o resultado final;\n- não há precedência declarada, entre as fases, que comprove que o ponto de resolução do fato vem antes da inscrição: a fase sem essa precedência não conta como anterior.",
         "Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Troque a condição por um fato conhecido na inscrição, ou retire-a da regra. Se o fato deveria ser conhecido na inscrição, confira o ponto de resolução do fato e as precedências entre as fases, que dizem quais fases vêm antes da inscrição."
@@ -5784,7 +5829,7 @@
       "oQueAconteceu": [
         "Há uma recusa por condição, no campo `regraDeAplicabilidade[c][i].valor`, com cláusula e condição contadas a partir de zero.",
         "Alguma condição de `regraDeAplicabilidade` compara um fato categórico com um valor que foi **desativado** no cadastro do fato. Desativar um valor impede vínculos novos e preserva os que já existem (UNI-REQ-0143): por isso só o vínculo **novo** é recusado. Na atualização, o par fato/valor que a regra vigente da modalidade já citava pode ser mantido; a recusa vale para um par que a regra vigente não citava. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Escolha outro valor do fato, remova a condição, ou reative o valor em `POST /api/configuracao/admin/fatos-candidato/{id}/valores/{codigo}/ativacao`. Na atualização, para manter um valor desativado que a regra já usava, reenvie a condição como está na regra vigente."
@@ -5834,7 +5879,7 @@
       ],
       "oQueAconteceu": [
         "Alguma condição de `regraDeAplicabilidade` cita o fato `MODALIDADE`, ou um fato derivado cujas regras padrão chegam à modalidade. Isso faria a modalidade depender de si mesma: para saber a quais modalidades o candidato concorre, seria preciso já saber a que modalidades ele concorre. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Retire a citação e descreva o grupo por fatos de origem do candidato (renda, origem escolar, raça ou etnia, deficiência), sem passar pela modalidade."
@@ -5864,7 +5909,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O campo `remanejamento.destino` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas ociosas passam, na regra de remanejamento de destino único. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Informe em `remanejamento.destino` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
@@ -5879,7 +5924,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O campo `remanejamento.fallback` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica para onde as vagas passam quando a modalidade par não as absorve, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Informe em `remanejamento.fallback` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."
@@ -5894,7 +5939,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O campo `remanejamento.par` aponta para a própria modalidade: ele traz o mesmo código que a modalidade está recebendo (a comparação é exata, letra por letra). Esse campo indica a modalidade com a qual as vagas ociosas são trocadas, na regra de remanejamento cruzado. Uma modalidade que depende de si mesma não tem para onde remanejar nem de onde compor vagas, e formaria um laço. Nada foi gravado.",
-        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
+        "Na atualização, a modalidade é procurada antes desta conferência: com um identificador inexistente a resposta é [modalidade não encontrada](/erros/uniplus.configuracao.modalidade.nao_encontrada), mesmo que o conteúdo enviado também tivesse este problema. Numa modalidade do catálogo legal fixo esta recusa não é emitida: se o conteúdo altera algo além do nome, da descrição e da base legal, vale [estrutura protegida não editável](/erros/uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel)."
       ],
       "comoResolver": [
         "Informe em `remanejamento.par` o código de **outra** modalidade ativa, ou omita o campo se a regra declarada não o exige. Consulte também [origem obrigatória para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade), [origem só para \"retira de\"](/erros/uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade), [referência inexistente ou inativa](/erros/uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa), [regra de remanejamento incoerente com a natureza](/erros/uniplus.configuracao.modalidade.natureza_remanejamento_incoerente) e [argumentos de remanejamento obrigatórios](/erros/uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio)."

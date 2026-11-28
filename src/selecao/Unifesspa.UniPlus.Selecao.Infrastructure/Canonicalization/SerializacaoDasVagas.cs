@@ -69,6 +69,7 @@ internal static class SerializacaoDasVagas
         ["ofertaCursoOrigemId"] = ofertaCursoOrigemId,
         ["modalidadeOrigemId"] = modalidade.ModalidadeOrigemId,
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(modalidade.Codigo),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(modalidade.Nome),
         ["descricao"] = modalidade.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
         ["naturezaLegal"] = modalidade.NaturezaLegal.Codigo(),
         ["composicaoVagas"] = modalidade.ComposicaoVagas.Codigo(),

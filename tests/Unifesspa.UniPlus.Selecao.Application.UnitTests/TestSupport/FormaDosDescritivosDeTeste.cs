@@ -67,6 +67,7 @@ internal static class FormaDosDescritivosDeTeste
         ["modalidades"] = FormaDeTeste.Lista(FormaDeTeste.Objeto(new()
         {
             ["codigo"] = FormaDeTeste.Valor(),
+            ["nome"] = FormaDeTeste.Valor(somenteLeitura),
             ["descricao"] = FormaDeTeste.Valor(somenteLeitura),
         })),
         ["quadro"] = Quadro(somenteLeitura),

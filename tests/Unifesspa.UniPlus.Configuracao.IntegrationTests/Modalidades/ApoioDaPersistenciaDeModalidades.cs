@@ -50,21 +50,26 @@ internal static class ApoioDaPersistenciaDeModalidades
         return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
     }
 
-    internal static Modalidade Ampla(string codigo) =>
-        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
+    internal static Modalidade Ampla(string codigo) => ModalidadeComONome(codigo, NomeDe(codigo));
+
+    internal static Modalidade ModalidadeComONome(string codigo, string nome) =>
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(nome, null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
             SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null)).Value!;
 
     internal static Modalidade Cota(string codigo) =>
-        Modalidade.Criar(codigo, new DeclaracaoDaModalidade("Cota", "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null,
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(NomeDe(codigo), "Cota", "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null,
             SementeDeAplicabilidadeLegal.LiEp, null, null)).Value!;
 
     internal static Modalidade RetiradaDeOutraModalidade(string codigo, string origem) =>
-        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(null, "AMPLA", "RETIRADA_DE_OUTRA_MODALIDADE", origem, null, null, null, null,
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(NomeDe(codigo), null, "AMPLA", "RETIRADA_DE_OUTRA_MODALIDADE", origem, null, null, null, null,
             SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null)).Value!;
 
     internal static Modalidade DestinoUnico(string codigo, string destino) =>
-        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null,
+        Modalidade.Criar(codigo, new DeclaracaoDaModalidade(NomeDe(codigo), null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null,
             SementeDeAplicabilidadeLegal.AcI, null, null)).Value!;
+
+    /// <summary>O nome da modalidade de teste, único porque o código o é.</summary>
+    internal static string NomeDe(string codigo) => $"Nome da modalidade {codigo}";
 
     internal static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

@@ -16932,13 +16932,20 @@
       },
       "AtualizarModalidadeCommand": {
         "required": [
-          "id"
+          "id",
+          "nome"
         ],
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [
@@ -19132,11 +19139,18 @@
       },
       "CriarModalidadeCommand": {
         "required": [
-          "codigo"
+          "codigo",
+          "nome"
         ],
         "type": "object",
         "properties": {
           "codigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nome": {
             "type": [
               "null",
               "string"
@@ -22989,6 +23003,7 @@
         "required": [
           "id",
           "codigo",
+          "nome",
           "legalFixa",
           "descricao",
           "naturezaLegal",
@@ -23007,6 +23022,9 @@
             "format": "uuid"
           },
           "codigo": {
+            "type": "string"
+          },
+          "nome": {
             "type": "string"
           },
           "legalFixa": {
