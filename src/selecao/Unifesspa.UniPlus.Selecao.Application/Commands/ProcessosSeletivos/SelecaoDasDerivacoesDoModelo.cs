@@ -134,7 +134,7 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     private static FieldError DerivadoSemRegraPadrao(string codigo) => Recusa(
         codigo,
         AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
-        "O modelo cita um dado calculado que o processo ainda não deriva e que não tem regra padrão no catálogo; configure as regras de derivação dele no processo antes.");
+        "O modelo cita um dado calculado que o processo ainda não calcula e que não tem regra padrão no catálogo de dados do candidato; cadastre a regra padrão dele no módulo Configuração, na seção \"Regras padrão\" do dado, e aplique o modelo de novo.");
 
     private static Dictionary<string, ConfiguracaoDerivacaoFato> DerivadosDoProcesso(ProcessoSeletivo processo) =>
         processo.DerivacoesEfetivas()

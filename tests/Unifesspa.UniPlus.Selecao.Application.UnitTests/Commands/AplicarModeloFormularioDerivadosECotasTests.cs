@@ -58,7 +58,7 @@ public sealed class AplicarModeloFormularioDerivadosECotasTests
         resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
         FieldError recusa = resultado.Errors.Single(static e => e.Error.Code == AplicacaoDeModeloErrorCodes.DerivadoSemRegra);
         recusa.Field.Should().EndWith("derivacoes[SEM_REGRA]");
-        recusa.Error.Message.Should().NotContain("SEM_REGRA").And.Contain("dado calculado");
+        recusa.Error.Message.Should().NotContain("SEM_REGRA").And.Contain("dado calculado").And.Contain("módulo Configuração").And.Contain("Regras padrão").And.Contain("cadastre a regra padrão").And.Contain("aplique o modelo de novo").And.NotContain("no processo antes");
     }
 
     [Fact(DisplayName = "Os valores desativados no catálogo citados nas regras são recusados juntos, como vínculo novo")]
