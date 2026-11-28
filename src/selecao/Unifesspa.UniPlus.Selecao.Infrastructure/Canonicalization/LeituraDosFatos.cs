@@ -168,7 +168,7 @@ internal static class LeituraDosFatos
     private static RegrasDoCampo? LerRegrasDoItem(
         LeitorEnvelope leitor, JsonObject item, string path, PredicadoDnf? exibicao, DeclaracaoDoFormulario formulario)
     {
-        if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade
+        if (LeituraDasCondicoes.LerObrigatoriedadeRecusandoNaHora(leitor, item, path) is not { } obrigatoriedade
             || LeituraDasRestricoes.LerRestricoes(leitor, item, path) is not { } restricoes)
         {
             return null;

@@ -17,11 +17,11 @@ public sealed class CausasDasCondicoesNoEnvelopeTests
     [InlineData(false, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public void LerObrigatoriedade_CondicoesInvalidas_PropagaCausas(bool separadas, bool unica)
+    public void LerObrigatoriedadeRecusandoNaHora_CondicoesInvalidas_PropagaCausas(bool separadas, bool unica)
     {
         JsonObject documento = new() { ["obrigatoriedade"] = new JsonObject { ["tipo"] = "QUANDO", ["quando"] = CondicoesNoEnvelope.Invalidas(separadas, unica) } };
         LeitorEnvelope leitor = new();
-        LeituraDasCondicoes.LerObrigatoriedade(leitor, documento, "item");
+        LeituraDasCondicoes.LerObrigatoriedadeRecusandoNaHora(leitor, documento, "item");
         CondicoesNoEnvelope.Conferir(new JsonObject { ["item"] = documento }, leitor, "item.obrigatoriedade.quando", separadas, unica);
     }
 

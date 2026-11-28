@@ -120,7 +120,7 @@ internal static class LeituraDosFormularios
         List<TermoExigidoFormulario> termos = [];
         for (int indice = 0; indice < itens.Count; indice++)
         {
-            TermoExigidoFormulario? termo = LerTermoSeguinte(leitor, leitor.ItemObjeto(itens, indice, $"{path}.termos"),
+            TermoExigidoFormulario? termo = LerTermoExigido(leitor, leitor.ItemObjeto(itens, indice, $"{path}.termos"),
                 $"{path}.termos[{indice}]", formulario, termos);
             if (termo is null)
             {
@@ -131,15 +131,6 @@ internal static class LeituraDosFormularios
         }
 
         return termos;
-    }
-
-    private static TermoExigidoFormulario? LerTermoSeguinte(
-        LeitorEnvelope leitor, JsonObject item, string pathTermo, FormularioProcesso formulario, IReadOnlyList<TermoExigidoFormulario> anteriores)
-    {
-        TermoExigidoFormulario? termo = LerTermoExigido(leitor, item, pathTermo, formulario);
-        return termo is null || SegueOsTermosAnteriores(termo, anteriores)
-            ? termo
-            : leitor.Recusar<TermoExigidoFormulario?>($"'{pathTermo}' repete código ou quebra a ordem crescente dos termos.");
     }
 
     private static bool SegueOsTermosAnteriores(TermoExigidoFormulario termo, IReadOnlyList<TermoExigidoFormulario> anteriores) =>
@@ -240,7 +231,7 @@ internal static class LeituraDosFormularios
             : [];
 
     private static TermoExigidoFormulario? LerTermoExigido(
-        LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario)
+        LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario, IReadOnlyList<TermoExigidoFormulario> anteriores)
     {
         if (leitor.Falhou)
         {
@@ -251,7 +242,7 @@ internal static class LeituraDosFormularios
             "formaAceite", "hashVersao", "exibicao", "obrigatoriedade");
 
         DeclaracaoTermo declaracao = LerDeclaracaoDoTermo(leitor, item, path);
-        return leitor.Falhou ? null : CriarTermo(leitor, item, path, formulario, declaracao);
+        return leitor.Falhou ? null : CriarTermo(leitor, item, path, (formulario, anteriores), declaracao);
     }
 
     private sealed record DeclaracaoTermo(string Codigo, int Ordem, VersaoTermoEscolhida Versao, IReadOnlyList<LinhaDoPredicado> Exibicao);
@@ -263,23 +254,32 @@ internal static class LeituraDosFormularios
         LeituraDasCondicoes.LerDnf(leitor, item, "exibicao", path));
 
     private static TermoExigidoFormulario? CriarTermo(
-        LeitorEnvelope leitor, JsonObject item, string path, FormularioProcesso formulario, DeclaracaoTermo declaracao)
+        LeitorEnvelope leitor, JsonObject item, string path, (FormularioProcesso Formulario, IReadOnlyList<TermoExigidoFormulario> Anteriores) contexto,
+        DeclaracaoTermo declaracao)
     {
-        Result<PredicadoDnf?> exibicaoLida = LeituraDasCondicoes.PredicadoOpcional(declaracao.Exibicao);
-        if (exibicaoLida.IsFailure)
-        {
-            return leitor.Propagar<TermoExigidoFormulario>(exibicaoLida.Errors, $"{path}.exibicao");
-        }
-
+        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(declaracao.Exibicao);
         if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
         {
-            return null;
+            // Formato quebrado encerra o item; só a recusa de regra da exibição, lida antes dele, sai junto.
+            return exibicao.IsFailure ? leitor.PropagarCausasDoItem<TermoExigidoFormulario?>(CausasDaExibicao(exibicao), path) : null;
         }
 
+        // O termo só confere código e ordem; a exibição e a obrigatoriedade recusadas já têm a recusa própria e não acusam nada aqui.
         Result<TermoExigidoFormulario> termo = TermoExigidoFormulario.Criar(
-            declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicaoLida.Value, obrigatoriedade, formulario);
-        return termo.IsSuccess ? termo.Value : leitor.Propagar<TermoExigidoFormulario>(termo.Errors, path);
+            declaracao.Codigo, declaracao.Ordem, declaracao.Versao, exibicao.Value, obrigatoriedade.Value ?? Obrigatoriedade.Nunca, contexto.Formulario);
+        IReadOnlyList<FieldError> causas = [.. CausasDaExibicao(exibicao), .. obrigatoriedade.Errors, .. termo.Errors,
+            .. RecusaDaOrdemEntreTermos(termo, contexto.Anteriores, path)];
+        return causas.Count > 0 ? leitor.PropagarCausasDoItem<TermoExigidoFormulario?>(causas, path) : termo.Value;
     }
+
+    private static IReadOnlyList<FieldError> CausasDaExibicao(Result<PredicadoDnf?> exibicao) =>
+        [.. exibicao.Errors.Select(causa => causa.NoCaminhoDoItem("exibicao"))];
+
+    private static IEnumerable<FieldError> RecusaDaOrdemEntreTermos(
+        Result<TermoExigidoFormulario> termo, IReadOnlyList<TermoExigidoFormulario> anteriores, string path) =>
+        termo.IsSuccess && !SegueOsTermosAnteriores(termo.Value!, anteriores)
+            ? [new FieldError(null, new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' repete código ou quebra a ordem crescente dos termos."))]
+            : [];
 
     private static int LerNumeroDaVersao(LeitorEnvelope leitor, JsonObject item, string path)
     {

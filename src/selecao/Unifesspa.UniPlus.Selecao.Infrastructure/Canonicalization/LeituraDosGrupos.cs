@@ -113,7 +113,7 @@ internal static class LeituraDosGrupos
             return leitor.Propagar<ExibicaoEObrigatoriedade?>(exibicao.Errors, $"{path}.exibicao");
         }
 
-        return LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is { } obrigatoriedade
+        return LeituraDasCondicoes.LerObrigatoriedadeRecusandoNaHora(leitor, item, path) is { } obrigatoriedade
             ? new ExibicaoEObrigatoriedade(exibicao.Value, obrigatoriedade)
             : null;
     }
