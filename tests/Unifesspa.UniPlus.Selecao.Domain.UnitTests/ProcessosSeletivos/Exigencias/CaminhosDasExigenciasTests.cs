@@ -26,7 +26,7 @@ public sealed class CaminhosDasExigenciasTests
     {
         RegraDeComprovacao[] regras = [Grupo(0, Documento(0), Grupo(1, Documento(0), Documento(1))), Documento(1)];
 
-        CaminhosDasExigencias.DasRegras(regras, "regrasDeComprovacao").Should().Equal(
+        CaminhosDasExigencias.DasRegras(regras, CaminhosDasExigencias.NaLista("regrasDeComprovacao", regras.Length)).Should().Equal(
             "regrasDeComprovacao[0]",
             "regrasDeComprovacao[0].itens[0]",
             "regrasDeComprovacao[0].itens[1]",
@@ -41,7 +41,7 @@ public sealed class CaminhosDasExigenciasTests
         RegraDeComprovacao[] regras = [Grupo(0, Documento(0), Grupo(1, Documento(0), Documento(1))), Documento(1)];
         RegraDeComprovacao[] todas = [.. regras.SelectMany(static regra => regra.EnumerarRegraEItens())];
 
-        CaminhosDasExigencias.DosDocumentos(todas, CaminhosDasExigencias.DasRegras(regras, "regrasDeComprovacao")).Should().Equal(
+        CaminhosDasExigencias.DosDocumentos(todas, CaminhosDasExigencias.DasRegras(regras, CaminhosDasExigencias.NaLista("regrasDeComprovacao", regras.Length))).Should().Equal(
             "regrasDeComprovacao[0].itens[0].documento",
             "regrasDeComprovacao[0].itens[1].itens[0].documento",
             "regrasDeComprovacao[0].itens[1].itens[1].documento",
@@ -54,11 +54,40 @@ public sealed class CaminhosDasExigenciasTests
         RegraDeComprovacao[] comDois = [Grupo(0, Documento(0), Documento(1)), Documento(1)];
         RegraDeComprovacao[] comQuatro = [Grupo(0, Documento(0), Documento(1), Documento(2), Documento(3)), Documento(1)];
 
-        IReadOnlyList<string> comDoisItens = CaminhosDasExigencias.DasRegras(comDois, "regrasDeComprovacao");
-        IReadOnlyList<string> comQuatroItens = CaminhosDasExigencias.DasRegras(comQuatro, "regrasDeComprovacao");
+        IReadOnlyList<string> comDoisItens = CaminhosDasExigencias.DasRegras(comDois, CaminhosDasExigencias.NaLista("regrasDeComprovacao", comDois.Length));
+        IReadOnlyList<string> comQuatroItens = CaminhosDasExigencias.DasRegras(comQuatro, CaminhosDasExigencias.NaLista("regrasDeComprovacao", comQuatro.Length));
 
         comDoisItens[^1].Should().Be("regrasDeComprovacao[1]").And.Be(comQuatroItens[^1]);
     }
+
+    [Fact(DisplayName = "Com os caminhos das regras fora de sequência, cada regra e cada item ficam no caminho recebido")]
+    public void DasRegras_CaminhosForaDeSequencia_ExpandeOsItensNoCaminhoRecebido()
+    {
+        RegraDeComprovacao[] regras = [Documento(0), Grupo(1, Documento(0), Documento(1)), Documento(2)];
+
+        CaminhosDasExigencias.DasRegras(regras, CaminhosDasExigencias.NasPosicoes("regrasDeComprovacao", [0, 3, 5])).Should().Equal(
+            "regrasDeComprovacao[0]",
+            "regrasDeComprovacao[3]",
+            "regrasDeComprovacao[3].itens[0]",
+            "regrasDeComprovacao[3].itens[1]",
+            "regrasDeComprovacao[5]");
+    }
+
+    [Theory(DisplayName = "Caminhos das regras em quantidade diferente da das regras são recusados em vez de apontar a regra errada")]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void DasRegras_QuantidadeDiferente_Recusa(int quantidade)
+    {
+        RegraDeComprovacao[] regras = [Documento(0), Documento(1)];
+
+        Action expandir = () => CaminhosDasExigencias.DasRegras(regras, CaminhosDasExigencias.NaLista("regrasDeComprovacao", quantidade));
+
+        expandir.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Cada posição dada vira um caminho, na ordem recebida")]
+    public void NasPosicoes_UmCaminhoPorPosicaoNaOrdemRecebida() =>
+        CaminhosDasExigencias.NasPosicoes("exigencias", [4, 1]).Should().Equal("exigencias[4]", "exigencias[1]");
 
     [Theory(DisplayName = "Na lista única o caminho é a posição na lista")]
     [InlineData(0)]

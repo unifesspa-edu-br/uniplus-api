@@ -24,7 +24,7 @@ public sealed class ConferenciaDasExigenciasDoFormularioTests
     private static IReadOnlyList<FieldError> Conferir(IEnumerable<FormularioDeclarado> formularios, ExigenciaDeDocumentoDoFormulario[] exigencias) =>
         ConferenciaDasExigenciasDoFormulario.Conferir(formularios, exigencias, CaminhosDasExigencias.NaLista("exigencias", exigencias.Length));
 
-    private static ExigenciaDeDocumentoDoFormulario Exigencia(string codigoDoFormulario, Guid faseId) =>
+    private static ExigenciaDeDocumentoDoFormulario Exigencia(string codigoDoFormulario, Guid? faseId) =>
         new(Codigo(codigoDoFormulario), faseId);
 
     [Fact(DisplayName = "A exigência no formulário obrigatório da própria fase não tem recusa")]
@@ -71,6 +71,24 @@ public sealed class ConferenciaDasExigenciasDoFormularioTests
             [Formulario("ISENCAO_TAXA", FaseDaInscricao, obrigatorio: false)], [Exigencia("ISENCAO_TAXA", FaseDaHabilitacao)]);
 
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioDeOutraFase);
+    }
+
+    [Fact(DisplayName = "A exigência sem fase no cronograma não recebe a recusa de formulário de outra fase")]
+    public void ExigenciaSemFase_NaoRecebeFormularioDeOutraFase()
+    {
+        IReadOnlyList<FieldError> recusas = Conferir(
+            [Formulario("INSCRICAO", FaseDaInscricao)], [Exigencia("INSCRICAO", faseId: null)]);
+
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A exigência sem fase no cronograma recebe a recusa de formulário inexistente")]
+    public void ExigenciaSemFase_RecebeFormularioInexistente()
+    {
+        IReadOnlyList<FieldError> recusas = Conferir(
+            [Formulario("INSCRICAO", FaseDaInscricao)], [Exigencia("AUSENTE", faseId: null)]);
+
+        recusas.Should().ContainSingle().Which.Error.Code.Should().Be(FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente);
     }
 
     [Fact(DisplayName = "As recusas de cada exigência se acumulam com as das demais, na ordem das exigências")]

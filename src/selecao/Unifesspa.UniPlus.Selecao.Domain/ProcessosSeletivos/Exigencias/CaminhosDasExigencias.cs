@@ -10,16 +10,21 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class CaminhosDasExigencias
 {
+    /// <summary>O nome da lista de regras de comprovação no pedido de gravação das exigências.</summary>
+    public const string ListaDasRegrasNoPedido = "regrasDeComprovacao";
+
     /// <summary>
-    /// O caminho de cada regra no pedido, na ordem de <see cref="RegraDeComprovacao.EnumerarRegraEItens"/>: a regra na
-    /// posição dela na <paramref name="lista"/>, e cada item de grupo dentro de <c>itens[]</c> da regra que o contém.
+    /// O caminho de cada regra no pedido, na ordem de <see cref="RegraDeComprovacao.EnumerarRegraEItens"/>: o caminho da regra
+    /// sem grupo vem em <paramref name="caminhosDasRegrasSemGrupo"/> (um por regra, na mesma ordem, nem sempre em sequência quando
+    /// só parte das regras do pedido é conferida), e cada item de grupo fica dentro de <c>itens[]</c> da regra que o contém.
     /// </summary>
-    public static IReadOnlyList<string> DasRegras(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, string lista)
+    public static IReadOnlyList<string> DasRegras(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, IReadOnlyList<string> caminhosDasRegrasSemGrupo)
     {
         ArgumentNullException.ThrowIfNull(regrasSemGrupo);
-        ArgumentNullException.ThrowIfNull(lista);
+        ArgumentNullException.ThrowIfNull(caminhosDasRegrasSemGrupo);
+        ExigirUmParaCada(caminhosDasRegrasSemGrupo, regrasSemGrupo.Count, nameof(caminhosDasRegrasSemGrupo));
 
-        return [.. regrasSemGrupo.SelectMany((regra, posicao) => DaRegraEDosItens(regra, NaPosicao(lista, posicao)))];
+        return [.. regrasSemGrupo.SelectMany((regra, posicao) => DaRegraEDosItens(regra, caminhosDasRegrasSemGrupo[posicao]))];
     }
 
     /// <summary>
@@ -48,8 +53,15 @@ public static class CaminhosDasExigencias
     /// <summary>O caminho de cada uma das <paramref name="quantidade"/> exigências da lista única de nome <paramref name="lista"/>.</summary>
     public static IReadOnlyList<string> NaLista(string lista, int quantidade)
     {
+        return NasPosicoes(lista, Enumerable.Range(0, quantidade));
+    }
+
+    /// <summary>O caminho de cada posição dada da lista de nome <paramref name="lista"/>, na ordem recebida.</summary>
+    public static IReadOnlyList<string> NasPosicoes(string lista, IEnumerable<int> posicoes)
+    {
         ArgumentNullException.ThrowIfNull(lista);
-        return [.. Enumerable.Range(0, quantidade).Select(posicao => NaPosicao(lista, posicao))];
+        ArgumentNullException.ThrowIfNull(posicoes);
+        return [.. posicoes.Select(posicao => NaPosicao(lista, posicao))];
     }
 
     /// <summary>Recusa a lista de caminhos que não tem um caminho para cada exigência: o item apontaria o lugar errado.</summary>

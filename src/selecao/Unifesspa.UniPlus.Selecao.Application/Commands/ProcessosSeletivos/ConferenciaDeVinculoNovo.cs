@@ -21,4 +21,14 @@ internal static class ConferenciaDeVinculoNovo
         ArgumentNullException.ThrowIfNull(catalogo);
         return ConferenciaNoCatalogo.VinculoNovo(VocabularioDeFatos.ParaRegras(catalogo.Values), existentes, propostos);
     }
+
+    /// <summary>A mesma conferência, com cada recusa apontando o campo do pedido que cita o dado ou o valor.</summary>
+    public static IReadOnlyList<FieldError> ConferirNosCampos(
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
+        VinculosDeFatos existentes,
+        IReadOnlyList<VinculosDoCampo> campos)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return ConferenciaNoCatalogo.VinculosNovosNosCampos(VocabularioDeFatos.ParaRegras(catalogo.Values), existentes, campos);
+    }
 }

@@ -57,7 +57,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             .ConfigureAwait(false);
         return definida.IsSuccess
             ? definida
-            : Result.ValidationFailure([.. definida.Errors.Select(erro => RegraCopiadaDoModelo.NoModelo(erro, copiadas))]);
+            : Result.ValidationFailure(RegraCopiadaDoModelo.RecusasNoModelo(definida.Errors, copiadas));
     }
 
     // O modelo substitui as regras sem grupo cujos documentos pertencem ao formulário que ele preenche.

@@ -18421,7 +18421,7 @@
       "oQueAconteceu": [
         "Um documento exigido declara a fase em que é exigido e, opcionalmente, a etapa em que é\ncoletado, e a etapa tem de acontecer na mesma fase da exigência. Isso deixou de valer em uma\ndestas situações:",
         "- na definição dos documentos exigidos, a etapa indicada acontece em outra fase. A recusa aponta o campo `regrasDeComprovacao[a].documento.momento.etapaId` (ou `regrasDeComprovacao[a].itens[b].documento.momento.etapaId`, no item de um grupo), e a mensagem de detalhe cita a etapa pelo nome e a fase pela citação do cronograma, sem identificadores;\n- na definição das etapas do processo, uma etapa que já é citada por uma exigência foi movida\n  para outra fase. A mensagem de detalhe cita a etapa, o documento e a fase da exigência, e diz\n  que a etapa não pode passar para outra fase sem antes reconfigurar a exigência.",
-        "Na definição dos documentos, o sistema confere o vínculo de cada exigência: a fase, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo)) e a etapa na fase. Esta última só é conferida quando a fase e a etapa existem no processo. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`."
+        "Na definição dos documentos, o sistema confere o vínculo de cada exigência: a fase, a etapa no processo (ver\n[`etapa_nao_pertence_ao_processo`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_ao_processo)) e a etapa na fase. Esta última só é conferida quando a fase e a etapa existem no processo: a exigência de fase fora do cronograma não recebe esta recusa. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências, e dos demais assuntos da definição (formulário, repetição por grupo, datas de referência e reenvio), saem juntas em `errors`, junto com as recusas da montagem das outras exigências."
       ],
       "comoResolver": [
         "Na definição dos documentos, indique uma etapa que aconteça na fase do documento, ou mude a\nfase do documento para a da etapa.",
@@ -18437,7 +18437,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Um documento exigido pode indicar a etapa em que é coletado. A etapa indicada não está entre as etapas deste processo.",
-        "Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.momento.etapaId` ou, para o documento de um item de grupo, `regrasDeComprovacao[a].itens[b].documento.momento.etapaId`, com a posição da regra e a do item no corpo enviado. Ao ler uma configuração já gravada, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/etapaChave`. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`. Esta conferência vale mesmo quando a fase da exigência também foi recusada; só a conferência de que a etapa acontece na fase (ver [`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)) depende das duas. A mensagem diz que a etapa da exigência deve ser uma das etapas do processo e não traz o identificador da etapa."
+        "Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.momento.etapaId` ou, para o documento de um item de grupo, `regrasDeComprovacao[a].itens[b].documento.momento.etapaId`, com a posição da regra e a do item no corpo enviado. Ao ler uma configuração já gravada, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/etapaChave`. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`. Esta conferência vale mesmo quando a fase da exigência também foi recusada, e as recusas dos demais assuntos da definição saem na mesma resposta; só a conferência de que a etapa acontece na fase (ver [`etapa_nao_pertence_a_fase`](/erros/uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase)) depende das duas. A mensagem diz que a etapa da exigência deve ser uma das etapas do processo e não traz o identificador da etapa."
       ],
       "comoResolver": [
         "Na definição, indique uma etapa que seja deste processo ou retire a indicação de etapa da exigência."
@@ -18452,7 +18452,7 @@
       "oQueAconteceu": [
         "Todo documento exigido é exigido numa fase do cronograma do processo. A fase indicada para a exigência não está no cronograma deste processo.",
         "Na gravação dos documentos, o campo é `regrasDeComprovacao[a].documento.momento.faseId` ou, para o documento de um item de grupo, `regrasDeComprovacao[a].itens[b].documento.momento.faseId`, com a posição da regra e a do item no corpo enviado. Ao ler uma configuração já gravada, o campo é o ponteiro `/documentosExigidos/exigencias/{n}/faseChave`. Cada exigência com defeito vira uma recusa própria, e as recusas de todas as exigências saem juntas em `errors`. A mensagem diz que a fase da exigência deve ser uma das fases do cronograma do processo e não traz o identificador da fase.",
-        "Na definição, esta conferência vem depois das conferências de forma e da montagem de cada exigência."
+        "Na definição, as recusas dos demais assuntos saem na mesma resposta, sem esperar a correção desta: o vínculo com a fase e a etapa, o formulário, a repetição por grupo, as datas de referência e o reenvio, nessa ordem, e em cada assunto pela posição da exigência. A exigência de fase fora do cronograma não recebe a recusa de etapa que não acontece na fase nem a de formulário de outra fase, porque não há fase para comparar; a de formulário inexistente continua valendo. As recusas da montagem de cada exigência (tipo de documento, modelo, forma da condição) saem na mesma resposta, primeiro as da montagem, depois as de vínculo novo com o catálogo e por fim as dos assuntos acima. A exigência recusada na montagem, e o grupo que tem um item recusado, não recebem as conferências seguintes; as demais exigências recebem todas."
       ],
       "comoResolver": [
         "Na definição, indique para cada exigência recusada uma fase que esteja no cronograma deste processo."
@@ -19936,6 +19936,7 @@
       ],
       "oQueAconteceu": [
         "O documento exigido é cobrado numa fase do cronograma, e o formulário em que o candidato o apresenta tem de ser respondido na mesma fase. O formulário citado pela exigência é ligado a outra fase, ou ainda a nenhuma. A mensagem aponta a exigência pela posição dela.",
+        "A exigência cuja fase não pertence ao cronograma do processo não recebe esta recusa, porque não há fase para comparar: ela recebe a recusa da fase (`documento_exigido.fase_nao_pertence_ao_processo`) e, se o formulário citado também não existe, a de formulário inexistente. Na definição dos documentos as recusas de exigências diferentes e de assuntos diferentes saem juntas.",
         "O formulário pode ser obrigatório ou facultativo: o pedido de isenção, que é facultativo, exige o comprovante. Dois formulários podem dividir a mesma fase, e por isso a exigência cita o formulário, e não só a fase."
       ],
       "comoResolver": [
@@ -28136,7 +28137,7 @@
       ],
       "oQueAconteceu": [
         "Um dado do candidato só pode ser incluído num formulário, numa regra, numa condição ou numa exigência de documento depois de o Representante do controlador aprovar a classificação, a finalidade e a base legal dele. O dado é novo ou teve a proteção alterada e está pendente. O Gestor de proteção de dados pode se manifestar sobre a proteção, mas não decide a aprovação.",
-        "A mensagem da resposta nomeia o dado do candidato pendente, como aparece no catálogo. Quando mais de um dado está pendente, a resposta traz uma causa por dado em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo."
+        "A mensagem da resposta nomeia o dado do candidato pendente, como aparece no catálogo. Quando mais de um dado está pendente, a resposta traz uma causa por dado em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo. Na definição dos documentos exigidos, a resposta traz uma causa por campo que cita o dado: `regrasDeComprovacao[a].documento.aplicabilidade.condicoes[j].fato` ou `regrasDeComprovacao[a].documento.fatosComprovados[m]` (com `itens[b]` no documento de um item de grupo), com a posição no corpo enviado; o mesmo dado citado em dois campos gera duas causas. Na aplicação de modelo de documentos, a causa aponta o documento do modelo."
       ],
       "comoResolver": [
         "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, ou peça ao administrador do catálogo que envie a solicitação de aprovação ao Representante do controlador, se ainda não a enviou."
@@ -28153,7 +28154,7 @@
       ],
       "oQueAconteceu": [
         "O pedido tenta criar um vínculo com um dado do candidato desativado no catálogo. Um vínculo já existente pode ser mantido.",
-        "A mensagem da resposta nomeia o dado como aparece no catálogo, sem repetir o código. Nas recusas de vínculo, quando mais de um dado está desativado, a resposta traz uma causa por dado em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo. Na criação de um dado que resume o que os membros de um grupo responderam (`POST /api/configuracao/admin/fatos-candidato/agregados`), a recusa do dado de membro desativado traz `field` igual a `fatoDeMembro`."
+        "A mensagem da resposta nomeia o dado como aparece no catálogo, sem repetir o código. Nas recusas de vínculo, quando mais de um dado está desativado, a resposta traz uma causa por dado em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo. Na definição dos documentos exigidos, a resposta traz uma causa por campo que cita o dado: `regrasDeComprovacao[a].documento.aplicabilidade.condicoes[j].fato` ou `regrasDeComprovacao[a].documento.fatosComprovados[m]` (com `itens[b]` no documento de um item de grupo), com a posição no corpo enviado; o mesmo dado citado em dois campos gera duas causas, e na aplicação de modelo de documentos a causa aponta o documento do modelo. Na criação de um dado que resume o que os membros de um grupo responderam (`POST /api/configuracao/admin/fatos-candidato/agregados`), a recusa do dado de membro desativado traz `field` igual a `fatoDeMembro`."
       ],
       "comoResolver": [
         "Use um dado do candidato ativo ou peça ao administrador do catálogo que reative o dado."
@@ -28178,7 +28179,7 @@
       ],
       "oQueAconteceu": [
         "O pedido tenta criar um vínculo com um valor desativado no catálogo. Um vínculo já existente pode ser mantido.",
-        "A mensagem da resposta nomeia o dado do candidato a que o valor pertence, como aparece no catálogo, sem repetir o código. Quando mais de um valor está desativado, a resposta traz uma causa por valor em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo."
+        "A mensagem da resposta nomeia o dado do candidato a que o valor pertence, como aparece no catálogo, sem repetir o código. Quando mais de um valor está desativado, a resposta traz uma causa por valor em `errors[]`, sem `field`, na ordem ordinal dos códigos do catálogo. Na definição dos documentos exigidos, a causa aponta o campo `regrasDeComprovacao[a].documento.aplicabilidade.condicoes[j].valor` (com `itens[b]` no documento de um item de grupo), com a posição da condição no corpo enviado, e o mesmo valor citado em duas condições gera duas causas; na aplicação de modelo de documentos, aponta o documento do modelo."
       ],
       "comoResolver": [
         "Use um valor ativo ou peça ao administrador do catálogo que reative o valor."

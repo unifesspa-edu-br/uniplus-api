@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,7 +36,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Fase fora do cronograma em item de grupo aponta a regra e o item no corpo do pedido")]
+    [Fact(DisplayName = "Fase fora do cronograma em item de grupo aponta a regra e o item no corpo do pedido, e o formulário que o processo não tem sai junto")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcessoEmItemDeGrupo_ApontaARegraEOItem()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -44,10 +45,13 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         Result resultado = processo.DefinirDocumentosExigidos([avulsa, grupo]);
 
-        resultado.Errors.Select(static erro => erro.Field).Should().Equal(
-            "regrasDeComprovacao[0].documento.momento.faseId",
-            "regrasDeComprovacao[1].itens[0].documento.momento.faseId",
-            "regrasDeComprovacao[1].itens[1].documento.momento.faseId");
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
+            ("regrasDeComprovacao[1].itens[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
+            ("regrasDeComprovacao[1].itens[1].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
+            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
+            ("regrasDeComprovacao[1].itens[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente),
+            ("regrasDeComprovacao[1].itens[1].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
     }
 
     private static RegraDeComprovacao RegraDeDocumentoEmFaseInexistente(Guid faseId, int ordem) =>
@@ -61,7 +65,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             [RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 0), RegraDeDocumentoEmFaseInexistente(faseDoGrupo, 1)]).Value!;
     }
 
-    [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
+    [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada, sem esconder a recusa do formulário que o processo não tem")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -72,6 +76,19 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
         resultado.Error.Message.Should().Be("A fase da exigência deve ser uma das fases do cronograma do processo.");
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
+            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+    }
+
+    [Fact(DisplayName = "Fase fora do cronograma com o formulário que o processo tem recebe só a recusa da fase")]
+    public void DefinirDocumentosExigidos_FaseDeOutroProcessoComFormulario_RecusaSoAFase()
+    {
+        ProcessoSeletivo processo = ProcessoComFases(Fase(1, "INSCRICAO"));
+        FormularioDeTeste.GarantirFormulario(processo, PapelDoFormularioDeTeste.Inscricao);
+
+        Result resultado = DefinirRegrasDeDocumento(processo, Exigencia(Guid.CreateVersion7()));
+
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("regrasDeComprovacao[0].documento.momento.faseId");
     }
 

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Exigencias;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -21,9 +22,7 @@ internal static class DefinicaoDosDocumentosExigidos
         ContextoDaMontagemDasExigencias contexto = await LerContextoAsync(processo, regrasDeDocumento, EscritaDasRegrasDeComprovacao.RegrasParaLeituraDeFatos(conferidos), mantidas, cadastros, cancellationToken).ConfigureAwait(false);
         MontagemDasRegrasDeComprovacao.Montadas montadas = await new MontagemDasRegrasDeComprovacao(new MontagemDoDocumentoExigido(contexto))
             .MontarRegrasSemGrupoAsync(conferidos, ProximaOrdemDasRegras(mantidas), cancellationToken).ConfigureAwait(false);
-        return montadas.Regras.IsFailure
-            ? Result.ValidationFailure(montadas.Regras.Errors)
-            : DefinirNoProcesso(processo, mantidas, montadas, contexto.Fatos);
+        return DefinirNoProcesso(processo, mantidas, montadas, contexto.Fatos);
     }
 
     private static int ProximaOrdemDasRegras(IReadOnlyList<RegraDeComprovacao> mantidas) =>
@@ -35,19 +34,45 @@ internal static class DefinicaoDosDocumentosExigidos
         MontagemDasRegrasDeComprovacao.Montadas montadas,
         FatosDoGatilho? fatos)
     {
-        List<RegraDeComprovacao> regras = montadas.Regras.Value!;
-        Result vinculosDosDados = fatos is null ? Result.Success() : ConferenciaDosVinculosDasExigencias.Conferir(processo, fatos, regras);
-        List<FieldError> recusasDeVinculo = [.. montadas.VinculosDosTipos, .. vinculosDosDados.Errors];
-        if (recusasDeVinculo.Count > 0)
-        {
-            return Result.ValidationFailure(recusasDeVinculo);
-        }
+        List<FieldError> recusasAntesDoDominio = RecusasAntesDoDominio(processo, montadas, fatos);
+        return recusasAntesDoDominio.Count == 0
+            ? DefinirNoAgregado(processo, mantidas, montadas.Regras)
+            : Result.ValidationFailure([.. recusasAntesDoDominio, .. RecusasDoDominio(processo, mantidas, montadas)]);
+    }
 
+    // A montagem vem antes porque as demais conferências leem o que ela monta; a pessoa corrige todos os assuntos de uma vez.
+    private static List<FieldError> RecusasAntesDoDominio(
+        ProcessoSeletivo processo, MontagemDasRegrasDeComprovacao.Montadas montadas, FatosDoGatilho? fatos) =>
+        [
+            .. montadas.Recusas,
+            .. montadas.VinculosDosTipos,
+            .. ConferenciaDosVinculosDasExigencias.Conferir(
+                processo, fatos, montadas.Regras, CaminhosDasExigencias.NasPosicoes(CaminhosDasExigencias.ListaDasRegrasNoPedido, montadas.PosicoesNoPedido)),
+        ];
+
+    private static Result DefinirNoAgregado(ProcessoSeletivo processo, IReadOnlyList<RegraDeComprovacao> mantidas, List<RegraDeComprovacao> regras)
+    {
         Result definido = processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
         return definido.IsSuccess || definido.Errors.Count == 0 || mantidas.Count == 0
             ? definido
-            : Result.ValidationFailure([.. definido.Errors.Select(erro => PosicaoDasRegrasNovas.SemAsMantidas(erro, mantidas.Count))]);
+            : Result.ValidationFailure(NaPosicaoDoPedido(definido.Errors, mantidas));
     }
+
+    // Só as exigências que montaram entram: a recusada na montagem, e o grupo com item recusado, ficam de fora. As recusas saem sem
+    // chamar o método que altera o processo: nada é gravado com recusa pendente.
+    private static List<FieldError> RecusasDoDominio(
+        ProcessoSeletivo processo, IReadOnlyList<RegraDeComprovacao> mantidas, MontagemDasRegrasDeComprovacao.Montadas montadas)
+    {
+        IReadOnlyList<string> caminhos =
+        [
+            .. CaminhosDasExigencias.NaLista(CaminhosDasExigencias.ListaDasRegrasNoPedido, mantidas.Count),
+            .. CaminhosDasExigencias.NasPosicoes(CaminhosDasExigencias.ListaDasRegrasNoPedido, montadas.PosicoesNoPedido.Select(posicao => posicao + mantidas.Count)),
+        ];
+        return NaPosicaoDoPedido(RegrasDasExigencias.RecusasDaDefinicao(processo.Declaracao(), [.. mantidas, .. montadas.Regras], caminhos), mantidas);
+    }
+
+    private static List<FieldError> NaPosicaoDoPedido(IEnumerable<FieldError> recusas, IReadOnlyList<RegraDeComprovacao> mantidas) =>
+        [.. recusas.Select(erro => PosicaoDasRegrasNovas.SemAsMantidas(erro, mantidas.Count))];
 
     // Somente os modelos do processo e os fatos necessários às regras são consultados.
     private static async Task<ContextoDaMontagemDasExigencias> LerContextoAsync(

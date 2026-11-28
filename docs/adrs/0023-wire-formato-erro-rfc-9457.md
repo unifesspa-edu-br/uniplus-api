@@ -118,6 +118,14 @@ Extensions condicionais:
 > **Decisão.** A recusa que nasce do pedido de publicação ou de retificação, fora do documento da configuração, aponta o campo do pedido em notação de pontos, sem ponteiro JSON: `documentoEditalId` para o documento do edital e `anexos[i].documentoId` para o anexo, em que `i` é a posição do anexo no pedido. Com vários anexos recusados, a resposta traz uma causa por anexo. A `message` diz o que se espera e nunca cita o identificador recebido. O código da modalidade é termo oficial do edital e pode ser citado, junto da descrição quando houver; isso ajusta a emenda de 2026-11-26 só nesse ponto.
 >
 > **Consequências.** O ponteiro JSON continua sendo só o campo do documento da configuração. O cliente localiza o anexo recusado pela posição que enviou.
+>
+> **Emenda (2026-11-28) — a recusa de vínculo com o catálogo na gravação das exigências aponta o campo.**
+>
+> **Contexto.** A recusa de vínculo com o catálogo na gravação das exigências de documento passa a apontar o campo.
+>
+> **Decisão.** Nos pedidos em que a recusa aponta o campo, sai uma causa por item e por campo que o cita (dois valores desativados na mesma condição são duas causas, uma para cada valor), pelo tipo e depois pela posição; sem campo, continua uma por item, na ordem dos códigos.
+>
+> **Consequências.** O mesmo dado citado duas vezes gera duas causas.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 

@@ -133,6 +133,42 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         resultado.Errors.Single().Field.Should().Be("modelo.conjuntoDeDocumentos");
     }
 
+    [Fact(DisplayName = "O valor desativado na condição de um documento do modelo aponta o documento do modelo, que não tem o campo da condição")]
+    public async Task Handle_ValorDesativadoNoDocumentoDoModelo_ApontaODocumentoDoModelo()
+    {
+        _cenario.FaseDoCronograma("INSCRICAO");
+        _cenario.DeclararAtendimentoEspecializado();
+        int posicao = _cenario.Catalogo.FindIndex(static fato => fato.Codigo == "CONDICAO_ATENDIMENTO");
+        _cenario.Catalogo[posicao] = _cenario.Catalogo[posicao] with { ValoresDominioDeclarados = [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, false)] };
+
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(DocumentoDoModelo("LAUDO_MEDICO", "PCD"), DocumentoDoModelo("LAUDO_MEDICO", "LACTANTE")));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(erro =>
+            erro.Error.Code == "VinculoCatalogo.ValorDesativado" && erro.Field == "modelo.conjuntoDeDocumentos.documentosExigidos[1]");
+    }
+
+    private static DocumentoExigidoDoModeloInput DocumentoComBaseLegalInvalida() => DocumentoDoModelo("LAUDO_MEDICO", "PCD") with
+    {
+        Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [new BaseLegalDoModeloInput(string.Empty, "FEDERAL", "PENDENTE", null)], false),
+    };
+
+    private static DocumentoExigidoDoModeloInput DocumentoQueAbrePrazoDeReenvio() => DocumentoDoModelo("LAUDO_MEDICO", "LACTANTE") with
+    {
+        Indeferimento = new IndeferimentoDoDocumentoDoModeloInput(false, "RETIRA_O_ACRESCIMO", [], true),
+    };
+
+    [Fact(DisplayName = "O documento 0 do modelo recusado na montagem e o documento 1 com recusa do domínio saem juntos, cada um no seu documento do modelo")]
+    public async Task Handle_MontagemDoPrimeiroEDominioDoSegundo_ApontaCadaDocumentoDoModelo()
+    {
+        _cenario.FaseDoCronograma("INSCRICAO");
+        _cenario.DeclararAtendimentoEspecializado();
+        Result<AplicacaoDeModeloDto> resultado = await _cenario.AplicarAsync(ModeloComDocumentos(DocumentoComBaseLegalInvalida(), DocumentoQueAbrePrazoDeReenvio()));
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().HaveCount(2).And.SatisfyRespectively(
+            primeira => primeira.Field.Should().StartWith("modelo.conjuntoDeDocumentos.documentosExigidos[0]"),
+            segunda => segunda.Should().Be(("modelo.conjuntoDeDocumentos.documentosExigidos[1].indeferimento.abrePrazoParaReenvio", "DocumentoExigido.PendenciaReenvioExigeComplementacao")));
+    }
+
     private DocumentoExigido ExigenciaMantida() => new Unifesspa.UniPlus.Selecao.Domain.UnitTests.Cenarios.DocumentoExigidoBuilder()
         .ComChave(ChaveLocal.Criar("exigencia_laudo_medico").Value)
         .ComTipo(new CopiaDoTipoDeDocumento(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal))

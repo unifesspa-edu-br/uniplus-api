@@ -55,7 +55,7 @@ public static class ConferenciaDasExigenciasDoFormulario
 
     private static IEnumerable<DomainError> RecusasDoFormularioCitado(ExigenciaDeDocumentoDoFormulario exigencia, FormularioDeclarado formulario)
     {
-        if (formulario.FaseId != exigencia.FaseId)
+        if (exigencia.FaseId is { } faseDaExigencia && formulario.FaseId != faseDaExigencia)
         {
             yield return FormularioDeOutraFase();
         }

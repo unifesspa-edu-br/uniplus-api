@@ -20,7 +20,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// (códigos declarados em <see cref="Regras.Enums.Operador"/>; <see cref="Valor"/> é texto,
 /// interpretado como JSON quando possível). A cláusula ausente é recusada; a cláusula negativa é recusada pelo domínio.
 /// </summary>
-public sealed record CondicaoGatilhoInput(int? Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor);
+public sealed record CondicaoGatilhoInput(int? Clausula, string Fato, [AceitaCodigosDe<Operador>] string? Operador, string Valor)
+{
+    /// <summary>O caminho do dado do candidato da condição, dentro dela, no pedido.</summary>
+    public const string CaminhoDoFato = "fato";
+
+    /// <summary>O caminho do valor comparado pela condição, dentro dela, no pedido.</summary>
+    public const string CaminhoDoValor = "valor";
+}
 
 /// <summary>
 /// Entrada de uma base legal (ADR-0074), usada por <see cref="IndeferimentoDoDocumentoInput"/> e por
@@ -146,7 +153,11 @@ public sealed record ItemDocumentoExigidoInput(
     IndeferimentoDoDocumentoInput? Indeferimento,
     RequisitosDoDocumentoInput? Requisitos,
     IReadOnlyList<string>? FatosComprovados = null,
-    string? Chave = null);
+    string? Chave = null)
+{
+    /// <summary>O caminho da lista de dados do candidato que o documento comprova no pedido.</summary>
+    public const string CaminhoDosFatosComprovados = "fatosComprovados";
+}
 
 /// <summary>
 /// Como as apresentações da mesma exigência se distinguem, na forma do <see cref="DistincaoDasApresentacoes"/>
