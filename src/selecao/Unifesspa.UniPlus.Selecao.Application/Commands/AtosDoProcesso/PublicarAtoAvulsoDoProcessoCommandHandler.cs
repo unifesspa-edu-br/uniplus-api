@@ -7,8 +7,8 @@ using DTOs;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Publica um ato avulso do processo: confere o tipo, a correção e os documentos, grava o registro do ato
-/// do processo e o entrega à porta de escrita do registro central, na mesma transação (ADR-0170).
+/// Publica um ato avulso do processo: confere o pedido, o tipo, a correção e os documentos, junta as recusas, grava o
+/// registro do ato do processo e o entrega à porta de escrita do registro central, na mesma transação (ADR-0170).
 /// </summary>
 /// <remarks>
 /// <b>Quem recusa o quê.</b> A Seleção confere o que é dela, antes de qualquer escrita. O que é do registro
@@ -29,10 +29,6 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(preparacao);
         ArgumentNullException.ThrowIfNull(publicacao);
-        if (RecusaDaCorrecaoDoAto.De(command) is { } correcaoRecusada)
-        {
-            return (correcaoRecusada, []);
-        }
         await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result<AtoAPublicar> ato = await preparacao.PrepararAsync(command, cancellationToken).ConfigureAwait(false);
         return ato.IsFailure

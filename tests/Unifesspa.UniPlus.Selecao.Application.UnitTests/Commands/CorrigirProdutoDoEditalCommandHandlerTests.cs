@@ -28,18 +28,19 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests
 {
     private readonly CenarioDaPublicacaoDoProdutoDoEdital _cenario = new();
 
-    [Fact(DisplayName = "A correção do item sem motivo é recusada no campo do motivo, antes de travar ou consultar o processo")]
-    public async Task CorrecaoSemMotivo_RecusaAntesDeQualquerLeitura()
+    [Fact(DisplayName = "A correção do item sem motivo é recusada só no campo do motivo, e o ato corrigido continua conferido")]
+    public async Task CorrecaoSemMotivo_RecusaNoCampoDoMotivo()
     {
-        PublicarProdutoDoEditalCommand semMotivo = _cenario.Comando(Guid.CreateVersion7(), corrige: Guid.CreateVersion7()) with { MotivoDaCorrecao = null };
+        (ProdutoDaFase preliminar, _) = Par();
+        _cenario.Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
+        AtoDoProcesso original = _cenario.Publicado(Materia, preliminar.Id);
+        PublicarProdutoDoEditalCommand semMotivo = _cenario.Comando(preliminar.Id, corrige: original.Id) with { MotivoDaCorrecao = null };
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await _cenario.Publicar(semMotivo);
+        IReadOnlyList<FieldError> recusas = await _cenario.Recusas(semMotivo);
 
-        resposta.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+        recusas.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "motivoDaCorrecao" && e.Error.Code == AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio);
-        mensagens.Should().BeEmpty();
-        await _cenario.Processos.DidNotReceive().TravarAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Atos.Received().ObterProcessoDoAtoAsync(original.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A errata de uma lista publicada é aceita, leva o item e a política confirmada, e a porta recebe o ato corrigido")]

@@ -15,8 +15,8 @@ public interface IDadosDoAtoPublicado
     /// <summary>Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</summary>
     DateOnly? DataDoAto { get; }
 
-    /// <summary>Quem assina o ato.</summary>
-    string Assinante { get; }
+    /// <summary>Quem assina o ato; ausente, a forma do pedido o recusa.</summary>
+    string? Assinante { get; }
 
     /// <summary>O documento a publicar confirmado que é o principal, sempre PDF.</summary>
     Guid? DocumentoPrincipalId { get; }

@@ -12,20 +12,20 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// corrige outro já publicado, a indicação deste e o motivo (ADR-0103).
 /// </summary>
 /// <param name="ProcessoSeletivoId">O processo que publica o ato.</param>
-/// <param name="TipoAtoCodigo">Código do tipo do ato no catálogo de Publicações.</param>
+/// <param name="TipoAtoCodigo">Código do tipo do ato no catálogo de Publicações; ausente, a forma do pedido o recusa.</param>
 /// <param name="Numero">Número que o documento declara, quando o tipo o tem.</param>
 /// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
-/// <param name="Assinante">Quem assina o ato.</param>
+/// <param name="Assinante">Quem assina o ato; ausente, a forma do pedido o recusa.</param>
 /// <param name="DocumentoPrincipalId">O documento a publicar confirmado que é o principal, sempre PDF.</param>
 /// <param name="Anexos">Os anexos, na ordem em que o ato os apresenta; nulo ou vazio quando não há.</param>
 /// <param name="AtoCorrigidoId">O ato publicado que este corrige; nulo quando o ato não corrige nenhum.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção; vem junto com <paramref name="AtoCorrigidoId"/>.</param>
 public sealed record PublicarAtoAvulsoDoProcessoCommand(
     Guid ProcessoSeletivoId,
-    string TipoAtoCodigo,
+    string? TipoAtoCodigo,
     string? Numero,
     DateOnly? DataDoAto,
-    string Assinante,
+    string? Assinante,
     Guid? DocumentoPrincipalId,
     IReadOnlyList<AnexoSolicitadoDoAto>? Anexos = null,
     Guid? AtoCorrigidoId = null,

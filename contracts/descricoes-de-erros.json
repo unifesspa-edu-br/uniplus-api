@@ -13771,7 +13771,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O nome dado a um anexo é o que a pessoa recebe ao baixá-lo. Ele é recusado quando está em\nbranco, tem mais de 120 caracteres contando a extensão, ou tem separador de caminho,\ncaractere de controle ou um dos caracteres `/ \\ < > : \" | ? * ;`."
+        "O nome dado a um anexo é o que a pessoa recebe ao baixá-lo. Ele é recusado quando está em\nbranco, tem mais de 120 caracteres contando a extensão, ou tem separador de caminho,\ncaractere de controle ou um dos caracteres `/ \\ < > : \" | ? * ;`.",
+        "A recusa aponta o campo `anexos[n].nome` do anexo, com uma causa por anexo; no nome\nrepetido, a causa é a do segundo anexo e dos seguintes."
       ],
       "comoResolver": [
         "Informe um nome de até 120 caracteres, sem os caracteres proibidos. A extensão do formato é\nacrescentada quando falta. Repita a publicação."
@@ -13787,7 +13788,8 @@
       ],
       "oQueAconteceu": [
         "O nome dado a um anexo é o nome do arquivo que a pessoa recebe ao baixá-lo, e cada anexo do\nato precisa de um nome próprio. Dois anexos ficaram com o mesmo nome.",
-        "A extensão do formato é acrescentada ao nome quando falta. Por isso `quadro` e `quadro.pdf`,\nnum anexo em PDF, contam como o mesmo nome. Espaços no começo e no fim também não distinguem\num nome do outro."
+        "A extensão do formato é acrescentada ao nome quando falta. Por isso `quadro` e `quadro.pdf`,\nnum anexo em PDF, contam como o mesmo nome. Espaços no começo e no fim também não distinguem\num nome do outro.",
+        "A recusa aponta o campo `anexos[n].nome` do anexo, com uma causa por anexo; no nome\nrepetido, a causa é a do segundo anexo e dos seguintes."
       ],
       "comoResolver": [
         "Dê a cada anexo um nome que o distinga dos demais, por exemplo `quadro de vagas` e\n`quadro de vagas retificado`, e repita a publicação."
@@ -13803,7 +13805,8 @@
         "UNI-REQ-0156"
       ],
       "oQueAconteceu": [
-        "O ato indicado como corrigido congelou a configuração do processo, como o edital de abertura\nou uma retificação do edital. O ato avulso nunca congela, e o corretor tem a mesma classe de\ncongelamento do corrigido: o ato que congela só se corrige por retificação do edital, com\nnova versão de configuração (UNI-REQ-0156)."
+        "O ato indicado como corrigido congelou a configuração do processo, como o edital de abertura\nou uma retificação do edital. O ato avulso nunca congela, e o corretor tem a mesma classe de\ncongelamento do corrigido: o ato que congela só se corrige por retificação do edital, com\nnova versão de configuração (UNI-REQ-0156).",
+        "A recusa aponta o campo `atoCorrigidoId`."
       ],
       "comoResolver": [
         "Para corrigir o edital, faça a retificação do processo seletivo. Para corrigir um ato\navulso, indique o ato avulso em `atoCorrigidoId`."
@@ -13819,7 +13822,8 @@
         "UNI-REQ-0156"
       ],
       "oQueAconteceu": [
-        "O ato indicado como corrigido pertence a outro processo seletivo. A correção herda os\nvínculos do ato corrigido; aceitar o ato de outro processo ligaria o novo ato a dois\nprocessos."
+        "O ato indicado como corrigido pertence a outro processo seletivo. A correção herda os\nvínculos do ato corrigido; aceitar o ato de outro processo ligaria o novo ato a dois\nprocessos.",
+        "A recusa aponta o campo `atoCorrigidoId`."
       ],
       "comoResolver": [
         "Use o identificador de um ato deste processo. Se o ato a corrigir é de outro processo,\npublique a correção naquele processo."
@@ -13835,7 +13839,8 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "O documento avulso indica, como ato corrigido, a publicação de um item que o edital declara,\ncomo um resultado, ou uma correção dessa publicação na mesma cadeia. A correção de um item do\nedital passa pela publicação do próprio item, porque é ali que o sistema confirma a política\nde divulgação do certame e aplica as travas do ciclo de recurso, como a de não corrigir o\npreliminar depois do definitivo. O documento avulso não passa por essas conferências, e por\nisso não pode corrigir um item."
+        "O documento avulso indica, como ato corrigido, a publicação de um item que o edital declara,\ncomo um resultado, ou uma correção dessa publicação na mesma cadeia. A correção de um item do\nedital passa pela publicação do próprio item, porque é ali que o sistema confirma a política\nde divulgação do certame e aplica as travas do ciclo de recurso, como a de não corrigir o\npreliminar depois do definitivo. O documento avulso não passa por essas conferências, e por\nisso não pode corrigir um item.",
+        "A recusa aponta o campo `atoCorrigidoId`."
       ],
       "comoResolver": [
         "Publique a correção pelo item: consulte os itens previstos do processo, escolha o item\ncorrigido e envie a errata ou a retificação do ato por ele, informando a publicação corrigida\ne o motivo. Se o documento avulso não era uma correção, retire o ato corrigido e o motivo da\nrequisição e publique-o como aviso ou comunicado."
@@ -13867,7 +13872,7 @@
         "UNI-REQ-0156"
       ],
       "oQueAconteceu": [
-        "O ato indicado como corrigido já foi corrigido, por outro ato avulso, por uma errata ou por\numa retificação. A cadeia de correção é linear: um ato é corrigido no máximo uma vez, e a\ncorreção seguinte recai sobre o ato mais recente da cadeia. A mensagem de detalhe nomeia o\nato que já o corrige, quando conhecido. Se duas correções do mesmo ato chegam ao mesmo\ntempo, só a primeira vale, e a outra recebe esta recusa sem nomear o corretor."
+        "O ato indicado como corrigido já foi corrigido, por outro ato avulso, por uma errata ou por\numa retificação. A cadeia de correção é linear: um ato é corrigido no máximo uma vez, e a\ncorreção seguinte recai sobre o ato mais recente da cadeia. Quando a conferência já vê o\ncorretor, a recusa aponta o campo `atoCorrigidoId`. Se duas correções do mesmo ato chegam ao\nmesmo tempo, só a primeira vale, e a outra recebe esta recusa detectada na gravação, sem campo\ne sem nomear o corretor."
       ],
       "comoResolver": [
         "Consulte os atos do processo, localize o ato mais recente da cadeia de correção e indique\nesse ato em `atoCorrigidoId`. Se a correção que já existe resolve o que se queria, não há o\nque publicar."
@@ -13883,7 +13888,7 @@
         "UNI-REQ-0157"
       ],
       "oQueAconteceu": [
-        "A publicação informa um ato a corrigir (`atoCorrigidoId`) que não é publicação do item\nescolhido. A correção de um item do edital, por errata ou por retificação do ato, corrige a\npublicação do próprio item, ou uma correção dela na mesma cadeia. O ato indicado pode ser de\noutro item, um documento avulso ou um ato que não existe neste processo; a mensagem de\ndetalhe nomeia o ato informado."
+        "A publicação informa um ato a corrigir (`atoCorrigidoId`) que não é publicação do item\nescolhido. A correção de um item do edital, por errata ou por retificação do ato, corrige a\npublicação do próprio item, ou uma correção dela na mesma cadeia. O ato indicado pode ser de\noutro item, um documento avulso ou um ato que não existe neste processo; a recusa aponta o\ncampo `atoCorrigidoId`, e a mensagem não repete o identificador."
       ],
       "comoResolver": [
         "Consulte os atos publicados do item e indique a publicação mais recente da cadeia dele. Se o\nque se quer corrigir é outro item, escolha esse item e repita a publicação por ele. Se o ato a\ncorrigir é um documento avulso, corrija-o pela publicação de documento avulso, e não por um\nitem do edital."
@@ -13899,7 +13904,7 @@
         "UNI-REQ-0156"
       ],
       "oQueAconteceu": [
-        "O identificador informado como ato corrigido não é de nenhum ato publicado por um processo\nseletivo. Um ato só corrige outro ato publicado do mesmo processo (UNI-REQ-0156). A mensagem\nde detalhe traz o identificador."
+        "O identificador informado como ato corrigido não é de nenhum ato publicado por um processo\nseletivo. Um ato só corrige outro ato publicado do mesmo processo (UNI-REQ-0156). A recusa\naponta o campo `atoCorrigidoId`, e a mensagem não repete o identificador."
       ],
       "comoResolver": [
         "Consulte os atos do processo e use, em `atoCorrigidoId`, o identificador do ato que se quer\ncorrigir. Se o ato não precisa corrigir outro, publique sem indicar ato corrigido."
@@ -13946,7 +13951,7 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O documento indicado já está em outro ato do processo, como principal ou como anexo. O\narquivo publicado tem um único ato por trás, para que a pessoa que o baixa saiba a que ato\nele pertence. A mensagem de detalhe traz o identificador do documento."
+        "O documento indicado já está em outro ato do processo, como principal ou como anexo. O\narquivo publicado tem um único ato por trás, para que a pessoa que o baixa saiba a que ato\nele pertence. A recusa aponta o campo do documento no pedido, `documentoPrincipalId` ou\n`anexos[n].documentoId`, com uma causa por documento, e a mensagem não repete o identificador."
       ],
       "comoResolver": [
         "Para publicá-lo neste ato, envie o arquivo de novo: inicie um novo envio com a finalidade\n`DOCUMENTO_DE_ATO`, confirme e use o novo identificador."
@@ -13961,7 +13966,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O documento principal ou um dos anexos existe, mas o envio dele ainda não foi confirmado. Só\no documento confirmado, já conferido e imutável, pode ser referenciado no ato."
+        "O documento principal ou um dos anexos existe, mas o envio dele ainda não foi confirmado. Só\no documento confirmado, já conferido e imutável, pode ser referenciado no ato.",
+        "A recusa aponta o campo do documento no pedido, `documentoPrincipalId` ou\n`anexos[n].documentoId`, com uma causa por documento."
       ],
       "comoResolver": [
         "Confirme o envio do documento e repita a publicação. Se a URL de envio já venceu, a\nconfirmação recusa com\n[`documento_a_publicar.objeto_nao_encontrado`](/erros/uniplus.selecao.documento_a_publicar.objeto_nao_encontrado):\ninicie um novo envio, confirme e use o novo identificador."
@@ -13992,7 +13998,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O documento principal ou um dos anexos foi enviado com outra finalidade: como documento do\nedital ou como anexo do edital. A finalidade é declarada no início do envio e não muda. Só o\ndocumento enviado como `DOCUMENTO_DE_ATO` serve ao ato avulso, o que mantém o arquivo do\nedital separado do arquivo do ato."
+        "O documento principal ou um dos anexos foi enviado com outra finalidade: como documento do\nedital ou como anexo do edital. A finalidade é declarada no início do envio e não muda. Só o\ndocumento enviado como `DOCUMENTO_DE_ATO` serve ao ato avulso, o que mantém o arquivo do\nedital separado do arquivo do ato.",
+        "A recusa aponta o campo do documento no pedido, `documentoPrincipalId` ou\n`anexos[n].documentoId`, com uma causa por documento."
       ],
       "comoResolver": [
         "Use documentos enviados com a finalidade `DOCUMENTO_DE_ATO`. Se o arquivo certo foi enviado\ncom outra finalidade, inicie um novo envio dele como documento de ato, confirme e use o novo\nidentificador."
@@ -14007,7 +14014,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O documento principal do ato é o que aparece na linha do tempo do certame e é sempre um PDF.\nO documento indicado como principal está em DOCX ou ODT. Esses formatos são aceitos apenas\ncomo anexo."
+        "O documento principal do ato é o que aparece na linha do tempo do certame e é sempre um PDF.\nO documento indicado como principal está em DOCX ou ODT. Esses formatos são aceitos apenas\ncomo anexo.",
+        "A recusa aponta o campo `documentoPrincipalId`."
       ],
       "comoResolver": [
         "Exporte o documento principal para PDF, inicie um novo envio com a finalidade\n`DOCUMENTO_DE_ATO`, confirme e use o novo identificador como principal. O DOCX ou o ODT\noriginal pode seguir como anexo."
@@ -14022,7 +14030,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O mesmo documento consta mais de uma vez no ato: em dois anexos, ou como principal e como\nanexo. Cada arquivo publicado do ato tem um lugar só."
+        "O mesmo documento consta mais de uma vez no ato: em dois anexos, ou como principal e como\nanexo. Cada arquivo publicado do ato tem um lugar só.",
+        "O documento principal é sempre o primeiro examinado. A recusa aponta o campo `anexos[n].documentoId`\nde cada ocorrência repetida, com uma causa por ocorrência."
       ],
       "comoResolver": [
         "Mantenha cada documento uma única vez. Se são arquivos diferentes, envie cada um e use o\nidentificador próprio."
@@ -14069,7 +14078,8 @@
       ],
       "oQueAconteceu": [
         "O tipo de ato do item é um **resultado**, e a publicação chegou sem a confirmação de que o\nPDF segue a política de divulgação do certame. A confirmação é exigida na publicação do\nresultado e também na da correção dele, por errata ou retificação do ato, inclusive quando a\ncorreção aponta outra correção da cadeia.",
-        "A política que vale é a da versão vigente do edital, congelada na publicação, e não a do\ncadastro: mudar o cadastro depois não altera o que se confirma. A mensagem de detalhe lista\nos campos que a política torna públicos. O sistema não confere o conteúdo do PDF; a\nconfirmação é o compromisso de quem publica."
+        "A política que vale é a da versão vigente do edital, congelada na publicação, e não a do\ncadastro: mudar o cadastro depois não altera o que se confirma. A mensagem de detalhe lista\nos campos que a política torna públicos. O sistema não confere o conteúdo do PDF; a\nconfirmação é o compromisso de quem publica.",
+        "A recusa aponta o campo `politicaDeDivulgacaoConfirmada`."
       ],
       "comoResolver": [
         "Consulte a política de divulgação mostrada junto aos itens previstos do processo, confira se o\nPDF só traz os campos públicos e repita a publicação com a confirmação marcada\n(`politicaDeDivulgacaoConfirmada`). Se o PDF traz algum dado fora da política, gere uma\nversão sem ele antes de publicar. A confirmação fica registrada com o ato."
@@ -14084,7 +14094,8 @@
         "UNI-REQ-0162"
       ],
       "oQueAconteceu": [
-        "A publicação tenta corrigir um resultado **preliminar** cujo definitivo já foi publicado. O\ndefinitivo fecha o ciclo de recurso da matéria, e o que vale a partir daí é ele. A trava vale\npara toda a cadeia de correções do preliminar: nem o preliminar nem a correção mais recente\ndele podem ser corrigidos. Vale só para os ciclos que esse definitivo fecha; o preliminar do\nmesmo tipo de ato em outro ciclo, ainda aberto, continua corrigível."
+        "A publicação tenta corrigir um resultado **preliminar** cujo definitivo já foi publicado. O\ndefinitivo fecha o ciclo de recurso da matéria, e o que vale a partir daí é ele. A trava vale\npara toda a cadeia de correções do preliminar: nem o preliminar nem a correção mais recente\ndele podem ser corrigidos. Vale só para os ciclos que esse definitivo fecha; o preliminar do\nmesmo tipo de ato em outro ciclo, ainda aberto, continua corrigível.",
+        "A recusa aponta o campo `atoCorrigidoId`."
       ],
       "comoResolver": [
         "Corrija o resultado **definitivo**, por errata ou retificação do ato, informando a publicação\ndo definitivo como ato corrigido. A correção do definitivo ajusta o documento publicado e não\nabre novo prazo de recurso."
@@ -14147,7 +14158,8 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O pedido traz mais de 20 anexos, sem contar o documento principal."
+        "O pedido traz mais de 20 anexos, sem contar o documento principal.",
+        "A recusa aponta o campo `anexos`. Com anexos demais, os documentos do pedido não são lidos,\ne as causas que dependem dessa leitura não aparecem na resposta."
       ],
       "comoResolver": [
         "Reduza a lista para até 20 anexos. Se há mais documentos a publicar, reúna-os em um só\narquivo ou publique-os em outro ato."
@@ -14162,7 +14174,7 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O tipo de ato escolhido, conforme o catálogo, congela a configuração do processo: publicá-lo\ncria uma nova versão congelada. O documento avulso não altera a configuração, então não\nserve a esse tipo. A mensagem de detalhe nomeia o tipo."
+        "O tipo de ato escolhido, conforme o catálogo, congela a configuração do processo: publicá-lo\ncria uma nova versão congelada. O documento avulso não altera a configuração, então não\nserve a esse tipo. No documento avulso, a recusa aponta o campo `tipoAtoCodigo`; no item do\nedital, o tipo vem do item que a rota escolhe, e a recusa não tem campo."
       ],
       "comoResolver": [
         "Escolha um tipo de ato que não congele configuração, como aviso, comunicado ou errata. Se a\nintenção é alterar o edital, faça a retificação do processo seletivo, que cria a nova\nversão."
@@ -14178,7 +14190,7 @@
         "UNI-REQ-0156"
       ],
       "oQueAconteceu": [
-        "O catálogo marca o tipo de ato escolhido como um tipo que corrige sempre outro ato, como a\nerrata. O pedido não indicou o ato corrigido (`atoCorrigidoId`). A errata não existe\nsozinha: ela aponta o ato que corrige e registra o motivo (UNI-REQ-0156). A mensagem de\ndetalhe nomeia o tipo."
+        "O catálogo marca o tipo de ato escolhido como um tipo que corrige sempre outro ato, como a\nerrata. O pedido não indicou o ato corrigido (`atoCorrigidoId`). A errata não existe\nsozinha: ela aponta o ato que corrige e registra o motivo (UNI-REQ-0156). A recusa aponta o campo\n`atoCorrigidoId`."
       ],
       "comoResolver": [
         "Informe em `atoCorrigidoId` o ato publicado que se quer corrigir, o mais recente da cadeia\nde correção, e o motivo da correção, e repita a publicação. Se o ato não corrige nenhum\noutro, escolha um tipo de ato que não exija correção, como aviso ou comunicado."
@@ -14193,7 +14205,7 @@
         "UNI-REQ-0155"
       ],
       "oQueAconteceu": [
-        "O tipo de ato escolhido existe e vigora na data do documento, mas o catálogo de tipos de ato\nnão o marca como publicável como documento avulso. Hoje só aviso, comunicado e errata são.\nResultado, convocação e chamada têm fluxo próprio: o resultado declarado no edital se\npublica pela publicação de resultado (UNI-REQ-0157), e convocação e chamada pertencem ao\nIngresso. A conferência acontece antes de qualquer gravação, e a mensagem de detalhe nomeia\no tipo."
+        "O tipo de ato escolhido existe e vigora na data do documento, mas o catálogo de tipos de ato\nnão o marca como publicável como documento avulso. Hoje só aviso, comunicado e errata são.\nResultado, convocação e chamada têm fluxo próprio: o resultado declarado no edital se\npublica pela publicação de resultado (UNI-REQ-0157), e convocação e chamada pertencem ao\nIngresso. A conferência acontece antes de qualquer gravação, e a recusa aponta o campo\n`tipoAtoCodigo`."
       ],
       "comoResolver": [
         "Escolha um tipo publicável como documento avulso, como aviso, comunicado ou errata. Se o\ntipo deveria ser avulso, peça ao administrador do catálogo de tipos de ato que o marque como\npublicável como documento avulso e repita a publicação. Para publicar um resultado, use a\npublicação de resultado do item que a fase ou a etapa declara no edital."
@@ -25891,7 +25903,8 @@
         "Publicar ou retificar um processo seletivo registra um ato normativo em\nPublicações, na mesma operação que grava a versão da configuração e a\ndivulgação do certame. Nessa operação, o tipo de ato declarado é conferido\nno catálogo: ele precisa ter versão vigente **no dia da divulgação**.",
         "O dia que vale é o dia civil do instante em que o sistema divulga o ato,\nno fuso institucional (UNI-REQ-0111). A data que o documento declara, a\nimpressa nele, **não escolhe** a versão do tipo (UNI-REQ-0406): um\ndocumento datado de uma semana atrás não busca a versão que vigorava\nentão.",
         "A recusa é **síncrona**: chega na própria resposta da publicação, antes de\nqualquer gravação. **Nada fica gravado**: nenhuma versão, nenhum ato,\nnenhuma divulgação. O rascunho é preservado, e a operação pode ser\nrepetida assim que o tipo tiver versão vigente.",
-        "A recusa vale também para os **tipos de ato que o cronograma declara**. Ao\npublicar, e ao retificar com um tipo declarado pela primeira vez, a\nclassificação de cada tipo (se congela a configuração, se é único, se é\nresultado) é lida do catálogo na data de hoje e congelada na versão\npublicada. Tipo declarado sem versão vigente hoje não tem classificação a\ncongelar. O tipo que a versão vigente já congelou não é relido na\nretificação (UNI-REQ-0163). Para o tipo declarado no cronograma ou nas etapas, a recusa não traz nome nem código do tipo: o campo `/cronograma/fases/{i}/publicacoesPrevistas/{p}/atoCodigo` (fase) ou `/etapas/{i}/publicacoesPrevistas/{p}/atoCodigo` (etapa) aponta o item, e há uma recusa para cada item nessa condição, todas na mesma resposta."
+        "A recusa vale também para os **tipos de ato que o cronograma declara**. Ao\npublicar, e ao retificar com um tipo declarado pela primeira vez, a\nclassificação de cada tipo (se congela a configuração, se é único, se é\nresultado) é lida do catálogo na data de hoje e congelada na versão\npublicada. Tipo declarado sem versão vigente hoje não tem classificação a\ncongelar. O tipo que a versão vigente já congelou não é relido na\nretificação (UNI-REQ-0163). Para o tipo declarado no cronograma ou nas etapas, a recusa não traz nome nem código do tipo: o campo `/cronograma/fases/{i}/publicacoesPrevistas/{p}/atoCodigo` (fase) ou `/etapas/{i}/publicacoesPrevistas/{p}/atoCodigo` (etapa) aponta o item, e há uma recusa para cada item nessa condição, todas na mesma resposta.",
+        "Na publicação de documento avulso, a recusa aponta o campo `tipoAtoCodigo`; na publicação de\nitem do edital, o tipo vem do item que a rota escolhe, e a recusa não tem campo."
       ],
       "comoResolver": [
         "Confirme, no catálogo de tipos de ato de Publicações, que o código tem uma\nversão vigente no dia da divulgação, que é hoje: tipos de ato têm vigência\nprópria. Cadastre uma versão vigente ou escolha outro tipo de ato. Para o\ntipo declarado no cronograma ou nas etapas pela primeira vez vale a mesma regra: vigente\nhoje, ou declare outro tipo. A mensagem desses itens não traz nome nem código; use o campo para achar o item.",

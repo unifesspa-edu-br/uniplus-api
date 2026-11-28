@@ -260,6 +260,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDoTipoDoAtoAvulso>();
         services.AddScoped<ConferenciaDoAtoCorrigido>();
         services.AddScoped<ConferenciaDosDocumentosDoAto>();
+        services.AddScoped<ConferenciaDoPedidoDoAto>();
         services.AddScoped<PreparacaoDaPublicacaoDoAtoAvulso>();
         services.AddScoped<ConfiguracaoVigenteDoProcesso>();
         services.AddScoped<ConferenciaDoProdutoDoEdital>();

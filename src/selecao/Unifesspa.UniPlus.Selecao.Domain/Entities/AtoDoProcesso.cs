@@ -48,6 +48,12 @@ public sealed class AtoDoProcesso : EntityBase
     public const int IdentificadorLegivelMaxLength = 200;
     public const int ContaIdMaxLength = 255;
 
+    /// <summary>O campo do pedido que indica o ato corrigido, no casing do payload.</summary>
+    public const string CampoDoAtoCorrigido = "atoCorrigidoId";
+
+    /// <summary>O campo do pedido que traz o motivo da correção, no casing do payload.</summary>
+    public const string CampoDoMotivoDaCorrecao = "motivoDaCorrecao";
+
     private readonly List<AnexoDoAtoDoProcesso> _anexos = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -135,9 +141,9 @@ public sealed class AtoDoProcesso : EntityBase
     private static FieldError? ErroDoAtoCorrigido(Guid? atoCorrigidoId, bool temMotivo) => (atoCorrigidoId, temMotivo) switch
     {
         (Guid id, _) when id == Guid.Empty => Violacao(
-            "atoCorrigidoId", AtoDoProcessoErrorCodes.AtoCorrigidoInvalido, "O ato corrigido informado é inválido."),
+            CampoDoAtoCorrigido, AtoDoProcessoErrorCodes.AtoCorrigidoInvalido, "O ato corrigido informado é inválido."),
         (null, true) => Violacao(
-            "atoCorrigidoId",
+            CampoDoAtoCorrigido,
             AtoDoProcessoErrorCodes.AtoCorrigidoObrigatorio,
             "Informe o ato corrigido: o motivo da correção só existe junto dele."),
         _ => null,
@@ -146,7 +152,7 @@ public sealed class AtoDoProcesso : EntityBase
     private static FieldError? ErroDoMotivoDaCorrecao(Guid? atoCorrigidoId, bool temMotivo) =>
         atoCorrigidoId is not null && !temMotivo
             ? Violacao(
-                "motivoDaCorrecao",
+                CampoDoMotivoDaCorrecao,
                 AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio,
                 "O motivo da correção é obrigatório quando o ato corrige outro.")
             : null;

@@ -39,4 +39,23 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandValidatorTests
     [Fact(DisplayName = "A data zero informada é recusada, porque não é ausência")]
     public void DataZeroInformada_Recusa() =>
         _validator.Validate(Comando() with { DataDoAto = default(DateOnly) }).IsValid.Should().BeFalse();
+
+    [Theory(DisplayName = "O tipo e o assinante ausentes ou em branco passam pelo validator: a forma do pedido os recusa como campo obrigatório")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void TipoEAssinanteAusentes_NaoSaoDoValidator(string? texto) =>
+        _validator.Validate(Comando() with { TipoAtoCodigo = texto, Assinante = texto }).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "O tipo e o assinante só com espaços, mesmo acima do limite, são da forma do pedido e não do comprimento")]
+    public void TipoEAssinanteSoComEspacosAcimaDoLimite_NaoSaoDoValidator() =>
+        _validator.Validate(Comando() with { TipoAtoCodigo = new string(' ', 201), Assinante = new string(' ', 201) }).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "O tipo e o assinante acima do tamanho do registro continuam recusados pelo validator")]
+    public void TipoEAssinanteAcimaDoTamanho_SaoRecusados()
+    {
+        PublicarAtoAvulsoDoProcessoCommand comando = Comando() with { TipoAtoCodigo = new string('a', 61), Assinante = new string('b', 201) };
+
+        _validator.Validate(comando).Errors.Select(e => e.PropertyName).Should().BeEquivalentTo(["TipoAtoCodigo", "Assinante"]);
+    }
 }

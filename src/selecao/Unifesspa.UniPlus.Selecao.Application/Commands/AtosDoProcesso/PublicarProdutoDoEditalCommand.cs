@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="ProdutoDoEditalId">O <c>Id</c> congelado do produto de fase ou de etapa que o ato cumpre.</param>
 /// <param name="Numero">Número que o documento declara, quando o tipo o tem.</param>
 /// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
-/// <param name="Assinante">Quem assina o ato.</param>
+/// <param name="Assinante">Quem assina o ato; ausente, a forma do pedido o recusa.</param>
 /// <param name="DocumentoPrincipalId">O documento a publicar confirmado que é o principal, sempre PDF.</param>
 /// <param name="Anexos">Os anexos, na ordem em que o ato os apresenta; nulo ou vazio quando não há.</param>
 /// <param name="PoliticaDeDivulgacaoConfirmada">
@@ -32,7 +32,7 @@ public sealed record PublicarProdutoDoEditalCommand(
     Guid ProdutoDoEditalId,
     string? Numero,
     DateOnly? DataDoAto,
-    string Assinante,
+    string? Assinante,
     Guid? DocumentoPrincipalId,
     IReadOnlyList<AnexoSolicitadoDoAto>? Anexos = null,
     bool PoliticaDeDivulgacaoConfirmada = false,

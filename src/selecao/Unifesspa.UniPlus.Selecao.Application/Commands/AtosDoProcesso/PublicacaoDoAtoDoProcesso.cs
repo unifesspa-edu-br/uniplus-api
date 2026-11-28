@@ -138,7 +138,7 @@ public sealed class PublicacaoDoAtoDoProcesso(
             TipoNome: ato.Tipo.Nome,
             Numero: ato.Dados.Numero,
             DataDoAto: ato.DataDoAto,
-            Assinante: ato.Dados.Assinante,
+            Assinante: ato.Assinante,
             IdentificadorNoEnderecoWebDaUnidadeAdministradora: versaoDivulgada.IdentificadorNoEnderecoWebDaUnidadeAdministradora,
             IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
             DocumentoPrincipalId: ato.Documentos.Principal.Id,

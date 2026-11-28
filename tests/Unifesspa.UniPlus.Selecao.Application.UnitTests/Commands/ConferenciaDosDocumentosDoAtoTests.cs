@@ -25,10 +25,10 @@ public sealed class ConferenciaDosDocumentosDoAtoTests
             .Returns([principal, anexo]);
         ConferenciaDosDocumentosDoAto conferencia = new(documentos, Substitute.For<IAtoDoProcessoRepository>());
 
-        Result<DocumentosDoAtoConferidos> resultado = await conferencia.ConferirAsync(
-            processoId, principal.Id, [new(anexo.Id, "Quadro\uD800")], CancellationToken.None);
+        ResultadoDosDocumentos resultado = await conferencia.ConferirAsync(
+            processoId, PedidoDosDocumentosDoAto.De(principal.Id, [new(anexo.Id, "Quadro\uD800")]), CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.AnexoNomeInvalido);
+        resultado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(AtoDoProcessoErrorCodes.AnexoNomeInvalido);
     }
 
     [Fact(DisplayName = "Documento principal inexistente é recusado apontando documentoPrincipalId, sem citar o identificador")]
@@ -37,9 +37,9 @@ public sealed class ConferenciaDosDocumentosDoAtoTests
         Guid processoId = Guid.CreateVersion7();
         Guid principalInexistente = Guid.CreateVersion7();
 
-        Result<DocumentosDoAtoConferidos> resultado = await ConferirAsync(processoId, principalInexistente, [], []);
+        ResultadoDosDocumentos resultado = await ConferirAsync(processoId, principalInexistente, [], []);
 
-        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        FieldError recusa = resultado.Recusas.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("documentoPrincipalId");
         recusa.Error.Code.Should().Be(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado);
         recusa.Error.Message.Should().Be("O documento principal do ato deve ser um dos documentos deste processo.");
@@ -53,15 +53,36 @@ public sealed class ConferenciaDosDocumentosDoAtoTests
         DocumentoAPublicar anexo = Documento(processoId);
         AnexoSolicitadoDoAto[] pedidos = [new(anexo.Id, "Quadro"), new(Guid.CreateVersion7(), "Lista")];
 
-        Result<DocumentosDoAtoConferidos> resultado = await ConferirAsync(processoId, principal.Id, pedidos, [principal, anexo]);
+        ResultadoDosDocumentos resultado = await ConferirAsync(processoId, principal.Id, pedidos, [principal, anexo]);
 
-        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        FieldError recusa = resultado.Recusas.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("anexos[1].documentoId");
         recusa.Error.Code.Should().Be(AtoDoProcessoErrorCodes.DocumentoNaoEncontrado);
         recusa.Error.Message.Should().Be("O documento do anexo deve ser um dos documentos deste processo.");
     }
 
-    private static Task<Result<DocumentosDoAtoConferidos>> ConferirAsync(
+    [Fact(DisplayName = "O documento já usado em outro ato é recusado junto do nome inválido do mesmo anexo, que não dependem um do outro")]
+    public async Task ConferirAsync_AnexoJaUsadoENomeInvalido_SomaAsDuasRecusas()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        DocumentoAPublicar principal = Documento(processoId);
+        DocumentoAPublicar anexo = Documento(processoId);
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
+        documentos.ListarDoProcessoAsync(processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([principal, anexo]);
+        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
+        atos.ListarDocumentosJaUsadosAsync(processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new HashSet<Guid> { anexo.Id });
+
+        ResultadoDosDocumentos resultado = await new ConferenciaDosDocumentosDoAto(documentos, atos).ConferirAsync(
+            processoId, PedidoDosDocumentosDoAto.De(principal.Id, [new(anexo.Id, "a/b")]), CancellationToken.None);
+
+        resultado.Recusas.Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+            ("anexos[0].nome", AtoDoProcessoErrorCodes.AnexoNomeInvalido),
+            ("anexos[0].documentoId", AtoDoProcessoErrorCodes.DocumentoJaUsadoEmOutroAto));
+        resultado.Conferidos.Should().BeNull();
+    }
+
+    private static Task<ResultadoDosDocumentos> ConferirAsync(
         Guid processoId, Guid principalId, AnexoSolicitadoDoAto[] pedidos, DocumentoAPublicar[] existentes)
     {
         IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
@@ -69,7 +90,7 @@ public sealed class ConferenciaDosDocumentosDoAtoTests
             .Returns(existentes);
         ConferenciaDosDocumentosDoAto conferencia = new(documentos, Substitute.For<IAtoDoProcessoRepository>());
 
-        return conferencia.ConferirAsync(processoId, principalId, pedidos, CancellationToken.None);
+        return conferencia.ConferirAsync(processoId, PedidoDosDocumentosDoAto.De(principalId, pedidos), CancellationToken.None);
     }
 
     private static DocumentoAPublicar Documento(Guid processoId)
