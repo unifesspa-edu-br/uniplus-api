@@ -68,7 +68,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
     private static Result<ReferenciaRegra> Recusa(string campo, string codigo, string mensagem) =>
         Result<ReferenciaRegra>.ValidationFailure([new(campo, new DomainError(codigo, mensagem))]);
 
-    // No primeiro item recusado a lista para: os seguintes ficam sem posição montada.
+    // Cada item é resolvido por si: o recusado deixa a posição vazia e os demais seguem, para a resposta trazer todas as recusas.
     private async Task<EliminacoesResolvidas> ResolverEliminacoesAsync(DefinirClassificacaoCommand command, CancellationToken cancellationToken)
     {
         if (command.RegrasEliminacao is not { } entradas)
@@ -77,7 +77,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
         }
 
         EliminacoesResolvidas resolvidas = EliminacoesResolvidas.ParaQuantidade(entradas.Count);
-        for (int posicao = 0; posicao < entradas.Count && resolvidas.SemRecusa; posicao++)
+        for (int posicao = 0; posicao < entradas.Count; posicao++)
         {
             RegraCatalogo? regra = await regraCatalogoReader.ObterAsync(
                 entradas[posicao].RegraCodigo, entradas[posicao].RegraVersao, cancellationToken).ConfigureAwait(false);

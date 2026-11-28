@@ -123,6 +123,16 @@ public sealed class RegraEliminacaoTests
         parametros.ExigeEnem().Should().Be(exigeEnem);
     }
 
+    [Fact(DisplayName = "Parâmetros de outra regra recusam com a orientação de usar só os da regra escolhida")]
+    public void Criar_ParametrosDeOutraRegra_DizOQueFazer()
+    {
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
+            Regra(RegraDeEliminacaoPorCalculo.ZeroEmAreaDoEnem), new ParametrosEliminacaoPorFaltaEmDiaDeProvaDoEnem());
+
+        resultado.Error!.Message.Should().Be(
+            "Os parâmetros informados não são os da regra de eliminação escolhida. Use só os parâmetros que ela pede.");
+    }
+
     [Fact(DisplayName = "Criar com parâmetros incompatíveis com a regra falha")]
     public void Criar_ParametrosIncompativeis_Falha()
     {

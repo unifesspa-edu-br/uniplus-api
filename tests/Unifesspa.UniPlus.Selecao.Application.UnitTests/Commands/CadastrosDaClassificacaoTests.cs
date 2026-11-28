@@ -28,6 +28,7 @@ public sealed class CadastrosDaClassificacaoTests
 
         Result resultado = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, new(codigo, "v1", null, null, null, null)));
         resultado.Error!.Code.Should().Be(codigoEsperado);
+        resultado.Errors.Single().Field.Should().Be("regrasEliminacao[0].regraCodigo");
         resultado.Error.Message.Should().NotContain(codigo).And.NotContain("v1").And.NotContain("regra_eliminacao");
     }
 
@@ -40,7 +41,8 @@ public sealed class CadastrosDaClassificacaoTests
         Result resultado = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, new("INEXISTENTE", "v1", null, null, null, null)));
 
         resultado.Error!.Code.Should().Be("RegraEliminacao.RegraTipoInvalido");
-        resultado.Error.Message.Should().Be("Código de regra de eliminação desconhecido.");
+        resultado.Errors.Single().Field.Should().Be("regrasEliminacao[0].regraCodigo");
+        resultado.Error.Message.Should().Be("O código da regra de eliminação não é conhecido.");
         resultado.Error.Message.Should().NotContain("INEXISTENTE");
     }
 }

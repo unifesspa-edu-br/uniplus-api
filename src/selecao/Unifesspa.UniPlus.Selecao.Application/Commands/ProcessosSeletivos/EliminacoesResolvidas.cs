@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// As eliminações que o pedido declarou, resolvidas uma a uma na posição em que vieram: a regra no catálogo, depois os
-/// parâmetros e a criação. Guarda as eliminações criadas, os parâmetros montados em cada posição (vazia onde o item foi
+/// parâmetros e a criação, sem parar no primeiro item recusado. Guarda as eliminações criadas, os parâmetros montados em cada posição (vazia onde o item foi
 /// recusado) e as recusas, separadas por origem porque a conferência as ordena em momentos diferentes.
 /// </summary>
 internal sealed class EliminacoesResolvidas
@@ -43,7 +43,7 @@ internal sealed class EliminacoesResolvidas
     {
         if (RecusaDaRegra(regra) is { } recusaDoCatalogo)
         {
-            _recusasDoCatalogo.Add(new(null, recusaDoCatalogo));
+            _recusasDoCatalogo.Add(new($"{ItemDaLista(posicao)}.regraCodigo", recusaDoCatalogo));
         }
         else
         {
@@ -56,7 +56,7 @@ internal sealed class EliminacoesResolvidas
         Result<RegraEliminacao> criada = Criar(regra, input);
         if (criada.IsFailure)
         {
-            _recusasDosParametros.Add(new(null, criada.Error!));
+            Recusar(posicao, criada.Error!);
         }
         else
         {
@@ -72,10 +72,27 @@ internal sealed class EliminacoesResolvidas
 
     private static Result<RegraEliminacao> Criar(RegraCatalogo regra, RegraEliminacaoInput input)
     {
-        Result<ParametrosRegraEliminacao> parametros = ParametrosDaEliminacaoDeclarados.Montar(input);
+        Result<ParametrosRegraEliminacao> parametros = ParametrosDeclaradosDaEliminacao.Montar(
+            input.RegraCodigo, input.EtapaRef, input.NotaMinima, input.Minimo, input.AreaCodigo);
         return parametros.IsFailure
             ? Result<RegraEliminacao>.Failure(parametros.Error!)
             : RegraEliminacao.Criar(regra.Referencia(), parametros.Value!);
+    }
+
+    private static string ItemDaLista(int posicao) => $"regrasEliminacao[{posicao}]";
+
+    // O código que o sistema não conhece é recusa do código citado e sai com as do catálogo; as demais são da forma ou dos
+    // valores do item.
+    private void Recusar(int posicao, DomainError recusa)
+    {
+        if (recusa.Code == ParametrosDeclaradosDaEliminacao.CodigoDeRegraDesconhecido)
+        {
+            _recusasDoCatalogo.Add(new($"{ItemDaLista(posicao)}.regraCodigo", recusa));
+        }
+        else
+        {
+            _recusasDosParametros.Add(new(ItemDaLista(posicao), recusa));
+        }
     }
 
     private static DomainError? RecusaDaRegra(RegraCatalogo? regra) => regra switch

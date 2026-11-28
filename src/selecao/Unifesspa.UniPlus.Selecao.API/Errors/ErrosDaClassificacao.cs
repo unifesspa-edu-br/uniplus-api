@@ -77,15 +77,15 @@ internal static class ErrosDaClassificacao
     /// <summary>Parâmetros e regra de cada eliminação.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaDefinicaoDaRegraDeEliminacao() =>
     [
-        new("RegraEliminacao.ParametrosIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra", "Os parâmetros informados não correspondem à regra referenciada")),
+        new("RegraEliminacao.ParametrosIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra", "A regra de eliminação escolhida não recebe parâmetros: retire os que foram informados")),
         new("RegraEliminacao.NotaMinimaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.nota_minima_invalida", "A nota mínima da eliminação deve ser não negativa")),
         new("RegraEliminacao.MinimoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.minimo_invalido", "O mínimo do corte em área deve ser não negativo")),
         new("RegraEliminacao.AreaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.area_invalida", "A área do corte não é um código de área do ENEM bem formado")),
         new("RegraEliminacao.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.regra_nao_encontrada", "Regra de eliminação não encontrada no catálogo de regras")),
         new("RegraEliminacao.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.regra_tipo_invalido", "A regra referenciada não é uma regra de eliminação")),
-        new("RegraEliminacao.EtapaRefENotaMinimaObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios", "EtapaRef e NotaMinima são obrigatórios para a regra ELIMINACAO_NOTA_MINIMA_ETAPA")),
-        new("RegraEliminacao.EtapaRefObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.etapa_ref_obrigatorio", "EtapaRef é obrigatório para a regra ELIMINACAO_AUSENCIA_NA_ETAPA")),
-        new("RegraEliminacao.AreaEMinimoObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios", "AreaCodigo e Minimo são obrigatórios para a regra ELIMINACAO_CORTE_EM_AREA")),
+        new("RegraEliminacao.EtapaRefENotaMinimaObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios", "Informe a etapa e a nota mínima na eliminação por nota mínima e retire o mínimo e a área")),
+        new("RegraEliminacao.EtapaRefObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.etapa_ref_obrigatorio", "Informe a etapa na eliminação por ausência e retire a nota mínima, o mínimo e a área")),
+        new("RegraEliminacao.AreaEMinimoObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios", "Informe a área e o mínimo na eliminação por corte em área e retire a etapa e a nota mínima")),
     ];
 
     /// <summary>Etapa e classificação que a regra de eliminação exige do processo.</summary>
