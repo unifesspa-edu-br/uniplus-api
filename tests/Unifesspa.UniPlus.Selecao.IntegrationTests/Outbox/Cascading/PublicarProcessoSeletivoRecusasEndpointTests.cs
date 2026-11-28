@@ -20,7 +20,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
+using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.AcessoAosDadosDoProcesso;
+
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDaPublicacaoDoProcessoSeletivo;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ApoioDasRecusasDoDocumentoEDoTipoNoEdital;
 
 // Cenário fim-a-fim do fluxo de referência ADR-0005:
 // HTTP request → PublicarProcessoSeletivoCommand → handler convention-based
@@ -81,6 +84,50 @@ public sealed class PublicarProcessoSeletivoRecusasEndpointTests
         HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
 
         await ConferirPendenciasMesmoEmRecusaAlheiaAsync(response);
+    }
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com documento não confirmado e tipo do ato sem versão vigente — 422 com as duas recusas, cada uma no seu campo, e nada gravado")]
+    public async Task Publicar_QuandoDocumentoEOTipoSaoRecusados_Retorna422ComAsDuasRecusas()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+        (Guid processoId, _) = await SemearAsync(api, nameof(Publicar_QuandoDocumentoEOTipoSaoRecusados_Retorna422ComAsDuasRecusas));
+        Guid documentoPendente = await SemearDocumentoPendenteAsync(api, processoId);
+
+        using HttpResponseMessage response = await PostPublicacaoAsync(client, processoId, CorpoDaPublicacao(documentoPendente));
+
+        await ConferirAsync(response);
+        (await ContarVersoesAsync(api, processoId)).Should().Be(0, "a recusa não deixou nada gravado");
+    }
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao sem permissão no processo — 404 com o código de processo não encontrado, mesmo com o documento e o tipo recusados")]
+    public async Task Publicar_SemPermissaoComTodasAsRecusas_Retorna404AntesDeTudo()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, _) = await SemearAsync(api, nameof(Publicar_SemPermissaoComTodasAsRecusas_Retorna404AntesDeTudo));
+        Guid documentoPendente = await SemearDocumentoPendenteAsync(api, processoId);
+        await new ConcessoesDasPersonas(_fixture).RemoverDaAsync(PersonasDoAcesso.Leandro);
+
+        using HttpResponseMessage response = await new RequisicoesAutenticadas(_fixture).SendAsync(
+            PersonasDoAcesso.Leandro, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", CorpoDaPublicacao(documentoPendente));
+
+        await ConferirProcessoNaoEncontradoAsync(response);
+    }
+
+    private static async Task<HttpResponseMessage> PostPublicacaoAsync(HttpClient client, Guid processoId, object corpo)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post,
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
+        {
+            Content = JsonContent.Create(corpo),
+        };
+        AppendTestAuth(request);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+        return await client.SendAsync(request).ConfigureAwait(false);
     }
 
     private async Task<Guid> SemearRegraQueReprovaTodoProcessoAsync(UniPlusDbContext db)

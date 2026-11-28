@@ -45,8 +45,8 @@ public enum DefeitoDoCongelamento
 
 /// <summary>
 /// Uma operação que congela, sobre um processo conforme, a que os testes acrescentam defeitos. O defeito que impede
-/// as conferências seguintes (o estado, o ato, o documento, o catálogo e as leituras) recusa sozinho; os demais se acumulam, na ordem em que a
-/// conferência os julga.
+/// as conferências seguintes (as leituras e as unidades) recusa sozinho; o documento e o tipo do ato impedem a conferência da configuração, mas se
+/// somam entre si; os demais se acumulam, na ordem em que a conferência os julga.
 /// </summary>
 internal sealed class CenarioDeRecusaNoCongelamento
 {
@@ -97,8 +97,12 @@ internal sealed class CenarioDeRecusaNoCongelamento
 
     private static readonly HashSet<DefeitoDoCongelamento> QueRecusamSozinhos =
     [
-        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.VersoesPublicadasIlegiveis, DefeitoDoCongelamento.UnidadeExcluida,
+    ];
+
+    private static readonly HashSet<DefeitoDoCongelamento> QueImpedemAConfiguracao =
+    [
+        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
     ];
 
     private readonly OperacaoQueCongela _operacao;
@@ -145,8 +149,13 @@ internal sealed class CenarioDeRecusaNoCongelamento
     /// <summary>Os códigos de todas as causas do defeito isolado, na ordem em que a resposta os traz.</summary>
     public static IReadOnlyList<string> CausasDo(DefeitoDoCongelamento defeito) => Causas[defeito];
 
-    /// <summary>O defeito recusa antes da conferência da configuração e impede o que viria depois: o estado, o ato, o catálogo e as leituras.</summary>
-    public static bool RecusaSozinho(DefeitoDoCongelamento defeito) => QueRecusamSozinhos.Contains(defeito);
+    /// <summary>
+    /// O primeiro defeito impede que o segundo apareça na resposta: recusa sozinho, ou é do documento ou do tipo do ato e o segundo
+    /// é da configuração. O documento e o tipo do ato não impedem um ao outro.
+    /// </summary>
+    public static bool ImpedeOSegundo(DefeitoDoCongelamento primeiro, DefeitoDoCongelamento segundo) =>
+        QueRecusamSozinhos.Contains(primeiro)
+        || (QueImpedemAConfiguracao.Contains(primeiro) && !QueImpedemAConfiguracao.Contains(segundo));
 
     public CenarioDeRecusaNoCongelamento Com(DefeitoDoCongelamento defeito)
     {
@@ -155,13 +164,16 @@ internal sealed class CenarioDeRecusaNoCongelamento
         return this;
     }
 
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> ExecutarAsync() => _operacao switch
+    public Task<(Result Resposta, IEnumerable<object> Eventos)> ExecutarAsync() => ExecutarAsync(Guid.CreateVersion7(), NovoAto());
+
+    /// <summary>Executa a operação com o documento e o ato que o teste escolhe: ausentes ou em branco, para provar o que não é consultado.</summary>
+    public Task<(Result Resposta, IEnumerable<object> Eventos)> ExecutarAsync(Guid? documentoEditalId, DadosDoAto? ato) => _operacao switch
     {
         OperacaoQueCongela.Publicar => Servicos.PublicarAsync(
-            new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: _anexos)),
+            new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, documentoEditalId, ato, _anexos)),
         _ => Servicos.RetificarAsync(
             new RetificarProcessoSeletivoCommand(
-                Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: _anexos)),
+                Processo.Id, "Correção do prazo", "001/2026-R1", null, null, documentoEditalId, ato, _anexos)),
     };
 
     /// <summary>O processo não saiu do estado em que estava: nenhum evento de publicação ficou no agregado.</summary>
