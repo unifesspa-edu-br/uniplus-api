@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -81,6 +82,8 @@ internal static class LeituraDosGrupos
     /// <summary>
     /// Lê as regras e os campos do grupo. Todas as recusas do grupo saem juntas: o código de formulário desconhecido, a exibição,
     /// a obrigatoriedade, o campo de outro formulário e a forma do grupo. A recusa de formato encerra o item e fica depois delas.
+    /// O campo recusado não impede a forma do próprio grupo (código, ordem, rótulo e ocorrências); a conferência que depende dos
+    /// campos não roda.
     /// </summary>
     private static GrupoColetado? CriarGrupo(
         LeitorEnvelope leitor,
@@ -98,7 +101,9 @@ internal static class LeituraDosGrupos
         }
 
         IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, declaracaoDoGrupo.Subitens, $"{path}.subitens", valoresSelecionaveis, formularios);
-        return leitor.Falhou ? PropagarSeHouver(leitor, recusas, path) : CriarOuRecusar(leitor, declaracaoDoGrupo, path, regras, campos, recusas);
+        return leitor.Falhou
+            ? PropagarSeHouver(leitor, [.. recusas, .. declaracaoDoGrupo.RecusasDoGrupoSemOsCampos()], path)
+            : CriarOuRecusar(leitor, declaracaoDoGrupo, path, regras, campos, recusas);
     }
 
     private static GrupoColetado? CriarOuRecusar(
@@ -136,10 +141,18 @@ internal static class LeituraDosGrupos
     private static GrupoColetado? PropagarSeHouver(LeitorEnvelope leitor, IReadOnlyList<FieldError> causas, string path) =>
         causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : null;
 
+    /// <summary>
+    /// As ocorrências e as regras do grupo apontam o próprio grupo. As regras do campo, que no documento ficam direto no campo,
+    /// perdem o trecho "regras" e apontam o campo.
+    /// </summary>
     private static IReadOnlyList<FieldError> CausasDoGrupoNoDocumento(IReadOnlyList<FieldError> causas) =>
-        [.. causas.Select(static causa => causa.Field is { } campo
-            && (campo.StartsWith("ocorrencias.", StringComparison.Ordinal) || campo.Contains("regras.", StringComparison.Ordinal))
-                ? LeitorEnvelope.NoProprioItem([causa])[0] : causa)];
+        [.. causas.Select(static causa => causa.Field switch
+        {
+            { } campo when campo.StartsWith("ocorrencias.", StringComparison.Ordinal) || campo.StartsWith("regras.", StringComparison.Ordinal)
+                => LeitorEnvelope.NoProprioItem([causa])[0],
+            { } campo => new FieldError(campo.Replace($".{FatoColetadoInput.CaminhoDasRegras}.", ".", StringComparison.Ordinal), causa.Error),
+            _ => causa,
+        })];
 
     /// <summary>A exibição e a obrigatoriedade lidas do grupo, com as recusas de regra de cada uma no caminho a partir do grupo.</summary>
     private sealed record RegrasDoGrupoLidas(Result<PredicadoDnf?> Exibicao, Result<Obrigatoriedade>? Obrigatoriedade)
@@ -192,6 +205,9 @@ internal static class LeituraDosGrupos
 
         public IEnumerable<FieldError> RecusasDoFormulario(string path) =>
             Formulario is null ? [FormulariosDoDocumento.RecusaDoFormularioDesconhecido(path)] : [];
+
+        public IReadOnlyList<FieldError> RecusasDoGrupoSemOsCampos() =>
+            CausasDoGrupoNoDocumento(FormaDoGrupo.ConferirOGrupoSemOsCampos(Codigo, Ordem, Rotulo, Ocorrencias));
 
         /// <summary>O campo de outro formulário só é recusado com o formulário do grupo lido; sem ele, a recusa do formulário já cobre o grupo.</summary>
         public IEnumerable<FieldError> RecusasDosCampos(IReadOnlyList<FatoColetado> campos, string path) =>

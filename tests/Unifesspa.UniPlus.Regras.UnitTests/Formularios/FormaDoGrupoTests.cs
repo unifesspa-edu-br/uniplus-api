@@ -70,6 +70,40 @@ public sealed class FormaDoGrupoTests
     }
 
     [Fact]
+    public void ConferirOGrupoSemOsCampos_CodigoOrdemEOcorrenciasInvalidos_DevolveAsTresRecusasEmOrdemESemRecusaDeCampo()
+    {
+        List<FieldError> erros = FormaDoGrupo.ConferirOGrupoSemOsCampos(
+            "codigo-fora-do-formato", -1, "Composição familiar", new OcorrenciasDoGrupo(3, 2, IncluiCandidato: false));
+
+        erros.Select(static e => e.Error.Code).Should().Equal(
+            GrupoFormularioErrorCodes.CodigoInvalido,
+            GrupoFormularioErrorCodes.OrdemInvalida,
+            GrupoFormularioErrorCodes.ContagemIncoerente);
+    }
+
+    [Fact]
+    public void ConferirOGrupoSemOsCampos_RotuloEmBranco_RecusaORotulo()
+    {
+        List<FieldError> erros = FormaDoGrupo.ConferirOGrupoSemOsCampos("COMPOSICAO", 1, " ", new OcorrenciasDoGrupo(0, 5, IncluiCandidato: false));
+
+        erros.Should().ContainSingle().Which.Error.Code.Should().Be(GrupoFormularioErrorCodes.RotuloInvalido);
+    }
+
+    [Fact]
+    public void Conferir_TudoInvalido_SegueAOrdemDoGrupoEDepoisDosCampos()
+    {
+        List<FieldError> erros = FormaDoGrupo.Conferir(
+            "codigo-fora-do-formato", -1, " ", new OcorrenciasDoGrupo(3, 2, IncluiCandidato: false), [], new ExibicaoEObrigatoriedade(null, Obrigatoriedade.Sempre));
+
+        erros.Select(static e => e.Error.Code).Should().Equal(
+            GrupoFormularioErrorCodes.CodigoInvalido,
+            GrupoFormularioErrorCodes.OrdemInvalida,
+            GrupoFormularioErrorCodes.RotuloInvalido,
+            GrupoFormularioErrorCodes.ContagemIncoerente,
+            GrupoFormularioErrorCodes.SubitensForaDoLimite);
+    }
+
+    [Fact]
     public void Conferir_CampoComSecaoPropria_Recusa() =>
         Conferir(subitens: [("PARENTESCO", "DADOS", false)]).Should().ContainSingle()
             .Which.Should().Be(new FieldError("subitens[0].paginaCodigo", new DomainError(
