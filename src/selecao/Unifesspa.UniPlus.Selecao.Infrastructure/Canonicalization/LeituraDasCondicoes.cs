@@ -28,6 +28,7 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 internal static class LeituraDasCondicoes
 {
     private const string CaminhoDaObrigatoriedade = "obrigatoriedade";
+    private const string CaminhoDoImpedimentoQuando = "impedimento.quando";
 
     /// <summary>
     /// A obrigatoriedade de um item ou de um termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
@@ -39,22 +40,6 @@ internal static class LeituraDasCondicoes
         JsonObject bloco = leitor.Objeto(item, CaminhoDaObrigatoriedade, path);
 
         return leitor.Falhou ? null : LerObrigatoriedadeDoBloco(leitor, bloco, $"{path}.{CaminhoDaObrigatoriedade}");
-    }
-
-    /// <summary>
-    /// A obrigatoriedade de um item que não junta causas: a recusa de regra encerra a leitura na hora.
-    /// Nulo quando há recusa, já propagada ao leitor.
-    /// </summary>
-    internal static Obrigatoriedade? LerObrigatoriedadeRecusandoNaHora(LeitorEnvelope leitor, JsonObject item, string path)
-    {
-        Result<Obrigatoriedade>? lida = LerObrigatoriedade(leitor, item, path);
-
-        if (lida is null)
-        {
-            return null;
-        }
-
-        return lida.IsFailure ? leitor.Propagar<Obrigatoriedade?>(lida.Errors, path) : lida.Value;
     }
 
     private static Result<Obrigatoriedade>? LerObrigatoriedadeDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
@@ -153,17 +138,23 @@ internal static class LeituraDasCondicoes
     }
 
     /// <summary>
-    /// A resposta que impede a inscrição, congelada no item; nula quando o item não tem. A forma — a
-    /// mensagem e as cláusulas sobre o próprio campo — é reconferida por <see cref="FatoColetado.Criar"/>.
+    /// A resposta que impede a inscrição, congelada no item; sem valor quando o item não tem. A forma — a
+    /// mensagem e as cláusulas sobre o próprio campo — é reconferida por <see cref="FatoColetado.Criar"/>. Nulo
+    /// quando a forma é outra, com a recusa já propagada ao leitor; as recusas de regra voltam no
+    /// <see cref="Result{T}"/>, no caminho relativo ao item, para quem junta as causas do item.
     /// </summary>
-    internal static Impedimento? LerImpedimento(LeitorEnvelope leitor, JsonObject item, string path)
+    internal static Result<Impedimento?>? LerImpedimento(LeitorEnvelope leitor, JsonObject item, string path)
     {
         JsonObject? bloco = leitor.ObjetoOpcional(item, "impedimento", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
 
-        return leitor.Falhou || bloco is null ? null : LerImpedimentoDoBloco(leitor, bloco, $"{path}.impedimento");
+        return bloco is null ? Result<Impedimento?>.Success(null) : LerImpedimentoDoBloco(leitor, bloco, $"{path}.impedimento");
     }
 
-    private static Impedimento? LerImpedimentoDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
+    private static Result<Impedimento?>? LerImpedimentoDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "quando", "mensagem");
         string mensagem = leitor.TextoNaoVazio(bloco, "mensagem", path, LimitesDoEnvelope.MensagemDoImpedimento);
@@ -176,14 +167,14 @@ internal static class LeituraDasCondicoes
         Result<PredicadoDnf?> quando = PredicadoOpcional(linhas);
 
         return quando.IsFailure
-            ? leitor.Propagar<Impedimento>(quando.Errors, $"{path}.quando")
+            ? Result<Impedimento?>.ValidationFailure([.. quando.Errors.Select(static causa => causa.NoCaminhoDoItem(CaminhoDoImpedimentoQuando))])
             : ImpedimentoDe(leitor, quando.Value, mensagem, path);
     }
 
-    private static Impedimento? ImpedimentoDe(LeitorEnvelope leitor, PredicadoDnf? quando, string mensagem, string path) =>
+    private static Result<Impedimento?>? ImpedimentoDe(LeitorEnvelope leitor, PredicadoDnf? quando, string mensagem, string path) =>
         quando is { } condicao
-            ? new Impedimento(condicao, mensagem)
-            : leitor.Propagar<Impedimento>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.quando' sem condição."));
+            ? Result<Impedimento?>.Success(new Impedimento(condicao, mensagem))
+            : leitor.Propagar<Result<Impedimento?>?>(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.quando' sem condição."));
 
     /// <summary>
     /// Um predicado DNF <c>{fato, operador, valor}</c> (pré-condição de fato ou <c>quando</c> de

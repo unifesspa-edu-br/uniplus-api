@@ -42,7 +42,7 @@ public sealed class CoerenciaEntreBlocosRecusadaNoEnvelopeTests
         FieldError causa = leitor.Falha<object>().Errors.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
         causa.Error.Message.Should().Be("'dadosDosFormularios[0].formularioCodigo' não é o código de um formulário do documento.").And.NotContainEquivalentOf(valor);
-        causa.Field.Should().BeNull();
+        causa.Field.Should().Be("dadosDosFormularios[0].formularioCodigo");
     }
 
     [Fact]

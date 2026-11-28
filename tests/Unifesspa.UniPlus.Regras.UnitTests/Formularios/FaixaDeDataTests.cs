@@ -137,7 +137,7 @@ public sealed class FaixaDeDataTests
             1,
             new ApresentacaoDoCampo("Data de nascimento", tipo),
             formato: null,
-            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes));
+            RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes)));
 
     /// <summary>O limite descrito pelo tipo e pelo dado dele: a data, para o limite fixo, ou os anos e os dias, para o contado do envio.</summary>
     private static LimiteDeData Limite(string descricao)

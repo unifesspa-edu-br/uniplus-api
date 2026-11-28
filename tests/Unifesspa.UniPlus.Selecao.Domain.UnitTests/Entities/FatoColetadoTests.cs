@@ -272,4 +272,46 @@ public sealed class FatoColetadoTests
             ItemFormularioErrorCodes.RotuloObrigatorio,
         ]);
     }
+
+    [Fact]
+    public void ConferirForma_RestricaoRecusadaNaLeitura_NaoAcusaMunicipioSemUfEConfereOResto()
+    {
+        RegrasLidasDoCampo regras = new(null, Obrigatoriedade.Nunca, [null], null);
+
+        List<FieldError> erros = FatoColetado.ConferirForma("MUNICIPIO_FICTICIO", -1, Campo("Município", TipoDeCampo.Municipio), regras, CopiaPadrao);
+
+        erros.Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.OrdemInvalida);
+    }
+
+    [Fact]
+    public void ConferirForma_RestricaoLidaForaDoTipoEOutraRecusada_AcusaSoAQueFoiLida()
+    {
+        RegrasLidasDoCampo regras = new(null, Obrigatoriedade.Nunca, [null, new FaixaNumerica(1, 2)], null);
+
+        List<FieldError> erros = FatoColetado.ConferirForma("TEXTO_FICTICIO", 0, Campo("Texto", TipoDeCampo.Texto), regras, CopiaPadrao with { Formato = "LIVRE" });
+
+        erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("regras.restricoes[1]", ItemFormularioErrorCodes.RestricaoIncoerente));
+    }
+
+    [Fact]
+    public void ConferirForma_ObrigatoriedadeRecusadaNaLeitura_ConfereAFormaSemAcusarAObrigatoriedade()
+    {
+        RegrasLidasDoCampo regras = new(null, null, [], null);
+
+        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, Campo("", TipoDeCampo.SimOuNao), regras, CopiaPadrao);
+
+        erros.Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
+    }
+
+    [Fact]
+    public void ConferirForma_RegrasLidasPorInteiro_DaOMesmoResultadoDaCriacao()
+    {
+        RegrasDoCampo regras = Regras(restricoes: [new FaixaNumerica(1, 2)]);
+
+        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, Campo("Campo", TipoDeCampo.SimOuNao), RegrasLidasDoCampo.De(regras), CopiaPadrao);
+        Result<FatoColetado> criacao = FatoColetado.Criar("FATO_FICTICIO", 0, null, Campo("Campo", TipoDeCampo.SimOuNao), regras, CopiaPadrao);
+
+        erros.Select(static e => e.Error.Code).Should().Equal(criacao.Errors.Select(static e => e.Error.Code));
+        erros.Should().ContainSingle();
+    }
 }

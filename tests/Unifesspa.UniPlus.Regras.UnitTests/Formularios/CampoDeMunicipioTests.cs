@@ -40,5 +40,5 @@ public sealed class CampoDeMunicipioTests
             1,
             new ApresentacaoDoCampo("Município de nascimento", tipo),
             formato: null,
-            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes));
+            RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes)));
 }

@@ -170,7 +170,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
             0,
             new ApresentacaoDoCampo("Rótulo do campo", tipo),
             formato,
-            new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, [], impedimento));
+            RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, [], impedimento)));
 
     private static DefinicaoItem Item(string fato) => new(fato, null, Obrigatoriedade.Nunca, []);
 

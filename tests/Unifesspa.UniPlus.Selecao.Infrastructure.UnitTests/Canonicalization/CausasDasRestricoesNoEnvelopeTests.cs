@@ -13,13 +13,13 @@ public sealed class CausasDasRestricoesNoEnvelopeTests
     [InlineData(false, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public void LerRestricoes_CondicoesDasOpcoesInvalidas_PropagaCausas(bool separadas, bool unica)
+    public void LerRestricoes_CondicoesDasOpcoesInvalidas_DevolveCausasDaRestricao(bool separadas, bool unica)
     {
         JsonObject entrada = new() { ["quando"] = CondicoesNoEnvelope.Invalidas(separadas, unica), ["valores"] = new JsonArray("A") };
         JsonObject restricao = new() { ["tipo"] = "OPCOES_PERMITIDAS", ["entradas"] = new JsonArray(entrada) };
         JsonObject item = new() { ["restricoes"] = new JsonArray(restricao) };
         LeitorEnvelope leitor = new();
-        LeituraDasRestricoes.LerRestricoes(leitor, item, "item");
+        leitor.Propagar<object>(LeituraDasRestricoes.LerRestricoes(leitor, item, "item").Single().Errors, "item.restricoes[0]");
         CondicoesNoEnvelope.Conferir(new JsonObject { ["item"] = item }, leitor, "item.restricoes[0].entradas[0].quando", separadas, unica);
     }
 
@@ -29,7 +29,7 @@ public sealed class CausasDasRestricoesNoEnvelopeTests
         JsonObject restricao = new() { ["tipo"] = "FAIXA_DE_DATA", ["dataMinima"] = Limite(), ["dataMaxima"] = Limite() };
         JsonObject item = new() { ["restricoes"] = new JsonArray(restricao) };
         LeitorEnvelope leitor = new();
-        LeituraDasRestricoes.LerRestricoes(leitor, item, "item");
+        leitor.Propagar<object>(LeituraDasRestricoes.LerRestricoes(leitor, item, "item").Single().Errors, "item.restricoes[0]");
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Should().HaveCount(2);
         ConferirLimite(new JsonObject { ["item"] = item }, causas[0], "item.restricoes[0].dataMinima");
@@ -42,7 +42,7 @@ public sealed class CausasDasRestricoesNoEnvelopeTests
         JsonObject restricao = new() { ["tipo"] = "OPCOES_PERMITIDAS", ["entradas"] = new JsonArray(GrupoSemValores(), GrupoSemValores()) };
         JsonObject item = new() { ["restricoes"] = new JsonArray(restricao) };
         LeitorEnvelope leitor = new();
-        LeituraDasRestricoes.LerRestricoes(leitor, item, "item");
+        leitor.Propagar<object>(LeituraDasRestricoes.LerRestricoes(leitor, item, "item").Single().Errors, "item.restricoes[0]");
         IReadOnlyList<FieldError> causas = leitor.Falha<object>().Errors;
         causas.Select(static c => c.Field).Should().Equal("item.restricoes[0].entradas[0].valores", "item.restricoes[0].entradas[1].valores");
         causas.Should().OnlyContain(static c => c.Error.Code == "RestricaoValor.OpcoesVazias");

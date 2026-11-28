@@ -26,40 +26,24 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 internal static class LeituraDasRestricoes
 {
     /// <summary>
-    /// As restrições de valor de um item, cada uma com as chaves do seu tipo. Nulo quando a forma é
-    /// outra, com a recusa já propagada ao leitor.
+    /// As restrições de valor de um item, cada uma com as chaves do seu tipo, na ordem do documento. A recusa de regra de
+    /// uma restrição volta no <see cref="Result{T}"/> dela, no caminho relativo à restrição, e a leitura segue nas demais.
+    /// A recusa de formato, já propagada ao leitor, encerra a leitura: a lista traz só as restrições lidas antes dela.
     /// </summary>
-    internal static List<RestricaoValor>? LerRestricoes(LeitorEnvelope leitor, JsonObject item, string path)
+    internal static List<Result<RestricaoValor>> LerRestricoes(LeitorEnvelope leitor, JsonObject item, string path)
     {
         JsonArray array = leitor.Array(item, "restricoes", path);
-        List<RestricaoValor> restricoes = [];
+        List<Result<RestricaoValor>> restricoes = [];
         for (int i = 0; i < array.Count && !leitor.Falhou; i++)
         {
-            if (!AdicionarRestricao(leitor, array, i, path, restricoes))
+            Result<RestricaoValor>? restricao = LerRestricao(leitor, leitor.ItemObjeto(array, i, $"{path}.restricoes"), $"{path}.restricoes[{i}]");
+            if (restricao is not null && !leitor.Falhou)
             {
-                return null;
+                restricoes.Add(restricao);
             }
         }
 
-        return leitor.Falhou ? null : restricoes;
-    }
-
-    private static bool AdicionarRestricao(LeitorEnvelope leitor, JsonArray array, int indice, string path, List<RestricaoValor> restricoes)
-    {
-        Result<RestricaoValor>? restricao = LerRestricao(leitor, leitor.ItemObjeto(array, indice, $"{path}.restricoes"), $"{path}.restricoes[{indice}]");
-        if (leitor.Falhou || restricao is null)
-        {
-            return false;
-        }
-
-        if (restricao.IsFailure)
-        {
-            leitor.Propagar<List<RestricaoValor>?>(restricao.Errors, $"{path}.restricoes[{indice}]");
-            return false;
-        }
-
-        restricoes.Add(restricao.Value!);
-        return true;
+        return restricoes;
     }
 
     private static Result<RestricaoValor>? LerRestricao(LeitorEnvelope leitor, JsonObject bloco, string pathRestricao)

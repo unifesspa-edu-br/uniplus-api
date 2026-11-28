@@ -121,9 +121,10 @@ public static class FormaDoItem
     /// A forma inteira do item: a básica, a ajuda, o formato (só o campo de texto tem), nenhuma
     /// regra citando o próprio fato e as restrições cabendo no campo. A autorreferência é ciclo de
     /// comprimento um, recusada aqui com um erro específico, sem precisar conhecer os outros itens.
-    /// O impedimento é a exceção: cada cláusula dele cita a resposta do próprio campo.
+    /// O impedimento é a exceção: cada cláusula dele cita a resposta do próprio campo. A parte das regras que a leitura
+    /// recusou vem nula e não é conferida aqui.
     /// </summary>
-    public static List<FieldError> Conferir(string? fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, string? formato, RegrasDoCampo regras)
+    public static List<FieldError> Conferir(string? fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, string? formato, RegrasLidasDoCampo regras)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);
@@ -133,7 +134,7 @@ public static class FormaDoItem
             .. ValidarFormaBasica(fatoCodigo, ordem, apresentacao.Rotulo),
             .. RecusasDaAjuda(apresentacao.Ajuda).Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDaApresentacao)),
             .. RecusasDoFormato(apresentacao.TipoDeCampo, formato),
-            .. RegrasLidasDoCampo.De(regras).ConferirNoCampo(fatoCodigo ?? string.Empty, apresentacao.TipoDeCampo)
+            .. regras.ConferirNoCampo(fatoCodigo ?? string.Empty, apresentacao.TipoDeCampo)
                 .Select(static erro => erro.NoCaminhoDe(FatoColetadoInput.CaminhoDasRegras)),
         ];
     }

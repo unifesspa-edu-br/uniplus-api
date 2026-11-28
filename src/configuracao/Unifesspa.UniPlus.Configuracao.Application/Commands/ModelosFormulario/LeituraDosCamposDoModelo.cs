@@ -64,10 +64,13 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
         return (item, item is null ? recusas.Recusas.GetRange(antes, recusas.Recusas.Count - antes) : [.. RecusasDoSubitemLido(item, caminho)]);
     }
 
-    private static IEnumerable<FieldError> RecusasDoSubitemLido(ItemDoModelo item, string caminho) =>
-        RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoCampo(
-            caminho, item.FatoCodigo, item.PaginaCodigo, item.Apresentacao.Rotulo, item.Apresentacao.Ajuda, item.Formato, RegrasLidasDoCampo.De(item.Regras)))
-            .Concat(FormaDoItem.Conferir(item.FatoCodigo, item.Ordem, item.Apresentacao, item.Formato, item.Regras).Select(erro => erro.NoCaminhoDoItem(caminho)));
+    private static IEnumerable<FieldError> RecusasDoSubitemLido(ItemDoModelo item, string caminho)
+    {
+        RegrasLidasDoCampo regras = RegrasLidasDoCampo.De(item.Regras);
+        return RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoCampo(
+                caminho, item.FatoCodigo, item.PaginaCodigo, item.Apresentacao.Rotulo, item.Apresentacao.Ajuda, item.Formato, regras))
+            .Concat(FormaDoItem.Conferir(item.FatoCodigo, item.Ordem, item.Apresentacao, item.Formato, regras).Select(erro => erro.NoCaminhoDoItem(caminho)));
+    }
 
     /// <summary>Recusa os textos e a forma do item que a leitura recusou, para as recusas dele saírem juntas; devolve nulo, o item não lido.</summary>
     private ItemDoModelo? RecusarItemNaoLido(
