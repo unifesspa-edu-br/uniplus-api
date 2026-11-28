@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
 /// <summary>
 /// A exigência de documento declara o formulário que a entrega (ADR-0171). Ela só vale num formulário
@@ -10,17 +11,24 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class ConferenciaDasExigenciasDoFormulario
 {
-    private const string CampoDaExigencia = "codigoDoFormulario";
+    /// <summary>O campo do código do formulário, dentro do caminho da exigência.</summary>
+    public const string CaminhoDoFormulario = "momento.formularioCodigo";
 
+    /// <summary>
+    /// As recusas de cada exigência, apontando o formulário pelo caminho dela em <paramref name="caminhosDasExigencias"/>
+    /// (um por exigência, na mesma ordem).
+    /// </summary>
     public static IReadOnlyList<FieldError> Conferir(
-        IEnumerable<FormularioDeclarado> formularios, IReadOnlyList<ExigenciaDeDocumentoDoFormulario> exigencias)
+        IEnumerable<FormularioDeclarado> formularios, IReadOnlyList<ExigenciaDeDocumentoDoFormulario> exigencias, IReadOnlyList<string> caminhosDasExigencias)
     {
         ArgumentNullException.ThrowIfNull(formularios);
         ArgumentNullException.ThrowIfNull(exigencias);
+        ArgumentNullException.ThrowIfNull(caminhosDasExigencias);
+        CaminhosDasExigencias.ExigirUmParaCada(caminhosDasExigencias, exigencias.Count, nameof(caminhosDasExigencias));
 
         ILookup<CodigoDoFormulario, FormularioDeclarado> porCodigo = formularios.ToLookup(static formulario => formulario.Codigo);
         return [.. exigencias.SelectMany((exigencia, indice) => RecusasDaExigencia(exigencia, porCodigo)
-            .Select(recusa => new FieldError($"exigencias[{indice}].{CampoDaExigencia}", recusa)))];
+            .Select(recusa => new FieldError($"{caminhosDasExigencias[indice]}.{CaminhoDoFormulario}", recusa)))];
     }
 
     /// <summary>Os formulários a remover que ainda entregam alguma exigência, uma recusa por formulário.</summary>

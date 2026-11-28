@@ -15,7 +15,7 @@ public sealed class DatasDeReferenciaNoCronogramaTests
     {
         DocumentoExigido documento = new DocumentoExigidoBuilder().Construir();
 
-        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([], [documento]);
+        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([], [documento], CaminhosDasExigencias.NaLista("exigencias", 1));
 
         causas.Select(c => (c.Field, c.Error.Code)).Should().Equal(
             ("exigencias[0].prazoDeEmissao", "PrazoDeEmissao.EscolhaNaoDeclarada"),
@@ -31,7 +31,7 @@ public sealed class DatasDeReferenciaNoCronogramaTests
         FaseCronograma fase = FaseParaReferenciaBuilder.Criar(false, null, null);
         DocumentoExigido documento = DocumentoComReferencias(fase.Id);
 
-        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([fase], [documento]);
+        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([fase], [documento], CaminhosDasExigencias.NaLista("exigencias", 1));
 
         causas.Select(c => (c.Field, c.Error.Code)).Should().Equal(
             ("exigencias[0].prazoDeEmissao.referencia", "DataDeReferenciaDoDocumento.DataDaFaseIndefinida"),
@@ -47,7 +47,7 @@ public sealed class DatasDeReferenciaNoCronogramaTests
         DocumentoExigido documento = new DocumentoExigidoBuilder().ComPrazoDeEmissao(new PrazoDeEmissaoBuilder().Construir())
             .ComValidade(new ValidadeDoDocumentoBuilder().Construir()).Construir();
 
-        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([], [documento]);
+        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirCompletude([], [documento], CaminhosDasExigencias.NaLista("exigencias", 1));
 
         causas.Select(c => (c.Field, c.Error.Code)).Should().Equal(
             ("exigencias[0].prazoDeEmissao.referencia", "DataDeReferenciaDoDocumento.FimDasInscricoesIndefinido"),
@@ -65,7 +65,7 @@ public sealed class DatasDeReferenciaNoCronogramaTests
         DocumentoExigido documento = new DocumentoExigidoBuilder().ComPrazoDeEmissao(new PrazoDeEmissaoBuilder().Construir())
             .ComValidade(new ValidadeDoDocumentoBuilder().Construir()).Construir();
 
-        DatasDeReferenciaNoCronograma.ConferirCompletude([semFim, comFim], [documento]).Should().BeEmpty();
+        DatasDeReferenciaNoCronograma.ConferirCompletude([semFim, comFim], [documento], CaminhosDasExigencias.NaLista("exigencias", 1)).Should().BeEmpty();
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class DatasDeReferenciaNoCronogramaTests
             .ComPrazoDeEmissao(new PrazoDeEmissaoBuilder().Referenciado(new DataDeReferenciaBuilder().NoInicioDaFase(aceita.Id).Construir()).Construir())
             .ComValidade(new ValidadeDoDocumentoBuilder().NaoExige().Construir()).Construir();
 
-        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirConjunto([aceita], [resolvido, pendente]);
+        IReadOnlyList<FieldError> causas = DatasDeReferenciaNoCronograma.ConferirConjunto([aceita], [resolvido, pendente], ["exigencias[0]", "exigencias[1]"]);
 
         causas.Select(c => (c.Field, c.Error.Message)).Should().Equal(
             ("exigencias[1].prazoDeEmissao.referencia", $"A fase de referência do prazo de emissão do documento '{pendente.TipoDocumentoNome}' não pertence ao cronograma deste processo."),

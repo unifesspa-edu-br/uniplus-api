@@ -43,7 +43,10 @@ internal static class DefinicaoDosDocumentosExigidos
             return Result.ValidationFailure(recusasDeVinculo);
         }
 
-        return processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
+        Result definido = processo.DefinirDocumentosExigidos([.. mantidas, .. regras]);
+        return definido.IsSuccess || definido.Errors.Count == 0 || mantidas.Count == 0
+            ? definido
+            : Result.ValidationFailure([.. definido.Errors.Select(erro => PosicaoDasRegrasNovas.SemAsMantidas(erro, mantidas.Count))]);
     }
 
     // Somente os modelos do processo e os fatos necessários às regras são consultados.

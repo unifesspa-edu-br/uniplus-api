@@ -8,14 +8,25 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class PendenciasDasExigencias
 {
     /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
-    internal static DomainError? PendenciaDaRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao) => RegrasDasExigencias.ConferirRepeticaoPorGrupo(configuracao, configuracao.Exigencias.RegrasDeComprovacao);
+    internal static DomainError? PendenciaDaRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao)
+    {
+        IReadOnlyList<RegraDeComprovacao> regras = [.. configuracao.Exigencias.RegrasDeComprovacao];
+        return RegrasDasExigencias.RecusasDaRepeticaoPorGrupo(configuracao, regras, CaminhosDasExigencias.NaLista("regrasDeComprovacao", regras.Count)) is [{ } primeira, ..]
+            ? primeira.Error
+            : null;
+    }
 
     /// <summary>
     /// O formulário de cada exigência continua sendo um formulário do processo, ligado à fase dela: a escrita
     /// confere, e o formulário pode ter mudado de fase ou saído depois.
     /// </summary>
     internal static DomainError? PendenciaDoFormularioDasExigencias(ConfiguracaoDeclarada configuracao) =>
-        RegrasDasExigencias.FormularioDasExigencias(configuracao, configuracao.Exigencias.DocumentosExigidos) is [{ } primeira, ..] ? primeira.Error : null;
+        RegrasDasExigencias.FormularioDasExigencias(
+            configuracao,
+            configuracao.Exigencias.DocumentosExigidos,
+            CaminhosDasExigencias.NaLista("exigencias", configuracao.Exigencias.DocumentosExigidos.Count)) is [{ } primeira, ..]
+            ? primeira.Error
+            : null;
 
     /// <summary>
     /// Pendências dos documentos exigidos, conferidas pela publicação e pela sucessão de versão

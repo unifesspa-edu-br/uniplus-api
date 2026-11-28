@@ -23,6 +23,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 [Collection(CascadingCollection.Name)]
 public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fixture)
 {
+    private const string FormularioQueOProcessoNaoTem = "FORMULARIO_QUE_O_PROCESSO_NAO_TEM";
+
     [Fact]
     public async Task DefinirDocumentosExigidos_DeclaracoesInvalidas_DevolveCodigoCampoEMensagem()
     {
@@ -78,6 +80,22 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
             .Should().Equal("regrasDeComprovacao[0].documento.requisitos.formatosPermitidos", "regrasDeComprovacao[1].documento.requisitos.formatosPermitidos");
     }
 
+    [Fact]
+    public async Task DefinirDocumentosExigidos_FormularioRecusadoEmItensDiferentes_ApontaOCaminhoDoPedido()
+    {
+        (Guid processo, Guid tipo, Guid fase) = await PrepararDocumentoAsync();
+        using HttpClient client = fixture.Factory.CreateClient();
+        using HttpResponseMessage resposta = await EnviarAsync(client, processo, RegrasComFormularioRecusado(tipo, fase));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Select(static erro => erro.GetProperty("field").GetString()).Should().Equal(
+            "regrasDeComprovacao[0].itens[0].documento.momento.formularioCodigo",
+            "regrasDeComprovacao[0].itens[1].documento.momento.formularioCodigo",
+            "regrasDeComprovacao[0].itens[2].documento.momento.formularioCodigo",
+            "regrasDeComprovacao[2].documento.momento.formularioCodigo");
+    }
+
     private async Task<(Guid Processo, Guid Tipo, Guid Fase)> PrepararDocumentoAsync()
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
@@ -94,6 +112,27 @@ public sealed class RecusasDaRegraDeComprovacaoEndpointTests(CascadingFixture fi
         });
         return (processo.Id, tipo.Id, processo.CronogramaFases.Single().Id);
     }
+
+    // Um grupo cujos três itens citam formulário que o processo não tem, um documento que cita o da inscrição e outro que cita formulário ausente.
+    private static object[] RegrasComFormularioRecusado(Guid tipo, Guid fase) =>
+    [
+        CasosDeRecusaDaRegra.GrupoCom([.. Enumerable.Repeat(0, 3).Select(_ => RegraEmFormulario(tipo, fase, FormularioQueOProcessoNaoTem))]),
+        RegraEmFormulario(tipo, fase, FormulariosDoProcessoDeTeste.Inscricao),
+        RegraEmFormulario(tipo, fase, FormularioQueOProcessoNaoTem),
+    ];
+
+    private static object RegraEmFormulario(Guid tipo, Guid fase, string formulario) => new
+    {
+        forma = "DOCUMENTO",
+        documento = new
+        {
+            tipoDocumento = new { id = tipo },
+            momento = new { faseId = fase, formularioCodigo = formulario },
+            aplicabilidade = new { tipo = "GERAL", condicoes = Array.Empty<object>() },
+            indeferimento = new { obrigatorio = true, abrePrazoParaReenvio = false, basesLegais = Array.Empty<object>() },
+            requisitos = new { formatosPermitidos = "QUALQUER" },
+        },
+    };
 
     private static object RegraSemFormatos(Guid tipo, Guid fase) => new
     {

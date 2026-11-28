@@ -13,6 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDasExigencias
 {
+    private const string CampoDoReenvio = "indeferimento.abrePrazoParaReenvio";
+    private const string CampoDaRepeticao = "grupoDoFormularioParaRepeticao";
+
     internal static Result<MudancaDaConfiguracao> Planejar(ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regrasSemGrupo)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
@@ -22,7 +25,7 @@ public static class RegrasDasExigencias
             .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
             .Select(static regra => regra.DocumentoExigido!)];
 
-        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos, CaminhosDosDocumentos(regrasSemGrupo, "regrasDeComprovacao"));
+        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos, CaminhosDasExigencias.DasRegras(regrasSemGrupo, "regrasDeComprovacao"));
         return recusas.Count == 0
             ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, documentos))
             : Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
@@ -30,37 +33,31 @@ public static class RegrasDasExigencias
 
     // Na ordem em que orientam: o vínculo com a fase e a etapa, o formulário, a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
     private static IReadOnlyList<FieldError> Recusas(
-        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhos)
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhosDasRegras)
     {
+        IReadOnlyList<string> caminhos = CaminhosDasExigencias.DosDocumentos(regras, caminhosDasRegras);
         Func<IReadOnlyList<FieldError>>[] conferencias =
         [
             () => ValidadorVinculoDaExigencia.RecusasDosVinculos(documentos, caminhos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas),
-            () => FormularioDasExigencias(configuracao, documentos),
-            () => Unica(ConferirRepeticaoPorGrupo(configuracao, regras)),
+            () => FormularioDasExigencias(configuracao, documentos, caminhos),
+            () => RecusasDaRepeticaoPorGrupo(configuracao, regras, caminhosDasRegras),
             () => DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos, [.. caminhos.Select(static caminho => caminho + ".requisitos")]),
-            () => Unica(RecusaDaPendenciaDeReenvio(configuracao, regras)),
+            () => RecusasDaPendenciaDeReenvio(configuracao, regras, caminhosDasRegras),
         ];
 
         return conferencias.Select(static conferir => conferir()).FirstOrDefault(static recusas => recusas.Count > 0) ?? [];
     }
 
-    // O caminho de cada documento no pedido, na ordem em que as regras o enumeram: o da regra de documento na posição dela, e o do
-    // documento de um item de grupo dentro de itens[].
-    private static List<string> CaminhosDosDocumentos(IEnumerable<RegraDeComprovacao> regras, string lista) =>
-        [.. regras.SelectMany((regra, posicao) => regra.Forma == FormaDeComprovacao.Documento
-            ? [$"{lista}[{posicao}].documento"]
-            : CaminhosDosDocumentos(regra.Itens, $"{lista}[{posicao}].itens"))];
-
-    private static IReadOnlyList<FieldError> Unica(DomainError? recusa) => recusa is null ? [] : [new FieldError(null, recusa)];
-
     /// <summary>
     /// A exigência cita um formulário que o processo tem, ligado à fase dela (ADR-0171). Todas as recusas saem
-    /// juntas, apontando a exigência pela posição.
+    /// juntas, apontando o formulário de cada exigência pelo caminho dela em <paramref name="caminhosDasExigencias"/>.
     /// </summary>
-    internal static IReadOnlyList<FieldError> FormularioDasExigencias(ConfiguracaoDeclarada configuracao, IEnumerable<DocumentoExigido> documentos) =>
+    internal static IReadOnlyList<FieldError> FormularioDasExigencias(
+        ConfiguracaoDeclarada configuracao, IEnumerable<DocumentoExigido> documentos, IReadOnlyList<string> caminhosDasExigencias) =>
         ConferenciaDasExigenciasDoFormulario.Conferir(
             configuracao.Coleta.FormulariosDeclarados,
-            [.. documentos.Select(ExigenciaDeDocumentoDoFormulario.De)]);
+            [.. documentos.Select(ExigenciaDeDocumentoDoFormulario.De)],
+            caminhosDasExigencias);
 
     private static MudancaDaConfiguracao MudancaDaTroca(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras, IReadOnlyList<DocumentoExigido> documentos) => new()
@@ -71,22 +68,17 @@ public static class RegrasDasExigencias
 
     // Consequência de reenvio exige que a fase permita complementação, para regra de documento e para grupo; o
     // sentido inverso é conferido ao redefinir o cronograma.
-    private static DomainError? RecusaDaPendenciaDeReenvio(ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> todasAsRegras)
-    {
-        foreach (RegraDeComprovacao regra in todasAsRegras)
-        {
-            bool abrePrazo = regra.Forma == FormaDeComprovacao.Documento
-                ? regra.DocumentoExigido!.AbrePrazoParaReenvio
-                : regra.AbrePrazoParaReenvio;
-            if (abrePrazo
-                && regra.FaseComum() is { } faseId
-                && ConferirConsequenciaPendenciaReenvio(configuracao, faseId) is { } erro)
-            {
-                return erro;
-            }
-        }
+    private static IReadOnlyList<FieldError> RecusasDaPendenciaDeReenvio(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<string> caminhosDasRegras) =>
+        [.. regras.Select((regra, posicao) => RecusaDoReenvio(configuracao, regra, caminhosDasRegras[posicao])).OfType<FieldError>()];
 
-        return null;
+    private static FieldError? RecusaDoReenvio(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra, string caminho)
+    {
+        bool ehDocumento = regra.Forma == FormaDeComprovacao.Documento;
+        bool abrePrazo = ehDocumento ? regra.DocumentoExigido!.AbrePrazoParaReenvio : regra.AbrePrazoParaReenvio;
+        return abrePrazo && regra.FaseComum() is { } faseId && ConferirConsequenciaPendenciaReenvio(configuracao, faseId) is { } erro
+            ? new FieldError($"{(ehDocumento ? CaminhosDasExigencias.DoDocumento(caminho) : caminho)}.{CampoDoReenvio}", erro)
+            : null;
     }
 
     /// <summary>
@@ -118,35 +110,33 @@ public static class RegrasDasExigencias
     /// A repetição nomeia um grupo do formulário do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
     /// conhecido até a fase das regras repetidas: a fase do formulário do grupo, pela mesma regra
     /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
-    /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
+    /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo. Saem primeiro as repetições
+    /// de grupo inexistente, depois as dos campos de grupo que existe, cada uma pela posição da regra.
     /// </summary>
-    internal static DomainError? ConferirRepeticaoPorGrupo(ConfiguracaoDeclarada configuracao, IReadOnlyCollection<RegraDeComprovacao> regras)
+    internal static IReadOnlyList<FieldError> RecusasDaRepeticaoPorGrupo(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<string> caminhosDasRegras)
     {
-        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(regras, configuracao.Coleta.GruposColetados) is { } semGrupo)
-        {
-            return semGrupo;
-        }
+        HashSet<string> existentes = new(configuracao.Coleta.GruposColetados.Select(static grupo => grupo.Codigo), StringComparer.Ordinal);
+        IEnumerable<FieldError?> inexistentes = regras.Select((regra, posicao) =>
+            NaRepeticao(caminhosDasRegras[posicao], Services.ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, existentes)));
+        IEnumerable<FieldError?> dosCampos = regras.Select((regra, posicao) =>
+            NaRepeticao(caminhosDasRegras[posicao], RecusaDosFatosDaRepeticao(configuracao, regra)));
 
-        foreach (RegraDeComprovacao regra in regras)
-        {
-            if (RecusaDosFatosDaRepeticao(configuracao, regra) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
+        return [.. inexistentes.Concat(dosCampos).OfType<FieldError>()];
     }
+
+    private static FieldError? NaRepeticao(string caminho, DomainError? recusa) =>
+        recusa is null ? null : new FieldError($"{caminho}.{CampoDaRepeticao}", recusa);
 
     private static DomainError? RecusaDosFatosDaRepeticao(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra)
     {
         if (regra.GrupoDoFormularioParaRepeticao is null || regra.FaseComum() is not { } fase
-            || !regra.TentarFormularioComum(out CodigoDoFormulario? formulario))
+            || !regra.TentarFormularioComum(out CodigoDoFormulario? formulario)
+            || configuracao.Coleta.GruposColetados.FirstOrDefault(g => string.Equals(g.Codigo, regra.GrupoDoFormularioParaRepeticao, StringComparison.Ordinal)) is not { } grupo)
         {
             return null;
         }
 
-        GrupoColetado grupo = configuracao.Coleta.GruposColetados.Single(g => string.Equals(g.Codigo, regra.GrupoDoFormularioParaRepeticao, StringComparison.Ordinal));
         return grupo.Subitens
             .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, formulario, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
             .FirstOrDefault(static recusa => recusa is not null);

@@ -19,24 +19,29 @@ internal static class DatasDeReferenciaNoCronograma
     private const string DaReferencia = "referencia";
 
     /// <summary>
-    /// Uma recusa por exigência e campo cuja fase de referência não pertence ao cronograma. Os campos apontam
-    /// <c>exigencias[i]</c>, ou o caminho de <paramref name="caminhosDosRequisitos"/> (o dos requisitos de cada exigência no
-    /// pedido) quando informado.
+    /// Uma recusa por exigência e campo cuja fase de referência não pertence ao cronograma. Os campos apontam o
+    /// caminho de <paramref name="caminhosDosRequisitos"/>, o de onde ficam o prazo de emissão e a validade de cada exigência.
     /// </summary>
     internal static IReadOnlyList<FieldError> ConferirConjunto(
-        IReadOnlyList<FaseCronograma> fases, IEnumerable<DocumentoExigido> documentos, IReadOnlyList<string>? caminhosDosRequisitos = null) =>
-        [.. documentos.SelectMany((documento, indice) => ReferenciasDoDocumento(documento)
+        IReadOnlyList<FaseCronograma> fases, IReadOnlyCollection<DocumentoExigido> documentos, IReadOnlyList<string> caminhosDosRequisitos)
+    {
+        CaminhosDasExigencias.ExigirUmParaCada(caminhosDosRequisitos, documentos.Count, nameof(caminhosDosRequisitos));
+        return [.. documentos.SelectMany((documento, indice) => ReferenciasDoDocumento(documento)
             .Where(referenciada => referenciada.Referencia.FaseId is not null && !fases.Any(fase => referenciada.Referencia.UsaAFase(fase.Id)))
             .Select(referenciada => new FieldError(
-                PonteiroDaReferencia(Prefixo(caminhosDosRequisitos, indice), referenciada.Nome),
+                PonteiroDaReferencia(caminhosDosRequisitos[indice], referenciada.Nome),
                 new DomainError(
                     DataDeReferenciaDoDocumentoErrorCodes.FaseNaoPertenceAoProcesso,
                     $"A fase de referência {referenciada.Campo} do documento '{documento.TipoDocumentoNome}' não pertence ao cronograma deste processo."))))];
+    }
 
-    internal static IReadOnlyList<FieldError> ConferirCompletude(IReadOnlyList<FaseCronograma> fases, IEnumerable<DocumentoExigido> documentos) =>
-        [.. documentos.SelectMany((documento, indice) => CompletudeDoDocumento(fases, documento, Prefixo(null, indice)))];
-
-    private static string Prefixo(IReadOnlyList<string>? caminhos, int indice) => caminhos is null ? $"exigencias[{indice}]" : caminhos[indice];
+    /// <summary>As escolhas e as datas de referência que faltam, apontando cada exigência pelo caminho de <paramref name="caminhosDasExigencias"/>.</summary>
+    internal static IReadOnlyList<FieldError> ConferirCompletude(
+        IReadOnlyList<FaseCronograma> fases, IReadOnlyCollection<DocumentoExigido> documentos, IReadOnlyList<string> caminhosDasExigencias)
+    {
+        CaminhosDasExigencias.ExigirUmParaCada(caminhosDasExigencias, documentos.Count, nameof(caminhosDasExigencias));
+        return [.. documentos.SelectMany((documento, indice) => CompletudeDoDocumento(fases, documento, caminhosDasExigencias[indice]))];
+    }
 
     private static IEnumerable<FieldError> CompletudeDoDocumento(IReadOnlyList<FaseCronograma> fases, DocumentoExigido documento, string prefixo)
     {

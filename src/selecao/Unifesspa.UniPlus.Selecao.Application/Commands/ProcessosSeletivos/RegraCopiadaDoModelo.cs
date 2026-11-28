@@ -17,22 +17,33 @@ internal sealed partial record RegraCopiadaDoModelo(RegraDeComprovacaoInformada 
     /// <summary>
     /// Leva a recusa do processo de volta ao conteúdo do modelo: o processo a aponta pela posição da regra
     /// na lista que recebeu e pela do item dentro do grupo, e o modelo, pela do documento ou do grupo. A
-    /// recusa sem essa posição segue como veio.
+    /// recusa sem essa posição segue como veio, e a de uma posição fora das copiadas perde o campo: o modelo não a tem.
     /// </summary>
     public static FieldError NoModelo(FieldError erro, IReadOnlyList<RegraCopiadaDoModelo> copiadas)
     {
         ArgumentNullException.ThrowIfNull(copiadas);
         Match posicao = PosicaoNaLista().Match(erro.Field ?? string.Empty);
-        int regra = posicao.Success ? int.Parse(posicao.Groups["regra"].Value, CultureInfo.InvariantCulture) : -1;
-        if (regra < 0 || regra >= copiadas.Count)
+        if (!posicao.Success)
         {
             return erro;
         }
 
-        string resto = posicao.Groups["resto"].Value;
+        int regra = int.Parse(posicao.Groups["regra"].Value, CultureInfo.InvariantCulture);
+        return erro with { Field = regra < copiadas.Count ? copiadas[regra].CampoNoModelo(posicao) : null };
+    }
+
+    // O documento do modelo não declara o formulário: a recusa dele aponta o próprio documento.
+    private string CampoNoModelo(Match posicao)
+    {
+        string resto = posicao.Groups["resto"].Value.Replace(".documento.", ".", StringComparison.Ordinal);
+        if (resto == "." + MomentoDaExigenciaInput.CaminhoDoFormulario)
+        {
+            resto = string.Empty;
+        }
+
         return posicao.Groups["item"].Success
-            ? erro with { Field = copiadas[regra].DoItem(int.Parse(posicao.Groups["item"].Value, CultureInfo.InvariantCulture)) + resto }
-            : erro with { Field = copiadas[regra].DaRegra(resto) };
+            ? DoItem(int.Parse(posicao.Groups["item"].Value, CultureInfo.InvariantCulture)) + resto
+            : DaRegra(resto);
     }
 
     private string DoItem(int item) => item < CaminhosDosItens.Count ? CaminhosDosItens[item] : Caminho;
