@@ -25,6 +25,11 @@ public sealed class RegraCopiadaDoModeloTests
     [InlineData("regrasDeComprovacao[1].itens[1].documento.momento.formularioCodigo", "conjuntoDeDocumentos.grupos[0].documentos[1]")]
     [InlineData("regrasDeComprovacao[0].documento.indeferimento.abrePrazoParaReenvio", "conjuntoDeDocumentos.documentos[0].indeferimento.abrePrazoParaReenvio")]
     [InlineData("regrasDeComprovacao[1].itens[1].documento.momento.faseId", "conjuntoDeDocumentos.grupos[0].documentos[1].momento.faseId")]
+    [InlineData("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[2].fato", "conjuntoDeDocumentos.documentos[0]")]
+    [InlineData("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[2].valor", "conjuntoDeDocumentos.documentos[0]")]
+    [InlineData("regrasDeComprovacao[0].documento.fatosComprovados[1]", "conjuntoDeDocumentos.documentos[0]")]
+    [InlineData("regrasDeComprovacao[1].itens[1].documento.aplicabilidade.condicoes[0].fato", "conjuntoDeDocumentos.grupos[0].documentos[1]")]
+    [InlineData("regrasDeComprovacao[1].itens[0].documento.fatosComprovados[0]", "conjuntoDeDocumentos.grupos[0].documentos[0]")]
     [InlineData("regrasDeComprovacao[1].cardinalidade.quantidadeMinima", "conjuntoDeDocumentos.grupos[0].quantidadeMinima")]
     public void NoModelo_PosicaoCopiada_ApontaOModelo(string campo, string esperado)
     {
@@ -48,5 +53,32 @@ public sealed class RegraCopiadaDoModeloTests
     public void NoModelo_SemPosicao_SegueComoVeio(string? campo)
     {
         RegraCopiadaDoModelo.NoModelo(Recusa(campo), Copiadas).Field.Should().Be(campo);
+    }
+
+    [Fact(DisplayName = "Duas recusas que passam a apontar o mesmo documento do modelo, com o mesmo código e a mesma mensagem, saem uma só")]
+    public void RecusasNoModelo_MesmoLugarCodigoEMensagem_UmaSo()
+    {
+        FieldError[] recusas =
+        [
+            Recusa("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].fato"),
+            Recusa("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[1].fato"),
+            Recusa("regrasDeComprovacao[1].documento.aplicabilidade.condicoes[0].fato"),
+        ];
+
+        IReadOnlyList<string?> campos = [.. RegraCopiadaDoModelo.RecusasNoModelo(recusas, Copiadas).Select(static recusa => recusa.Field)];
+
+        campos.Should().Equal("conjuntoDeDocumentos.documentos[0]", "conjuntoDeDocumentos.grupos[0]");
+    }
+
+    [Fact(DisplayName = "Recusas de itens diferentes do catálogo no mesmo documento do modelo continuam duas, mesmo com a mesma mensagem")]
+    public void RecusasNoModelo_ItensDiferentesDoCatalogo_ContinuamDuas()
+    {
+        FieldError[] recusas =
+        [
+            Recusa("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].valor") with { Origem = "ZONA.RURAL" },
+            Recusa("regrasDeComprovacao[0].documento.aplicabilidade.condicoes[0].valor") with { Origem = "ZONA.RIBEIRINHA" },
+        ];
+
+        RegraCopiadaDoModelo.RecusasNoModelo(recusas, Copiadas).Should().HaveCount(2);
     }
 }

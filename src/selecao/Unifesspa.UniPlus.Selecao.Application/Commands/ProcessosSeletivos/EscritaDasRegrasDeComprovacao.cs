@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Exigencias;
 using Domain.Services;
 using Domain.ValueObjects;
 
@@ -11,7 +12,7 @@ using Kernel.Results;
 internal static class EscritaDasRegrasDeComprovacao
 {
     public static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IEnumerable<GrupoColetado> grupos) =>
-        Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), "regrasDeComprovacao", RepeticaoDaRegra.SemRepeticao);
+        Conferir(regras, new HashSet<string>(grupos.Select(static grupo => grupo.Codigo), StringComparer.Ordinal), CaminhosDasExigencias.ListaDasRegrasNoPedido, RepeticaoDaRegra.SemRepeticao);
 
     private static List<RegraInformadaConferida> Conferir(IReadOnlyList<RegraDeComprovacaoInformada> regras, IReadOnlySet<string> grupos, string caminho, RepeticaoDaRegra repeticaoDoGrupoQueContem) =>
         [.. regras.Select((regra, indice) => ConferirRegra(regra, grupos, $"{caminho}[{indice}]", indice, repeticaoDoGrupoQueContem))];

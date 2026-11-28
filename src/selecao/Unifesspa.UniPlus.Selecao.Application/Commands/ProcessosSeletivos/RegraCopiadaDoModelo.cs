@@ -15,6 +15,16 @@ using Kernel.Results;
 internal sealed partial record RegraCopiadaDoModelo(RegraDeComprovacaoInformada Regra, string Caminho, IReadOnlyList<string> CaminhosDosItens)
 {
     /// <summary>
+    /// As recusas do processo no conteúdo do modelo. Duas recusas que passam a apontar o mesmo lugar do modelo, com o
+    /// mesmo código, a mesma mensagem e o mesmo item do catálogo, saem uma só: o modelo não distingue as condições que a cópia gerou.
+    /// </summary>
+    public static IReadOnlyList<FieldError> RecusasNoModelo(IEnumerable<FieldError> erros, IReadOnlyList<RegraCopiadaDoModelo> copiadas)
+    {
+        ArgumentNullException.ThrowIfNull(erros);
+        return [.. erros.Select(erro => NoModelo(erro, copiadas)).DistinctBy(static erro => (erro.Field, erro.Error.Code, erro.Error.Message, erro.Origem))];
+    }
+
+    /// <summary>
     /// Leva a recusa do processo de volta ao conteúdo do modelo: o processo a aponta pela posição da regra
     /// na lista que recebeu e pela do item dentro do grupo, e o modelo, pela do documento ou do grupo. A
     /// recusa sem essa posição segue como veio, e a de uma posição fora das copiadas perde o campo: o modelo não a tem.
@@ -32,19 +42,25 @@ internal sealed partial record RegraCopiadaDoModelo(RegraDeComprovacaoInformada 
         return erro with { Field = regra < copiadas.Count ? copiadas[regra].CampoNoModelo(posicao) : null };
     }
 
-    // O documento do modelo não declara o formulário: a recusa dele aponta o próprio documento.
     private string CampoNoModelo(Match posicao)
     {
-        string resto = posicao.Groups["resto"].Value.Replace(".documento.", ".", StringComparison.Ordinal);
-        if (resto == "." + MomentoDaExigenciaInput.CaminhoDoFormulario)
-        {
-            resto = string.Empty;
-        }
-
+        string resto = SemOCaminhoDoPedido(posicao.Groups["resto"].Value);
         return posicao.Groups["item"].Success
             ? DoItem(int.Parse(posicao.Groups["item"].Value, CultureInfo.InvariantCulture)) + resto
             : DaRegra(resto);
     }
+
+    // O documento do modelo não declara o formulário, a aplicabilidade nem os dados comprovados: a recusa de qualquer
+    // deles aponta o próprio documento.
+    private static string SemOCaminhoDoPedido(string restoNoPedido)
+    {
+        string resto = restoNoPedido.Replace(".documento.", ".", StringComparison.Ordinal);
+        return resto == "." + MomentoDaExigenciaInput.CaminhoDoFormulario || EhDadoDoDocumentoDoPedido(resto) ? string.Empty : resto;
+    }
+
+    private static bool EhDadoDoDocumentoDoPedido(string resto) =>
+        resto.StartsWith("." + AplicabilidadeDaExigenciaInput.CaminhoDasCondicoes, StringComparison.Ordinal)
+        || resto.StartsWith("." + ItemDocumentoExigidoInput.CaminhoDosFatosComprovados, StringComparison.Ordinal);
 
     private string DoItem(int item) => item < CaminhosDosItens.Count ? CaminhosDosItens[item] : Caminho;
 

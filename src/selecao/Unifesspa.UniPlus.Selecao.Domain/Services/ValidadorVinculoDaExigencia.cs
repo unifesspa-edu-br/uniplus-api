@@ -51,10 +51,18 @@ public static class ValidadorVinculoDaExigencia
         return [.. exigencias.SelectMany((item, indice) => RecusasDaExigencia(item, caminhosDasExigencias[indice], fases, etapas))];
     }
 
+    /// <summary>A fase do cronograma em que a exigência é coletada; nula quando a fase dela não pertence ao cronograma.</summary>
+    public static FaseCronograma? FaseDaExigencia(DocumentoExigido exigencia, IReadOnlyCollection<FaseCronograma> fases)
+    {
+        ArgumentNullException.ThrowIfNull(exigencia);
+        ArgumentNullException.ThrowIfNull(fases);
+        return fases.FirstOrDefault(candidata => candidata.Id == exigencia.ExigidoNaFaseId);
+    }
+
     private static IEnumerable<FieldError> RecusasDaExigencia(
         DocumentoExigido item, string caminho, IReadOnlyCollection<FaseCronograma> fases, IReadOnlyCollection<EtapaProcesso> etapas)
     {
-        FaseCronograma? fase = fases.FirstOrDefault(candidata => candidata.Id == item.ExigidoNaFaseId);
+        FaseCronograma? fase = FaseDaExigencia(item, fases);
         if (fase is null)
         {
             yield return new FieldError($"{caminho}.momento.faseId", new DomainError(

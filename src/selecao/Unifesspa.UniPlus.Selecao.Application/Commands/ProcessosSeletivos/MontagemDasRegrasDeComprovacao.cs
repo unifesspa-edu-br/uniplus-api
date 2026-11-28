@@ -10,20 +10,20 @@ using Kernel.Results;
 /// <summary>Compõe as regras informadas e propaga o grupo de repetição às regras contidas.</summary>
 internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido documentos)
 {
-    /// <param name="Regras">As regras montadas; falha com todas as recusas, inclusive as de vínculo do tipo de documento.</param>
+    /// <param name="Regras">As regras sem grupo que montaram, na ordem do pedido. Não entram a regra recusada na montagem nem o grupo
+    /// com algum item recusado, mesmo com os itens que montaram bem.</param>
+    /// <param name="PosicoesNoPedido">A posição, na lista do pedido, de cada regra de <paramref name="Regras"/>.</param>
+    /// <param name="Recusas">As recusas da montagem: de declaração, de cadastros e de composição, nessa ordem.</param>
     /// <param name="VinculosDosTipos">Recusas de tipo de documento como vínculo novo. Não impedem a montagem: as regras vêm
-    /// em <paramref name="Regras"/> para que o catálogo confira também os dados das mesmas exigências.</param>
-    internal sealed record Montadas(Result<List<RegraDeComprovacao>> Regras, IReadOnlyList<FieldError> VinculosDosTipos);
+    /// em <paramref name="Regras"/> para que o catálogo e o domínio confiram também as mesmas exigências.</param>
+    internal sealed record Montadas(
+        List<RegraDeComprovacao> Regras, IReadOnlyList<int> PosicoesNoPedido, IReadOnlyList<FieldError> Recusas, IReadOnlyList<FieldError> VinculosDosTipos);
 
     public async Task<Montadas> MontarRegrasSemGrupoAsync(
         IReadOnlyList<RegraInformadaConferida> entradas, int ordemInicial, CancellationToken cancellationToken)
     {
         RegrasMontadas montados = await MontarRegrasAsync(entradas, ordemInicial, cancellationToken).ConfigureAwait(false);
-        List<FieldError> recusas = [.. montados.Declaracao, .. montados.Cadastros, .. montados.Composicao];
-        return new(
-            recusas.Count > 0 ? Result<List<RegraDeComprovacao>>.ValidationFailure([.. recusas, .. montados.Vinculos])
-                : Result<List<RegraDeComprovacao>>.Success(montados.Regras),
-            montados.Vinculos);
+        return new(montados.Regras, montados.Posicoes, [.. montados.Declaracao, .. montados.Cadastros, .. montados.Composicao], montados.Vinculos);
     }
 
     private async Task<RegrasMontadas> MontarRegrasAsync(
@@ -93,6 +93,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
         else
         {
             destino.Regras.Add(resultado.Value!);
+            destino.Posicoes.Add(regra.Indice);
         }
     }
 
@@ -121,6 +122,7 @@ internal sealed class MontagemDasRegrasDeComprovacao(MontagemDoDocumentoExigido 
     private sealed class RegrasMontadas
     {
         internal List<RegraDeComprovacao> Regras { get; } = [];
+        internal List<int> Posicoes { get; } = [];
         internal List<FieldError> Declaracao { get; } = [];
         internal List<FieldError> Cadastros { get; } = [];
         internal List<FieldError> Composicao { get; } = [];

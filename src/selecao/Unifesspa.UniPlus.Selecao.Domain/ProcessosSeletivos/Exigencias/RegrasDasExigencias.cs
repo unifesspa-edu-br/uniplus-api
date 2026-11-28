@@ -20,33 +20,63 @@ public static class RegrasDasExigencias
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        List<RegraDeComprovacao> todasAsRegras = [.. regrasSemGrupo.SelectMany(static regra => regra.EnumerarRegraEItens())];
-        List<DocumentoExigido> documentos = [.. todasAsRegras
-            .Where(static regra => regra.Forma == FormaDeComprovacao.Documento)
-            .Select(static regra => regra.DocumentoExigido!)];
+        IReadOnlyList<FieldError> recusas = RecusasDaDefinicao(
+            configuracao, regrasSemGrupo, CaminhosDasExigencias.NaLista(CaminhosDasExigencias.ListaDasRegrasNoPedido, regrasSemGrupo.Count));
+        if (recusas.Count > 0)
+        {
+            return Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
+        }
 
-        IReadOnlyList<FieldError> recusas = Recusas(configuracao, todasAsRegras, documentos, CaminhosDasExigencias.DasRegras(regrasSemGrupo, "regrasDeComprovacao"));
-        return recusas.Count == 0
-            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, documentos))
-            : Result<MudancaDaConfiguracao>.ValidationFailure(recusas);
+        List<RegraDeComprovacao> todasAsRegras = TodasAsRegras(regrasSemGrupo);
+        return Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(configuracao, todasAsRegras, DocumentosDasRegras(todasAsRegras)));
     }
 
-    // Na ordem em que orientam: o vínculo com a fase e a etapa, o formulário, a repetição, as datas de referência (todas as recusas juntas) e o reenvio.
+    /// <summary>
+    /// Todas as recusas que as regras de comprovação recebidas teriam na configuração, sem alterá-la: o vínculo com a fase e a
+    /// etapa, o formulário, a repetição, as datas de referência e o reenvio, nessa ordem de assunto e, em cada um, pela posição da exigência.
+    /// <paramref name="caminhosDasRegrasSemGrupo"/> traz o caminho de cada regra sem grupo no pedido, que pode pular posições.
+    /// </summary>
+    public static IReadOnlyList<FieldError> RecusasDaDefinicao(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regrasSemGrupo, IReadOnlyList<string> caminhosDasRegrasSemGrupo)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(regrasSemGrupo);
+
+        List<RegraDeComprovacao> todasAsRegras = TodasAsRegras(regrasSemGrupo);
+        return Recusas(configuracao, todasAsRegras, DocumentosDasRegras(todasAsRegras), CaminhosDasExigencias.DasRegras(regrasSemGrupo, caminhosDasRegrasSemGrupo));
+    }
+
+    private static List<RegraDeComprovacao> TodasAsRegras(IReadOnlyList<RegraDeComprovacao> regrasSemGrupo) =>
+        [.. regrasSemGrupo.SelectMany(static regra => regra.EnumerarRegraEItens())];
+
+    private static List<DocumentoExigido> DocumentosDasRegras(IReadOnlyList<RegraDeComprovacao> todasAsRegras) =>
+        [.. todasAsRegras.Where(static regra => regra.Forma == FormaDeComprovacao.Documento).Select(static regra => regra.DocumentoExigido!)];
+
+    // Cada assunto traz todas as recusas dele e os assuntos saem juntos, na ordem em que orientam: o vínculo com a fase e a etapa,
+    // o formulário, a repetição, as datas de referência e o reenvio.
     private static IReadOnlyList<FieldError> Recusas(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<RegraDeComprovacao> regras, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhosDasRegras)
     {
         IReadOnlyList<string> caminhos = CaminhosDasExigencias.DosDocumentos(regras, caminhosDasRegras);
-        Func<IReadOnlyList<FieldError>>[] conferencias =
+        IReadOnlyList<FaseCronograma> fases = configuracao.Cronograma.CronogramaFases;
+        return
         [
-            () => ValidadorVinculoDaExigencia.RecusasDosVinculos(documentos, caminhos, configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas),
-            () => FormularioDasExigencias(configuracao, documentos, caminhos),
-            () => RecusasDaRepeticaoPorGrupo(configuracao, regras, caminhosDasRegras),
-            () => DatasDeReferenciaNoCronograma.ConferirConjunto(configuracao.Cronograma.CronogramaFases, documentos, [.. caminhos.Select(static caminho => caminho + ".requisitos")]),
-            () => RecusasDaPendenciaDeReenvio(configuracao, regras, caminhosDasRegras),
+            .. ValidadorVinculoDaExigencia.RecusasDosVinculos(documentos, caminhos, fases, configuracao.Avaliacao.Etapas),
+            .. FormularioDasExigenciasNoCronograma(configuracao, documentos, caminhos),
+            .. RecusasDaRepeticaoPorGrupo(configuracao, regras, caminhosDasRegras),
+            .. DatasDeReferenciaNoCronograma.ConferirConjunto(fases, documentos, [.. caminhos.Select(static caminho => caminho + ".requisitos")]),
+            .. RecusasDaPendenciaDeReenvio(configuracao, regras, caminhosDasRegras),
         ];
-
-        return conferencias.Select(static conferir => conferir()).FirstOrDefault(static recusas => recusas.Count > 0) ?? [];
     }
+
+    // A exigência de fase fora do cronograma não tem fase para comparar com a do formulário: só recebe a recusa de formulário inexistente.
+    private static IReadOnlyList<FieldError> FormularioDasExigenciasNoCronograma(
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhos) =>
+        ConferenciaDasExigenciasDoFormulario.Conferir(
+            configuracao.Coleta.FormulariosDeclarados,
+            [.. documentos.Select(documento => new ExigenciaDeDocumentoDoFormulario(
+                documento.FormularioCodigo, ValidadorVinculoDaExigencia.FaseDaExigencia(documento, configuracao.Cronograma.CronogramaFases)?.Id))],
+            caminhos);
 
     /// <summary>
     /// A exigência cita um formulário que o processo tem, ligado à fase dela (ADR-0171). Todas as recusas saem
@@ -89,8 +119,7 @@ public static class RegrasDasExigencias
         FaseCronograma? fase = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId);
         if (fase is null)
         {
-            // FaseNaoPertenceAoProcesso já cobre a ausência — defesa em profundidade, não
-            // deveria ocorrer (a fase já foi validada acima nesta mesma chamada).
+            // A fase fora do cronograma é recusada pelo vínculo da exigência, que sai junto; aqui não há fase para conferir.
             return null;
         }
 

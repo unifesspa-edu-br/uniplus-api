@@ -12,6 +12,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <param name="Nome">O nome da opção como o catálogo a descreve, o que as recusas mostram no lugar do código; ausente quando o catálogo não a descreve.</param>
 public sealed record ValorDoCatalogo(string Codigo, string? Nome, bool Ativo);
 
+/// <summary>Os vínculos que um campo do pedido cita, para a recusa apontar o campo; sem campo, a recusa não o aponta.</summary>
+public sealed record VinculosDoCampo(string? Campo, VinculosDeFatos Vinculos);
+
 /// <summary>
 /// O fato do catálogo como as regras do formulário o conferem, pelos tokens do catálogo. O processo
 /// o lê pelo contrato da Configuração, e o modelo, pela própria entidade.
@@ -155,14 +158,30 @@ public static class ConferenciaNoCatalogo
     /// </summary>
     public static Result VinculoNovo(IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos)
     {
-        ArgumentNullException.ThrowIfNull(catalogo);
-        ArgumentNullException.ThrowIfNull(existentes);
         ArgumentNullException.ThrowIfNull(propostos);
 
-        List<FieldError> erros = [.. FatosDesativados(catalogo, existentes, propostos)];
-        erros.AddRange(FatosSemProtecao(catalogo, existentes, propostos));
-        erros.AddRange(ValoresDesativados(catalogo, existentes, propostos));
+        IReadOnlyList<FieldError> erros = VinculosNovosNosCampos(catalogo, existentes, [new(null, propostos)]);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
+
+    /// <summary>
+    /// A mesma conferência do vínculo novo, com a recusa apontando o campo que cita o dado ou o valor: uma recusa por campo
+    /// que cita, o mesmo dado citado em dois campos recusado nos dois. Saem primeiro os dados desativados, depois os sem
+    /// a aprovação da proteção e por fim os valores desativados, cada tipo na ordem em que os campos citam.
+    /// </summary>
+    public static IReadOnlyList<FieldError> VinculosNovosNosCampos(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, IReadOnlyList<VinculosDoCampo> campos)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(existentes);
+        ArgumentNullException.ThrowIfNull(campos);
+
+        return
+        [
+            .. campos.SelectMany(campo => FatosDesativados(catalogo, existentes, campo)),
+            .. campos.SelectMany(campo => FatosSemProtecao(catalogo, existentes, campo)),
+            .. campos.SelectMany(campo => ValoresDesativados(catalogo, existentes, campo)),
+        ];
     }
 
     private static IEnumerable<FatoDoCatalogo> FatosNovosNoCatalogo(
@@ -171,27 +190,27 @@ public static class ConferenciaNoCatalogo
             .Select(fato => catalogo.GetValueOrDefault(fato)).OfType<FatoDoCatalogo>();
 
     private static IEnumerable<FieldError> FatosDesativados(
-        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
-        FatosNovosNoCatalogo(catalogo, existentes, propostos).Where(static fato => !fato.Ativo)
-            .Select(static fato => new FieldError(null, new DomainError(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDoCampo citacao) =>
+        FatosNovosNoCatalogo(catalogo, existentes, citacao.Vinculos).Where(static fato => !fato.Ativo)
+            .Select(fato => new FieldError(citacao.Campo, new DomainError(
                 VinculoCatalogoErrorCodes.FatoDesativado,
                 $"O dado do candidato '{fato.Nome}' está desativado no catálogo e não aceita vínculo novo."), fato.Codigo));
 
     private static IEnumerable<FieldError> FatosSemProtecao(
-        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
-        FatosNovosNoCatalogo(catalogo, existentes, propostos).Where(static fato => !fato.ProtecaoAprovada)
-            .Select(static fato => new FieldError(null, new DomainError(
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDoCampo citacao) =>
+        FatosNovosNoCatalogo(catalogo, existentes, citacao.Vinculos).Where(static fato => !fato.ProtecaoAprovada)
+            .Select(fato => new FieldError(citacao.Campo, new DomainError(
                 VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
                 $"O dado do candidato '{fato.Nome}' aguarda a aprovação do Representante do controlador e não pode ser incluído agora. "
                 + "Retire o dado do formulário, da regra, da condição ou da exigência de documento em que ele foi incluído, "
                 + "ou peça ao administrador do catálogo que envie a solicitação de aprovação, se ainda não a enviou."), fato.Codigo));
 
     private static IEnumerable<FieldError> ValoresDesativados(
-        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos) =>
-        propostos.Valores.Where(valor => !existentes.Valores.Contains(valor)
+        IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDoCampo citacao) =>
+        citacao.Vinculos.Valores.Where(valor => !existentes.Valores.Contains(valor)
             && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? f) && f.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
             .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal)
-            .Select(v => new FieldError(null, new DomainError(
+            .Select(v => new FieldError(citacao.Campo, new DomainError(
                 VinculoCatalogoErrorCodes.ValorDesativado, MensagemDoValorDesativado(catalogo[v.Fato], v.Valor)), $"{v.Fato}.{v.Valor}"));
 
     private static string MensagemDoValorDesativado(FatoDoCatalogo fato, string codigoDoValor) =>

@@ -107,6 +107,26 @@ public sealed class FormularioDaExigenciaEndpointTests
         problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente");
     }
 
+    [Fact(DisplayName = "A fase fora do cronograma de uma exigência e o formulário inexistente de outra saem juntos com 422, cada um no campo da sua exigência")]
+    public async Task DefinirDocumentosExigidos_FaseForaEFormularioInexistenteEmExigenciasDiferentes_RecusaAsDuas()
+    {
+        (ProcessoSeletivo processo, Guid tipoDocumentoId, string bolsista) = await SemearCenarioAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PutDocumentosExigidosAsync(client, processo.Id,
+        [
+            RegraDoDocumentoCondicionadaA(bolsista, tipoDocumentoId, Guid.CreateVersion7(), FormulariosDoProcessoDeTeste.PedidoDeIsencao),
+            RegraDoDocumentoCondicionadaA(bolsista, tipoDocumentoId, processo.CronogramaFases.Single().Id, "FORMULARIO_QUE_NAO_EXISTE"),
+        ]);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement[] erros = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
+        erros.Select(static erro => (erro.GetProperty("field").GetString(), erro.GetProperty("code").GetString())).Should().Equal(
+            ("regrasDeComprovacao[0].documento.momento.faseId", "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo"),
+            ("regrasDeComprovacao[1].documento.momento.formularioCodigo", "uniplus.selecao.formulario_processo.exigencia_em_formulario_inexistente"));
+    }
+
     [Fact(DisplayName = "Fato omitido na condição do gatilho é recusado com 400 no envelope e o ponteiro com os índices")]
     public async Task DefinirDocumentosExigidos_FatoOmitidoNaCondicao_Retorna400NoEnvelope()
     {
