@@ -229,13 +229,13 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         writeContext.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO selecao.processos_seletivos (
-                id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
+                id, nome, identificador_legivel, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
                 situacao, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
                 unidade_administradora_origem_id,
                 unidade_administradora_sigla, unidade_administradora_identificador_no_endereco_web, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
-                {processoId}, 'PS sem unidade', {TiposDeProcessoDeTeste.Sisu.OrigemId}, 'SISU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
+                {processoId}, 'PS sem unidade', {IdentificadoresDeTeste.Novo().Valor}, {TiposDeProcessoDeTeste.Sisu.OrigemId}, 'SISU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
                 {Guid.NewGuid()},
                 NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
                 now(), false)
