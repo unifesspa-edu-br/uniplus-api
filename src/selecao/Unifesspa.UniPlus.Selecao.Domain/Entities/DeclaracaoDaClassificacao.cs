@@ -7,7 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O que o operador (ou o envelope reidratado) declara para a classificação de um processo
 /// seletivo, antes de as conferências de <see cref="ConfiguracaoClassificacao.Criar"/> a
 /// aceitarem. A fórmula da nota e a ordem de alocação são obrigatórias; o resto tem o valor de
-/// quem não declarou nada (nulo, vazio ou falso).
+/// quem não declarou nada (nulo, vazio ou falso), exceto que o pedido que não informa se a
+/// classificação é baseada em ENEM, ou a lista de eliminações, passa nulo e é recusado por
+/// <see cref="ConfiguracaoClassificacao.Criar"/>.
 /// </summary>
 public sealed record DeclaracaoDaClassificacao
 {
@@ -23,11 +25,11 @@ public sealed record DeclaracaoDaClassificacao
     /// <summary>Ordem de alocação entre a 1ª e a 2ª opção de curso.</summary>
     public required ReferenciaRegra RegraOrdemAlocacao { get; init; }
 
-    /// <summary>Regras de eliminação; vazia quando não há.</summary>
-    public IReadOnlyList<RegraEliminacao> RegrasEliminacao { get; init; } = [];
+    /// <summary>Regras de eliminação; vazia quando não há, e nula quando o pedido não informou a lista.</summary>
+    public IReadOnlyList<RegraEliminacao>? RegrasEliminacao { get; init; } = [];
 
-    /// <summary>A classificação usa a estrutura de pontuação por área do ENEM.</summary>
-    public bool BaseadoEmEnem { get; init; }
+    /// <summary>A classificação usa a estrutura de pontuação por área do ENEM; nulo quando o pedido não informou.</summary>
+    public bool? BaseadoEmEnem { get; init; } = false;
 
     /// <summary>Resolução de Pesos por Área declarada, como o operador a digitou.</summary>
     public string? ResolucaoPesoAreaEnem { get; init; }

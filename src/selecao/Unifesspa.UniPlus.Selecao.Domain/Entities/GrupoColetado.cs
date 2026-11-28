@@ -88,7 +88,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// <exception cref="ArgumentException">Os campos são de formulários diferentes.</exception>
     public static Result<GrupoColetado> Criar(
         string codigo,
-        int ordem,
+        int? ordem,
         string? paginaCodigo,
         string rotulo,
         OcorrenciasDoGrupo ocorrencias,
@@ -102,7 +102,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
         List<FieldError> erros = ConferirForma(codigo, ordem, rotulo, ocorrencias, regras, subitens);
         return erros.Count > 0
             ? Result<GrupoColetado>.ValidationFailure(erros)
-            : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem, paginaCodigo, rotulo, ocorrencias, regras, subitens));
+            : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem.GetValueOrDefault(), paginaCodigo, rotulo, ocorrencias, regras, subitens));
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
     /// não exige que os campos sejam de um mesmo formulário.
     /// </summary>
     public static List<FieldError> ConferirForma(
-        string codigo, int ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
+        string codigo, int? ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
         ArgumentNullException.ThrowIfNull(regras);

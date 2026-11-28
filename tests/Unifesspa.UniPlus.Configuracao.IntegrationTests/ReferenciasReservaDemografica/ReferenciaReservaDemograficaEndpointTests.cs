@@ -8,6 +8,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -97,6 +98,91 @@ public sealed class ReferenciaReservaDemograficaEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory(DisplayName = "POST admin sem um percentual, ou com ele nulo, retorna 422 que o nomeia, não zera em silêncio")]
+    [InlineData("ppiPercentual", false)]
+    [InlineData("quilombolaPercentual", false)]
+    [InlineData("pcdPercentual", false)]
+    [InlineData("ppiPercentual", true)]
+    [InlineData("quilombolaPercentual", true)]
+    [InlineData("pcdPercentual", true)]
+    public async Task Criar_SemPercentual_Retorna422(string campo, bool nulo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, SemOPercentual(CorpoValido(CensoUnico()), campo, nulo));
+
+        await RecusaDeCampoObrigatorioNoDominio.ConferirAsync(response, campo);
+    }
+
+    [Fact(DisplayName = "POST admin com os três percentuais zero é aceito: zero é resposta, ausente é que falta")]
+    public async Task Criar_PercentuaisZero_Retorna201()
+    {
+        var body = new { censoReferencia = CensoUnico(), ppiPercentual = 0m, quilombolaPercentual = 0m, pcdPercentual = 0m, baseLegal = "Lei 12.711/2012, art. 10, III" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "POST admin sem os três percentuais e sem censo acumula as recusas na ordem do contrato")]
+    public async Task Criar_SemCensoESemPercentuais_AcumulaNaOrdemDoContrato()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, new { baseLegal = "Lei 12.711/2012, art. 10, III" });
+
+        await RecusaDeCampoObrigatorioNoDominio.ConferirRecusasAsync(
+            response,
+            ("censoReferencia", "uniplus.configuracao.referencia_reserva_demografica.censo_obrigatorio"),
+            ("ppiPercentual", RecusaDeCampoObrigatorioNoDominio.Code),
+            ("quilombolaPercentual", RecusaDeCampoObrigatorioNoDominio.Code),
+            ("pcdPercentual", RecusaDeCampoObrigatorioNoDominio.Code));
+    }
+
+    [Theory(DisplayName = "PUT admin sem um percentual retorna 422 que o nomeia e não zera o valor existente")]
+    [InlineData("ppiPercentual")]
+    [InlineData("quilombolaPercentual")]
+    [InlineData("pcdPercentual")]
+    public async Task Atualizar_SemPercentual_Retorna422(string campo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await (await EnviarPostAdmin(client, AdminPath, CorpoValido(CensoUnico()))).Content.ReadFromJsonAsync<Guid>();
+
+        Dictionary<string, object?> corpo = SemOPercentual(CorpoValido(CensoUnico()), campo, nulo: false);
+        corpo["id"] = id;
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, corpo);
+
+        await RecusaDeCampoObrigatorioNoDominio.ConferirAsync(response, campo);
+    }
+
+    private static Dictionary<string, object?> SemOPercentual(object corpo, string campo, bool nulo)
+    {
+        Dictionary<string, object?> propriedades = JsonSerializer
+            .Deserialize<Dictionary<string, object?>>(JsonSerializer.Serialize(corpo))!;
+        if (nulo)
+        {
+            propriedades[campo] = null;
+        }
+        else
+        {
+            propriedades.Remove(campo);
+        }
+
+        return propriedades;
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{AdminPath}/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+        return await client.SendAsync(request);
     }
 
     private static async Task VerificarReferenciaObtida(HttpResponseMessage resposta)

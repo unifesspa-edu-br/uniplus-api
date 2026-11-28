@@ -6,7 +6,7 @@ using FluentValidation;
 
 /// <summary>
 /// Confere o que o agregado e a leitura das condições não alcançam (ADR-0125): <c>ProcessoSeletivoId</c> é
-/// identificador de rota; as listas de configurações e de regras, e cada item delas, não podem ser nulos, porque o
+/// identificador de rota; a lista de configurações, e cada item dela e de cada lista de regras, não podem ser nulos, porque o
 /// código que as lê as percorre sem checagem defensiva; e o predicado <c>quando</c> não pode ser uma lista externa
 /// vazia, pois a regra incondicional tem <c>quando</c> nulo. O restante da forma é recusado adiante:
 /// código do fato, presença de regras, unicidade de ordem e regras com e sem código por
@@ -39,12 +39,7 @@ internal sealed class ConfiguracaoDerivacaoInputValidator : AbstractValidator<Co
 {
     public ConfiguracaoDerivacaoInputValidator()
     {
-        // RuleForEach só reporta item nulo dentro da lista; a lista nula exige o NotNull explícito, senão
-        // um payload com Regras nulo estouraria ao ser percorrido.
-        RuleFor(c => c.Regras)
-            .NotNull()
-            .WithMessage("Lista de regras de derivação é obrigatória.");
-
+        // A lista de regras ausente ou nula é recusada pela forma da derivação (422); aqui só se recusa o item nulo.
         RuleForEach(c => c.Regras)
             .NotNull()
             .WithMessage("Item de regra de derivação não pode ser nulo.");

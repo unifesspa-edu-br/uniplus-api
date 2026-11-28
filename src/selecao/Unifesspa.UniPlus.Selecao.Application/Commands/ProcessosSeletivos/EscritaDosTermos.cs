@@ -69,7 +69,7 @@ internal static class EscritaDosTermos
     }
 
     private static List<FieldError> ConferirUnicidade(IReadOnlyList<TermoExigidoInput?> entradas) =>
-        FormaDoTermo.ConferirUnicidade([.. entradas.Select(static t => t is null ? null : ((string?, int)?)(t.Codigo, t.Ordem))]);
+        FormaDoTermo.ConferirUnicidade([.. entradas.Select(static t => t is null ? null : ((string?, int?)?)(t.Codigo, t.Ordem))]);
 
     /// <summary>
     /// As condições do termo não dependem da versão: conferidas antes dela, as recusas do termo saem juntas. O termo só

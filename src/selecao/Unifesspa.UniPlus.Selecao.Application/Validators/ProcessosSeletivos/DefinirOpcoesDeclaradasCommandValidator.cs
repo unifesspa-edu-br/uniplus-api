@@ -16,13 +16,9 @@ public sealed class DefinirOpcoesDeclaradasCommandValidator : AbstractValidator<
             .NotEmpty()
             .WithMessage("O código do fato é obrigatório.");
 
-        // A lista e os itens não podem ser nulos: o handler percorre a lista, e um item nulo
-        // estouraria como 500 em vez de um 4xx. A lista vazia é recusada pelo agregado, com
-        // código próprio.
-        RuleFor(x => x.Opcoes)
-            .NotNull()
-            .WithMessage("A lista de opções não pode ser nula.");
-
+        // Os itens não podem ser nulos: o handler percorre a lista, e um item nulo estouraria como 500
+        // em vez de um 4xx. A lista ausente é recusada pelo handler (422), e a lista vazia pelo agregado,
+        // com código próprio.
         RuleForEach(x => x.Opcoes)
             .NotNull()
             .WithMessage("Uma opção da lista não pode ser nula.");

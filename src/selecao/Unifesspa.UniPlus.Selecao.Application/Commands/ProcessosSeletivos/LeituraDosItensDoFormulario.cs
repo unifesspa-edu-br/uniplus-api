@@ -5,6 +5,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -85,10 +87,15 @@ internal sealed record GruposLidos(IReadOnlyList<GrupoLido> Grupos, IReadOnlyLis
 /// </summary>
 internal static class LeituraDosItensDoFormulario
 {
-    public static ItensLidos Ler(IReadOnlyList<FatoColetadoInput> entradas, ContextoDoCatalogo contexto, string caminho = "itens")
+    /// <summary>A lista nula é a que o pedido não enviou: é recusada com o código de campo obrigatório, e a lista vazia declara nenhum item.</summary>
+    public static ItensLidos Ler(IReadOnlyList<FatoColetadoInput>? entradas, ContextoDoCatalogo contexto, string caminho = "itens")
     {
-        ArgumentNullException.ThrowIfNull(entradas);
         ArgumentNullException.ThrowIfNull(contexto);
+        if (entradas is null)
+        {
+            return new ItensLidos([], [RecusaDaListaAusente(caminho)]);
+        }
+
         List<FieldError> erros = [];
         List<ItemLido> itens = [];
         for (int indice = 0; indice < entradas.Count; indice++)
@@ -98,6 +105,10 @@ internal static class LeituraDosItensDoFormulario
 
         return new ItensLidos(itens, erros);
     }
+
+    // Lista e itens são recusados por caminho: o chamador informa o da lista, que muda conforme a seção do formulário.
+    public static FieldError RecusaDaListaAusente(string caminho = "itens") =>
+        new(caminho, new DomainError(CodigosDeValidacao.Obrigatorio, "Informe os itens do formulário."));
 
     /// <summary>
     /// O item lido, acumulando em <paramref name="erros"/> as recusas dele quando alguma parte foi recusada: as da leitura e

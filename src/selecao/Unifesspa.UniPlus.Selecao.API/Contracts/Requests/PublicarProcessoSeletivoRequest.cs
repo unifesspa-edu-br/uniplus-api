@@ -1,11 +1,17 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using System.ComponentModel;
+
 using Controllers;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoPublicacaoController.Publicar"/> — omite
 /// <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
+/// <param name="DocumentoEditalId">O documento confirmado do edital; ausente ou nulo é recusado com 422.</param>
+/// <param name="Ato">Os dados que o documento declara sobre o ato; ausente ou nulo é recusado com 422.</param>
 /// <param name="Anexos">
 /// Os anexos do edital, na ordem em que ele os apresenta, até 20. Ausente ou vazio quando o edital não tem anexo.
 /// </param>
@@ -16,8 +22,12 @@ using Controllers;
 /// <param name="PeriodoInscricaoFim">Idem <paramref name="PeriodoInscricaoInicio"/>.</param>
 public sealed record PublicarProcessoSeletivoRequest(
     string? Numero,
-    Guid DocumentoEditalId,
-    DadosDoAtoRequest Ato,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    Guid? DocumentoEditalId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DadosDoAtoRequest? Ato,
     IReadOnlyList<AnexoDoEditalRequest>? Anexos = null,
     DateTimeOffset? PeriodoInscricaoInicio = null,
     DateTimeOffset? PeriodoInscricaoFim = null);

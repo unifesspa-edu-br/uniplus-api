@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
@@ -10,6 +12,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 /// </summary>
 public sealed record FormularioDeclarado(CodigoDoFormulario Codigo, Guid? FaseId, bool Obrigatorio)
 {
+    /// <summary>
+    /// Confere a declaração do pedido: dizer se o formulário é obrigatório é obrigatório, e a falta é recusada com o código de
+    /// campo obrigatório. Enquanto a recusa existir nada é gravado; as conferências que não dependem do campo seguem
+    /// tratando o formulário como facultativo, o que só dispensa as regras que dependem de ele ser obrigatório.
+    /// </summary>
+    public static (FormularioDeclarado Declarado, List<FieldError> Recusas) Declarar(CodigoDoFormulario codigo, Guid? faseId, bool? obrigatorio) =>
+        (new FormularioDeclarado(codigo, faseId, obrigatorio ?? false),
+         obrigatorio is null
+            ? [new FieldError("obrigatorio", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se o formulário é obrigatório."))]
+            : []);
+
     /// <summary>
     /// O que a estrutura das páginas confere do formulário: serve à fase de inscrição quando a fase que o recebe coleta
     /// inscrição, e também quando ainda não tem fase ou a leitura do documento não pôde julgá-la.

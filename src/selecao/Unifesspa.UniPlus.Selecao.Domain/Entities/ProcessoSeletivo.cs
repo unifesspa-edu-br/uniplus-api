@@ -271,7 +271,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>Declara quantos cursos o candidato escolhe (1 ou 2), sem superar o de ofertas já gravadas.</summary>
-    public Result DefinirOpcoesDeCurso(int numero) =>
+    public Result DefinirOpcoesDeCurso(int? numero) =>
         Editar(
             () => RegrasDaDistribuicaoDeVagas.ConferirOpcoesDeCurso(Declaracao(), numero).Com(numero),
             declarado => NumeroDeOpcoesDeCurso = declarado);
@@ -282,12 +282,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDoFada.Recusa(Declaracao(), aplica, configuracao).Com((aplica, configuracao)),
             declaracao => (Fada, AplicaFada) = (Vincular(declaracao.configuracao), declaracao.aplica));
 
-    public Result DefinirProvaPresencial(bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios) =>
+    public Result DefinirProvaPresencial(bool? temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado>? municipios, int limiteDeMunicipios) =>
         Editar(() => DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial, municipios, limiteDeMunicipios),
             declaracao => ProvaPresencial = declaracao);
 
     /// <summary>Substitui o cadastro de reserva por chamada inteiro; a lista vazia deixa o processo sem reserva em nenhuma chamada.</summary>
-    public Result DefinirCadastroDeReserva(IReadOnlyList<CadastroDeReservaInformado?> chamadas) =>
+    public Result DefinirCadastroDeReserva(IReadOnlyList<CadastroDeReservaInformado?>? chamadas) =>
         Editar(() => CadastroDeReservaPorChamada.Declarar(chamadas), SubstituirCadastroDeReserva);
 
     /// <summary>Declara como o edital prevê a manifestação de interesse pelo código de contrato; sem código, a manifestação não é prevista.</summary>

@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -17,6 +19,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// do catálogo.
 /// </summary>
 /// <remarks>
+/// <para><see cref="DataDoAto"/> é <c>DateOnly?</c> sem valor padrão: ausente ou nula é recusada com 422, em
+/// vez de gravar o ano 1 em silêncio.</para>
 /// <para>O par <see cref="VersaoDoObjetoId"/>/<see cref="VersaoDoObjetoHash"/> é
 /// recebido por valor, completo ou ausente: Publicações não resolve a
 /// versão do objeto — ela vive no módulo dono do objeto e chega já resolvida.</para>
@@ -57,7 +61,9 @@ public sealed record RegistrarAtoNormativoCommand(
     int Ano,
     string? Numero,
     [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string? TipoCodigo,
-    DateOnly DataDoAto,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422). É a data que o documento declara.")]
+    DateOnly? DataDoAto,
     string? DocumentoHash,
     string? Assinante,
     Guid? VersaoDoObjetoId = null,

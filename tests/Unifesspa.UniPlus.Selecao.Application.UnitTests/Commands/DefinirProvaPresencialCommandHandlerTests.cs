@@ -70,6 +70,34 @@ public sealed class DefinirProvaPresencialCommandHandlerTests
         await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Declaração e municípios ausentes são recusados juntos como obrigatórios, sem salvar")]
+    public async Task Handle_TudoAusente_RecusaAcumulandoObrigatorios()
+    {
+        Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
+        Result resultado = await contexto.Definir(null, null);
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+            [("provaPresencial.temProvaPresencial", "uniplus.validacao.obrigatorio"), ("provaPresencial.municipios", "uniplus.validacao.obrigatorio")]);
+        await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Lista de municípios ausente com prova declarada é recusada como obrigatória")]
+    public async Task Handle_MunicipiosAusentes_RecusaComoObrigatorio()
+    {
+        Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
+        Result resultado = await contexto.Definir(true, null);
+        resultado.Errors.Should().ContainSingle(e => e.Field == "provaPresencial.municipios" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Declaração ausente com municípios informados é recusada como obrigatória")]
+    public async Task Handle_DeclaracaoAusente_RecusaComoObrigatorio()
+    {
+        Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
+        Result resultado = await contexto.Definir(null, []);
+        resultado.Errors.Should().ContainSingle(e => e.Field == "provaPresencial.temProvaPresencial" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
@@ -101,7 +129,7 @@ public sealed class DefinirProvaPresencialCommandHandlerTests
         }
 
         public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
-        public Task<Result> Definir(bool tem, IReadOnlyList<MunicipioDeProvaInformado> municipios) =>
+        public Task<Result> Definir(bool? tem, IReadOnlyList<MunicipioDeProvaInformado>? municipios) =>
             DefinirProvaPresencialCommandHandler.Handle(new(_id, tem, municipios), _repositorio, UnitOfWork, _options, CancellationToken.None);
     }
 }

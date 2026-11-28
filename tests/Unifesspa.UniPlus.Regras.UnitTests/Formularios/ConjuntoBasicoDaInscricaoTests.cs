@@ -186,7 +186,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia(gravados);
 
         referencia.Select(static i => i.FatoCodigo).Should().Equal(codigos);
-        referencia.Select(static i => i.Ordem).Should().Equal(Enumerable.Range(inicio, Teto));
+        referencia.Select(static i => i.Ordem.GetValueOrDefault()).Should().Equal(Enumerable.Range(inicio, Teto));
         referencia.Select(static i => i.Apresentacao!.Rotulo).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.Apresentacao!.Rotulo));
         referencia.Should().OnlyContain(static i => i.Apresentacao!.Ajuda == "Ajuda gravada.");
     }

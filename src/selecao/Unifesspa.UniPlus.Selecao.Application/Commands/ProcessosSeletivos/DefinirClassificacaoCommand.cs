@@ -32,6 +32,10 @@ public sealed record RegraEliminacaoInput(
 /// de alocação. O FADA e o desempate não são parâmetros aqui: já são dimensões
 /// do próprio agregado.
 /// </summary>
+/// <param name="RegrasEliminacao">
+/// Obrigatória: ausente ou nula é recusada (422) na criação da classificação; a lista vazia declara que não há eliminação.
+/// </param>
+/// <param name="BaseadoEmEnem">Obrigatório: ausente ou nulo é recusado (422) na criação da classificação.</param>
 /// <param name="ResolucaoPesoAreaEnem">
 /// Resolução de Pesos por Área que a classificação usa — obrigatória na classificação
 /// baseada em ENEM com cálculo local, recusada nas demais. O handler a resolve no cadastro
@@ -50,7 +54,7 @@ public sealed record DefinirClassificacaoCommand(
     int? CasasArredondamento,
     string RegraOrdemAlocacaoCodigo,
     string RegraOrdemAlocacaoVersao,
-    IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
-    bool BaseadoEmEnem,
+    IReadOnlyList<RegraEliminacaoInput>? RegrasEliminacao,
+    bool? BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,
     decimal? EscalaNotaFinal) : ICommand<Result>;

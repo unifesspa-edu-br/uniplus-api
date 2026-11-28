@@ -23,9 +23,9 @@ public sealed class RecorteDoFormularioTests
     {
         RecorteDoFormulario recorte = RecorteDoFormulario.De(Processo(), Habilitacao);
 
-        recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("HABILITACAO:DOCUMENTOS");
-        recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("HABILITACAO:VERACIDADE");
-        recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo).Should().BeEquivalentTo(
+        recorte.Regras.Paginas!.Select(static e => e.Codigo).Should().Equal("HABILITACAO:DOCUMENTOS");
+        recorte.Regras.Termos!.Select(static t => t.Codigo).Should().Equal("HABILITACAO:VERACIDADE");
+        recorte.Regras.Derivacoes!.Select(static d => d.FatoCodigo).Should().BeEquivalentTo(
             ["ESCOLA_PUBLICA", "EGRESSO_REDE_PUBLICA"], "a derivação citada leva junto a derivação de que ela depende");
         recorte.Pressupostos.Should().Equal(
             ["MODALIDADE_CONVOCACAO", "TIPO_ESCOLA"], "a resposta da inscrição e o fato do sistema chegam como já conhecidos");
@@ -89,7 +89,7 @@ public sealed class RecorteDoFormularioTests
     {
         RecorteDoFormulario recorte = RecorteDoFormulario.De(ProcessoComAgregadosDeDoisFormularios(), Habilitacao);
 
-        recorte.Regras.Agregados.Select(static a => a.Codigo).Should().Equal("PROPRIEDADE_NA_FAMILIA");
+        recorte.Regras.Agregados!.Select(static a => a.Codigo).Should().Equal("PROPRIEDADE_NA_FAMILIA");
         recorte.Pressupostos.Should().Equal(["RURAL_NA_FAMILIA"], "o grupo que o agregado agrega foi respondido na inscrição");
     }
 
@@ -103,9 +103,9 @@ public sealed class RecorteDoFormularioTests
 
         RecorteDoFormulario recorte = RecorteDoFormulario.DaDefinicaoInteira(modelo);
 
-        recorte.Regras.Paginas.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
-        recorte.Regras.Termos.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
-        recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo).Should().Equal("ESCOLA_PUBLICA");
+        recorte.Regras.Paginas!.Select(static e => e.Codigo).Should().Equal("DOCUMENTOS");
+        recorte.Regras.Termos!.Select(static t => t.Codigo).Should().Equal("VERACIDADE");
+        recorte.Regras.Derivacoes!.Select(static d => d.FatoCodigo).Should().Equal("ESCOLA_PUBLICA");
         recorte.Pressupostos.Should().Equal("TIPO_ESCOLA");
     }
 

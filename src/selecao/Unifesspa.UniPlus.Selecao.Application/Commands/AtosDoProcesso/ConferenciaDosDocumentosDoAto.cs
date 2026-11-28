@@ -25,17 +25,51 @@ public sealed class ConferenciaDosDocumentosDoAto(
 {
     public const int QuantidadeMaximaDeAnexos = 20;
 
+    // O documento ausente e a quantidade acima do limite acumulam; as regras que leem os documentos dependem de todos eles.
     internal async Task<Result<DocumentosDoAtoConferidos>> ConferirAsync(
-        Guid processoSeletivoId, Guid documentoPrincipalId,
+        Guid processoSeletivoId, Guid? documentoPrincipalId,
         IReadOnlyList<AnexoSolicitadoDoAto> anexosSolicitados, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(anexosSolicitados);
-        if (anexosSolicitados.Count > QuantidadeMaximaDeAnexos)
+        FieldError[] recusas = [.. DocumentosAusentes(documentoPrincipalId, anexosSolicitados), .. QuantidadeExcedida(anexosSolicitados)];
+
+        return recusas.Length > 0
+            ? Result<DocumentosDoAtoConferidos>.ValidationFailure(recusas)
+            : await ConferirRepeticaoEEnviosAsync(processoSeletivoId, documentoPrincipalId.GetValueOrDefault(), anexosSolicitados, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    internal static IEnumerable<FieldError> DocumentosAusentes(Guid? documentoPrincipalId, IReadOnlyList<AnexoSolicitadoDoAto> anexos)
+    {
+        if (documentoPrincipalId is null)
         {
-            return Falha(AtoDoProcessoErrorCodes.QuantidadeDeAnexosExcedida,
-                $"O ato aceita no máximo {QuantidadeMaximaDeAnexos} anexos.");
+            yield return Obrigatorio("documentoPrincipalId", "Informe o documento principal do ato.");
         }
-        Guid[] ids = [documentoPrincipalId, .. anexosSolicitados.Select(static a => a.DocumentoId)];
+
+        foreach ((AnexoSolicitadoDoAto anexo, int posicao) in anexos.Select(static (anexo, posicao) => (anexo, posicao)))
+        {
+            if (anexo.DocumentoId is null)
+            {
+                yield return Obrigatorio($"anexos[{posicao}].documentoId", "Informe o documento do anexo.");
+            }
+        }
+    }
+
+    internal static IEnumerable<FieldError> QuantidadeExcedida(IReadOnlyList<AnexoSolicitadoDoAto> anexos) =>
+        anexos.Count > QuantidadeMaximaDeAnexos
+            ? [new FieldError(null, new DomainError(
+                AtoDoProcessoErrorCodes.QuantidadeDeAnexosExcedida, $"O ato aceita no máximo {QuantidadeMaximaDeAnexos} anexos."))]
+            : [];
+
+    private static FieldError Obrigatorio(string campo, string mensagem) =>
+        new(campo, new DomainError(CodigosDeValidacao.Obrigatorio, mensagem));
+
+    private async Task<Result<DocumentosDoAtoConferidos>> ConferirRepeticaoEEnviosAsync(
+        Guid processoSeletivoId, Guid documentoPrincipalId,
+        IReadOnlyList<AnexoSolicitadoDoAto> anexosSolicitados, CancellationToken cancellationToken)
+    {
+        // Sem ausência, todo documento tem valor: o padrão só satisfaz o tipo.
+        Guid[] ids = [documentoPrincipalId, .. anexosSolicitados.Select(static a => a.DocumentoId.GetValueOrDefault())];
         DomainError? recusa = ConferirRepeticao(ids);
         return recusa is not null
             ? Result<DocumentosDoAtoConferidos>.Failure(recusa)
@@ -112,7 +146,7 @@ public sealed class ConferenciaDosDocumentosDoAto(
         HashSet<string> nomesUsados = new(NomeDoAnexoPublicado.Comparador);
         foreach (AnexoSolicitadoDoAto pedido in pedidos)
         {
-            Result<AnexoConferido> anexo = ConferirNomeDoAnexo(pedido, documentos[pedido.DocumentoId], nomesUsados);
+            Result<AnexoConferido> anexo = ConferirNomeDoAnexo(pedido, documentos[pedido.DocumentoId.GetValueOrDefault()], nomesUsados);
             if (anexo.IsFailure)
             {
                 return Result<IReadOnlyList<AnexoConferido>>.Failure(anexo.Error!);

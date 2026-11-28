@@ -88,6 +88,32 @@ public sealed class CriarTipoAtoPublicadoCommandHandlerTests
         resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == TipoAtoPublicadoErrorCodes.NomeObrigatorio);
     }
 
+    [Fact(DisplayName = "Atributo ausente é recusado como obrigatório, acumulado com o código inválido, sem consultar sobreposição")]
+    public async Task Handle_ComAtributoAusenteECodigoInvalido_AcumulaSemIO()
+    {
+        Result<Guid> resultado = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando() with { Codigo = "edital abertura", PublicavelComoAvulso = null, VigenciaInicio = null },
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("codigo", TipoAtoPublicadoErrorCodes.CodigoFormato),
+            ("publicavelComoAvulso", CodigosDeValidacao.Obrigatorio),
+            ("vigenciaInicio", CodigosDeValidacao.Obrigatorio));
+        await _repository.DidNotReceive().ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Atributo ausente não vira falso em silêncio: nada é criado")]
+    public async Task Handle_ComEfeitoIrreversivelAusente_NaoCria()
+    {
+        Result<Guid> resultado = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando() with { EfeitoIrreversivel = null }, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "efeitoIrreversivel" && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoAtoPublicado>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "A checagem de sobreposição recebe exatamente a janela do comando")]
     public async Task Handle_ConsultaComAJanelaInformada()
     {

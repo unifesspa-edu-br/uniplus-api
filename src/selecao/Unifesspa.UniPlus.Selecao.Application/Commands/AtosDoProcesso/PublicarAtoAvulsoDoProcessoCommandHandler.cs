@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
-using Domain.Entities;
 using Domain.Interfaces;
 
 using DTOs;
@@ -30,10 +29,9 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(preparacao);
         ArgumentNullException.ThrowIfNull(publicacao);
-        Result correcao = AtoDoProcesso.ValidarCorrecao(command.AtoCorrigidoId, command.MotivoDaCorrecao);
-        if (correcao.IsFailure)
+        if (RecusaDaCorrecaoDoAto.De(command) is { } correcaoRecusada)
         {
-            return (Result<AtoPublicadoDto>.ValidationFailure(correcao.Errors), []);
+            return (correcaoRecusada, []);
         }
         await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result<AtoAPublicar> ato = await preparacao.PrepararAsync(command, cancellationToken).ConfigureAwait(false);

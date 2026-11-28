@@ -136,31 +136,74 @@ public sealed class TipoAtoPublicadoEscritaEndpointTests
         doc.RootElement.GetProperty("exigeAtoCorrigido").GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "POST sem os atributos do documento avulso é recusado com 400 que os nomeia")]
-    public async Task Criar_SemOsAtributosDoDocumentoAvulso_Retorna400()
+    [Theory(DisplayName = "POST sem um campo obrigatório é recusado com 422 que o nomeia, não com 400")]
+    [MemberData(nameof(CamposObrigatorios))]
+    public async Task Criar_SemCampoObrigatorio_Retorna422(string campo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        CorpoDoTipoDeAto corpo = new CorpoDoTipoDeAto(CodigoUnico()).SemOsAtributosDoDocumentoAvulso();
 
-        HttpResponseMessage response = await PostAsync(client, corpo);
+        HttpResponseMessage response = await PostAsync(client, new CorpoDoTipoDeAto(CodigoUnico()).Sem(campo));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        string detalhe = await response.Content.ReadAsStringAsync();
-        detalhe.Should().Contain("publicavelComoAvulso").And.Contain("exigeAtoCorrigido");
+        await ConferirRecusaDeCampoObrigatorio(response, campo);
     }
 
-    [Fact(DisplayName = "PUT sem os atributos do documento avulso é recusado com 400 e não os zera em silêncio")]
-    public async Task Atualizar_SemOsAtributosDoDocumentoAvulso_Retorna400()
+    [Theory(DisplayName = "POST com um campo obrigatório nulo é recusado com 422, igual ao ausente")]
+    [MemberData(nameof(CamposObrigatorios))]
+    public async Task Criar_ComCampoObrigatorioNulo_Retorna422(string campo)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await PostAsync(client, new CorpoDoTipoDeAto(CodigoUnico()).ComNulo(campo));
+
+        await ConferirRecusaDeCampoObrigatorio(response, campo);
+    }
+
+    [Theory(DisplayName = "PUT sem um campo obrigatório é recusado com 422 e não o zera em silêncio")]
+    [MemberData(nameof(CamposObrigatorios))]
+    public async Task Atualizar_SemCampoObrigatorio_Retorna422(string campo)
     {
         string codigo = CodigoUnico();
         Guid id = await _apoio.CriarAsync(codigo);
-        CorpoDoTipoDeAto corpo = new CorpoDoTipoDeAto(codigo) { Id = id }.SemOsAtributosDoDocumentoAvulso();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await AtualizarAsync(client, id, corpo);
+        HttpResponseMessage response = await AtualizarAsync(client, id, new CorpoDoTipoDeAto(codigo) { Id = id }.Sem(campo));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await response.Content.ReadAsStringAsync()).Should().Contain("publicavelComoAvulso");
+        await ConferirRecusaDeCampoObrigatorio(response, campo);
+    }
+
+    [Fact(DisplayName = "POST sem os atributos e com nome curto acumula as recusas, na ordem do contrato")]
+    public async Task Criar_SemAtributosEComNomeCurto_AcumulaNaOrdemDoContrato()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        CorpoDoTipoDeAto corpo = new CorpoDoTipoDeAto(CodigoUnico()) { Nome = "E" }.SemOsAtributosDoDocumentoAvulso().Sem("vigenciaInicio");
+
+        HttpResponseMessage response = await PostAsync(client, corpo);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(e => e.GetProperty("field").GetString())
+            .Should().Equal("nome", "publicavelComoAvulso", "exigeAtoCorrigido", "vigenciaInicio");
+    }
+
+    public static TheoryData<string> CamposObrigatorios => new()
+    {
+        "congelaConfiguracao",
+        "unicoPorObjeto",
+        "efeitoIrreversivel",
+        "ehResultado",
+        "publicavelComoAvulso",
+        "exigeAtoCorrigido",
+        "vigenciaInicio",
+    };
+
+    private static async Task ConferirRecusaDeCampoObrigatorio(HttpResponseMessage response, string campo)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erro = problema.RootElement.GetProperty("errors")[0];
+        erro.GetProperty("field").GetString().Should().Be(campo);
+        erro.GetProperty("code").GetString().Should().Be("uniplus.validacao.obrigatorio");
     }
 
     [Fact(DisplayName = "POST com janela sobreposta retorna 409 com o type do ProblemDetails")]

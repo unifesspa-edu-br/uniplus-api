@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// (ADR-0056): lê cada condição, cada recurso e cada tipo de deficiência pelo identificador e congela por valor o
 /// código e o nome (ADR-0061). Todas as recusas saem juntas (ADR-0125, item 5), na ordem da leitura do documento:
 /// identificadores repetidos, tipo de deficiência sem a condição de pessoa com deficiência (só quando todas as
-/// condições foram encontradas) e, por fim, cada identificador sem cadastro, em condições, recursos e tipos, no item
+/// condições foram informadas e encontradas) e, por fim, cada identificador sem cadastro, em condições, recursos e tipos, no item
 /// e na posição em que veio no pedido. A regra de que o tipo de deficiência só vale sob a condição de pessoa com
 /// deficiência (ADR-0067) é do <see cref="AtendimentoEspecializado"/>.
 /// </summary>
@@ -25,9 +25,9 @@ public sealed class CadastrosDoAtendimentoEspecializado(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        CopiasDoCadastro<CondicaoOfertada> condicoes = await CondicoesOfertadasAsync(command.CondicaoIds, cancellationToken).ConfigureAwait(false);
-        CopiasDoCadastro<RecursoOfertado> recursos = await RecursosOfertadosAsync(command.RecursoIds, cancellationToken).ConfigureAwait(false);
-        CopiasDoCadastro<DeficienciaAtendida> tipos = await DeficienciasAtendidasAsync(command.TipoDeficienciaIds, cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<CondicaoOfertada> condicoes = await CondicoesOfertadasAsync(command.CondicaoIds ?? [], cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<RecursoOfertado> recursos = await RecursosOfertadosAsync(command.RecursoIds ?? [], cancellationToken).ConfigureAwait(false);
+        CopiasDoCadastro<DeficienciaAtendida> tipos = await DeficienciasAtendidasAsync(command.TipoDeficienciaIds ?? [], cancellationToken).ConfigureAwait(false);
 
         return Montar(command, condicoes, recursos, tipos);
     }
@@ -68,17 +68,28 @@ public sealed class CadastrosDoAtendimentoEspecializado(
         CopiasDoCadastro<RecursoOfertado> recursos,
         CopiasDoCadastro<DeficienciaAtendida> tipos)
     {
-        List<FieldError> recusas = AtendimentoEspecializado.ValidarIdsUnicos(command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds);
-        if (condicoes.Recusas.Count == 0)
-        {
-            recusas.AddRange(AtendimentoEspecializado.ValidarDeficienciaComCondicaoPcd(condicoes.Copias, tipos.Copias));
-        }
-
+        List<FieldError> recusas = RecusasDaDeclaracao(command, condicoes, tipos);
         recusas.AddRange([.. condicoes.Recusas, .. recursos.Recusas, .. tipos.Recusas]);
 
         return recusas.Count > 0
             ? Result<AtendimentoEspecializado>.ValidationFailure(recusas)
             : AtendimentoEspecializado.Criar(condicoes.Copias, recursos.Copias, tipos.Copias);
+    }
+
+    private static List<FieldError> RecusasDaDeclaracao(
+        DefinirAtendimentoEspecializadoCommand command, CopiasDoCadastro<CondicaoOfertada> condicoes, CopiasDoCadastro<DeficienciaAtendida> tipos)
+    {
+        List<FieldError> recusas =
+        [
+            .. AtendimentoEspecializado.ValidarListasInformadas(command.CondicaoIds, command.RecursoIds, command.TipoDeficienciaIds),
+            .. AtendimentoEspecializado.ValidarIdsUnicos(command.CondicaoIds ?? [], command.RecursoIds ?? [], command.TipoDeficienciaIds ?? []),
+        ];
+        if (command.CondicaoIds is not null && condicoes.Recusas.Count == 0)
+        {
+            recusas.AddRange(AtendimentoEspecializado.ValidarDeficienciaComCondicaoPcd(condicoes.Copias, tipos.Copias));
+        }
+
+        return recusas;
     }
 
     private static async Task<CopiasDoCadastro<TCopia>> CopiarAsync<TView, TCopia>(

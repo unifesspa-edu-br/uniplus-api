@@ -74,15 +74,16 @@ public sealed class JsonServiceCollectionExtensionsTests
             typeof(InstanteEmMicrossegundosModelBinderProvider), typeof(SimpleTypeModelBinderProvider));
     }
 
-    [Fact(DisplayName = "O envio simulado sem instante é recusado na leitura do corpo")]
-    public void EnvioSimulado_SemInstante_LancaJsonException()
+    [Fact(DisplayName = "O envio simulado sem instante é lido com o instante ausente, para o domínio recusá-lo")]
+    public void EnvioSimulado_SemInstante_ChegaAoDominioSemInstante()
     {
         using ServiceProvider provedor = Provedor();
         JsonSerializerOptions opcoes = provedor.GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
 
-        Action ler = () => JsonSerializer.Deserialize<EnvioSimuladoInput>("{\"fuso\":\"America/Belem\"}", opcoes);
+        EnvioSimuladoInput? lido = JsonSerializer.Deserialize<EnvioSimuladoInput>("{\"fuso\":\"America/Belem\"}", opcoes);
 
-        ler.Should().Throw<JsonException>().Which.Message.Should().Contain("instante");
+        lido.Should().NotBeNull();
+        lido!.Instante.Should().BeNull();
     }
 
     private static ServiceProvider Provedor()

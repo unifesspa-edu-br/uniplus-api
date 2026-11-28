@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -80,7 +81,7 @@ public static class FormaDoItem
     /// recebe a lista inteira conferir a forma de todos os itens antes de resolver o catálogo, e
     /// assim um código vazio não cai num "fato desconhecido", menos específico.
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int ordem, string? rotulo) =>
+    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int? ordem, string? rotulo) =>
         [.. RecusasDoCodigoDoFato(fatoCodigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo)];
 
     private static IEnumerable<FieldError> RecusasDoCodigoDoFato(string? fatoCodigo)
@@ -96,9 +97,13 @@ public static class FormaDoItem
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    private static IEnumerable<FieldError> RecusasDaOrdem(int? ordem)
     {
-        if (ordem < 0)
+        if (ordem is null)
+        {
+            yield return new("ordem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a ordem."));
+        }
+        else if (ordem < 0)
         {
             yield return new("ordem", new DomainError(ItemFormularioErrorCodes.OrdemInvalida, "A ordem do item não pode ser negativa."));
         }
@@ -124,7 +129,7 @@ public static class FormaDoItem
     /// O impedimento é a exceção: cada cláusula dele cita a resposta do próprio campo. A parte das regras que a leitura
     /// recusou vem nula e não é conferida aqui; com o tipo de campo recusado, o formato e o que depende do tipo ficam sem conferir.
     /// </summary>
-    public static List<FieldError> Conferir(string? fatoCodigo, int ordem, ApresentacaoLidaDoCampo apresentacao, string? formato, RegrasLidasDoCampo regras)
+    public static List<FieldError> Conferir(string? fatoCodigo, int? ordem, ApresentacaoLidaDoCampo apresentacao, string? formato, RegrasLidasDoCampo regras)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);

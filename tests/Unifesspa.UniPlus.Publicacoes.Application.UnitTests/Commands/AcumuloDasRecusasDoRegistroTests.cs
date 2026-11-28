@@ -162,6 +162,32 @@ public sealed class AcumuloDasRecusasDoRegistroTests
         await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
 
+    [Fact(DisplayName = "Data do ato omitida é recusada como obrigatória, entre o órgão e o hash, e o catálogo ainda é lido")]
+    public async Task Montar_DataDoAtoOmitida_RecusaComoObrigatoriaNaOrdemDoCorpo()
+    {
+        _tipos.ComTipoVigente();
+
+        Result<AtoMontado> montado = await Montar(Comando() with { Orgao = "", DataDoAto = null, DocumentoHash = "abc" });
+
+        ResumoDasRecusas.De(montado.Errors).Should().Equal(
+            ("orgao", AtoNormativoErrorCodes.TextoInvalido),
+            ("dataDoAto", CodigosDeValidacao.Obrigatorio),
+            ("documentoHash", AtoNormativoErrorCodes.HashDoDocumentoInvalido));
+        await ConsultouOCatalogoUmaVez();
+    }
+
+    [Fact(DisplayName = "Data do ato omitida não grava o ano 1: nada é montado nem reservado")]
+    public async Task Montar_DataDoAtoOmitida_NaoMontaNemReservaVaga()
+    {
+        _tipos.ComTipoVigente(unicoPorObjeto: true);
+
+        Result<AtoMontado> montado = await Montar(Comando() with { DataDoAto = null, Vinculos = [new("OBJETO_A", Processo)] });
+
+        montado.IsFailure.Should().BeTrue();
+        montado.Errors.Should().ContainSingle(e => e.Field == "dataDoAto");
+        await _atos.DidNotReceiveWithAnyArgs().ReservarVagaAsync(default!, default);
+    }
+
     [Fact(DisplayName = "Tipo da entidade vinculada e os três campos do anexo omitidos são recusados pelo domínio")]
     public async Task Montar_CamposAninhadosNulos_RecusaPeloDominio()
     {

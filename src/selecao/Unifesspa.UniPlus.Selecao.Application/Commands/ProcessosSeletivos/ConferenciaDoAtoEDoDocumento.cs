@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// instante em que a operação publica, o único que ela usa.
 /// </summary>
 internal readonly record struct AtoEDocumentoConferidos(
-    DadosDoAto Ato,
+    DadosDoAtoCompletos Ato,
     DocumentoAPublicar Documento,
     TipoAtoPublicadoView TipoDoAto,
     IReadOnlyList<Guid> AtosDaLinhagem,
@@ -29,7 +29,8 @@ internal readonly record struct AtoEDocumentoConferidos(
 /// valor, porque reler o catálogo faria a decisão valer outra coisa. O instante da operação é lido aqui, uma só vez,
 /// depois da trava do processo que o handler já tomou, e o tipo do ato vigora no dia civil dele no fuso institucional: a
 /// data que o documento declara não escolhe o tipo. A origem diz qual instante vale: na retificação, o efetivo, que não
-/// precede a vigência da versão sucedida.
+/// precede a vigência da versão sucedida. O campo obrigatório ausente (o documento do edital, o bloco do ato, o ano, a data e o documento de cada anexo) acumula com a recusa do
+/// tipo do ato e corta o que depende dele; o documento recusado impede o resto.
 /// </summary>
 public sealed class ConferenciaDoAtoEDoDocumento(
     IDocumentoAPublicarRepository documentos,
@@ -38,42 +39,73 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     LeituraDoInstanteDoComando instantes)
 {
     internal async Task<Result<AtoEDocumentoConferidos>> ConferirAsync(
-        Guid processoId, Guid documentoEditalId, DadosDoAto ato, OrigemDoCongelamento origem, CancellationToken cancellationToken)
+        Guid processoId,
+        Guid? documentoEditalId,
+        DadosDoAto? ato,
+        IReadOnlyList<AnexoSolicitadoDoEdital>? anexos,
+        OrigemDoCongelamento origem,
+        CancellationToken cancellationToken)
     {
-        Result<DocumentoAPublicar> documento = await ConferenciaDoDocumentoDoEdital
-            .ConferirAsync(documentos, processoId, documentoEditalId, origem.DescricaoDaOperacao, cancellationToken)
-            .ConfigureAwait(false);
+        FieldError[] ausentes = [.. AusenciasNaDeclaracaoDoEdital.Listar(documentoEditalId, ato, anexos)];
+        Result<DocumentoAPublicar>? documento = documentoEditalId is { } id
+            ? await ConferenciaDoDocumentoDoEdital
+                .ConferirAsync(documentos, processoId, id, origem.DescricaoDaOperacao, cancellationToken)
+                .ConfigureAwait(false)
+            : null;
 
-        return documento.IsFailure
-            ? Result<AtoEDocumentoConferidos>.ValidationFailure(documento.Errors)
-            : await ConferirOTipoEAVagaAsync(processoId, ato, documento.Value!, origem, cancellationToken).ConfigureAwait(false);
+        return documento is { IsFailure: true }
+            ? Result<AtoEDocumentoConferidos>.ValidationFailure([.. ausentes, .. documento.Errors])
+            : await ConferirOTipoEAVagaAsync(processoId, ausentes, ato, documento?.Value, origem, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoEAVagaAsync(
-        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, OrigemDoCongelamento origem, CancellationToken cancellationToken)
+        Guid processoId,
+        FieldError[] ausentes,
+        DadosDoAto? ato,
+        DocumentoAPublicar? documento,
+        OrigemDoCongelamento origem,
+        CancellationToken cancellationToken)
     {
         Result<InstanteDoComando> instante = origem.LerOInstante(instantes);
 
         return instante.IsFailure
             ? Result<AtoEDocumentoConferidos>.Failure(instante.Error!)
-            : await ConferirOTipoNoDiaAsync(processoId, ato, documento, instante.Value, cancellationToken).ConfigureAwait(false);
+            : await ConferirOTipoNoDiaAsync(processoId, ausentes, ato, documento, instante.Value, cancellationToken).ConfigureAwait(false);
     }
 
+    // A ausência de um campo acumula com a recusa do tipo, que não depende dele; sem causa, o documento e o tipo existem.
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoNoDiaAsync(
-        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDoComando instante, CancellationToken cancellationToken)
+        Guid processoId,
+        FieldError[] ausentes,
+        DadosDoAto? ato,
+        DocumentoAPublicar? documento,
+        InstanteDoComando instante,
+        CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView> tipoDoAto = await tiposDeAto
-            .CongelaConfiguracaoAsync(ato, instante.Dia, cancellationToken)
-            .ConfigureAwait(false);
-        if (tipoDoAto.IsFailure)
-        {
-            return Result<AtoEDocumentoConferidos>.Failure(tipoDoAto.Error!);
-        }
+        Result<TipoAtoPublicadoView>? tipoDoAto = ato is null
+            ? null
+            : await tiposDeAto.CongelaConfiguracaoAsync(ato.TipoAtoCodigo, instante.Dia, cancellationToken).ConfigureAwait(false);
+        FieldError[] causas = [.. ausentes, .. tipoDoAto?.Errors ?? []];
 
+        return causas.Length > 0
+            ? Result<AtoEDocumentoConferidos>.ValidationFailure(causas)
+            : await ReunirALinhagemAsync(
+                processoId, AusenciasNaDeclaracaoDoEdital.Completar(ato)!, documento!, tipoDoAto!.Value!, instante, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    private async Task<Result<AtoEDocumentoConferidos>> ReunirALinhagemAsync(
+        Guid processoId,
+        DadosDoAtoCompletos ato,
+        DocumentoAPublicar documento,
+        TipoAtoPublicadoView tipoDoAto,
+        InstanteDoComando instante,
+        CancellationToken cancellationToken)
+    {
         IReadOnlyList<Guid> atosDaLinhagem = await processos
             .ObterAtosCriadoresAsync(processoId, cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<AtoEDocumentoConferidos>.Success(new(ato, documento, tipoDoAto.Value!, atosDaLinhagem, instante));
+        return Result<AtoEDocumentoConferidos>.Success(new(ato, documento, tipoDoAto, atosDaLinhagem, instante));
     }
 }

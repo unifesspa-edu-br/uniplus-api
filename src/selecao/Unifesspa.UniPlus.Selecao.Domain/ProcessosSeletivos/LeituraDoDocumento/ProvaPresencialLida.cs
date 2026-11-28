@@ -20,6 +20,8 @@ public sealed record ProvaPresencialLida(DeclaracaoDaProvaPresencial? Declaracao
             return new(null, OrigemNoDocumento.Identidade, limiteDeMunicipios);
         }
 
+        ArgumentNullException.ThrowIfNull(bloco.Municipios, nameof(bloco));
+
         Result<DeclaracaoDaProvaPresencial> declaracao =
             DeclaracaoDaProvaPresencial.Declarar(bloco.TemProvaPresencial, bloco.Municipios, limiteDeMunicipios);
 

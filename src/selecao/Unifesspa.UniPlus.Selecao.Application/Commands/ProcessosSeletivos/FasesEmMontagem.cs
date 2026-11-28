@@ -7,6 +7,7 @@ using Domain.ProcessosSeletivos.Chaves;
 using Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Domain.ValueObjects;
 
+using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -63,7 +64,7 @@ internal sealed class FasesEmMontagem
             Result interrupcao = await MontarFaseAsync(fases[indice], indice, cancellationToken).ConfigureAwait(false);
             if (interrupcao.IsFailure)
             {
-                return Result<List<FaseCronograma>>.ValidationFailure([.. _recusas, .. interrupcao.Errors]);
+                return FalhaInterrompida(interrupcao, fases, indice);
             }
         }
 
@@ -71,6 +72,16 @@ internal sealed class FasesEmMontagem
             ? Result<List<FaseCronograma>>.ValidationFailure(_recusas)
             : Result<List<FaseCronograma>>.Success(_fases);
     }
+
+    private Result<List<FaseCronograma>> FalhaInterrompida(Result interrupcao, IReadOnlyList<FaseCronogramaInput> fases, int indice) =>
+        Result<List<FaseCronograma>>.ValidationFailure([.. _recusas, .. interrupcao.Errors, .. ParecerAusenteDasFasesSeguintes(fases, indice)]);
+
+    // A montagem interrompida não examina as fases seguintes, mas a ausência do parecer nelas independe do que interrompeu.
+    private static IEnumerable<FieldError> ParecerAusenteDasFasesSeguintes(IReadOnlyList<FaseCronogramaInput> fases, int indiceInterrompido) =>
+        Enumerable.Range(indiceInterrompido + 1, fases.Count - indiceInterrompido - 1)
+            .Select(indice => (Recusa: RecusaDoParecerAusente(fases[indice]), Indice: indice))
+            .Where(static par => par.Recusa is not null)
+            .Select(static par => ComIndice(par.Recusa!, par.Indice));
 
     private void ReservarChaves(IReadOnlyList<FaseCronogramaInput> fases)
     {
@@ -89,6 +100,11 @@ internal sealed class FasesEmMontagem
 
     private async Task<Result> MontarFaseAsync(FaseCronogramaInput input, int indice, CancellationToken cancellationToken)
     {
+        if (RecusaDoParecerAusente(input) is { } parecerAusente)
+        {
+            _recusas.Add(ComIndice(parecerAusente, indice));
+        }
+
         Result<InsumosDaFase> insumos = await ResolverInsumosAsync(input, indice, cancellationToken).ConfigureAwait(false);
         return insumos.IsFailure
             ? Result.ValidationFailure(insumos.Errors)
@@ -221,9 +237,9 @@ internal sealed class FasesEmMontagem
         Result<FaseCronograma> fase = FaseCronograma.Criar(
             chave, OrigemCanonicaDaFaseDoCadastro.De(insumos.Canonica),
             new(input.Ordem, input.Inicio, input.Fim, insumos.Unidade) { NoMesmoMomentoDaAnterior = input.NoMesmoMomentoDaAnterior },
-            new(produtos, input.EmiteParecerIndividual, regraRecurso, input.TiposDeDecisao, regraDeHomologacao),
+            new(produtos, input.EmiteParecerIndividual.GetValueOrDefault(), regraRecurso, input.TiposDeDecisao, regraDeHomologacao),
             insumos.Bancas);
-        Acumular(fase, indice);
+        Acumular(fase, indice, input.EmiteParecerIndividual is null);
     }
 
     private ChaveLocal ChaveDaFase(FaseCanonicaView tipo)
@@ -239,15 +255,23 @@ internal sealed class FasesEmMontagem
         return chave;
     }
 
-    private void Acumular(Result<FaseCronograma> fase, int indice)
+    // A ausência da promessa de parecer é recusada ao começar a fase, antes de qualquer outra verificação, pois não depende delas.
+    // Quando a fase chega a ser criada, a ausência vale "não promete" só para conferir as demais regras, e a fase não é adotada.
+    private static FieldError? RecusaDoParecerAusente(FaseCronogramaInput input) =>
+        input.EmiteParecerIndividual is null
+            ? new FieldError("emiteParecerIndividual", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se a fase promete parecer individual."))
+            : null;
+
+    private void Acumular(Result<FaseCronograma> fase, int indice, bool parecerAusente)
     {
-        if (fase.IsSuccess)
+        if (fase.IsFailure)
+        {
+            _recusas.AddRange(fase.Errors.Select(erro => ComIndice(erro, indice)));
+        }
+        else if (!parecerAusente)
         {
             _fases.Add(fase.Value!);
-            return;
         }
-
-        _recusas.AddRange(fase.Errors.Select(erro => ComIndice(erro, indice)));
     }
 
     private static FieldError ComIndice(FieldError erro, int indice) => erro.NoCaminhoDoItem($"fases[{indice}]");

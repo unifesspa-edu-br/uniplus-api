@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record DefinirFatosColetadosCommand(
     Guid ProcessoSeletivoId,
     string FormularioCodigo,
-    IReadOnlyList<FatoColetadoInput> Itens,
+    IReadOnlyList<FatoColetadoInput>? Itens,
     IReadOnlyList<GrupoColetadoInput>? Grupos = null) : ICommand<Result>
 {
     /// <summary>
@@ -28,5 +28,5 @@ public sealed record DefinirFatosColetadosCommand(
     /// o pedido é recusado inteiro pela quantidade, antes de qualquer conferência por elemento.
     /// </summary>
     public int QuantidadeNoTeto =>
-        FormaDoItem.QuantidadeNoTeto(Itens.Count, (Grupos ?? []).Select(static g => g?.Subitens.Count ?? 0));
+        FormaDoItem.QuantidadeNoTeto(Itens?.Count ?? 0, (Grupos ?? []).Select(static g => g?.Subitens?.Count ?? 0));
 }

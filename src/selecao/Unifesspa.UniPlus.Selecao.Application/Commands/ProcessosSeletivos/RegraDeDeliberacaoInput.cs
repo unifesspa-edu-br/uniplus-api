@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 using Domain.Enums;
@@ -18,11 +19,13 @@ public sealed record RegraDeDeliberacaoInput
     [AceitaCodigosDe<ModoDeDeliberacao>]
     public string? Modo { get; init; }
 
-    [JsonRequired]
-    public int Integrantes { get; init; }
+    [ObrigatorioNoContrato]
+    [Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    public int? Integrantes { get; init; }
 
-    [JsonRequired]
-    public int Suplentes { get; init; }
+    [ObrigatorioNoContrato]
+    [Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    public int? Suplentes { get; init; }
 
     public int? Quorum { get; init; }
 

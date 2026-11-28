@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -72,13 +73,34 @@ public sealed class FormaDoGrupoNaEntradaTests
         recusas.Select(static r => r.Error.Code).Should().Equal(GrupoFormularioErrorCodes.RegraAutorreferente);
     }
 
-    [Fact(DisplayName = "O grupo sem campos na entrada é conferido sem falhar")]
-    public void Conferir_SubitensAusentes_ConfereOGrupoSemFalhar()
+    [Fact(DisplayName = "Os campos ausentes são recusados como obrigatórios, sem a recusa da quantidade que depende deles")]
+    public void Conferir_SubitensAusentes_RecusaComoObrigatorio()
     {
-        GrupoColetadoInput entrada = Grupo(new OcorrenciasDoGrupoInput(0, false, 5)) with { Subitens = null! };
+        GrupoColetadoInput entrada = Grupo(new OcorrenciasDoGrupoInput(0, false, 5)) with { Subitens = null };
 
         FormaDoGrupoNaEntrada.Conferir(entrada, OcorrenciasLidasDoGrupo.Ler(entrada.Ocorrencias), null, Obrigatoriedade.Nunca, [])
-            .Select(static r => r.Error.Code).Should().Equal(GrupoFormularioErrorCodes.SubitensForaDoLimite);
+            .Select(static r => (r.Field, r.Error.Code)).Should().Equal(("subitens", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "Os campos ausentes de um grupo que inclui o candidato não recusam o parentesco ausente, mas conferem o mínimo")]
+    public void Conferir_SubitensAusentesComCandidato_NaoRecusaOParentescoMasConfereOMinimo()
+    {
+        GrupoColetadoInput entrada = Grupo(new OcorrenciasDoGrupoInput(0, true, 5)) with { Subitens = null };
+
+        FormaDoGrupoNaEntrada.Conferir(entrada, OcorrenciasLidasDoGrupo.Ler(entrada.Ocorrencias), null, Obrigatoriedade.Nunca, [])
+            .Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+                ("subitens", CodigosDeValidacao.Obrigatorio),
+                ("ocorrencias.minimo", GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto));
+    }
+
+    [Fact(DisplayName = "A ordem do grupo ausente é recusada como obrigatória, junto das demais recusas do grupo")]
+    public void Conferir_OrdemAusente_RecusaComoObrigatoria()
+    {
+        GrupoColetadoInput entrada = Grupo(new OcorrenciasDoGrupoInput(0, false, 5), Campo("MAIOR_IDADE")) with { Ordem = null, Rotulo = " " };
+
+        FormaDoGrupoNaEntrada.Conferir(entrada, OcorrenciasLidasDoGrupo.Ler(entrada.Ocorrencias), null, Obrigatoriedade.Nunca, [null])
+            .Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+                ("ordem", CodigosDeValidacao.Obrigatorio), ("rotulo", GrupoFormularioErrorCodes.RotuloInvalido));
     }
 
     private static GrupoColetadoInput Grupo(OcorrenciasDoGrupoInput ocorrencias, params FatoColetadoInput[] campos) =>

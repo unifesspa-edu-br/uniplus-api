@@ -57,8 +57,9 @@ public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository r
                 $"O edital aceita no máximo {AnexoDoEdital.QuantidadeMaxima} anexos."));
         }
 
+        // O documento ausente já foi recusado na conferência do ato: aqui todo anexo tem documento, e o padrão só satisfaz o tipo.
         IReadOnlyList<DocumentoAPublicar> documentos = await repositorio
-            .ListarDoProcessoAsync(processoSeletivoId, [.. solicitados.Select(static s => s.DocumentoId).Distinct()], cancellationToken)
+            .ListarDoProcessoAsync(processoSeletivoId, [.. solicitados.Select(static s => s.DocumentoId.GetValueOrDefault()).Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
         return AnexosDosPedidos(solicitados, documentos, vigentes);
@@ -84,7 +85,24 @@ public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository r
             ? Result<AnexoDoEdital>.ValidationFailure([new FieldError(
                 $"anexos[{posicao}].documentoId",
                 new DomainError(AnexoDoEditalErrorCodes.NaoEncontrado, "O documento do anexo deve ser um dos documentos deste processo."))])
-            : AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, pedido.Nome);
+            : ComOCampoDoAnexo(AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, pedido.Nome), posicao, AnexoDoEdital.RecusaDoNome(documento, pedido.Nome));
+    }
+
+    // As recusas do anexo apontam o item do pedido: o nome inválido no nome, o documento sem confirmação ou de outra finalidade no documento.
+    // O documento recusado (outra finalidade ou sem confirmação) vem antes do nome na criação, mas o nome inválido é defeito independente e sai junto.
+    private static Result<AnexoDoEdital> ComOCampoDoAnexo(Result<AnexoDoEdital> criado, int posicao, DomainError? recusaDoNome)
+    {
+        if (criado.IsSuccess)
+        {
+            return criado;
+        }
+
+        IEnumerable<FieldError> doDocumento = criado.Errors
+            .Where(static recusa => !string.Equals(recusa.Error.Code, AnexoDoEditalErrorCodes.NomeInvalido, StringComparison.Ordinal))
+            .Select(recusa => new FieldError($"anexos[{posicao}].documentoId", recusa.Error));
+        IEnumerable<FieldError> doNome = recusaDoNome is null ? [] : [new FieldError($"anexos[{posicao}].nome", recusaDoNome)];
+
+        return Result<AnexoDoEdital>.ValidationFailure([.. doDocumento, .. doNome]);
     }
 
     private static AnexoDoEdital ComAIdentidadeDoQueContinua(AnexoDoEdital anexo, IReadOnlyList<AnexoDoEdital> vigentes)

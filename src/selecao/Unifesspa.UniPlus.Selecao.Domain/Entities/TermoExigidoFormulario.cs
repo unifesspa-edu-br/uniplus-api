@@ -111,7 +111,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
     /// <param name="formulario">O formulário que exige o termo, quando já existe; o processo liga o termo ao formulário que define.</param>
     public static Result<TermoExigidoFormulario> Criar(
         string codigo,
-        int ordem,
+        int? ordem,
         VersaoTermoEscolhida versao,
         PredicadoDnf? exibicao,
         Obrigatoriedade obrigatoriedade,
@@ -126,7 +126,7 @@ public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
             return Result<TermoExigidoFormulario>.ValidationFailure(erros);
         }
 
-        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem, versao, exibicao, obrigatoriedade, formulario));
+        return Result<TermoExigidoFormulario>.Success(new TermoExigidoFormulario(codigo, ordem.GetValueOrDefault(), versao, exibicao, obrigatoriedade, formulario));
     }
 
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>

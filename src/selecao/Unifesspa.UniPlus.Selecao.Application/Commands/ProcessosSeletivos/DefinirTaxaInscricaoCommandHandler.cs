@@ -9,10 +9,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 
 /// <summary>
-/// Handler do <see cref="DefinirTaxaInscricaoCommand"/> (issue #1112): <c>Cobra</c> nulo remove
-/// a declaração (toggle por ausência, mas ausência aqui bloqueia publicação — CA-01); caso
-/// contrário constrói <see cref="ConfiguracaoTaxaInscricao"/> via <see cref="ConfiguracaoTaxaInscricao.Criar"/>,
-/// que aplica as regras de valor, de exclusividade com a isenção e de fundamento obrigatório.
+/// Handler do <see cref="DefinirTaxaInscricaoCommand"/>: constrói <see cref="ConfiguracaoTaxaInscricao"/> via
+/// <see cref="ConfiguracaoTaxaInscricao.Criar"/>, que exige <c>Cobra</c> e aplica as regras de valor, de
+/// exclusividade com a isenção e de fundamento obrigatório.
 /// </summary>
 public static class DefinirTaxaInscricaoCommandHandler
 {
@@ -52,15 +51,13 @@ public static class DefinirTaxaInscricaoCommandHandler
 
     private static Result Definir(ProcessoSeletivo processo, DefinirTaxaInscricaoCommand command)
     {
-        Result<ConfiguracaoTaxaInscricao>? declarada = command.Cobra is null
-            ? null
-            : ConfiguracaoTaxaInscricao.Criar(command.Cobra.Value, command.Valor, command.Fundamentos);
-        if (declarada is { IsFailure: true })
+        Result<ConfiguracaoTaxaInscricao> declarada = ConfiguracaoTaxaInscricao.Criar(command.Cobra, command.Valor, command.Fundamentos);
+        if (declarada.IsFailure)
         {
             return Result.ValidationFailure(declarada.Errors);
         }
 
-        Result definido = processo.DefinirTaxaInscricao(declarada?.Value);
+        Result definido = processo.DefinirTaxaInscricao(declarada.Value);
         return definido.IsFailure ? Result.Failure(definido.Error!) : definido;
     }
 }

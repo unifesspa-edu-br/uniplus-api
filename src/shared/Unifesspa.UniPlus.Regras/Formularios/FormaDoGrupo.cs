@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -28,29 +29,35 @@ public static class FormaDoGrupo
     /// </summary>
     public static List<FieldError> Conferir(
         string? codigo,
-        int ordem,
+        int? ordem,
         string? rotulo,
         OcorrenciasDoGrupo ocorrencias,
-        IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)> subitens,
+        IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)>? subitens,
         ExibicaoEObrigatoriedade regras)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
-        ArgumentNullException.ThrowIfNull(subitens);
         ArgumentNullException.ThrowIfNull(regras);
 
         return
         [
             .. ConferirOGrupoSemOsCampos(codigo, ordem, rotulo, ocorrencias),
-            .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
-            .. RecusasDeRegraQueCitaOGrupo(codigo ?? string.Empty, subitens, regras),
+            .. RecusasDosSubitens(subitens),
+            .. RecusasDeRegraQueCitaOGrupo(codigo ?? string.Empty, subitens ?? [], regras),
         ];
     }
+
+    /// <summary>Os campos ausentes são recusados como obrigatórios; a quantidade e a forma de cada um dependem deles.</summary>
+    private static IEnumerable<FieldError> RecusasDosSubitens(
+        IReadOnlyList<(string? FatoCodigo, string? PaginaCodigo, bool TemImpedimento)>? subitens) =>
+        subitens is null
+            ? [new("subitens", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe os campos do grupo."))]
+            : [.. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens)];
 
     /// <summary>
     /// O que a forma do grupo recusa sem olhar os campos: código, ordem, rótulo e ocorrências. Serve à leitura que não
     /// conseguiu ler os campos e ainda assim aponta o que está errado no próprio grupo.
     /// </summary>
-    public static List<FieldError> ConferirOGrupoSemOsCampos(string? codigo, int ordem, string? rotulo, OcorrenciasDoGrupo ocorrencias)
+    public static List<FieldError> ConferirOGrupoSemOsCampos(string? codigo, int? ordem, string? rotulo, OcorrenciasDoGrupo ocorrencias)
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
 
@@ -70,9 +77,13 @@ public static class FormaDoGrupo
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    private static IEnumerable<FieldError> RecusasDaOrdem(int? ordem)
     {
-        if (ordem < 0)
+        if (ordem is null)
+        {
+            yield return new("ordem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a ordem."));
+        }
+        else if (ordem < 0)
         {
             yield return new("ordem", new DomainError(GrupoFormularioErrorCodes.OrdemInvalida, "A ordem do grupo não pode ser negativa."));
         }

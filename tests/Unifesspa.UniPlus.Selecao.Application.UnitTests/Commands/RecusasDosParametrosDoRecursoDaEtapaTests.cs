@@ -47,6 +47,40 @@ public sealed class RecusasDosParametrosDoRecursoDaEtapaTests
             ("etapas[0].recursos[1].efeitoSuspensivo", "RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado"));
     }
 
+    [Fact(DisplayName = "A instância superior ausente ou nula é recusada com o código genérico de campo obrigatório, e o prazo da 2ª instância declarado não vira outra recusa")]
+    public async Task Handle_InstanciaSuperiorAusente_RecusaComOCodigoGenerico()
+    {
+        ParametrosDoPedidoDoRecurso pedido = ParametrosDoPedidoDoRecurso.Valido with
+        {
+            AdmiteInstanciaSuperior = null,
+            PrazoSegundaInstanciaValor = 3m,
+            PrazoSegundaInstanciaUnidade = "DIAS_UTEIS",
+        };
+
+        Result resultado = await DefinirAsync(Recurso(pedido));
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("etapas[0].recursos[0].admiteInstanciaSuperior", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "A instância superior ausente acumula com as demais recusas do recurso, na ordem dos campos")]
+    public async Task Handle_InstanciaSuperiorAusenteComOutrasRecusas_Acumula()
+    {
+        ParametrosDoPedidoDoRecurso pedido = ParametrosDoPedidoDoRecurso.Valido with
+        {
+            PrazoValor = 0m,
+            AdmiteInstanciaSuperior = null,
+            EfeitoSuspensivo = null,
+        };
+
+        Result resultado = await DefinirAsync(Recurso(pedido));
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("etapas[0].recursos[0].prazoValor", "RecursoDaEtapa.PrazoNaoPositivo"),
+            ("etapas[0].recursos[0].admiteInstanciaSuperior", CodigosDeValidacao.Obrigatorio),
+            ("etapas[0].recursos[0].efeitoSuspensivo", "RecursoDaEtapa.EfeitoSuspensivoNaoDeclarado"));
+    }
+
     [Fact(DisplayName = "A declaração válida, com a guarda da vaga omitida, é aceita e fica com a guarda até o resultado definitivo")]
     public async Task Handle_GuardaOmitida_GuardaAteOResultadoDefinitivo()
     {

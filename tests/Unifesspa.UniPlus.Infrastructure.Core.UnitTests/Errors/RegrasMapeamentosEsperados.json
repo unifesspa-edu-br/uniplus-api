@@ -561,7 +561,7 @@
     "chave": "FormularioPortavel.InstanteDoEnvioForaDoCalendario",
     "status": 422,
     "codigo": "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario",
-    "titulo": "O instante do envio simulado está ausente ou fora do calendário que os limites da faixa de data alcançam"
+    "titulo": "O instante do envio simulado fica fora do calendário que os limites da faixa de data alcançam"
   },
   {
     "chave": "RegrasDerivacaoFato.DerivacaoAutorreferente",

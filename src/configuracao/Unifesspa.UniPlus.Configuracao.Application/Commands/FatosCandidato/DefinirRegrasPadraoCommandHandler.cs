@@ -65,8 +65,8 @@ public static class DefinirRegrasPadraoCommandHandler
 
     private static Result<IReadOnlyList<RegraDerivacao>> Montar(IReadOnlyList<RegraPadraoInput>? entradas) =>
         entradas is null
-            ? Result<IReadOnlyList<RegraDerivacao>>.Failure(new DomainError(
-                FatoCandidatoErrorCodes.RegraPadraoMalformada, "A lista de regras é obrigatória; a lista vazia remove as regras."))
+            ? Result<IReadOnlyList<RegraDerivacao>>.ValidationFailure([new FieldError(
+                "regras", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe as regras; a lista vazia remove as regras."))])
             : MontarTodas(entradas);
 
     private static Result<IReadOnlyList<RegraDerivacao>> MontarTodas(IReadOnlyList<RegraPadraoInput> entradas)

@@ -148,7 +148,7 @@ public sealed class TetoDeItensDoPedidoNaLeituraTests
     private static FatoColetadoInput[] ComItemNaPosicao(FatoColetadoInput item)
     {
         FatoColetadoInput[] itens = [.. Itens(201)];
-        itens[item.Ordem] = item;
+        itens[item.Ordem.GetValueOrDefault()] = item;
         return itens;
     }
 

@@ -62,6 +62,56 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
         });
     }
 
+    [Fact(DisplayName = "Envio simulado sem instante é recusado como obrigatório no instante")]
+    public void Handle_EnvioSemInstante_RecusaOInstanteComoObrigatorio()
+    {
+        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(new(
+            Regras, null, null, null, null, new EnvioSimuladoInput(null, "America/Belem"))));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "envio.instante",
+            Error = new { Code = CodigosDeValidacao.Obrigatorio },
+        });
+    }
+
+    [Fact(DisplayName = "Envio simulado sem instante e com zona desconhecida acumula as duas recusas, cada uma no seu campo")]
+    public void Handle_EnvioSemInstanteEComFusoDesconhecido_AcumulaAsDuasRecusas()
+    {
+        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(new(
+            Regras, null, null, null, null, new EnvioSimuladoInput(null, "America/Atlantida"))));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("envio.instante", CodigosDeValidacao.Obrigatorio),
+            ("envio.fuso", FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido));
+    }
+
+    [Fact(DisplayName = "Envio simulado com o instante omitido no corpo chega ao domínio sem valor")]
+    public void Handle_CorpoSemInstante_ChegaSemValorERecusaOInstante()
+    {
+        AvaliacaoSemCadastroInput simulacao = JsonSerializer.Deserialize<AvaliacaoSemCadastroInput>(
+            "{\"regras\": " + JsonSerializer.Serialize(Regras, JsonSerializerOptions.Web) + ", \"envio\": {\"fuso\": \"America/Belem\"}}",
+            JsonSerializerOptions.Web)!;
+
+        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(simulacao));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("envio.instante", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "Regras sem as quatro listas chegam ao domínio e acumulam a recusa de cada uma como obrigatória")]
+    public void Handle_RegrasSemAsListas_RecusaAsQuatroListasComoObrigatorias()
+    {
+        AvaliacaoSemCadastroInput simulacao = JsonSerializer.Deserialize<AvaliacaoSemCadastroInput>("{\"regras\": {}}", JsonSerializerOptions.Web)!;
+
+        Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(simulacao));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("paginas", CodigosDeValidacao.Obrigatorio),
+            ("termos", CodigosDeValidacao.Obrigatorio),
+            ("derivacoes", CodigosDeValidacao.Obrigatorio),
+            ("agregados", CodigosDeValidacao.Obrigatorio));
+    }
+
     [Fact(DisplayName = "Envio simulado no primeiro instante do calendário é recusado no instante, sem estourar a conta dos limites")]
     public void Handle_EnvioNoPrimeiroInstanteDoCalendario_Recusa()
     {

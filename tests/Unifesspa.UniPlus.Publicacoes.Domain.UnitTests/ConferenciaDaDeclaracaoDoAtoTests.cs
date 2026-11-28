@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.UnitTests;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
@@ -17,6 +18,7 @@ public sealed class ConferenciaDaDeclaracaoDoAtoTests
     {
         Numeracao = new NumeracaoDoAto("CEPS", "EDITAL", 2026, "13"),
         TipoCodigo = "EDITAL_ABERTURA",
+        DataDoAto = new DateOnly(2026, 1, 15),
         DocumentoHash = HashValido,
         Assinante = PersonasDeTeste.NomeKevinCarvalho,
         VersaoDoObjetoId = null,
@@ -30,6 +32,7 @@ public sealed class ConferenciaDaDeclaracaoDoAtoTests
     {
         Numeracao = new NumeracaoDoAto("", "", 0, new string('n', 61)),
         TipoCodigo = "edital",
+        DataDoAto = null,
         DocumentoHash = "abc",
         Assinante = null,
         VersaoDoObjetoId = Guid.CreateVersion7(),
@@ -50,6 +53,7 @@ public sealed class ConferenciaDaDeclaracaoDoAtoTests
         conferencia.Recusas.Should().BeEmpty();
         conferencia.Numeracao.Valor.Should().Be(Valida.Numeracao);
         conferencia.CodigoDoTipo.Valor.Should().Be("EDITAL_ABERTURA");
+        conferencia.DataDoAto.Valor.Should().Be(new DateOnly(2026, 1, 15));
         conferencia.Documento.Valor.Should().Be((HashValido, PersonasDeTeste.NomeKevinCarvalho));
         conferencia.VersaoDoObjeto.Valor.Should().BeNull();
         conferencia.Vinculos.Should().ContainSingle().Which.Valor.Should().Be(Valida.Vinculos[0]);
@@ -68,6 +72,26 @@ public sealed class ConferenciaDaDeclaracaoDoAtoTests
             ("orgao", AtoNormativoErrorCodes.TextoInvalido),
             ("serie", AtoNormativoErrorCodes.TextoInvalido),
             ("documentoHash", AtoNormativoErrorCodes.HashDoDocumentoInvalido));
+    }
+
+    [Fact(DisplayName = "Data do ato ausente é recusada como obrigatória, nomeando só ela")]
+    public void De_SemDataDoAto_RecusaComoObrigatoria()
+    {
+        ConferenciaDaDeclaracaoDoAto conferencia = ConferenciaDaDeclaracaoDoAto.De(Valida with { DataDoAto = null });
+
+        FieldError recusa = conferencia.Recusas.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("dataDoAto");
+        recusa.Error.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+        recusa.Error.Message.Should().StartWith("Informe ");
+        conferencia.DataDoAto.EstaAceita.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Código do tipo fora da forma, data ausente e hash inválido saem nessa ordem")]
+    public void De_TipoDataEHashRecusados_SaemNaOrdemDoCorpo()
+    {
+        DeclaracaoDoAtoNormativo declaracao = Valida with { TipoCodigo = "edital", DataDoAto = null, DocumentoHash = "abc" };
+
+        Recusas(declaracao).Select(recusa => recusa.Campo).Should().Equal("tipoCodigo", "dataDoAto", "documentoHash");
     }
 
     [Fact(DisplayName = "Órgão em branco e vínculo com tipo fora da forma são recusados na mesma conferência")]
@@ -150,7 +174,7 @@ public sealed class ConferenciaDaDeclaracaoDoAtoTests
     public void De_TudoInvalido_SaiNaOrdemDoCorpo()
     {
         Recusas(TudoInvalido).Select(recusa => recusa.Campo).Should().Equal(
-            "orgao", "serie", "ano", "numero", "tipoCodigo", "documentoHash", "assinante", "versaoDoObjetoHash",
+            "orgao", "serie", "ano", "numero", "tipoCodigo", "dataDoAto", "documentoHash", "assinante", "versaoDoObjetoHash",
             "atoRetificadoId", "motivoRetificacao", "vinculos[0].entidadeTipo", "vinculos[0].entidadeId", "vinculos[2]",
             "anexos", "anexos[50]");
     }

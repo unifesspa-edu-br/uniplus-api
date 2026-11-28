@@ -52,7 +52,7 @@ public sealed class ProjecaoDoFormularioApresentadoTests
             (Secao, DefinicaoDoProcesso.CodigoDaPagina(cenario.Inscricao.Codigo, Secao)), ("REVISAO", (string?)null));
         formulario.Termos.Should().ContainSingle().Which.CodigoNasRegras.Should().Be(
             DefinicaoDoProcesso.CodigoDoTermo(cenario.Inscricao.Codigo, "VERACIDADE"));
-        formulario.Regras.Paginas.Select(static e => e.Codigo).Should().Contain(formulario.Paginas[0].CodigoNasRegras);
+        formulario.Regras.Paginas!.Select(static e => e.Codigo).Should().Contain(formulario.Paginas[0].CodigoNasRegras);
     }
 
     [Fact(DisplayName = "Cada formulário traz só os itens, os grupos e os termos que são dele")]
@@ -127,7 +127,7 @@ public sealed class ProjecaoDoFormularioApresentadoTests
             .Should().Equal(null, null, "Passa pela heteroidentificação.");
         formulario.Coleta.Itens[1].ValoresSelecionaveis.Should().BeNull();
         formulario.Coleta.Itens[1].Formato.Should().Be("NOME_PESSOA");
-        formulario.Regras.Paginas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta
+        formulario.Regras.Paginas!.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "COR_RACA").Oferta
             .Should().BeEquivalentTo(["AMARELA", "BRANCA", "PRETA"]);
     }
 

@@ -76,7 +76,7 @@ internal sealed class RegraDeDerivacaoInformada
             condicoes.Add(criada.Value!);
         }
 
-        return RegraDerivacaoConfigurada.Criar(_entrada.Ordem, _entrada.Contribui, condicoes);
+        return RegraDerivacaoConfigurada.Criar(_entrada.Ordem.GetValueOrDefault(), _entrada.Contribui, condicoes);
     }
 
     private static FieldError NoPredicado(FieldError recusa) => recusa.NoCaminhoDoItem("quando");

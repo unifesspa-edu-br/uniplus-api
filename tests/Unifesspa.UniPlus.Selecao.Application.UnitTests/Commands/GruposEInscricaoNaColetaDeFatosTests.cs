@@ -276,6 +276,25 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Acima do teto, a lista de itens ausente é recusada junto do excesso, sem ler o catálogo")]
+    public async Task Handle_AcimaDoTetoSemItens_AcumulaAAusenciaEOExcesso()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        GrupoColetadoInput grupo = Composicao() with
+        {
+            Subitens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
+                .Select(static i => EntradaDoFatoColetadoDeTeste.Coletando($"ITEM_{i}", i).ComRotulo("Item").ComObrigatoriedade("NUNCA").Construir())],
+        };
+
+        Result resultado = await HandleAsync(
+            mocks, new DefinirFatosColetadosCommand(processo.Id, PapelDoFormularioDeTeste.Habilitacao.Codigo(), null, [grupo]));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should()
+            .BeEquivalentTo([("itens", CodigosDeValidacao.Obrigatorio), ("itens", ItemFormularioErrorCodes.ItensEmExcesso)]);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Campo de grupo com fato desativado é vínculo novo recusado")]
     public async Task Handle_CampoDeGrupoDesativado_RecusaVinculoNovo()
     {

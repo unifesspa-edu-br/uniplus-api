@@ -33,15 +33,30 @@ public sealed class EnvioSimuladoDaAvaliacaoEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Envio simulado sem instante é recusado com 400 e nomeia o campo ausente")]
-    public async Task Envio_SemInstante_Retorna400()
+    [Theory(DisplayName = "Envio simulado com o instante omitido ou nulo é recusado com 422 e o código genérico de obrigatório")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Envio_InstanteOmitidoOuNulo_Retorna422(bool nulo)
     {
-        using HttpResponseMessage resposta = await AvaliarAsync(new { regras = RegrasSemItens, envio = new { fuso = "America/Belem" } });
+        object envio = nulo ? new { instante = (string?)null, fuso = "America/Belem" } : new { fuso = "America/Belem" };
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using HttpResponseMessage resposta = await AvaliarAsync(new { regras = RegrasSemItens, envio });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        corpo.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
-        corpo.RootElement.GetProperty("detail").GetString().Should().Contain("instante");
+        JsonElement erro = corpo.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle().Subject;
+        (erro.GetProperty("field").GetString(), erro.GetProperty("code").GetString()).Should().Be(("envio.instante", "uniplus.validacao.obrigatorio"));
+    }
+
+    [Fact(DisplayName = "Envio simulado sem instante e com zona desconhecida devolve as duas recusas juntas")]
+    public async Task Envio_SemInstanteEComFusoDesconhecido_AcumulaAsRecusas()
+    {
+        using HttpResponseMessage resposta = await AvaliarAsync(new { regras = RegrasSemItens, envio = new { fuso = "America/Atlantida" } });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        corpo.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
+            .Should().Equal("envio.instante", "envio.fuso");
     }
 
     [Fact(DisplayName = "Envio simulado com instante, mesmo com 7 casas decimais, é avaliado")]

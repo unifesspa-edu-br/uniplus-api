@@ -46,6 +46,20 @@ public sealed class DefinirProvaPresencialEndpointTests(CascadingFixture fixture
             .Should().Contain("uniplus.cidade_referencia.codigo_ibge_obrigatorio");
     }
 
+    [Theory(DisplayName = "Corpo sem a declaração ou sem a lista de municípios é recusado com 422 de campo obrigatório")]
+    [InlineData("{ }", new[] { "provaPresencial.temProvaPresencial", "provaPresencial.municipios" })]
+    [InlineData("""{ "temProvaPresencial": true, "municipios": null }""", new[] { "provaPresencial.municipios" })]
+    [InlineData("""{ "municipios": [] }""", new[] { "provaPresencial.temProvaPresencial" })]
+    public async Task Put_CampoAusente_RecusaComoObrigatorio(string corpo, string[] campos)
+    {
+        Guid id = await SemearAsync();
+        using HttpClient client = fixture.Factory.CreateClient();
+        using HttpRequestMessage request = CriarRequest(id, "1504208", "PA");
+        request.Content = new StringContent(corpo, Encoding.UTF8, "application/json");
+        using HttpResponseMessage resposta = await client.SendAsync(request);
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, campos);
+    }
+
     [Fact]
     public async Task Put_ProcessoInexistente_Retorna404()
     {

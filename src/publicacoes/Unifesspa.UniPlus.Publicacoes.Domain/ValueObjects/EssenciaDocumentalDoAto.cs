@@ -77,6 +77,14 @@ public readonly record struct EssenciaDocumentalDoAto(
     internal static ParteConferida<string> ConferirCodigoDoTipo(string? tipoCodigo) =>
         ParteConferida<string>.Decidida(tipoCodigo, TipoAtoPublicado.CampoDoCodigo.Recusa(tipoCodigo, "tipoCodigo"));
 
+    /// <summary>A data que o documento declara: ausente é recusada como obrigatória.</summary>
+    internal static ParteConferida<DateOnly> ConferirDataDoAto(DateOnly? dataDoAto) =>
+        ParteConferida<DateOnly>.Decidida(
+            dataDoAto.GetValueOrDefault(),
+            dataDoAto is null
+                ? new FieldError("dataDoAto", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a data do ato."))
+                : null);
+
     /// <summary>As recusas do hash e do assinante, nessa ordem; o assinante sai sem espaços nas pontas.</summary>
     internal static ParteConferida<(string Hash, string Assinante)> ConferirDocumento(string? documentoHash, string? assinante)
     {

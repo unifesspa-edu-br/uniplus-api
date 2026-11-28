@@ -124,7 +124,8 @@ public sealed class UnidadeCriacaoTests
             new IdentificadoresDaUnidade(null, "CEPS", "0001", null),
             new CidadeDaUnidade(null, null, null),
             TipoUnidade.Centro,
-            new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null));
+            new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null),
+            false);
 
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
@@ -139,7 +140,8 @@ public sealed class UnidadeCriacaoTests
             UnidadeDeTeste.IdentificadoresDoCeps(),
             CidadeDaUnidade.Nenhuma,
             null,
-            new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null));
+            new VigenciaDaUnidade(UnidadeDeTeste.InicioDaVigencia, null),
+            false);
 
         FieldError erro = validacao.Errors.Should().ContainSingle(e => e.Field == "tipo").Subject;
         erro.Error.Code.Should().Be(UnidadeErrorCodes.TipoInvalido);

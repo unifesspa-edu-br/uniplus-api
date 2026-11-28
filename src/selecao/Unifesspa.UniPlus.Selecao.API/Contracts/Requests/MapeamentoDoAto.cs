@@ -8,11 +8,9 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </summary>
 internal static class MapeamentoDoAto
 {
-    internal static DadosDoAto ParaDados(DadosDoAtoRequest ato)
-    {
-        ArgumentNullException.ThrowIfNull(ato);
-        return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataDoAto, ato.Assinante, ato.TipoAtoCodigo);
-    }
+    // O bloco ausente segue como nulo: o domínio o recusa junto das demais causas.
+    internal static DadosDoAto? ParaDados(DadosDoAtoRequest? ato) =>
+        ato is null ? null : new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataDoAto, ato.Assinante, ato.TipoAtoCodigo);
 
     // O item nulo segue para o validator, que o recusa com 4xx — desreferenciar aqui responderia
     // 500 antes de o comando existir.

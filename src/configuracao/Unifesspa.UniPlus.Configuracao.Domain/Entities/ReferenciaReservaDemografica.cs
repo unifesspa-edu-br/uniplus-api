@@ -53,9 +53,9 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     /// </summary>
     public static Result<ReferenciaReservaDemografica> Criar(
         string? censoReferencia,
-        decimal ppiPercentual,
-        decimal quilombolaPercentual,
-        decimal pcdPercentual,
+        decimal? ppiPercentual,
+        decimal? quilombolaPercentual,
+        decimal? pcdPercentual,
         string? baseLegal)
     {
         Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> validacao =
@@ -66,7 +66,7 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
         }
 
         var referencia = new ReferenciaReservaDemografica();
-        referencia.AplicarCampos(censoReferencia!, validacao.Value, baseLegal!);
+        referencia.AplicarCampos(censoReferencia, validacao.Value, baseLegal);
 
         return Result<ReferenciaReservaDemografica>.Success(referencia);
     }
@@ -79,9 +79,9 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     /// </summary>
     public Result Atualizar(
         string? censoReferencia,
-        decimal ppiPercentual,
-        decimal quilombolaPercentual,
-        decimal pcdPercentual,
+        decimal? ppiPercentual,
+        decimal? quilombolaPercentual,
+        decimal? pcdPercentual,
         string? baseLegal)
     {
         Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> validacao =
@@ -91,7 +91,7 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
             return Result.ValidationFailure(validacao.Errors);
         }
 
-        AplicarCampos(censoReferencia!, validacao.Value, baseLegal!);
+        AplicarCampos(censoReferencia, validacao.Value, baseLegal);
 
         return Result.Success();
     }
@@ -103,9 +103,9 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
     /// </summary>
     public static Result ValidarCamposDoPayload(
         string? censoReferencia,
-        decimal ppiPercentual,
-        decimal quilombolaPercentual,
-        decimal pcdPercentual,
+        decimal? ppiPercentual,
+        decimal? quilombolaPercentual,
+        decimal? pcdPercentual,
         string? baseLegal)
     {
         Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> resultado =
@@ -114,75 +114,90 @@ public sealed class ReferenciaReservaDemografica : SoftDeletableEntity, IAuditab
         return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
+    // Só roda depois de a conferência aceitar o censo e a base legal, então o texto nunca chega vazio.
     private void AplicarCampos(
-        string censoReferencia,
+        string? censoReferencia,
         (Percentual Ppi, Percentual Quilombola, Percentual Pcd) percentuais,
-        string baseLegal)
+        string? baseLegal)
     {
-        CensoReferencia = censoReferencia.Trim();
+        CensoReferencia = censoReferencia?.Trim() ?? string.Empty;
         PpiPercentual = percentuais.Ppi;
         QuilombolaPercentual = percentuais.Quilombola;
         PcdPercentual = percentuais.Pcd;
-        BaseLegal = baseLegal.Trim();
+        BaseLegal = baseLegal?.Trim() ?? string.Empty;
     }
 
     private static Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> ValidarCampos(
         string? censoReferencia,
-        decimal ppiPercentual,
-        decimal quilombolaPercentual,
-        decimal pcdPercentual,
+        decimal? ppiPercentual,
+        decimal? quilombolaPercentual,
+        decimal? pcdPercentual,
         string? baseLegal)
     {
-        List<FieldError> erros = [];
+        Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> percentuais =
+            LerPercentuais(ppiPercentual, quilombolaPercentual, pcdPercentual);
+        FieldError[] erros = [.. RecusasDoCenso(censoReferencia), .. percentuais.Errors, .. RecusasDaBaseLegal(baseLegal)];
 
+        return erros.Length > 0 ? Result<(Percentual, Percentual, Percentual)>.ValidationFailure(erros) : percentuais;
+    }
+
+    private static Result<(Percentual Ppi, Percentual Quilombola, Percentual Pcd)> LerPercentuais(
+        decimal? ppiPercentual, decimal? quilombolaPercentual, decimal? pcdPercentual)
+    {
+        Result<Percentual> ppi = LerPercentual(ppiPercentual, "ppiPercentual", "Informe o percentual de pretos, pardos e indígenas.");
+        Result<Percentual> quilombola = LerPercentual(quilombolaPercentual, "quilombolaPercentual", "Informe o percentual de quilombolas.");
+        Result<Percentual> pcd = LerPercentual(pcdPercentual, "pcdPercentual", "Informe o percentual de pessoas com deficiência.");
+        FieldError[] erros = [.. ppi.Errors, .. quilombola.Errors, .. pcd.Errors];
+
+        return erros.Length > 0
+            ? Result<(Percentual, Percentual, Percentual)>.ValidationFailure(erros)
+            : Result<(Percentual, Percentual, Percentual)>.Success((ppi.Value!, quilombola.Value!, pcd.Value!));
+    }
+
+    private static IEnumerable<FieldError> RecusasDoCenso(string? censoReferencia)
+    {
         if (string.IsNullOrWhiteSpace(censoReferencia))
         {
-            erros.Add(new("censoReferencia", new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.CensoObrigatorio, "Censo de referência é obrigatório.")));
+            yield return new("censoReferencia", new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.CensoObrigatorio, "Censo de referência é obrigatório."));
         }
         else if (censoReferencia.Trim().Length is < CensoReferenciaMinLength or > CensoReferenciaMaxLength)
         {
-            erros.Add(new("censoReferencia", new DomainError(
+            yield return new("censoReferencia", new DomainError(
                 ReferenciaReservaDemograficaErrorCodes.CensoTamanho,
-                $"Censo de referência deve ter entre {CensoReferenciaMinLength} e {CensoReferenciaMaxLength} caracteres.")));
+                $"Censo de referência deve ter entre {CensoReferenciaMinLength} e {CensoReferenciaMaxLength} caracteres."));
         }
+    }
 
-        Result<Percentual> ppi = Percentual.Criar(ppiPercentual);
-        if (ppi.IsFailure)
-        {
-            erros.Add(new("ppiPercentual", ComCodigoForaDeFaixa(ppi.Error!)));
-        }
-
-        Result<Percentual> quilombola = Percentual.Criar(quilombolaPercentual);
-        if (quilombola.IsFailure)
-        {
-            erros.Add(new("quilombolaPercentual", ComCodigoForaDeFaixa(quilombola.Error!)));
-        }
-
-        Result<Percentual> pcd = Percentual.Criar(pcdPercentual);
-        if (pcd.IsFailure)
-        {
-            erros.Add(new("pcdPercentual", ComCodigoForaDeFaixa(pcd.Error!)));
-        }
-
+    private static IEnumerable<FieldError> RecusasDaBaseLegal(string? baseLegal)
+    {
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
-            erros.Add(new("baseLegal", new DomainError(
-                ReferenciaReservaDemograficaErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória.")));
+            yield return new("baseLegal", new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória."));
         }
         else if (baseLegal.Trim().Length > BaseLegalMaxLength)
         {
-            erros.Add(new("baseLegal", new DomainError(
+            yield return new("baseLegal", new DomainError(
                 ReferenciaReservaDemograficaErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
+                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres."));
         }
+    }
 
-        if (erros.Count > 0)
+    // O percentual ausente é recusado como obrigatório; o zero informado é valor válido.
+    private static Result<Percentual> LerPercentual(decimal? informado, string campo, string mensagemDeObrigatorio)
+    {
+        if (informado is not { } valor)
         {
-            return Result<(Percentual, Percentual, Percentual)>.ValidationFailure(erros);
+            return Result<Percentual>.ValidationFailure([new FieldError(campo, new DomainError(
+                CodigosDeValidacao.Obrigatorio, mensagemDeObrigatorio))]);
         }
 
-        return Result<(Percentual, Percentual, Percentual)>.Success((ppi.Value!, quilombola.Value!, pcd.Value!));
+        Result<Percentual> percentual = Percentual.Criar(valor);
+
+        return percentual.IsFailure
+            ? Result<Percentual>.ValidationFailure([new FieldError(campo, ComCodigoForaDeFaixa(percentual.Error!))])
+            : percentual;
     }
 
     // Reetiqueta o erro genérico do value object com o código de domínio do cadastro.

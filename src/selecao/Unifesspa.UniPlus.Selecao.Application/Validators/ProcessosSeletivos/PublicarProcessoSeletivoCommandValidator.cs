@@ -19,11 +19,10 @@ public sealed class PublicarProcessoSeletivoCommandValidator : AbstractValidator
     }
 
     // O bloco documental do ato é validado ANTES da publicação ser gravada: o que o
-    // formato pode recusar vira 422 no campo, antes de qualquer escrita.
+    // formato pode recusar vira 422 no campo, antes de qualquer escrita. O bloco ausente é
+    // recusado na conferência do ato, junto das demais causas.
     private void RegrasDoAto() =>
         RuleFor(x => x.Ato)
-            .NotNull()
-            .WithMessage("Dados do ato normativo são obrigatórios.")
             .SetValidator(new DadosDoAtoValidator()!);
 
     private void RegrasDoProcesso() =>

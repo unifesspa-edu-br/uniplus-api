@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 
 using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModeloFormularioHttp;
 
@@ -69,6 +70,16 @@ public sealed class RecusasDaSimulacaoSemCadastroEndpointTests
         using JsonDocument problema = JsonDocument.Parse(corpo);
         problema.RootElement.GetProperty("detail").GetString().Should().NotContain(CodigoFicticio);
         problema.RootElement.GetProperty("errors").GetRawText().Should().NotContain(CodigoFicticio);
+    }
+
+    [Fact(DisplayName = "Regras sem as quatro listas voltam como 422 e uma recusa de obrigatório por lista, na ordem do contrato")]
+    public async Task Simulacao_RegrasSemAsListas_DevolveUmaRecusaPorLista()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Avaliacoes, new { regras = new { }, respostas = new Dictionary<string, object>() });
+
+        await RecusaDeCampoObrigatorioNoDominio.ConferirCamposAsync(resposta, "paginas", "termos", "derivacoes", "agregados");
     }
 
     private async Task<JsonDocument> RecusarAsync(object regras)

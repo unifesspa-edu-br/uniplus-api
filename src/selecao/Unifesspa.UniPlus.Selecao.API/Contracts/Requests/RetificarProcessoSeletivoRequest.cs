@@ -1,7 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using System.ComponentModel;
+
 using Controllers;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
@@ -10,6 +13,8 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// e não recebe id de Edital: o Edital sucedido é o vigente, resolvido no
 /// servidor (a retificação endereça o agregado, não uma entidade interna).
 /// </summary>
+/// <param name="DocumentoEditalId">O documento confirmado do edital; ausente ou nulo é recusado com 422.</param>
+/// <param name="Ato">Os dados que o documento declara sobre o ato; ausente ou nulo é recusado com 422.</param>
 /// <param name="Anexos">
 /// Os anexos da nova versão. Ausente mantém os da versão vigente; uma lista substitui o conjunto
 /// inteiro, e a lista vazia retira todos. O anexo que continua o mesmo (mesmo documento e mesmo
@@ -24,8 +29,12 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 public sealed record RetificarProcessoSeletivoRequest(
     string Motivo,
     string? Numero,
-    Guid DocumentoEditalId,
-    DadosDoAtoRequest Ato,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    Guid? DocumentoEditalId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DadosDoAtoRequest? Ato,
     IReadOnlyList<AnexoDoEditalRequest>? Anexos = null,
     DateTimeOffset? PeriodoInscricaoInicio = null,
     DateTimeOffset? PeriodoInscricaoFim = null)

@@ -3334,7 +3334,7 @@
     {
       "codigo": "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario",
       "status": 422,
-      "titulo": "O instante do envio simulado está ausente ou fora do calendário que os limites da faixa de data alcançam"
+      "titulo": "O instante do envio simulado fica fora do calendário que os limites da faixa de data alcançam"
     },
     {
       "codigo": "uniplus.formulario_portavel.obrigatoriedade_invalida",

@@ -20,6 +20,10 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private const decimal PercentualMinimoDaReservaLegal = 0.5m;
     private const decimal PercentualMaximoDaReservaLegal = 1m;
 
+    // O pedido seleciona as modalidades por id; a declaração já resolvida as lista pelo nome do documento.
+    private const string CampoDasModalidadesNoPedido = "modalidadeIds";
+    private const string CampoDasModalidadesNaDeclaracao = "modalidades";
+
     /// <param name="declarada">A distribuição declarada para a oferta.</param>
     /// <param name="vagasAnuaisAutorizadas">
     /// O teto de vagas anuais autorizadas no e-MEC; nulo quando a oferta não o declara — ausência não é
@@ -59,31 +63,36 @@ public static class ConferenciaDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(quantidadesDoQuadro);
 
-        return [.. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades), .. QuantidadesNegativas(quantidadesDoQuadro)];
+        return [.. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades, CampoDasModalidadesNaDeclaracao), .. QuantidadesNegativas(quantidadesDoQuadro)];
     }
 
     /// <summary>
     /// A forma do pedido: a mesma conferência, com a quantidade que falta e a negativa recusadas juntas, na ordem das
-    /// linhas do quadro, para que a pessoa corrija de cima para baixo.
+    /// linhas do quadro, para que a pessoa corrija de cima para baixo. A lista de modalidades e o quadro são
+    /// obrigatórios: nulos (não informados) são recusados, e o que depende deles não é conferido.
     /// </summary>
+    /// <param name="quantidadeDeModalidades">As modalidades selecionadas, nulo quando o pedido não as informou.</param>
+    /// <param name="quantidadesDoQuadro">A quantidade de cada linha do quadro, nulo quando o pedido não trouxe o quadro.</param>
     public static IReadOnlyList<FieldError> ConferirFormaDoPedido(
         int vagasOfertadasBase,
         decimal? percentualDaReservaLegal,
-        int quantidadeDeModalidades,
-        IReadOnlyList<int?> quantidadesDoQuadro)
-    {
-        ArgumentNullException.ThrowIfNull(quantidadesDoQuadro);
+        int? quantidadeDeModalidades,
+        IReadOnlyList<int?>? quantidadesDoQuadro) =>
+    [
+        .. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades, CampoDasModalidadesNoPedido),
+        .. quantidadesDoQuadro is null
+            ? [Recusa("quadro", CodigosDeValidacao.Obrigatorio, "Informe o quadro; envie [] quando não houver quantidade a fixar.")]
+            : QuantidadesDoQuadro(quantidadesDoQuadro),
+    ];
 
-        return [.. FormaSemQuantidades(vagasOfertadasBase, percentualDaReservaLegal, quantidadeDeModalidades), .. QuantidadesDoQuadro(quantidadesDoQuadro)];
-    }
-
-    private static IEnumerable<FieldError> FormaSemQuantidades(int vagasOfertadasBase, decimal? percentualDaReservaLegal, int quantidadeDeModalidades) =>
+    private static IEnumerable<FieldError> FormaSemQuantidades(
+        int vagasOfertadasBase, decimal? percentualDaReservaLegal, int? quantidadeDeModalidades, string campoDasModalidades) =>
         Presentes(
             VagasOfertadasBaseInvalidas(vagasOfertadasBase),
             PercentualForaDoLimite(percentualDaReservaLegal),
             PrecisaoDecimal.Recusa(percentualDaReservaLegal, PercentualPrecisao, PercentualEscala, "percentualDaReservaLegal",
                 "O percentual da reserva legal deve ter no máximo 1 dígito inteiro e 4 casas decimais."),
-            ModalidadesAusentes(quantidadeDeModalidades));
+            ModalidadesAusentes(quantidadeDeModalidades, campoDasModalidades));
 
     /// <summary>A forma da declaração: a do pedido, lida das próprias modalidades e das quantidades que elas trazem.</summary>
     internal static IReadOnlyList<FieldError> ConferirForma(DistribuicaoDeVagasDeclarada declarada)
@@ -122,11 +131,12 @@ public static class ConferenciaDaDistribuicaoDeVagas
         Recusa("percentualDaReservaLegal", DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
             $"O percentual da reserva legal deve estar entre {PercentualMinimoDaReservaLegal:0.0} e {PercentualMaximoDaReservaLegal:0.0} (art. 10, II).");
 
-    private static FieldError? ModalidadesAusentes(int quantidadeDeModalidades) =>
-        quantidadeDeModalidades == 0
-            ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesVazias,
-                "A oferta deve ter ao menos uma modalidade selecionada.")
-            : null;
+    private static FieldError? ModalidadesAusentes(int? quantidadeDeModalidades, string campo) => quantidadeDeModalidades switch
+    {
+        null => Recusa(campo, CodigosDeValidacao.Obrigatorio, "Informe as modalidades da oferta."),
+        0 => Recusa(campo, DistribuicaoDeVagasErrorCodes.ModalidadesVazias, "A oferta deve ter ao menos uma modalidade selecionada."),
+        _ => null,
+    };
 
     private static IEnumerable<FieldError> QuantidadesDoQuadro(IReadOnlyList<int?> quantidades) =>
         quantidades

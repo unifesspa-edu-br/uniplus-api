@@ -63,7 +63,7 @@ A [ADR-0068](0068-relogio-via-timeprovider-injetado.md) tornou o relógio injeta
 ### Negativas
 
 - Sete tabelas ganham uma coluna e um índice único, e o índice da vigência dos lotes do ENEM passa a terminar nela.
-- O `[JsonRequired]` do instante do envio simulado muda o comportamento em runtime (ausência vira 400) e a baseline OpenAPI da Configuração em `envio.instante`.
+- O instante do envio simulado ausente ou nulo é recusado pelo domínio com 422 e o código genérico de campo obrigatório, como a [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md) manda, e a baseline OpenAPI da Configuração muda em `envio.instante`.
 - A troca do tipo lógico do Avro pode exigir remover o subject no Apicurio de HML na implantação.
 - O `Program` fica fora da conferência de arquitetura; a revisão cobre o que ele chama.
 

@@ -62,6 +62,17 @@ public sealed record AnexoDoEdital(
     /// A cópia do documento sob o nome pedido; recusa o que ainda não foi confirmado e o nome que o
     /// download não aceitaria.
     /// </summary>
+    /// <summary>
+    /// A recusa do nome para o documento, ou nula quando o nome é aceito: independe da finalidade e da confirmação dele, que
+    /// <see cref="Criar"/> recusa primeiro, e deixa quem confere o pedido apontar o nome inválido junto da recusa do documento.
+    /// </summary>
+    public static DomainError? RecusaDoNome(DocumentoAPublicar documento, string? nome)
+    {
+        ArgumentNullException.ThrowIfNull(documento);
+
+        return NomeDeArquivoEnviado.Normalizar(nome, documento.Extensao) is null ? NomeInvalido : null;
+    }
+
     public static Result<AnexoDoEdital> Criar(Guid id, DocumentoAPublicar documento, string? nome)
     {
         ArgumentNullException.ThrowIfNull(documento);

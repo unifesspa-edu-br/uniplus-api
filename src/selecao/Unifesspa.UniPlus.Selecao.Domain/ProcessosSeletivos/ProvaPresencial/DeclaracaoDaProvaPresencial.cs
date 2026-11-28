@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -47,33 +48,52 @@ public sealed record DeclaracaoDaProvaPresencial
     }
 
     /// <summary>
-    /// Confere a forma da declaração e acumula as recusas (ADR-0125): sem prova presencial não há município,
-    /// cada código tem a forma de município e a UF do prefixo, nenhum se repete, e a lista cabe no limite
-    /// técnico. O processo com prova presencial e sem município ainda é uma declaração: a publicação é que
-    /// o recusa.
+    /// Confere a forma da declaração e acumula as recusas (ADR-0125): a prova presencial e a lista de municípios
+    /// são obrigatórias (a lista vazia declara "nenhum"), sem prova presencial não há município, cada código tem a
+    /// forma de município e a UF do prefixo, nenhum se repete, e a lista cabe no limite técnico. As regras que
+    /// dependem de um campo ausente não são conferidas. O processo com prova presencial e sem município ainda é
+    /// uma declaração: a publicação é que o recusa.
     /// </summary>
     /// <param name="limiteDeMunicipios">O limite técnico de municípios por processo, que protege a conferência no Geo.</param>
     public static Result<DeclaracaoDaProvaPresencial> Declarar(
-        bool temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado> municipios, int limiteDeMunicipios)
+        bool? temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado>? municipios, int limiteDeMunicipios)
     {
-        ArgumentNullException.ThrowIfNull(municipios);
-
         List<FieldError> recusas =
         [
-            .. RecusasSemProva(temProvaPresencial, municipios.Count),
-            .. RecusasDeCadaMunicipio(municipios),
-            .. RecusasAcimaDoLimite(municipios.Count, limiteDeMunicipios),
+            .. RecusasDaAusencia(temProvaPresencial, municipios),
+            .. RecusasDosMunicipios(temProvaPresencial, municipios, limiteDeMunicipios),
         ];
         return recusas.Count > 0
             ? Result<DeclaracaoDaProvaPresencial>.ValidationFailure(recusas)
             : Result<DeclaracaoDaProvaPresencial>.Success(new(
-                temProvaPresencial,
-                [.. municipios.Select(static (municipio, indice) => new MunicipioDeProva(municipio.CodigoIbge!, municipio.Uf!, null, indice + 1))]));
+                temProvaPresencial.GetValueOrDefault(),
+                [.. (municipios ?? []).Select(static (municipio, indice) => new MunicipioDeProva(municipio.CodigoIbge!, municipio.Uf!, null, indice + 1))]));
     }
 
-    private static IEnumerable<FieldError> RecusasSemProva(bool temProvaPresencial, int quantidade)
+    private static IEnumerable<FieldError> RecusasDaAusencia(bool? temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado>? municipios)
     {
-        if (!temProvaPresencial && quantidade > 0)
+        if (temProvaPresencial is null)
+        {
+            yield return Recusa($"{Campo}.temProvaPresencial", CodigosDeValidacao.Obrigatorio, "Informe se o processo tem prova presencial.");
+        }
+
+        if (municipios is null)
+        {
+            yield return Recusa(CampoDosMunicipios, CodigosDeValidacao.Obrigatorio, "Informe os municípios de prova; envie [] quando não houver nenhum.");
+        }
+    }
+
+    private static IEnumerable<FieldError> RecusasDosMunicipios(
+        bool? temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado>? municipios, int limiteDeMunicipios) =>
+        municipios is null
+            ? []
+            : [.. RecusasSemProva(temProvaPresencial, municipios.Count),
+                .. RecusasDeCadaMunicipio(municipios),
+                .. RecusasAcimaDoLimite(municipios.Count, limiteDeMunicipios)];
+
+    private static IEnumerable<FieldError> RecusasSemProva(bool? temProvaPresencial, int quantidade)
+    {
+        if (temProvaPresencial is false && quantidade > 0)
         {
             yield return new FieldError(CampoDosMunicipios, new DomainError(
                 ProvaPresencialErrorCodes.MunicipiosSemProvaPresencial,

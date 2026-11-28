@@ -13,4 +13,4 @@ using Unifesspa.UniPlus.Regras.Entradas;
 public sealed record DefinirTermosDoFormularioCommand(
     Guid ProcessoSeletivoId,
     string FormularioCodigo,
-    IReadOnlyList<TermoExigidoInput> Termos) : ICommand<Result>;
+    IReadOnlyList<TermoExigidoInput>? Termos) : ICommand<Result>;

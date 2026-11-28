@@ -22,11 +22,28 @@ internal sealed class FormaDoPortavel
     internal static IReadOnlyList<FieldError> Recusas(FormularioPortavel portavel)
     {
         FormaDoPortavel forma = new();
-        forma.Lista(portavel.Paginas, "paginas", forma.Pagina);
-        forma.Lista(portavel.Termos, "termos", (termo, caminho) => forma.ExibicaoEObrigatoriedade(termo.Regras, $"{caminho}.regras"));
-        forma.Lista(portavel.Derivacoes, "derivacoes", forma.Derivacao);
-        forma.Lista(portavel.Agregados, "agregados", static (_, _) => { });
+        forma.ListaObrigatoria(portavel.Paginas, "paginas", "Informe as páginas do formulário; envie [] quando não houver nenhuma.", forma.Pagina);
+        forma.ListaObrigatoria(
+            portavel.Termos, "termos", "Informe os termos do formulário; envie [] quando não houver nenhum.",
+            (termo, caminho) => forma.ExibicaoEObrigatoriedade(termo.Regras, $"{caminho}.regras"));
+        forma.ListaObrigatoria(
+            portavel.Derivacoes, "derivacoes", "Informe as derivações do formulário; envie [] quando não houver nenhuma.", forma.Derivacao);
+        forma.ListaObrigatoria(
+            portavel.Agregados, "agregados", "Informe os agregados do formulário; envie [] quando não houver nenhum.", static (_, _) => { });
         return forma._recusas;
+    }
+
+    // As quatro listas do documento são obrigatórias; as aninhadas seguem toleradas ausentes.
+    private void ListaObrigatoria<T>(IReadOnlyList<T>? lista, string caminho, string mensagemDeObrigatorio, Action<T, string> dentro)
+        where T : class
+    {
+        if (lista is null)
+        {
+            _recusas.Add(new FieldError(caminho, new DomainError(CodigosDeValidacao.Obrigatorio, mensagemDeObrigatorio)));
+            return;
+        }
+
+        Lista(lista, caminho, dentro);
     }
 
     private void Pagina(PaginaPortavel pagina, string caminho)

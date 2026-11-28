@@ -52,7 +52,7 @@ internal sealed class ValoresDoDominioDoFato(FatoCandidato fato, List<FatoValorD
         return Result.Success();
     }
 
-    internal Result Reordenar(IReadOnlyList<string> codigosEmOrdem)
+    internal Result Reordenar(IReadOnlyList<string>? codigosEmOrdem)
     {
         if (RecusaDeEstado() is { } recusa)
         {

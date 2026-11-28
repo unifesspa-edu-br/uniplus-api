@@ -44,7 +44,7 @@ internal static class ItemBasicoDeTeste
 
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>
     internal static FatoColetado Basico(FatoColetadoInput entrada) =>
-        FatoColetadoDeTeste.Coletando(entrada.FatoCodigo, entrada.Ordem)
+        FatoColetadoDeTeste.Coletando(entrada.FatoCodigo, entrada.Ordem.GetValueOrDefault())
             .ComRotulo(entrada.Apresentacao!.Rotulo!)
             .DoTipo(CatalogoDe<TipoDeCampo>.Obter(entrada.Apresentacao.TipoDeCampo!))
             .ComObrigatoriedade(ObrigatoriedadeDaEntrada(entrada))

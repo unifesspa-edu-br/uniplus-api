@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// O que o pedido de registro declara do ato antes de o tipo ser resolvido no catálogo: a numeração, o
-/// código do tipo, o hash do documento, o assinante, a versão do objeto, a retificação, os vínculos e os
+/// código do tipo, a data que o documento declara, o hash do documento, o assinante, a versão do objeto, a retificação, os vínculos e os
 /// anexos. Os textos podem chegar nulos, e o domínio os trata como vazios.
 /// </summary>
 public sealed record DeclaracaoDoAtoNormativo
@@ -10,6 +10,9 @@ public sealed record DeclaracaoDoAtoNormativo
     public required NumeracaoDoAto Numeracao { get; init; }
 
     public required string? TipoCodigo { get; init; }
+
+    /// <summary>A data que o documento declara; ausente é recusada como obrigatória.</summary>
+    public required DateOnly? DataDoAto { get; init; }
 
     public required string? DocumentoHash { get; init; }
 

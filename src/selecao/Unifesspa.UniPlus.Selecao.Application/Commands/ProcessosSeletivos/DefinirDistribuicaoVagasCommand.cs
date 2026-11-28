@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
+
 using Domain.ValueObjects;
 
 using DTOs;
@@ -7,6 +9,7 @@ using DTOs;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Item de entrada de uma distribuição de vagas por oferta, usado por
@@ -15,7 +18,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// (<c>regras_do_catalogo</c>) e seleciona as modalidades por <c>Id</c> — os demais
 /// atributos de cada modalidade (natureza legal, composição, remanejamento)
 /// são lidos do cadastro vivo pelo handler (snapshot-copy, ADR-0061), não
-/// informados aqui.
+/// informados aqui. As modalidades e o quadro são obrigatórios: ausentes ou nulos são recusados (422) na conferência da
+/// forma do pedido.
 /// </summary>
 public sealed record ConfiguracaoDistribuicaoVagasInput(
     Guid OfertaCursoId,
@@ -26,8 +30,12 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
     string? RegraAjusteCodigo,
     string? RegraAjusteVersao,
     Guid? ReferenciaReservaDemograficaId,
-    IReadOnlyList<Guid> ModalidadeIds,
-    IReadOnlyList<QuantidadeVagaInput> Quadro,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    IReadOnlyList<Guid>? ModalidadeIds,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver quantidade a fixar.")]
+    IReadOnlyList<QuantidadeVagaInput>? Quadro,
     ParametrosRegraAjusteDistribuicao? AjusteDoQuadro = null);
 
 /// <summary>
@@ -36,7 +44,11 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
 /// institucional; recusada para as modalidades calculadas do ramo federal
 /// (issue #848/ADR-0115).
 /// </summary>
-public sealed record QuantidadeVagaInput(Guid ModalidadeId, int? Quantidade);
+public sealed record QuantidadeVagaInput(
+    Guid ModalidadeId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Quantidade);
 
 /// <summary>
 /// Substitui integralmente a distribuição de vagas do processo (Story #773,

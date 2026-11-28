@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -26,14 +27,27 @@ public sealed class DefinirEtapasContratoEndpointTests(CascadingFixture ambiente
     [InlineData("produtos")]
     [InlineData("bancas")]
     [InlineData("recursos")]
-    public async Task Definir_ColecaoOmitida_400ComCampoEEnvelopeCanonico(string campo)
+    public async Task Definir_ColecaoOmitida_422ComCampoObrigatorio(string campo)
     {
         (HttpClient client, Guid processoId) = await PrepararAsync();
         JsonObject etapa = Etapa();
         etapa.Remove(campo).Should().BeTrue();
         using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(new JsonArray(etapa)));
-        JsonElement problema = await ExigirErroAsync(resposta, HttpStatusCode.BadRequest, "uniplus.requisicao.campo_obrigatorio_ausente");
-        problema.GetRawText().Should().ContainEquivalentOf(campo);
+        await RecusaDeCampoObrigatorioNoDominio.ConferirCamposAsync(resposta, $"etapas[0].{campo}");
+    }
+
+    [Fact]
+    public async Task Definir_TresColecoesOmitidas_422AcumulaUmItemPorCampo()
+    {
+        (HttpClient client, Guid processoId) = await PrepararAsync();
+        JsonObject etapa = Etapa();
+        foreach (string campo in new[] { "produtos", "bancas", "recursos" })
+        {
+            etapa.Remove(campo).Should().BeTrue();
+        }
+
+        using HttpResponseMessage resposta = await EnviarAsync(client, processoId, JsonContent.Create(new JsonArray(etapa)));
+        await RecusaDeCampoObrigatorioNoDominio.ConferirCamposAsync(resposta, "etapas[0].produtos", "etapas[0].bancas", "etapas[0].recursos");
     }
 
     [Fact]

@@ -24,11 +24,15 @@ public static class CandidatoComoMembro
     /// exibido e obrigatório; se o campo restringe as opções, o próprio candidato está entre as que
     /// valem sempre — opções formadas pelas respostas anteriores não o garantem. Sem isso, nenhuma
     /// resposta identificaria a ocorrência do candidato. O mínimo não declarado já tem a recusa da
-    /// leitura e não é conferido aqui; o parentesco é conferido mesmo assim.
+    /// leitura e não é conferido aqui; o parentesco é conferido mesmo assim, menos quando os campos faltam (<see langword="null"/>),
+    /// porque a recusa deles já existe e o parentesco depende deles.
     /// </summary>
-    public static List<FieldError> Conferir(int? minimo, IReadOnlyList<CampoDoMembro> subitens)
+    public static List<FieldError> Conferir(int? minimo, IReadOnlyList<CampoDoMembro>? subitens)
     {
-        ArgumentNullException.ThrowIfNull(subitens);
+        if (subitens is null)
+        {
+            return [.. RecusasDoMinimo(minimo)];
+        }
 
         int indice = subitens.ToList().FindIndex(static s => string.Equals(s.FatoCodigo, FatoParentesco, StringComparison.Ordinal));
         return [.. RecusasDoMinimo(minimo), .. indice < 0 ? RecusasDoParentescoAusente() : RecusasDoParentesco(indice, subitens[indice])];

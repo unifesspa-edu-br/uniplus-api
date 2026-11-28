@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 /// </summary>
 /// <param name="Numeracao">Órgão, série, ano e número.</param>
 /// <param name="CodigoDoTipo">O código do tipo, como chegou.</param>
+/// <param name="DataDoAto">A data que o documento declara.</param>
 /// <param name="Documento">O hash do documento e o assinante.</param>
 /// <param name="VersaoDoObjeto">O par da versão do objeto, completo ou ausente.</param>
 /// <param name="Retificacao">O ato retificado e o motivo.</param>
@@ -17,6 +18,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 public sealed record ConferenciaDaDeclaracaoDoAto(
     ParteConferida<NumeracaoDoAto> Numeracao,
     ParteConferida<string> CodigoDoTipo,
+    ParteConferida<DateOnly> DataDoAto,
     ParteConferida<(string Hash, string Assinante)> Documento,
     ParteConferida<ReferenciaVersaoDoObjeto> VersaoDoObjeto,
     ParteConferida<RelacaoDeRetificacao> Retificacao,
@@ -25,13 +27,14 @@ public sealed record ConferenciaDaDeclaracaoDoAto(
 {
     /// <summary>
     /// As recusas que não dependem do banco, na ordem do corpo do pedido: numeração, código do tipo,
-    /// documento, versão do objeto, retificação, vínculos por posição e anexos. A leitura do banco
+    /// data do ato, documento, versão do objeto, retificação, vínculos por posição e anexos. A leitura do banco
     /// intercala as suas depois, por campo.
     /// </summary>
     public IReadOnlyList<FieldError> Recusas =>
     [
         .. Numeracao.Recusas,
         .. CodigoDoTipo.Recusas,
+        .. DataDoAto.Recusas,
         .. Documento.Recusas,
         .. VersaoDoObjeto.Recusas,
         .. Retificacao.Recusas,
@@ -46,6 +49,7 @@ public sealed record ConferenciaDaDeclaracaoDoAto(
         return new(
             declaracao.Numeracao.Conferir(),
             EssenciaDocumentalDoAto.ConferirCodigoDoTipo(declaracao.TipoCodigo),
+            EssenciaDocumentalDoAto.ConferirDataDoAto(declaracao.DataDoAto),
             EssenciaDocumentalDoAto.ConferirDocumento(declaracao.DocumentoHash, declaracao.Assinante),
             ReferenciaVersaoDoObjeto.DoPar(declaracao.VersaoDoObjetoId, declaracao.VersaoDoObjetoHash),
             declaracao.Retificacao.Conferir(),

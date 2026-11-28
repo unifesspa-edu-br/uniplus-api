@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
-using System.Text.Json.Serialization;
+using System.ComponentModel;
 
 using Application.Commands.ProcessosSeletivos;
 
@@ -12,28 +12,33 @@ using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirFormulario"/> — o processo e o código do formulário
-/// vêm da rota. Dizer se o formulário é obrigatório é obrigatório no corpo. A lista de páginas é obrigatória: o formulário termina sempre na revisão e aceite. A consequência da
+/// vêm da rota. Dizer se o formulário é obrigatório e enviar a lista de páginas são obrigatórios no corpo: o que
+/// falta é recusado com o código de campo obrigatório (422), junto das demais recusas. O formulário termina sempre na revisão e aceite. A consequência da
 /// falta de envio é opcional, e a ausência dela retira a que o formulário tinha.
 /// </summary>
 public sealed record DefinirFormularioRequest(
     Guid? FaseId,
     string? Titulo,
-    [property: JsonRequired] bool Obrigatorio,
-    [property: JsonRequired] IReadOnlyList<PaginaDoFormularioInput> Paginas,
+    [property: ObrigatorioNoContrato, Description("Obrigatório; ausente ou nulo é recusado (422).")] bool? Obrigatorio,
+    [property: ObrigatorioNoContrato, Description("Obrigatório; ausente ou nulo é recusado (422). Envie [] quando não houver nenhuma.")]
+    IReadOnlyList<PaginaDoFormularioInput>? Paginas,
     [property: AceitaCodigosDe<ConsequenciaDoDescumprimento>] string? ConsequenciaDaFaltaDeEnvio = null);
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirItens"/>. A lista de itens é obrigatória: só a
-/// lista vazia explícita remove os itens, nunca um corpo sem ela. Os grupos repetíveis
+/// lista vazia explícita remove os itens, e o corpo sem ela é recusado com o código de campo obrigatório (422). Os grupos repetíveis
 /// (UNI-REQ-0146) são opcionais: sem eles, os grupos do formulário ficam como estão, e só a lista
 /// vazia explícita os remove.
 /// </summary>
 public sealed record DefinirItensDoFormularioRequest(
-    [property: JsonRequired] IReadOnlyList<FatoColetadoInput> Itens,
+    [property: ObrigatorioNoContrato, Description("Obrigatório; ausente ou nulo é recusado (422). Envie [] quando não houver nenhum.")]
+    IReadOnlyList<FatoColetadoInput>? Itens,
     IReadOnlyList<GrupoColetadoInput>? Grupos = null);
 
 /// <summary>
 /// Corpo de <see cref="FormulariosController.DefinirTermos"/>. A lista é obrigatória: só a lista
-/// vazia explícita remove os termos, nunca um corpo sem ela.
+/// vazia explícita remove os termos, e o corpo sem ela é recusado (422).
 /// </summary>
-public sealed record DefinirTermosDoFormularioRequest([property: JsonRequired] IReadOnlyList<TermoExigidoInput> Termos);
+public sealed record DefinirTermosDoFormularioRequest(
+    [property: ObrigatorioNoContrato, Description("Obrigatório; ausente ou nulo é recusado (422). Envie [] quando não houver nenhum.")]
+    IReadOnlyList<TermoExigidoInput>? Termos);

@@ -76,4 +76,8 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName.StartsWith(nameof(RetificarProcessoSeletivoCommand.Anexos), StringComparison.Ordinal));
     }
+
+    [Fact(DisplayName = "O bloco do ato e o documento do edital ausentes não são do validator: a conferência do ato os recusa com o código de campo obrigatório")]
+    public void AtoEDocumentoAusentes_NaoSaoDoValidator() =>
+        Validator.Validate(ComandoValido() with { Ato = null, DocumentoEditalId = null }).IsValid.Should().BeTrue();
 }

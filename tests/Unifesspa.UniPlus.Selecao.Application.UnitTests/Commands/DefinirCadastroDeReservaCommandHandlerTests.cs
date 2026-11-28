@@ -101,6 +101,19 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
         await contexto.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Lista de chamadas ausente é recusada como obrigatória, sem salvar; lista vazia declara nenhuma")]
+    public async Task Handle_ListaAusente_RecusaComoObrigatorio()
+    {
+        Contexto contexto = new(PublicacaoDeTeste.NovoProcessoConforme());
+
+        Result ausente = await contexto.Definir(null);
+        Result vazia = await contexto.Definir([]);
+
+        ausente.Errors.Should().ContainSingle(e => e.Field == "cadastroDeReserva" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        vazia.IsSuccess.Should().BeTrue();
+        await contexto.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "O conflito de concorrência descarta o rastreamento e devolve o conflito, sem relançar")]
     public async Task Handle_ConflitoDeConcorrencia_DescartaEDevolveConflito()
     {
@@ -127,7 +140,7 @@ public sealed class DefinirCadastroDeReservaCommandHandlerTests
 
         public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
-        public Task<Result> Definir(IReadOnlyList<CadastroDeReservaInformado?> chamadas) =>
+        public Task<Result> Definir(IReadOnlyList<CadastroDeReservaInformado?>? chamadas) =>
             DefinirCadastroDeReservaCommandHandler.Handle(new(_id, chamadas), _repositorio, UnitOfWork, CancellationToken.None);
     }
 }

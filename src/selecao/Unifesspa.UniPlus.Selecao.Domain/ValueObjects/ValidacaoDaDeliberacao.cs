@@ -27,18 +27,22 @@ internal static class ValidacaoDaDeliberacao
         return violacoes;
     }
 
-    private static IEnumerable<FieldError> DaComposicao(DeclaracaoDaDeliberacao declarada)
-    {
-        if (declarada.Integrantes < 1)
-        {
-            yield return Recusa("integrantes", BancaErrorCodes.IntegrantesInvalidos, "A banca deve ter no mínimo 1 integrante.");
-        }
+    private static IEnumerable<FieldError> DaComposicao(DeclaracaoDaDeliberacao declarada) =>
+        [.. DosIntegrantes(declarada.Integrantes), .. DosSuplentes(declarada.Suplentes)];
 
-        if (declarada.Suplentes < 0)
-        {
-            yield return Recusa("suplentes", BancaErrorCodes.SuplentesInvalidos, "Os suplentes da banca não podem ser negativos.");
-        }
-    }
+    private static IEnumerable<FieldError> DosIntegrantes(int? integrantes) => integrantes switch
+    {
+        null => [Obrigatorio("integrantes", "Informe o número de integrantes da banca.")],
+        < 1 => [Recusa("integrantes", BancaErrorCodes.IntegrantesInvalidos, "A banca deve ter no mínimo 1 integrante.")],
+        _ => [],
+    };
+
+    private static IEnumerable<FieldError> DosSuplentes(int? suplentes) => suplentes switch
+    {
+        null => [Obrigatorio("suplentes", "Informe o número de suplentes da banca; use 0 quando não houver.")],
+        < 0 => [Recusa("suplentes", BancaErrorCodes.SuplentesInvalidos, "Os suplentes da banca não podem ser negativos.")],
+        _ => [],
+    };
 
     /// <summary>
     /// O ato individual aceita a deliberação sem votação ou com a votação do recurso inteira: quórum, critério e encerramento
@@ -88,7 +92,7 @@ internal static class ValidacaoDaDeliberacao
 
     private static IEnumerable<FieldError> DoQuorum(DeclaracaoDaDeliberacao declarada)
     {
-        if (declarada.Integrantes < 1)
+        if (declarada.Integrantes is not >= 1)
         {
             return [];
         }
@@ -115,7 +119,7 @@ internal static class ValidacaoDaDeliberacao
 
     private static IEnumerable<FieldError> DoDesempate(DeclaracaoDaDeliberacao declarada)
     {
-        if (!declarada.Votacao.CriterioConferido().HasValue)
+        if (!declarada.Votacao.CriterioConferido().HasValue || declarada.Integrantes is null)
         {
             return [];
         }
@@ -133,7 +137,7 @@ internal static class ValidacaoDaDeliberacao
 
     private static IEnumerable<FieldError> DoResultadoSemUnanimidade(DeclaracaoDaDeliberacao declarada)
     {
-        if (!declarada.Votacao.CriterioConferido().HasValue)
+        if (!declarada.Votacao.CriterioConferido().HasValue || declarada.Integrantes is null)
         {
             return [];
         }
@@ -148,6 +152,9 @@ internal static class ValidacaoDaDeliberacao
             ? [Recusa("semUnanimidade", BancaErrorCodes.SemUnanimidadeNaoSeAplica, "O resultado sem unanimidade só se aplica ao critério de unanimidade, em banca com mais de 1 integrante.")]
             : [];
     }
+
+    private static FieldError Obrigatorio(string campo, string mensagem) =>
+        Recusa(campo, CodigosDeValidacao.Obrigatorio, mensagem);
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) =>
         new(campo, new DomainError(codigo, mensagem));

@@ -34,6 +34,7 @@ public sealed class ParametrosDeclaradosDoRecursoTests
         ComInstanciaSuperior with { PrazoDaSegundaInstancia = PrazoDeclarado.Ausente },
         Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "HORAS") },
         ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" },
+        Valido with { AdmiteInstanciaSuperior = null },
     ];
 
     private static (MotivoDaRecusaDosParametros Motivo, string Campo)[] Recusas(ParametrosDeclaradosDoRecurso declarados) =>

@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 
-using System.Text.Json.Serialization;
+using System.ComponentModel;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -20,21 +21,22 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// nulos, para o campo ausente escapar do <c>[ApiController]</c> e chegar à
 /// validação de domínio, que acumula toda violação no mesmo lote.
 /// <para>
-/// <c>PublicavelComoAvulso</c> e <c>ExigeAtoCorrigido</c> são obrigatórios no corpo: um valor implícito
-/// (<c>false</c>) faria o cliente que não os conhece desligar o atributo em silêncio. Ausentes, o corpo
-/// é recusado com 400.
+/// Os seis atributos e o início da vigência são <c>bool?</c>/<c>DateOnly?</c> sem valor padrão e sem
+/// <c>[JsonRequired]</c>: um valor implícito (<c>false</c>, ano 1) faria o cliente que não os conhece
+/// ligar ou desligar o atributo em silêncio. Ausentes ou nulos, chegam ao domínio e são recusados com 422,
+/// acumulados com as demais recusas; o contrato os publica como obrigatórios e sem <c>null</c>.
 /// </para>
 /// </remarks>
 public sealed record CriarTipoAtoPublicadoCommand(
     [property: NoFormatoDoCodigo(TipoAtoPublicado.TamanhoMaximoDoCodigo)] string? Codigo,
     string? Nome,
-    bool CongelaConfiguracao,
-    bool UnicoPorObjeto,
-    bool EfeitoIrreversivel,
-    bool EhResultado,
-    [property: JsonRequired] bool PublicavelComoAvulso,
-    [property: JsonRequired] bool ExigeAtoCorrigido,
-    DateOnly VigenciaInicio,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.CongelaConfiguracao)] bool? CongelaConfiguracao,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.UnicoPorObjeto)] bool? UnicoPorObjeto,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.EfeitoIrreversivel)] bool? EfeitoIrreversivel,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.EhResultado)] bool? EhResultado,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.PublicavelComoAvulso)] bool? PublicavelComoAvulso,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.ExigeAtoCorrigido)] bool? ExigeAtoCorrigido,
+    [property: ObrigatorioNoContrato, Description(DescricoesDosAtributosDoTipoDeAto.VigenciaInicio)] DateOnly? VigenciaInicio,
     DateOnly? VigenciaFim = null,
     string? BaseLegal = null) : ICommand<Result<Guid>>
 {

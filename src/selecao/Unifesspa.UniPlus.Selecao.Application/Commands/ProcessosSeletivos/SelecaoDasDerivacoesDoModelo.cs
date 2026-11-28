@@ -50,7 +50,7 @@ internal sealed class SelecaoDasDerivacoesDoModelo(
     public FieldError? ConferirModalidade(string[] citados, List<ConfiguracaoDerivacaoInput> aCopiar)
     {
         IEnumerable<string> fechamento = citados.Concat(aCopiar
-            .SelectMany(static d => d.Regras).SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato));
+            .SelectMany(static d => d.Regras ?? []).SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato));
         return processo.DistribuicaoVagas.Count == 0
             && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValoresValor == FonteValoresFato.Modalidade)
                 ? new FieldError("modelo", new DomainError(

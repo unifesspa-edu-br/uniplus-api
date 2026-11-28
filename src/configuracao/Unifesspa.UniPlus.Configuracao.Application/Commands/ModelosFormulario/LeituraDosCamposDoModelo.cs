@@ -24,11 +24,11 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
         int recusasAntes = recusas.Recusas.Count;
         TipoDeCampo? tipo = LerTipoDeCampo(entrada.Apresentacao?.TipoDeCampo, $"{campo}.{FatoColetadoInput.CaminhoDaApresentacao}");
         RegrasLidasDoCampo regras = LerRegrasDoCampo(entrada.Regras, $"{campo}.{FatoColetadoInput.CaminhoDasRegras}");
-        return recusas.RecusouDesde(recusasAntes)
+        return recusas.RecusouDesde(recusasAntes) || entrada.Ordem is null
             ? RecusarItemNaoLido(entrada, (campo, lugar), tipo, regras)
             : new ItemDoModelo(
                 entrada.FatoCodigo,
-                entrada.Ordem,
+                entrada.Ordem.GetValueOrDefault(),
                 entrada.PaginaCodigo,
                 EntradaDeRegras.Apresentacao(entrada.Apresentacao, tipo!.Value),
                 FormatoDoCatalogo(entrada.FatoCodigo),

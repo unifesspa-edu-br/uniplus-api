@@ -41,6 +41,9 @@ internal sealed class ResolucaoDaDistribuicao(
     private readonly HashSet<DadoDaDistribuicaoDeVagas> _recusados = [];
     private IReadOnlyDictionary<Guid, string?> _citacoesDoQuadroForaDaSelecao = new Dictionary<Guid, string?>();
 
+    // O quadro ausente é recusado pela forma do pedido; as conferências que dependem dele deixam de rodar.
+    private IReadOnlyList<QuantidadeVagaInput> Quadro => pedido.Quadro ?? [];
+
     /// <summary>A forma do pedido, que não depende de nenhum cadastro.</summary>
     internal IReadOnlyList<FieldError> RecusasDaForma { get; private set; } = [];
 
@@ -164,11 +167,24 @@ internal sealed class ResolucaoDaDistribuicao(
         return snapshot.Error;
     }
 
+    // A lista ausente é recusada pela forma do pedido, e as regras que leem as modalidades deixam de rodar.
     private async Task ResolverModalidadesAsync(CancellationToken cancellationToken)
     {
-        for (int indice = 0; indice < pedido.ModalidadeIds.Count; indice++)
+        if (pedido.ModalidadeIds is { } modalidadeIds)
         {
-            Result<ModalidadeSelecionada> modalidade = await ResolverModalidadeAsync(pedido.ModalidadeIds[indice], cancellationToken)
+            await ResolverCadaModalidadeAsync(modalidadeIds, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _recusados.Add(DadoDaDistribuicaoDeVagas.Modalidades);
+        }
+    }
+
+    private async Task ResolverCadaModalidadeAsync(IReadOnlyList<Guid> modalidadeIds, CancellationToken cancellationToken)
+    {
+        for (int indice = 0; indice < modalidadeIds.Count; indice++)
+        {
+            Result<ModalidadeSelecionada> modalidade = await ResolverModalidadeAsync(modalidadeIds[indice], cancellationToken)
                 .ConfigureAwait(false);
             RecusarAModalidade(indice, modalidade.Errors);
             if (modalidade.IsSuccess)
@@ -193,7 +209,7 @@ internal sealed class ResolucaoDaDistribuicao(
         ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(modalidadeId, cancellationToken).ConfigureAwait(false);
         return view is null
             ? Result<ModalidadeSelecionada>.Failure(RecusasDeCadastroDasVagas.ModalidadeNaoEncontrada())
-            : ModalidadeSelecionada.Criar(CopiaDosCadastrosDasVagas.Modalidade(view), pedido.Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
+            : ModalidadeSelecionada.Criar(CopiaDosCadastrosDasVagas.Modalidade(view), Quadro.FirstOrDefault(linha => linha.ModalidadeId == modalidadeId)?.Quantidade);
     }
 
     // A recusa cita a modalidade pelo código do cadastro, seguido da descrição quando há; só as linhas fora da
@@ -201,7 +217,7 @@ internal sealed class ResolucaoDaDistribuicao(
     private async Task<IReadOnlyDictionary<Guid, string?>> CitarAsModalidadesDoQuadroForaDaSelecaoAsync(CancellationToken cancellationToken)
     {
         Dictionary<Guid, string?> citacoes = [];
-        foreach (Guid id in pedido.Quadro.Select(static linha => linha.ModalidadeId).Except(pedido.ModalidadeIds))
+        foreach (Guid id in Quadro.Select(static linha => linha.ModalidadeId).Except(pedido.ModalidadeIds ?? []))
         {
             ModalidadeView? view = await modalidadeReader.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
             citacoes[id] = view is null ? null : CitacaoDaModalidade(view);
@@ -220,11 +236,11 @@ internal sealed class ResolucaoDaDistribuicao(
         .. ConferenciaDaDistribuicaoDeVagas.ConferirFormaDoPedido(
             pedido.VagasOfertadasBase,
             pedido.PercentualDaReservaLegal,
-            pedido.ModalidadeIds.Count,
-            [.. pedido.Quadro.Select(static linha => linha.Quantidade)]),
-        .. pedido.Quadro
+            pedido.ModalidadeIds?.Count,
+            pedido.Quadro is null ? null : [.. pedido.Quadro.Select(static linha => linha.Quantidade)]),
+        .. Quadro
             .Select((linha, indice) => (linha, indice))
-            .Where(par => !pedido.ModalidadeIds.Contains(par.linha.ModalidadeId))
+            .Where(par => pedido.ModalidadeIds is not null && !pedido.ModalidadeIds.Contains(par.linha.ModalidadeId))
             .Select(par => new FieldError(
                 $"quadro[{par.indice}].modalidadeId",
                 RecusasDaResolucaoDeVagas.QuadroModalidadeNaoSelecionada(_citacoesDoQuadroForaDaSelecao.GetValueOrDefault(par.linha.ModalidadeId)))),
@@ -240,8 +256,14 @@ internal sealed class ResolucaoDaDistribuicao(
         AjusteDoQuadro = pedido.AjusteDoQuadro,
         Modalidades = _modalidades,
         Recusados = _recusados,
-        ModalidadesComQuantidadeRecusada = pedido.Quadro.Where(static linha => linha.Quantidade is null).Select(static linha => linha.ModalidadeId).ToHashSet(),
+        ModalidadesComQuantidadeRecusada = ModalidadesSemQuantidadeConferivel(),
     };
+
+    // Sem o quadro nenhuma quantidade é conhecida: a regra que exige ou veda a quantidade fixada deixa de rodar para todas.
+    private HashSet<Guid> ModalidadesSemQuantidadeConferivel() =>
+        pedido.Quadro is null
+            ? [.. pedido.ModalidadeIds ?? []]
+            : [.. Quadro.Where(static linha => linha.Quantidade is null).Select(static linha => linha.ModalidadeId)];
 
     // A oferta não encontrada não dá teto nem grupo de área do ENEM, e a regra recusada não dá rol.
     private FatosDaOfertaNoCadastro FatosDoCadastro() => new()

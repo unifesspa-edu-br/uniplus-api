@@ -45,14 +45,13 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Falha quando a lista de regras é nula (o RuleForEach não cobre a coleção nula em si)")]
-    public void Rejeita_RegrasNulo()
+    [Fact(DisplayName = "Passa com a lista de regras nula no validator — a recusa como obrigatória é do domínio")]
+    public void Aceita_RegrasNuloNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
             Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", null!)]));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Falha quando a lista de configurações é nula")]

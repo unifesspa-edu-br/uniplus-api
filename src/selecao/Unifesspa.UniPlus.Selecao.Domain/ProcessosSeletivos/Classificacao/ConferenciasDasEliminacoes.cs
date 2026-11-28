@@ -14,7 +14,7 @@ internal static class ConferenciasDasEliminacoes
     internal static List<FieldError> Conferir(
         IReadOnlyList<RegraEliminacao> regras,
         ReferenciaRegra regraCalculo,
-        bool baseadoEmEnem,
+        bool? baseadoEmEnem,
         IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro)
     {
         List<FieldError> erros = ConferirDependenciaDoEnem(regras, baseadoEmEnem);
@@ -34,8 +34,9 @@ internal static class ConferenciasDasEliminacoes
     // Eixo ortogonal a RegraCalculo (que só distingue cálculo local de classificação importada):
     // a regra que só tem sentido sobre os dados do ENEM do candidato exige a classificação
     // baseada em ENEM.
-    private static List<FieldError> ConferirDependenciaDoEnem(IReadOnlyList<RegraEliminacao> regras, bool baseadoEmEnem) =>
-        regras.Any(static regra => regra.Parametros.ExigeEnem()) && !baseadoEmEnem
+    // Sem a declaração do ENEM não há contra o que conferir: a ausência já é recusada.
+    private static List<FieldError> ConferirDependenciaDoEnem(IReadOnlyList<RegraEliminacao> regras, bool? baseadoEmEnem) =>
+        regras.Any(static regra => regra.Parametros.ExigeEnem()) && baseadoEmEnem is false
             ? [new("regrasEliminacao", new DomainError(
                 "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
                 "Uma ou mais regras de eliminação só se aplicam quando a classificação está configurada como baseada em ENEM."))]
@@ -43,9 +44,9 @@ internal static class ConferenciasDasEliminacoes
 
     private static IReadOnlyList<GrupoPesoAreaEnemCongelado>? QuadroQueOsCortesConferem(
         ReferenciaRegra regraCalculo,
-        bool baseadoEmEnem,
+        bool? baseadoEmEnem,
         IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro) =>
-        ConferenciasDoQuadroDePesosPorArea.Exige(regraCalculo, baseadoEmEnem) && quadro.Count > 0 ? quadro : null;
+        baseadoEmEnem is { } baseado && ConferenciasDoQuadroDePesosPorArea.Exige(regraCalculo, baseado) && quadro.Count > 0 ? quadro : null;
 
     // Sem parâmetros, uma segunda declaração da falta em dia de prova repete a primeira e não elimina
     // ninguém a mais: cada repetição é recusada no próprio item. A recusa do ENEM desmarcado não

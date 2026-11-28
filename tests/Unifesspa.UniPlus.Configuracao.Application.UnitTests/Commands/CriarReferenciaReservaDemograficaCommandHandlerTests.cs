@@ -78,4 +78,41 @@ public sealed class CriarReferenciaReservaDemograficaCommandHandlerTests
             Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ReferenciaReservaDemografica>(), Arg.Any<CancellationToken>());
     }
+
+    [Theory(DisplayName = "Percentual ausente é recusado como obrigatório antes de qualquer consulta ou gravação")]
+    [InlineData("ppiPercentual")]
+    [InlineData("quilombolaPercentual")]
+    [InlineData("pcdPercentual")]
+    public async Task Handle_PercentualAusente_RecusaComoObrigatorioSemConsultarNemGravar(string campo)
+    {
+        CriarReferenciaReservaDemograficaCommand comando = campo switch
+        {
+            "ppiPercentual" => ComandoValido() with { PpiPercentual = null },
+            "quilombolaPercentual" => ComandoValido() with { QuilombolaPercentual = null },
+            _ => ComandoValido() with { PcdPercentual = null },
+        };
+
+        Result<Guid> resultado = await CriarReferenciaReservaDemograficaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == campo && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+        await _repository.DidNotReceive().CensoExisteEntreLivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Percentuais zero são aceitos e gravados: zero é resposta, ausente é que falta")]
+    public async Task Handle_PercentuaisZero_CriaEPersiste()
+    {
+        _repository.CensoExisteEntreLivosAsync("2022", null, Arg.Any<CancellationToken>()).Returns(false);
+
+        Result<Guid> resultado = await CriarReferenciaReservaDemograficaCommandHandler.Handle(
+            ComandoValido() with { PpiPercentual = 0m, QuilombolaPercentual = 0m, PcdPercentual = 0m },
+            _repository,
+            _unitOfWork,
+            CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }

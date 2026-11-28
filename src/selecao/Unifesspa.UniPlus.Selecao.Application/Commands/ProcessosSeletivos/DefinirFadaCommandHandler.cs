@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirFadaCommand"/> (Fator de Atenuação das Desigualdades de Acesso — FADA, UNI-REQ-0015):
-/// <c>Aplica</c> falso declara que o processo não aplica o FADA; verdadeiro resolve a regra <c>FADA_MULTIPLICATIVO</c> no
+/// <c>Aplica</c> ausente ou nulo é recusado (422); falso declara que o processo não aplica o FADA; verdadeiro resolve a regra <c>FADA_MULTIPLICATIVO</c> no
 /// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>) e a Base Legal
 /// referenciada (<see cref="IBaseLegalDoFadaReader"/>, Configuração),
 /// cujo snapshot é congelado em <see cref="ConfiguracaoDoFada"/>.
@@ -57,10 +57,13 @@ public static class DefinirFadaCommandHandler
         IBaseLegalDoFadaReader baseLegalDoFadaReader,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken) =>
-        command.Aplica
-            ? await AplicarAsync(command, processo, regraCatalogoReader, baseLegalDoFadaReader, unitOfWork, cancellationToken)
-                .ConfigureAwait(false)
-            : await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false);
+        command.Aplica switch
+        {
+            true => await AplicarAsync(command, processo, regraCatalogoReader, baseLegalDoFadaReader, unitOfWork, cancellationToken)
+                .ConfigureAwait(false),
+            false => await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false),
+            null => Result.ValidationFailure([DeclaracaoDoFada.RecusaDaAusencia()]),
+        };
 
     private static async Task<Result> NaoAplicarAsync(
         DefinirFadaCommand command,
@@ -120,16 +123,13 @@ public static class DefinirFadaCommandHandler
         CancellationToken cancellationToken)
     {
         Result<ReferenciaRegra> regra = await ResolverRegraAsync(declarada, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
-        if (regra.IsFailure)
-        {
-            return Result<ConfiguracaoDoFada>.Failure(regra.Error!);
-        }
 
+        // A regra no catálogo e a base legal dependem só do que o pedido informou: as duas são consultadas e as recusas se somam.
         Result<BaseLegalCongelada> baseLegal = await ResolverBaseLegalAsync(declarada.BaseLegalId, baseLegalDoFadaReader, cancellationToken)
             .ConfigureAwait(false);
-        if (baseLegal.IsFailure)
+        if (regra.IsFailure || baseLegal.IsFailure)
         {
-            return Result<ConfiguracaoDoFada>.ValidationFailure(baseLegal.Errors);
+            return Result<ConfiguracaoDoFada>.ValidationFailure([.. regra.Errors, .. baseLegal.Errors]);
         }
 
         return ConfiguracaoDoFada.Criar(regra.Value!, declarada.Fator, declarada.Teto, declarada.FatoElegibilidadeCodigo, baseLegal.Value!);

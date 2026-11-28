@@ -9,5 +9,5 @@ internal sealed record EditalDeclarado(
     string? Numero,
     DateTimeOffset? PeriodoInscricaoInicio,
     DateTimeOffset? PeriodoInscricaoFim,
-    Guid DocumentoEditalId,
+    Guid? DocumentoEditalId,
     IReadOnlyList<AnexoSolicitadoDoEdital>? Anexos);

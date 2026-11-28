@@ -202,4 +202,13 @@ public sealed class ConfiguracaoTaxaInscricaoTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Fundamentos.Should().HaveCount(3);
     }
+
+    [Fact(DisplayName = "Criar sem informar se cobra recusa como obrigatório no campo cobra e corta as regras que dependem dele")]
+    public void Criar_CobraAusente_RecusaSoComoObrigatorio()
+    {
+        Result<ConfiguracaoTaxaInscricao> resultado = ConfiguracaoTaxaInscricao.Criar(null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(e => e.Field == "cobra" && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+    }
 }

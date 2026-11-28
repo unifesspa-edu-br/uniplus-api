@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Entradas;
 
+using System.ComponentModel;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -42,9 +42,14 @@ public sealed record LimiteDeDataInput(string Ancora, DateOnly? Data = null, int
 
 /// <summary>
 /// O envio que a simulação supõe: o instante e a zona, no identificador IANA, em que se conta o dia
-/// dele — o mesmo que o formulário apresentado publica em <c>fusoDoEnvio</c>.
+/// dele — o mesmo que o formulário apresentado publica em <c>fusoDoEnvio</c>. O instante ausente ou nulo chega ao
+/// domínio, que o recusa (422) com as demais recusas do envio.
 /// </summary>
-public sealed record EnvioSimuladoInput([property: JsonRequired] DateTimeOffset Instante, string Fuso);
+public sealed record EnvioSimuladoInput(
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DateTimeOffset? Instante,
+    string Fuso);
 
 /// <summary>
 /// Um grupo de opções permitidas e a condição, sobre respostas anteriores, em que ele vale; sem
@@ -107,7 +112,9 @@ public sealed record RegrasDoCampoInput(
 /// </summary>
 public sealed record FatoColetadoInput(
     string FatoCodigo,
-    int Ordem,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Ordem,
     ApresentacaoDoCampoInput? Apresentacao,
     RegrasDoCampoInput? Regras,
     string? PaginaCodigo = null)
@@ -146,16 +153,20 @@ public sealed record ExibicaoEObrigatoriedadeInput(
 /// Um grupo repetível do formulário (UNI-REQ-0146): o código, a posição na ordem dos itens, o rótulo, as
 /// <see cref="Ocorrencias"/> admitidas, a exibição e a obrigatoriedade do grupo em <see cref="Regras"/> — na forma
 /// das do item —, os campos de cada ocorrência, cada um na forma do item, com ordem própria dentro do grupo e sem
-/// seção, e a seção do grupo. As ocorrências ausentes são recusadas pelo domínio, como o mínimo e a inclusão
+/// seção, e a seção do grupo. Os campos (<see cref="Subitens"/>) ausentes são recusados pelo domínio como obrigatórios, sem conferir o que depende deles. As ocorrências ausentes são recusadas pelo domínio, como o mínimo e a inclusão
 /// do candidato que faltarem; as regras ausentes chegam ao domínio, que recusa a obrigatoriedade que falta.
 /// </summary>
 public sealed record GrupoColetadoInput(
     string Codigo,
-    int Ordem,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Ordem,
     string Rotulo,
     OcorrenciasDoGrupoInput? Ocorrencias,
     ExibicaoEObrigatoriedadeInput? Regras,
-    IReadOnlyList<FatoColetadoInput> Subitens,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    IReadOnlyList<FatoColetadoInput>? Subitens,
     string? PaginaCodigo = null)
 {
     /// <summary>O caminho das ocorrências no grupo, onde a recusa de mínimo e máximo se aponta.</summary>
@@ -179,7 +190,9 @@ public sealed record ApresentacaoDaPaginaInput(string? Titulo, string? Descricao
 /// </summary>
 public sealed record PaginaDoFormularioInput(
     string Codigo,
-    int Ordem,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Ordem,
     [AceitaCodigosDe<TipoPaginaFormulario>] string Tipo,
     [AceitaCodigosDe<BlocoSistema>] string? Bloco,
     ApresentacaoDaPaginaInput? Apresentacao,
@@ -204,7 +217,9 @@ public sealed record VersaoDoTermoInput(Guid TermoId, Guid VersaoId);
 /// </summary>
 public sealed record TermoExigidoInput(
     string Codigo,
-    int Ordem,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Ordem,
     VersaoDoTermoInput? Termo,
     ExibicaoEObrigatoriedadeInput? Regras)
 {

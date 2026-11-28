@@ -23,27 +23,26 @@ public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
         Result<InstanteDoComando> instante = instantes.Ler();
         return instante.IsFailure
             ? Result<AtoAPublicar>.Failure(instante.Error!)
-            : await ConferirProdutoAsync(command, processo.Value!, instante.Value, cancellationToken).ConfigureAwait(false);
+            : AusenciaDaDataDoAto.Concluir(
+                command, await ConferirAsync(command, processo.Value!, instante.Value, cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<Result<AtoAPublicar>> ConferirProdutoAsync(
+    // A recusa do item não impede a conferência da ausência dos documentos, que não depende dela.
+    private async Task<Result<AtoConferido>> ConferirAsync(
         PublicarProdutoDoEditalCommand command, ProcessoDivulgadoConferido processo,
         InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<ProdutoConferido> produto = await produtos.ConferirAsync(command, instante, cancellationToken).ConfigureAwait(false);
-        return produto.IsFailure
-            ? Result<AtoAPublicar>.Failure(produto.Error!)
-            : await ConferirDocumentosAsync(command, processo, instante.Instante, produto.Value, cancellationToken).ConfigureAwait(false);
-    }
+        if (produto.IsFailure)
+        {
+            return Result<AtoConferido>.ValidationFailure(
+                [.. produto.Errors, .. ConferenciaDosDocumentosDoAto.DocumentosAusentes(command.DocumentoPrincipalId, command.Anexos ?? [])]);
+        }
 
-    private async Task<Result<AtoAPublicar>> ConferirDocumentosAsync(
-        PublicarProdutoDoEditalCommand command, ProcessoDivulgadoConferido processo,
-        DateTimeOffset instante, ProdutoConferido produto, CancellationToken cancellationToken)
-    {
         Result<DocumentosDoAtoConferidos> conferidos = await documentos
             .ConferirAsync(command.ProcessoSeletivoId, command.DocumentoPrincipalId, command.Anexos ?? [], cancellationToken).ConfigureAwait(false);
         return conferidos.IsFailure
-            ? Result<AtoAPublicar>.ValidationFailure(conferidos.Errors)
-            : Result<AtoAPublicar>.Success(new(command, processo, produto.Tipo, conferidos.Value!, instante, produto.Item, produto.ContaId));
+            ? Result<AtoConferido>.ValidationFailure(conferidos.Errors)
+            : Result<AtoConferido>.Success(new(processo, produto.Value.Tipo, conferidos.Value!, instante.Instante, produto.Value.Item, produto.Value.ContaId));
     }
 }

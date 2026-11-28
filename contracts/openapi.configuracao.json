@@ -17156,7 +17156,8 @@
             "format": "uuid"
           },
           "permiteSobreposicao": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -17215,14 +17216,17 @@
           },
           "ppiPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "quilombolaPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "pcdPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "baseLegal": {
@@ -18280,6 +18284,7 @@
             ]
           },
           "valor": {
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "$ref": "#/components/schemas/JsonElement"
           }
         }
@@ -19508,14 +19513,17 @@
           },
           "ppiPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "quilombolaPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "pcdPercentual": {
             "type": "number",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Zero \u00E9 um valor v\u00E1lido.",
             "format": "double"
           },
           "baseLegal": {
@@ -21150,7 +21158,11 @@
         "type": "object",
         "properties": {
           "instante": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date-time"
           },
           "fuso": {
@@ -21691,6 +21703,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "apresentacao": {
@@ -22061,25 +22074,29 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PaginaPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "termos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           },
           "derivacoes": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DerivacaoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "agregados": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AgregadoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -22179,6 +22196,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "rotulo": {
@@ -22208,7 +22226,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "paginaCodigo": {
             "type": [
@@ -23566,7 +23585,8 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -23737,6 +23757,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "tipo": {
@@ -24840,7 +24861,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RegraPadraoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). A lista vazia remove as regras."
           }
         }
       },
@@ -25420,6 +25442,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "termo": {

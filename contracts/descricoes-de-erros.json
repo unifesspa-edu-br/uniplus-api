@@ -10678,8 +10678,8 @@
       "requisitos": [],
       "oQueAconteceu": [
         "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `fuso` vazio, só com espaços, ou com uma zona horária que o ambiente não reconhece. O envio supõe o instante em que o candidato enviaria as respostas e o fuso em que o dia dele é contado, que é o da período de inscrição, e é dele que se contam os limites da faixa de data. A mensagem é \"A zona '`{zona\\}`' do envio não é reconhecida.\", com a zona informada.",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.fuso`. Nada é gravado. A recusa vale para o texto presente: a propriedade `fuso` ausente ou nula, e a `instante` ausente, são recusadas antes, com 400 e sem código deste catálogo, pela leitura do corpo. O envio simulado é opcional: sem ele, os limites contados do envio ficam indeterminados.",
-        "Esta recusa vem junto das demais do envio e das ocorrências, na mesma lista, e antes da avaliação das regras. Se o fuso é recusado, o instante não chega a ser conferido."
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.fuso`. Nada é gravado. A recusa vale para o texto presente: a propriedade `fuso` ausente ou nula é recusada com este mesmo código. A propriedade `instante` ausente ou nula é recusada junto, como campo obrigatório (422, `uniplus.validacao.obrigatorio`, com `field` igual a `envio.instante`). O envio simulado é opcional: sem ele, os limites contados do envio ficam indeterminados.",
+        "Esta recusa vem junto das demais do envio e das ocorrências, na mesma lista, e antes da avaliação das regras. Se o fuso é recusado, a recusa do instante ausente sai junto na mesma lista, e o dia do instante não é conferido contra o calendário, porque depende do fuso."
       ],
       "comoResolver": [
         "Informe em `fuso` o identificador de uma zona horária que o ambiente reconheça, no mesmo formato que o formulário apresentado publica em `fusoDoEnvio`, ou omita o `envio` inteiro."
@@ -10692,8 +10692,8 @@
       "codigo": "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario",
       "requisitos": [],
       "oQueAconteceu": [
-        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `instante` cujo dia, no `fuso` informado, fica perto demais das pontas do calendário. Os limites da faixa de data de um campo podem ser contados do dia do envio, com deslocamento de até 150 anos ou 54.900 dias para mais ou para menos, e o dia do envio precisa comportar esse deslocamento nos dois lados: ficar a pelo menos esse intervalo de 01/01/0001 e de 31/12/9999. A mensagem é \"O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam.\"",
-        "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.instante`. Nada é gravado. A propriedade `instante` ausente é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. O fuso é conferido antes: com o fuso recusado, a recusa é a de [fuso do envio desconhecido](/erros/uniplus.formulario_portavel.fuso_do_envio_desconhecido)."
+        "A avaliação de um formulário sem cadastro confere as regras de um formulário apresentado contra respostas simuladas, sem gravar nada nem registrar o conteúdo enviado. O envio simulado (`envio`) traz um `instante` cujo dia, no `fuso` informado, fica perto demais das pontas do calendário. Os limites da faixa de data de um campo podem ser contados do dia do envio, com deslocamento de até 150 anos ou 54.900 dias para mais ou para menos, e o dia do envio precisa comportar esse deslocamento nos dois lados: ficar a pelo menos esse intervalo de 01/01/0001 e de 31/12/9999. A mensagem é \"O instante do envio fica fora do calendário que os limites da faixa de data alcançam.\"",
+        "A recusa vem na lista `errors` da resposta, com `field` igual a `envio.instante`. Nada é gravado. A propriedade `instante` ausente ou nula não usa este código: é recusada como campo obrigatório (422, `uniplus.validacao.obrigatorio`), na mesma lista, junto com a recusa do fuso quando há. A conferência do calendário só acontece quando o fuso é reconhecido; com o fuso recusado, a recusa é a de [fuso do envio desconhecido](/erros/uniplus.formulario_portavel.fuso_do_envio_desconhecido)."
       ],
       "comoResolver": [
         "Informe um `instante` de uma data corrente, como a de um envio real, ou omita o `envio` inteiro."
@@ -13128,7 +13128,9 @@
     },
     {
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0554"
+      ],
       "oQueAconteceu": [
         "A requisição não trouxe um campo exigido pela operação. O campo `detail` da resposta informa o nome do que falta, e cada campo recusado vira um item de `errors[]`, cujo `field` o aponta.",
         "A ausência tem duas origens, e as duas caem aqui:",
@@ -28087,7 +28089,9 @@
     },
     {
       "codigo": "uniplus.validacao.obrigatorio",
-      "requisitos": [],
+      "requisitos": [
+        "UNI-REQ-0554"
+      ],
       "oQueAconteceu": [
         "Na validação do pedido, um campo obrigatório está ausente ou vazio. Este código aparece em uma entrada de `errors[]` da resposta de [validação](/erros/uniplus.validacao); quando a ausência é a primeira recusa do pedido, ele também é o código principal da resposta. O campo `field` identifica o campo e `message` descreve a correção necessária."
       ],
@@ -28098,6 +28102,40 @@
         "POST /api/selecao/processos-seletivos",
         "POST /api/configuracao/admin/fases-canonicas",
         "PUT /api/configuracao/admin/fases-canonicas/`{id}`",
+        "Criação de um tipo de fase",
+        "Alteração de um tipo de fase",
+        "POST /api/publicacoes/admin/tipos-ato",
+        "PUT /api/publicacoes/admin/tipos-ato/`{id}`",
+        "POST /api/configuracao/admin/modalidades",
+        "PUT /api/configuracao/admin/modalidades/`{id}`",
+        "POST /api/configuracao/admin/avaliacoes-de-formulario",
+        "PUT /api/configuracao/admin/fatos-candidato/`{id}`/regras-padrao",
+        "PUT /api/configuracao/admin/fatos-candidato/`{id}`/ordem-dos-valores",
+        "PUT /api/configuracao/admin/precedencias-fase/`{id}`",
+        "POST /api/configuracao/admin/referencias-reserva-demografica",
+        "PUT /api/configuracao/admin/referencias-reserva-demografica/`{id}`",
+        "POST /api/organizacao/admin/unidades",
+        "PUT /api/organizacao/admin/unidades/`{id}`",
+        "POST /api/publicacoes/admin/atos",
+        "PUT /api/selecao/processos-seletivos/`{id}`/taxa-inscricao",
+        "PUT /api/selecao/processos-seletivos/`{id}`/fada",
+        "PUT /api/selecao/processos-seletivos/`{id}`/classificacao",
+        "PUT /api/selecao/processos-seletivos/`{id}`/prova-presencial",
+        "PUT /api/selecao/processos-seletivos/`{id}`/cadastro-reserva",
+        "PUT /api/selecao/processos-seletivos/`{id}`/opcoes-de-curso",
+        "PUT /api/selecao/processos-seletivos/`{id}`/atendimento-especializado",
+        "PUT /api/selecao/processos-seletivos/`{id}`/fatos/`{fatoCodigo}`/opcoes",
+        "PUT /api/selecao/processos-seletivos/`{id}`/distribuicao-vagas",
+        "PUT /api/selecao/processos-seletivos/`{id}`/regras-derivacao",
+        "POST /api/selecao/processos-seletivos/`{id}`/publicacao",
+        "POST /api/selecao/processos-seletivos/`{id}`/retificacoes",
+        "POST /api/selecao/processos-seletivos/`{processoSeletivoId}`/atos",
+        "POST /api/selecao/processos-seletivos/`{processoSeletivoId}`/produtos-previstos/`{produtoId}`/publicacoes",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`/itens",
+        "PUT /api/selecao/admin/processos-seletivos/`{id}`/formularios/`{codigo}`/termos",
+        "PUT /api/selecao/processos-seletivos/`{id}`/etapas",
+        "PUT /api/selecao/processos-seletivos/`{id}`/cronograma-fases",
         "Outras operações com validação da mesma categoria"
       ]
     },

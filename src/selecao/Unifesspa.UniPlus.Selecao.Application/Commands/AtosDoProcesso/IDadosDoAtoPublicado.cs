@@ -13,13 +13,13 @@ public interface IDadosDoAtoPublicado
     string? Numero { get; }
 
     /// <summary>Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</summary>
-    DateOnly DataDoAto { get; }
+    DateOnly? DataDoAto { get; }
 
     /// <summary>Quem assina o ato.</summary>
     string Assinante { get; }
 
     /// <summary>O documento a publicar confirmado que é o principal, sempre PDF.</summary>
-    Guid DocumentoPrincipalId { get; }
+    Guid? DocumentoPrincipalId { get; }
 
     /// <summary>Os anexos, na ordem em que o ato os apresenta; nulo ou vazio quando não há.</summary>
     IReadOnlyList<AnexoSolicitadoDoAto>? Anexos { get; }

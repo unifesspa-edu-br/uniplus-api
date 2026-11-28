@@ -63,12 +63,11 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
             .NotNull()
             .WithMessage("Nível da escala de atendimento não pode ser nulo.");
 
-    // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a chave, mas `"produtos": null` atravessa a
-    // desserialização e chega até aqui — o tipo não-anulável não a barra, e a exigência implícita do `[ApiController]` não
-    // alcança propriedade de item de coleção no corpo. Como a gravação substitui a coleção inteira, um nulo apagaria em silêncio
-    // o que a etapa declara. A lista vazia continua válida: é a declaração explícita de que não há nenhum. Item nulo nas
-    // coleções aninhadas passa incólume pelo ChildRules, e o handler o desreferencia — o papel do produto, o tipo da banca, a
-    // evento que inicia o prazo do recurso — estourando como 500.
+    // A COLEÇÃO em si não pode ser nula, e a chave omitida chega aqui como nula. Como a gravação substitui a coleção inteira, um
+    // nulo apagaria em silêncio o que a etapa declara; por isso as três coleções saem recusadas com 422 e o campo nomeado,
+    // acumuladas com as demais recusas do pedido. A lista vazia continua válida: é a declaração explícita de que não há nenhum.
+    // Item nulo nas coleções aninhadas passa incólume pelo ChildRules, e o handler o desreferencia — o papel do produto, o tipo da
+    // banca, o evento que inicia o prazo do recurso — estourando como 500.
     private static void ColecoesNaoNulasDaEtapa(InlineValidator<EtapaProcessoInput> etapa)
     {
         etapa.RuleFor(e => e.Produtos)

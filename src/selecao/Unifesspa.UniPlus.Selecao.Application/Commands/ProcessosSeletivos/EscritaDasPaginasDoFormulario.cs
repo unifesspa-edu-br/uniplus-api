@@ -8,6 +8,7 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -17,8 +18,17 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// As páginas lidas pela forma, sem leitura externa, na posição da entrada (nulo na página recusada), com a
 /// exibição de cada posição.
 /// </summary>
-internal sealed record PaginasDoFormularioLidas(IReadOnlyList<PaginaDoFormulario?> PorPosicao, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros)
+internal sealed record PaginasDoFormularioLidas(
+    IReadOnlyList<PaginaDoFormulario?> PorPosicao, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros, bool Enviadas = true)
 {
+    /// <summary>A lista que o pedido não enviou: nenhuma página lida e a recusa da lista ausente.</summary>
+    public static PaginasDoFormularioLidas Ausentes { get; } = new(
+        [], [], [new FieldError(EstruturaFormulario.CaminhoDasPaginas, new DomainError(CodigosDeValidacao.Obrigatorio, "Informe as páginas do formulário."))],
+        Enviadas: false);
+
+    /// <summary>As páginas por posição para a conferência da estrutura; nulo quando a lista não foi enviada e as regras dela são cortadas.</summary>
+    public IReadOnlyList<PaginaDoFormulario?>? ParaAEstrutura => Enviadas ? PorPosicao : null;
+
     /// <summary>As páginas que a forma aceitou, sem a posição das recusadas.</summary>
     public IReadOnlyList<PaginaDoFormulario> Montadas => [.. PorPosicao.OfType<PaginaDoFormulario>()];
 }
@@ -33,9 +43,13 @@ internal sealed record PaginaLida(PaginaDoFormulario? Pagina, PredicadoDnf? Exib
 /// </summary>
 internal static class EscritaDasPaginasDoFormulario
 {
-    public static PaginasDoFormularioLidas Ler(IReadOnlyList<PaginaDoFormularioInput?> entradas)
+    public static PaginasDoFormularioLidas Ler(IReadOnlyList<PaginaDoFormularioInput?>? entradas)
     {
-        ArgumentNullException.ThrowIfNull(entradas);
+        if (entradas is null)
+        {
+            return PaginasDoFormularioLidas.Ausentes;
+        }
+
         List<PaginaLida> lidas = [.. entradas.Select((entrada, i) => LerPagina(entrada, $"{EstruturaFormulario.CaminhoDasPaginas}[{i}]"))];
         return new PaginasDoFormularioLidas(
             [.. lidas.Select(static l => l.Pagina)],

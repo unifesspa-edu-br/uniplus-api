@@ -13,6 +13,7 @@ internal static class VersaoDoObjetoDeTeste
         {
             Numeracao = new NumeracaoDoAto("CEPS", "EDITAL", 2026, "13"),
             TipoCodigo = "EDITAL_ABERTURA",
+            DataDoAto = new DateOnly(2026, 1, 15),
             DocumentoHash = AtoNormativoDeTeste.HashValido,
             Assinante = PersonasDeTeste.NomeKevinCarvalho,
             VersaoDoObjetoId = id,

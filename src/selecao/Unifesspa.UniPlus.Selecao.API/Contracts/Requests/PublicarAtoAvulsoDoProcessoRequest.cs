@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using System.ComponentModel;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
 /// <summary>
@@ -17,9 +20,13 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 public sealed record PublicarAtoAvulsoDoProcessoRequest(
     string TipoAtoCodigo,
     string? Numero,
-    DateOnly DataDoAto,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DateOnly? DataDoAto,
     string Assinante,
-    Guid DocumentoPrincipalId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    Guid? DocumentoPrincipalId,
     IReadOnlyList<AnexoDoAtoRequest>? Anexos = null,
     Guid? AtoCorrigidoId = null,
     string? MotivoDaCorrecao = null)
@@ -37,7 +44,11 @@ public sealed record PublicarAtoAvulsoDoProcessoRequest(
 /// Nome do arquivo no download. A extensão do formato é acrescentada quando falta; o nome é
 /// obrigatório, tem até 120 caracteres com a extensão e não admite separador de caminho.
 /// </param>
-public sealed record AnexoDoAtoRequest(Guid DocumentoId, string? Nome)
+public sealed record AnexoDoAtoRequest(
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    Guid? DocumentoId,
+    string? Nome)
 {
     /// <summary>Os anexos do corpo como o comando os recebe; um item nulo segue adiante para o validator recusar.</summary>
     internal static List<AnexoSolicitadoDoAto>? ParaComando(IReadOnlyList<AnexoDoAtoRequest>? anexos) =>

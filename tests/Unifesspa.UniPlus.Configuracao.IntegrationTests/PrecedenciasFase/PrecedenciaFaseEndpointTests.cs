@@ -9,6 +9,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -197,7 +198,16 @@ public sealed class PrecedenciaFaseEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "PUT altera PermiteSobreposicao mantendo o par imutável; replay idempotente retorna o mesmo estado")]
+    [Fact(DisplayName = "PUT sem o campo em aresta inexistente retorna 422, não 404")]
+    public async Task Atualizar_CampoAusenteEInexistente_Retorna422()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        await RecusaDeCampoObrigatorioNoDominio.ConferirAsync(await EnviarPutAdmin(client, id, new { id }), "permiteSobreposicao");
+    }
+
+    [Fact(DisplayName = "PUT altera PermiteSobreposicao mantendo o par imutável; sem o campo ou com ele nulo, retorna 422 e não apaga o valor")]
     public async Task Atualizar_TrocaSobreposicaoEReplayIdempotente()
     {
         var criarBody = new { antecessoraCodigo = "AVALIACAO", sucessoraCodigo = "CLASSIFICACAO", permiteSobreposicao = false };
@@ -211,7 +221,15 @@ public sealed class PrecedenciaFaseEndpointTests
         HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, atualizarBody);
         atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        await ConferirRecusaDaSobreposicaoAusenteAsync(client, id);
         await VerificarSobreposicaoAtualizadaAsync(client, id);
+    }
+
+    private static async Task ConferirRecusaDaSobreposicaoAusenteAsync(HttpClient client, Guid id)
+    {
+        await RecusaDeCampoObrigatorioNoDominio.ConferirAsync(await EnviarPutAdmin(client, id, new { id }), "permiteSobreposicao");
+        await RecusaDeCampoObrigatorioNoDominio.ConferirAsync(
+            await EnviarPutAdmin(client, id, new { id, permiteSobreposicao = (bool?)null }), "permiteSobreposicao");
     }
 
     private static async Task VerificarSobreposicaoAtualizadaAsync(HttpClient client, Guid id)

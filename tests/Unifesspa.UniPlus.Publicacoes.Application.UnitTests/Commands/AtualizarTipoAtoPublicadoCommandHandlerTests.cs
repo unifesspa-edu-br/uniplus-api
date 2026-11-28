@@ -124,6 +124,32 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Atributo ausente é recusado como obrigatório sem buscar por Id, acumulado com as demais recusas")]
+    public async Task Handle_ComAtributoAusente_AcumulaSemBuscarPorId()
+    {
+        Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(Guid.NewGuid()) with { Nome = "E", ExigeAtoCorrigido = null },
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("nome", TipoAtoPublicadoErrorCodes.NomeTamanho),
+            ("exigeAtoCorrigido", CodigosDeValidacao.Obrigatorio));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Início da vigência ausente é recusado e o tipo existente não muda")]
+    public async Task Handle_ComInicioDaVigenciaAusente_NaoAlteraOTipo()
+    {
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
+
+        Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(existente.Id) with { VigenciaInicio = null }, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "vigenciaInicio" && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+        existente.VigenciaInicio.Should().Be(Inicio);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Violação da exclusion constraint de vigência descarta o rastreamento antes de devolver o conflito")]
     public async Task Handle_ColisaoNaExclusionConstraint_DescartaRastreamentoERetornaConflito()
     {

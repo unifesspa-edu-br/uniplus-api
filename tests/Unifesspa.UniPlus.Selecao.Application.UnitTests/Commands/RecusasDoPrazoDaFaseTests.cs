@@ -46,6 +46,22 @@ public sealed class RecusasDoPrazoDaFaseTests
             ($"fases[0].regraRecurso.{campo}", $"RegraRecursoFase.{codigo}"));
     }
 
+    [Fact(DisplayName = "A instância superior ausente é recusada com o código genérico de campo obrigatório, acumulada com as demais recusas")]
+    public async Task Handle_InstanciaSuperiorAusente_RecusaComOCodigoGenericoAcumulada()
+    {
+        Result resultado = await DefinirFaseComAsync(ParametrosDoPedidoDoRecurso.Valido with
+        {
+            PrazoValor = 0m,
+            AdmiteInstanciaSuperior = null,
+            PrazoSegundaInstanciaValor = 1m,
+            PrazoSegundaInstanciaUnidade = "HORAS",
+        });
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("fases[0].regraRecurso.prazoValor", "RegraRecursoFase.PrazoNaoPositivo"),
+            ("fases[0].regraRecurso.admiteInstanciaSuperior", CodigosDeValidacao.Obrigatorio));
+    }
+
     private static Task<Result> DefinirFaseComAsync(ParametrosDoPedidoDoRecurso pedido)
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho()

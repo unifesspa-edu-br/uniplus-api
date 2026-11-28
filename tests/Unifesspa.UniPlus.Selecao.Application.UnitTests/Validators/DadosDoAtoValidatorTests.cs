@@ -29,8 +29,8 @@ public sealed class DadosDoAtoValidatorTests
         _validator.Validate(Valido()).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Ano omitido do corpo binda para 0 e é recusado — não pode publicar e falhar depois")]
-    public void AnoAusente_Recusa()
+    [Fact(DisplayName = "Ano informado como zero é recusado pela faixa — não pode publicar e falhar depois")]
+    public void AnoZero_Recusa()
     {
         ValidationResult resultado = _validator.Validate(Valido() with { Ano = 0 });
 
@@ -38,14 +38,18 @@ public sealed class DadosDoAtoValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(DadosDoAto.Ano));
     }
 
-    [Fact(DisplayName = "Data de publicação omitida binda para 0001-01-01 e é recusada")]
-    public void DataAusente_Recusa()
+    [Fact(DisplayName = "Data informada como 0001-01-01 é recusada")]
+    public void DataZero_Recusa()
     {
-        ValidationResult resultado = _validator.Validate(Valido() with { DataDoAto = default });
+        ValidationResult resultado = _validator.Validate(Valido() with { DataDoAto = default(DateOnly) });
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(DadosDoAto.DataDoAto));
     }
+
+    [Fact(DisplayName = "Ano e data ausentes não são do validator: a conferência do ato os recusa com o código de campo obrigatório")]
+    public void AnoEDataAusentes_NaoSaoDoValidator() =>
+        _validator.Validate(Valido() with { Ano = null, DataDoAto = null }).IsValid.Should().BeTrue();
 
     [Theory(DisplayName = "Órgão e assinante em branco são recusados")]
     [InlineData("")]

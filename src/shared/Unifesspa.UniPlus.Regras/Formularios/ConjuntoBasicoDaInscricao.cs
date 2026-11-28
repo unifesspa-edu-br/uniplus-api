@@ -126,7 +126,7 @@ public static class ConjuntoBasicoDaInscricao
             return Itens;
         }
 
-        int inicio = porCodigo.Values.Min(static g => g.Ordem);
+        int inicio = porCodigo.Values.Select(static g => g.Ordem).OfType<int>().DefaultIfEmpty(0).Min();
         return [.. Itens.Select((canonico, posicao) =>
             ComOrdemERotuloDoConjunto(porCodigo.GetValueOrDefault(canonico.FatoCodigo) ?? canonico, canonico, inicio + posicao))];
     }
@@ -186,16 +186,18 @@ public static class ConjuntoBasicoDaInscricao
     private static int DeslocamentoDoQueVemDepoisDaSecao(
         IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<GrupoColetadoInput> grupos, IReadOnlyList<FatoColetadoInput> referencia)
     {
-        int teto = referencia.Count == 0 ? -1 : referencia.Max(static r => r.Ordem);
+        int teto = referencia.Count == 0 ? -1 : referencia.Max(static r => r.Ordem.GetValueOrDefault());
         int primeiro = enviados.Where(i => i is not null && !Fatos.Contains(i.FatoCodigo)).Select(static i => i.Ordem)
             .Concat(grupos.Where(static g => g is not null).Select(static g => g.Ordem))
+            .OfType<int>()
             .DefaultIfEmpty(int.MaxValue).Min();
         return primeiro <= teto ? teto + 1 - primeiro : 0;
     }
 
     /// <summary>
     /// O item básico enviado vale pelo da referência, que já tem a ordem e o rótulo do conjunto; o
-    /// omitido entra por ela.
+    /// omitido entra por ela. O enviado sem ordem segue como veio, para a ausência ser recusada na leitura
+    /// em vez de coberta pela ordem da referência.
     /// </summary>
     private static IReadOnlyList<FatoColetadoInput> ItensMesclados(
         IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<FatoColetadoInput> referencia, int deslocamento)
@@ -216,7 +218,12 @@ public static class ConjuntoBasicoDaInscricao
             return enviado!;
         }
 
-        return basicos.GetValueOrDefault(enviado.FatoCodigo) ?? (Fatos.Contains(enviado.FatoCodigo) ? enviado : enviado with { Ordem = enviado.Ordem + deslocamento });
+        if (Fatos.Contains(enviado.FatoCodigo))
+        {
+            return enviado.Ordem is null ? enviado : basicos.GetValueOrDefault(enviado.FatoCodigo) ?? enviado;
+        }
+
+        return enviado with { Ordem = enviado.Ordem + deslocamento };
     }
 
     /// <summary>

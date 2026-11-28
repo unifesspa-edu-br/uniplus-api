@@ -30,11 +30,18 @@ public sealed class ErrosDaConfiguracaoDoRecursoTests
         [MotivoDaRecusaDosParametros.GuardaDaVagaNaoDeclaravel] = "guarda_da_vaga_nao_declaravel",
     };
 
-    public static TheoryData<MotivoDaRecusaDosParametros> Motivos => [.. Enum.GetValues<MotivoDaRecusaDosParametros>().Where(static motivo => motivo != MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida)];
+    // Formato inválido e campo obrigatório ausente saem com o código genérico de validação, não com um código do módulo.
+    private static readonly MotivoDaRecusaDosParametros[] MotivosComCodigoGenerico =
+    [
+        MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida,
+        MotivoDaRecusaDosParametros.InstanciaSuperiorNaoDeclarada,
+    ];
+
+    public static TheoryData<MotivoDaRecusaDosParametros> Motivos => [.. MotivosComCodigoProprio()];
 
     [Fact(DisplayName = "Todo motivo de recusa dos parâmetros do recurso tem o código estável declarado neste teste")]
     public void TodoMotivo_TemCodigoNoFio() =>
-        SufixosNoFio.Keys.Should().BeEquivalentTo(Enum.GetValues<MotivoDaRecusaDosParametros>().Where(static motivo => motivo != MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida));
+        SufixosNoFio.Keys.Should().BeEquivalentTo(MotivosComCodigoProprio());
 
     [Theory(DisplayName = "A recusa dos parâmetros do recurso da fase é mapeada para 422 com o código estável do módulo")]
     [MemberData(nameof(Motivos))]
@@ -45,6 +52,9 @@ public sealed class ErrosDaConfiguracaoDoRecursoTests
     [MemberData(nameof(Motivos))]
     public void RecusaDaEtapa_MapeadaPara422ComOCodigoEstavel(MotivoDaRecusaDosParametros motivo) =>
         ConferirMapeamento($"RecursoDaEtapa.{motivo}", $"uniplus.selecao.configuracao_do_recurso_da_etapa.{SufixosNoFio[motivo]}");
+
+    private static IEnumerable<MotivoDaRecusaDosParametros> MotivosComCodigoProprio() =>
+        Enum.GetValues<MotivoDaRecusaDosParametros>().Except(MotivosComCodigoGenerico);
 
     private static void ConferirMapeamento(string codigoDoDominio, string codigoNoFio)
     {

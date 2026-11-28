@@ -6,9 +6,9 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 
@@ -47,24 +47,37 @@ public static class DefinirOpcoesDeclaradasCommandHandler
         CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoes = ConferirOpcoes(command);
-        if (opcoes.IsFailure)
-        {
-            return Result.ValidationFailure(opcoes.Errors);
-        }
-
         FatoCandidatoView? fato = await fatoCandidatoReader.ObterPorCodigoAsync(command.FatoCodigo, cancellationToken).ConfigureAwait(false);
-        return RecusaDoFato(fato) ?? await GravarAsync(processo, fato!, opcoes.Value!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
+        FieldError[] recusasDoFato = [.. RecusaDoFato(fato)?.Errors ?? [], .. RecusaDoFatoGeridoPeloAtendimento(command.FatoCodigo)];
+
+        // As opções e o fato dependem só do pedido: as conferências rodam e as recusas se somam.
+        return opcoes.IsFailure || recusasDoFato.Length > 0
+            ? Result.ValidationFailure([.. opcoes.Errors, .. recusasDoFato])
+            : await GravarAsync(processo, fato!, opcoes.Value!, fatoCandidatoReader, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static Result<IReadOnlyList<OpcaoDeclaradaFato>> ConferirOpcoes(DefinirOpcoesDeclaradasCommand command)
+    private static Result<IReadOnlyList<OpcaoDeclaradaFato>> ConferirOpcoes(DefinirOpcoesDeclaradasCommand command) =>
+        command.Opcoes is { } opcoes
+            ? ConferirCadaOpcao(command.FatoCodigo, opcoes)
+            : Result<IReadOnlyList<OpcaoDeclaradaFato>>.ValidationFailure([new FieldError(
+                "opcoes", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe as opções do fato."))]);
+
+    private static Result<IReadOnlyList<OpcaoDeclaradaFato>> ConferirCadaOpcao(string fatoCodigo, IReadOnlyList<OpcaoDeclaradaInput> opcoes)
     {
         List<(int Ordem, Result<OpcaoDeclaradaFato> Opcao)> criadas =
-            [.. command.Opcoes.Select((input, ordem) => (ordem, OpcaoDeclaradaFato.Criar(command.FatoCodigo, input.Codigo, input.Rotulo, ordem)))];
+            [.. opcoes.Select((input, ordem) => (ordem, OpcaoDeclaradaFato.Criar(fatoCodigo, input.Codigo, input.Rotulo, ordem)))];
         FieldError[] erros = [.. criadas.SelectMany(static c => c.Opcao.Errors.Select(e => e.NoCaminhoDoItem($"opcoes[{c.Ordem}]")))];
         return erros.Length > 0
             ? Result<IReadOnlyList<OpcaoDeclaradaFato>>.ValidationFailure(erros)
             : Result<IReadOnlyList<OpcaoDeclaradaFato>>.Success([.. criadas.Select(static c => c.Opcao.Value!)]);
     }
+
+    private static IEnumerable<FieldError> RecusaDoFatoGeridoPeloAtendimento(string fatoCodigo) =>
+        AtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo)
+            ? [new FieldError(null, new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.GeridasPeloAtendimentoEspecializado,
+                "As opções deste fato vêm do atendimento especializado; defina-as nele."))]
+            : [];
 
     private static Result? RecusaDoFato(FatoCandidatoView? fato)
     {

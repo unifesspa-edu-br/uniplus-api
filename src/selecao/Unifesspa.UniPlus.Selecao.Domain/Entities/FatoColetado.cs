@@ -166,7 +166,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// <exception cref="ArgumentException">A cópia do catálogo vem sem hipótese legal, finalidade do tratamento ou descrição.</exception>
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
-        int ordem,
+        int? ordem,
         string? paginaCodigo,
         ApresentacaoDoCampo apresentacao,
         RegrasDoCampo regras,
@@ -183,7 +183,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
             return Result<FatoColetado>.ValidationFailure(erros);
         }
 
-        return Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem, paginaCodigo, apresentacao, regras, copia, formulario));
+        return Result<FatoColetado>.Success(new FatoColetado(fatoCodigo, ordem.GetValueOrDefault(), paginaCodigo, apresentacao, regras, copia, formulario));
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// conferida aqui.
     /// </summary>
     public static List<FieldError> ConferirForma(
-        string fatoCodigo, int ordem, ApresentacaoLidaDoCampo apresentacao, RegrasLidasDoCampo regras, CopiaDoItemNoCatalogo copia)
+        string fatoCodigo, int? ordem, ApresentacaoLidaDoCampo apresentacao, RegrasLidasDoCampo regras, CopiaDoItemNoCatalogo copia)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);

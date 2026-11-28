@@ -8,9 +8,9 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
-/// A declaração de instância superior é obrigatória na entrada: <c>bool</c> ausente
-/// desserializa como <c>false</c>, e a janela seria congelada afirmando que o recurso termina
-/// na 1ª instância sem que ninguém o tivesse decidido.
+/// A declaração de instância superior é obrigatória na entrada: ausente ou nula, chega ao comando como nula, e o domínio a
+/// recusa. Ela não pode ser lida como <c>false</c>, senão a janela seria congelada afirmando que o recurso termina na 1ª
+/// instância sem que ninguém o tivesse decidido.
 /// </summary>
 public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
 {
@@ -21,8 +21,8 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
         Converters = { new JsonStringEnumConverter() },
     };
 
-    [Fact(DisplayName = "Regra de recurso da fase sem a declaração de instância superior é rejeitada, e não lida como 'não admite'")]
-    public void RegraDaFase_SemDeclaracao_LancaJsonException()
+    [Fact(DisplayName = "Regra de recurso da fase sem a declaração de instância superior é lida como nula, e não como 'não admite'")]
+    public void RegraDaFase_SemDeclaracao_LeComoNula()
     {
         const string json = """
         {
@@ -32,13 +32,13 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
         }
         """;
 
-        Action act = () => JsonSerializer.Deserialize<RegraRecursoFaseInput>(json, Options);
+        RegraRecursoFaseInput? regra = JsonSerializer.Deserialize<RegraRecursoFaseInput>(json, Options);
 
-        act.Should().Throw<JsonException>();
+        regra!.AdmiteInstanciaSuperior.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Janela de recurso da etapa sem a declaração de instância superior é rejeitada, e não lida como 'não admite'")]
-    public void JanelaDaEtapa_SemDeclaracao_LancaJsonException()
+    [Fact(DisplayName = "Janela de recurso da etapa sem a declaração de instância superior é lida como nula, e não como 'não admite'")]
+    public void JanelaDaEtapa_SemDeclaracao_LeComoNula()
     {
         const string json = """
         {
@@ -48,9 +48,9 @@ public sealed class InstanciaSuperiorDaJanelaDeRecursoJsonTests
         }
         """;
 
-        Action act = () => JsonSerializer.Deserialize<RecursoDaEtapaInput>(json, Options);
+        RecursoDaEtapaInput? janela = JsonSerializer.Deserialize<RecursoDaEtapaInput>(json, Options);
 
-        act.Should().Throw<JsonException>();
+        janela!.AdmiteInstanciaSuperior.Should().BeNull();
     }
 
     [Fact(DisplayName = "Com a declaração de instância superior, a regra de recurso da fase é lida com os códigos como texto")]

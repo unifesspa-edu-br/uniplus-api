@@ -13,7 +13,8 @@ using static AtoNormativoApoio;
 /// <summary>
 /// O registro do ato por HTTP entrega ao domínio o texto obrigatório que o corpo omite ou traz com <c>null</c>,
 /// no campo do ato, no de um vínculo e no de um anexo da lista: a recusa é a do domínio, 422 com o código da regra e
-/// o campo apontado, e as duas formas de ausência dão a mesma resposta.
+/// o campo apontado, e as duas formas de ausência dão a mesma resposta. A data do ato, que antes virava o ano 1 em
+/// silêncio, é recusada com o código genérico de campo obrigatório.
 /// </summary>
 [Collection(PublicacoesEndpointCollection.Name)]
 public sealed class CampoObrigatorioNoRegistroDoAtoEndpointTests
@@ -38,6 +39,8 @@ public sealed class CampoObrigatorioNoRegistroDoAtoEndpointTests
         { "serie", Prefixo + "texto_invalido", false },
         { "tipoCodigo", "uniplus.publicacoes.tipo_ato.codigo_obrigatorio", true },
         { "tipoCodigo", "uniplus.publicacoes.tipo_ato.codigo_obrigatorio", false },
+        { "dataDoAto", "uniplus.validacao.obrigatorio", true },
+        { "dataDoAto", "uniplus.validacao.obrigatorio", false },
         { "documentoHash", Prefixo + "hash_do_documento_invalido", true },
         { "documentoHash", Prefixo + "hash_do_documento_invalido", false },
         { "assinante", Prefixo + "texto_invalido", true },

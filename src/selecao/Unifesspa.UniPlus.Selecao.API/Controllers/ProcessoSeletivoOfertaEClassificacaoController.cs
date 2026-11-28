@@ -182,8 +182,8 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo. <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
-    /// declarado", que BLOQUEIA a publicação.
+    /// Define a taxa de inscrição e os fundamentos de isenção do processo. <c>Cobra</c> é obrigatório: ausente ou nulo é recusado (422) e não
+    /// remove a declaração.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/taxa-inscricao")]

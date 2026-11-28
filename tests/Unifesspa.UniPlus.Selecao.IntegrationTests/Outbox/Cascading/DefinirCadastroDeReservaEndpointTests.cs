@@ -82,14 +82,14 @@ public sealed class DefinirCadastroDeReservaEndpointTests(CascadingFixture fixtu
         (await LerGravadoAsync(id)).Should().Equal(CadastroAnterior);
     }
 
-    [Fact(DisplayName = "PUT sem o campo chamadas responde 400")]
-    public async Task Put_SemChamadas_Retorna400()
+    [Fact(DisplayName = "PUT sem o campo chamadas responde 422 de campo obrigatório")]
+    public async Task Put_SemChamadas_Retorna422()
     {
         Guid id = await SemearAsync();
 
         using HttpResponseMessage resposta = await EnviarAsync(id, "{}");
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "cadastroDeReserva");
     }
 
     [Fact(DisplayName = "PUT de processo inexistente responde 404")]

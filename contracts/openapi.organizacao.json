@@ -1157,7 +1157,8 @@
             ]
           },
           "unidadeAcademica": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "vigenciaFim": {
             "type": [
@@ -1460,10 +1461,12 @@
             ]
           },
           "unidadeAcademica": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "vigenciaInicio": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "vigenciaFim": {

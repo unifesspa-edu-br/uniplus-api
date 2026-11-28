@@ -146,16 +146,15 @@ public sealed class LeituraDosDocumentosExigidosTests
         Causas(lidas).Should().Equal(("/documentosExigidos/exigencias/0/dadosComprovados", DocumentoExigido.FatosComprovadosInvalidos));
     }
 
-    [Fact(DisplayName = "A condição com o valor nulo escrito é lida, e a condição sem o valor é recusada como valor obrigatório")]
-    public void Condicao_ValorNuloEscritoOuAusente_UmaELidaEOutraRecusada()
+    [Fact(DisplayName = "A condição com o valor nulo escrito e a sem o valor são recusadas como valor obrigatório")]
+    public void Condicao_ValorNuloEscritoOuAusente_AsDuasSaoRecusadas()
     {
         JsonElement nuloEscrito = JsonSerializer.SerializeToElement<string?>(null);
 
         ExigenciasLidas escrito = Ler(Exigencia(0, "identidade").Condicional([Condicao("SEXO", "IGUAL", nuloEscrito)]));
         ExigenciasLidas ausente = Ler(Exigencia(0, "identidade").Condicional([Condicao("SEXO", "IGUAL", null)]));
 
-        Causas(escrito).Should().BeEmpty();
-        escrito.Exigencias.DocumentosExigidos.Single().Condicoes.Should().ContainSingle();
+        Causas(escrito).Should().ContainSingle().Which.Ponteiro.Should().EndWith("/valor");
         Causas(ausente).Should().ContainSingle().Which.Ponteiro.Should().EndWith("/valor");
     }
 

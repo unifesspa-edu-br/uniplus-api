@@ -110,10 +110,28 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
     /// janela. Antecessora e sucessora são <b>imutáveis</b> — a chave natural do
     /// par não muda; para trocá-lo, remova a aresta e crie outra.
     /// </summary>
-    public void Atualizar(bool permiteSobreposicao)
+    public Result Atualizar(bool? permiteSobreposicao)
     {
-        PermiteSobreposicao = permiteSobreposicao;
+        Result presenca = ConferirSobreposicao(permiteSobreposicao);
+        if (presenca.IsFailure)
+        {
+            return presenca;
+        }
+
+        PermiteSobreposicao = permiteSobreposicao!.Value;
+
+        return Result.Success();
     }
+
+    /// <summary>
+    /// Recusa a ausência de <paramref name="permiteSobreposicao"/> como campo obrigatório. É a mesma
+    /// conferência de <see cref="Atualizar"/>, para o pedido ser recusado antes de buscar a aresta.
+    /// </summary>
+    public static Result ConferirSobreposicao(bool? permiteSobreposicao) =>
+        permiteSobreposicao is null
+            ? Result.ValidationFailure([new FieldError("permiteSobreposicao", new DomainError(
+                CodigosDeValidacao.Obrigatorio, "Informe se a aresta permite sobreposição de período."))])
+            : Result.Success();
 
     // Não depende do grafo vigente: só compara os dois códigos já normalizados entre si.
     private static Result<(string, string)> ConferirSemPrecedenciaSobreSiMesma(string antecessora, string sucessora) =>

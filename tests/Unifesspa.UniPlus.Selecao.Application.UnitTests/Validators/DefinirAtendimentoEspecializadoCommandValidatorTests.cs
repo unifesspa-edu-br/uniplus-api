@@ -39,13 +39,12 @@ public sealed class DefinirAtendimentoEspecializadoCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "CondicaoIds[0]");
     }
 
-    [Fact(DisplayName = "Validator falha quando uma das listas é nula (evita foreach sobre null no handler)")]
-    public void Rejeita_ListaNula()
+    [Fact(DisplayName = "Validator deixa a lista nula para o domínio recusar como obrigatória")]
+    public void Aceita_ListaNulaNoValidator()
     {
         ValidationResult result = new DefinirAtendimentoEspecializadoCommandValidator()
-            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), null!, [], []));
+            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), null, [], []));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "CondicaoIds");
+        result.IsValid.Should().BeTrue();
     }
 }

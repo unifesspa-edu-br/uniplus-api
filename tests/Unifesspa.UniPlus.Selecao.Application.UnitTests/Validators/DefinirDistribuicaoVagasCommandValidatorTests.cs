@@ -85,16 +85,15 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha (sem estourar) quando ModalidadeIds é nulo")]
-    public void Rejeita_ModalidadeIdsNulo()
+    [Fact(DisplayName = "Validator deixa ModalidadeIds nulo, sem estourar, para o domínio recusar como obrigatório")]
+    public void Aceita_ModalidadeIdsNulo_ARecusaEDoDominio()
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = null! };
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = null };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == "DistribuicaoVagas[0].ModalidadeIds");
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Item nulo na lista gera erro, sem lançar exceção")]
@@ -107,15 +106,15 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Quadro nulo gera erro de validação, sem lançar exceção")]
-    public void Validar_QuadroNulo_GeraErroSemLancarExcecao()
+    [Fact(DisplayName = "Quadro nulo passa pelo validator, sem lançar exceção: a recusa como obrigatório é do domínio")]
+    public void Validar_QuadroNulo_SegueParaODominioSemLancarExcecao()
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = null! };
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = null };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
 
         ValidationResult resultado = _validator.Validate(command);
 
-        resultado.IsValid.Should().BeFalse();
+        resultado.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Item nulo dentro do quadro gera erro de validação, sem lançar exceção")]
