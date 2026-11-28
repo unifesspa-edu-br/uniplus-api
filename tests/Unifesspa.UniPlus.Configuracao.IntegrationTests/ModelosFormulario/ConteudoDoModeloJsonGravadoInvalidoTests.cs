@@ -71,4 +71,30 @@ public sealed class ConteudoDoModeloJsonGravadoInvalidoTests
         erro.Message.Should().NotContain("documento-malformado-ficticio-7f3a");
         erro.InnerException.Should().BeNull();
     }
+
+    [Theory(DisplayName = "O objeto ou o texto gravado com tipo errado falha na leitura, sem virar exigência ausente")]
+    [InlineData("\"validade\":" + Validade, "\"validade\":42")]
+    [InlineData("\"validade\":" + Validade, "\"validade\":\"texto\"")]
+    [InlineData("\"porOpcao\":null", "\"porOpcao\":42")]
+    [InlineData("\"efeitoDoVencimento\":\"ACEITAR_COM_AVISO\"", "\"efeitoDoVencimento\":7")]
+    [InlineData("\"referencia\":{\"tipo\":\"DATA_ESPECIFICA\",\"data\":\"2027-02-01\",\"faseCodigo\":null}", "\"referencia\":42")]
+    [InlineData("\"faseCodigo\":null}", "\"faseCodigo\":5}")]
+    public void Desserializar_TipoErradoNoDocumento_Falha(string valido, string gravado)
+    {
+        string json = Conteudo.Replace(valido, gravado, StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(json);
+
+        ler.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact(DisplayName = "O prazo de emissão gravado com o número 42 falha na leitura")]
+    public void Desserializar_PrazoDeEmissaoNumero_Falha()
+    {
+        string json = Conteudo.Replace("\"prazoDeEmissao\":null", "\"prazoDeEmissao\":42", StringComparison.Ordinal);
+
+        Action ler = () => ConteudoDoModeloJson.Desserializar(json);
+
+        ler.Should().Throw<InvalidOperationException>();
+    }
 }

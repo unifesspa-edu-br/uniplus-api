@@ -16773,6 +16773,12 @@
             ]
           },
           "grupoAreaEnem": {
+            "enum": [
+              "TECNOLOGICA",
+              "HUMANISTICA_I",
+              "HUMANISTICA_II",
+              "SAUDE_E_BIOLOGICAS"
+            ],
             "type": [
               "null",
               "string"
@@ -18768,6 +18774,12 @@
             ]
           },
           "grupoAreaEnem": {
+            "enum": [
+              "TECNOLOGICA",
+              "HUMANISTICA_I",
+              "HUMANISTICA_II",
+              "SAUDE_E_BIOLOGICAS"
+            ],
             "type": [
               "null",
               "string"
@@ -19384,6 +19396,12 @@
             ]
           },
           "grupoCurso": {
+            "enum": [
+              "TECNOLOGICA",
+              "HUMANISTICA_I",
+              "HUMANISTICA_II",
+              "SAUDE_E_BIOLOGICAS"
+            ],
             "type": [
               "null",
               "string"

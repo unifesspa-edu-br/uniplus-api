@@ -10,9 +10,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>O item sob o circuito de aprovação: o cadastro e o identificador.</summary>
 public sealed class ItemDaProtecaoTests
 {
-    [Theory(DisplayName = "O cadastro do vocabulário é lido sem os espaços das pontas")]
+    [Theory(DisplayName = "O cadastro do vocabulário, escrito exatamente, é aceito")]
     [InlineData("TIPO_DOCUMENTO", CadastroDoCatalogo.TipoDocumento)]
-    [InlineData(" DADO_DO_CANDIDATO ", CadastroDoCatalogo.Fato)]
+    [InlineData("DADO_DO_CANDIDATO", CadastroDoCatalogo.Fato)]
     public void Ler_CadastroValido(string cadastro, CadastroDoCatalogo esperado)
     {
         Guid id = Guid.CreateVersion7();
@@ -26,6 +26,9 @@ public sealed class ItemDaProtecaoTests
     [InlineData(null)]
     [InlineData("MODALIDADE")]
     [InlineData("fato")]
+    [InlineData("tipo_documento")]
+    [InlineData(" TIPO_DOCUMENTO ")]
+    [InlineData(" DADO_DO_CANDIDATO ")]
     public void Ler_CadastroInvalido_RecusaNoCampo(string? cadastro)
     {
         List<FieldError> erros = [];

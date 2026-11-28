@@ -37,10 +37,9 @@ public sealed class CursoTests
         curso.IsDeleted.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "Criar sem grupo de área do ENEM (nulo ou em branco) é aceito — nem todo curso classifica por área")]
+    [Theory(DisplayName = "Criar sem grupo de área do ENEM (nulo ou vazio) é aceito — nem todo curso classifica por área")]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("   ")]
     public void Criar_SemGrupoAreaEnem_Aceita(string? grupoAreaEnem)
     {
         Curso curso = Criar(grupoAreaEnem: grupoAreaEnem).Value!;
@@ -141,7 +140,19 @@ public sealed class CursoTests
         resultado.Error!.Code.Should().Be(CursoErrorCodes.NivelEnsinoTamanho);
     }
 
-    [Fact(DisplayName = "Campos são normalizados por Trim na criação")]
+    [Theory(DisplayName = "O grupo de área só com espaços, com espaços nas pontas ou em outra caixa é recusado no campo do grupo")]
+    [InlineData("   ")]
+    [InlineData(" TECNOLOGICA ")]
+    [InlineData("tecnologica")]
+    public void Criar_GrupoForaDoFormato_Recusa(string grupo)
+    {
+        Result<Curso> resultado = Criar(grupoAreaEnem: grupo);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "grupoAreaEnem")
+            .Which.Error.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
+    }
+
+    [Fact(DisplayName = "Textos livres são normalizados por Trim na criação")]
     public void Criar_CamposComEspacos_Normaliza()
     {
         Curso curso = Criar(
@@ -149,7 +160,7 @@ public sealed class CursoTests
             nome: "  Engenharia Civil  ",
             grau: "  Bacharelado  ",
             nivelEnsino: "  Graduação  ",
-            grupoAreaEnem: $"  {GrupoCurso.Tecnologica}  ").Value!;
+            grupoAreaEnem: GrupoCurso.Tecnologica).Value!;
 
         curso.Codigo.Should().Be("ENG_CIVIL");
         curso.Nome.Should().Be("Engenharia Civil");

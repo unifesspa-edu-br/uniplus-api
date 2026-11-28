@@ -112,8 +112,25 @@ public sealed class AtoDaProtecaoDoCatalogoTests
         SituacoesDaAprovacao.Analisar("DEVOLVIDA").Should().Be(SituacaoDaAprovacao.Devolvida);
         new Action(() => SituacoesDaAprovacao.Analisar("REPROVADA")).Should().Throw<ArgumentOutOfRangeException>();
         CadastrosDoCatalogo.TokensCanonicos.Should().Equal("TIPO_DOCUMENTO", "DADO_DO_CANDIDATO");
-        CadastrosDoCatalogo.TryAnalisar(" DADO_DO_CANDIDATO ", out CadastroDoCatalogo fato).Should().BeTrue();
+        CadastrosDoCatalogo.TryAnalisar("DADO_DO_CANDIDATO", out CadastroDoCatalogo fato).Should().BeTrue();
         fato.Should().Be(CadastroDoCatalogo.Fato);
+    }
+
+    [Fact(DisplayName = "A leitura do token fora do formato falha sem repetir o valor gravado")]
+    public void Analisar_TokenComEspacos_FalhaSemOValor()
+    {
+        Action ato = () => AtosDaProtecao.Analisar(" DEVOLUCAO-FICTICIA-7F3A ");
+
+        ato.Should().Throw<ArgumentOutOfRangeException>().Which.Message.Should().NotContain("DEVOLUCAO-FICTICIA-7F3A");
+    }
+
+    [Fact(DisplayName = "O token com espaços nas pontas não é reconhecido em nenhum vocabulário")]
+    public void Tokens_ComEspacosNasPontas_NaoSaoReconhecidos()
+    {
+        CadastrosDoCatalogo.TryAnalisar(" DADO_DO_CANDIDATO ", out _).Should().BeFalse();
+        AtosDaProtecao.TryAnalisar(" DEVOLUCAO ", out _).Should().BeFalse();
+        SituacoesDaAprovacao.TryAnalisar(" DEVOLVIDA ", out _).Should().BeFalse();
+        PareceresDaManifestacao.TryAnalisar(" RECOMENDA_AJUSTE ", out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "O token fora do vocabulário falha alto na reidratação")]

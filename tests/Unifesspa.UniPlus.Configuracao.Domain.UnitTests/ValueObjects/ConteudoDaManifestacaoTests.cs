@@ -15,7 +15,7 @@ public sealed class ConteudoDaManifestacaoTests
     {
         List<FieldError> erros = [];
 
-        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler(" RECOMENDA_APROVACAO ", null, erros);
+        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler("RECOMENDA_APROVACAO", null, erros);
 
         conteudo!.Parecer.Should().Be(ParecerDaManifestacao.RecomendaAprovacao);
         conteudo.Texto.Should().BeNull();
@@ -49,10 +49,12 @@ public sealed class ConteudoDaManifestacaoTests
             e.Field == "texto" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoObrigatorio);
     }
 
-    [Theory]
+    [Theory(DisplayName = "O parecer antigo, com espaços nas pontas ou em outra caixa é recusado, e nada é gravado")]
     [InlineData("ADEQUADA")]
     [InlineData("INADEQUADA")]
-    public void Ler_ParecerAntigo_Recusa(string parecer)
+    [InlineData(" RECOMENDA_APROVACAO ")]
+    [InlineData("recomenda_aprovacao")]
+    public void Ler_ParecerForaDoFormato_Recusa(string parecer)
     {
         List<FieldError> erros = [];
         ConteudoDaManifestacao.Ler(parecer, "Texto.", erros).Should().BeNull();

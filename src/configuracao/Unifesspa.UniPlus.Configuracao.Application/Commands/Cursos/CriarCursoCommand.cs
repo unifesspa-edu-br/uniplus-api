@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Cursos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -23,4 +25,5 @@ public sealed record CriarCursoCommand(
     string? Nome,
     string? Grau,
     string? NivelEnsino,
+    [property: VocabularioFechado(GrupoCurso.Tecnologica, GrupoCurso.HumanisticaI, GrupoCurso.HumanisticaII, GrupoCurso.SaudeEBiologicas)]
     string? GrupoAreaEnem = null) : ICommand<Result<Guid>>;

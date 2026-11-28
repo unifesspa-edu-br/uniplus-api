@@ -57,12 +57,11 @@ public sealed record GrupoCurso
     /// <summary>
     /// Devolve o grupo do <paramref name="codigo"/> informado, com o rótulo posto pelo
     /// sistema. Código fora dos quatro (ou nulo/em branco) retorna falha de domínio. O
-    /// código é normalizado por <c>Trim</c> e comparado de forma ordinal — é ASCII, então
-    /// não há forma Unicode a normalizar.
+    /// código é comparado de forma ordinal e exata: espaços nas pontas e outra caixa são recusados.
     /// </summary>
     public static Result<GrupoCurso> Criar(string? codigo)
     {
-        if (codigo is null || !PorCodigo.TryGetValue(codigo.Trim(), out GrupoCurso? grupo))
+        if (codigo is null || !PorCodigo.TryGetValue(codigo, out GrupoCurso? grupo))
         {
             return Result<GrupoCurso>.Failure(new DomainError(
                 GrupoCursoErrorCodes.ForaDoDominio,

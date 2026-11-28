@@ -102,7 +102,7 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
 
     private static GrupoCurso? ValidarGrupo(string? valor, List<FieldError> erros)
     {
-        if (string.IsNullOrWhiteSpace(valor))
+        if (string.IsNullOrEmpty(valor))
         {
             return null;
         }

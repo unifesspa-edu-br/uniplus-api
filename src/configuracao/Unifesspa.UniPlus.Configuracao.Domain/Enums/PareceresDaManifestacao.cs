@@ -45,7 +45,7 @@ public static class PareceresDaManifestacao
     /// <summary>Resolve um token textual ao parecer; <see langword="false"/> quando inválido.</summary>
     public static bool TryAnalisar(string? token, out ParecerDaManifestacao parecer)
     {
-        if (!string.IsNullOrWhiteSpace(token) && DeToken.TryGetValue(token.Trim(), out ParecerDaManifestacao resolvido))
+        if (token is not null && DeToken.TryGetValue(token, out ParecerDaManifestacao resolvido))
         {
             parecer = resolvido;
             return true;
@@ -60,5 +60,5 @@ public static class PareceresDaManifestacao
     public static ParecerDaManifestacao Analisar(string? token) =>
         TryAnalisar(token, out ParecerDaManifestacao parecer)
             ? parecer
-            : throw new ArgumentOutOfRangeException(nameof(token), token, "Token de parecer da manifestação fora do domínio fechado.");
+            : throw new ArgumentOutOfRangeException(nameof(token), "Token de parecer da manifestação fora do domínio fechado.");
 }

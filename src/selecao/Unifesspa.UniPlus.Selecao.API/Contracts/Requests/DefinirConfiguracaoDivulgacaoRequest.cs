@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
 using Controllers;
 
-using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
