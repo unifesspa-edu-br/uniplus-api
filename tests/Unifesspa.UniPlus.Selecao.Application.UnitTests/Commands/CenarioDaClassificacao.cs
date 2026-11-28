@@ -124,6 +124,17 @@ internal sealed class CenarioDaClassificacao
         DefinirClassificacaoCommandHandler.Handle(
             command, _repository, _regraCatalogoReader, PesoAreaEnemReader, UnitOfWork, CancellationToken.None);
 
+    /// <summary>Confere que as únicas consultas ao catálogo foram as das regras informadas, uma vez cada, e nenhuma outra.</summary>
+    public async Task ConsultouSoAsRegrasDoCatalogoAsync(params (string Codigo, string Versao)[] esperadas)
+    {
+        foreach ((string codigo, string versao) in esperadas)
+        {
+            await _regraCatalogoReader.Received(1).ObterAsync(codigo, versao, Arg.Any<CancellationToken>());
+        }
+
+        await _regraCatalogoReader.ReceivedWithAnyArgs(esperadas.Length).ObterAsync(default!, default!, default);
+    }
+
     public Task NaoConsultouOCadastroDePesosAsync() =>
         PesoAreaEnemReader.DidNotReceiveWithAnyArgs().ObterPorResolucaoAsync(default!, default);
 

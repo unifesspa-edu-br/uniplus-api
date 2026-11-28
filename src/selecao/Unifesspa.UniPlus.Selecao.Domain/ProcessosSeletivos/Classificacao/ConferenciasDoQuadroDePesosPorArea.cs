@@ -30,6 +30,10 @@ internal static class ConferenciasDoQuadroDePesosPorArea
         return baseadoEmEnem && regraCalculo.Codigo == RegraDeCalculoDaNota.MediaPonderada.Codigo();
     }
 
+    /// <summary>A resolução sem as bordas em branco, ou nula quando ela é só branco.</summary>
+    internal static string? Aparar(string? resolucao) =>
+        string.IsNullOrWhiteSpace(resolucao) ? null : resolucao.Trim();
+
     /// <summary>
     /// Forma da resolução informada: cabe na coluna em NFC, não traz caractere invisível, o nulo
     /// inclusive, e pode ser normalizada (<see cref="TextoNormalizavel.TentarNfc"/>). Resolução

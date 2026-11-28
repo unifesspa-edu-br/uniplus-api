@@ -15659,26 +15659,11 @@
       ]
     },
     {
-      "codigo": "uniplus.selecao.configuracao_classificacao.regra_arredondamento_versao_obrigatoria",
-      "requisitos": [],
-      "oQueAconteceu": [
-        "O corpo do pedido de definição de classificação informa `regraArredondamentoCodigo` sem informar `regraArredondamentoVersao`. Código e versão juntos identificam uma regra do catálogo; informar apenas um deles deixa a referência incompleta. Esta causa está em rascunho e não é publicada.",
-        "No `PUT` de definição de classificação, quando `regraArredondamentoCodigo` é informado sem `regraArredondamentoVersao`, a resposta é `uniplus.validacao`, com a mesma mensagem e outro `code`. Na configuração publicada, código e versão são sempre lidos juntos.",
-        "Esta entrada existe para que o código de domínio, já registrado no\ncatálogo, tenha uma página assim que o caminho até ele for destravado —\nremover a regra de validação de corpo do pedido redundante, mesmo trabalho da\nADR-0125, rastreada em `uniplus-api#1227`."
-      ],
-      "comoResolver": [
-        "Informe `regraArredondamentoVersao` sempre que `regraArredondamentoCodigo`\nfor informado. Hoje, um corpo do pedido que omite a versão responde com\n`uniplus.validacao`, não com este código — mas a correção é a mesma:\npreencher os dois campos juntos."
-      ],
-      "ondeAparece": [
-        "Definição de classificação do processo seletivo"
-      ]
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_classificacao.regra_nao_encontrada",
       "requisitos": [],
       "oQueAconteceu": [
-        "O par código/versão declarado para uma das três regras que a configuração de\nclassificação referencia — a regra de cálculo (`regraCalculoCodigo`/\n`regraCalculoVersao`), a de arredondamento\n(`regraArredondamentoCodigo`/`regraArredondamentoVersao`, quando informada)\nou a de ordem de alocação (`regraOrdemAlocacaoCodigo`/\n`regraOrdemAlocacaoVersao`) — não existe no `rol_de_regras`. Este único\ncódigo cobre a mesma falha nos três pontos: o processamento resolve uma\nregra de cada vez, na ordem cálculo → arredondamento → ordem de alocação, e\npara na primeira que não for encontrada.",
-        "Por isso nunca acumula com nenhuma outra causa desta série — é sempre a\nprimeira falha que interrompe o processamento, e a mensagem devolvida cita\no código e a versão que não foram encontrados, o que identifica qual das\ntrês regras é a origem.",
+        "O par código/versão declarado para uma das três regras que a configuração de\nclassificação referencia — a regra de cálculo (`regraCalculoCodigo`/\n`regraCalculoVersao`), a de arredondamento\n(`regraArredondamentoCodigo`/`regraArredondamentoVersao`, quando informada)\nou a de ordem de alocação (`regraOrdemAlocacaoCodigo`/\n`regraOrdemAlocacaoVersao`) — não existe no `rol_de_regras`. Este único\ncódigo cobre a mesma falha nos três pontos, e o campo da recusa, em `errors[]`,\ndiz qual das três regras é a origem.",
+        "As três regras são consultadas de forma independente: a falha de uma não impede\na consulta das outras. A recusa sai na mesma resposta, junto das recusas dos\ndemais campos da classificação (como a escala da nota final ou as casas de\narredondamento) e das outras regras não encontradas ou de tipo inválido, cada\numa com o próprio campo. Só não aparecem as recusas que dependem da regra que\nnão foi encontrada: sem a regra de cálculo, por exemplo, não se confere o\narredondamento nem o quadro de pesos por área. Nada é gravado.",
         "Este código também é levantado, com o mesmo nome, para as regras de\neliminação — mas ali é uma causa própria de `RegraEliminacao` (ver\n[`uniplus.selecao.regra_eliminacao.regra_nao_encontrada`](/erros/uniplus.selecao.regra_eliminacao.regra_nao_encontrada)),\nnão esta."
       ],
       "comoResolver": [
@@ -15693,7 +15678,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "O código/versão de uma das três regras que a configuração de classificação\nreferencia — `regraCalculoCodigo`/`regraCalculoVersao`,\n`regraArredondamentoCodigo`/`regraArredondamentoVersao` ou\n`regraOrdemAlocacaoCodigo`/`regraOrdemAlocacaoVersao` — existe no\n`rol_de_regras`, mas o tipo cadastrado da regra não é o tipo que aquele\ncampo espera (`REGRA_CALCULO`, `REGRA_ARREDONDAMENTO` ou\n`REGRA_ORDEM_ALOCACAO`, respectivamente). O catálogo é compartilhado por\nvários tipos de regra do módulo Seleção — o código sozinho não garante o\ntipo certo.",
-        "Roda logo depois de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_classificacao.regra_nao_encontrada)\nresolver a existência de cada regra, no mesmo processamento sequencial —\ncálculo, depois arredondamento (se informado), depois ordem de alocação. A\nprimeira falha, de qualquer uma das duas causas em qualquer uma das três\nposições, interrompe o processamento; nunca acumula com nenhuma outra causa\ndesta série.",
+        "Roda junto de\n[`regra_nao_encontrada`](/erros/uniplus.selecao.configuracao_classificacao.regra_nao_encontrada)\nna consulta de cada regra: cálculo, arredondamento (se informado) e ordem de\nalocação são consultados de forma independente, e cada falha sai na mesma\nresposta, com o campo da regra que a originou, junto das recusas dos demais\ncampos da classificação. Só não aparecem as recusas que dependem da regra\nrecusada. Nada é gravado.",
         "Este código também é levantado, com o mesmo nome, para as regras de\neliminação — mas ali é uma causa própria de `RegraEliminacao` (ver\n[`uniplus.selecao.regra_eliminacao.regra_tipo_invalido`](/erros/uniplus.selecao.regra_eliminacao.regra_tipo_invalido)),\nnão esta."
       ],
       "comoResolver": [

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -23,8 +24,8 @@ internal sealed record ClassificacaoLida(
 /// <summary>
 /// Lê a classificação do documento pelas regras de domínio da gravação: as regras vêm do catálogo, as eliminações e os critérios são
 /// lidos um a um, o quadro de pesos por área vem dos cadastros e a fábrica acumula o que o bloco consegue provar sozinho. A regra do
-/// catálogo que falta, ou que não é do tipo do campo, recusa o bloco inteiro, que fica sem classificação: a fábrica não tem como
-/// criá-lo sem a regra de cálculo e a de ordem de alocação.
+/// catálogo que falta, ou que não é do tipo do campo, deixa o bloco sem classificação: a fábrica não tem como criá-lo sem a regra de
+/// cálculo e a de ordem de alocação. Os campos que não dependem da regra ausente continuam conferidos, e as recusas se somam às dela.
 /// </summary>
 internal static class LeituraDaClassificacao
 {
@@ -48,13 +49,13 @@ internal static class LeituraDaClassificacao
         return new(
             lida,
             [.. criterios.Itens.Select(static criterio => criterio.Item)],
-            [.. RecusadasDoBloco(causas, origemDasEliminacoes), .. eliminacoes.Recusadas, .. criterios.Recusadas],
+            [.. RecusadasDoBloco(causas), .. eliminacoes.Recusadas, .. criterios.Recusadas],
             [origemDasEliminacoes, criterios.Origem(LeituraDosCriteriosDeDesempate.Lista)]);
     }
 
-    // O índice de uma eliminação que a fábrica aponta é o da declaração, e o ponteiro leva à posição em que a regra veio no documento.
-    private static IEnumerable<ParteRecusada> RecusadasDoBloco(IReadOnlyList<FieldError> causas, OrigemNoDocumento origemDasEliminacoes) =>
-        PonteiroNoDocumento.Converter(causas.Select(static causa => causa.NoCaminhoDoItem(Bloco)), origemDasEliminacoes)
+    // O índice de uma eliminação que a conferência aponta é a posição dela no documento, as recusadas inclusive: já é a posição de origem.
+    private static IEnumerable<ParteRecusada> RecusadasDoBloco(IReadOnlyList<FieldError> causas) =>
+        PonteiroNoDocumento.Converter(causas.Select(static causa => causa.NoCaminhoDoItem(Bloco)), OrigemNoDocumento.Identidade)
             .Select(static causa => ParteRecusada.DoBloco(Bloco, causa));
 
     private static (ConfiguracaoClassificacao? Classificacao, IReadOnlyList<FieldError> Causas) Montar(
@@ -67,24 +68,59 @@ internal static class LeituraDaClassificacao
         Result<ReferenciaRegra> ordem = Regra(classificacao.RegraOrdemAlocacao, TipoRegra.RegraOrdemAlocacao, "regraOrdemAlocacao", cadastros);
 
         FieldError[] foraDoCatalogo = [.. Falhas(calculo), .. arredondamento is null ? [] : Falhas(arredondamento), .. Falhas(ordem)];
+        ReferenciaRegra? regraCalculo = calculo.IsSuccess ? calculo.Value : null;
+        LeituraDoQuadroDePesos quadro = LeituraDoQuadroDePesos.Ler(
+            regraCalculo, classificacao.BaseadoEmEnem ?? false, classificacao.ResolucaoPesoAreaEnem, cadastros);
 
-        return foraDoCatalogo.Length > 0
-            ? (null, foraDoCatalogo)
-            : Criar(classificacao, new(calculo.Value!, arredondamento?.Value, ordem.Value!), eliminacoes, cadastros);
+        // Os campos são conferidos nas posições do documento, com ou sem a regra do catálogo: o que a regra ausente impede é só montar a fábrica.
+        FieldError[] causas =
+        [
+            .. quadro.RecusasJuntoCom(ConfiguracaoClassificacao.ConferirCampos(CamposDoDocumento(classificacao, regraCalculo, eliminacoes, quadro))),
+            .. foraDoCatalogo,
+        ];
+
+        return causas.Length > 0
+            ? (null, causas)
+            : Criar(classificacao, new(calculo.Value!, arredondamento?.Value, ordem.Value!), eliminacoes, quadro);
+    }
+
+    private static CamposDaClassificacao CamposDoDocumento(
+        ClassificacaoNoDocumento classificacao,
+        ReferenciaRegra? regraCalculo,
+        ItensLidosDaClassificacao<RegraEliminacao> eliminacoes,
+        LeituraDoQuadroDePesos quadro) => new()
+        {
+            RegraCalculo = regraCalculo,
+            ArredondamentoDeclarado = classificacao.RegraArredondamento is not null,
+            CasasArredondamento = classificacao.CasasArredondamento,
+            Eliminacoes = EliminacoesNasPosicoesDoDocumento(classificacao, eliminacoes),
+            BaseadoEmEnem = classificacao.BaseadoEmEnem,
+            ResolucaoPesoAreaEnem = quadro.Resolucao,
+            QuadroPesoAreaEnem = quadro.Grupos,
+            EscalaNotaFinal = classificacao.EscalaNotaFinal,
+        };
+
+    // A quantidade conta todas as eliminações do documento, as recusadas inclusive: a conferência da classificação importada
+    // não pode perder a incompatibilidade só porque a eliminação foi recusada antes de ter parâmetros.
+    private static EliminacoesDeclaradas EliminacoesNasPosicoesDoDocumento(
+        ClassificacaoNoDocumento classificacao, ItensLidosDaClassificacao<RegraEliminacao> eliminacoes)
+    {
+        Dictionary<int, ParametrosRegraEliminacao> adotadas = eliminacoes.Itens.ToDictionary(
+            static item => item.PosicaoNoDocumento, static item => item.Item.Parametros);
+
+        return EliminacoesDeclaradas.NasPosicoes(
+            [.. classificacao.RegrasEliminacao.Select(regra => adotadas.GetValueOrDefault(regra.PosicaoNoDocumento))]);
     }
 
     private static (ConfiguracaoClassificacao? Classificacao, IReadOnlyList<FieldError> Causas) Criar(
         ClassificacaoNoDocumento classificacao,
         RegrasDoCatalogo regras,
         ItensLidosDaClassificacao<RegraEliminacao> eliminacoes,
-        CadastrosCitadosNoDocumento cadastros)
+        LeituraDoQuadroDePesos quadro)
     {
-        LeituraDoQuadroDePesos quadro = LeituraDoQuadroDePesos.Ler(
-            regras.Calculo, classificacao.BaseadoEmEnem ?? false, classificacao.ResolucaoPesoAreaEnem, cadastros);
         Result<ConfiguracaoClassificacao> criada = ConfiguracaoClassificacao.Criar(Declaracao(classificacao, regras, eliminacoes, quadro));
-        IReadOnlyList<FieldError> causas = quadro.RecusasJuntoCom(criada.IsSuccess ? [] : criada.Errors);
 
-        return causas.Count == 0 ? (criada.Value, []) : (null, causas);
+        return criada.IsSuccess ? (criada.Value, []) : (null, criada.Errors);
     }
 
     private static DeclaracaoDaClassificacao Declaracao(
@@ -95,7 +131,7 @@ internal static class LeituraDaClassificacao
             CasasArredondamento = classificacao.CasasArredondamento,
             RegraOrdemAlocacao = regras.OrdemDeAlocacao,
             RegrasEliminacao = [.. eliminacoes.Itens.Select(static regra => regra.Item)],
-            BaseadoEmEnem = classificacao.BaseadoEmEnem ?? false,
+            BaseadoEmEnem = classificacao.BaseadoEmEnem,
             ResolucaoPesoAreaEnem = quadro.Resolucao,
             QuadroPesoAreaEnem = quadro.Grupos,
             EscalaNotaFinal = classificacao.EscalaNotaFinal,

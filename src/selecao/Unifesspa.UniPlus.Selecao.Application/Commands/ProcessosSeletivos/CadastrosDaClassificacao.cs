@@ -11,138 +11,79 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalogoReader, IPesoAreaEnemReader pesoAreaEnemReader)
 {
-    public async Task<Result<DeclaracaoDaClassificacao>> ResolverRegrasAsync(DefinirClassificacaoCommand command, CancellationToken cancellationToken)
+    /// <summary>
+    /// Consulta a fórmula da nota, a precisão, a ordem de alocação e as eliminações sem parar na primeira recusa: cada uma
+    /// é independente das outras, e o operador corrige tudo de uma vez (ADR-0125).
+    /// </summary>
+    public async Task<RegrasCitadasNaClassificacao> ResolverRegrasAsync(DefinirClassificacaoCommand command, CancellationToken cancellationToken)
     {
-        Result<DeclaracaoDaClassificacao> calculoEOrdem = await ResolverCalculoEOrdemDeAlocacaoAsync(command, cancellationToken).ConfigureAwait(false);
-        if (calculoEOrdem.IsFailure)
-        {
-            return calculoEOrdem;
-        }
+        Result<ReferenciaRegra>? calculo = await ResolverRegraAsync(command.RegraCalculoCodigo, command.RegraCalculoVersao,
+            TipoRegra.RegraCalculo, "regraCalculoCodigo", cancellationToken).ConfigureAwait(false);
+        Result<ReferenciaRegra>? arredondamento = await ResolverRegraAsync(command.RegraArredondamentoCodigo, command.RegraArredondamentoVersao,
+            TipoRegra.RegraArredondamento, "regraArredondamentoCodigo", cancellationToken).ConfigureAwait(false);
+        Result<ReferenciaRegra>? ordem = await ResolverRegraAsync(command.RegraOrdemAlocacaoCodigo, command.RegraOrdemAlocacaoVersao,
+            TipoRegra.RegraOrdemAlocacao, "regraOrdemAlocacaoCodigo", cancellationToken).ConfigureAwait(false);
+        EliminacoesResolvidas eliminacoes = await ResolverEliminacoesAsync(command, cancellationToken).ConfigureAwait(false);
 
-        Result<IReadOnlyList<RegraEliminacao>?> eliminacoes = await ResolverEliminacoesAsync(command, cancellationToken).ConfigureAwait(false);
-        return eliminacoes.IsFailure
-            ? Result<DeclaracaoDaClassificacao>.Failure(eliminacoes.Error!)
-            : Result<DeclaracaoDaClassificacao>.Success(calculoEOrdem.Value! with { RegrasEliminacao = eliminacoes.Value });
+        return new(
+            Resolvida(calculo),
+            Resolvida(arredondamento),
+            Resolvida(ordem),
+            [.. calculo?.Errors ?? [], .. arredondamento?.Errors ?? [], .. ordem?.Errors ?? []],
+            eliminacoes);
     }
 
     /// <summary>
-    /// Consulta apenas quando a combinação aceita a resolução; as demais combinações são conferidas pelo domínio.
+    /// Consulta apenas quando a fórmula da nota foi confirmada e a combinação aceita a resolução; as demais combinações são
+    /// conferidas pelo domínio.
     /// </summary>
     public async Task<QuadroDePesosResolvido> ResolverQuadroAsync(
-        ReferenciaRegra regraCalculo, DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
-        command.BaseadoEmEnem is { } baseadoEmEnem
+        ReferenciaRegra? regraCalculo, DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
+        regraCalculo is not null
+            && command.BaseadoEmEnem is { } baseadoEmEnem
             && ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regraCalculo, baseadoEmEnem)
             && !string.IsNullOrWhiteSpace(command.ResolucaoPesoAreaEnem)
             ? await QuadroDePesosResolvido.DaResolucaoAsync(command.ResolucaoPesoAreaEnem, pesoAreaEnemReader, cancellationToken).ConfigureAwait(false)
             : QuadroDePesosResolvido.SemConsulta(command.ResolucaoPesoAreaEnem);
 
-    private async Task<Result<DeclaracaoDaClassificacao>> ResolverCalculoEOrdemDeAlocacaoAsync(
-        DefinirClassificacaoCommand command, CancellationToken cancellationToken)
+    private async Task<Result<ReferenciaRegra>?> ResolverRegraAsync(
+        string? codigo, string? versao, TipoRegra tipoEsperado, string campo, CancellationToken cancellationToken)
     {
-        Result<(ReferenciaRegra Calculo, ReferenciaRegra? Arredondamento)> calculo = await ResolverCalculoDaNotaAsync(command, cancellationToken).ConfigureAwait(false);
-        if (calculo.IsFailure)
+        if (codigo is null || versao is null)
         {
-            return Result<DeclaracaoDaClassificacao>.Failure(calculo.Error!);
+            return null;
         }
 
-        Result<ReferenciaRegra> ordem = await ResolverRegraAsync(command.RegraOrdemAlocacaoCodigo!, command.RegraOrdemAlocacaoVersao!,
-            TipoRegra.RegraOrdemAlocacao, cancellationToken).ConfigureAwait(false);
-        return ordem.IsFailure ? Result<DeclaracaoDaClassificacao>.Failure(ordem.Error!)
-            : Result<DeclaracaoDaClassificacao>.Success(DeclaracaoDoPedido(command, calculo.Value, ordem.Value!));
-    }
-
-    private async Task<Result<(ReferenciaRegra Calculo, ReferenciaRegra? Arredondamento)>> ResolverCalculoDaNotaAsync(
-        DefinirClassificacaoCommand command, CancellationToken cancellationToken)
-    {
-        Result<ReferenciaRegra> calculo = await ResolverRegraAsync(command.RegraCalculoCodigo!, command.RegraCalculoVersao!,
-            TipoRegra.RegraCalculo, cancellationToken).ConfigureAwait(false);
-        if (calculo.IsFailure)
-        {
-            return Result<(ReferenciaRegra, ReferenciaRegra?)>.Failure(calculo.Error!);
-        }
-
-        Result<ReferenciaRegra>? arredondamento = await ResolverArredondamentoAsync(command, cancellationToken).ConfigureAwait(false);
-        return arredondamento is { IsFailure: true } ? Result<(ReferenciaRegra, ReferenciaRegra?)>.Failure(arredondamento.Error!)
-            : Result<(ReferenciaRegra, ReferenciaRegra?)>.Success((calculo.Value!, arredondamento?.Value));
-    }
-
-    private async Task<Result<ReferenciaRegra>?> ResolverArredondamentoAsync(DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
-        (command.RegraArredondamentoCodigo, command.RegraArredondamentoVersao) switch
-        {
-            (null, _) => null,
-            (_, null) => Result<ReferenciaRegra>.Failure(new DomainError("ConfiguracaoClassificacao.RegraArredondamentoVersaoObrigatoria",
-                "Versão da regra de arredondamento é obrigatória quando o código é informado.")),
-            (string codigo, string versao) => await ResolverRegraAsync(codigo, versao, TipoRegra.RegraArredondamento, cancellationToken).ConfigureAwait(false),
-        };
-
-    private async Task<Result<ReferenciaRegra>> ResolverRegraAsync(string codigo, string versao, TipoRegra tipoEsperado, CancellationToken cancellationToken)
-    {
         RegraCatalogo? regra = await regraCatalogoReader.ObterAsync(codigo, versao, cancellationToken).ConfigureAwait(false);
         return regra switch
         {
-            null => Result<ReferenciaRegra>.Failure(new DomainError("ConfiguracaoClassificacao.RegraNaoEncontrada",
-                "Regra não encontrada no catálogo de regras.")),
-            { Tipo: var tipo } when tipo != tipoEsperado => Result<ReferenciaRegra>.Failure(new DomainError(
-                "ConfiguracaoClassificacao.RegraTipoInvalido", "A regra não é do tipo esperado.")),
+            null => Recusa(campo, "ConfiguracaoClassificacao.RegraNaoEncontrada", "Regra não encontrada no catálogo de regras."),
+            { Tipo: var tipo } when tipo != tipoEsperado => Recusa(campo, "ConfiguracaoClassificacao.RegraTipoInvalido", "A regra não é do tipo esperado."),
             _ => Result<ReferenciaRegra>.Success(regra.Referencia()),
         };
     }
 
-    // A lista ausente segue nula para a criação da classificação, que a recusa junto das demais recusas.
-    private async Task<Result<IReadOnlyList<RegraEliminacao>?>> ResolverEliminacoesAsync(
-        DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
-        command.RegrasEliminacao is { } entradas
-            ? await ResolverCadaEliminacaoAsync(entradas, cancellationToken).ConfigureAwait(false)
-            : Result<IReadOnlyList<RegraEliminacao>?>.Success(null);
+    private static ReferenciaRegra? Resolvida(Result<ReferenciaRegra>? regra) => regra is { IsSuccess: true } ? regra.Value : null;
 
-    private async Task<Result<IReadOnlyList<RegraEliminacao>?>> ResolverCadaEliminacaoAsync(
-        IReadOnlyList<RegraEliminacaoInput> entradas, CancellationToken cancellationToken)
+    private static Result<ReferenciaRegra> Recusa(string campo, string codigo, string mensagem) =>
+        Result<ReferenciaRegra>.ValidationFailure([new(campo, new DomainError(codigo, mensagem))]);
+
+    // No primeiro item recusado a lista para: os seguintes ficam sem posição montada.
+    private async Task<EliminacoesResolvidas> ResolverEliminacoesAsync(DefinirClassificacaoCommand command, CancellationToken cancellationToken)
     {
-        List<RegraEliminacao> regras = [];
-        foreach (RegraEliminacaoInput input in entradas)
+        if (command.RegrasEliminacao is not { } entradas)
         {
-            Result<RegraEliminacao> resultado = await ResolverEliminacaoAsync(input, cancellationToken).ConfigureAwait(false);
-            if (resultado.IsFailure)
-            {
-                return Result<IReadOnlyList<RegraEliminacao>?>.Failure(resultado.Error!);
-            }
-
-            regras.Add(resultado.Value!);
+            return EliminacoesResolvidas.NaoInformadas();
         }
 
-        return Result<IReadOnlyList<RegraEliminacao>?>.Success(regras);
-    }
-
-    private async Task<Result<RegraEliminacao>> ResolverEliminacaoAsync(RegraEliminacaoInput input, CancellationToken cancellationToken)
-    {
-        RegraCatalogo? regra = await regraCatalogoReader.ObterAsync(input.RegraCodigo, input.RegraVersao, cancellationToken).ConfigureAwait(false);
-        if (RecusaDaRegraDeEliminacao(regra) is { } recusa)
+        EliminacoesResolvidas resolvidas = EliminacoesResolvidas.ParaQuantidade(entradas.Count);
+        for (int posicao = 0; posicao < entradas.Count && resolvidas.SemRecusa; posicao++)
         {
-            return Result<RegraEliminacao>.Failure(recusa);
+            RegraCatalogo? regra = await regraCatalogoReader.ObterAsync(
+                entradas[posicao].RegraCodigo, entradas[posicao].RegraVersao, cancellationToken).ConfigureAwait(false);
+            resolvidas.Acrescentar(posicao, regra, entradas[posicao]);
         }
 
-        Result<ParametrosRegraEliminacao> parametros = ParametrosDaEliminacaoDeclarados.Montar(input);
-        return parametros.IsFailure ? Result<RegraEliminacao>.Failure(parametros.Error!)
-            : RegraEliminacao.Criar(regra!.Referencia(), parametros.Value!);
+        return resolvidas;
     }
-
-    private static DomainError? RecusaDaRegraDeEliminacao(RegraCatalogo? regra) => regra switch
-    {
-        null => new DomainError("RegraEliminacao.RegraNaoEncontrada",
-            "Regra de eliminação não encontrada no catálogo de regras."),
-        { Tipo: not TipoRegra.RegraEliminacao } => new DomainError("RegraEliminacao.RegraTipoInvalido",
-            "A regra informada não é uma regra de eliminação."),
-        _ => null,
-    };
-
-    private static DeclaracaoDaClassificacao DeclaracaoDoPedido(
-        DefinirClassificacaoCommand command, (ReferenciaRegra Calculo, ReferenciaRegra? Arredondamento) calculoDaNota, ReferenciaRegra ordem) => new()
-        {
-            RegraCalculo = calculoDaNota.Calculo,
-            RegraArredondamento = calculoDaNota.Arredondamento,
-            CasasArredondamento = command.CasasArredondamento,
-            RegraOrdemAlocacao = ordem,
-            BaseadoEmEnem = command.BaseadoEmEnem,
-            EscalaNotaFinal = command.EscalaNotaFinal,
-        };
 }

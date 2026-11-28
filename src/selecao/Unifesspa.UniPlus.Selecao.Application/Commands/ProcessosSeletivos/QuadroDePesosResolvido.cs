@@ -33,7 +33,7 @@ internal sealed record QuadroDePesosResolvido(
         null => Recusado(informada, [NaResolucao("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada",
             "A resolução de Pesos por Área informada não tem pesos cadastrados.")]),
         { Completa: false } => Recusado(informada, [NaResolucao("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIncompleta",
-            $"A resolução de Pesos por Área {cadastrada.Resolucao} não tem pesos cadastrados para: "
+            $"A resolução de Pesos por Área não tem pesos cadastrados para: "
             + $"{string.Join(", ", cadastrada.GruposAusentes.Select(static grupo => grupo.Rotulo))}.")]),
         _ => CopiarLinhas(informada, cadastrada),
     };
@@ -41,18 +41,15 @@ internal sealed record QuadroDePesosResolvido(
     public DeclaracaoDaClassificacao DeclaracaoCompleta(DeclaracaoDaClassificacao regras) =>
         regras with { ResolucaoPesoAreaEnem = Resolucao, QuadroPesoAreaEnem = Quadro };
 
-    /// <summary>Acumula as recusas do domínio, sem as que são consequência da resolução recusada.</summary>
-    public List<FieldError> RecusasJuntoCom(Result<ConfiguracaoClassificacao> configuracao)
-    {
-        List<FieldError> erros = [.. Recusas];
-        if (configuracao.IsFailure)
-        {
-            erros.AddRange(Recusas.Count == 0 ? configuracao.Errors
-                : ConfiguracaoClassificacao.SemConsequenciasDaResolucaoRecusada(configuracao.Errors));
-        }
-
-        return erros;
-    }
+    /// <summary>
+    /// As recusas dos campos, sem as que são consequência da resolução recusada, e depois as do cadastro de Pesos por Área:
+    /// a consulta externa vem depois dos campos (ADR-0125).
+    /// </summary>
+    public List<FieldError> RecusasJuntoCom(IReadOnlyList<FieldError> dosCampos) =>
+    [
+        .. Recusas.Count == 0 ? dosCampos : ConfiguracaoClassificacao.SemConsequenciasDaResolucaoRecusada(dosCampos),
+        .. Recusas,
+    ];
 
     private static QuadroDePesosResolvido CopiarLinhas(string informada, ResolucaoPesoAreaEnemView cadastrada)
     {

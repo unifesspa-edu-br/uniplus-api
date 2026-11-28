@@ -143,10 +143,22 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(declaracao);
 
-        List<FieldError> erros = ConferenciasDaClassificacao.Conferir(declaracao);
+        List<FieldError> erros = ConferirCampos(declaracao.Campos);
         return erros.Count > 0
             ? Result<ConfiguracaoClassificacao>.ValidationFailure(erros)
             : Result<ConfiguracaoClassificacao>.Success(Montar(declaracao));
+    }
+
+    /// <summary>
+    /// As recusas dos campos da classificação, acumuladas e na ordem em que o operador as corrige. É a mesma
+    /// conferência de <see cref="Criar"/>, e existe separada para valer também quando uma parte do pedido não foi
+    /// confirmada no catálogo: ela pula só o que depende da parte ausente, sem recusar por consequência.
+    /// </summary>
+    public static List<FieldError> ConferirCampos(CamposDaClassificacao campos)
+    {
+        ArgumentNullException.ThrowIfNull(campos);
+
+        return ConferenciasDaClassificacao.Conferir(campos);
     }
 
     private static ConfiguracaoClassificacao Montar(DeclaracaoDaClassificacao declaracao)

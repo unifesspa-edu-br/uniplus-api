@@ -68,6 +68,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         erro.Field.Should().Be("resolucaoPesoAreaEnem");
         erro.Error.Code.Should().Be("ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIncompleta");
         erro.Error.Message.Should().Contain("Saúde e Biológicas");
+        erro.Error.Message.Should().NotContain(ResolucaoDePesos);
         processo.Classificacao.Should().BeNull();
         await cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -141,10 +142,10 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
 
         Result result = await cenario.DefinirAsync(command);
 
-        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
         [
-            ((string?)ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida"),
             ((string?)"casasArredondamento", "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio"),
+            ((string?)ConfiguracaoClassificacao.CampoResolucaoPesoAreaEnem, "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida"),
         ]);
         await cenario.NaoConsultouOCadastroDePesosAsync();
     }
@@ -189,10 +190,10 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
         [
-            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
             ((string?)"casasArredondamento", "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio"),
+            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
         ], "o quadro vazio é consequência da recusa do cadastro, e não sai como violação à parte");
         processo.Classificacao.Should().BeNull();
     }
@@ -208,10 +209,10 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        result.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
         [
-            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
             ((string?)"regrasEliminacao[1]", "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida"),
+            ((string?)"resolucaoPesoAreaEnem", "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemNaoEncontrada"),
         ], "a repetição não é consequência da resolução recusada e chega ao operador no item que a repete");
         processo.Classificacao.Should().BeNull();
     }

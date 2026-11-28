@@ -9,6 +9,7 @@ public sealed class PropriedadesDeReferenciaDeRegraTests
 {
     private static readonly string[] PropriedadesConhecidas =
         [
+            "CamposDaClassificacao.RegraCalculo",
             "ConfiguracaoCascataRemanejamento.Regra",
             "ConfiguracaoClassificacao.RegraArredondamento",
             "ConfiguracaoClassificacao.RegraCalculo",

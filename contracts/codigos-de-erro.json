@@ -4777,11 +4777,6 @@
       "titulo": "A resolução de Pesos por Área declarada não tem nenhum grupo de área congelado"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_classificacao.regra_arredondamento_versao_obrigatoria",
-      "status": 422,
-      "titulo": "Versão da regra de arredondamento é obrigatória quando o código é informado"
-    },
-    {
       "codigo": "uniplus.selecao.configuracao_classificacao.regra_nao_encontrada",
       "status": 422,
       "titulo": "Regra não encontrada no catálogo de regras"
