@@ -86,11 +86,13 @@ public static class DefinirFatosColetadosCommandHandler
     }
 
     /// <summary>
-    /// Acima do teto a lista não é lida item a item: o validator não confere os itens dela, e a recusa da quantidade é
-    /// a única resposta, dada antes de resolver o vocabulário cross-módulo, sem pagar o I/O do reader.
+    /// Acima do teto a lista não é lida item a item, e a recusa da quantidade sai antes de resolver o vocabulário
+    /// cross-módulo, sem pagar o I/O do reader. A ausência da lista de itens não depende da quantidade e sai junto.
     /// </summary>
     private static Result? RecusaDaQuantidade(DefinirFatosColetadosCommand command) =>
-        FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso ? Result.ValidationFailure(excesso) : null;
+        FormaDoItem.ValidarQuantidade(command.QuantidadeNoTeto) is { Count: > 0 } excesso
+            ? Result.ValidationFailure(command.Itens is null ? [LeituraDosItensDoFormulario.RecusaDaListaAusente(), .. excesso] : excesso)
+            : null;
 
     /// <summary>
     /// A leitura da forma dos itens e dos grupos usa só o formato do dado no catálogo, lido depois da recusa por quantidade;

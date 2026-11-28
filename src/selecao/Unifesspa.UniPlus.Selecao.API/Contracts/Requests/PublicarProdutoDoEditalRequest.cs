@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using System.ComponentModel;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
 /// <summary>
@@ -20,9 +23,13 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 /// <param name="MotivoDaCorrecao">Motivo da correção; obrigatório junto com <paramref name="AtoCorrigidoId"/>.</param>
 public sealed record PublicarProdutoDoEditalRequest(
     string? Numero,
-    DateOnly DataDoAto,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DateOnly? DataDoAto,
     string Assinante,
-    Guid DocumentoPrincipalId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    Guid? DocumentoPrincipalId,
     IReadOnlyList<AnexoDoAtoRequest>? Anexos = null,
     bool PoliticaDeDivulgacaoConfirmada = false,
     Guid? AtoCorrigidoId = null,

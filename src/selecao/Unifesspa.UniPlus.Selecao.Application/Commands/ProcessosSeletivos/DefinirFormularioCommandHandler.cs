@@ -60,26 +60,24 @@ public static class DefinirFormularioCommandHandler
     private static async Task<Result> DefinirAsync(
         DefinirFormularioCommand command, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
-        Result<FormularioDeclarado> declarado = Declarar(command);
-        return declarado.IsFailure
-            ? Result.Failure(declarado.Error!)
-            : await LerEGravarAsync(command, declarado.Value!, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static Result<FormularioDeclarado> Declarar(DefinirFormularioCommand command)
-    {
         Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(command.FormularioCodigo);
-        return codigo.IsFailure
-            ? Result<FormularioDeclarado>.Failure(codigo.Error!)
-            : Result<FormularioDeclarado>.Success(new FormularioDeclarado(codigo.Value!, command.FaseId, command.Obrigatorio));
+        if (codigo.IsFailure)
+        {
+            return Result.Failure(codigo.Error!);
+        }
+
+        (FormularioDeclarado declarado, List<FieldError> recusasDaDeclaracao) = FormularioDeclarado.Declarar(codigo.Value!, command.FaseId, command.Obrigatorio);
+        return await LerEGravarAsync(command, declarado, recusasDaDeclaracao, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>As recusas da declaração, as das páginas e as da estrutura acumulam no mesmo <c>errors[]</c>, nessa ordem (ADR-0125).</summary>
     private static async Task<Result> LerEGravarAsync(
-        DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+        DefinirFormularioCommand command, FormularioDeclarado declarado, List<FieldError> recusasDaDeclaracao, ProcessoSeletivo processo,
+        IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         FormularioLido lido = await LerAsync(command, declarado, processo, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
-        return lido.Erros.Count > 0 || lido.RecusasDoVinculoNovo.Count > 0
-            ? Result.ValidationFailure([.. lido.Erros, .. ConferirEstrutura(command, declarado, processo, lido), .. lido.RecusasDoVinculoNovo])
+        return recusasDaDeclaracao.Count > 0 || lido.Erros.Count > 0 || lido.RecusasDoVinculoNovo.Count > 0
+            ? Result.ValidationFailure([.. recusasDaDeclaracao, .. lido.Erros, .. ConferirEstrutura(command, declarado, processo, lido), .. lido.RecusasDoVinculoNovo])
             : Gravar(command, declarado, processo, lido);
     }
 
@@ -92,9 +90,9 @@ public static class DefinirFormularioCommandHandler
         DefinirFormularioCommand command, FormularioDeclarado declarado, ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         bool guardaOConjuntoBasico = ConjuntoBasicoNaInscricao.Guarda(processo.Declaracao(), declarado);
-        (IReadOnlyList<PaginaDoFormularioInput> entradas, List<FieldError> daSecao) = guardaOConjuntoBasico
-            ? ConjuntoBasicoDaInscricao.MesclarPaginas(command.Paginas ?? [], SecaoDadosBasicosDoProcesso.Secao(processo, declarado.Codigo))
-            : (command.Paginas ?? [], []);
+        (IReadOnlyList<PaginaDoFormularioInput>? entradas, List<FieldError> daSecao) = guardaOConjuntoBasico && command.Paginas is { } enviadas
+            ? ConjuntoBasicoDaInscricao.MesclarPaginas(enviadas, SecaoDadosBasicosDoProcesso.Secao(processo, declarado.Codigo))
+            : (command.Paginas, []);
         PaginasDoFormularioLidas lidas = EscritaDasPaginasDoFormulario.Ler(entradas);
         bool criaInscricao = guardaOConjuntoBasico && processo.Declaracao().Coleta.FormularioDe(declarado.Codigo) is null;
         IReadOnlyList<FatoCandidatoView> catalogo = criaInscricao || lidas.Exibicoes.Any(static e => e is not null)
@@ -145,7 +143,7 @@ public static class DefinirFormularioCommandHandler
         HashSet<string> recusados = [.. lido.Erros.Select(static e => e.Field ?? string.Empty)];
         return RegrasDosFormularios
             .ConferirFormulario(
-                processo.Declaracao(), declarado, command.Titulo, lido.Paginas.PorPosicao, lido.ItensDaCriacao)
+                processo.Declaracao(), declarado, command.Titulo, lido.Paginas.ParaAEstrutura, lido.ItensDaCriacao)
             .Where(recusa => recusa.Field is not { } campo || !campo.EndsWith(".exibicao", StringComparison.Ordinal) || !recusados.Contains(campo));
     }
 

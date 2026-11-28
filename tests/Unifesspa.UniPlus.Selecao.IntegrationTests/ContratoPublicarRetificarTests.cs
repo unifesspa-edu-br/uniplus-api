@@ -124,11 +124,20 @@ public sealed class ContratoPublicarRetificarTests
     private static string RefDoAto(JsonElement corpo) =>
         NomeDoRef(corpo.GetProperty("properties").GetProperty("ato"));
 
+    // A propriedade de objeto sai como a referência direta, dentro de allOf ou de um oneOf que também traz o ramo nulo do gerador;
+    // em qualquer forma, o schema referenciado é o mesmo.
     private static string NomeDoRef(JsonElement elemento)
     {
-        string referencia = elemento.GetProperty("$ref").GetString()!;
+        JsonElement referenciaDireta = elemento.TryGetProperty("$ref", out JsonElement direta)
+            ? direta
+            : RamoComReferencia(elemento).GetProperty("$ref");
+        string referencia = referenciaDireta.GetString()!;
         return referencia[(referencia.LastIndexOf('/') + 1)..];
     }
+
+    private static JsonElement RamoComReferencia(JsonElement elemento) =>
+        (elemento.TryGetProperty("allOf", out JsonElement todos) ? todos : elemento.GetProperty("oneOf"))
+            .EnumerateArray().Single(static ramo => ramo.TryGetProperty("$ref", out _));
 
     private static IEnumerable<string> PropriedadesDe(JsonElement schema) =>
         schema.GetProperty("properties").EnumerateObject().Select(p => p.Name);

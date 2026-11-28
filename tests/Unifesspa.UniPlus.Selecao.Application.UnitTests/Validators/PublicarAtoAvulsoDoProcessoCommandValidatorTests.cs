@@ -31,4 +31,12 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandValidatorTests
         _validator.Validate(Comando(motivo: "Data errada")).IsValid.Should().BeTrue();
         _validator.Validate(Comando(Guid.Empty, "Data errada")).IsValid.Should().BeTrue();
     }
+
+    [Fact(DisplayName = "A data e o documento principal ausentes não são do validator: o domínio os recusa com o código de campo obrigatório")]
+    public void DataEDocumentoAusentes_NaoSaoDoValidator() =>
+        _validator.Validate(Comando() with { DataDoAto = null, DocumentoPrincipalId = null }).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "A data zero informada é recusada, porque não é ausência")]
+    public void DataZeroInformada_Recusa() =>
+        _validator.Validate(Comando() with { DataDoAto = default(DateOnly) }).IsValid.Should().BeFalse();
 }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
@@ -10,6 +11,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class DeclaracaoDoFada
 {
+    /// <summary>A recusa do pedido que não informa se o processo aplica o FADA.</summary>
+    public static FieldError RecusaDaAusencia() => new(
+        "aplica",
+        new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA)."));
+
     /// <summary>A recusa da declaração que contradiz a configuração, ou nulo quando as duas concordam.</summary>
     public static DomainError? Recusa(bool aplica, bool temConfiguracao) => (aplica, temConfiguracao) switch
     {

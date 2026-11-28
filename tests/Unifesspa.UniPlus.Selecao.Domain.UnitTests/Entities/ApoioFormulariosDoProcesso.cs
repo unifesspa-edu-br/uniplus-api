@@ -69,7 +69,7 @@ internal static class ApoioFormulariosDoProcesso
             .Construir();
 
     /// <summary>A data de nascimento na seção dos dados básicos, com a obrigatoriedade do caso.</summary>
-    internal static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem)
+    internal static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetadoDeTeste.Coletando("DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem.GetValueOrDefault())
         .ComRotulo("Data de nascimento")
         .DoTipo(TipoDeCampo.Data)
         .ComObrigatoriedade(obrigatoriedade)

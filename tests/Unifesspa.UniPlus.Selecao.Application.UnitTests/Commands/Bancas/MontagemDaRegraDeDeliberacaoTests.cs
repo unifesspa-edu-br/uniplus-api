@@ -82,4 +82,39 @@ public sealed class MontagemDaRegraDeDeliberacaoTests
         ]);
         resultado.Errors.Should().OnlyContain(static erro => erro.Error.Code == "Banca.VotacaoDoRecursoIncompleta");
     }
+
+    [Fact(DisplayName = "Integrantes e suplentes ausentes são recusados com o código genérico de campo obrigatório, e o desempate e o quórum, que dependem dos integrantes, não viram outra recusa")]
+    public void Montar_SemIntegrantesNemSuplentes_RecusaOsDoisCampos()
+    {
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(
+            RegrasDeDeliberacaoDeTeste.Valida() with { Integrantes = null, Suplentes = null },
+            "etapas[0].bancas[1]");
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("etapas[0].bancas[1].regraDeDeliberacao.integrantes", CodigosDeValidacao.Obrigatorio),
+            ("etapas[0].bancas[1].regraDeDeliberacao.suplentes", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "Suplentes ausentes acumulam com o critério e o encerramento que faltam, na ordem dos campos")]
+    public void Montar_SemSuplentesECriterio_AcumulaAsRecusas()
+    {
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(
+            RegrasDeDeliberacaoDeTeste.ComTresViolacoes() with { Integrantes = 3, Suplentes = null }, "etapas[0].bancas[0]");
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("etapas[0].bancas[0].regraDeDeliberacao.suplentes", CodigosDeValidacao.Obrigatorio),
+            ("etapas[0].bancas[0].regraDeDeliberacao.quorum", "Banca.QuorumForaDoIntervalo"),
+            ("etapas[0].bancas[0].regraDeDeliberacao.criterio", "Banca.CriterioObrigatorio"),
+            ("etapas[0].bancas[0].regraDeDeliberacao.encerramento", "Banca.EncerramentoObrigatorio"));
+    }
+
+    [Fact(DisplayName = "Zero suplentes declara nenhum e é aceito")]
+    public void Montar_ZeroSuplentes_Aceita()
+    {
+        Result<RegraDeDeliberacao?> resultado = MontagemDaRegraDeDeliberacao.Montar(
+            RegrasDeDeliberacaoDeTeste.Valida() with { Suplentes = 0 }, "bancas[0]");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Suplentes.Should().Be(0);
+    }
 }

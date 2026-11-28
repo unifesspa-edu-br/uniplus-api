@@ -42,6 +42,7 @@ public sealed class RecusasDosParametrosDoRecursoTests
         [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaNaoDeclarado] = ComInstanciaSuperior with { PrazoDaSegundaInstancia = PrazoDeclarado.Ausente },
         [MotivoDaRecusaDosParametros.PrazoSegundaInstanciaSemInstanciaSuperior] = Valido with { PrazoDaSegundaInstancia = new PrazoDeclarado(1m, "HORAS") },
         [MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior] = ComInstanciaSuperior with { GuardaDaVaga = "NAO_GUARDA" },
+        [MotivoDaRecusaDosParametros.InstanciaSuperiorNaoDeclarada] = Valido with { AdmiteInstanciaSuperior = null },
     };
 
     [Fact(DisplayName = "Causas independentes são acumuladas na ordem nas duas entidades, cada uma com o código do dono")]
@@ -78,10 +79,17 @@ public sealed class RecusasDosParametrosDoRecursoTests
             string doFase = RegraRecursoFase.Criar(Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
             string daEtapa = RecursoDaEtapa.Criar(EventoInicialDoPrazo.PublicacaoDoAto, Regra, declarados, Guid.Empty).Errors.Single().Error.Code;
 
-            doFase.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RegraRecursoFase.{motivo}");
-            daEtapa.Should().Be(motivo == MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida ? "uniplus.validacao.formato" : $"RecursoDaEtapa.{motivo}");
+            doFase.Should().Be(CodigoEsperado(motivo, "RegraRecursoFase"));
+            daEtapa.Should().Be(CodigoEsperado(motivo, "RecursoDaEtapa"));
         }
     }
+
+    private static string CodigoEsperado(MotivoDaRecusaDosParametros motivo, string dono) => motivo switch
+    {
+        MotivoDaRecusaDosParametros.PrazoPrecisaoInvalida => CodigosDeValidacao.Formato,
+        MotivoDaRecusaDosParametros.InstanciaSuperiorNaoDeclarada => CodigosDeValidacao.Obrigatorio,
+        _ => $"{dono}.{motivo}",
+    };
 
     [Fact(DisplayName = "A referência de regra inválida da fase é recusada na raiz da regra, junto das recusas dos parâmetros")]
     public void RegraInvalida_NaRaizDaRegra()

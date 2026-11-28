@@ -193,6 +193,7 @@ internal sealed class AtoNormativoApoio(PublicacoesEndpointFixture fixture)
             congelaConfiguracao = congela,
             unicoPorObjeto = false,
             efeitoIrreversivel = efeito,
+            ehResultado = false,
             publicavelComoAvulso = false,
             exigeAtoCorrigido = false,
             vigenciaInicio = "2020-01-01",

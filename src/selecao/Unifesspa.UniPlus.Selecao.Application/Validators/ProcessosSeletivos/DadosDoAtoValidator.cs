@@ -50,16 +50,15 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
 
     private void ValidarAnoEData()
     {
-        // Campo omitido do corpo binda para 0 (int não-nullable) — sem esta regra, o ano
-        // ausente passaria trivialmente e só seria recusado ao registrar o ato.
+        // O ano e a data ausentes são recusados na conferência do ato, com o código de campo obrigatório;
+        // aqui, só o valor informado fora da faixa.
         RuleFor(x => x.Ano)
             .GreaterThan(0)
-            .WithMessage("Ano do ato é obrigatório.");
+            .WithMessage("Ano do ato deve ser maior que zero.");
 
-        // Mesma armadilha: DateOnly omitido binda para 0001-01-01.
         RuleFor(x => x.DataDoAto)
             .NotEqual(default(DateOnly))
-            .WithMessage("Data do ato declarada pelo documento é obrigatória.");
+            .WithMessage("Data do ato declarada pelo documento é inválida.");
     }
 
     private void ValidarAssinante()

@@ -59,40 +59,48 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
             return (null, Result.ValidationFailure(validacaoPreCheck.Errors));
         }
 
-        TipoAtoPublicado? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        return await BuscarParaAtualizar(command.Id, validacaoPreCheck.Value!, repository, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<(TipoAtoPublicado? Tipo, Result Verificacao)> BuscarParaAtualizar(
+        Guid id, CamposDoTipoAtoPublicado campos, ITipoAtoPublicadoRepository repository,
+        CancellationToken cancellationToken)
+    {
+        TipoAtoPublicado? tipo = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
             return (null, Result.Failure(NaoEncontradoErro()));
         }
 
-        Result verificacao = await VerificarAtualizacao(command, tipo, repository, cancellationToken).ConfigureAwait(false);
+        Result verificacao = await VerificarAtualizacao(id, campos, tipo, repository, cancellationToken).ConfigureAwait(false);
         return verificacao.IsFailure ? (null, verificacao) : (tipo, Result.Success());
     }
 
     private static async Task<Result> VerificarAtualizacao(
-        AtualizarTipoAtoPublicadoCommand command, TipoAtoPublicado tipo,
+        Guid id, CamposDoTipoAtoPublicado campos, TipoAtoPublicado tipo,
         ITipoAtoPublicadoRepository repository, CancellationToken cancellationToken)
     {
-        Result codigo = tipo.ConferirCodigoInalterado(command.Codigo);
+        Result codigo = tipo.ConferirCodigoInalterado(campos.Codigo);
         if (codigo.IsFailure)
         {
             return codigo;
         }
 
-        return await VerificarSobreposicao(command, tipo, repository, cancellationToken).ConfigureAwait(false);
+        return await VerificarSobreposicao(id, campos, tipo, repository, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> VerificarSobreposicao(
-        AtualizarTipoAtoPublicadoCommand command, TipoAtoPublicado tipo,
+        Guid id, CamposDoTipoAtoPublicado campos, TipoAtoPublicado tipo,
         ITipoAtoPublicadoRepository repository, CancellationToken cancellationToken)
     {
-        if (!JanelaMudou(tipo, command))
+        if (!JanelaMudou(tipo, campos))
         {
             return Result.Success();
         }
 
         bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
-            tipo.Codigo, command.VigenciaInicio, command.VigenciaFim, command.Id, cancellationToken)
+            tipo.Codigo, campos.VigenciaInicio, campos.VigenciaFim, id, cancellationToken)
             .ConfigureAwait(false);
         return sobreposta
             ? Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro())
@@ -121,8 +129,8 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         return Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro());
     }
 
-    private static bool JanelaMudou(TipoAtoPublicado tipo, AtualizarTipoAtoPublicadoCommand command) =>
-        tipo.VigenciaInicio != command.VigenciaInicio || tipo.VigenciaFim != command.VigenciaFim;
+    private static bool JanelaMudou(TipoAtoPublicado tipo, CamposDoTipoAtoPublicado campos) =>
+        tipo.VigenciaInicio != campos.VigenciaInicio || tipo.VigenciaFim != campos.VigenciaFim;
 
     private static DomainError NaoEncontradoErro() =>
         new(TipoAtoPublicadoErrorCodes.NaoEncontrado, "Tipo de ato não encontrado.");

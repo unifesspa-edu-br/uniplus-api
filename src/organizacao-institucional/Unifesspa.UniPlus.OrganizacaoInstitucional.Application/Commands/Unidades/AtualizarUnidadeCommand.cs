@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
+using System.ComponentModel;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -7,7 +9,8 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 /// <remarks>
 /// <c>Nome</c>/<c>Slug</c>/<c>Sigla</c>/<c>Codigo</c> são <c>string?</c>, não
-/// <c>string</c> (ADR-0125) — mesma justificativa de <see cref="CriarUnidadeCommand"/>.
+/// <c>string</c> (ADR-0125) — mesma justificativa de <see cref="CriarUnidadeCommand"/>, que vale também para
+/// <c>UnidadeAcademica</c>: a edição substitui o valor, e um <c>false</c> implícito o desligaria em silêncio.
 /// </remarks>
 public sealed record AtualizarUnidadeCommand(
     Guid Id,
@@ -18,7 +21,9 @@ public sealed record AtualizarUnidadeCommand(
     string? Codigo,
     Guid? UnidadeSuperiorId,
     [property: AceitaCodigosDe<TipoUnidade>] string? Tipo,
-    bool UnidadeAcademica,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    bool? UnidadeAcademica,
     DateOnly? VigenciaFim,
     /// <summary>Motivo da mudança de identificador (Slug/Sigla/Codigo/Alias), se aplicável.</summary>
     string? MotivoMudancaIdentificador = null,

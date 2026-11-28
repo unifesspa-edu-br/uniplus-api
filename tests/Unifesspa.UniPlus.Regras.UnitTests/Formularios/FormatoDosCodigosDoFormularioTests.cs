@@ -59,7 +59,7 @@ public sealed class FormatoDosCodigosDoFormularioTests
     [Fact]
     public void ConferirUnicidade_CodigosValidosIguais_RecusaSomenteRepeticaoExata()
     {
-        var termos = new (string? Codigo, int Ordem)?[] { ("MARCADOR_DISTINTIVO", 0), (" MARCADOR_DISTINTIVO", 1), (" MARCADOR_DISTINTIVO", 2), ("MARCADOR_DISTINTIVO", 3) };
+        var termos = new (string? Codigo, int? Ordem)?[] { ("MARCADOR_DISTINTIVO", 0), (" MARCADOR_DISTINTIVO", 1), (" MARCADOR_DISTINTIVO", 2), ("MARCADOR_DISTINTIVO", 3) };
         FieldError erro = FormaDoTermo.ConferirUnicidade(termos).Should().ContainSingle().Subject;
         erro.Field.Should().Be("termos[3].codigo");
         erro.Error.Code.Should().Be(TermoFormularioErrorCodes.CodigoDuplicado);

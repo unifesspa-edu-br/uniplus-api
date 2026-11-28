@@ -161,10 +161,10 @@ public static class EntradaDeRegras
         input is null ? null : RestricoesDeValor.Limite(input.Ancora, input.Data, input.Anos, input.Dias);
 
     /// <summary>
-    /// O envio que a simulação supõe; nulo quando ela não o informa. A zona é procurada na base de fusos
-    /// do ambiente, e a que ela não reconhece é recusada no fuso. O instante que fica perto demais das pontas
-    /// do calendário, como o primeiro dele, para os limites da faixa de data se contarem dele é recusado no
-    /// instante. A ausência do instante no corpo nem chega aqui: é recusada na leitura.
+    /// O envio que a simulação supõe; nulo quando ela não o informa. O instante ausente ou nulo é recusado como
+    /// obrigatório, junto da zona que a base de fusos do ambiente não reconhece. O instante que fica perto demais
+    /// das pontas do calendário, como o primeiro dele, para os limites da faixa de data se contarem dele é recusado
+    /// no instante, e só quando o instante e a zona foram lidos, porque o dia do envio depende dos dois.
     /// </summary>
     public static Result<EnvioDasRespostas?> Envio(EnvioSimuladoInput? input)
     {
@@ -173,22 +173,35 @@ public static class EntradaDeRegras
             return Result<EnvioDasRespostas?>.Success(null);
         }
 
-        return Fuso(input.Fuso) is { } fuso
-            ? EnvioDentroDoCalendario(new EnvioDasRespostas(input.Instante, fuso))
-            : EnvioRecusado(
-                "envio.fuso", FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, $"A zona '{input.Fuso}' do envio não é reconhecida.");
+        TimeZoneInfo? fuso = Fuso(input.Fuso);
+        EnvioDasRespostas? envio = input.Instante is { } instante && fuso is not null ? new EnvioDasRespostas(instante, fuso) : null;
+        List<FieldError> recusas = [.. RecusasDoEnvio(input, fuso, envio)];
+
+        return recusas.Count == 0 ? Result<EnvioDasRespostas?>.Success(envio) : Result<EnvioDasRespostas?>.ValidationFailure(recusas);
     }
 
-    private static Result<EnvioDasRespostas?> EnvioDentroDoCalendario(EnvioDasRespostas envio) =>
-        LimiteDeData.ComportaOsDeslocamentos(envio.Dia)
-            ? Result<EnvioDasRespostas?>.Success(envio)
-            : EnvioRecusado(
-                "envio.instante",
-                FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario,
-                "O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam.");
+    private static IEnumerable<FieldError> RecusasDoEnvio(EnvioSimuladoInput input, TimeZoneInfo? fuso, EnvioDasRespostas? envio)
+    {
+        if (RecusaDoInstante(input.Instante, envio) is { } recusaDoInstante)
+        {
+            yield return new("envio.instante", recusaDoInstante);
+        }
 
-    private static Result<EnvioDasRespostas?> EnvioRecusado(string campo, string codigo, string mensagem) =>
-        Result<EnvioDasRespostas?>.ValidationFailure([new FieldError(campo, new DomainError(codigo, mensagem))]);
+        if (fuso is null)
+        {
+            yield return new("envio.fuso", new DomainError(
+                FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, $"A zona '{input.Fuso}' do envio não é reconhecida."));
+        }
+    }
+
+    private static DomainError? RecusaDoInstante(DateTimeOffset? instante, EnvioDasRespostas? envio) => instante switch
+    {
+        null => new DomainError(CodigosDeValidacao.Obrigatorio, "Informe o instante do envio."),
+        _ when envio is not null && !LimiteDeData.ComportaOsDeslocamentos(envio.Dia) => new DomainError(
+            FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario,
+            "O instante do envio fica fora do calendário que os limites da faixa de data alcançam."),
+        _ => null,
+    };
 
     private static TimeZoneInfo? Fuso(string? zona)
     {

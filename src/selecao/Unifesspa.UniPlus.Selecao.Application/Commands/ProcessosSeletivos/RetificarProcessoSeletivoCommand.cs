@@ -25,6 +25,6 @@ public sealed record RetificarProcessoSeletivoCommand(
     string? Numero,
     DateTimeOffset? PeriodoInscricaoInicio,
     DateTimeOffset? PeriodoInscricaoFim,
-    Guid DocumentoEditalId,
-    DadosDoAto Ato,
+    Guid? DocumentoEditalId,
+    DadosDoAto? Ato,
     IReadOnlyList<AnexoSolicitadoDoEdital>? Anexos = null) : ICommand<Result>;

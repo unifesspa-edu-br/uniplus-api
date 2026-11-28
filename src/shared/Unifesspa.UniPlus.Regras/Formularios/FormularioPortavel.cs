@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using System.ComponentModel;
+
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -24,12 +26,24 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// o E de condições. Nulo é ausência de condição; a lista vazia é o predicado sem cláusula, que avalia
 /// falso — e, na derivação, a regra-âncora, sempre ativa.
 /// </para>
+/// <para>
+/// As quatro listas são obrigatórias: ausente ou nula é recusada (422) na forma do documento, e a lista vazia
+/// declara "nenhum". Por isso são anuláveis no tipo, para a ausência chegar a essa recusa.
+/// </para>
 /// </remarks>
 public sealed record FormularioPortavel(
-    IReadOnlyList<PaginaPortavel> Paginas,
-    IReadOnlyList<TermoPortavel> Termos,
-    IReadOnlyList<DerivacaoPortavel> Derivacoes,
-    IReadOnlyList<AgregadoPortavel> Agregados)
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhuma.")]
+    IReadOnlyList<PaginaPortavel>? Paginas,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhum.")]
+    IReadOnlyList<TermoPortavel>? Termos,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhuma.")]
+    IReadOnlyList<DerivacaoPortavel>? Derivacoes,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhum.")]
+    IReadOnlyList<AgregadoPortavel>? Agregados)
 {
     /// <summary>
     /// O formulário portável de uma definição. A oferta de valores não está na definição: quem monta a

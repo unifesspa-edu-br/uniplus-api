@@ -60,6 +60,17 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == propriedadeEsperada);
     }
 
+    [Fact(DisplayName = "Validator acumula as recusas das três coleções ausentes, na ordem produtos, bancas e recursos")]
+    public void Rejeita_TresColecoesNulas_AcumulaNaOrdem()
+    {
+        EtapaProcessoInput etapa = EtapaValida() with { Produtos = null!, Bancas = null!, Recursos = null! };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
+
+        result.Errors.Select(static e => e.PropertyName).Should().Equal("Etapas[0].Produtos", "Etapas[0].Bancas", "Etapas[0].Recursos");
+    }
+
     /// <summary>
     /// A lista vazia é a declaração explícita de que a etapa não tem nenhum — o contraponto
     /// da recusa acima, e o que impede que exigir a chave vire exigir conteúdo.

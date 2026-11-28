@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
-using System.Text.Json.Serialization;
+using System.ComponentModel;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -17,10 +18,13 @@ public sealed record RegraPadraoInput(
     IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? Quando);
 
 /// <summary>Substitui as regras padrão de um derivado por regra do administrador (ADR-0136).</summary>
-public sealed record DefinirRegrasPadraoCommand(Guid Id, IReadOnlyList<RegraPadraoInput> Regras) : ICommand<Result>;
+public sealed record DefinirRegrasPadraoCommand(Guid Id, IReadOnlyList<RegraPadraoInput>? Regras) : ICommand<Result>;
 
 /// <summary>
 /// Corpo da definição das regras padrão de um derivado. A lista é obrigatória: só a lista vazia
-/// explícita remove as regras, nunca um corpo sem ela.
+/// explícita remove as regras, e o corpo sem ela, ou com ela nula, é recusado (422) na conferência das regras.
 /// </summary>
-public sealed record RegrasPadraoInput([property: JsonRequired] IReadOnlyList<RegraPadraoInput> Regras);
+public sealed record RegrasPadraoInput(
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422). A lista vazia remove as regras.")]
+    IReadOnlyList<RegraPadraoInput>? Regras);

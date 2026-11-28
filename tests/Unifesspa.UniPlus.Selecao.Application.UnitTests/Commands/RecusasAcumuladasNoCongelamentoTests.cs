@@ -92,8 +92,8 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
         cenario.AfirmarQueNaoTransitou();
     }
 
-    [Fact(DisplayName = "O anexo recusado impede avaliar o período de inscrição e a conformidade legal, que só leem o edital montado")]
-    public async Task AnexoRecusado_ImpedeAvaliarOPeriodoEAConformidadeLegal()
+    [Fact(DisplayName = "O anexo recusado não esconde a recusa do período, que não depende dele, e impede avaliar a conformidade legal, que lê o edital montado")]
+    public async Task AnexoRecusado_SomaOPeriodoEImpedeAvaliarAConformidadeLegal()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar);
         Result controle = await PublicarComPeriodoAsync(cenario, anexos: null);
@@ -103,7 +103,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
         Result resposta = await PublicarComPeriodoAsync(comAnexo, anexos: [new AnexoSolicitadoDoEdital(Guid.CreateVersion7(), null)]);
 
         resposta.Errors.Select(static e => e.Error.Code).Should().Contain(CodigoDa(DefeitoDoCongelamento.Anexos))
-            .And.NotContain(PeriodoNaoInformavel)
+            .And.Contain(PeriodoNaoInformavel)
             .And.NotContain(CodigoDa(DefeitoDoCongelamento.ConformidadeLegal));
         ConformidadeLegalNaoFoiLida(comAnexo);
     }

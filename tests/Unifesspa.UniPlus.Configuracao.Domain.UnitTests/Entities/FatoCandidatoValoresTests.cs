@@ -270,5 +270,30 @@ public sealed class FatoCandidatoValoresTests
         fato.ValoresDominioDeclarados.Single().Ordem.Should().Be(0);
     }
 
+    [Fact(DisplayName = "Reordenar sem a lista de códigos é recusado como obrigatório e não muda a ordem")]
+    public void ReordenarValores_ListaAusente_RecusaComoObrigatorio()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.ReordenarValores(null);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        (recusa.Field, recusa.Error.Code).Should().Be(("codigos", CodigosDeValidacao.Obrigatorio));
+        fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("A", "B");
+    }
+
+    [Fact(DisplayName = "Reordenar com lista vazia declara nenhum código: só é aceita quando o fato não tem valores")]
+    public void ReordenarValores_ListaVazia_DeclaraNenhumCodigo()
+    {
+        FatoCandidato semValores = Criar().Value!;
+        FatoCandidato comValor = Criar().Value!;
+        comValor.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        semValores.ReordenarValores([]).IsSuccess.Should().BeTrue();
+        comValor.ReordenarValores([]).Errors.Should().ContainSingle(e => e.Error.Code == FatoValorDominioErrorCodes.OrdemSemTodosOsValores);
+    }
+
     // ─── Sem remoção lógica (EntityBase puro: o fato é desativado, nunca apagado) ──
 }

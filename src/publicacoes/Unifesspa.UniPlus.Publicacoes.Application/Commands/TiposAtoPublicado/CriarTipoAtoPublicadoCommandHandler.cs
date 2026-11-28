@@ -36,15 +36,15 @@ public static class CriarTipoAtoPublicadoCommandHandler
             return Result<Guid>.ValidationFailure(validacao.Errors);
         }
 
-        return await Criar(command, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+        return await Criar(command, validacao.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<Guid>> Criar(
-        CriarTipoAtoPublicadoCommand command, ITipoAtoPublicadoRepository repository,
-        IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        CriarTipoAtoPublicadoCommand command, CamposDoTipoAtoPublicado campos,
+        ITipoAtoPublicadoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
-            command.Codigo!, command.VigenciaInicio, command.VigenciaFim, null, cancellationToken)
+            campos.Codigo, campos.VigenciaInicio, campos.VigenciaFim, null, cancellationToken)
             .ConfigureAwait(false);
         if (sobreposta)
         {

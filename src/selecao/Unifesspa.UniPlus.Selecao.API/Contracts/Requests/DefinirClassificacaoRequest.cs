@@ -1,23 +1,22 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
-using System.Text.Json.Serialization;
+using System.ComponentModel;
 
 using Application.Commands.ProcessosSeletivos;
 
 using Controllers;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirClassificacao"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>
-/// <c>BaseadoEmEnem</c> é <c>[JsonRequired]</c>: o host não habilita
-/// <c>RespectRequiredConstructorParameters</c> (só configura naming policy e
-/// enum converter), então por padrão do <c>System.Text.Json</c> um parâmetro
-/// de construtor de record ausente no JSON recebe o valor default
-/// (<see langword="false"/>) — indistinguível de um <see langword="false"/>
-/// explícito. Omitir o campo não pode equivaler silenciosamente a "não é
-/// baseado em ENEM".
+/// <c>BaseadoEmEnem</c> e <c>RegrasEliminacao</c> são anuláveis, sem valor padrão e sem <c>[JsonRequired]</c>:
+/// ausentes ou nulos chegam ao domínio e são recusados (422), acumulados com as demais recusas, em vez de virarem
+/// "não é baseado em ENEM" ou o 400 da leitura do corpo. O contrato os publica como obrigatórios e sem
+/// <c>null</c>; a lista vazia declara que não há eliminação.
 /// <para>
 /// <c>ResolucaoPesoAreaEnem</c> é opcional no corpo: ausente vale nulo, e é o domínio que
 /// decide se ela era obrigatória (classificação baseada em ENEM com cálculo local) ou
@@ -36,8 +35,12 @@ public sealed record DefinirClassificacaoRequest(
     int? CasasArredondamento,
     string RegraOrdemAlocacaoCodigo,
     string RegraOrdemAlocacaoVersao,
-    IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
-    [property: JsonRequired] bool BaseadoEmEnem,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422); envie [] quando não houver nenhuma.")]
+    IReadOnlyList<RegraEliminacaoInput>? RegrasEliminacao,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    bool? BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem = null,
     decimal? EscalaNotaFinal = null)
 {

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Declara se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA, UNI-REQ-0015) e, quando aplica, a
 /// configuração do FADA. <see cref="Aplica"/> falso dispensa a configuração; verdadeiro a exige.
 /// </summary>
-/// <param name="Aplica">Declaração obrigatória: o processo aplica ou não o FADA.</param>
+/// <param name="Aplica">Declaração obrigatória: o processo aplica ou não o FADA; ausente ou nulo é recusado (422).</param>
 /// <param name="Regra">A regra do FADA do catálogo de regras.</param>
 /// <param name="Fator">O multiplicador aplicado à nota.</param>
 /// <param name="Teto">O teto do acréscimo, quando há.</param>
@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="BaseLegal">A base legal do FADA, cujo snapshot é congelado no processo.</param>
 public sealed record DefinirFadaCommand(
     Guid ProcessoSeletivoId,
-    bool Aplica,
+    bool? Aplica,
     ReferenciaRegraInput? Regra,
     decimal? Fator,
     decimal? Teto,

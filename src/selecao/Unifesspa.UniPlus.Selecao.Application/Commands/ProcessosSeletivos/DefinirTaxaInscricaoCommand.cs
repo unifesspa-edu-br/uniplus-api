@@ -7,10 +7,8 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
-/// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não declarado",
-/// que BLOQUEIA a publicação (CA-01), como a declaração do FADA em <c>DefinirFadaCommand</c>.
-/// <c>Fundamentos</c> é obrigatório quando <c>Cobra</c> == <see langword="true"/> (issue #1310).
+/// Define a taxa de inscrição e os fundamentos de isenção do processo. <c>Cobra</c> é obrigatório: ausente
+/// ou nulo é recusado (422), e não remove a declaração. <c>Fundamentos</c> é obrigatório quando <c>Cobra</c> == <see langword="true"/> (issue #1310).
 /// </summary>
 public sealed record DefinirTaxaInscricaoCommand(
     Guid ProcessoSeletivoId,

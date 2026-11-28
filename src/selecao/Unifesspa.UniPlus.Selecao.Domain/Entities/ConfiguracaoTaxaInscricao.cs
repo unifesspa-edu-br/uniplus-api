@@ -14,11 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Três estados no comando que grava esta configuração, dois na entidade.</b> No wire,
-/// <c>Cobra</c> nulo remove a declaração (o processo volta a "não declarado" — reverte inclusive
-/// uma declaração anterior); <c>Cobra</c> não nulo cria ou substitui integralmente. Uma vez
-/// instanciada, a entidade sempre representa uma declaração definitiva — por isso <see cref="Cobra"/>
-/// aqui é <see langword="bool"/> não anulável.
+/// <b>A declaração exige <c>Cobra</c>.</b> No wire, <c>Cobra</c> ausente ou nulo é recusado (422) junto das
+/// demais recusas, e não remove a declaração. Uma vez instanciada, a entidade sempre representa uma
+/// declaração definitiva — por isso <see cref="Cobra"/> aqui é <see langword="bool"/> não anulável.
 /// </para>
 /// <para>
 /// <b>"Não cobrar" e "isentar" são mutuamente exclusivos</b> (CA-03): <see cref="Cobra"/> ==
@@ -62,35 +60,43 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
     /// podem coexistir no mesmo payload malformado.
     /// </summary>
     public static Result<ConfiguracaoTaxaInscricao> Criar(
-        bool cobra,
+        bool? cobra,
         decimal? valor,
         IReadOnlyList<string>? fundamentosCodigos)
     {
-        List<FieldError> erros = RecusasDoValor(cobra, valor);
+        List<FieldError> erros = [.. RecusaDaCobranca(cobra), .. RecusasDoValor(cobra, valor)];
         List<FundamentoIsencao> fundamentos = ConferirFundamentos(cobra, fundamentosCodigos, erros);
         return erros.Count > 0
             ? Result<ConfiguracaoTaxaInscricao>.ValidationFailure(erros)
             : Result<ConfiguracaoTaxaInscricao>.Success(new ConfiguracaoTaxaInscricao
             {
-                Cobra = cobra,
+                Cobra = cobra.GetValueOrDefault(),
                 Valor = valor,
                 _fundamentos = fundamentos,
             });
     }
 
-    private static List<FieldError> RecusasDoValor(bool cobra, decimal? valor)
+    private static FieldError[] RecusaDaCobranca(bool? cobra) =>
+        cobra is null
+            ? [new("cobra", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe se o processo cobra taxa de inscrição."))]
+            : [];
+
+    private static List<FieldError> RecusasDoValor(bool? cobra, decimal? valor)
     {
-        FieldError? faixa = cobra && valor is not > 0
-            ? new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", "Processo que cobra taxa exige valor positivo."))
-            : !cobra && valor is not null
-                ? new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", "Processo que declara não cobrar taxa não pode informar valor."))
-                : null;
+        FieldError? faixa = cobra switch
+        {
+            true when valor is not > 0 =>
+                new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", "Processo que cobra taxa exige valor positivo.")),
+            false when valor is not null =>
+                new("valor", new DomainError("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", "Processo que declara não cobrar taxa não pode informar valor.")),
+            _ => null,
+        };
         FieldError? formato = PrecisaoDecimal.Recusa(valor, ValorPrecisao, ValorEscala, "valor",
             "O valor da taxa deve ter no máximo 10 dígitos inteiros e 2 casas decimais.");
         return [.. new[] { faixa, formato }.OfType<FieldError>()];
     }
 
-    private static List<FundamentoIsencao> ConferirFundamentos(bool cobra, IReadOnlyList<string>? codigos, List<FieldError> erros)
+    private static List<FundamentoIsencao> ConferirFundamentos(bool? cobra, IReadOnlyList<string>? codigos, List<FieldError> erros)
     {
         FieldError? recusa = RecusaDaDeclaracaoDosFundamentos(cobra, codigos);
         if (recusa is not null)
@@ -101,14 +107,17 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
         return codigos is { Count: > 0 } ? LerFundamentos(codigos, erros) : [];
     }
 
-    private static FieldError? RecusaDaDeclaracaoDosFundamentos(bool cobra, IReadOnlyList<string>? codigos) =>
-        cobra && codigos is not { Count: > 0 }
-            ? new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra",
-                "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção."))
-            : !cobra && codigos is { Count: > 0 }
-                ? new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca",
-                    "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — \"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas."))
-                : null;
+    private static FieldError? RecusaDaDeclaracaoDosFundamentos(bool? cobra, IReadOnlyList<string>? codigos) =>
+        cobra switch
+        {
+            true when codigos is not { Count: > 0 } =>
+                new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra",
+                    "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção.")),
+            false when codigos is { Count: > 0 } =>
+                new("fundamentos", new DomainError("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca",
+                    "Processo que declara não cobrar taxa não pode configurar fundamento de isenção — \"não cobrar\" e \"isentar\" são decisões distintas e mutuamente exclusivas.")),
+            _ => null,
+        };
 
     private static List<FundamentoIsencao> LerFundamentos(IReadOnlyList<string> codigos, List<FieldError> erros)
     {

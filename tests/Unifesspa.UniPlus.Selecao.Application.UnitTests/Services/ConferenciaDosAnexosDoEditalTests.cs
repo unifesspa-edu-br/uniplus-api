@@ -159,6 +159,56 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.NomeInvalido);
     }
 
+    [Fact(DisplayName = "As recusas de nome e de documento apontam o campo do anexo na posição em que ele veio no pedido")]
+    public async Task RecusasDeNomeEDeDocumento_ApontamOCampoDoItem()
+    {
+        DocumentoAPublicar primeiro = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
+        DocumentoAPublicar segundo = Documento("Cronograma", TiposDeMidiaDeDocumento.Pdf);
+        DocumentoAPublicar pendente = Documento("Pendente", TiposDeMidiaDeDocumento.Pdf, confirmado: false);
+
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
+            [
+                new AnexoSolicitadoDoEdital(primeiro.Id, "a/b"),
+                new AnexoSolicitadoDoEdital(pendente.Id, "Pendente"),
+                new AnexoSolicitadoDoEdital(segundo.Id, "c/d"),
+            ],
+            [],
+            primeiro,
+            segundo,
+            pendente);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("anexos[0].nome", AnexoDoEditalErrorCodes.NomeInvalido),
+            ("anexos[1].documentoId", AnexoDoEditalErrorCodes.NaoConfirmado),
+            ("anexos[2].nome", AnexoDoEditalErrorCodes.NomeInvalido));
+    }
+
+    [Fact(DisplayName = "O anexo sem documento não é consultado nem recusado aqui, e os demais mantêm a posição que têm no pedido")]
+    public async Task AnexoSemDocumento_NaoEscondeAsRecusasDosDemais()
+    {
+        DocumentoAPublicar segundo = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf);
+
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
+            [new AnexoSolicitadoDoEdital(null, "Primeiro"), new AnexoSolicitadoDoEdital(segundo.Id, "a/b")],
+            [],
+            segundo);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("anexos[1].nome", AnexoDoEditalErrorCodes.NomeInvalido));
+    }
+
+    [Fact(DisplayName = "O documento recusado e o nome inválido do mesmo anexo saem juntos, cada um no seu campo")]
+    public async Task DocumentoNaoConfirmadoENomeInvalido_SomamAsDuasRecusas()
+    {
+        DocumentoAPublicar pendente = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf, confirmado: false);
+
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
+            [new AnexoSolicitadoDoEdital(pendente.Id, "a/b")], [], pendente);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("anexos[0].documentoId", AnexoDoEditalErrorCodes.NaoConfirmado),
+            ("anexos[0].nome", AnexoDoEditalErrorCodes.NomeInvalido));
+    }
+
     [Fact(DisplayName = "Mais anexos que o limite são recusados antes de consultar documento")]
     public async Task AcimaDoLimite_Recusa()
     {

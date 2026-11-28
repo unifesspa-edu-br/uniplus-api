@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Confere no catálogo de Publicações, ANTES de publicar, o tipo de ato que o operador
@@ -29,13 +29,11 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 public sealed class ConferenciaDoTipoDeAto(ITipoAtoPublicadoReader reader)
 {
     internal async Task<Result<TipoAtoPublicadoView>> CongelaConfiguracaoAsync(
-        DadosDoAto ato,
+        string tipoAtoCodigo,
         DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(ato);
-
-        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(ato.TipoAtoCodigo, diaDaPublicacao, cancellationToken)
+        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {

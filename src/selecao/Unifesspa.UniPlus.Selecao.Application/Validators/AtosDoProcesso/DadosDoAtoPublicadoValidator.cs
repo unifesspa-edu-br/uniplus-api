@@ -16,6 +16,14 @@ public abstract class DadosDoAtoPublicadoValidator<TComando> : AbstractValidator
 {
     protected DadosDoAtoPublicadoValidator()
     {
+        RegrasDoProcessoEDoNumero();
+        RegrasDoAto();
+        RegrasDosDocumentos();
+        RegrasDaCorrecao();
+    }
+
+    private void RegrasDoProcessoEDoNumero()
+    {
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");
@@ -23,30 +31,31 @@ public abstract class DadosDoAtoPublicadoValidator<TComando> : AbstractValidator
         RuleFor(x => x.Numero)
             .MaximumLength(AtoDoProcesso.NumeroMaxLength)
             .WithMessage($"Número do ato deve ter no máximo {AtoDoProcesso.NumeroMaxLength} caracteres.");
+    }
 
-        // DateOnly omitido binda para 0001-01-01.
+    private void RegrasDoAto()
+    {
+        // A data ausente é recusada na preparação, com o código de campo obrigatório; aqui, só a data zero informada.
         RuleFor(x => x.DataDoAto)
             .NotEqual(default(DateOnly))
-            .WithMessage("Data do ato declarada pelo documento é obrigatória.");
+            .WithMessage("Data do ato declarada pelo documento é inválida.");
 
         RuleFor(x => x.Assinante)
             .NotEmpty()
             .WithMessage("Assinante do ato é obrigatório.")
             .MaximumLength(AtoDoProcesso.AssinanteMaxLength)
             .WithMessage($"Assinante deve ter no máximo {AtoDoProcesso.AssinanteMaxLength} caracteres.");
+    }
 
-        RuleFor(x => x.DocumentoPrincipalId)
-            .NotEmpty()
-            .WithMessage("Referência ao documento principal do ato é obrigatória.");
-
+    private void RegrasDosDocumentos() =>
         // A lista é opcional, mas um item nulo dentro dela é corpo malformado.
         RuleForEach(x => x.Anexos)
             .NotNull()
             .WithMessage("Item da lista de anexos não pode ser nulo.");
 
-        // O par ato corrigido e motivo é regra do agregado (AtoDoProcesso.ValidarCorrecao); aqui só o tamanho.
+    // O par ato corrigido e motivo é regra do agregado (AtoDoProcesso.ValidarCorrecao); aqui só o tamanho.
+    private void RegrasDaCorrecao() =>
         RuleFor(x => x.MotivoDaCorrecao)
             .MaximumLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength)
             .WithMessage($"O motivo da correção deve ter no máximo {AtoDoProcesso.MotivoDaCorrecaoMaxLength} caracteres.");
-    }
 }

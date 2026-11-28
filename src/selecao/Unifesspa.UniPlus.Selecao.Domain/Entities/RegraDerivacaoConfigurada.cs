@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -68,28 +69,29 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
     /// caia num erro semântico menos específico, e que uma violação de forma seja mascarada pelo
     /// erro semântico de outra regra do mesmo payload).
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(int ordem, string? contribui)
+    public static List<FieldError> ValidarFormaBasica(int? ordem, string? contribui) =>
+    [
+        .. RecusaDaOrdem(ordem),
+        .. RecusaDaContribuicao(contribui),
+    ];
+
+    private static FieldError[] RecusaDaOrdem(int? ordem) => ordem switch
     {
-        List<FieldError> erros = [];
+        null => [new("ordem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a ordem da regra."))],
+        < 0 => [new("ordem", new DomainError(
+            RegraDerivacaoConfiguradaErrorCodes.OrdemInvalida,
+            "A ordem da regra não pode ser negativa."))],
+        _ => [],
+    };
 
-        if (ordem < 0)
-        {
-            erros.Add(new("ordem", new DomainError(
-                RegraDerivacaoConfiguradaErrorCodes.OrdemInvalida,
-                "A ordem da regra não pode ser negativa.")));
-        }
-
-        // Nula é a regra do derivado booleano; em branco é um código mal preenchido, nunca um
-        // booleano implícito.
-        if (contribui is not null && string.IsNullOrWhiteSpace(contribui))
-        {
-            erros.Add(new("contribui", new DomainError(
+    // Nula é a regra do derivado booleano; em branco é um código mal preenchido, nunca um
+    // booleano implícito.
+    private static FieldError[] RecusaDaContribuicao(string? contribui) =>
+        contribui is not null && string.IsNullOrWhiteSpace(contribui)
+            ? [new("contribui", new DomainError(
                 RegraDerivacaoConfiguradaErrorCodes.ContribuiEmBranco,
-                "O código contribuído pela regra não pode ficar em branco; omita-o só no derivado booleano.")));
-        }
-
-        return erros;
-    }
+                "O código contribuído pela regra não pode ficar em branco; omita-o só no derivado booleano."))]
+            : [];
 
     internal void VincularConfiguracao(Guid configuracaoDerivacaoFatoId) =>
         ConfiguracaoDerivacaoFatoId = configuracaoDerivacaoFatoId;
@@ -100,27 +102,32 @@ public sealed class RegraDerivacaoConfigurada : EntityBase
     /// </summary>
     internal Result<RegraDerivacao> ParaRegraDerivacao()
     {
+        Result<PredicadoDnf> quando = PredicadoDasCondicoes();
+        if (quando.IsFailure)
+        {
+            return Result<RegraDerivacao>.Failure(quando.Error!);
+        }
+
+        return Contribui is null
+            ? Result<RegraDerivacao>.Success(RegraDerivacao.CriarBooleana(quando.Value!))
+            : RegraDerivacao.Criar(quando.Value!, Contribui);
+    }
+
+    private Result<PredicadoDnf> PredicadoDasCondicoes()
+    {
         List<(int Clausula, CondicaoDnf Condicao)> agrupadas = new(_condicoes.Count);
         foreach (CondicaoRegraDerivacao condicao in _condicoes)
         {
             Result<CondicaoDnf> condicaoResult = condicao.ParaCondicaoDnf();
             if (condicaoResult.IsFailure)
             {
-                return Result<RegraDerivacao>.Failure(condicaoResult.Error!);
+                return Result<PredicadoDnf>.Failure(condicaoResult.Error!);
             }
 
             agrupadas.Add((condicao.Clausula, condicaoResult.Value!));
         }
 
-        Result<PredicadoDnf> quandoResult = PredicadoDnf.CriarDeCondicoesAgrupadas(agrupadas);
-        if (quandoResult.IsFailure)
-        {
-            return Result<RegraDerivacao>.Failure(quandoResult.Error!);
-        }
-
-        return Contribui is null
-            ? Result<RegraDerivacao>.Success(RegraDerivacao.CriarBooleana(quandoResult.Value!))
-            : RegraDerivacao.Criar(quandoResult.Value!, Contribui);
+        return PredicadoDnf.CriarDeCondicoesAgrupadas(agrupadas);
     }
 }
 

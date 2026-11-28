@@ -9,13 +9,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// documento da configuração ou do registro da versão publicada, e recusa todas as causas juntas.
 /// </summary>
 /// <param name="PrazoDeInterposicao">Prazo para apresentar o recurso na 1ª instância.</param>
-/// <param name="AdmiteInstanciaSuperior">Se o recurso admite instância superior. Obrigatória e sem valor padrão.</param>
+/// <param name="AdmiteInstanciaSuperior">Se o recurso admite instância superior. Obrigatória: ausente é recusada, e as regras que dependem dela ficam de fora.</param>
 /// <param name="PrazoDaSegundaInstancia">Prazo para apresentar o recurso na 2ª instância: obrigatório com instância superior, recusado sem ela.</param>
 /// <param name="EfeitoSuspensivo">Código do efeito suspensivo da 1ª instância; obrigatório.</param>
 /// <param name="GuardaDaVaga">Código da guarda da vaga; ausente vale guardar até o resultado definitivo.</param>
 public sealed record ParametrosDeclaradosDoRecurso(
     PrazoDeclarado PrazoDeInterposicao,
-    bool AdmiteInstanciaSuperior,
+    bool? AdmiteInstanciaSuperior,
     PrazoDeclarado PrazoDaSegundaInstancia,
     string? EfeitoSuspensivo,
     string? GuardaDaVaga)
@@ -24,13 +24,14 @@ public sealed record ParametrosDeclaradosDoRecurso(
     private const string PrazoUnidade = "prazoUnidade";
     private const string SegundaInstanciaValor = "prazoSegundaInstanciaValor";
     private const string SegundaInstanciaUnidade = "prazoSegundaInstanciaUnidade";
+    private const string CampoAdmiteInstanciaSuperior = "admiteInstanciaSuperior";
 
     private const string OpcoesDeEfeitoAceitas =
         "efeito suspensivo para todos os recursos, sem efeito suspensivo ou a unidade responsável pela fase de origem "
         + "do ato recorrido decide em cada recurso.";
 
     /// <summary>
-    /// As recusas, acumuladas na ordem: prazo de interposição, efeito suspensivo, guarda não declarável, prazo da 2ª instância
+    /// As recusas, acumuladas na ordem: prazo de interposição, instância superior ausente, efeito suspensivo, guarda não declarável, prazo da 2ª instância
     /// e "não guarda" com instância superior. Sem recusa, os parâmetros conferidos; com recusa, nenhum.
     /// </summary>
     public (ParametrosRegraPrazoRecurso? Conferidos, IReadOnlyList<RecusaDosParametrosDoRecurso> Recusas) Conferir()
@@ -43,11 +44,18 @@ public sealed record ParametrosDeclaradosDoRecurso(
     private IEnumerable<RecusaDosParametrosDoRecurso?> TodasAsRecusas()
     {
         yield return PrazoDeInterposicao.Recusa(PrazoValor, PrazoUnidade, "prazo de interposição");
+        yield return RecusaDaInstanciaSuperiorAusente();
         yield return RecusaDoEfeito();
         yield return RecusaDaGuardaNaoDeclaravel();
         yield return RecusaDoPrazoDaSegundaInstancia();
         yield return RecusaDeNaoGuardarComInstanciaSuperior();
     }
+
+    private RecusaDosParametrosDoRecurso? RecusaDaInstanciaSuperiorAusente() =>
+        AdmiteInstanciaSuperior is null
+            ? new(MotivoDaRecusaDosParametros.InstanciaSuperiorNaoDeclarada, CampoAdmiteInstanciaSuperior,
+                "Informe se o recurso admite instância superior.")
+            : null;
 
     private RecusaDosParametrosDoRecurso? RecusaDoEfeito() =>
         CatalogoDe<EfeitoSuspensivo>.TentarObter(EfeitoSuspensivo, out _)
@@ -64,7 +72,12 @@ public sealed record ParametrosDeclaradosDoRecurso(
             : null;
 
     private RecusaDosParametrosDoRecurso? RecusaDoPrazoDaSegundaInstancia() =>
-        AdmiteInstanciaSuperior ? RecusaDoPrazoComInstanciaSuperior() : RecusaDoPrazoSemInstanciaSuperior();
+        AdmiteInstanciaSuperior switch
+        {
+            true => RecusaDoPrazoComInstanciaSuperior(),
+            false => RecusaDoPrazoSemInstanciaSuperior(),
+            null => null,
+        };
 
     private RecusaDosParametrosDoRecurso? RecusaDoPrazoComInstanciaSuperior() =>
         PrazoDaSegundaInstancia.Valor is null
@@ -86,7 +99,7 @@ public sealed record ParametrosDeclaradosDoRecurso(
 
     // A guarda recusada não é julgada contra a instância superior: a recusa dela depende de um dado que já foi recusado.
     private RecusaDosParametrosDoRecurso? RecusaDeNaoGuardarComInstanciaSuperior() =>
-        AdmiteInstanciaSuperior && GuardaConferida() is Enums.GuardaDaVaga.NaoGuarda
+        AdmiteInstanciaSuperior is true && GuardaConferida() is Enums.GuardaDaVaga.NaoGuarda
             ? new(MotivoDaRecusaDosParametros.NaoGuardaComInstanciaSuperior, "guardaDaVaga",
                 "O recurso admite instância superior, e a 2ª instância sempre tem efeito suspensivo: "
                 + "escolha guardar a vaga até o resultado definitivo ou retire a instância superior.")
@@ -99,9 +112,10 @@ public sealed record ParametrosDeclaradosDoRecurso(
 
     private ParametrosRegraPrazoRecurso? Conferidos() =>
         PrazoDeInterposicao.ComoPrazo() is { } interposicao
+            && AdmiteInstanciaSuperior is { } admiteInstanciaSuperior
             && CatalogoDe<EfeitoSuspensivo>.TentarObter(EfeitoSuspensivo, out EfeitoSuspensivo efeito)
             && GuardaConferida() is { } guarda
             ? new ParametrosRegraPrazoRecurso(
-                interposicao, AdmiteInstanciaSuperior, AdmiteInstanciaSuperior ? PrazoDaSegundaInstancia.ComoPrazo() : null, efeito, guarda)
+                interposicao, admiteInstanciaSuperior, admiteInstanciaSuperior ? PrazoDaSegundaInstancia.ComoPrazo() : null, efeito, guarda)
             : null;
 }

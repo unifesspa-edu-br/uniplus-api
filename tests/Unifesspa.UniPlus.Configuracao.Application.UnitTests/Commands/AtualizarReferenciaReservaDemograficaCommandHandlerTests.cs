@@ -104,4 +104,33 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
         resultado.Error?.Code.Should().Be(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
+
+    [Theory(DisplayName = "Percentual ausente é recusado como obrigatório antes de buscar a referência e não zera o valor existente")]
+    [InlineData("ppiPercentual")]
+    [InlineData("quilombolaPercentual")]
+    [InlineData("pcdPercentual")]
+    public async Task Handle_PercentualAusente_RecusaComoObrigatorioSemBuscarNemGravar(string campo)
+    {
+        ReferenciaReservaDemografica existente = Existente();
+
+        Result resultado = await AtualizarReferenciaReservaDemograficaCommandHandler.Handle(
+            SemOPercentual(existente.Id, campo), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == campo && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        existente.PpiPercentual.Valor.Should().Be(78.50m);
+    }
+
+    private static AtualizarReferenciaReservaDemograficaCommand SemOPercentual(Guid id, string campo)
+    {
+        AtualizarReferenciaReservaDemograficaCommand completo = new(id, "2022", 79m, 1.3m, 8.5m, BaseLegal);
+
+        return campo switch
+        {
+            "ppiPercentual" => completo with { PpiPercentual = null },
+            "quilombolaPercentual" => completo with { QuilombolaPercentual = null },
+            _ => completo with { PcdPercentual = null },
+        };
+    }
 }

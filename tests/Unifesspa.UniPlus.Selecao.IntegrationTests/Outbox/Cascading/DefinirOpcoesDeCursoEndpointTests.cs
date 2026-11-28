@@ -67,18 +67,14 @@ public sealed class DefinirOpcoesDeCursoEndpointTests
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.selecao.processo_seletivo.opcoes_de_curso_invalido");
     }
 
-    [Fact(DisplayName = "Corpo sem numero é rejeitado com 400, não com 422 de um zero implícito")]
-    public async Task SemNumero_400()
+    [Fact(DisplayName = "Corpo sem numero é recusado com 422 de campo obrigatório, não de um zero implícito")]
+    public async Task SemNumero_422()
     {
-        (CascadingApiFactory api, Guid processoId) = await SemearRascunhoAsync(nameof(SemNumero_400));
+        (CascadingApiFactory api, Guid processoId) = await SemearRascunhoAsync(nameof(SemNumero_422));
 
         HttpResponseMessage resposta = await PutAsync(api, processoId, new { });
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-        problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.requisicao.campo_obrigatorio_ausente");
-        problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("field").GetString())
-            .Should().Equal("numero");
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "numero");
         (await LerNumeroGravadoAsync(api, processoId)).Should().Be(1);
     }
 

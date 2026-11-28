@@ -30,8 +30,7 @@ public sealed class ConferenciaDoCadastroDaUnidade
 
     internal async Task<Result<Unidade>> ConferirNovaAsync(CriarUnidadeCommand command, CancellationToken cancellationToken)
     {
-        Result validacao = Unidade.ValidarCampos(
-            command.Nome, command.Identificadores(), command.Cidade(), TipoDaUnidadeDaEntrada.Ler(command.Tipo), command.Vigencia());
+        Result validacao = ValidarPayloadDaCriacao(command);
         if (validacao.IsFailure)
         {
             return Result<Unidade>.ValidationFailure(validacao.Errors);
@@ -68,6 +67,15 @@ public sealed class ConferenciaDoCadastroDaUnidade
         return recusa is null ? Result<Unidade>.Success(unidade!) : Result<Unidade>.Failure(recusa);
     }
 
+    private static Result ValidarPayloadDaCriacao(CriarUnidadeCommand command) =>
+        Unidade.ValidarCampos(
+            command.Nome,
+            command.Identificadores(),
+            command.Cidade(),
+            TipoDaUnidadeDaEntrada.Ler(command.Tipo),
+            command.Vigencia(),
+            command.UnidadeAcademica);
+
     // A coerência entre VigenciaFim e VigenciaInicio exige o valor persistido, então
     // roda de novo dentro de Unidade.Atualizar, depois de buscar a Unidade.
     private static Result ValidarPayloadDaAtualizacao(AtualizarUnidadeCommand command)
@@ -77,7 +85,8 @@ public sealed class ConferenciaDoCadastroDaUnidade
             command.Identificadores(),
             command.Cidade(),
             TipoDaUnidadeDaEntrada.Ler(command.Tipo),
-            new VigenciaDaUnidade(DateOnly.MinValue, null));
+            new VigenciaDaUnidade(DateOnly.MinValue, null),
+            command.UnidadeAcademica);
         Result motivo = UnidadeIdentificadorHistorico.ValidarMotivoMudanca(command.MotivoMudancaIdentificador);
 
         return campos.IsFailure || motivo.IsFailure

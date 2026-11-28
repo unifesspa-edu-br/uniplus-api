@@ -45,6 +45,7 @@ public sealed class MontagemDoAtoNormativo(
         {
             Numeracao = new NumeracaoDoAto(command.Orgao ?? string.Empty, command.Serie ?? string.Empty, command.Ano, command.Numero),
             TipoCodigo = command.TipoCodigo,
+            DataDoAto = command.DataDoAto,
             DocumentoHash = command.DocumentoHash,
             Assinante = command.Assinante,
             VersaoDoObjetoId = command.VersaoDoObjetoId,
@@ -161,7 +162,7 @@ public sealed class MontagemDoAtoNormativo(
 
     /// <summary>
     /// Todas as recusas do pedido, campo a campo na ordem do corpo: numeração, código do tipo (forma ou
-    /// tipo sem versão vigente), documento, versão do objeto, ato retificado (forma, cadeia e herança),
+    /// tipo sem versão vigente), data do ato, documento, versão do objeto, ato retificado (forma, cadeia e herança),
     /// motivo, cada vínculo (tipo da entidade, registro pelo domínio dono, identificador, repetição) e
     /// anexos.
     /// </summary>
@@ -175,6 +176,7 @@ public sealed class MontagemDoAtoNormativo(
         .. forma.Numeracao.Recusas,
         .. forma.CodigoDoTipo.Recusas,
         .. tipo.Recusas,
+        .. forma.DataDoAto.Recusas,
         .. forma.Documento.Recusas,
         .. forma.VersaoDoObjeto.Recusas,
         .. forma.Retificacao.Recusas,
@@ -240,7 +242,7 @@ public sealed class MontagemDoAtoNormativo(
         new(
             forma.Numeracao.Valor,
             tipo,
-            command.DataDoAto,
+            forma.DataDoAto.Valor,
             forma.Documento.Valor.Hash,
             forma.Documento.Valor.Assinante,
             forma.Retificacao.Valor);

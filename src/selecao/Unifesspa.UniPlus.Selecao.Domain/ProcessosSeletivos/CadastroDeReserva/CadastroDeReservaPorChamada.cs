@@ -57,13 +57,17 @@ public sealed record CadastroDeReservaPorChamada
     /// <summary>
     /// Confere a forma da declaração e acumula as recusas (ADR-0125): cada chamada informa um número a partir
     /// de 1, declarado uma só vez, a quantidade de pessoas da reserva por vaga, não negativa, e a participação da
-    /// reserva (UNI-REQ-0505), que a quantidade maior que zero exige e a quantidade zero recusa. A declaração sem
-    /// chamada é a do processo sem cadastro de reserva. Quantas vagas cada chamada tem não é conferido aqui: vem do quadro,
+    /// reserva (UNI-REQ-0505), que a quantidade maior que zero exige e a quantidade zero recusa. A lista é obrigatória:
+    /// ausente ou nula é recusada, e a lista vazia é a declaração do processo sem cadastro de reserva. Quantas vagas cada chamada tem não é conferido aqui: vem do quadro,
     /// por quem convoca.
     /// </summary>
-    public static Result<CadastroDeReservaPorChamada> Declarar(IReadOnlyList<CadastroDeReservaInformado?> chamadas)
+    public static Result<CadastroDeReservaPorChamada> Declarar(IReadOnlyList<CadastroDeReservaInformado?>? chamadas)
     {
-        ArgumentNullException.ThrowIfNull(chamadas);
+        if (chamadas is null)
+        {
+            return Result<CadastroDeReservaPorChamada>.ValidationFailure([Recusa(
+                Campo, CodigosDeValidacao.Obrigatorio, "Informe as chamadas do cadastro de reserva; envie [] quando não houver nenhuma.")]);
+        }
 
         List<FieldError> recusas = [.. RecusasDeCadaChamada(chamadas)];
         return recusas.Count > 0

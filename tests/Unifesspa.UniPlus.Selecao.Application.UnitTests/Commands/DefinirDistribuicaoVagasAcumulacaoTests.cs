@@ -72,6 +72,20 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         resultado.Error!.Message.Should().Be("A quantidade de vagas declarada não pode ser negativa.");
     }
 
+    [Fact(DisplayName = "O quadro ausente é recusado sozinho: a quantidade não declarada de cada modalidade depende dele e não é conferida")]
+    public async Task QuadroAusente_RecusaSoOQuadro()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        (Guid oferta, Guid modalidade) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicao(Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
+        ConfiguracaoDistribuicaoVagasInput pedido = new(oferta, 60, null, Institucional, "v1", null, null, null, [modalidade], null);
+
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(mocks, processo, pedido);
+
+        resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(("distribuicaoVagas[0].quadro", CodigosDeValidacao.Obrigatorio));
+    }
+
     [Fact(DisplayName = "As recusas de cadastro da oferta, da regra, da referência demográfica e da modalidade aparecem juntas")]
     public async Task RecusasDeCadastro_AparecemJuntas()
     {

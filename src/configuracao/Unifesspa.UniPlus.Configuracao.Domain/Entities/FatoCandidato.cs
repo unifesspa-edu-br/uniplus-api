@@ -359,13 +359,18 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// Reordena os valores do fato do administrador pela lista completa de códigos — ativos e
     /// desativados —, na ordem em que passam a aparecer. A lista que deixa um valor de fora, repete
     /// um código ou cita um código que o fato não tem é recusada inteira, e as três faltas acumulam.
+    /// A lista ausente ou nula é recusada como obrigatória; só a lista vazia declara "nenhum código".
     /// </summary>
-    public Result ReordenarValores(IReadOnlyList<string> codigosEmOrdem)
-    {
-        ArgumentNullException.ThrowIfNull(codigosEmOrdem);
+    public Result ReordenarValores(IReadOnlyList<string>? codigosEmOrdem) => Valores.Reordenar(codigosEmOrdem);
 
-        return Valores.Reordenar(codigosEmOrdem);
-    }
+    /// <summary>
+    /// Recusa a lista de códigos ausente ou nula como obrigatória, sem precisar do fato: é a mesma
+    /// conferência de <see cref="ReordenarValores"/>, para o pedido ser recusado antes de buscá-lo.
+    /// </summary>
+    public static Result ConferirPresencaDaOrdemDosValores(IReadOnlyList<string>? codigosEmOrdem) =>
+        ConferenciaDosValoresDoFato.RecusaDaOrdemAusente(codigosEmOrdem) is { } ausente
+            ? Result.ValidationFailure([ausente])
+            : Result.Success();
 
     private ValoresDoDominioDoFato Valores => new(this, _valoresDominioDeclarados);
 

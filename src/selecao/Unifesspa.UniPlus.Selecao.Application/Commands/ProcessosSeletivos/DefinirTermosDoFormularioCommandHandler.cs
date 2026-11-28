@@ -24,6 +24,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirTermosDoFormularioCommandHandler
 {
+    private const string CampoDosTermos = "termos";
+
     public static async Task<Result> Handle(
         DefinirTermosDoFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -53,24 +55,23 @@ public static class DefinirTermosDoFormularioCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        if (RecusaDaListaAusente(command) is { } recusa)
+        if (command.Termos is not { } termos)
         {
-            return recusa;
+            return RecusaDaListaAusente();
         }
 
         TermosResolvidosNoCatalogo resolvidos =
-            await ResolverNoCatalogoAsync(command.Termos, processo, fatoCandidatoReader, termoConsentimentoReader, cancellationToken).ConfigureAwait(false);
+            await ResolverNoCatalogoAsync(termos, processo, fatoCandidatoReader, termoConsentimentoReader, cancellationToken).ConfigureAwait(false);
         return resolvidos.Erros.Count > 0
             ? Result.ValidationFailure(resolvidos.Erros)
             : await GravarAsync(command, processo, resolvidos, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>A lista de termos é obrigatória, e a vazia os remove; a recusa vem antes de consultar cadastros.</summary>
-    private static Result? RecusaDaListaAusente(DefinirTermosDoFormularioCommand command) =>
-        command.Termos is null
-            ? Result.Failure(new DomainError(
-                TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."))
-            : null;
+    private static Result RecusaDaListaAusente() =>
+        Result.ValidationFailure([new FieldError(
+            CampoDosTermos,
+            new DomainError(TermoExigidoFormularioErrorCodes.EntradaMalformada, "A lista de termos é obrigatória; a lista vazia remove os termos."))]);
 
     /// <summary>
     /// A forma vem antes das leituras externas; as recusas da forma, do catálogo e da unicidade acumulam no mesmo

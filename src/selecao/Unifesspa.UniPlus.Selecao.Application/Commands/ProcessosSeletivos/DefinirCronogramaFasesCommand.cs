@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.ComponentModel;
-using System.Text.Json.Serialization;
 
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -26,9 +25,9 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// <param name="PrazoValor">Valor do prazo de interposição; ausente é recusado pelo domínio.</param>
 /// <param name="PrazoUnidade">Código da unidade do prazo de interposição; o domínio recusa o ausente e o desconhecido.</param>
 /// <param name="AdmiteInstanciaSuperior">
-/// Se o recurso desta fase admite instância superior. <c>[JsonRequired]</c>: o ausente
-/// virava <c>false</c> em silêncio, e o edital seria congelado afirmando que o recurso termina
-/// na 1ª instância sem que ninguém tivesse decidido isso.
+/// Se o recurso desta fase admite instância superior. Obrigatório: o ausente virava <c>false</c> em silêncio, e o edital seria
+/// congelado afirmando que o recurso termina na 1ª instância sem que ninguém tivesse decidido isso. Ausente ou nulo chega ao
+/// domínio e é recusado (422).
 /// </param>
 /// <param name="PrazoSegundaInstanciaValor">Valor do prazo da 2ª instância; obrigatório com instância superior e recusado sem ela.</param>
 /// <param name="PrazoSegundaInstanciaUnidade">Código da unidade do prazo da 2ª instância.</param>
@@ -41,7 +40,9 @@ public sealed record RegraRecursoFaseInput(
     decimal? PrazoValor,
     [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoUnidade,
     string AtoAncoraCodigo,
-    [property: JsonRequired] bool AdmiteInstanciaSuperior,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    bool? AdmiteInstanciaSuperior,
     decimal? PrazoSegundaInstanciaValor,
     [property: AceitaCodigosDe<UnidadePrazo>] string? PrazoSegundaInstanciaUnidade,
     [property: AceitaCodigosDe<EfeitoSuspensivo>] string? EfeitoSuspensivo,
@@ -120,8 +121,9 @@ public sealed record FaseCronogramaInput(
     DateTimeOffset? Fim,
     [property: Description("Tudo o que a fase publica, com o papel de cada publicação.")]
     IReadOnlyList<ProdutoDaFaseInput> Produtos,
-    [property: Description("Se a fase promete parecer individual por candidato. É só a promessa: o parecer é produzido na execução da fase.")]
-    bool EmiteParecerIndividual,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Se a fase promete parecer individual por candidato. É só a promessa: o parecer é produzido na execução da fase. Obrigatório; ausente ou nulo é recusado (422).")]
+    bool? EmiteParecerIndividual,
     [property: Description("As bancas que a fase exige.")]
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     [property: Description("Como o recurso da fase funciona: instâncias, prazos, efeito suspensivo, guarda da vaga e procedimentos.")]

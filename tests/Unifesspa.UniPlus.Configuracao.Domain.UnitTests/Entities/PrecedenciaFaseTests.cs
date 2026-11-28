@@ -246,11 +246,36 @@ public sealed class PrecedenciaFaseTests
         PrecedenciaFase aresta = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
         Guid idOriginal = aresta.Id;
 
-        aresta.Atualizar(true);
+        Result resultado = aresta.Atualizar(true);
 
+        resultado.IsSuccess.Should().BeTrue();
         aresta.PermiteSobreposicao.Should().BeTrue();
         aresta.AntecessoraCodigo.Should().Be("INSCRICAO");
         aresta.SucessoraCodigo.Should().Be("HOMOLOGACAO_INSCRICOES");
         aresta.Id.Should().Be(idOriginal);
+    }
+
+    [Fact(DisplayName = "Atualizar sem PermiteSobreposicao recusa como obrigatório e mantém o valor existente")]
+    public void Atualizar_SemSobreposicao_RecusaComoObrigatorioENaoMuta()
+    {
+        PrecedenciaFase aresta = Criar(permiteSobreposicao: true).Value!;
+
+        Result resultado = aresta.Atualizar(null);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be("permiteSobreposicao");
+        recusa.Error.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+        aresta.PermiteSobreposicao.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Atualizar com PermiteSobreposicao falso é aceito: falso é resposta, ausente é que falta")]
+    public void Atualizar_SobreposicaoFalsa_Aceita()
+    {
+        PrecedenciaFase aresta = Criar(permiteSobreposicao: true).Value!;
+
+        Result resultado = aresta.Atualizar(false);
+
+        resultado.IsSuccess.Should().BeTrue();
+        aresta.PermiteSobreposicao.Should().BeFalse();
     }
 }

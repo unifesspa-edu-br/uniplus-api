@@ -57,7 +57,7 @@ public sealed class ModeloFormularioReaderTests
 
         lido!.Conteudo.Itens!.Single().FatoCodigo.Should().Be("CERTIFICADO");
         GrupoColetadoInput grupo = lido.Conteudo.Grupos!.Single();
-        grupo.Subitens.Select(static s => s.FatoCodigo).Should().Equal(CandidatoComoMembro.FatoParentesco, "MAIOR_IDADE");
+        grupo.Subitens!.Select(static s => s.FatoCodigo).Should().Equal(CandidatoComoMembro.FatoParentesco, "MAIOR_IDADE");
         grupo.Ocorrencias!.Maximo.Should().BeNull("o grupo sem máximo é gravado e lido sem máximo");
         grupo.Ocorrencias.IncluiCandidato.Should().BeTrue();
     }

@@ -28,8 +28,9 @@ internal sealed class DerivacaoInformada
     private DerivacaoInformada(ConfiguracaoDerivacaoInput entrada)
     {
         _entrada = entrada;
-        _regras = [.. entrada.Regras.Select(RegraDeDerivacaoInformada.De)];
-        _recusasDeForma = [.. ConfiguracaoDerivacaoFato.ValidarFormaBasica(entrada.CodigoFato, [.. entrada.Regras.Select(static r => (r.Ordem, r.Contribui))])];
+        _regras = [.. (entrada.Regras ?? []).Select(RegraDeDerivacaoInformada.De)];
+        _recusasDeForma = [.. ConfiguracaoDerivacaoFato.ValidarFormaBasica(
+            entrada.CodigoFato, entrada.Regras is null ? null : [.. entrada.Regras.Select(static r => (r.Ordem, r.Contribui))])];
         bool daOferta = entrada.CodigoFato is { } codigo && DerivacoesDaOferta.Deriva(codigo);
         if (daOferta)
         {

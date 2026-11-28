@@ -72,6 +72,19 @@ public sealed class DefinirFadaCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
+    [Fact(DisplayName = "Handle sem a declaração de aplicação recusa como obrigatória no campo aplica, mantém o processo e não persiste")]
+    public async Task Handle_AplicaAusente_RecusaComoObrigatorio()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS FADA ausente");
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFadaCommand command = new(processo.Id, null, null, null, null, null, null);
+
+        Result result = await Handle(command, mocks);
+
+        result.Errors.Should().ContainSingle(e => e.Field == "aplica" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle declarando que não aplica o FADA remove a configuração, declara e persiste (UNI-REQ-0015)")]
     public async Task Handle_NaoAplica_RemoveFadaEDeclara()
     {
@@ -265,6 +278,25 @@ public sealed class DefinirFadaCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         ExigirRecusaDaBaseLegalNaoEncontrada(result);
+        processo.Fada.Should().BeNull();
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com regra e base legal inexistentes recusa as duas juntas, sem persistir")]
+    public async Task Handle_RegraEBaseLegalNaoEncontradas_SomaAsRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.Sisu, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((RegraCatalogo?)null);
+        Guid idInexistente = Guid.CreateVersion7();
+        mocks.BaseLegalDoFadaReader.ObterPorIdAsync(idInexistente, Arg.Any<CancellationToken>()).Returns((BaseLegalDoFadaView?)null);
+        DefinirFadaCommand command = FadaDeTeste.Para(processo.Id).QueAplica().ComRegra("REGRA_INEXISTENTE_DE_TESTE", "versao-inexistente-de-teste").ComFator(1.20m).ComBaseLegal(idInexistente).Construir();
+
+        Result result = await Handle(command, mocks);
+
+        result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            (null, "ConfiguracaoDoFada.RegraNaoEncontrada"),
+            ("baseLegal.id", "ConfiguracaoDoFada.BaseLegalNaoEncontrada"));
         processo.Fada.Should().BeNull();
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

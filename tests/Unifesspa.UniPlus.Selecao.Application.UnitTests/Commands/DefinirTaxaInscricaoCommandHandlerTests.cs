@@ -45,13 +45,14 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle com Cobra nulo remove a declaração e persiste — processo volta a \"não declarado\" (CA-01)")]
-    public async Task Handle_CobraNulo_RemoveDeclaracao()
+    [Fact(DisplayName = "Handle com Cobra nulo recusa como obrigatório no campo cobra, mantém a declaração e não persiste")]
+    public async Task Handle_CobraNulo_RecusaComoObrigatorio()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(
                 cobra: true, valor: 100m, fundamentosCodigos: ["CADASTRO_UNICO"]).Value!);
+        ConfiguracaoTaxaInscricao? antes = processo.ConfiguracaoTaxaInscricao;
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirTaxaInscricaoCommand command = new(processo.Id, null, null, null);
@@ -59,9 +60,10 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         Result result = await DefinirTaxaInscricaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        processo.ConfiguracaoTaxaInscricao.Should().BeNull();
-        await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().ContainSingle(e => e.Field == "cobra" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        processo.ConfiguracaoTaxaInscricao.Should().BeSameAs(antes);
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle com Cobra=true, valor válido e fundamento define a configuração e persiste")]

@@ -44,7 +44,7 @@ public enum BlocoSistema
 }
 
 /// <summary>Uma página, na forma que a estrutura do formulário confere.</summary>
-public sealed record PaginaEstrutura(string Codigo, int Ordem, TipoPaginaFormulario Tipo, BlocoSistema? Bloco);
+public sealed record PaginaEstrutura(string Codigo, int? Ordem, TipoPaginaFormulario Tipo, BlocoSistema? Bloco);
 
 /// <summary>Um item, na forma que a estrutura do formulário confere: o fato, a ordem e a seção.</summary>
 public sealed record ItemEstrutura(string FatoCodigo, int Ordem, string? PaginaCodigo);

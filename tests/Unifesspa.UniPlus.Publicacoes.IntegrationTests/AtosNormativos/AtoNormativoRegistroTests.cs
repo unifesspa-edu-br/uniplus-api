@@ -202,6 +202,7 @@ public sealed class AtoNormativoRegistroTests
             efeitoIrreversivel = false,
             publicavelComoAvulso = false,
             exigeAtoCorrigido = false,
+            ehResultado = false,
             vigenciaInicio = "2020-01-01",
             vigenciaFim = (string?)null,
         };

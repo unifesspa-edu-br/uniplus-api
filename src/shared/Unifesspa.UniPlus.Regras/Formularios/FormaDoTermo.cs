@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Regras.Formularios;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -12,7 +13,7 @@ public static class FormaDoTermo
     public const int CodigoMaxLength = 60;
 
     /// <summary>A forma do termo que não depende do catálogo: confere todo o payload antes de ler as versões.</summary>
-    public static List<FieldError> ValidarFormaBasica(string? codigo, int ordem) =>
+    public static List<FieldError> ValidarFormaBasica(string? codigo, int? ordem) =>
         [.. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem)];
 
     private static List<FieldError> RecusasDoCodigo(string? codigo) =>
@@ -39,16 +40,20 @@ public static class FormaDoTermo
     private static bool CodigoValido([NotNullWhen(true)] string? codigo) =>
         !string.IsNullOrWhiteSpace(codigo) && codigo.Length <= CodigoMaxLength && FormatoDoCodigo.TemFormatoValido(codigo);
 
-    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    private static IEnumerable<FieldError> RecusasDaOrdem(int? ordem)
     {
-        if (ordem < 0)
+        if (ordem is null)
+        {
+            yield return new("ordem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a ordem."));
+        }
+        else if (ordem < 0)
         {
             yield return new("ordem", new DomainError(TermoFormularioErrorCodes.OrdemInvalida, "A ordem do termo não pode ser negativa."));
         }
     }
 
     /// <summary>Confere a unicidade dos códigos válidos e das ordens dos termos.</summary>
-    public static List<FieldError> ConferirUnicidade(IReadOnlyList<(string? Codigo, int Ordem)?> termos)
+    public static List<FieldError> ConferirUnicidade(IReadOnlyList<(string? Codigo, int? Ordem)?> termos)
     {
         ArgumentNullException.ThrowIfNull(termos);
 
@@ -75,9 +80,9 @@ public static class FormaDoTermo
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDeOrdemDuplicada(int indice, int ordem, HashSet<int> ordens)
+    private static IEnumerable<FieldError> RecusasDeOrdemDuplicada(int indice, int? ordem, HashSet<int> ordens)
     {
-        if (!ordens.Add(ordem))
+        if (ordem is { } valor && !ordens.Add(valor))
         {
             yield return new($"termos[{indice}].ordem", new DomainError(
                 TermoFormularioErrorCodes.OrdemDuplicada, "Dois termos do formulário têm a mesma ordem."));

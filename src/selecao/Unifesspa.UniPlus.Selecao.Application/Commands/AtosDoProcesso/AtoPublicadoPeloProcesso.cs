@@ -21,7 +21,7 @@ internal static class AtoPublicadoPeloProcesso
     public static AtoNormativoPublicado DaVersao(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
-        DadosDoAto ato,
+        DadosDoAtoCompletos ato,
         TipoAtoPublicadoView tipoConferido,
         string? numeroDeclarado,
         string documentoHash,
@@ -46,7 +46,7 @@ internal static class AtoPublicadoPeloProcesso
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(atoDoProcesso);
 
-        DadosDoAto dados = new(ato.Processo.Orgao, ato.Tipo.Codigo, ato.Dados.DataDoAto.Year, ato.Dados.DataDoAto, atoDoProcesso.Assinante, ato.Tipo.Codigo);
+        DadosDoAtoCompletos dados = new(ato.Processo.Orgao, ato.Tipo.Codigo, ato.DataDoAto.Year, ato.DataDoAto, atoDoProcesso.Assinante, ato.Tipo.Codigo);
         string hashDoDocumento = ato.Documentos.Principal.HashSha256!;
 
         return Montar(dados, ato.Tipo, ato.Dados.ProcessoSeletivoId, atoDoProcesso.Id, atoDoProcesso.PublicadoEm, atoDoProcesso.Numero, hashDoDocumento) with
@@ -57,7 +57,7 @@ internal static class AtoPublicadoPeloProcesso
     }
 
     private static AtoNormativoPublicado Montar(
-        DadosDoAto ato,
+        DadosDoAtoCompletos ato,
         TipoAtoPublicadoView tipoConferido,
         Guid processoSeletivoId,
         Guid atoId,

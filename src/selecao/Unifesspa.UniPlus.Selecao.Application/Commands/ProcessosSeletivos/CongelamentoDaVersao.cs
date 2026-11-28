@@ -29,7 +29,7 @@ public sealed class CongelamentoDaVersao(
     internal async Task<(Result Resposta, IEnumerable<object> Eventos)> CongelarAsync(
         ProcessoSeletivo processo,
         EditalDeclarado edital,
-        DadosDoAto atoInformado,
+        DadosDoAto? atoInformado,
         OrigemDoCongelamento origem,
         Func<PedidoDeCongelamento, Task<Result<VersaoConfiguracao>>> transicao,
         CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ public sealed class CongelamentoDaVersao(
     private async Task<(Result Resposta, IEnumerable<object> Eventos)> TentarCongelarAsync(
         ProcessoSeletivo processo,
         EditalDeclarado edital,
-        DadosDoAto atoInformado,
+        DadosDoAto? atoInformado,
         OrigemDoCongelamento origem,
         Func<PedidoDeCongelamento, Task<Result<VersaoConfiguracao>>> transicao,
         CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ public sealed class CongelamentoDaVersao(
         }
 
         Result<AtoEDocumentoConferidos> ato = await atoEDocumento
-            .ConferirAsync(processo.Id, edital.DocumentoEditalId, atoInformado, origem, cancellationToken)
+            .ConferirAsync(processo.Id, edital.DocumentoEditalId, atoInformado, edital.Anexos, origem, cancellationToken)
             .ConfigureAwait(false);
 
         return ato.IsFailure

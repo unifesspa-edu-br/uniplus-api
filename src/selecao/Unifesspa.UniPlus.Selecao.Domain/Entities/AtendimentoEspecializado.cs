@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -132,6 +133,28 @@ public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
         return recusas.Count > 0
             ? Result<AtendimentoEspecializado>.ValidationFailure(recusas)
             : Result<AtendimentoEspecializado>.Success(new(condicoes, recursos, tiposDeficiencia));
+    }
+
+    /// <summary>
+    /// Recusa a lista ausente ou nula: a lista vazia declara que nada é ofertado naquela dimensão, e ausente é
+    /// pedido incompleto.
+    /// </summary>
+    public static List<FieldError> ValidarListasInformadas(
+        IReadOnlyList<Guid>? condicaoIds, IReadOnlyList<Guid>? recursoIds, IReadOnlyList<Guid>? tipoDeficienciaIds)
+    {
+        List<FieldError> recusas = [];
+        RecusarListaAusente(recusas, condicaoIds, "condicaoIds", "Informe as condições de atendimento; envie [] quando não houver nenhuma.");
+        RecusarListaAusente(recusas, recursoIds, "recursoIds", "Informe os recursos de acessibilidade; envie [] quando não houver nenhum.");
+        RecusarListaAusente(recusas, tipoDeficienciaIds, "tipoDeficienciaIds", "Informe os tipos de deficiência; envie [] quando não houver nenhum.");
+        return recusas;
+    }
+
+    private static void RecusarListaAusente(List<FieldError> recusas, IReadOnlyList<Guid>? lista, string campo, string mensagem)
+    {
+        if (lista is null)
+        {
+            recusas.Add(new(campo, new DomainError(CodigosDeValidacao.Obrigatorio, mensagem)));
+        }
     }
 
     /// <summary>

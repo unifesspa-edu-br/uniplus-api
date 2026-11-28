@@ -14,7 +14,7 @@ internal sealed record DimensoesDasSementesDoModelo(
         Maior(modelos, static m => m.Paginas?.Count),
         Maior(modelos, static m => m.Termos?.Count),
         Maior(modelos, static m => m.Grupos?.Count),
-        Maior(modelos, static m => m.Grupos?.Select(static g => g.Subitens.Count).DefaultIfEmpty(0).Max()),
+        Maior(modelos, static m => m.Grupos?.Select(static g => g.Subitens!.Count).DefaultIfEmpty(0).Max()),
         Maior(modelos, static m => m.Pressupostos?.Count),
         Maior(Predicados(modelos), static p => p.Count),
         Maior(Predicados(modelos), static p => p.Select(static c => c.Count).DefaultIfEmpty(0).Max()),
@@ -26,7 +26,7 @@ internal sealed record DimensoesDasSementesDoModelo(
         origem.Select(medida).Max() ?? 0;
 
     private static IEnumerable<FatoColetadoInput> TodosOsItens(IEnumerable<ConteudoDoModeloInput> modelos) =>
-        modelos.SelectMany(static m => (m.Itens ?? []).Concat((m.Grupos ?? []).SelectMany(static g => g.Subitens)));
+        modelos.SelectMany(static m => (m.Itens ?? []).Concat((m.Grupos ?? []).SelectMany(static g => g.Subitens ?? [])));
 
     private static IEnumerable<RestricaoValorInput> RestricoesDeValor(IEnumerable<ConteudoDoModeloInput> modelos) =>
         TodosOsItens(modelos).SelectMany(static i => i.Regras?.Restricoes ?? []);

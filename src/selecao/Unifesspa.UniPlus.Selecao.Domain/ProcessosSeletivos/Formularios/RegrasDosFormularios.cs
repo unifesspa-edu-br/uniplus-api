@@ -70,22 +70,25 @@ public static class RegrasDosFormularios
     /// os itens e só citam fatos que o formulário conhece antes delas. A lista vem na posição do pedido,
     /// com nulo na página recusada: cada página montada é conferida contra as outras montadas, e o que
     /// conclui algo sobre o formulário inteiro (blocos exigidos, revisão e aceite no fim, itens, exibição
-    /// pela posição) só é conferido com todas as páginas.
+    /// pela posição) só é conferido com todas as páginas. A lista nula é a que o pedido não enviou: as regras das páginas
+    /// são cortadas, e a recusa da lista é de quem a leu.
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirFormulario(
         ConfiguracaoDeclarada configuracao,
         FormularioDeclarado declarado,
         string? titulo,
-        IReadOnlyList<PaginaDoFormulario?> paginas,
+        IReadOnlyList<PaginaDoFormulario?>? paginas,
         IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(declarado);
-        ArgumentNullException.ThrowIfNull(paginas);
 
         List<FieldError> recusas = FormaDoCabecalho.ValidarTitulo(titulo);
         AcrescentarRecusaDaFase(recusas, configuracao, declarado.FaseId);
-        recusas.AddRange(RecusasDasPaginas(configuracao, declarado, paginas, itensDaCriacao));
+        if (paginas is not null)
+        {
+            recusas.AddRange(RecusasDasPaginas(configuracao, declarado, paginas, itensDaCriacao));
+        }
 
         return recusas;
     }

@@ -54,11 +54,21 @@ internal static class ConferenciaDosValoresDoFato
     /// <summary>
     /// A ordem pela lista completa de códigos — ativos e desativados. A lista que deixa um valor de
     /// fora, repete um código ou cita um código que o fato não tem é recusada inteira, e as faltas
-    /// acumulam. Devolve os códigos como informados, na ordem recebida.
+    /// acumulam. A lista ausente ou nula é recusada como obrigatória. Devolve os códigos como informados, na ordem recebida.
     /// </summary>
-    internal static Result<string[]> ConferirOrdem(IReadOnlyList<string> codigosEmOrdem, IReadOnlyCollection<string> existentes)
+    internal static Result<string[]> ConferirOrdem(IReadOnlyList<string>? codigosEmOrdem, IReadOnlyCollection<string> existentes) =>
+        RecusaDaOrdemAusente(codigosEmOrdem) is { } ausente
+            ? Result<string[]>.ValidationFailure([ausente])
+            : ConferirOrdemInformada([.. codigosEmOrdem!.Select(static c => c ?? string.Empty)], existentes);
+
+    /// <summary>A lista de códigos ausente ou nula é recusada como obrigatória; a vazia é uma lista informada.</summary>
+    internal static FieldError? RecusaDaOrdemAusente(IReadOnlyList<string>? codigosEmOrdem) =>
+        codigosEmOrdem is null
+            ? Recusa("codigos", CodigosDeValidacao.Obrigatorio, "Informe os códigos dos valores na ordem desejada.")
+            : null;
+
+    private static Result<string[]> ConferirOrdemInformada(string[] informados, IReadOnlyCollection<string> existentes)
     {
-        string[] informados = [.. codigosEmOrdem.Select(static c => c ?? string.Empty)];
         List<FieldError> erros =
         [
             .. Presentes(

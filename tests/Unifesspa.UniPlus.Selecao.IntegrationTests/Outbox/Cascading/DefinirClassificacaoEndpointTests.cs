@@ -54,15 +54,14 @@ public sealed class DefinirClassificacaoEndpointTests
 
     public DefinirClassificacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Corpo sem baseadoEmEnem é rejeitado com 400 — não vira false silencioso")]
-    public async Task SemBaseadoEmEnem_400()
+    [Fact(DisplayName = "Corpo sem baseadoEmEnem é recusado com 422 de campo obrigatório — não vira false silencioso")]
+    public async Task SemBaseadoEmEnem_422()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(SemBaseadoEmEnem_400));
+        Contexto ctx = await SemearRascunhoAsync(nameof(SemBaseadoEmEnem_422));
 
         HttpResponseMessage resposta = await ctx.PutClassificacaoRawAsync(CorpoSemBaseadoEmEnem);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "baseadoEmEnem omitido não pode desserializar como false implícito — o parâmetro é [JsonRequired]");
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "baseadoEmEnem");
     }
 
     [Fact(DisplayName = "baseadoEmEnem=false explícito é aceito e persiste false")]

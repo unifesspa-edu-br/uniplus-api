@@ -6,6 +6,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <see cref="Ano"/> e <see cref="DataDoAto"/> são anuláveis e sem valor padrão: ausente chega à conferência e é recusado
+/// (422), em vez de virar zero ou 0001-01-01.
+/// </para>
+/// <para>
 /// Nada aqui é derivado. O órgão não sai da Unidade, o assinante não é o usuário
 /// autenticado, a data não é o relógio — é a data que o documento declara, distinção que
 /// a #803 já tinha custado caro — e o tipo não se infere do contexto: a ADR-0103 é
@@ -22,7 +26,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 public sealed record DadosDoAto(
     string Orgao,
     string Serie,
-    int Ano,
-    DateOnly DataDoAto,
+    int? Ano,
+    DateOnly? DataDoAto,
     string Assinante,
     string TipoAtoCodigo);

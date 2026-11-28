@@ -38,10 +38,10 @@ public sealed class DefinirTaxaInscricaoEndpointTests
 
     public DefinirTaxaInscricaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Corpo sem cobra é rejeitado com 400 — não vira remoção silenciosa da declaração")]
-    public async Task SemCobra_400()
+    [Fact(DisplayName = "Corpo sem cobra é recusado com 422 de campo obrigatório — não vira remoção silenciosa da declaração")]
+    public async Task SemCobra_422()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(SemCobra_400));
+        Contexto ctx = await SemearRascunhoAsync(nameof(SemCobra_422));
 
         const string corpoSemCampo = """
             {
@@ -52,14 +52,13 @@ public sealed class DefinirTaxaInscricaoEndpointTests
 
         HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(corpoSemCampo);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "cobra omitido não pode desserializar como null implícito — o parâmetro é [JsonRequired]");
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "cobra");
     }
 
-    [Fact(DisplayName = "cobra=null explícito é aceito e remove a declaração existente (CA-01, toggle deliberado)")]
-    public async Task ComCobraNuloExplicito_204ERemoveDeclaracao()
+    [Fact(DisplayName = "cobra=null explícito é recusado com 422 de campo obrigatório e mantém a declaração existente")]
+    public async Task ComCobraNuloExplicito_422EMantemDeclaracao()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraNuloExplicito_204ERemoveDeclaracao));
+        Contexto ctx = await SemearRascunhoAsync(nameof(ComCobraNuloExplicito_422EMantemDeclaracao));
 
         HttpResponseMessage primeira = await ctx.PutTaxaInscricaoAsync(CorpoComCobranca(cobra: true, valor: 100m));
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -67,9 +66,12 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutTaxaInscricaoRawAsync(
             """{ "cobra": null, "valor": null, "fundamentos": null }""");
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "cobra");
 
-        (await ctx.ObterTaxaAsync()).Should().BeNull("cobra:null explícito remove deliberadamente a declaração existente");
+        ConfiguracaoTaxaInscricao? mantida = await ctx.ObterTaxaAsync();
+        mantida.Should().NotBeNull();
+        mantida.Cobra.Should().BeTrue("o 422 não apaga nem troca a declaração existente");
+        mantida.Fundamentos.Should().Equal(FundamentoIsencao.CadastroUnico);
     }
 
     [Fact(DisplayName = "cobra=false explícito é aceito e persiste a declaração de não cobrança")]

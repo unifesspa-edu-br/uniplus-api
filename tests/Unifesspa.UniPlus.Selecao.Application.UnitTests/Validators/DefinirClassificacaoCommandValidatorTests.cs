@@ -22,13 +22,12 @@ public sealed class DefinirClassificacaoCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando RegrasEliminacao é nulo (payload malformado)")]
-    public void Rejeita_RegrasEliminacaoNula()
+    [Fact(DisplayName = "Validator deixa a lista de eliminações ausente para o domínio recusar como obrigatória")]
+    public void Aceita_RegrasEliminacaoNula_ARecusaEDoDominio()
     {
         ValidationResult result = new DefinirClassificacaoCommandValidator().Validate(ComandoValido(null!));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "RegrasEliminacao");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator falha quando código de arredondamento é informado sem versão")]

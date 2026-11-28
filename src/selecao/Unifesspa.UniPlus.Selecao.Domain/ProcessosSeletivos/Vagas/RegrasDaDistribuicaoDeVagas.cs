@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -40,10 +41,18 @@ public static class RegrasDaDistribuicaoDeVagas
                 : null);
     }
 
-    internal static Result ConferirOpcoesDeCurso(ConfiguracaoDeclarada configuracao, int numero)
+    internal static Result ConferirOpcoesDeCurso(ConfiguracaoDeclarada configuracao, int? numero)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
+        return numero is { } declarado
+            ? ConferirNumeroInformado(configuracao, declarado)
+            : Result.ValidationFailure([new FieldError("numero", new DomainError(
+                CodigosDeValidacao.Obrigatorio, "Informe quantos cursos o candidato escolhe, 1 ou 2."))]);
+    }
+
+    private static Result ConferirNumeroInformado(ConfiguracaoDeclarada configuracao, int numero)
+    {
         if (RecusaDoNumeroDeOpcoes(numero) is { } recusa)
         {
             return Result.ValidationFailure([recusa]);

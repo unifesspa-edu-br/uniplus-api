@@ -59,6 +59,45 @@ public sealed class CondicaoDnfInformadaTests
         Recusas(CondicaoDnf.CriarInformada("", "IGUAL", Json("[1]")))
             .Should().Equal(("fato", "CondicaoDnf.FatoObrigatorio"), ("valor", "CondicaoDnf.FormaIncoerenteComOperador"));
 
+    [Theory(DisplayName = "O valor ausente é recusado como obrigatório no campo do valor, seja qual for o operador")]
+    [InlineData("IGUAL")]
+    [InlineData("MAIOR_IGUAL")]
+    [InlineData("ALGUM_DE")]
+    [InlineData("NENHUM_DE")]
+    public void CriarInformada_ValorAusente_RecusaComoObrigatorio(string operador) =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", operador, default))
+            .Should().Equal(("valor", CodigosDeValidacao.Obrigatorio));
+
+    [Fact(DisplayName = "O valor ausente e o fato em branco saem juntos, cada um no seu campo")]
+    public void CriarInformada_ValorAusenteEFatoEmBranco_AcumulaAsDuasRecusas() =>
+        Recusas(CondicaoDnf.CriarInformada(" ", "IGUAL", default))
+            .Should().Equal(("fato", "CondicaoDnf.FatoObrigatorio"), ("valor", CodigosDeValidacao.Obrigatorio));
+
+    [Theory(DisplayName = "O valor nulo no JSON é recusado como obrigatório, seja qual for o operador")]
+    [InlineData("IGUAL")]
+    [InlineData("ALGUM_DE")]
+    [InlineData("NENHUM_DE")]
+    public void CriarInformada_ValorNuloNoJson_RecusaComoObrigatorio(string operador) =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", operador, Json("null")))
+            .Should().Equal(("valor", CodigosDeValidacao.Obrigatorio));
+
+    [Fact(DisplayName = "O valor ausente acumula com o operador desconhecido, porque a presença não depende do operador")]
+    public void CriarInformada_ValorAusenteEOperadorDesconhecido_AcumulaAsDuasRecusas() =>
+        Recusas(CondicaoDnf.CriarInformada("FATO", "QUASE_IGUAL", default))
+            .Should().Equal(("operador", "CondicaoDnf.OperadorInvalido"), ("valor", CodigosDeValidacao.Obrigatorio));
+
+    [Fact(DisplayName = "Criar recusa o valor nulo no JSON como obrigatório")]
+    public void Criar_ValorNuloNoJson_RecusaComoObrigatorio() =>
+        CondicaoDnf.Criar("FATO", Operador.Igual, Json("null")).Error!.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+
+    [Fact(DisplayName = "Criar recusa o valor ausente como obrigatório")]
+    public void Criar_ValorAusente_RecusaComoObrigatorio() =>
+        CondicaoDnf.Criar("FATO", Operador.Igual, default).Error!.Code.Should().Be(CodigosDeValidacao.Obrigatorio);
+
+    [Fact(DisplayName = "O array vazio de ALGUM_DE continua sendo valor declarado")]
+    public void CriarInformada_ArrayVazio_NaoEAusente() =>
+        CondicaoDnf.CriarInformada("FATO", "ALGUM_DE", Json("[]")).IsSuccess.Should().BeTrue();
+
     [Fact(DisplayName = "A mensagem do operador desconhecido lista os códigos aceitos e não repete o valor recebido")]
     public void CriarInformada_OperadorDesconhecido_ListaOsAceitosENaoRepeteOValor()
     {

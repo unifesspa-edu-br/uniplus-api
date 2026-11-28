@@ -19,10 +19,10 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
             return calculoEOrdem;
         }
 
-        Result<IReadOnlyList<RegraEliminacao>> eliminacoes = await ResolverEliminacoesAsync(command, cancellationToken).ConfigureAwait(false);
+        Result<IReadOnlyList<RegraEliminacao>?> eliminacoes = await ResolverEliminacoesAsync(command, cancellationToken).ConfigureAwait(false);
         return eliminacoes.IsFailure
             ? Result<DeclaracaoDaClassificacao>.Failure(eliminacoes.Error!)
-            : Result<DeclaracaoDaClassificacao>.Success(calculoEOrdem.Value! with { RegrasEliminacao = eliminacoes.Value! });
+            : Result<DeclaracaoDaClassificacao>.Success(calculoEOrdem.Value! with { RegrasEliminacao = eliminacoes.Value });
     }
 
     /// <summary>
@@ -30,7 +30,8 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
     /// </summary>
     public async Task<QuadroDePesosResolvido> ResolverQuadroAsync(
         ReferenciaRegra regraCalculo, DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
-        ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regraCalculo, command.BaseadoEmEnem)
+        command.BaseadoEmEnem is { } baseadoEmEnem
+            && ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regraCalculo, baseadoEmEnem)
             && !string.IsNullOrWhiteSpace(command.ResolucaoPesoAreaEnem)
             ? await QuadroDePesosResolvido.DaResolucaoAsync(command.ResolucaoPesoAreaEnem, pesoAreaEnemReader, cancellationToken).ConfigureAwait(false)
             : QuadroDePesosResolvido.SemConsulta(command.ResolucaoPesoAreaEnem);
@@ -87,22 +88,29 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
         };
     }
 
-    private async Task<Result<IReadOnlyList<RegraEliminacao>>> ResolverEliminacoesAsync(
-        DefinirClassificacaoCommand command, CancellationToken cancellationToken)
+    // A lista ausente segue nula para a criação da classificação, que a recusa junto das demais recusas.
+    private async Task<Result<IReadOnlyList<RegraEliminacao>?>> ResolverEliminacoesAsync(
+        DefinirClassificacaoCommand command, CancellationToken cancellationToken) =>
+        command.RegrasEliminacao is { } entradas
+            ? await ResolverCadaEliminacaoAsync(entradas, cancellationToken).ConfigureAwait(false)
+            : Result<IReadOnlyList<RegraEliminacao>?>.Success(null);
+
+    private async Task<Result<IReadOnlyList<RegraEliminacao>?>> ResolverCadaEliminacaoAsync(
+        IReadOnlyList<RegraEliminacaoInput> entradas, CancellationToken cancellationToken)
     {
         List<RegraEliminacao> regras = [];
-        foreach (RegraEliminacaoInput input in command.RegrasEliminacao)
+        foreach (RegraEliminacaoInput input in entradas)
         {
             Result<RegraEliminacao> resultado = await ResolverEliminacaoAsync(input, cancellationToken).ConfigureAwait(false);
             if (resultado.IsFailure)
             {
-                return Result<IReadOnlyList<RegraEliminacao>>.Failure(resultado.Error!);
+                return Result<IReadOnlyList<RegraEliminacao>?>.Failure(resultado.Error!);
             }
 
             regras.Add(resultado.Value!);
         }
 
-        return Result<IReadOnlyList<RegraEliminacao>>.Success(regras);
+        return Result<IReadOnlyList<RegraEliminacao>?>.Success(regras);
     }
 
     private async Task<Result<RegraEliminacao>> ResolverEliminacaoAsync(RegraEliminacaoInput input, CancellationToken cancellationToken)

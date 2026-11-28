@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 internal sealed record ParametrosDoPedidoDoRecurso(
     decimal? PrazoValor,
     string? PrazoUnidade,
-    bool AdmiteInstanciaSuperior,
+    bool? AdmiteInstanciaSuperior,
     decimal? PrazoSegundaInstanciaValor,
     string? PrazoSegundaInstanciaUnidade,
     string? EfeitoSuspensivo,

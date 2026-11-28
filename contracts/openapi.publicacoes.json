@@ -1244,25 +1244,32 @@
             ]
           },
           "congelaConfiguracao": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se o ato deste tipo produz nova vers\u00E3o congelada da configura\u00E7\u00E3o. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "unicoPorObjeto": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se o objeto do ato admite um \u00FAnico ato vivo deste tipo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "efeitoIrreversivel": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se a publica\u00E7\u00E3o de um ato deste tipo n\u00E3o pode ser desfeita. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "ehResultado": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo determina a situa\u00E7\u00E3o do candidato. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "publicavelComoAvulso": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo pode ser publicado como documento avulso de um processo seletivo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "exigeAtoCorrigido": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo corrige sempre outro ato publicado. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "vigenciaInicio": {
             "type": "string",
+            "description": "Primeiro dia em que esta vers\u00E3o do tipo vale, inclusivo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "vigenciaFim": {
@@ -1332,25 +1339,32 @@
             ]
           },
           "congelaConfiguracao": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se o ato deste tipo produz nova vers\u00E3o congelada da configura\u00E7\u00E3o. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "unicoPorObjeto": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se o objeto do ato admite um \u00FAnico ato vivo deste tipo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "efeitoIrreversivel": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se a publica\u00E7\u00E3o de um ato deste tipo n\u00E3o pode ser desfeita. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "ehResultado": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo determina a situa\u00E7\u00E3o do candidato. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "publicavelComoAvulso": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo pode ser publicado como documento avulso de um processo seletivo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "exigeAtoCorrigido": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Se um ato deste tipo corrige sempre outro ato publicado. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "vigenciaInicio": {
             "type": "string",
+            "description": "Primeiro dia em que esta vers\u00E3o do tipo vale, inclusivo. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "vigenciaFim": {
@@ -1568,6 +1582,7 @@
           },
           "dataDoAto": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). \u00C9 a data que o documento declara.",
             "format": "date"
           },
           "documentoHash": {

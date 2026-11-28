@@ -46,7 +46,7 @@ public sealed class ConversaoDaDerivacaoPortavelTests
     [Fact(DisplayName = "Condição recusada não confere a contribuição da regra")]
     public void Derivacao_CondicaoRecusada_NaoConfereAContribuicao()
     {
-        DerivacaoPortavel derivacao = new("CATEGORIA", false, [new RegraDerivacaoPortavel([[new("", "IGUAL", default)]], null)]);
+        DerivacaoPortavel derivacao = new("CATEGORIA", false, [new RegraDerivacaoPortavel([[new("", "IGUAL", JsonSerializer.SerializeToElement(true))]], null)]);
 
         Result<DefinicaoFormulario> resultado = ComDerivacao(derivacao);
 

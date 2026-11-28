@@ -62,7 +62,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         await AcrescentarValorAsync(client, id, "REGULAR", "Regular", 1);
 
         await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = new[] { "REGULAR" } }, HttpStatusCode.UnprocessableEntity);
-        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = (string[]?)null }, HttpStatusCode.BadRequest);
+        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = (string[]?)null }, HttpStatusCode.UnprocessableEntity);
         await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/valores/NAO_EXISTE", new { descricao = "Qualquer" }, HttpStatusCode.NotFound);
     }
 
@@ -84,7 +84,7 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
         ConferirRegraEja(fato, dependencia);
     }
 
-    [Fact(DisplayName = "Regras padrão sem a lista, ou com condição sem valor, são recusadas com 400 e não viram erro interno")]
+    [Fact(DisplayName = "Regras padrão sem a lista, ou com condição sem valor, são recusadas com 422 e não viram erro interno")]
     public async Task RegrasPadraoInvalidas()
     {
         using HttpClient client = Fixture.Factory.CreateClient();
@@ -96,8 +96,8 @@ public sealed class FatoCandidatoAdminDefinicaoEndpointTests(ConfiguracaoEndpoin
             regras = new[] { new { contribui = "EJA", quando = new[] { new[] { new { fato = dependencia, operador = "IGUAL" } } } } },
         };
 
-        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", new { }, HttpStatusCode.BadRequest, "corpo sem a lista não apaga as regras");
-        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", semValor, HttpStatusCode.BadRequest, "condição sem valor é recusada, não vira erro interno");
+        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", new { }, HttpStatusCode.UnprocessableEntity, "corpo sem a lista não apaga as regras");
+        await ConferirAsync(client, HttpMethod.Put, $"{Base}/{id}/regras-padrao", semValor, HttpStatusCode.UnprocessableEntity, "condição sem valor é recusada, não vira erro interno");
     }
 
     [Fact(DisplayName = "Agregado sobre fato de membro é cadastrado com o vínculo ao fato de membro")]

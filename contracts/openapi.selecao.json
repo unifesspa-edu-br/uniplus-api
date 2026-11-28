@@ -13285,6 +13285,7 @@
         "properties": {
           "documentoId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "nome": {
@@ -13304,6 +13305,7 @@
         "properties": {
           "documentoId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "nome": {
@@ -15578,7 +15580,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RegraDerivacaoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -15768,13 +15771,15 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "quadro": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuantidadeVagaInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver quantidade a fixar."
           },
           "ajusteDoQuadro": {
             "oneOf": [
@@ -16409,10 +16414,12 @@
           },
           "ano": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "dataDoAto": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "assinante": {
@@ -16539,21 +16546,24 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "recursoIds": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           },
           "tipoDeficienciaIds": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -16567,7 +16577,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CadastroDeReservaInformado"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -16658,10 +16669,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RegraEliminacaoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "baseadoEmEnem": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "resolucaoPesoAreaEnem": {
             "type": [
@@ -16719,7 +16732,8 @@
         "type": "object",
         "properties": {
           "aplica": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regra": {
             "oneOf": [
@@ -16786,13 +16800,15 @@
             ]
           },
           "obrigatorio": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "paginas": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PaginaDoFormularioInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Envie [] quando n\u00E3o houver nenhuma."
           },
           "consequenciaDaFaltaDeEnvio": {
             "oneOf": [
@@ -16830,7 +16846,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Envie [] quando n\u00E3o houver nenhum."
           },
           "grupos": {
             "type": [
@@ -16899,7 +16916,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OpcaoDeclaradaRequest"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -16911,6 +16929,7 @@
         "properties": {
           "numero": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Aceita 1 ou 2.",
             "format": "int32"
           }
         }
@@ -16923,13 +16942,15 @@
         "type": "object",
         "properties": {
           "temProvaPresencial": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "municipios": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MunicipioDeProvaInformado"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -16976,10 +16997,8 @@
         "type": "object",
         "properties": {
           "cobra": {
-            "type": [
-              "null",
-              "boolean"
-            ]
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Nulo n\u00E3o remove mais a declara\u00E7\u00E3o."
           },
           "valor": {
             "type": [
@@ -17009,7 +17028,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermoExigidoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422). Envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -22312,7 +22332,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProdutoDaEtapaInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "inicio": {
             "type": [
@@ -22336,13 +22357,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BancaDaEtapaInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "recursos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RecursoDaEtapaInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "notaMaxima": {
             "type": [
@@ -22771,7 +22794,7 @@
           },
           "emiteParecerIndividual": {
             "type": "boolean",
-            "description": "Se a fase promete parecer individual por candidato. \u00C9 s\u00F3 a promessa: o parecer \u00E9 produzido na execu\u00E7\u00E3o da fase."
+            "description": "Se a fase promete parecer individual por candidato. \u00C9 s\u00F3 a promessa: o parecer \u00E9 produzido na execu\u00E7\u00E3o da fase. Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "bancasRequeridas": {
             "type": "array",
@@ -22923,6 +22946,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "apresentacao": {
@@ -23469,25 +23493,29 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PaginaPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "termos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           },
           "derivacoes": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DerivacaoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhuma."
           },
           "agregados": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AgregadoPortavel"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422); envie [] quando n\u00E3o houver nenhum."
           }
         }
       },
@@ -23765,6 +23793,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "rotulo": {
@@ -23794,7 +23823,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FatoColetadoInput"
-            }
+            },
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "paginaCodigo": {
             "type": [
@@ -27100,6 +27130,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "tipo": {
@@ -28877,6 +28908,7 @@
           },
           "dataDoAto": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "assinante": {
@@ -28884,6 +28916,7 @@
           },
           "documentoPrincipalId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "anexos": {
@@ -28926,10 +28959,19 @@
           },
           "documentoEditalId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "ato": {
-            "$ref": "#/components/schemas/DadosDoAtoRequest"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
+                "$ref": "#/components/schemas/DadosDoAtoRequest"
+              }
+            ]
           },
           "anexos": {
             "type": [
@@ -28973,6 +29015,7 @@
           },
           "dataDoAto": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "date"
           },
           "assinante": {
@@ -28980,6 +29023,7 @@
           },
           "documentoPrincipalId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "anexos": {
@@ -29046,10 +29090,8 @@
             "format": "uuid"
           },
           "quantidade": {
-            "type": [
-              "null",
-              "integer"
-            ],
+            "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           }
         }
@@ -29222,7 +29264,8 @@
             ]
           },
           "admiteInstanciaSuperior": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "prazoSegundaInstanciaValor": {
             "type": [
@@ -29801,10 +29844,12 @@
           },
           "integrantes": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "suplentes": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "quorum": {
@@ -29939,6 +29984,7 @@
         "properties": {
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "contribui": {
@@ -30152,7 +30198,8 @@
             "type": "string"
           },
           "admiteInstanciaSuperior": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "prazoSegundaInstanciaValor": {
             "type": [
@@ -30622,10 +30669,19 @@
           },
           "documentoEditalId": {
             "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "uuid"
           },
           "ato": {
-            "$ref": "#/components/schemas/DadosDoAtoRequest"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
+                "$ref": "#/components/schemas/DadosDoAtoRequest"
+              }
+            ]
           },
           "anexos": {
             "type": [
@@ -31133,6 +31189,7 @@
           },
           "ordem": {
             "type": "integer",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422).",
             "format": "int32"
           },
           "termo": {

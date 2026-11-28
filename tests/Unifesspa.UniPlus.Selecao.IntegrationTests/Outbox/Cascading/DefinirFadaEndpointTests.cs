@@ -33,14 +33,14 @@ public sealed class DefinirFadaEndpointTests
 
     public DefinirFadaEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Corpo sem aplica é rejeitado com 400 — omitir não declara que o processo não aplica o FADA")]
-    public async Task SemAplica_400_ENadaDeclarado()
+    [Fact(DisplayName = "Corpo sem aplica é recusado com 422 de campo obrigatório — omitir não declara que o processo não aplica o FADA")]
+    public async Task SemAplica_422_ENadaDeclarado()
     {
-        (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(SemAplica_400_ENadaDeclarado));
+        (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(SemAplica_422_ENadaDeclarado));
 
         HttpResponseMessage resposta = await PutAsync(client, processoId, """{ "regra": null }""");
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await RecusaDeObrigatorioDoDominio.ConferirAsync(resposta, "aplica");
         (await DeclaracaoGravadaAsync(processoId)).Should().BeNull("a omissão não pode virar uma declaração");
     }
 

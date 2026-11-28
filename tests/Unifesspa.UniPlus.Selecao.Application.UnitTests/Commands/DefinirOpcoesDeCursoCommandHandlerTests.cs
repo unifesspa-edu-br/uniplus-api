@@ -31,6 +31,19 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
+    [Fact(DisplayName = "Handle sem o número de opções recusa como obrigatório no campo numero e não persiste")]
+    public async Task Handle_NumeroAusente_RecusaComoObrigatorio()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
+
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(processo.Id, null), repository, unitOfWork, CancellationToken.None);
+
+        result.Errors.Should().ContainSingle(e => e.Field == "numero" && e.Error.Code == "uniplus.validacao.obrigatorio");
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle com 1 opção sobre 1 curso grava e persiste")]
     public async Task Handle_UmaOpcaoComUmCurso_GravaEPersiste()
     {

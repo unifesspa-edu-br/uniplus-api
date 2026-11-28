@@ -215,6 +215,18 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos[0].regras.obrigatoriedade", TermoExigidoFormularioErrorCodes.ObrigatoriedadeInvalida));
     }
 
+    [Fact(DisplayName = "Termo sem ordem é recusado como obrigatório, no campo do termo, e nada é gravado")]
+    public async Task Handle_TermoSemOrdem_RecusaComoObrigatorio()
+    {
+        ProcessoSeletivo processo = ProcessoQueColetaCorRaca();
+        Mocks mocks = NovosMocks(processo);
+
+        Result resultado = await HandleAsync(mocks, processo, Termo("CONSULTA", TermoId, VersaoId).Construir() with { Ordem = null });
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos[0].ordem", CodigosDeValidacao.Obrigatorio));
+        await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Termo sem a versão do catálogo é recusado como versão não encontrada, no caminho do termo")]
     public async Task Handle_TermoSemVersao_RecusaVersaoNaoEncontrada()
     {
@@ -256,14 +268,14 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
 
         Result resultado = await HandleSemListaAsync(mocks, processo.Id);
 
-        resultado.Error!.Code.Should().Be(TermoExigidoFormularioErrorCodes.EntradaMalformada);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("termos", TermoExigidoFormularioErrorCodes.EntradaMalformada));
         await ConferirQueNadaFoiLidoNemGravadoAsync(mocks);
         (await HandleAsync(mocks, processo)).IsSuccess.Should().BeTrue();
     }
 
     private static Task<Result> HandleSemListaAsync(Mocks mocks, Guid processoId) =>
         DefinirTermosDoFormularioCommandHandler.Handle(
-            new DefinirTermosDoFormularioCommand(processoId, PapelDoFormularioDeTeste.Habilitacao.Codigo(), null!),
+            new DefinirTermosDoFormularioCommand(processoId, PapelDoFormularioDeTeste.Habilitacao.Codigo(), null),
             mocks.Repository, mocks.FatoCandidatoReader, mocks.TermoReader, mocks.UnitOfWork, CancellationToken.None);
 
     private static async Task ConferirQueNadaFoiLidoNemGravadoAsync(Mocks mocks)

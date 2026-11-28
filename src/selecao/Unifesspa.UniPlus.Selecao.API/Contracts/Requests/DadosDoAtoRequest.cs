@@ -1,5 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using System.ComponentModel;
+
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
+
 /// <summary>
 /// Dados que o DOCUMENTO declara sobre si — órgão publicador, série, ano, data do ato,
 /// quem assina e o tipo do ato no catálogo de Publicações. Nenhum deles é derivado pelo
@@ -10,7 +14,11 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 public sealed record DadosDoAtoRequest(
     string Orgao,
     string Serie,
-    int Ano,
-    DateOnly DataDoAto,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    int? Ano,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    DateOnly? DataDoAto,
     string Assinante,
     string TipoAtoCodigo);

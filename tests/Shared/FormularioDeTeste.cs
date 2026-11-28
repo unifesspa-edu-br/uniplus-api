@@ -373,7 +373,7 @@ internal static class FormularioDeTeste
         string.Equals(fato.PaginaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
             ? fato
             : FatoColetadoDeTeste.Como(fato)
-                .NaOrdem(ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem)
+                .NaOrdem(ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem.GetValueOrDefault())
                 .NaSecao(ConjuntoBasicoDaInscricao.CodigoDaSecao)
                 .Construir();
 

@@ -83,16 +83,18 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         VigenciaDaUnidade vigencia,
         Guid? unidadeSuperiorId,
         TipoUnidade tipo,
-        bool unidadeAcademica)
+        bool? unidadeAcademica)
     {
-        Result validacao = ValidarCampos(nome, identificadores, cidade, tipo, vigencia);
+        Result validacao = ValidarCampos(nome, identificadores, cidade, tipo, vigencia, unidadeAcademica);
         if (validacao.IsFailure)
         {
             return Result<Unidade>.ValidationFailure(validacao.Errors);
         }
 
-        var unidade = new Unidade { VigenciaInicio = vigencia.Inicio };
-        unidade.AplicarAtributos(nome, identificadores.Normalizar(), unidadeSuperiorId, tipo, unidadeAcademica, vigencia.Fim);
+        // Só roda sem recusas: o início e o indicador já foram exigidos, então o valor padrão nunca é usado.
+        var unidade = new Unidade { VigenciaInicio = vigencia.Inicio.GetValueOrDefault() };
+        unidade.AplicarAtributos(
+            nome, identificadores.Normalizar(), unidadeSuperiorId, tipo, unidadeAcademica.GetValueOrDefault(), vigencia.Fim);
         unidade.AplicarCidade(cidade);
         unidade.AbrirHistoricoInicial();
 
@@ -110,10 +112,10 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         DateOnly? vigenciaFim,
         Guid? unidadeSuperiorId,
         TipoUnidade tipo,
-        bool unidadeAcademica)
+        bool? unidadeAcademica)
     {
         Result validacao = ValidarCampos(
-            nome, mudanca.Novos, cidade, tipo, new VigenciaDaUnidade(VigenciaInicio, vigenciaFim));
+            nome, mudanca.Novos, cidade, tipo, new VigenciaDaUnidade(VigenciaInicio, vigenciaFim), unidadeAcademica);
         Result motivo = UnidadeIdentificadorHistorico.ValidarMotivoMudanca(mudanca.Motivo);
         if (validacao.IsFailure || motivo.IsFailure)
         {
@@ -122,7 +124,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 
         IdentificadoresNormalizados novos = mudanca.Novos.Normalizar();
         RenomearIdentificadores(novos, mudanca.Data, mudanca.Motivo);
-        AplicarAtributos(nome, novos, unidadeSuperiorId, tipo, unidadeAcademica, vigenciaFim);
+        AplicarAtributos(nome, novos, unidadeSuperiorId, tipo, unidadeAcademica.GetValueOrDefault(), vigenciaFim);
         AplicarCidade(cidade);
 
         return Result.Success();
@@ -139,11 +141,13 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         IdentificadoresDaUnidade identificadores,
         CidadeDaUnidade cidade,
         TipoUnidade? tipo,
-        VigenciaDaUnidade vigencia)
+        VigenciaDaUnidade vigencia,
+        bool? unidadeAcademica)
     {
         List<FieldError> erros =
         [
             .. ValidarTipo(tipo),
+            .. ValidarUnidadeAcademica(unidadeAcademica),
             .. ValidarNome(nome),
             .. identificadores.Validar(),
             .. vigencia.Validar(),
@@ -160,6 +164,15 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
             yield return new FieldError("tipo", new DomainError(
                 UnidadeErrorCodes.TipoInvalido,
                 $"O tipo da Unidade é obrigatório e deve ser um destes códigos: {CodigosAceitosDoTipo()}."));
+        }
+    }
+
+    private static IEnumerable<FieldError> ValidarUnidadeAcademica(bool? unidadeAcademica)
+    {
+        if (unidadeAcademica is null)
+        {
+            yield return new FieldError("unidadeAcademica", new DomainError(
+                CodigosDeValidacao.Obrigatorio, "Informe se a Unidade é acadêmica."));
         }
     }
 

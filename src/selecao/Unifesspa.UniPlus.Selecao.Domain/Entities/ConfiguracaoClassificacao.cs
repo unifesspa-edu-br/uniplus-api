@@ -162,10 +162,10 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
         RegraArredondamento = declaracao.RegraArredondamento;
         CasasArredondamento = declaracao.CasasArredondamento;
         RegraOrdemAlocacao = declaracao.RegraOrdemAlocacao;
-        BaseadoEmEnem = declaracao.BaseadoEmEnem;
+        BaseadoEmEnem = declaracao.BaseadoEmEnem.GetValueOrDefault();
         EscalaNotaFinal = declaracao.EscalaNotaFinal;
         ResolucaoPesoAreaEnem = declaracao.ResolucaoNormalizada;
-        VincularFilhos(declaracao.RegrasEliminacao, declaracao.QuadroPesoAreaEnem);
+        VincularFilhos(declaracao.RegrasEliminacao ?? [], declaracao.QuadroPesoAreaEnem);
     }
 
     private void VincularFilhos(

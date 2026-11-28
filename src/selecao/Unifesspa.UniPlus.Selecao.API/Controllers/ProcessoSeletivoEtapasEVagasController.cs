@@ -101,10 +101,10 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
             new DefinirOpcoesDeclaradasCommand(
                 id,
                 fatoCodigo,
-                // A nulidade da lista ou de um item segue para o validator, que a recusa com 4xx —
+                // A lista nula segue para o handler, que a recusa com 422, e um item nulo segue para o validator —
                 // desreferenciar aqui responderia 500 antes de o comando existir.
                 request.Opcoes is null
-                    ? null!
+                    ? null
                     : [.. request.Opcoes.Select(static o => o is null ? null! : new OpcaoDeclaradaInput(o.Codigo, o.Rotulo))]),
             cancellationToken);
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);

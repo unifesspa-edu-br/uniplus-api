@@ -65,7 +65,7 @@ public sealed record CondicaoDnf
 
     /// <summary>
     /// Cria a condição validando a forma — sem I/O e sem conhecimento do
-    /// vocabulário de fatos. Devolve a primeira recusa.
+    /// vocabulário de fatos. Devolve a primeira recusa; valor ausente ou nulo é recusado como obrigatório.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">O operador não é membro do enum, como num cast de inteiro.</exception>
     public static Result<CondicaoDnf> Criar(string fato, Operador operador, JsonElement valor)
@@ -84,7 +84,7 @@ public sealed record CondicaoDnf
 
     /// <summary>
     /// Cria a condição a partir do que o pedido ou o documento informou: o operador chega como o código que o contrato
-    /// publica. Acumula a recusa do fato e a do operador, e confere a forma do valor só quando o operador foi lido, porque
+    /// publica. Acumula a recusa do fato e a do operador, e a do valor: a ausência (ou nulo) é recusada sempre, e a forma só é conferida quando o operador foi lido, porque
     /// a forma depende dele. Cada recusa vem no campo de origem: <c>fato</c>, <c>operador</c> e <c>valor</c>.
     /// </summary>
     public static Result<CondicaoDnf> CriarInformada(string? fato, string? operador, JsonElement valor)
@@ -104,15 +104,27 @@ public sealed record CondicaoDnf
             yield return new(CampoFato, recusaDoFato);
         }
 
-        if (operador is not { } lido)
+        if (operador is null)
         {
             yield return new(CampoOperador, OperadorNaoReconhecido());
         }
-        else if (RecusaDaForma(lido, valor) is { } recusaDaForma)
+
+        if (RecusaDoValor(operador, valor) is { } recusaDoValor)
         {
-            yield return new(CampoValor, recusaDaForma);
+            yield return new(CampoValor, recusaDoValor);
         }
     }
+
+    private static DomainError? RecusaDoValor(Operador? operador, JsonElement valor) =>
+        ValorAusente(valor) ? ValorObrigatorio()
+        : operador is { } lido ? RecusaDaFormaDoValorInformado(lido, valor)
+        : null;
+
+    private static bool ValorAusente(JsonElement valor) =>
+        valor.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null;
+
+    private static DomainError ValorObrigatorio() =>
+        new(CodigosDeValidacao.Obrigatorio, "Informe o valor da condição.");
 
     private static DomainError? RecusaDoFato(string? fato) =>
         string.IsNullOrWhiteSpace(fato)
@@ -123,7 +135,10 @@ public sealed record CondicaoDnf
         new("CondicaoDnf.OperadorInvalido",
             $"O operador da condição não é reconhecido. Os operadores aceitos são {string.Join(", ", CatalogoDe<Operador>.Todos().Select(static d => d.Codigo))}.");
 
-    private static DomainError? RecusaDaForma(Operador operador, JsonElement valor)
+    private static DomainError? RecusaDaForma(Operador operador, JsonElement valor) =>
+        ValorAusente(valor) ? ValorObrigatorio() : RecusaDaFormaDoValorInformado(operador, valor);
+
+    private static DomainError? RecusaDaFormaDoValorInformado(Operador operador, JsonElement valor)
     {
         bool ehOperadorDeLista = operador is Operador.AlgumDe or Operador.NenhumDe;
         bool formaCoerente = ehOperadorDeLista

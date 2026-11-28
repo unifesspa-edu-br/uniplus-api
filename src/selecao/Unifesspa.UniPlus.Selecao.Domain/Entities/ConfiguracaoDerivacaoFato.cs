@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -93,52 +94,53 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
         string? codigoFato,
-        IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas)
-    {
-        ArgumentNullException.ThrowIfNull(regrasBrutas);
+        IReadOnlyCollection<(int? Ordem, string? Contribui)>? regrasBrutas) =>
+    [
+        .. RecusaDoCodigo(codigoFato),
+        .. RecusaDaPresencaDasRegras(regrasBrutas),
+        .. regrasBrutas is null ? [] : RecusasDaCoerenciaDasRegras(regrasBrutas),
+    ];
 
-        List<FieldError> erros = [];
-
-        ValidarPresenca(codigoFato, regrasBrutas, erros);
-        ValidarCoerenciaDasRegras(regrasBrutas, erros);
-
-        return erros;
-    }
-
-    private static void ValidarPresenca(string? codigoFato, IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas, List<FieldError> erros)
-    {
-        if (string.IsNullOrWhiteSpace(codigoFato))
-        {
-            erros.Add(new("codigoFato", new DomainError(
+    private static FieldError[] RecusaDoCodigo(string? codigoFato) =>
+        string.IsNullOrWhiteSpace(codigoFato)
+            ? [new("codigoFato", new DomainError(
                 ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoObrigatorio,
-                "O código do fato derivado é obrigatório.")));
-        }
+                "O código do fato derivado é obrigatório."))]
+            : [];
 
-        if (regrasBrutas.Count == 0)
+    private static FieldError[] RecusaDaPresencaDasRegras(IReadOnlyCollection<(int? Ordem, string? Contribui)>? regrasBrutas) =>
+        regrasBrutas switch
         {
-            erros.Add(new("regras", new DomainError(
+            null => [new("regras", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe as regras da derivação do fato."))],
+            { Count: 0 } => [new("regras", new DomainError(
                 ConfiguracaoDerivacaoFatoErrorCodes.SemRegras,
-                "A derivação de um fato precisa de ao menos uma regra.")));
-        }
+                "A derivação de um fato precisa de ao menos uma regra."))],
+            _ => [],
+        };
 
-    }
+    private static List<FieldError> RecusasDaCoerenciaDasRegras(IReadOnlyCollection<(int? Ordem, string? Contribui)> regrasBrutas) =>
+    [
+        .. RecusaDaOrdemRepetida(regrasBrutas),
+        .. RecusaDeRegrasComESemCodigo(regrasBrutas),
+    ];
 
-    private static void ValidarCoerenciaDasRegras(IReadOnlyCollection<(int Ordem, string? Contribui)> regrasBrutas, List<FieldError> erros)
+    // A ordem ausente já é recusada na regra; a repetição se lê sobre as ordens informadas.
+    private static FieldError[] RecusaDaOrdemRepetida(IReadOnlyCollection<(int? Ordem, string? Contribui)> regrasBrutas)
     {
-        if (regrasBrutas.Select(static r => r.Ordem).Distinct().Count() != regrasBrutas.Count)
-        {
-            erros.Add(new("regras", new DomainError(
+        int[] ordens = [.. regrasBrutas.Where(static r => r.Ordem is not null).Select(static r => r.Ordem!.Value)];
+        return ordens.Distinct().Count() != ordens.Length
+            ? [new("regras", new DomainError(
                 ConfiguracaoDerivacaoFatoErrorCodes.OrdemRegraDuplicada,
-                "A ordem de uma regra é usada por mais de uma regra na mesma derivação.")));
-        }
-
-        if (regrasBrutas.Any(static r => r.Contribui is null) && regrasBrutas.Any(static r => r.Contribui is not null))
-        {
-            erros.Add(new("regras", new DomainError(
-                ConfiguracaoDerivacaoFatoErrorCodes.RegrasComESemCodigo,
-                "As regras de uma derivação contribuem código todas, no derivado categórico, ou nenhuma, no derivado booleano.")));
-        }
+                "A ordem de uma regra é usada por mais de uma regra na mesma derivação."))]
+            : [];
     }
+
+    private static FieldError[] RecusaDeRegrasComESemCodigo(IReadOnlyCollection<(int? Ordem, string? Contribui)> regrasBrutas) =>
+        regrasBrutas.Any(static r => r.Contribui is null) && regrasBrutas.Any(static r => r.Contribui is not null)
+            ? [new("regras", new DomainError(
+                ConfiguracaoDerivacaoFatoErrorCodes.RegrasComESemCodigo,
+                "As regras de uma derivação contribuem código todas, no derivado categórico, ou nenhuma, no derivado booleano."))]
+            : [];
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;

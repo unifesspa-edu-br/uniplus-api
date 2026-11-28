@@ -44,7 +44,7 @@ internal sealed class LeituraDoConteudo
         if (!porInteiro)
         {
             _recusas.Recusas.AddRange(FormaDoTermo.ConferirUnicidade(
-                [.. (entrada?.Termos ?? []).Select(static t => t is null ? null : ((string?, int)?)(t.Codigo, t.Ordem))]));
+                [.. (entrada?.Termos ?? []).Select(static t => t is null ? null : ((string?, int?)?)(t.Codigo, t.Ordem))]));
         }
 
         return partes with { PorInteiro = porInteiro };
@@ -78,14 +78,14 @@ internal sealed class LeituraDoConteudo
         PredicadoDnf? exibicao = _recusas.LerPredicado(entrada.Exibicao, $"{campo}.exibicao");
         TipoPaginaFormulario? tipo = LerTipoDaPagina(entrada.Tipo, $"{campo}.tipo");
         BlocoSistema? bloco = LerBlocoDaPagina(entrada.Bloco, $"{campo}.bloco");
-        if (_recusas.RecusouDesde(recusasAntes))
+        if (_recusas.RecusouDesde(recusasAntes) || entrada.Ordem is null)
         {
             RecusarPaginaNaoLida(entrada, campo, tipo, exibicao);
             return null;
         }
 
         return new PaginaDoModelo(
-            entrada.Codigo, entrada.Ordem, tipo!.Value, bloco,
+            entrada.Codigo, entrada.Ordem.GetValueOrDefault(), tipo!.Value, bloco,
             entrada.Apresentacao?.Titulo ?? string.Empty, entrada.Apresentacao?.Descricao, entrada.Apresentacao?.Aviso, exibicao);
     }
 
@@ -128,14 +128,14 @@ internal sealed class LeituraDoConteudo
     {
         int recusasAntes = _recusas.Recusas.Count;
         (PredicadoDnf? exibicao, Obrigatoriedade? obrigatoriedade) = LerExibicaoEObrigatoriedadePorPartes(entrada.Regras, $"{campo}.{TermoExigidoInput.CaminhoDasRegras}");
-        if (_recusas.RecusouDesde(recusasAntes))
+        if (_recusas.RecusouDesde(recusasAntes) || entrada.Ordem is null)
         {
             RecusarTermoNaoLido(entrada, campo, exibicao, obrigatoriedade);
             return null;
         }
 
         return new TermoDoModelo(
-            entrada.Codigo, entrada.Ordem, entrada.Termo?.TermoId ?? Guid.Empty, entrada.Termo?.VersaoId ?? Guid.Empty,
+            entrada.Codigo, entrada.Ordem.GetValueOrDefault(), entrada.Termo?.TermoId ?? Guid.Empty, entrada.Termo?.VersaoId ?? Guid.Empty,
             new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade!));
     }
 
@@ -154,10 +154,10 @@ internal sealed class LeituraDoConteudo
         (PredicadoDnf? exibicao, Obrigatoriedade? obrigatoriedade) = LerExibicaoEObrigatoriedadePorPartes(entrada.Regras, $"{campo}.{GrupoColetadoInput.CaminhoDasRegras}");
         int antesDosSubitens = _recusas.Recusas.Count;
         SubitensLidos subitens = _campos.LerSubitens(entrada, campo, posicao);
-        return _recusas.RecusouDesde(recusasAntes)
+        return _recusas.RecusouDesde(recusasAntes) || entrada.Ordem is null || entrada.Subitens is null
             ? RecusarGrupoNaoLido(entrada, posicao, ocorrencias, (exibicao, obrigatoriedade), subitens, antesDosSubitens)
             : new GrupoDoModelo(
-                entrada.Codigo, entrada.Ordem, entrada.PaginaCodigo, entrada.Rotulo, ocorrencias.Declaradas!,
+                entrada.Codigo, entrada.Ordem.GetValueOrDefault(), entrada.PaginaCodigo, entrada.Rotulo, ocorrencias.Declaradas!,
                 new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade!), [.. subitens.Lidos.Select(static s => s.Parte)]);
     }
 

@@ -26,6 +26,17 @@ public sealed class OrdemDaPreparacaoDoProdutoDoEditalTests
     }
 
     [Fact]
+    public async Task Handle_ItemNaoDeclaradoEDocumentoPrincipalAusente_AcumulaAsDuasRecusas()
+    {
+        _cenario.ParNaMesmaFase();
+
+        (Result<AtoPublicadoDto> resposta, _) = await _cenario.Publicar(_cenario.Comando(Guid.CreateVersion7()) with { DocumentoPrincipalId = null });
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(AtoDoProcessoErrorCodes.ProdutoNaoDeclarado, CodigosDeValidacao.Obrigatorio);
+        await NaoLeuDocumentos();
+    }
+
+    [Fact]
     public async Task Handle_TipoAusenteEPoliticaNaoConfirmada_InterrompeNoTipo()
     {
         (ProdutoDaFase preliminar, _) = _cenario.ParNaMesmaFase();
@@ -74,6 +85,22 @@ public sealed class OrdemDaPreparacaoDoProdutoDoEditalTests
         resposta.IsFailure.Should().BeTrue();
         await _cenario.Processos.DidNotReceive().TravarAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _cenario.Processos.DidNotReceive().ObterSiglaDaUnidadeAdministradoraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_CorrecaoSemMotivoComDataEDocumentoAusentes_AcumulaAsTresRecusas()
+    {
+        PublicarProdutoDoEditalCommand comando = _cenario.Comando(Guid.CreateVersion7(), corrige: Guid.CreateVersion7()) with
+        {
+            MotivoDaCorrecao = null,
+            DataDoAto = null,
+            DocumentoPrincipalId = null,
+        };
+
+        (Result<AtoPublicadoDto> resposta, _) = await _cenario.Publicar(comando);
+
+        resposta.Errors.Select(static e => e.Field).Should().Equal("motivoDaCorrecao", "dataDoAto", "documentoPrincipalId");
+        await _cenario.Processos.DidNotReceive().TravarAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     private async Task NaoLeuDocumentos() =>

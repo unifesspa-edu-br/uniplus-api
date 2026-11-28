@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
@@ -18,7 +19,7 @@ public static class FormaDaPagina
     /// regra da exibição, que depende dele, deixa de ser conferida.
     /// </summary>
     public static List<FieldError> Conferir(
-        string? codigo, int ordem, TipoPaginaFormulario? tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
+        string? codigo, int? ordem, TipoPaginaFormulario? tipo, string? titulo, string? descricao, string? aviso, bool temExibicao) =>
     [
         .. RecusasDoCodigo(codigo),
         .. RecusasDaOrdem(ordem),
@@ -38,9 +39,13 @@ public static class FormaDaPagina
         }
     }
 
-    private static IEnumerable<FieldError> RecusasDaOrdem(int ordem)
+    private static IEnumerable<FieldError> RecusasDaOrdem(int? ordem)
     {
-        if (ordem < 0)
+        if (ordem is null)
+        {
+            yield return new("ordem", new DomainError(CodigosDeValidacao.Obrigatorio, "Informe a ordem."));
+        }
+        else if (ordem < 0)
         {
             yield return new("ordem", new DomainError(EstruturaFormularioErrorCodes.PaginaOrdemInvalida, "A ordem da página não pode ser negativa."));
         }

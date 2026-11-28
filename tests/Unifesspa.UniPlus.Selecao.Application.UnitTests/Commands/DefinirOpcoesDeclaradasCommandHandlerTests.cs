@@ -83,21 +83,37 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         DefinirOpcoesDeclaradasCommand comando = new(processo.Id, "CATEGORIA_RENDA", [new("RURAL", "")]);
 
         Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
-            comando, repositorio, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+            comando, repositorio, CriarReader(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("opcoes[0].rotulo");
     }
 
-    [Fact(DisplayName = "Opção sem rótulo é recusada em rascunho antes de ler o catálogo de dados do candidato")]
-    public async Task Handle_OpcaoSemRotulo_RecusaSemLerOCatalogo()
+    [Fact(DisplayName = "Opção sem rótulo e fato que não admite opções do processo são recusados juntos, nessa ordem")]
+    public async Task Handle_OpcaoSemRotuloEFatoSemOpcoesDoProcesso_SomaAsRecusas()
     {
         ProcessoSeletivo processo = CriarProcesso();
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
 
         Result resultado = await HandleOpcaoSemRotuloAsync(CriarRepositorio(processo), reader, processo.Id);
 
-        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("opcoes[0].rotulo");
-        reader.ReceivedCalls().Should().BeEmpty();
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("opcoes[0].rotulo", OpcaoDeclaradaFatoErrorCodes.RotuloInvalido),
+            (null, OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso));
+    }
+
+    [Fact(DisplayName = "Opção sem rótulo e fato gerido pelo atendimento especializado são recusados juntos")]
+    public async Task Handle_OpcaoSemRotuloEFatoDoAtendimento_SomaAsRecusas()
+    {
+        ProcessoSeletivo processo = CriarProcesso();
+        IFatoCandidatoReader reader = CriarReader();
+        DefinirOpcoesDeclaradasCommand comando = new(processo.Id, "CONDICAO_ATENDIMENTO", [new("PCD", "")]);
+
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            comando, CriarRepositorio(processo), reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain([
+            ("opcoes[0].rotulo", OpcaoDeclaradaFatoErrorCodes.RotuloInvalido),
+            (null, OpcaoDeclaradaFatoErrorCodes.GeridasPeloAtendimentoEspecializado)]);
     }
 
     [Fact(DisplayName = "Processo inexistente é recusado antes da conferência das opções, sem ler o catálogo de dados do candidato")]
@@ -121,6 +137,24 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
         reader.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Opção com código ou rótulo ausente, nulo, vazio ou em branco é recusada no campo, com o código próprio, junto da outra")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Handle_OpcaoSemCodigoNemRotulo_AcumulaOsDoisCampos(string? valor)
+    {
+        ProcessoSeletivo processo = CriarProcesso();
+        DefinirOpcoesDeclaradasCommand comando = new(processo.Id, "CATEGORIA_RENDA", [new(valor, valor), new("RURAL", null)]);
+
+        Result resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
+            comando, CriarRepositorio(processo), CriarReader(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("opcoes[0].codigo", OpcaoDeclaradaFatoErrorCodes.CodigoInvalido),
+            ("opcoes[0].rotulo", OpcaoDeclaradaFatoErrorCodes.RotuloInvalido),
+            ("opcoes[1].rotulo", OpcaoDeclaradaFatoErrorCodes.RotuloInvalido));
     }
 
     private static Task<Result> HandleOpcaoSemRotuloAsync(IProcessoSeletivoRepository repositorio, IFatoCandidatoReader reader, Guid processoId) =>

@@ -62,4 +62,32 @@ public sealed class AtualizarPrecedenciaFaseCommandHandlerTests
         existente.SucessoraCodigo.Should().Be("HOMOLOGACAO_INSCRICOES");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "PermiteSobreposicao ausente é recusado com 422 e o valor existente não muda nem é gravado")]
+    public async Task Handle_SobreposicaoAusente_RecusaComoObrigatorioSemGravar()
+    {
+        PrecedenciaFase existente = PrecedenciaFase.Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", true, []).Value!;
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await AtualizarPrecedenciaFaseCommandHandler.Handle(
+            new AtualizarPrecedenciaFaseCommand(existente.Id, null), _repository, _unitOfWork, CancellationToken.None);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        (recusa.Field, recusa.Error.Code).Should().Be(("permiteSobreposicao", CodigosDeValidacao.Obrigatorio));
+        existente.PermiteSobreposicao.Should().BeTrue();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "PermiteSobreposicao ausente em aresta inexistente é recusado com 422, antes da busca e do 404")]
+    public async Task Handle_SobreposicaoAusenteEInexistente_Recusa422SemBuscar()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        Result resultado = await AtualizarPrecedenciaFaseCommandHandler.Handle(
+            new AtualizarPrecedenciaFaseCommand(id, null), _repository, _unitOfWork, CancellationToken.None);
+
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        (recusa.Field, recusa.Error.Code).Should().Be(("permiteSobreposicao", CodigosDeValidacao.Obrigatorio));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 }

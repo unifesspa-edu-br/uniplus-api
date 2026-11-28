@@ -191,7 +191,7 @@ public sealed class EnvelopeLidoFormulariosTests
         avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);
         RecorteDoFormulario recorte = RecorteDoFormulario.De(
             avaliavel.Value!.Definicao, FormulariosDoProcessoDeTeste.Codigo(FormulariosDoProcessoDeTeste.Inscricao).Valor);
-        recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo)
+        recorte.Regras.Derivacoes!.Select(static d => d.FatoCodigo)
             .Should().Contain([OpcaoPelasCotasDaLei.Fato, OrigemEscolar.FatoEgresso]);
         recorte.Pressupostos.Should().NotContain(OpcaoPelasCotasDaLei.Fato);
     }

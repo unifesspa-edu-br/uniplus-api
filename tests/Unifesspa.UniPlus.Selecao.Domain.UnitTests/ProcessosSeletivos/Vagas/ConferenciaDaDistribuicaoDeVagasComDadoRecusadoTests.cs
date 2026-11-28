@@ -154,6 +154,20 @@ public sealed class ConferenciaDaDistribuicaoDeVagasComDadoRecusadoTests
             ("quadro[1].quantidade", CodigosDeValidacao.Obrigatorio), ("quadro[3].quantidade", CodigosDeValidacao.Obrigatorio));
     }
 
+    [Fact(DisplayName = "As modalidades ausentes no pedido são recusadas no campo modalidadeIds, e o quadro ausente no seu")]
+    public void Pedido_ModalidadesEQuadroAusentes_RecusaNoCampoDoPedido()
+    {
+        IReadOnlyList<FieldError> recusas = ConferenciaDaDistribuicaoDeVagas.ConferirFormaDoPedido(60, 0.5m, null, null);
+
+        recusas.Select(static r => (r.Field, r.Error.Code)).Should().Equal(
+            ("modalidadeIds", CodigosDeValidacao.Obrigatorio), ("quadro", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "A lista de modalidades vazia no pedido é recusada no campo modalidadeIds")]
+    public void Pedido_ModalidadesVazias_RecusaNoCampoDoPedido() =>
+        ConferenciaDaDistribuicaoDeVagas.ConferirFormaDoPedido(60, 0.5m, 0, [])
+            .Select(static r => (r.Field, r.Error.Code)).Should().Equal(("modalidadeIds", DistribuicaoDeVagasErrorCodes.ModalidadesVazias));
+
     [Fact(DisplayName = "A quantidade que falta na linha anterior sai antes da negativa da linha seguinte")]
     public void QuadroDoPedido_AusenteAntesDaNegativa_RecusaNaOrdemDasLinhas()
     {

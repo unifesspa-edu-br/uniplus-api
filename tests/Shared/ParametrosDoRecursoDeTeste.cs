@@ -14,7 +14,7 @@ internal static class ParametrosDoRecursoDeTeste
     internal static ParametrosDeclaradosDoRecurso Declarados(
         decimal valor = 2m,
         UnidadePrazo unidade = UnidadePrazo.DiasUteis,
-        bool admiteInstanciaSuperior = false,
+        bool? admiteInstanciaSuperior = false,
         PrazoDoRecurso? segundaInstancia = null,
         string? efeitoSuspensivo = "SEM_EFEITO_SUSPENSIVO",
         string? guardaDaVaga = null) =>

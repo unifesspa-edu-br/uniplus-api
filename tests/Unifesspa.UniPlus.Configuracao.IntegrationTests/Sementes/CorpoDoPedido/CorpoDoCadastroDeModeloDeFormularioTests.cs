@@ -51,7 +51,7 @@ public sealed class CorpoDoCadastroDeModeloDeFormularioTests(ITestOutputHelper s
         DimensoesDasSementesDoModelo dimensoes = DimensoesDasSementesDoModelo.De([.. ModelosSemeados]);
         ConteudoDoModeloInput conteudo = PiorCasoDoModeloDeFormulario.Cadastro(dimensoes, 0).Conteudo!;
 
-        int noTeto = FormaDoItem.QuantidadeNoTeto(conteudo.Itens!.Count, conteudo.Grupos!.Select(static g => g.Subitens.Count));
+        int noTeto = FormaDoItem.QuantidadeNoTeto(conteudo.Itens!.Count, conteudo.Grupos!.Select(static g => g.Subitens!.Count));
 
         noTeto.Should().Be(FormaDoItem.MaximoDeItens);
     }

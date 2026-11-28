@@ -15,6 +15,6 @@ internal static class ErrosDoFormularioPortavel
         new(FormularioPortavelErrorCodes.EstruturaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.estrutura_invalida", "As regras não formam um formulário: elemento nulo, código repetido ou referência que não existe")),
         new(FormularioPortavelErrorCodes.OcorrenciaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.ocorrencia_invalida", "Ocorrência de grupo sem identidade própria no grupo")),
         new(FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.fuso_do_envio_desconhecido", "A zona do envio simulado não é reconhecida")),
-        new(FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario", "O instante do envio simulado está ausente ou fora do calendário que os limites da faixa de data alcançam")),
+        new(FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario", "O instante do envio simulado fica fora do calendário que os limites da faixa de data alcançam")),
     ];
 }

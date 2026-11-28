@@ -113,4 +113,27 @@ public sealed class RecusasAcumuladasDasCondicoesDoPredicadoTests
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e =>
             e.Field == "regras[0].quando[0][0]" && e.Error.Code == FatoCandidatoErrorCodes.RegraPadraoMalformada);
     }
+
+    [Fact(DisplayName = "Regras padrão ausentes ou nulas são recusadas como obrigatórias no campo das regras")]
+    public async Task DefinirRegrasPadrao_ListaNula_RecusaComoObrigatoria()
+    {
+        Result resultado = await DefinirRegrasPadraoCommandHandler.Handle(
+            new DefinirRegrasPadraoCommand(Guid.CreateVersion7(), null), Substitute.For<IFatoCandidatoRepository>(),
+            Substitute.For<IPrecedenciaFaseRepository>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("regras", CodigosDeValidacao.Obrigatorio));
+    }
+
+    [Fact(DisplayName = "Regras padrão com lista vazia declaram nenhuma regra e não são recusadas pela forma")]
+    public async Task DefinirRegrasPadrao_ListaVazia_NaoERecusadaPelaForma()
+    {
+        IFatoCandidatoRepository repositorio = Substitute.For<IFatoCandidatoRepository>();
+        repositorio.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([]);
+
+        Result resultado = await DefinirRegrasPadraoCommandHandler.Handle(
+            new DefinirRegrasPadraoCommand(Guid.CreateVersion7(), []), repositorio,
+            Substitute.For<IPrecedenciaFaseRepository>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
+
+        resultado.Errors.Should().NotContain(static e => e.Field == "regras" && e.Error.Code == CodigosDeValidacao.Obrigatorio);
+    }
 }

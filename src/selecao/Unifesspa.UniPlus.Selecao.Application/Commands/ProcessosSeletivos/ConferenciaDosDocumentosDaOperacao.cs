@@ -39,23 +39,28 @@ public sealed class ConferenciaDosDocumentosDaOperacao(
         Result<IReadOnlyList<AnexoDoEdital>> anexosConferidos = await anexos
             .ConferirAsync(processo.Id, edital.Anexos, origem.AnexosVigentes(herdaOsDaVersao: edital.Anexos is null), cancellationToken)
             .ConfigureAwait(false);
-        Result<DadosEdital>? dados = ResolverOEdital(processo, edital, anexosConferidos);
-        Result<ResultadoConformidade>? conformidade = dados is { IsSuccess: true }
+        Result<DadosEdital>? dados = ResolverOEdital(processo, edital, ato.Documento, anexosConferidos);
+        bool anexosAceitos = anexosConferidos.IsSuccess;
+        Result<ResultadoConformidade>? conformidade = anexosAceitos && dados is { IsSuccess: true }
             ? await AvaliarAsync(processo, dados.Value!, lidos, cancellationToken).ConfigureAwait(false)
             : null;
 
         return new DocumentosConferidos(
-            dados?.Value, conformidade?.Value, tipos.Value, [.. tipos.Errors, .. dados?.Errors ?? [], .. conformidade?.Errors ?? []], anexosConferidos.Errors);
+            anexosAceitos ? dados?.Value : null,
+            conformidade?.Value,
+            tipos.Value,
+            [.. tipos.Errors, .. dados?.Errors ?? [], .. conformidade?.Errors ?? []],
+            anexosConferidos.Errors);
     }
 
-    // Os anexos recusados impedem resolver o período: sem eles o edital não se monta. Nulo quando os anexos foram recusados ou
-    // quando o período não se resolve porque a fase que o ancora está sem janela, recusa que a conferência da configuração já traz.
+    // O período depende só do cronograma e do pedido: a recusa dele sai mesmo com anexo recusado, que então entra vazio na resolução e
+    // o edital resolvido não segue adiante. Nulo quando o período não se resolve porque a fase que o ancora está sem janela, recusa que
+    // a conferência da configuração já traz. O documento do edital já foi conferido: o identificador vem dele, e não do pedido, que
+    // pode tê-lo ausente.
     private static Result<DadosEdital>? ResolverOEdital(
-        ProcessoSeletivo processo, EditalDeclarado edital, Result<IReadOnlyList<AnexoDoEdital>> anexosConferidos) =>
-        anexosConferidos.IsFailure
-            ? null
-            : ResolucaoDoPeriodoDeInscricao.Resolver(
-                processo, edital.Numero, edital.PeriodoInscricaoInicio, edital.PeriodoInscricaoFim, edital.DocumentoEditalId, anexosConferidos.Value!);
+        ProcessoSeletivo processo, EditalDeclarado edital, DocumentoAPublicar documento, Result<IReadOnlyList<AnexoDoEdital>> anexosConferidos) =>
+        ResolucaoDoPeriodoDeInscricao.Resolver(
+            processo, edital.Numero, edital.PeriodoInscricaoInicio, edital.PeriodoInscricaoFim, documento.Id, anexosConferidos.IsSuccess ? anexosConferidos.Value! : []);
 
     private Task<Result<ResultadoConformidade>> AvaliarAsync(
         ProcessoSeletivo processo, DadosEdital dados, LeiturasDoCongelamento lidos, CancellationToken cancellationToken) =>

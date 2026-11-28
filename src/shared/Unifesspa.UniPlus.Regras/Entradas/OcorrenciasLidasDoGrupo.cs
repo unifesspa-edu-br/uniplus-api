@@ -33,7 +33,7 @@ public sealed record OcorrenciasLidasDoGrupo(int? Minimo, bool? IncluiCandidato,
     /// A identificação da ocorrência do candidato, só quando a inclusão foi declarada verdadeira; o mínimo
     /// ausente não é conferido nela.
     /// </summary>
-    public IEnumerable<FieldError> ConferirCandidatoComoMembro(IReadOnlyList<CampoDoMembro> campos) =>
+    public IEnumerable<FieldError> ConferirCandidatoComoMembro(IReadOnlyList<CampoDoMembro>? campos) =>
         IncluiCandidato is true ? CandidatoComoMembro.Conferir(Minimo, campos) : [];
 
     /// <summary>Lê as ocorrências da entrada; a entrada ausente recusa o mínimo e a inclusão do candidato.</summary>

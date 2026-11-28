@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// e encerramento juntos, ou nenhum.
 /// </summary>
 /// <param name="Modo">Votação do colegiado ou ato individual.</param>
-/// <param name="Integrantes">Titulares da banca, no mínimo 1.</param>
-/// <param name="Suplentes">Suplentes da banca, no mínimo 0.</param>
+/// <param name="Integrantes">Titulares da banca, no mínimo 1; ausente é recusado.</param>
+/// <param name="Suplentes">Suplentes da banca, no mínimo 0; ausente é recusado.</param>
 /// <param name="Votacao">Campos declarados para a votação.</param>
-public sealed record DeclaracaoDaDeliberacao(string? Modo, int Integrantes, int Suplentes, DeclaracaoDaVotacao Votacao)
+public sealed record DeclaracaoDaDeliberacao(string? Modo, int? Integrantes, int? Suplentes, DeclaracaoDaVotacao Votacao)
 {
     internal ModoDeDeliberacao? ModoConferido() =>
         CatalogoDe<ModoDeDeliberacao>.TentarObter(Modo, out ModoDeDeliberacao valor) ? valor : null;
@@ -54,8 +54,8 @@ public sealed class RegraDeDeliberacao
     private RegraDeDeliberacao(DeclaracaoDaDeliberacao declarada)
     {
         Modo = declarada.ModoConferido()!.Value;
-        Integrantes = declarada.Integrantes;
-        Suplentes = declarada.Suplentes;
+        Integrantes = declarada.Integrantes!.Value;
+        Suplentes = declarada.Suplentes!.Value;
         Quorum = declarada.Votacao.Quorum;
         Criterio = declarada.Votacao.CriterioConferido();
         Desempate = declarada.Votacao.DesempateConferido();

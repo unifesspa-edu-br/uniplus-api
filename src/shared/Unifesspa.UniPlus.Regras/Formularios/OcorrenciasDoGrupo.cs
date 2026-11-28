@@ -35,6 +35,6 @@ public sealed record OcorrenciasDoGrupo(int Minimo, int? Maximo, bool IncluiCand
     /// A identificação da ocorrência do candidato pelos campos do grupo; sem recusa quando o grupo
     /// não o inclui.
     /// </summary>
-    public IEnumerable<FieldError> ConferirCandidatoComoMembro(IReadOnlyList<CampoDoMembro> campos) =>
+    public IEnumerable<FieldError> ConferirCandidatoComoMembro(IReadOnlyList<CampoDoMembro>? campos) =>
         IncluiCandidato ? CandidatoComoMembro.Conferir(Minimo, campos) : [];
 }

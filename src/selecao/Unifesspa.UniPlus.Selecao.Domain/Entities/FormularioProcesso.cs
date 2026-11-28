@@ -194,7 +194,7 @@ public sealed class PaginaDoFormulario : EntityBase
         PaginaEstrutura estrutura, string titulo, string? descricao, string? aviso, PredicadoDnf? exibicao) => new()
         {
             Codigo = estrutura.Codigo ?? string.Empty,
-            Ordem = estrutura.Ordem,
+            Ordem = estrutura.Ordem.GetValueOrDefault(),
             Tipo = estrutura.Tipo,
             Bloco = estrutura.Bloco,
             Titulo = (titulo ?? string.Empty).Trim(),

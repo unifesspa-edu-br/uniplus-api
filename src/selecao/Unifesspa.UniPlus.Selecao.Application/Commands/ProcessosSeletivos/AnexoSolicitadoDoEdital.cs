@@ -6,4 +6,4 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </summary>
 /// <param name="DocumentoId">O documento a publicar confirmado, do mesmo processo.</param>
 /// <param name="Nome">Nome do arquivo no download; a extensão do formato é acrescentada quando falta.</param>
-public sealed record AnexoSolicitadoDoEdital(Guid DocumentoId, string? Nome);
+public sealed record AnexoSolicitadoDoEdital(Guid? DocumentoId, string? Nome);

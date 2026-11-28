@@ -11,10 +11,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// (CA-06 da Story #758). Cada dimensão referencia o cadastro vivo do módulo
 /// Configuração por <c>Id</c> — os dados congelados (código, nome) são lidos
 /// no handler via snapshot-copy (ADR-0061). Tipo de deficiência só é aceito
-/// quando a condição PcD está entre as condições ofertadas (ADR-0067).
+/// quando a condição PcD está entre as condições ofertadas (ADR-0067). As três listas são obrigatórias: ausente ou
+/// nula é recusada (422) na montagem, e a lista vazia declara que nada é ofertado naquela dimensão.
 /// </summary>
 public sealed record DefinirAtendimentoEspecializadoCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<Guid> CondicaoIds,
-    IReadOnlyList<Guid> RecursoIds,
-    IReadOnlyList<Guid> TipoDeficienciaIds) : ICommand<Result>;
+    IReadOnlyList<Guid>? CondicaoIds,
+    IReadOnlyList<Guid>? RecursoIds,
+    IReadOnlyList<Guid>? TipoDeficienciaIds) : ICommand<Result>;
