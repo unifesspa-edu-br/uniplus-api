@@ -38,7 +38,7 @@ public sealed class CampoDeMunicipioTests
         FormaDoItem.Conferir(
             "NATURALIDADE_MUNICIPIO",
             1,
-            new ApresentacaoDoCampo("Município de nascimento", tipo),
+            ApresentacaoLidaDoCampo.De(new ApresentacaoDoCampo("Município de nascimento", tipo)),
             formato: null,
             RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes)));
 }

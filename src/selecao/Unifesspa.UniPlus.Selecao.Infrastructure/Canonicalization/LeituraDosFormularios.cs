@@ -219,14 +219,14 @@ internal static class LeituraDosFormularios
             new PaginaEstrutura(declaracaoDaPagina.Codigo, declaracaoDaPagina.Ordem, declaracaoDaPagina.Tipo, declaracaoDaPagina.Bloco), declaracaoDaPagina.Titulo, declaracaoDaPagina.Descricao, declaracaoDaPagina.Aviso,
             exibicao.Value ?? (declaracaoDaPagina.Exibicao.Count > 0 ? PredicadoDnf.SemClausula : null));
         IReadOnlyList<FieldError> causas = [.. exibicao.Errors.Select(causa => causa.NoCaminhoDoItem("exibicao")),
-            .. pagina.Errors, .. RecusaDaOrdem(pagina.IsSuccess, pathPagina, ordemAnterior, declaracaoDaPagina.Ordem)];
+            .. pagina.Errors, .. RecusaDaOrdem(pagina.Errors, pathPagina, ordemAnterior, declaracaoDaPagina.Ordem)];
         return causas.Count > 0 ? leitor.PropagarCausasDoItem<PaginaDoFormulario?>(causas, pathPagina) : pagina.Value;
     }
 
     // O encoder emite as páginas em ordem estritamente crescente; outra forma só vem de envelope
-    // adulterado e não reproduziria os bytes. Página de forma recusada não tem ordem confiável para comparar.
-    private static IEnumerable<FieldError> RecusaDaOrdem(bool formaValida, string pathPagina, int? ordemAnterior, int ordem) =>
-        formaValida && ordem <= ordemAnterior
+    // adulterado e não reproduziria os bytes. A página de ordem negativa já tem a recusa dela e não tem ordem confiável para comparar.
+    private static IEnumerable<FieldError> RecusaDaOrdem(IReadOnlyList<FieldError> recusasDaPagina, string pathPagina, int? ordemAnterior, int ordem) =>
+        ordem <= ordemAnterior && !recusasDaPagina.Any(static recusa => recusa.Error.Code == EstruturaFormularioErrorCodes.PaginaOrdemInvalida)
             ? [new FieldError(null, new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathPagina}' quebra a ordem crescente das páginas."))]
             : [];
 

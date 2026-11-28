@@ -69,7 +69,7 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
         RegrasLidasDoCampo regras = RegrasLidasDoCampo.De(item.Regras);
         return RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoCampo(
                 caminho, item.FatoCodigo, item.PaginaCodigo, item.Apresentacao.Rotulo, item.Apresentacao.Ajuda, item.Formato, regras))
-            .Concat(FormaDoItem.Conferir(item.FatoCodigo, item.Ordem, item.Apresentacao, item.Formato, regras).Select(erro => erro.NoCaminhoDoItem(caminho)));
+            .Concat(FormaDoItem.Conferir(item.FatoCodigo, item.Ordem, ApresentacaoLidaDoCampo.De(item.Apresentacao), item.Formato, regras).Select(erro => erro.NoCaminhoDoItem(caminho)));
     }
 
     /// <summary>Recusa os textos e a forma do item que a leitura recusou, para as recusas dele saírem juntas; devolve nulo, o item não lido.</summary>
@@ -85,7 +85,7 @@ internal sealed class LeituraDosCamposDoModelo(RecusasDaLeituraDoModelo recusas,
 
         recusas.Recusas.AddRange(RecusasDaLeituraDoModelo.TextosNaoGravaveis(TextosDoConteudoDoModelo.DoCampo(
             campo, entrada.FatoCodigo, entrada.PaginaCodigo, entrada.Apresentacao?.Rotulo, entrada.Apresentacao?.Ajuda, formato, regras)));
-        recusas.Recusas.AddRange(FormaDoItemNaEntrada.Conferir(entrada, tipo, formato, regras).Select(erro => erro.NoCaminhoDoItem(campo)));
+        recusas.Recusas.AddRange(FormaDoItem.Conferir(entrada.FatoCodigo, entrada.Ordem, ApresentacaoLidaDoCampo.DaEntrada(entrada.Apresentacao, tipo), formato, regras).Select(erro => erro.NoCaminhoDoItem(campo)));
         return null;
     }
 

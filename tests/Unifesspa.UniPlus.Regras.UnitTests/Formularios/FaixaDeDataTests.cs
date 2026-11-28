@@ -135,7 +135,7 @@ public sealed class FaixaDeDataTests
         FormaDoItem.Conferir(
             "DATA_NASCIMENTO",
             1,
-            new ApresentacaoDoCampo("Data de nascimento", tipo),
+            ApresentacaoLidaDoCampo.De(new ApresentacaoDoCampo("Data de nascimento", tipo)),
             formato: null,
             RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, restricoes)));
 

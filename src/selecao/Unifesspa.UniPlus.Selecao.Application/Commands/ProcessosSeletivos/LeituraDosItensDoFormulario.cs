@@ -116,7 +116,7 @@ internal static class LeituraDosItensDoFormulario
         }
 
         string? formato = contexto.FormatoDoDado(entrada.FatoCodigo);
-        erros.AddRange([.. doTipo, .. daExibicao, .. dasRegras, .. FormaDoItemNaEntrada.Conferir(entrada, tipo, formato, regras).Select(erro => erro.NoCaminhoDoItem(campo))]);
+        erros.AddRange([.. doTipo, .. daExibicao, .. dasRegras, .. FormaDoItem.Conferir(entrada.FatoCodigo, entrada.Ordem, ApresentacaoLidaDoCampo.DaEntrada(entrada.Apresentacao, tipo), formato, regras).Select(erro => erro.NoCaminhoDoItem(campo))]);
         return new ItemLido(entrada, regras, null);
     }
 

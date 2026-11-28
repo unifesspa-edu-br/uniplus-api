@@ -119,6 +119,7 @@ public sealed class FormularioDosItensNoEnvelopeTests
         LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), [], formularios);
 
         leitor.Erro.Message.Should().Be("'gruposDosFormularios[0].formularioCodigo' não é o código de um formulário do documento.");
+        leitor.Falha<object>().Errors.Should().ContainSingle().Which.Field.Should().Be("gruposDosFormularios[0].formularioCodigo");
     }
 
     [Fact(DisplayName = "O campo sem a chave do formulário é recusado")]

@@ -105,13 +105,24 @@ public sealed class GrupoColetado : EntityBase, IParteDoProcesso
             : Result<GrupoColetado>.Success(new GrupoColetado(codigo, ordem, paginaCodigo, rotulo, ocorrencias, regras, subitens));
     }
 
-    private static List<FieldError> ConferirForma(
-        string codigo, int ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens) =>
-    [
-        .. FormaDoGrupo.Conferir(
-            codigo, ordem, rotulo, ocorrencias, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.PaginaCodigo, s.Impedimento is not null))], regras),
-        .. ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]),
-    ];
+    /// <summary>
+    /// A forma do grupo, a mesma que <see cref="Criar"/> confere, para quem lê o grupo com parte recusada e não pode criá-lo:
+    /// não exige que os campos sejam de um mesmo formulário.
+    /// </summary>
+    public static List<FieldError> ConferirForma(
+        string codigo, int ordem, string rotulo, OcorrenciasDoGrupo ocorrencias, ExibicaoEObrigatoriedade regras, IReadOnlyList<FatoColetado> subitens)
+    {
+        ArgumentNullException.ThrowIfNull(ocorrencias);
+        ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(subitens);
+
+        return
+        [
+            .. FormaDoGrupo.Conferir(
+                codigo, ordem, rotulo, ocorrencias, [.. subitens.Select(static s => ((string?)s.FatoCodigo, s.PaginaCodigo, s.Impedimento is not null))], regras),
+            .. ocorrencias.ConferirCandidatoComoMembro([.. subitens.Select(static s => (s.FatoCodigo, !s.SemPrecondicao, s.Obrigatoriedade, s.Restricoes))]),
+        ];
+    }
 
     private void AdotarCampos(IReadOnlyList<FatoColetado> subitens)
     {

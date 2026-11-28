@@ -69,21 +69,18 @@ internal static class LeituraDosGrupos
         return grupo is not null && LerAgregadosDoGrupo(leitor, item, path, grupo, agregados) ? grupo : null;
     }
 
-    /// <summary>A declaração do grupo lida das chaves exatas do envelope; recusa o código de formulário que o documento não traz.</summary>
+    /// <summary>A declaração do grupo lida das chaves exatas do envelope; o código de formulário que o documento não traz é recusa do grupo, não da declaração.</summary>
     private static DeclaracaoDoGrupo? LerDeclaracaoDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, FormulariosDoDocumento formularios)
     {
         leitor.ExigirChaves(
             item, path, "codigo", "formularioCodigo", "paginaCodigo", "ordem", "rotulo", "minimo", "maximo", "incluiCandidato", "exibicao", "obrigatoriedade", "subitens", "agregados");
         DeclaracaoDoGrupo declaracao = LerCamposDaDeclaracaoDoGrupo(leitor, item, path, formularios);
-        return leitor.Falhou ? null
-            : declaracao.Formulario is null
-                ? leitor.Recusar<DeclaracaoDoGrupo?>($"'{path}.formularioCodigo' não é o código de um formulário do documento.")
-                : declaracao;
+        return leitor.Falhou ? null : declaracao;
     }
 
     /// <summary>
-    /// Todas as recusas do grupo saem juntas: a exibição, a obrigatoriedade, a forma do grupo e, só se a forma passou,
-    /// o campo de outro formulário. A recusa de formato encerra o item e fica depois delas.
+    /// Lê as regras e os campos do grupo. Todas as recusas do grupo saem juntas: o código de formulário desconhecido, a exibição,
+    /// a obrigatoriedade, o campo de outro formulário e a forma do grupo. A recusa de formato encerra o item e fica depois delas.
     /// </summary>
     private static GrupoColetado? CriarGrupo(
         LeitorEnvelope leitor,
@@ -93,38 +90,51 @@ internal static class LeituraDosGrupos
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis,
         FormulariosDoDocumento formularios)
     {
-        Result<PredicadoDnf?> exibicao = LeituraDasCondicoes.PredicadoOpcional(declaracaoDoGrupo.Exibicao);
-        if (LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path) is not { } obrigatoriedade)
+        RegrasDoGrupoLidas regras = new(LeituraDasCondicoes.PredicadoOpcional(declaracaoDoGrupo.Exibicao), LeituraDasCondicoes.LerObrigatoriedade(leitor, item, path));
+        IReadOnlyList<FieldError> recusas = [.. declaracaoDoGrupo.RecusasDoFormulario(path), .. regras.Recusas];
+        if (leitor.Falhou)
         {
-            return PropagarSeHouver(leitor, new RegrasDoGrupoLidas(exibicao, null).Recusas, path);
+            return PropagarSeHouver(leitor, recusas, path);
         }
 
-        RegrasDoGrupoLidas regras = new(exibicao, obrigatoriedade);
         IReadOnlyList<FatoColetado> campos = LeituraDosFatos.LerListaDeFatos(leitor, declaracaoDoGrupo.Subitens, $"{path}.subitens", valoresSelecionaveis, formularios);
-        return leitor.Falhou ? PropagarSeHouver(leitor, regras.Recusas, path) : CriarComOsCampos(leitor, declaracaoDoGrupo, path, regras, campos);
+        return leitor.Falhou ? PropagarSeHouver(leitor, recusas, path) : CriarOuRecusar(leitor, declaracaoDoGrupo, path, regras, campos, recusas);
     }
 
-    private static GrupoColetado? CriarComOsCampos(
-        LeitorEnvelope leitor, DeclaracaoDoGrupo declaracaoDoGrupo, string path, RegrasDoGrupoLidas regras, IReadOnlyList<FatoColetado> campos)
+    private static GrupoColetado? CriarOuRecusar(
+        LeitorEnvelope leitor,
+        DeclaracaoDoGrupo declaracaoDoGrupo,
+        string path,
+        RegrasDoGrupoLidas regras,
+        IReadOnlyList<FatoColetado> campos,
+        IReadOnlyList<FieldError> recusasDasRegras)
     {
-        // O grupo lança exceção com campos de formulários diferentes; nesse caso ele não é criado.
-        if (campos.Any(campo => campo.FormularioId != declaracaoDoGrupo.Formulario!.Id))
+        IReadOnlyList<FieldError> anteriores = [.. recusasDasRegras, .. declaracaoDoGrupo.RecusasDosCampos(campos, path)];
+        (GrupoColetado? grupo, IReadOnlyList<FieldError> daForma) = ConferirAForma(declaracaoDoGrupo, regras, campos, anteriores);
+        IReadOnlyList<FieldError> causas = [.. anteriores, .. CausasDoGrupoNoDocumento(daForma)];
+        return causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : grupo;
+    }
+
+    /// <summary>
+    /// A forma do grupo pelo domínio. Sem recusa anterior, é a criação do grupo; com recusa, é só a conferência da forma, porque o
+    /// grupo não é criado com formulário desconhecido nem com campos de formulários diferentes.
+    /// </summary>
+    private static (GrupoColetado? Grupo, IReadOnlyList<FieldError> Recusas) ConferirAForma(
+        DeclaracaoDoGrupo declaracaoDoGrupo, RegrasDoGrupoLidas regras, IReadOnlyList<FatoColetado> campos, IReadOnlyList<FieldError> recusasAnteriores)
+    {
+        if (recusasAnteriores.Count > 0)
         {
-            return PropagarSeHouver(leitor, [.. regras.Recusas, CampoDeOutroFormulario(path)], path);
+            return (null, GrupoColetado.ConferirForma(
+                declaracaoDoGrupo.Codigo, declaracaoDoGrupo.Ordem, declaracaoDoGrupo.Rotulo, declaracaoDoGrupo.Ocorrencias, regras.ParaConferirAForma, campos));
         }
 
-        Result<GrupoColetado> grupo = GrupoColetado.Criar(
-            declaracaoDoGrupo.Codigo, declaracaoDoGrupo.Ordem, declaracaoDoGrupo.PaginaCodigo, declaracaoDoGrupo.Rotulo, new OcorrenciasDoGrupo(declaracaoDoGrupo.Minimo, declaracaoDoGrupo.Maximo, declaracaoDoGrupo.IncluiCandidato), regras.ParaConferirAForma, campos);
-        IReadOnlyList<FieldError> causas = [.. regras.Recusas, .. CausasDoGrupoNoDocumento(grupo.Errors)];
-        return causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : grupo.Value;
+        Result<GrupoColetado> criado = GrupoColetado.Criar(
+            declaracaoDoGrupo.Codigo, declaracaoDoGrupo.Ordem, declaracaoDoGrupo.PaginaCodigo, declaracaoDoGrupo.Rotulo, declaracaoDoGrupo.Ocorrencias, regras.ParaConferirAForma, campos);
+        return (criado.IsSuccess ? criado.Value : null, criado.Errors);
     }
 
     private static GrupoColetado? PropagarSeHouver(LeitorEnvelope leitor, IReadOnlyList<FieldError> causas, string path) =>
         causas.Count > 0 ? leitor.PropagarCausasDoItem<GrupoColetado?>(causas, path) : null;
-
-    private static FieldError CampoDeOutroFormulario(string path) => new(
-        "subitens",
-        new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo."));
 
     private static IReadOnlyList<FieldError> CausasDoGrupoNoDocumento(IReadOnlyList<FieldError> causas) =>
         [.. causas.Select(static causa => causa.Field is { } campo
@@ -177,6 +187,22 @@ internal static class LeituraDosGrupos
         public IReadOnlyList<LinhaDoPredicado> Exibicao { get; init; } = [];
 
         public JsonArray Subitens { get; init; } = [];
+
+        public OcorrenciasDoGrupo Ocorrencias => new(Minimo, Maximo, IncluiCandidato);
+
+        public IEnumerable<FieldError> RecusasDoFormulario(string path) =>
+            Formulario is null ? [FormulariosDoDocumento.RecusaDoFormularioDesconhecido(path)] : [];
+
+        /// <summary>O campo de outro formulário só é recusado com o formulário do grupo lido; sem ele, a recusa do formulário já cobre o grupo.</summary>
+        public IEnumerable<FieldError> RecusasDosCampos(IReadOnlyList<FatoColetado> campos, string path) =>
+            Formulario is { } formulario && campos.Any(campo => campo.FormularioId != formulario.Id)
+                ?
+                [
+                    new FieldError(
+                        "subitens",
+                        new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo.")),
+                ]
+                : [];
     }
 
     internal static bool LerAgregadosDoGrupo(LeitorEnvelope leitor, JsonObject item, string path, GrupoColetado grupo, List<DefinicaoAgregado> agregados)

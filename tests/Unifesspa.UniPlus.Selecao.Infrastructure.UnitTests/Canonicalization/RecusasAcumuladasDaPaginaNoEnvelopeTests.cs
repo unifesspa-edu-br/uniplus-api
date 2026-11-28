@@ -49,6 +49,22 @@ public sealed class RecusasAcumuladasDaPaginaNoEnvelopeTests
     }
 
     [Fact]
+    public void LerFormularios_CodigoForaDoFormatoEOrdemRepetida_PropagaAmbasNaOrdem()
+    {
+        JsonObject anterior = FormularioComTermosNoEnvelope.Pagina("PRIMEIRA", 1, "SECAO", null);
+        JsonObject repetida = FormularioComTermosNoEnvelope.Pagina(CodigoInvalido, 1, "SECAO", null);
+        Conferir([anterior, repetida], [(Pagina + "1].codigo", CodigoForaDoFormato), (Pagina + "1]", OrdemForaDaSequencia(1))]);
+    }
+
+    [Fact]
+    public void LerFormularios_CodigoForaDoFormatoEOrdemNegativa_NaoAcusaAOrdemForaDaSequencia()
+    {
+        JsonObject anterior = FormularioComTermosNoEnvelope.Pagina("PRIMEIRA", 5, "SECAO", null);
+        JsonObject negativa = FormularioComTermosNoEnvelope.Pagina(CodigoInvalido, -1, "SECAO", null);
+        Conferir([anterior, negativa], [(Pagina + "1].codigo", CodigoForaDoFormato), (Pagina + "1].ordem", OrdemNegativa)]);
+    }
+
+    [Fact]
     public void LerFormularios_SoExibicaoInvalida_NaoGeraRecusaExtra()
     {
         JsonObject anterior = FormularioComTermosNoEnvelope.Pagina("PRIMEIRA", 0, "SECAO", null);

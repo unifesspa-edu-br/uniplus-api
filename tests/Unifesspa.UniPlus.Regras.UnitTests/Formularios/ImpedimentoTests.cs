@@ -168,7 +168,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
         FormaDoItem.Conferir(
             fato,
             0,
-            new ApresentacaoDoCampo("Rótulo do campo", tipo),
+            ApresentacaoLidaDoCampo.De(new ApresentacaoDoCampo("Rótulo do campo", tipo)),
             formato,
             RegrasLidasDoCampo.De(new RegrasDoCampo(exibicao: null, Obrigatoriedade.Sempre, [], impedimento)));
 

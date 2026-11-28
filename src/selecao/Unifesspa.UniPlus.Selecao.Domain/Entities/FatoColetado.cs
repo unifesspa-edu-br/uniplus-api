@@ -177,7 +177,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(regras);
         ExigirCopiaCompleta(copia);
 
-        List<FieldError> erros = ConferirForma(fatoCodigo, ordem, apresentacao, RegrasLidasDoCampo.De(regras), copia);
+        List<FieldError> erros = ConferirForma(fatoCodigo, ordem, ApresentacaoLidaDoCampo.De(apresentacao), RegrasLidasDoCampo.De(regras), copia);
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
@@ -195,7 +195,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
         ExigirCopiaCompleta(copia);
 
         // A mesma forma e o mesmo vocabulário que Criar confere.
-        List<FieldError> erros = ConferirForma(FatoCodigo, Ordem, Apresentacao, RegrasLidasDoCampo.De(Regras), copia);
+        List<FieldError> erros = ConferirForma(FatoCodigo, Ordem, ApresentacaoLidaDoCampo.De(Apresentacao), RegrasLidasDoCampo.De(Regras), copia);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
@@ -214,7 +214,7 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// conferida aqui.
     /// </summary>
     public static List<FieldError> ConferirForma(
-        string fatoCodigo, int ordem, ApresentacaoDoCampo apresentacao, RegrasLidasDoCampo regras, CopiaDoItemNoCatalogo copia)
+        string fatoCodigo, int ordem, ApresentacaoLidaDoCampo apresentacao, RegrasLidasDoCampo regras, CopiaDoItemNoCatalogo copia)
     {
         ArgumentNullException.ThrowIfNull(apresentacao);
         ArgumentNullException.ThrowIfNull(regras);

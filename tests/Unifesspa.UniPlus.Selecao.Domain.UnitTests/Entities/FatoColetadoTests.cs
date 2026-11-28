@@ -278,7 +278,7 @@ public sealed class FatoColetadoTests
     {
         RegrasLidasDoCampo regras = new(null, Obrigatoriedade.Nunca, [null], null);
 
-        List<FieldError> erros = FatoColetado.ConferirForma("MUNICIPIO_FICTICIO", -1, Campo("Município", TipoDeCampo.Municipio), regras, CopiaPadrao);
+        List<FieldError> erros = FatoColetado.ConferirForma("MUNICIPIO_FICTICIO", -1, ApresentacaoLidaDoCampo.De(Campo("Município", TipoDeCampo.Municipio)), regras, CopiaPadrao);
 
         erros.Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.OrdemInvalida);
     }
@@ -288,7 +288,7 @@ public sealed class FatoColetadoTests
     {
         RegrasLidasDoCampo regras = new(null, Obrigatoriedade.Nunca, [null, new FaixaNumerica(1, 2)], null);
 
-        List<FieldError> erros = FatoColetado.ConferirForma("TEXTO_FICTICIO", 0, Campo("Texto", TipoDeCampo.Texto), regras, CopiaPadrao with { Formato = "LIVRE" });
+        List<FieldError> erros = FatoColetado.ConferirForma("TEXTO_FICTICIO", 0, ApresentacaoLidaDoCampo.De(Campo("Texto", TipoDeCampo.Texto)), regras, CopiaPadrao with { Formato = "LIVRE" });
 
         erros.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("regras.restricoes[1]", ItemFormularioErrorCodes.RestricaoIncoerente));
     }
@@ -298,7 +298,7 @@ public sealed class FatoColetadoTests
     {
         RegrasLidasDoCampo regras = new(null, null, [], null);
 
-        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, Campo("", TipoDeCampo.SimOuNao), regras, CopiaPadrao);
+        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, ApresentacaoLidaDoCampo.De(Campo("", TipoDeCampo.SimOuNao)), regras, CopiaPadrao);
 
         erros.Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
@@ -308,10 +308,21 @@ public sealed class FatoColetadoTests
     {
         RegrasDoCampo regras = Regras(restricoes: [new FaixaNumerica(1, 2)]);
 
-        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, Campo("Campo", TipoDeCampo.SimOuNao), RegrasLidasDoCampo.De(regras), CopiaPadrao);
+        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", 0, ApresentacaoLidaDoCampo.De(Campo("Campo", TipoDeCampo.SimOuNao)), RegrasLidasDoCampo.De(regras), CopiaPadrao);
         Result<FatoColetado> criacao = FatoColetado.Criar("FATO_FICTICIO", 0, null, Campo("Campo", TipoDeCampo.SimOuNao), regras, CopiaPadrao);
 
         erros.Select(static e => e.Error.Code).Should().Equal(criacao.Errors.Select(static e => e.Error.Code));
         erros.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void ConferirForma_TipoDeCampoNaoLido_ConfereOrdemEClassificacaoENaoOFormatoNemARestricao()
+    {
+        RegrasLidasDoCampo regras = new(null, Obrigatoriedade.Nunca, [new FaixaNumerica(1, 2)], null);
+        CopiaDoItemNoCatalogo copia = CopiaPadrao with { Formato = "FORMATO_QUALQUER", ClassificacaoProtecao = "CLASSIFICACAO_FORA" };
+
+        List<FieldError> erros = FatoColetado.ConferirForma("FATO_FICTICIO", -1, new ApresentacaoLidaDoCampo("Campo", null, null), regras, copia);
+
+        erros.Select(static e => e.Error.Code).Should().Equal(ItemFormularioErrorCodes.OrdemInvalida, FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida);
     }
 }

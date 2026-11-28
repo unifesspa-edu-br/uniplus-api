@@ -136,9 +136,8 @@ internal static class LeituraDosFatos
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis)
     {
         (FatoColetado? fato, IReadOnlyList<FieldError> daForma) = ConferirAForma(lido.Declaracao, lido.Regras);
-        IReadOnlyList<ValorDominioDeclaradoCongelado>? valores = lido.Declaracao.TipoDeCampo is { } tipo
-            ? LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, tipo)
-            : null;
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valores =
+            LeituraDosValoresDeDominio.LerValoresSelecionaveis(leitor, item, path, lido.Declaracao.TipoDeCampo);
         IReadOnlyList<FieldError> causas = [.. lido.Recusas, .. CausasDoFatoNoDocumento(daForma)];
         if (causas.Count > 0 || leitor.Falhou || fato is null)
         {
@@ -150,23 +149,19 @@ internal static class LeituraDosFatos
     }
 
     /// <summary>
-    /// A forma do item pelo domínio. Com todas as partes lidas, é a criação do item; com parte recusada, é a conferência
-    /// das partes lidas, que não acusa a parte recusada. Sem o tipo de campo, que a forma exige, nada é conferido.
+    /// A forma do item pelo domínio. Com o tipo de campo e todas as regras lidos, é a criação do item; com parte recusada, é a
+    /// conferência das partes lidas, que não acusa a parte recusada nem confere o que depende do tipo de campo recusado.
     /// </summary>
     private static (FatoColetado? Fato, IReadOnlyList<FieldError> Recusas) ConferirAForma(DeclaracaoDoFato declaracaoDoFato, RegrasDoItemLidas regras)
     {
-        if (declaracaoDoFato.TipoDeCampo is not { } tipo)
+        if (declaracaoDoFato.TipoDeCampo is not { } tipo || regras.Completas is not { } completas)
         {
-            return (null, []);
+            return (null, FatoColetado.ConferirForma(
+                declaracaoDoFato.FatoCodigo, declaracaoDoFato.Ordem, declaracaoDoFato.ApresentacaoLida, regras.Lidas, declaracaoDoFato.CopiaParaAForma));
         }
 
-        ApresentacaoDoCampo apresentacao = new(declaracaoDoFato.Rotulo, tipo, declaracaoDoFato.Ajuda, declaracaoDoFato.PedirConfirmacao);
-        if (regras.Completas is not { } completas)
-        {
-            return (null, FatoColetado.ConferirForma(declaracaoDoFato.FatoCodigo, declaracaoDoFato.Ordem, apresentacao, regras.Lidas, declaracaoDoFato.CopiaParaAForma));
-        }
-
-        Result<FatoColetado> criado = FatoColetado.Criar(declaracaoDoFato.FatoCodigo, declaracaoDoFato.Ordem, declaracaoDoFato.PaginaCodigo, apresentacao, completas, declaracaoDoFato.CopiaParaAForma, declaracaoDoFato.Formulario);
+        Result<FatoColetado> criado = FatoColetado.Criar(
+            declaracaoDoFato.FatoCodigo, declaracaoDoFato.Ordem, declaracaoDoFato.PaginaCodigo, declaracaoDoFato.ApresentacaoCom(tipo), completas, declaracaoDoFato.CopiaParaAForma, declaracaoDoFato.Formulario);
         return (criado.IsSuccess ? criado.Value : null, criado.Errors);
     }
 
@@ -279,6 +274,11 @@ internal static class LeituraDosFatos
 
         public bool PedirConfirmacao { get; init; }
 
+        /// <summary>A apresentação como foi lida; o tipo de campo recusado fica nulo.</summary>
+        public ApresentacaoLidaDoCampo ApresentacaoLida => new(Rotulo, TipoDeCampo, Ajuda);
+
+        public ApresentacaoDoCampo ApresentacaoCom(TipoDeCampo tipo) => new(Rotulo, tipo, Ajuda, PedirConfirmacao);
+
         public required CopiaDoItemNoCatalogo Copia { get; init; }
 
         /// <summary>
@@ -295,7 +295,7 @@ internal static class LeituraDosFatos
         [
             .. Recusa(!CatalogoDe<HipoteseLegalTratamento>.TentarObter(Copia.HipoteseLegal, out _), "hipoteseLegal", path, "fora do vocabulário de hipóteses legais."),
             .. Recusa(ComponenteForaDaFormaCanonica, "componenteExibicao", path, "não está na forma canônica: sem espaço nas pontas e não vazio."),
-            .. Recusa(Formulario is null, "formularioCodigo", path, "não é o código de um formulário do documento."),
+            .. (Formulario is null ? [FormulariosDoDocumento.RecusaDoFormularioDesconhecido(path)] : Array.Empty<FieldError>()),
             .. Recusa(TipoDeCampo is null, "tipoDeCampo", path, $"fora dos tipos de campo aceitos: {string.Join(", ", CatalogoDe<TipoDeCampo>.Todos().Select(static c => c.Codigo))}."),
         ];
 

@@ -140,7 +140,7 @@ internal static class LeituraDosValoresDeDominio
 
     /// <summary>
     /// Os valores selecionáveis de um fato coletado (UNI-REQ-0072) — bicondicional
-    /// com <paramref name="tipoDeCampo"/> : <c>ESCOLHA_UNICA</c>/
+    /// com <paramref name="tipoDeCampo"/> (quando conhecido): <c>ESCOLHA_UNICA</c>/
     /// <c>ESCOLHA_MULTIPLA</c> exige array com cardinalidade mínima 1 (nunca vazio);
     /// <c>SIM_OU_NAO</c>/<c>NUMERO</c> exige <see langword="null"/>. Um envelope que descumpra a
     /// bicondicional em qualquer sentido — seletor mudo (<c>null</c> ou <c>[]</c> onde deveria
@@ -150,29 +150,24 @@ internal static class LeituraDosValoresDeDominio
     /// <c>LerValoresDominioDeclarados</c> aplica a <c>opcoesDeclaradas</c>.
     /// </summary>
     internal static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresSelecionaveis(
-        LeitorEnvelope leitor, JsonObject item, string pathPai, TipoDeCampo tipoDeCampo)
+        LeitorEnvelope leitor, JsonObject item, string pathPai, TipoDeCampo? tipoDeCampo)
     {
         string path = $"{pathPai}.valoresSelecionaveis";
-        bool ehFatoDeSelecao = tipoDeCampo.EhEscolha();
+        bool ehFatoDeSelecao = tipoDeCampo?.EhEscolha() ?? false;
 
-        if (item["valoresSelecionaveis"] is not JsonNode node)
+        return item["valoresSelecionaveis"] switch
         {
-            return ehFatoDeSelecao
+            null => ehFatoDeSelecao
                 ? Recusar(leitor, $"'{path}' é null, mas o tipo de campo é de seleção — campos de seleção exigem uma lista de opções.")
-                : null;
-        }
-
-        return LerVocabularioSelecionavel(leitor, node, path, tipoDeCampo, ehFatoDeSelecao);
+                : null,
+            JsonArray array => tipoDeCampo is null ? null : LerVocabularioSelecionavel(leitor, array, path, ehFatoDeSelecao),
+            _ => Recusar(leitor, $"'{path}' deveria ser um array ou null."),
+        };
     }
 
     private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerVocabularioSelecionavel(
-        LeitorEnvelope leitor, JsonNode node, string path, TipoDeCampo tipoDeCampo, bool ehFatoDeSelecao)
+        LeitorEnvelope leitor, JsonArray array, string path, bool ehFatoDeSelecao)
     {
-        if (node is not JsonArray array)
-        {
-            return Recusar(leitor, $"'{path}' deveria ser um array ou null.");
-        }
-
         if (!ehFatoDeSelecao)
         {
             return Recusar(
