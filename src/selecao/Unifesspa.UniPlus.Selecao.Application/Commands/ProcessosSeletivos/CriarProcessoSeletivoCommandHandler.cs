@@ -53,6 +53,13 @@ public static class CriarProcessoSeletivoCommandHandler
             : await GravarAsync(novo.Value!, processoSeletivoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
+    /// qualquer conferência dos dados e de qualquer leitura: quem não pode configurar naquela unidade recebe a recusa
+    /// de acesso, qualquer que seja o estado do pedido, e não descobre os campos exigidos nem se a unidade existe ou
+    /// tem cidade. Sem unidade informada não há contra o que decidir: a falta dela segue como dado do pedido, junto
+    /// das demais recusas que não precisam de leitura, e nada é lido.
+    /// </summary>
     private static async Task<Result<ProcessoSeletivo>> NovoProcessoAsync(
         CriarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -61,32 +68,23 @@ public static class CriarProcessoSeletivoCommandHandler
         ITipoProcessoReader tipoProcessoReader,
         CancellationToken cancellationToken)
     {
-        Result<IdentificadorLegivel> identificador = await IdentificadorDeQuemPodeCriarAsync(command, verificador, cancellationToken).ConfigureAwait(false);
-        if (identificador.IsFailure)
+        ResultadoDoAcesso acesso = await AcessoNaUnidadeAsync(command, verificador, cancellationToken).ConfigureAwait(false);
+        if (acesso != ResultadoDoAcesso.Permitido)
         {
-            return Result<ProcessoSeletivo>.ValidationFailure(identificador.Errors);
+            return Result<ProcessoSeletivo>.Failure(AcessoAoProcesso.Recusa(acesso));
         }
 
-        Result<ReferenciasDoNovoProcesso> referencias = await ReferenciasDoNovoProcesso
-            .ResolverAsync(command, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
-
-        return referencias.IsFailure
-            ? Result<ProcessoSeletivo>.ValidationFailure(referencias.Errors)
-            : await CriarSeOIdentificadorEstaLivreAsync(
-                command, identificador.Value!, referencias.Value!, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        return command.UnidadeAdministradoraOrigemId == Guid.Empty
+            ? Result<ProcessoSeletivo>.ValidationFailure([
+                .. CamposDoNovoProcesso.Conferir(command),
+                .. IdentificadorLegivelDeclarado.Conferir(command.IdentificadorLegivel).Errors,
+                .. ReferenciasDoNovoProcesso.RecusasSemLeitura(command)])
+            : await ConferirECriarAsync(command, processoSeletivoRepository, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
-    /// qualquer conferência dos dados e de qualquer leitura: quem não pode configurar naquela unidade recebe a recusa
-    /// de acesso, qualquer que seja o estado do pedido, e não descobre os campos exigidos nem se a unidade existe ou
-    /// tem cidade. Sem unidade informada não há contra o que decidir, e a falta dela segue como dado do pedido.
-    /// Depois da permissão, os dados do pedido e o identificador legível são conferidos antes de qualquer consulta.
-    /// </summary>
-    private static async Task<Result<IdentificadorLegivel>> IdentificadorDeQuemPodeCriarAsync(
-        CriarProcessoSeletivoCommand command, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
-    {
-        ResultadoDoAcesso acesso = command.UnidadeAdministradoraOrigemId == Guid.Empty
+    private static async Task<ResultadoDoAcesso> AcessoNaUnidadeAsync(
+        CriarProcessoSeletivoCommand command, IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        command.UnidadeAdministradoraOrigemId == Guid.Empty
             ? ResultadoDoAcesso.Permitido
             : await AcessoAoProcesso
                 .ExigirNaUnidadeAsync(
@@ -94,35 +92,53 @@ public static class CriarProcessoSeletivoCommandHandler
                     unidade => AcessoAoProcesso.ResourceDoProcesso(unidade, processoId: null), cancellationToken)
                 .ConfigureAwait(false);
 
-        return acesso == ResultadoDoAcesso.Permitido
-            ? DadosEIdentificadorDeclarados(command)
-            : Result<IdentificadorLegivel>.Failure(AcessoAoProcesso.Recusa(acesso));
-    }
-
-    private static Result<IdentificadorLegivel> DadosEIdentificadorDeclarados(CriarProcessoSeletivoCommand command)
-    {
-        IReadOnlyList<FieldError> recusas = CamposDoNovoProcesso.Conferir(command);
-
-        return recusas.Count > 0
-            ? Result<IdentificadorLegivel>.ValidationFailure(recusas)
-            : IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
-    }
-
-    private static async Task<Result<ProcessoSeletivo>> CriarSeOIdentificadorEstaLivreAsync(
+    /// <summary>
+    /// Com a permissão decidida, todas as recusas independentes saem juntas (ADR-0125), na ordem em que o cliente as
+    /// corrige: os campos, o identificador, a unidade, a localidade, o tipo e, por último, o identificador já usado,
+    /// que só é consultado quando o identificador foi aceito.
+    /// </summary>
+    private static async Task<Result<ProcessoSeletivo>> ConferirECriarAsync(
         CriarProcessoSeletivoCommand command,
-        IdentificadorLegivel identificador,
-        ReferenciasDoNovoProcesso referencias,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IUnidadeReader unidadeReader,
+        ITipoProcessoReader tipoProcessoReader,
         CancellationToken cancellationToken)
     {
-        bool emUso = await processoSeletivoRepository
-            .IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> campos = CamposDoNovoProcesso.Conferir(command);
+        Result<IdentificadorLegivel> identificador = IdentificadorLegivelDeclarado.Conferir(command.IdentificadorLegivel);
+        Result<ReferenciasDoNovoProcesso> referencias = await ReferenciasDoNovoProcesso
+            .ResolverAsync(command, unidadeReader, tipoProcessoReader, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> uso = await RecusaDoUsoAsync(identificador, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
 
-        return emUso
-            ? Result<ProcessoSeletivo>.Failure(IdentificadorLegivelEmUso(identificador))
-            : Result<ProcessoSeletivo>.Success(ProcessoSeletivo.Criar(
-                command.Nome!, referencias.Tipo, CatalogoDe<OrigemCandidatos>.Obter(command.OrigemCandidatos!), referencias.UnidadeId, referencias.Unidade,
-                referencias.Localidade, identificador));
+        FieldError[] recusas = [.. campos, .. identificador.Errors, .. referencias.Errors, .. uso];
+
+        return recusas.Length > 0
+            ? Result<ProcessoSeletivo>.ValidationFailure(recusas)
+            : Result<ProcessoSeletivo>.Success(Criar(command, identificador.Value!, referencias.Value!));
+    }
+
+    private static async Task<IReadOnlyList<FieldError>> RecusaDoUsoAsync(
+        Result<IdentificadorLegivel> identificador, IProcessoSeletivoRepository processoSeletivoRepository, CancellationToken cancellationToken)
+    {
+        if (identificador.IsFailure)
+        {
+            return [];
+        }
+
+        bool emUso = await processoSeletivoRepository
+            .IdentificadorLegivelEmUsoAsync(identificador.Value!, excluirId: null, cancellationToken).ConfigureAwait(false);
+
+        return emUso ? [IdentificadorLegivelDeclarado.RecusaDoUso()] : [];
+    }
+
+    private static ProcessoSeletivo Criar(
+        CriarProcessoSeletivoCommand command, IdentificadorLegivel identificador, ReferenciasDoNovoProcesso referencias)
+    {
+        string nome = command.Nome ?? throw new InvalidOperationException("O nome do processo foi conferido antes de criar.");
+
+        return ProcessoSeletivo.Criar(
+            nome, referencias.Tipo, CatalogoDe<OrigemCandidatos>.Obter(command.OrigemCandidatos!), referencias.UnidadeId, referencias.Unidade,
+            referencias.Localidade, identificador);
     }
 
     /// <summary>
@@ -144,7 +160,7 @@ public static class CriarProcessoSeletivoCommandHandler
         catch (Exception ex) when (EhConflitoDeIdentificadorLegivel(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(IdentificadorLegivelEmUso(processo.IdentificadorLegivel!.Value));
+            return Result<Guid>.Failure(IdentificadorLegivelDeclarado.EmUso());
         }
 
         return Result<Guid>.Success(processo.Id);
@@ -154,20 +170,4 @@ public static class CriarProcessoSeletivoCommandHandler
 
     internal static bool EhConflitoDeIdentificadorLegivel(Exception ex) => string.Equals(
         ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
-
-    /// <summary>
-    /// O identificador declarado pelo cliente, já no formato do domínio. A ausência é erro
-    /// nomeado, e não regra do validator, pelo mesmo motivo da localidade: o consumidor precisa
-    /// da página que explica a causa.
-    /// </summary>
-    internal static Result<IdentificadorLegivel> IdentificadorLegivelDeclarado(string? valor) =>
-        string.IsNullOrWhiteSpace(valor)
-            ? Result<IdentificadorLegivel>.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
-                "O identificador legível é obrigatório."))
-            : IdentificadorLegivel.Criar(valor);
-
-    internal static DomainError IdentificadorLegivelEmUso(IdentificadorLegivel identificador) => new(
-        ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso,
-        $"O identificador legível '{identificador}' já é usado por outro processo seletivo.");
 }

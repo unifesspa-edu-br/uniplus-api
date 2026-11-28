@@ -76,7 +76,7 @@ public sealed class GravacaoDaVersaoCongelada(
             return montada;
         }
 
-        return await SalvarAsync(processo, registroDoAto, cancellationToken).ConfigureAwait(false);
+        return await SalvarAsync(registroDoAto, cancellationToken).ConfigureAwait(false);
     }
 
     // Duas transições concorrentes do mesmo processo derivam o mesmo número de versão, e o índice único e o gatilho de
@@ -84,13 +84,13 @@ public sealed class GravacaoDaVersaoCongelada(
     // que outro certame já divulga e a vaga ou a retificação que outra transação tomou são os outros conflitos que só a
     // gravação enxerga, e a Seleção traduz os seus antes de perguntar à porta pelos do registro central. A recusa não
     // devolve exceção, e o orquestrador descarta o rastreamento antes de o Wolverine salvar de novo (ADR-0119).
-    private async Task<Result> SalvarAsync(ProcessoSeletivo processo, AtoDoProcesso registroDoAto, CancellationToken cancellationToken)
+    private async Task<Result> SalvarAsync(AtoDoProcesso registroDoAto, CancellationToken cancellationToken)
     {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (Traduzir(ex, processo, registroDoAto) is { } erro)
+        catch (Exception ex) when (Traduzir(ex, registroDoAto) is { } erro)
         {
             return Result.Failure(erro);
         }
@@ -98,18 +98,18 @@ public sealed class GravacaoDaVersaoCongelada(
         return Result.Success();
     }
 
-    private DomainError? Traduzir(Exception excecao, ProcessoSeletivo processo, AtoDoProcesso registroDoAto)
+    private DomainError? Traduzir(Exception excecao, AtoDoProcesso registroDoAto)
     {
         string? constraint = ConstraintVioladaNaGravacao.NomeDaConstraintViolada(excecao);
 
         return VersaoConfiguracaoConstraintViolation.Traduzir(constraint)
-            ?? ConflitoDoIdentificadorLegivel(constraint, processo)
+            ?? ConflitoDoIdentificadorLegivel(constraint)
             ?? ConflitoNaGravacaoDoAtoDoProcesso.Traduzir(constraint, registroDoAto)
             ?? registroCentralDeAtos.TraduzirConflitoDaGravacao(excecao);
     }
 
-    private static DomainError? ConflitoDoIdentificadorLegivel(string? constraint, ProcessoSeletivo processo) =>
+    private static DomainError? ConflitoDoIdentificadorLegivel(string? constraint) =>
         string.Equals(constraint, IndiceDoIdentificadorLegivelDivulgado, StringComparison.Ordinal)
-            ? CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(processo.IdentificadorLegivel!.Value)
+            ? IdentificadorLegivelDeclarado.EmUso()
             : null;
 }

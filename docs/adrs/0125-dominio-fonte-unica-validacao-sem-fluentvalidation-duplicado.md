@@ -118,3 +118,12 @@ Mecanismo, implementado e testado no agregado `Campus`:
 - ADR-0046 — Validação de regras sem exceção (`Result.Failure`)
 - ADR-0117 — Política de supressão de análise estática
 - Issue de origem: uniplus-api#1176
+
+## Emenda (2026-11-28) — a unicidade é conferida quando o dado dela foi aceito
+
+O item 5 manda acumular a unicidade com as demais recusas, mas a Confirmação e a criação de campus a consultam só depois de a validação passar.
+
+- A unicidade é conferida sempre que o próprio dado dela foi aceito, e sai por último na lista. Uma recusa que depende de outro dado só é conferida quando esse dado foi aceito.
+- Nenhuma leitura acontece antes de decidida a permissão. Sem a unidade que escopa a permissão, nada é lido.
+- Quando a unicidade vem junto de outras recusas, a resposta é 422 e ela aparece na lista; sozinha, mantém o status próprio.
+- A criação do processo seletivo segue essa regra. A criação de campus fica divergente até ser migrada.

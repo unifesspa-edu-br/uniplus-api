@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Cenarios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Os dados do pedido de criação do processo: nome, tipo, origem dos candidatos e unidade. Cada causa sai no campo do
+/// Os dados do pedido de criação do processo: nome e origem dos candidatos. Cada causa sai no campo do
 /// pedido, todas juntas e na ordem do pedido, sem repetir o valor recebido.
 /// </summary>
 public sealed class CamposDoNovoProcessoTests
@@ -18,7 +18,7 @@ public sealed class CamposDoNovoProcessoTests
     private static (string? Campo, string Codigo)[] Pares(CriarProcessoSeletivoCommand comando) =>
         [.. CamposDoNovoProcesso.Conferir(comando).Select(static recusa => (recusa.Field, recusa.Error.Code))];
 
-    [Fact(DisplayName = "O pedido com nome, tipo, origem e unidade válidos não tem recusa")]
+    [Fact(DisplayName = "O pedido com nome e origem válidos não tem recusa")]
     public void PedidoValido_SemRecusa() => CamposDoNovoProcesso.Conferir(Valido()).Should().BeEmpty();
 
     [Theory(DisplayName = "O nome nulo, vazio ou só de espaços é obrigatório")]
@@ -35,12 +35,6 @@ public sealed class CamposDoNovoProcessoTests
         CamposDoNovoProcesso.Conferir(Valido() with { Nome = new string('a', DocumentoDoRascunho.NomeMaxLength) }).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O tipo e a unidade vazios são obrigatórios")]
-    public void TipoEUnidadeVazios_Obrigatorios() =>
-        Pares(Valido() with { TipoProcessoOrigemId = Guid.Empty, UnidadeAdministradoraOrigemId = Guid.Empty }).Should().Equal(
-            ("tipoProcessoOrigemId", CodigosDeValidacao.Obrigatorio),
-            ("unidadeAdministradoraOrigemId", CodigosDeValidacao.Obrigatorio));
-
     [Theory(DisplayName = "A origem dos candidatos ausente é obrigatória e a desconhecida é inválida")]
     [InlineData(null, CodigosDeValidacao.Obrigatorio)]
     [InlineData("", CodigosDeValidacao.Obrigatorio)]
@@ -52,11 +46,11 @@ public sealed class CamposDoNovoProcessoTests
     [Fact(DisplayName = "Todas as causas saem juntas, na ordem do pedido, e a mensagem não repete o valor recebido")]
     public void TodasAsCausas_SaemJuntas()
     {
-        CriarProcessoSeletivoCommand comando = Valido() with { Nome = string.Empty, TipoProcessoOrigemId = Guid.Empty, OrigemCandidatos = "valorEnviado", UnidadeAdministradoraOrigemId = Guid.Empty };
+        CriarProcessoSeletivoCommand comando = Valido() with { Nome = string.Empty, OrigemCandidatos = "valorEnviado" };
 
         IReadOnlyList<FieldError> recusas = CamposDoNovoProcesso.Conferir(comando);
 
-        recusas.Select(static recusa => recusa.Field).Should().Equal("nome", "tipoProcessoOrigemId", "origemCandidatos", "unidadeAdministradoraOrigemId");
+        recusas.Select(static recusa => recusa.Field).Should().Equal("nome", "origemCandidatos");
         recusas.Should().OnlyContain(static recusa => !recusa.Error.Message.Contains("valorEnviado", StringComparison.Ordinal));
     }
 }

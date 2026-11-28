@@ -72,4 +72,31 @@ public sealed class IdentificadorLegivelTests
         resultado.IsFailure.Should().BeTrue("a rota pública por identificador precisa ser distinguível da rota por Guid");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelComFormatoDeGuid);
     }
+
+    [Fact(DisplayName = "Tamanho e formato inválidos juntos devolvem as duas causas, nessa ordem")]
+    public void Criar_TamanhoEFormatoInvalidos_DevolveAsDuasCausas()
+    {
+        Result<IdentificadorLegivel> resultado = IdentificadorLegivel.Criar("PS");
+
+        resultado.Errors.Select(static causa => causa.Error.Code).Should().Equal(
+            ProcessoSeletivoErrorCodes.IdentificadorLegivelTamanho,
+            ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
+        resultado.Errors.Should().OnlyContain(static causa => causa.Field == null);
+    }
+
+    [Fact(DisplayName = "Guid em maiúsculas é recusado só pelo formato, sem a causa de forma de Guid")]
+    public void Criar_GuidEmMaiusculas_SoFormato()
+    {
+        Result<IdentificadorLegivel> resultado = IdentificadorLegivel.Criar("A1B2C3D4-5E6F-4A7B-8C9D-0E1F2A3B4C5D");
+
+        resultado.Errors.Select(static causa => causa.Error.Code).Should().Equal(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
+    }
+
+    [Fact(DisplayName = "As mensagens das causas não repetem o valor recebido")]
+    public void Criar_Recusa_MensagemSemOValor()
+    {
+        Result<IdentificadorLegivel> resultado = IdentificadorLegivel.Criar("SEGREDO");
+
+        resultado.Errors.Should().OnlyContain(static causa => !causa.Error.Message.Contains("SEGREDO", StringComparison.OrdinalIgnoreCase));
+    }
 }

@@ -61,7 +61,7 @@ public static class DefinirLocalidadeCommandHandler
         Result<LocalidadeRegente> declarada = LocalidadeRegente.Criar(command.CodigoIbge, command.Nome, command.Uf);
         if (declarada.IsFailure)
         {
-            return Result.Failure(declarada.Error!);
+            return Result.ValidationFailure(declarada.Errors);
         }
 
         Result definido = processo.DefinirLocalidade(declarada.Value!);

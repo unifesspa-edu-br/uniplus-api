@@ -24931,7 +24931,7 @@
       "codigo": "uniplus.selecao.processo_seletivo.identificador_legivel_em_uso",
       "requisitos": [],
       "oQueAconteceu": [
-        "Outro processo seletivo já usa o identificador informado. A unicidade é global, e não por unidade administradora ou ano, porque o identificador forma o endereço público do certame e a chave do documento no acervo. A conferência é refeita na hora de publicar o processo e de retificá-lo: se outro processo passou a usar o identificador depois que o rascunho foi salvo, a publicação é recusada com este código, **nada fica gravado** (nenhuma versão, ato ou divulgação) e o rascunho é preservado."
+        "Outro processo seletivo já usa o identificador informado. Na criação, essa recusa é a última da ordem: quando é a única, a resposta é 409 com este código; quando há outras recusas do pedido, todas saem juntas na lista `errors` da resposta 422, e esta vem por último, só se o identificador tiver formato válido. A unicidade é global, e não por unidade administradora ou ano, porque o identificador forma o endereço público do certame e a chave do documento no acervo. A conferência é refeita na hora de publicar o processo e de retificá-lo: se outro processo passou a usar o identificador depois que o rascunho foi salvo, a publicação é recusada com este código, **nada fica gravado** (nenhuma versão, ato ou divulgação) e o rascunho é preservado."
       ],
       "comoResolver": [
         "Escolha outro identificador, por exemplo acrescentando o ano ou a modalidade (`medicina-2027-ampla`). Se o processo que já o usa é o mesmo certame, abra-o em vez de criar outro. Na publicação, altere o identificador no rascunho e publique de novo."
@@ -25228,7 +25228,7 @@
         "Declare a localidade na configuração do processo, com o trio já canônico no\nsistema:",
         "- **código IBGE** de sete dígitos, com prefixo coerente com a UF informada;\n- **nome** do município, não vazio;\n- **UF**.",
         "O código IBGE é o único valor normativo — é dele que se derivam o município e a\nunidade federativa cujos feriados incidem. Nome e UF persistidos são cache de\nexibição: se divergirem, o rótulo sai errado, nunca o prazo.",
-        "Na criação, informe a localidade junto com os demais dados do cadastro inicial.\nSe a interface apresentar o campo já preenchido com a cidade da unidade\nadministradora, confirme-a ou troque pelo município que o edital declara — o\nvalor sugerido só vale como declaração depois de enviado.",
+        "Na criação, informe a localidade junto com os demais dados do cadastro inicial; a falta dela é recusada na mesma resposta das demais recusas independentes do pedido, na posição de localidade.\nSe a interface apresentar o campo já preenchido com a cidade da unidade\nadministradora, confirme-a ou troque pelo município que o edital declara — o\nvalor sugerido só vale como declaração depois de enviado.",
         "O campo continua editável enquanto o processo está em rascunho. Declarada a localidade, repita a\noperação."
       ],
       "ondeAparece": [
@@ -26001,7 +26001,7 @@
       ],
       "oQueAconteceu": [
         "Ao criar o processo seletivo, o tipo de processo informado em `tipoProcessoOrigemId` não existe no cadastro ou foi desativado. Só tipo ativo pode ser vinculado a um novo processo. A recusa vem em `errors`, com esse campo; a mensagem não repete o identificador. Nada é criado.",
-        "A conferência do tipo vem depois das de permissão na unidade, de identificador\nlegível, de unidade administradora e de localidade do processo, e antes da de\nidentificador legível já em uso. Quando algum desses pontos anteriores também\nestá errado, é ele que responde primeiro.",
+        "Depois da permissão na unidade, todas as recusas do pedido saem juntas, na mesma resposta, na ordem: nome, origem dos\ncandidatos, identificador legível, unidade administradora, localidade, tipo de processo e, por último,\nidentificador legível já em uso. A recusa do tipo vem depois das quatro primeiras e antes da do identificador em\nuso; quando outra recusa anterior também existe, ela aparece antes na lista `errors`, e é a primeira da lista que dá o\ncódigo principal da resposta.",
         "Desativar um tipo não afeta os processos que já o usam: o tipo só deixa de\nestar disponível para novos processos."
       ],
       "comoResolver": [
@@ -26067,7 +26067,7 @@
       "requisitos": [],
       "oQueAconteceu": [
         "Ao criar o processo seletivo, a unidade administradora informada em `unidadeAdministradoraOrigemId` não existe no cadastro de unidades ou foi removida. A recusa vem em `errors`, com esse campo; a mensagem não repete o identificador. Nada é criado.",
-        "A conferência acontece depois de a permissão de configurar processos naquela unidade ser verificada e de o identificador legível ser conferido, e antes das conferências de cidade da unidade, de localidade e de tipo do processo."
+        "A conferência acontece depois de a permissão de configurar processos naquela unidade ser verificada. As demais recusas do pedido saem na mesma resposta, na ordem: nome, origem dos candidatos, identificador legível, unidade administradora, localidade, tipo de processo e, por último, identificador já em uso. Quando há mais de uma, a primeira da lista `errors` dá o código principal."
       ],
       "comoResolver": [
         "Confira a unidade administradora escolhida e use uma unidade que exista no cadastro. Se a unidade deveria existir e não aparece, o problema está no cadastro de unidades e a verificação é de quem o mantém."

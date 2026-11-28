@@ -250,10 +250,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
             // ReferenciaCidadeGeo.Validar acumula toda violação independente do
             // trio de cidade (ex.: código, nome e UF ausentes ao mesmo tempo
             // viram três erros) — cada um mapeado para o campo real que descreve.
-            foreach (FieldError erroCidade in cidade.Errors)
-            {
-                erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
-            }
+            erros.AddRange(CamposDaCidadeDoPedido.Apontar(cidade.Errors));
         }
         else
         {
@@ -312,20 +309,5 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
             caractere.ToString().Normalize(NormalizationForm.FormD).EnumerateRunes()
                 .Any(static parte => Rune.GetUnicodeCategory(parte) == UnicodeCategory.NonSpacingMark));
 
-    /// <summary>
-    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
-    /// campo do payload (camelCase, ADR-0023) a que ele se refere de fato — sem
-    /// isso, todo erro de cidade seria rotulado com o mesmo campo em
-    /// <c>errors[].field</c>, mesmo quando a causa é o nome ou a UF, não o código
-    /// IBGE.
-    /// </summary>
-    private static string CampoDaCidade(string codigoErro) => codigoErro switch
-    {
-        CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
-            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
-        CidadeReferenciaErrorCodes.UfObrigatoria
-            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
-        _ => "cidadeCodigoIbge",
-    };
+    private static readonly CamposDaCidade CamposDaCidadeDoPedido = new("cidadeCodigoIbge", "cidadeNome", "cidadeUf");
 }

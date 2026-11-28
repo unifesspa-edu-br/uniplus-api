@@ -7,22 +7,21 @@ using Kernel.Domain.CodigosDeContrato;
 using Kernel.Results;
 
 /// <summary>
-/// Os dados que o pedido de criação do processo precisa trazer: nome, tipo, origem dos candidatos e unidade. Só quem
-/// tem permissão na unidade chega aqui, e todas as causas saem juntas (ADR-0125), cada uma no campo do pedido, sem
-/// repetir o valor recebido.
+/// Os dados do pedido de criação do processo que não dependem de nenhum cadastro: o nome e a origem dos candidatos.
+/// Só quem tem permissão na unidade chega aqui, e todas as causas saem juntas (ADR-0125), cada uma no campo do
+/// pedido, sem repetir o valor recebido. A unidade e o tipo informados são conferidos em
+/// <see cref="ReferenciasDoNovoProcesso"/>, na posição de cada um.
 /// </summary>
 internal static class CamposDoNovoProcesso
 {
     internal const string CampoNome = "nome";
-    internal const string CampoTipo = "tipoProcessoOrigemId";
     internal const string CampoOrigem = "origemCandidatos";
-    internal const string CampoUnidade = "unidadeAdministradoraOrigemId";
 
     internal static IReadOnlyList<FieldError> Conferir(CriarProcessoSeletivoCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return [.. RecusasDoNome(command.Nome), .. RecusaDoTipo(command.TipoProcessoOrigemId), .. RecusasDaOrigem(command.OrigemCandidatos), .. RecusaDaUnidade(command.UnidadeAdministradoraOrigemId)];
+        return [.. RecusasDoNome(command.Nome), .. RecusasDaOrigem(command.OrigemCandidatos)];
     }
 
     private static IEnumerable<FieldError> RecusasDoNome(string? nome)
@@ -37,9 +36,6 @@ internal static class CamposDoNovoProcesso
         }
     }
 
-    private static IEnumerable<FieldError> RecusaDoTipo(Guid tipo) =>
-        tipo == Guid.Empty ? [Recusa(CampoTipo, CodigosDeValidacao.Obrigatorio, "O tipo do processo seletivo é obrigatório.")] : [];
-
     // A origem é obrigatória na criação: o piso mínimo do cronograma deriva dela, nunca do tipo.
     private static IEnumerable<FieldError> RecusasDaOrigem(string? origem)
     {
@@ -52,9 +48,6 @@ internal static class CamposDoNovoProcesso
             yield return Recusa(CampoOrigem, CodigosDeValidacao.Regra, "A origem dos candidatos é inválida.");
         }
     }
-
-    private static IEnumerable<FieldError> RecusaDaUnidade(Guid unidade) =>
-        unidade == Guid.Empty ? [Recusa(CampoUnidade, CodigosDeValidacao.Obrigatorio, "A unidade administradora do processo seletivo é obrigatória.")] : [];
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }

@@ -58,6 +58,17 @@ public sealed class LocalidadeRegenteTests
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeObrigatorio);
     }
 
+    [Fact(DisplayName = "Nome em branco, UF vazia e código mal formado devolvem as três causas, na ordem do Kernel")]
+    public void Criar_TresCausas_DevolveTodas()
+    {
+        Result<LocalidadeRegente> resultado = LocalidadeRegente.Criar("12", "  ", string.Empty);
+
+        resultado.Errors.Select(static causa => causa.Error.Code).Should().Equal(
+            CidadeReferenciaErrorCodes.NomeObrigatorio,
+            CidadeReferenciaErrorCodes.UfObrigatoria,
+            CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
+    }
+
     [Fact(DisplayName = "Espaço em volta é aparado e a UF é normalizada em maiúsculas")]
     public void Criar_Normaliza()
     {

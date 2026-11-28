@@ -79,7 +79,7 @@ internal static class LeituraDaIdentificacao
         Result<IdentificadorLegivel> identificador = IdentificadorLegivel.Criar(valor);
         if (identificador.IsFailure)
         {
-            recusadas.Add(Recusada(IdentidadeDoProcessoDeclarada.CampoDoIdentificadorLegivel, identificador.Error!));
+            recusadas.AddRange(identificador.Errors.Select(static causa => Recusada(IdentidadeDoProcessoDeclarada.CampoDoIdentificadorLegivel, causa.Error)));
         }
 
         return identificador.IsSuccess ? identificador.Value : null;
