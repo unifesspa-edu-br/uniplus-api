@@ -53,6 +53,23 @@ public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
         await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "O documento com exigência em formulário que o processo ainda não tem cria o rascunho e não traz diagnóstico: a falta do formulário só é recusada na publicação")]
+    public async Task ExigenciaEmFormularioAindaNaoCriado_CriaORascunhoSemDiagnostico()
+    {
+        RascunhoDeProcessoSeletivo? criado = null;
+        await _cenario.Rascunhos.AdicionarAsync(Arg.Do<RascunhoDeProcessoSeletivo>(r => criado = r), Arg.Any<CancellationToken>());
+        string documento = CenarioDoRascunho.DocumentoValido().Replace(
+            "\"versaoFormato\": 1,",
+            "\"versaoFormato\": 1, \"documentosExigidos\": { \"exigencias\": [ { \"chave\": \"exigencia_comprovante\", \"obrigatorio\": true, \"abrePrazoParaReenvio\": false, \"formularioCodigo\": \"FORMULARIO_QUE_AINDA_NAO_EXISTE\" } ] },",
+            StringComparison.Ordinal);
+
+        Result<RascunhoSalvoDto> resultado = await Criar(documento);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Diagnosticos.Should().BeEmpty();
+        criado!.Documento.Should().Contain("FORMULARIO_QUE_AINDA_NAO_EXISTE");
+    }
+
     [Fact(DisplayName = "O documento guardado é o normalizado: sem o que é só de leitura")]
     public async Task DocumentoGuardado_EONormalizado()
     {

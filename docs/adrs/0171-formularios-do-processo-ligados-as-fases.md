@@ -94,3 +94,7 @@ A decisão permanece. A [ADR-0177](0177-efeito-suspensivo-por-periodo-segunda-in
 ## Emenda 2 (2026-11-24) — página do formulário
 
 Em "regra de campo, de etapa ou de termo" e "identifica etapas, campos e termos", o nome da parte do formulário é página. Etapa fica só para a etapa de avaliação do processo. A decisão não muda.
+
+## Emenda 3 (2026-11-28) — a existência do formulário da exigência é conferida na publicação
+
+A decisão permanece. No item "Exigência", a gravação dos documentos exigidos aceita a exigência que cita um formulário que o processo ainda não tem, também na importação do documento de configuração em rascunho, porque o formulário pode ser criado depois. A falta do formulário é regra de completude ([ADR-0173](0173-regras-da-configuracao-sobre-declaracoes-parciais.md), item 2): é recusada na publicação e na retificação, junto das demais causas, e aparece no painel de conformidade. O formulário que o processo tem, ligado a outra fase que a da exigência, continua recusado já na gravação. O código de erro não muda. O banco não liga a exigência ao formulário por chave estrangeira: a existência é conferida pelo domínio na publicação e na retificação, e depois da publicação a configuração só muda por elas.

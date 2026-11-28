@@ -51,7 +51,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         processo.DocumentosExigidos.Should().ContainSingle(d => d.ExigidoNaEtapaId == etapa.Id);
     }
 
-    [Fact(DisplayName = "Etapa que não pertence ao processo é recusada, sem esconder a recusa do formulário que o processo não tem")]
+    [Fact(DisplayName = "Etapa que não pertence ao processo é recusada, e o formulário que o processo não tem não recusa a gravação")]
     public void DefinirDocumentosExigidos_EtapaDeOutroProcesso_Recusa()
     {
         FaseCronograma fase = Fase(1, "HABILITACAO");
@@ -65,11 +65,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAoProcesso");
         resultado.Error.Message.Should().Be("A etapa da exigência deve ser uma das etapas do processo.");
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAoProcesso"));
     }
 
-    [Fact(DisplayName = "Fase, etapa e formulário que o processo não tem são recusados juntos, cada um apontando o campo da exigência")]
+    [Fact(DisplayName = "Fase e etapa que o processo não tem são recusadas juntas, cada uma apontando o campo da exigência")]
     public void DefinirDocumentosExigidos_FaseEEtapaDeOutroProcesso_RecusaAsDuas()
     {
         ProcessoSeletivo processo = ProcessoComFases(Fase(1, "HABILITACAO"));
@@ -78,8 +77,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
             ("regrasDeComprovacao[0].documento.momento.faseId", "DocumentoExigido.FaseNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAoProcesso"),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAoProcesso"));
     }
 
     /// <summary>
@@ -100,8 +98,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");
         resultado.Error.Message.Should().Be($"A etapa 'Prova objetiva' não acontece na fase '{habilitacao.TipoFaseNome}'.");
         resultado.Errors.Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(
-            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAFase"),
-            ("regrasDeComprovacao[0].documento.momento.formularioCodigo", FormulariosDeclaradosErrorCodes.ExigenciaEmFormularioInexistente));
+            ("regrasDeComprovacao[0].documento.momento.etapaId", "DocumentoExigido.EtapaNaoPertenceAFase"));
     }
 
     /// <summary>

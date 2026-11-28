@@ -69,10 +69,10 @@ public static class RegrasDasExigencias
         ];
     }
 
-    // A exigência de fase fora do cronograma não tem fase para comparar com a do formulário: só recebe a recusa de formulário inexistente.
+    // A exigência de fase fora do cronograma não tem fase para comparar com a do formulário: não recebe recusa de formulário. O que cita formulário que ainda não existe é aceito no rascunho.
     private static IReadOnlyList<FieldError> FormularioDasExigenciasNoCronograma(
         ConfiguracaoDeclarada configuracao, IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<string> caminhos) =>
-        ConferenciaDasExigenciasDoFormulario.Conferir(
+        ConferenciaDasExigenciasDoFormulario.ConferirConjunto(
             configuracao.Coleta.FormulariosDeclarados,
             [.. documentos.Select(documento => new ExigenciaDeDocumentoDoFormulario(
                 documento.FormularioCodigo, ValidadorVinculoDaExigencia.FaseDaExigencia(documento, configuracao.Cronograma.CronogramaFases)?.Id))],
@@ -148,27 +148,28 @@ public static class RegrasDasExigencias
         HashSet<string> existentes = new(configuracao.Coleta.GruposColetados.Select(static grupo => grupo.Codigo), StringComparer.Ordinal);
         IEnumerable<FieldError?> inexistentes = regras.Select((regra, posicao) =>
             NaRepeticao(caminhosDasRegras[posicao], Services.ValidadorRepeticaoPorGrupo.RecusarGrupoInexistente(regra.GrupoDoFormularioParaRepeticao, existentes)));
-        IEnumerable<FieldError?> dosCampos = regras.Select((regra, posicao) =>
-            NaRepeticao(caminhosDasRegras[posicao], RecusaDosFatosDaRepeticao(configuracao, regra)));
+        IEnumerable<FieldError> dosCampos = regras.SelectMany((regra, posicao) =>
+            RecusasDosFatosDaRepeticao(configuracao, regra).Select(recusa => NaRepeticao(caminhosDasRegras[posicao], recusa)!));
 
-        return [.. inexistentes.Concat(dosCampos).OfType<FieldError>()];
+        return [.. inexistentes.OfType<FieldError>().Concat(dosCampos)];
     }
 
     private static FieldError? NaRepeticao(string caminho, DomainError? recusa) =>
         recusa is null ? null : new FieldError($"{caminho}.{CampoDaRepeticao}", recusa);
 
-    private static DomainError? RecusaDosFatosDaRepeticao(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra)
+    // Cada campo do grupo depende só do fato dele, da fase e do formulário da regra: todos os recusados são apontados.
+    private static IEnumerable<DomainError> RecusasDosFatosDaRepeticao(ConfiguracaoDeclarada configuracao, RegraDeComprovacao regra)
     {
         if (regra.GrupoDoFormularioParaRepeticao is null || regra.FaseComum() is not { } fase
             || !regra.TentarFormularioComum(out CodigoDoFormulario? formulario)
             || configuracao.Coleta.GruposColetados.FirstOrDefault(g => string.Equals(g.Codigo, regra.GrupoDoFormularioParaRepeticao, StringComparison.Ordinal)) is not { } grupo)
         {
-            return null;
+            return [];
         }
 
         return grupo.Subitens
             .Select(campo => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(configuracao, campo.FatoCodigo, fase, formulario, CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo))
-            .FirstOrDefault(static recusa => recusa is not null);
+            .OfType<DomainError>();
     }
 
     /// <summary>

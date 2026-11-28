@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -63,6 +64,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
                 "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR " +
                 "(formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL " +
                 "AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+            t.HasCheckConstraint("ck_documentos_exigidos_formulario_codigo_formato", $"formulario_codigo ~ '{FormatoDoCodigo.ExpressaoNoBanco}'");
             RestringirCodigosDosEnums(t);
         });
         builder.HasKey(d => d.Id);
@@ -105,11 +107,13 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             .HasComment("O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado.");
         // A etapa que coleta o documento, quando a fase se subdivide — opcional.
         builder.Property(d => d.ExigidoNaEtapaId).HasComment("Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira.");
-        // O formulário a que o documento pertence, citado pelo código; a coerência com a fase é do domínio.
+        // O formulário a que o documento pertence, citado pelo código, sem chave estrangeira: o rascunho aceita citar um
+        // formulário que ainda não existe, e a existência e a coerência com a fase são conferidas pelo domínio na
+        // publicação e na retificação (ADR-0171).
         builder.Property(d => d.FormularioCodigo)
             .HasConversion<CodigoDoFormularioValueConverter>()
             .HasMaxLength(CodigoDoFormulario.TamanhoMaximo).IsRequired()
-            .HasComment("Código do formulário a que o documento pertence, entre os do processo.");
+            .HasComment("Código do formulário a que o documento pertence; a existência do formulário no processo é conferida na publicação e na retificação.");
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DocumentoExigido> builder)
@@ -161,24 +165,6 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.Navigation(d => d.BasesLegais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        ConfigurarFormulario(builder);
-    }
-
-    // Chave estrangeira composta para a chave alternativa (processo, código) do formulário. NO ACTION, e não RESTRICT: a exclusão
-    // do processo apaga formulários e exigências no mesmo comando, e RESTRICT a recusaria. A remoção de um formulário que
-    // ainda tem exigência é recusada antes, no domínio.
-    private static void ConfigurarFormulario(EntityTypeBuilder<DocumentoExigido> builder)
-    {
-        builder.HasOne<FormularioProcesso>()
-            .WithMany()
-            .HasForeignKey(d => new { d.ProcessoSeletivoId, d.FormularioCodigo })
-            .HasPrincipalKey(f => new { f.ProcessoSeletivoId, f.Codigo })
-            .HasConstraintName("fk_documentos_exigidos_formulario")
-            .OnDelete(DeleteBehavior.NoAction);
-
-        builder.HasIndex(d => new { d.ProcessoSeletivoId, d.FormularioCodigo })
-            .HasDatabaseName("ix_documentos_exigidos_formulario");
     }
 
     // Os códigos gravados nas colunas dos enums; as colunas do prazo de emissão e da validade são anuláveis.
