@@ -12838,7 +12838,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("formulario_codigo")
-                        .HasComment("Código do formulário a que o documento pertence, entre os do processo.");
+                        .HasComment("Código do formulário a que o documento pertence; a existência do formulário no processo é conferida na publicação e na retificação.");
 
                     b.Property<string>("HipoteseLegal")
                         .IsRequired()
@@ -12901,9 +12901,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_documentos_exigidos_processo_chave_local");
 
-                    b.HasIndex("ProcessoSeletivoId", "FormularioCodigo")
-                        .HasDatabaseName("ix_documentos_exigidos_formulario");
-
                     b.ToTable("documentos_exigidos", "selecao", t =>
                         {
                             t.HasComment("Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
@@ -12913,6 +12910,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_documentos_exigidos_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
 
                             t.HasCheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+
+                            t.HasCheckConstraint("ck_documentos_exigidos_formulario_codigo_formato", "formulario_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
 
                             t.HasCheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
 
@@ -14936,10 +14935,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasComment("Identificador do responsável pela exclusão lógica, quando disponível.");
 
                     b.Property<string>("IdentificadorLegivel")
+                        .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("identificador_legivel")
-                        .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
+                        .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo.");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -14993,8 +14993,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("IdentificadorLegivel")
                         .IsUnique()
-                        .HasDatabaseName("ux_processos_seletivos_identificador_legivel")
-                        .HasFilter("identificador_legivel IS NOT NULL");
+                        .HasDatabaseName("ux_processos_seletivos_identificador_legivel");
 
                     b.ToTable("processos_seletivos", "selecao", t =>
                         {
@@ -21230,14 +21229,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_documentos_exigidos_processo_seletivo_processo_seletivo_id");
 
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FormularioProcesso", null)
-                        .WithMany()
-                        .HasForeignKey("ProcessoSeletivoId", "FormularioCodigo")
-                        .HasPrincipalKey("ProcessoSeletivoId", "Codigo")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired()
-                        .HasConstraintName("fk_documentos_exigidos_formulario");
-
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.Entities.RequisitosDoDocumento", "Requisitos", b1 =>
                         {
                             b1.Property<Guid>("DocumentoExigidoId")
@@ -22125,6 +22116,90 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_cadastros_de_reserva_processo_seletivo");
                         });
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado.DeclaracaoDaImportacaoDoResultado", "ImportacaoDoResultado", b1 =>
+                        {
+                            b1.Property<Guid>("ProcessoSeletivoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("Declarada")
+                                .HasColumnType("boolean")
+                                .HasColumnName("importacao_declarada")
+                                .HasComment("Sempre verdadeiro quando o processo declara a importação do resultado; nulo = ainda não declarada.");
+
+                            b1.Property<Guid?>("PrimeiraFaseDepoisDaImportacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("primeira_fase_depois_importacao_id")
+                                .HasComment("Identificador da fase do cronograma que é a primeira depois da importação do resultado. Nulo = ainda não declarada.");
+
+                            b1.HasKey("ProcessoSeletivoId");
+
+                            b1.ToTable("processos_seletivos", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProcessoSeletivoId")
+                                .HasConstraintName("fk_processos_seletivos_processos_seletivos_id");
+
+                            b1.OwnsMany("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado.RelatorioDeclarado", "Relatorios", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer")
+                                        .HasColumnName("id")
+                                        .HasComment("Identificador técnico da linha, substituída com a declaração.");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<string>("LeiauteCodigo")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("leiaute_codigo")
+                                        .HasComment("Código do leiaute que o relatório segue.");
+
+                                    b2.Property<string>("LeiauteVersao")
+                                        .IsRequired()
+                                        .HasMaxLength(16)
+                                        .HasColumnType("character varying(16)")
+                                        .HasColumnName("leiaute_versao")
+                                        .HasComment("Versão do leiaute que o relatório segue.");
+
+                                    b2.Property<int>("Posicao")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("posicao")
+                                        .HasComment("Posição do relatório na declaração, a partir de 1.");
+
+                                    b2.Property<Guid>("ProcessoSeletivoId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("processo_seletivo_id")
+                                        .HasComment("Processo seletivo que declara o relatório da importação.");
+
+                                    b2.HasKey("Id")
+                                        .HasName("pk_relatorios_da_importacao");
+
+                                    b2.HasIndex("ProcessoSeletivoId", "LeiauteCodigo")
+                                        .IsUnique()
+                                        .HasDatabaseName("ux_relatorios_da_importacao_processo_leiaute");
+
+                                    b2.HasIndex("ProcessoSeletivoId", "Posicao")
+                                        .IsUnique()
+                                        .HasDatabaseName("ux_relatorios_da_importacao_processo_posicao");
+
+                                    b2.ToTable("relatorios_da_importacao", "selecao", t =>
+                                        {
+                                            t.HasComment("Relatórios que o processo de resultado importado declara importar, na ordem declarada.");
+
+                                            t.HasCheckConstraint("ck_relatorios_da_importacao_posicao", "posicao >= 1");
+                                        });
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProcessoSeletivoId")
+                                        .HasConstraintName("fk_relatorios_da_importacao_processo_seletivo");
+                                });
+
+                            b1.Navigation("Relatorios");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial.DeclaracaoDaProvaPresencial", "ProvaPresencial", b1 =>
                         {
                             b1.Property<Guid>("ProcessoSeletivoId")
@@ -22389,6 +22464,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
 
                     b.Navigation("AlgoritmoContagemPrazo");
+
+                    b.Navigation("ImportacaoDoResultado");
 
                     b.Navigation("Localidade")
                         .IsRequired();

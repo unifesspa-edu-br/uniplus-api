@@ -922,7 +922,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do processo seletivo."),
                     nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, comment: "Nome do processo seletivo informado no cadastro."),
-                    identificador_legivel = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado."),
+                    identificador_legivel = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo."),
                     tipo_processo_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de processo no cadastro de origem, copiado na criação."),
                     tipo_processo_codigo = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, comment: "Código do tipo de processo copiado do cadastro na criação."),
                     tipo_processo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de processo copiado do cadastro na criação."),
@@ -947,6 +947,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     referencia_temporal_dados_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data escolhida quando a referência para apurar os dados do candidato é uma data específica."),
                     referencia_temporal_dados_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase escolhida quando a referência para apurar os dados do candidato é o início ou o fim de uma fase."),
                     tem_prova_presencial = table.Column<bool>(type: "boolean", nullable: true, comment: "Declara se o processo tem prova presencial. Nulo = ainda não declarado."),
+                    primeira_fase_depois_importacao_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Identificador da fase do cronograma que é a primeira depois da importação do resultado. Nulo = ainda não declarada."),
+                    importacao_declarada = table.Column<bool>(type: "boolean", nullable: true, comment: "Sempre verdadeiro quando o processo declara a importação do resultado; nulo = ainda não declarada."),
                     manifestacao_de_interesse = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Manifestação de interesse declarada pelo edital. Nulo = não prevista. Códigos: UMA_VEZ, CONFIRMA_A_CADA_CHAMADA."),
                     aplica_fada = table.Column<bool>(type: "boolean", nullable: true, comment: "Indica se o processo aplica o Fator de Atenuação das Desigualdades de Acesso (FADA); ausente quando ainda não declarado."),
                     numero_de_opcoes_de_curso = table.Column<int>(type: "integer", nullable: true, comment: "Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado."),
@@ -2793,6 +2795,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Opções de resposta declaradas pelo processo para um dado.");
 
             migrationBuilder.CreateTable(
+                name: "relatorios_da_importacao",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador técnico da linha, substituída com a declaração.")
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    leiaute_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do leiaute que o relatório segue."),
+                    leiaute_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, comment: "Versão do leiaute que o relatório segue."),
+                    posicao = table.Column<int>(type: "integer", nullable: false, comment: "Posição do relatório na declaração, a partir de 1."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que declara o relatório da importação.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_relatorios_da_importacao", x => x.id);
+                    table.CheckConstraint("ck_relatorios_da_importacao_posicao", "posicao >= 1");
+                    table.ForeignKey(
+                        name: "fk_relatorios_da_importacao_processo_seletivo",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Relatórios que o processo de resultado importado declara importar, na ordem declarada.");
+
+            migrationBuilder.CreateTable(
                 name: "versoes_configuracao",
                 schema: "selecao",
                 columns: table => new
@@ -3947,6 +3975,90 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "documentos_exigidos",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exigência de documento."),
+                    chave_local = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Identificador que a parte guarda dentro da configuração publicada; único no processo."),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que faz a exigência."),
+                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Fase do cronograma do processo em que o documento é exigido."),
+                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira."),
+                    formulario_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do formulário a que o documento pertence; a existência do formulário no processo é conferida na publicação e na retificação."),
+                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência."),
+                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de documento, copiado do catálogo ao gravar a exigência."),
+                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de documento, copiado do catálogo ao gravar a exigência."),
+                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Categoria do tipo de documento, copiada do catálogo ao gravar a exigência."),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade do tratamento dos dados do documento, copiada do tipo de documento."),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento."),
+                    dados_comprovados = table.Column<string[]>(type: "text[]", nullable: false, comment: "Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados."),
+                    aplicabilidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. Códigos: GERAL, CONDICIONAL."),
+                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a falta do documento impede a inscrição de seguir."),
+                    abre_prazo_para_reenvio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a exigência abre prazo para reenvio do documento."),
+                    consequencia_do_descumprimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
+                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o documento pode ser enviado em qualquer formato de arquivo."),
+                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true, comment: "Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito."),
+                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true, comment: "Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite."),
+                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo."),
+                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, comment: "Nome do arquivo do modelo de documento, copiado ao gravar a exigência."),
+                    modelo_formato = table.Column<string>(type: "character varying(4)", maxLength: 4, nullable: true, comment: "Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: DOCX, ODT, PDF."),
+                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência."),
+                    prazo_emissao_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita. Códigos: SEM_PRAZO, COM_PRAZO."),
+                    prazo_emissao_valor = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO."),
+                    prazo_emissao_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true, comment: "Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: DIAS, MESES, ANOS."),
+                    prazo_emissao_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
+                    prazo_emissao_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência do prazo de emissão; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
+                    prazo_emissao_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência do prazo de emissão; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
+                    prazo_emissao_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
+                    validade_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita. Códigos: NAO_EXIGE_DOCUMENTO_VALIDO, EXIGE_DOCUMENTO_VALIDO."),
+                    validade_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência da validade; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
+                    validade_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência da validade; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
+                    validade_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência da validade; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
+                    validade_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_documentos_exigidos", x => x.id);
+                    table.CheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
+                    table.CheckConstraint("ck_documentos_exigidos_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
+                    table.CheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
+                    table.CheckConstraint("ck_documentos_exigidos_formulario_codigo_formato", "formulario_codigo ~ '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_efeito", "prazo_emissao_efeito IS NULL OR prazo_emissao_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_escolha", "prazo_emissao_escolha IS NULL OR prazo_emissao_escolha IN ('SEM_PRAZO', 'COM_PRAZO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_referencia_tipo", "prazo_emissao_referencia_tipo IS NULL OR prazo_emissao_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
+                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_unidade", "prazo_emissao_unidade IS NULL OR prazo_emissao_unidade IN ('DIAS', 'MESES', 'ANOS')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_efeito", "validade_efeito IS NULL OR validade_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_escolha", "validade_escolha IS NULL OR validade_escolha IN ('NAO_EXIGE_DOCUMENTO_VALIDO', 'EXIGE_DOCUMENTO_VALIDO')");
+                    table.CheckConstraint("ck_documentos_exigidos_validade_referencia_tipo", "validade_referencia_tipo IS NULL OR validade_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_etapa_processo_exigido_na_etapa_id",
+                        column: x => x.exigido_na_etapa_id,
+                        principalSchema: "selecao",
+                        principalTable: "etapas_processo",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_fase_cronograma_exigido_na_fase_id",
+                        column: x => x.exigido_na_fase_id,
+                        principalSchema: "selecao",
+                        principalTable: "fases_cronograma",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_processo_seletivo_processo_seletivo_id",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
+
+            migrationBuilder.CreateTable(
                 name: "publicacoes_previstas_da_fase",
                 schema: "selecao",
                 columns: table => new
@@ -4010,95 +4122,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         onDelete: ReferentialAction.Cascade);
                 },
                 comment: "Configuração dos recursos de uma fase do cronograma.");
-
-            migrationBuilder.CreateTable(
-                name: "documentos_exigidos",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador da exigência de documento."),
-                    chave_local = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Identificador que a parte guarda dentro da configuração publicada; único no processo."),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Processo seletivo que faz a exigência."),
-                    exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Fase do cronograma do processo em que o documento é exigido."),
-                    exigido_na_etapa_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Etapa da fase que coleta o documento; vazio quando o documento é da fase inteira."),
-                    formulario_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do formulário a que o documento pertence, entre os do processo."),
-                    tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de documento do catálogo que a exigência pede, como estava ao gravar a exigência."),
-                    tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Código do tipo de documento, copiado do catálogo ao gravar a exigência."),
-                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de documento, copiado do catálogo ao gravar a exigência."),
-                    tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false, comment: "Categoria do tipo de documento, copiada do catálogo ao gravar a exigência."),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Classificação de proteção de dados do documento, copiada do tipo de documento. Códigos: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL."),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "Finalidade do tratamento dos dados do documento, copiada do tipo de documento."),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, comment: "Hipótese legal do tratamento dos dados do documento, copiada do tipo de documento."),
-                    dados_comprovados = table.Column<string[]>(type: "text[]", nullable: false, comment: "Códigos dos dados do candidato que o documento comprova; vazio quando a exigência não comprova dados."),
-                    aplicabilidade = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "A quem a exigência se aplica: todos os candidatos ou só quem atende às condições da exigência. Códigos: GERAL, CONDICIONAL."),
-                    obrigatorio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a falta do documento impede a inscrição de seguir."),
-                    abre_prazo_para_reenvio = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se a exigência abre prazo para reenvio do documento."),
-                    consequencia_do_descumprimento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que acontece com o candidato quando o documento é indeferido; vazio quando a exigência não determina resultado. Códigos: ELIMINA_DO_PROCESSO, RETIRA_A_MODALIDADE, RETIRA_O_ACRESCIMO."),
-                    formatos_permitidos_qualquer = table.Column<bool>(type: "boolean", nullable: false, comment: "Indica se o documento pode ser enviado em qualquer formato de arquivo."),
-                    formatos_permitidos_lista = table.Column<string>(type: "jsonb", nullable: true, comment: "Lista dos formatos de arquivo aceitos, cada um com o limite de tamanho próprio quando houver; vazia quando qualquer formato é aceito."),
-                    tamanho_maximo_bytes = table.Column<int>(type: "integer", nullable: true, comment: "Tamanho máximo do arquivo do documento, em bytes; vazio quando não há limite."),
-                    modelo_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Modelo de documento que a exigência oferece ao candidato; vazio quando não há modelo."),
-                    modelo_nome_arquivo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true, comment: "Nome do arquivo do modelo de documento, copiado ao gravar a exigência."),
-                    modelo_formato = table.Column<string>(type: "character varying(4)", maxLength: 4, nullable: true, comment: "Formato do arquivo do modelo, copiado ao gravar a exigência. Códigos: DOCX, ODT, PDF."),
-                    modelo_hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true, comment: "Resumo SHA-256 do arquivo do modelo, copiado ao gravar a exigência."),
-                    prazo_emissao_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre o prazo de emissão do documento; vazio enquanto a escolha não foi feita. Códigos: SEM_PRAZO, COM_PRAZO."),
-                    prazo_emissao_valor = table.Column<int>(type: "integer", nullable: true, comment: "Quantidade de dias, meses ou anos do prazo de emissão, maior que zero; preenchida só quando a escolha é COM_PRAZO."),
-                    prazo_emissao_unidade = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true, comment: "Unidade do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: DIAS, MESES, ANOS."),
-                    prazo_emissao_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência do prazo de emissão; preenchida só quando a escolha é COM_PRAZO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
-                    prazo_emissao_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência do prazo de emissão; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
-                    prazo_emissao_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência do prazo de emissão; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
-                    prazo_emissao_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento emitido fora do prazo; preenchida só quando a escolha é COM_PRAZO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
-                    validade_escolha = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Escolha sobre a validade do documento; vazio enquanto a escolha não foi feita. Códigos: NAO_EXIGE_DOCUMENTO_VALIDO, EXIGE_DOCUMENTO_VALIDO."),
-                    validade_referencia_tipo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Data de referência da validade; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: FIM_DAS_INSCRICOES, INICIO_DA_FASE, FIM_DA_FASE, DATA_ESPECIFICA, DATA_DA_APRESENTACAO."),
-                    validade_referencia_data = table.Column<DateOnly>(type: "date", nullable: true, comment: "Data específica usada como referência da validade; preenchida só quando o tipo da data de referência é DATA_ESPECIFICA."),
-                    validade_referencia_fase_id = table.Column<Guid>(type: "uuid", nullable: true, comment: "Fase do cronograma cujo início ou fim é a referência da validade; preenchida só quando o tipo da data de referência é INICIO_DA_FASE ou FIM_DA_FASE."),
-                    validade_efeito = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "O que a análise faz com o documento vencido; preenchida só quando a escolha é EXIGE_DOCUMENTO_VALIDO. Códigos: RECUSAR_DOCUMENTO, ACEITAR_COM_AVISO."),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Data e hora de criação do registro."),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Data e hora da última alteração, quando houver.")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_documentos_exigidos", x => x.id);
-                    table.CheckConstraint("ck_documentos_exigidos_aplicabilidade", "aplicabilidade IN ('GERAL', 'CONDICIONAL')");
-                    table.CheckConstraint("ck_documentos_exigidos_consequencia_do_descumprimento", "consequencia_do_descumprimento IS NULL OR consequencia_do_descumprimento IN ('ELIMINA_DO_PROCESSO', 'RETIRA_A_MODALIDADE', 'RETIRA_O_ACRESCIMO')");
-                    table.CheckConstraint("ck_documentos_exigidos_formatos_permitidos_coerente", "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR (formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL AND jsonb_array_length(formatos_permitidos_lista) > 0)");
-                    table.CheckConstraint("ck_documentos_exigidos_modelo_formato", "modelo_formato IS NULL OR modelo_formato IN ('DOCX', 'ODT', 'PDF')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_efeito", "prazo_emissao_efeito IS NULL OR prazo_emissao_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_escolha", "prazo_emissao_escolha IS NULL OR prazo_emissao_escolha IN ('SEM_PRAZO', 'COM_PRAZO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_referencia_tipo", "prazo_emissao_referencia_tipo IS NULL OR prazo_emissao_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
-                    table.CheckConstraint("ck_documentos_exigidos_prazo_emissao_unidade", "prazo_emissao_unidade IS NULL OR prazo_emissao_unidade IN ('DIAS', 'MESES', 'ANOS')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_efeito", "validade_efeito IS NULL OR validade_efeito IN ('RECUSAR_DOCUMENTO', 'ACEITAR_COM_AVISO')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_escolha", "validade_escolha IS NULL OR validade_escolha IN ('NAO_EXIGE_DOCUMENTO_VALIDO', 'EXIGE_DOCUMENTO_VALIDO')");
-                    table.CheckConstraint("ck_documentos_exigidos_validade_referencia_tipo", "validade_referencia_tipo IS NULL OR validade_referencia_tipo IN ('FIM_DAS_INSCRICOES', 'INICIO_DA_FASE', 'FIM_DA_FASE', 'DATA_ESPECIFICA', 'DATA_DA_APRESENTACAO')");
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_etapa_processo_exigido_na_etapa_id",
-                        column: x => x.exigido_na_etapa_id,
-                        principalSchema: "selecao",
-                        principalTable: "etapas_processo",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_fase_cronograma_exigido_na_fase_id",
-                        column: x => x.exigido_na_fase_id,
-                        principalSchema: "selecao",
-                        principalTable: "fases_cronograma",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_formulario",
-                        columns: x => new { x.processo_seletivo_id, x.formulario_codigo },
-                        principalSchema: "selecao",
-                        principalTable: "formularios_processo",
-                        principalColumns: new[] { "processo_seletivo_id", "codigo" });
-                    table.ForeignKey(
-                        name: "fk_documentos_exigidos_processo_seletivo_processo_seletivo_id",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                },
-                comment: "Documentos que o processo seletivo exige do candidato: em que fase, para quem, o que restringe o arquivo e quando a análise recusa o documento.");
 
             migrationBuilder.CreateTable(
                 name: "grupos_dos_formularios",
@@ -6622,12 +6645,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "exigido_na_fase_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_documentos_exigidos_formulario",
-                schema: "selecao",
-                table: "documentos_exigidos",
-                columns: new[] { "processo_seletivo_id", "formulario_codigo" });
-
-            migrationBuilder.CreateIndex(
                 name: "ux_documentos_exigidos_processo_chave_local",
                 schema: "selecao",
                 table: "documentos_exigidos",
@@ -7285,8 +7302,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "processos_seletivos",
                 column: "identificador_legivel",
-                unique: true,
-                filter: "identificador_legivel IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_providencias_concessao",
@@ -7446,6 +7462,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "regras_eliminacao",
                 column: "configuracao_classificacao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_relatorios_da_importacao_processo_leiaute",
+                schema: "selecao",
+                table: "relatorios_da_importacao",
+                columns: new[] { "processo_seletivo_id", "leiaute_codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_relatorios_da_importacao_processo_posicao",
+                schema: "selecao",
+                table: "relatorios_da_importacao",
+                columns: new[] { "processo_seletivo_id", "posicao" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_respostas_da_inscricao_dado_codigo",
@@ -8321,6 +8351,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "regras_eliminacao",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "relatorios_da_importacao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
