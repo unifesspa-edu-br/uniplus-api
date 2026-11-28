@@ -163,6 +163,18 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             .Which.ColumnName.Should().Be("unidade_administradora_sigla");
     }
 
+    [Fact(DisplayName = "Inserir processo sem identificador legível viola o NOT NULL da coluna")]
+    public async Task Inserir_SemIdentificadorLegivel_ViolaNotNull()
+    {
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
+
+        Func<Task> act = () => InserirSemIdentificadorLegivelAsync(writeContext, Guid.CreateVersion7());
+
+        (await act.Should().ThrowAsync<PostgresException>(
+            "identificador_legivel é obrigatório no banco, sem aceitar linha antiga sem identificador"))
+            .Which.ColumnName.Should().Be("identificador_legivel");
+    }
+
     /// <summary>
     /// Reproduz o fluxo criar→configurar real (que o caminho AdicionarAsync não cobria): carrega o
     /// agregado JÁ tracked via ObterComConfiguracaoAsync, substitui a coleção de etapas por filhos com
@@ -224,6 +236,23 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
         ]).Value!;
     }
+
+    private static Task<int> InserirSemIdentificadorLegivelAsync(UniPlusDbContext writeContext, Guid processoId) =>
+        writeContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO selecao.processos_seletivos (
+                id, nome, identificador_legivel, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
+                situacao, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
+                unidade_administradora_origem_id,
+                unidade_administradora_sigla, unidade_administradora_codigo, unidade_administradora_identificador_no_endereco_web, unidade_administradora_nome, unidade_administradora_tipo,
+                created_at, is_deleted)
+            VALUES (
+                {processoId}, 'PS sem identificador', NULL, {TiposDeProcessoDeTeste.Sisu.OrigemId}, 'SISU', 'SiSU', 'RASCUNHO', 'INSCRICAO_PROPRIA', '1504208', 'Marabá', 'PA',
+                {Guid.NewGuid()},
+                'CEPS', 'CEPS', 'ceps', 'Centro de Processos Seletivos', 'CENTRO',
+                now(), false)
+            """,
+            CancellationToken.None);
 
     private static Task<int> InserirSemUnidadeAsync(UniPlusDbContext writeContext, Guid processoId) =>
         writeContext.Database.ExecuteSqlInterpolatedAsync(
