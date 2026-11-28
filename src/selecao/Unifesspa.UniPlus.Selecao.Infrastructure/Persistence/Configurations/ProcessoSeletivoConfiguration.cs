@@ -71,13 +71,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
         builder.Property(p => p.Nome).HasMaxLength(NomeMaxLength).IsRequired().HasComment("Nome do processo seletivo informado no cadastro.");
 
-        // Identificador legível: nulável até a publicação, que o exige. O índice
-        // único não filtra os excluídos logicamente — o endereço público de um certame excluído
-        // não pode ser herdado por outro —, só os ausentes.
+        // Identificador legível: todo processo gravado o tem, escolhido no cadastro. O índice único não filtra
+        // os excluídos logicamente — o endereço público de um certame excluído não pode ser herdado por outro.
         builder.Property(p => p.IdentificadorLegivel)
             .HasConversion(IdentificadorLegivelConverter)
             .HasMaxLength(FormatoKebab.ComprimentoMaximo)
-            .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo. Ausência = ainda não declarado.");
+            .IsRequired()
+            .HasComment("Identificador legível escolhido no cadastro; dele derivam o endereço público do certame e a chave no acervo.");
         // Declaração de que o processo aplica ou não o Fator de Atenuação das Desigualdades de Acesso (FADA): nula = ainda não declarado,
         // o que bloqueia a publicação.
         builder.Property(p => p.AplicaFada)
@@ -95,7 +95,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasComment("Manifestação de interesse declarada pelo edital. Nulo = não prevista.");
         builder.HasIndex(p => p.IdentificadorLegivel)
             .IsUnique()
-            .HasFilter("identificador_legivel IS NOT NULL")
             .HasDatabaseName("ux_processos_seletivos_identificador_legivel");
         builder.Ignore(p => p.TipoProcessoOrigemId);
         builder.OwnsOne(p => p.TipoProcesso, tipo =>
