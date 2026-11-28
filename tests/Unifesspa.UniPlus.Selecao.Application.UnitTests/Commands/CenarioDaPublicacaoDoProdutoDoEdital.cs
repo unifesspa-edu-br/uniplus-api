@@ -89,15 +89,30 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
         await UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    public Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
+    /// <summary>Publica e devolve todas as causas da recusa, conferindo que nada foi gravado nem enviado à porta.</summary>
+    public async Task<IReadOnlyList<FieldError>> Recusas(PublicarProdutoDoEditalCommand comando)
+    {
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(comando);
+
+        resposta.IsFailure.Should().BeTrue();
+        mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
+        await Atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
+        await Registro.DidNotReceive().RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>());
+        await UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        return resposta.Errors;
+    }
+
+    public Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(
+        PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null, IResolvedorFusoInstitucional? fuso = null) =>
         PublicarProdutoDoEditalCommandHandler.Handle(
             comando, Processos,
             new PreparacaoDaPublicacaoDoProdutoDoEdital(
-                new ConferenciaDoProcessoDivulgado(Processos, Divulgados),
-                new LeituraDoInstanteDoComando(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new ConferenciaDoPedidoDoAto(
+                    new ConferenciaDoProcessoDivulgado(Processos, Divulgados),
+                    new LeituraDoInstanteDoComando(relogio ?? new RelogioFixo(Agora), fuso ?? new ResolvedorFusoDeTeste()),
+                    new ConferenciaDosDocumentosDoAto(Documentos, Atos)),
                 new ConferenciaDoProdutoDoEdital(new ConfiguracaoVigenteDoProcesso(Processos, Codecs),
-                    new ConferenciaDoTipoDeAto(Tipos), Atos, new ConferenciaDoAtoCorrigido(Atos, Processos), Usuario),
-                new ConferenciaDosDocumentosDoAto(Documentos, Atos)),
+                    new ConferenciaDoTipoDeAto(Tipos), Atos, new ConferenciaDoAtoCorrigido(Atos, Processos), Usuario)),
             new PublicacaoDoAtoDoProcesso(Atos, Registro, UnitOfWork), CancellationToken.None);
 
     public PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>

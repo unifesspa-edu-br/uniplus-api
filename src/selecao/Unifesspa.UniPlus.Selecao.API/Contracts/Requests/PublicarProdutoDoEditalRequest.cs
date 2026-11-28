@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 /// </summary>
 /// <param name="Numero">Número que o documento declara, quando o tipo o tem.</param>
 /// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
-/// <param name="Assinante">Quem assina o ato.</param>
+/// <param name="Assinante">Quem assina o ato. Obrigatório: ausente ou nulo é recusado (422).</param>
 /// <param name="DocumentoPrincipalId">O documento a publicar confirmado que é o principal, sempre PDF.</param>
 /// <param name="Anexos">Os anexos, na ordem em que o ato os apresenta, até 20. Ausente ou vazio quando não há.</param>
 /// <param name="PoliticaDeDivulgacaoConfirmada">
@@ -26,7 +26,9 @@ public sealed record PublicarProdutoDoEditalRequest(
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
     DateOnly? DataDoAto,
-    string Assinante,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Assinante,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
     Guid? DocumentoPrincipalId,

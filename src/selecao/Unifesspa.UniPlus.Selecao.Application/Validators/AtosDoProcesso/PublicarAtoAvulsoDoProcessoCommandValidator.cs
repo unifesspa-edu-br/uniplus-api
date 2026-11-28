@@ -13,10 +13,10 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandValidator : DadosDoAtoPubl
 {
     public PublicarAtoAvulsoDoProcessoCommandValidator()
     {
+        // O tipo ausente ou em branco é recusado pela forma do pedido, com o código de campo obrigatório; o limite só vale para texto com conteúdo.
         RuleFor(x => x.TipoAtoCodigo)
-            .NotEmpty()
-            .WithMessage("Tipo do ato é obrigatório.")
             .MaximumLength(AtoDoProcesso.TipoCodigoMaxLength)
+            .When(static x => !string.IsNullOrWhiteSpace(x.TipoAtoCodigo))
             .WithMessage($"Tipo do ato deve ter no máximo {AtoDoProcesso.TipoCodigoMaxLength} caracteres.");
     }
 }

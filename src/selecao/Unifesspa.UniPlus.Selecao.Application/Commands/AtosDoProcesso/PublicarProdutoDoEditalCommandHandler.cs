@@ -20,10 +20,6 @@ public static class PublicarProdutoDoEditalCommandHandler
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(preparacao);
         ArgumentNullException.ThrowIfNull(publicacao);
-        if (RecusaDaCorrecaoDoAto.De(command) is { } correcaoRecusada)
-        {
-            return (correcaoRecusada, []);
-        }
         await processos.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         Result<AtoAPublicar> ato = await preparacao.PrepararAsync(command, cancellationToken).ConfigureAwait(false);
         return ato.IsFailure

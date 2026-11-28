@@ -23,7 +23,29 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
-using ProdutoConferido = (Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdentidadeDoItemDoEdital Item, Unifesspa.UniPlus.Publicacoes.Contracts.TipoAtoPublicadoView Tipo, string? ContaId);
+/// <summary>O item declarado pela versão vigente do edital e a configuração em que ele foi lido.</summary>
+internal sealed record ItemDeclaradoPelaVersaoVigente(ConfiguracaoVigente Vigente, ProjecaoDosProdutosPrevistos.Declarado Produto);
+
+/// <summary>
+/// O que a conferência do item concluiu, em três famílias de causas: as do item, as da política de divulgação e as da
+/// correção, e os valores conferidos que o ato registra quando nenhuma causa os impede.
+/// </summary>
+/// <param name="DoItem">As causas do item: declaração, tipo e primeira publicação; sem campo, porque o item vem da rota.</param>
+/// <param name="DaPolitica">As causas da confirmação da política de divulgação.</param>
+/// <param name="DaCorrecao">As causas do ato corrigido.</param>
+/// <param name="Item">A identidade do item no cronograma; nulo quando o item não foi conferido.</param>
+/// <param name="Tipo">O tipo do item; nulo quando o tipo foi recusado ou não foi lido.</param>
+/// <param name="ContaId">Quem confirmou a política de divulgação, quando ela foi exigida.</param>
+internal sealed record ProdutoDoEditalConferido(
+    IReadOnlyList<FieldError> DoItem,
+    IReadOnlyList<FieldError> DaPolitica,
+    IReadOnlyList<FieldError> DaCorrecao,
+    IdentidadeDoItemDoEdital? Item = null,
+    TipoAtoPublicadoView? Tipo = null,
+    string? ContaId = null)
+{
+    public static ProdutoDoEditalConferido NaoConsultado { get; } = new([], [], []);
+}
 
 /// <summary>
 /// Confere, antes de publicar o ato, que o item pedido é um dos que a versão vigente do edital declara e
@@ -50,58 +72,90 @@ public sealed class ConferenciaDoProdutoDoEdital(
     ConferenciaDoAtoCorrigido correcoes,
     IUserContext usuario)
 {
-    internal async Task<Result<ProdutoConferido>> ConferirAsync(
+    internal async Task<ProdutoDoEditalConferido> ConferirAsync(
+        PublicarProdutoDoEditalCommand command, CorrecaoPedida correcao, InstanteDoComando instante, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FieldError> doAtoCorrigido = await ConferirAtoCorrigidoAsync(command.ProcessoSeletivoId, correcao, cancellationToken).ConfigureAwait(false);
+        Result<ItemDeclaradoPelaVersaoVigente> item = await LerItemAsync(command, instante, cancellationToken).ConfigureAwait(false);
+
+        return item.IsFailure
+            ? new(item.Errors, [], doAtoCorrigido)
+            : await ConferirItemAsync(command, correcao, instante, item.Value!, doAtoCorrigido, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<ItemDeclaradoPelaVersaoVigente>> LerItemAsync(
         PublicarProdutoDoEditalCommand command, InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<ConfiguracaoVigente> vigente = await grafos.LerAsync(command.ProcessoSeletivoId, instante.Instante, cancellationToken).ConfigureAwait(false);
         if (vigente.IsFailure)
         {
-            return Result<ProdutoConferido>.Failure(vigente.Error!);
+            return Result<ItemDeclaradoPelaVersaoVigente>.ValidationFailure(vigente.Errors);
         }
+
         Result<ProjecaoDosProdutosPrevistos.Declarado> produto = Declarado(vigente.Value!.Configuracao, command.ProdutoDoEditalId);
+
         return produto.IsFailure
-            ? Result<ProdutoConferido>.Failure(produto.Error!)
-            : await ConferirTipoECadeiaAsync(command, instante, vigente.Value, produto.Value!, cancellationToken).ConfigureAwait(false);
+            ? Result<ItemDeclaradoPelaVersaoVigente>.ValidationFailure(produto.Errors)
+            : Result<ItemDeclaradoPelaVersaoVigente>.Success(new(vigente.Value, produto.Value!));
     }
 
-    private async Task<Result<ProdutoConferido>> ConferirTipoECadeiaAsync(
-        PublicarProdutoDoEditalCommand command, InstanteDoComando instante, ConfiguracaoVigente vigente,
-        ProjecaoDosProdutosPrevistos.Declarado produto, CancellationToken cancellationToken)
+    private async Task<ProdutoDoEditalConferido> ConferirItemAsync(
+        PublicarProdutoDoEditalCommand command, CorrecaoPedida correcao, InstanteDoComando instante,
+        ItemDeclaradoPelaVersaoVigente item, IReadOnlyList<FieldError> doAtoCorrigido, CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView> tipo = await TipoAsync(produto, vigente.TiposDeAto, instante.Dia, cancellationToken).ConfigureAwait(false);
-        if (tipo.IsFailure)
+        Guid processoId = command.ProcessoSeletivoId;
+        ConfiguracaoPublicada grafo = item.Vigente.Configuracao;
+        Result<TipoAtoPublicadoView> tipo = await TipoAsync(item.Produto, item.Vigente.TiposDeAto, instante.Dia, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> primeiraPublicacao = await ConferirPrimeiraPublicacaoAsync(processoId, correcao, item.Produto, grafo, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FieldError> correcaoDoItem = await ConferirCorrecaoDoItemAsync(processoId, correcao, doAtoCorrigido.Count > 0, item.Produto, grafo, cancellationToken).ConfigureAwait(false);
+        PoliticaConferida politica = tipo.IsSuccess
+            ? ConfirmacaoDaPoliticaDeDivulgacao.Conferir(tipo.Value!, command.PoliticaDeDivulgacaoConfirmada, usuario.UserId, grafo)
+            : PoliticaConferida.NaoConferida;
+
+        return new([.. tipo.Errors, .. primeiraPublicacao], politica.Recusas, [.. doAtoCorrigido, .. correcaoDoItem], item.Produto.Item, tipo.Value, politica.ContaId);
+    }
+
+    /// <summary>O ato corrigido é conferido sem depender do item: a conferência não lê o que o item declara.</summary>
+    private async Task<IReadOnlyList<FieldError>> ConferirAtoCorrigidoAsync(
+        Guid processoId, CorrecaoPedida correcao, CancellationToken cancellationToken)
+    {
+        if (correcao.AtoCorrigidoId is not { } corrigido)
         {
-            return Result<ProdutoConferido>.Failure(tipo.Error!);
+            return [];
         }
-        IReadOnlyList<AtoDoProcesso> publicados = await atos.ListarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return await ConferirPublicacaoEPoliticaAsync(command, produto, vigente.Configuracao, tipo.Value!, CadeiasDosProdutosPrevistos.De(publicados), cancellationToken)
-            .ConfigureAwait(false);
+
+        Result<IReadOnlyList<Guid>> conferido = await correcoes.ConferirAsync(processoId, corrigido, cancellationToken).ConfigureAwait(false);
+
+        return conferido.Errors;
     }
 
-    private async Task<Result<ProdutoConferido>> ConferirPublicacaoEPoliticaAsync(
-        PublicarProdutoDoEditalCommand command, ProjecaoDosProdutosPrevistos.Declarado produto,
-        ConfiguracaoPublicada grafo, TipoAtoPublicadoView tipo, CadeiasDosProdutosPrevistos cadeias, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<FieldError>> ConferirPrimeiraPublicacaoAsync(
+        Guid processoId, CorrecaoPedida correcao, ProjecaoDosProdutosPrevistos.Declarado produto,
+        ConfiguracaoPublicada grafo, CancellationToken cancellationToken)
     {
-        Result publicacao = command.AtoCorrigidoId is { } corrigido
-            ? await ConferirCorrecaoAsync(command.ProcessoSeletivoId, corrigido, produto, grafo, cadeias, cancellationToken).ConfigureAwait(false)
-            : PrimeiraPublicacao(produto, grafo, cadeias);
-        if (publicacao.IsFailure)
+        if (correcao.Situacao != SituacaoDaCorrecaoPedida.SemCorrecao)
         {
-            return Result<ProdutoConferido>.Failure(publicacao.Error!);
+            return [];
         }
-        Result<string?> politica = Politica(tipo, command.PoliticaDeDivulgacaoConfirmada, usuario.UserId, grafo);
-        return politica.IsFailure
-            ? Result<ProdutoConferido>.Failure(politica.Error!)
-            : Result<ProdutoConferido>.Success((produto.Item, tipo, politica.Value));
+
+        return PrimeiraPublicacao(produto, grafo, await CadeiasAsync(processoId, cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<Result> ConferirCorrecaoAsync(
-        Guid processoId, Guid corrigido, ProjecaoDosProdutosPrevistos.Declarado produto,
-        ConfiguracaoPublicada grafo, CadeiasDosProdutosPrevistos cadeias, CancellationToken cancellationToken)
+    /// <summary>O ato corrigido ser do item e o preliminar ainda estar aberto só se confere com o ato corrigido aceito.</summary>
+    private async Task<IReadOnlyList<FieldError>> ConferirCorrecaoDoItemAsync(
+        Guid processoId, CorrecaoPedida correcao, bool atoCorrigidoRecusado, ProjecaoDosProdutosPrevistos.Declarado produto,
+        ConfiguracaoPublicada grafo, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<Guid>> correcao = await correcoes.ConferirAsync(processoId, corrigido, cancellationToken).ConfigureAwait(false);
-        return correcao.IsFailure ? Result.Failure(correcao.Error!) : Correcao(produto, corrigido, grafo, cadeias);
+        if (correcao.AtoCorrigidoId is not { } corrigido || atoCorrigidoRecusado)
+        {
+            return [];
+        }
+
+        return Correcao(produto, corrigido, grafo, await CadeiasAsync(processoId, cancellationToken).ConfigureAwait(false));
     }
+
+    private async Task<CadeiasDosProdutosPrevistos> CadeiasAsync(Guid processoId, CancellationToken cancellationToken) =>
+        CadeiasDosProdutosPrevistos.De(await atos.ListarDoProcessoAsync(processoId, cancellationToken).ConfigureAwait(false));
 
     private static Result<ProjecaoDosProdutosPrevistos.Declarado> Declarado(ConfiguracaoPublicada grafo, Guid produtoId) =>
         ProjecaoDosProdutosPrevistos.ProdutoDeclarado(grafo, produtoId) is { } produto
@@ -160,7 +214,7 @@ public sealed class ConferenciaDoProdutoDoEdital(
                 "A versão publicada declara o item sem congelar a classificação do tipo; o envelope lido garante uma entrada por tipo declarado.");
 
     /// <summary>A primeira publicação do item: ele está aberto e, sendo definitivo, o preliminar da matéria já saiu.</summary>
-    private static Result PrimeiraPublicacao(
+    private static IReadOnlyList<FieldError> PrimeiraPublicacao(
         ProjecaoDosProdutosPrevistos.Declarado produto,
         ConfiguracaoPublicada configuracaoPublicada,
         CadeiasDosProdutosPrevistos cadeias)
@@ -174,15 +228,15 @@ public sealed class ConferenciaDoProdutoDoEdital(
             .ImpedimentoDe(produto, situacao, configuracaoPublicada, cadeias);
 
         return impedimento is null
-            ? Result.Success()
-            : Result.Failure(new DomainError(CodigoDoImpedimento(CatalogoDe<ImpedimentoDoProduto>.Obter(impedimento.Motivo.Codigo)), impedimento.Mensagem));
+            ? []
+            : [new FieldError(null, new DomainError(CodigoDoImpedimento(CatalogoDe<ImpedimentoDoProduto>.Obter(impedimento.Motivo.Codigo)), impedimento.Mensagem))];
     }
 
     /// <summary>
     /// A correção de uma publicação do item: o ato corrigido é do item e, sendo o item um preliminar, o
     /// definitivo que fecha o ciclo dele ainda não saiu (UNI-REQ-0162).
     /// </summary>
-    private static Result Correcao(
+    private static IReadOnlyList<FieldError> Correcao(
         ProjecaoDosProdutosPrevistos.Declarado produto,
         Guid atoCorrigidoId,
         ConfiguracaoPublicada configuracaoPublicada,
@@ -193,15 +247,14 @@ public sealed class ConferenciaDoProdutoDoEdital(
         ArgumentNullException.ThrowIfNull(cadeias);
         if (!cadeias.AtosDe([produto.Item]).Any(a => a.Id == atoCorrigidoId))
         {
-            return Result.Failure(new DomainError(
-                AtoDoProcessoErrorCodes.AtoCorrigidoNaoEhDoProduto,
-                "O ato não é uma publicação deste item do edital, e a correção de um item corrige a publicação dele."));
+            return [RecusaDoAtoCorrigido(AtoDoProcessoErrorCodes.AtoCorrigidoNaoEhDoProduto,
+                "O ato não é uma publicação deste item do edital, e a correção de um item corrige a publicação dele.")];
         }
 
         return PreliminarFechado(produto, configuracaoPublicada, cadeias)
-            ? Result.Failure(new DomainError(AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo,
-                "O resultado preliminar não pode mais ser corrigido: o definitivo da mesma matéria já foi publicado e fechou o ciclo de recurso. Corrija o resultado definitivo, por errata ou retificação do ato."))
-            : Result.Success();
+            ? [RecusaDoAtoCorrigido(AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo,
+                "O resultado preliminar não pode mais ser corrigido: o definitivo da mesma matéria já foi publicado e fechou o ciclo de recurso. Corrija o resultado definitivo, por errata ou retificação do ato.")]
+            : [];
     }
 
     private static bool PreliminarFechado(
@@ -212,48 +265,8 @@ public sealed class ConferenciaDoProdutoDoEdital(
             && PreliminaresDaMateria.DefinitivosQueFecham(grafo, produto.Id).Any(d => cadeias.PrimeiraPublicacaoDe(itens[d]) is not null);
     }
 
-    /// <summary>
-    /// A confirmação da política de divulgação, exigida quando o tipo é resultado. Devolve o contaId de quem
-    /// confirmou, para ficar no registro, ou nulo quando a confirmação não foi pedida.
-    /// </summary>
-    private static Result<string?> Politica(
-        TipoAtoPublicadoView tipo,
-        bool confirmada,
-        string? contaId,
-        ConfiguracaoPublicada configuracaoPublicada)
-    {
-        ArgumentNullException.ThrowIfNull(tipo);
-        ArgumentNullException.ThrowIfNull(configuracaoPublicada);
-
-        if (!tipo.EhResultado)
-        {
-            return Result<string?>.Success(null);
-        }
-
-        return !confirmada ? PoliticaNaoConfirmada(configuracaoPublicada) : IdentificarQuemConfirmou(contaId);
-    }
-
-    private static Result<string?> PoliticaNaoConfirmada(ConfiguracaoPublicada grafo)
-    {
-        ConfiguracaoDivulgacaoDto politica = ProjecaoDosProdutosPrevistos.PoliticaDeDivulgacaoDaVersao(grafo);
-        string campos = string.Join(", ", ConfiguracaoDivulgacao.CamposPermitidos
-            .Where(c => politica.CamposPublicos.Contains(c.Codigo, StringComparer.Ordinal))
-            .Select(static c => c.Nome.ToLowerInvariant()));
-
-        return Result<string?>.Failure(new DomainError(
-            AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada,
-            $"O tipo de ato é um resultado, e publicá-lo exige confirmar que o PDF segue a política de divulgação do certame, a da versão vigente: campos públicos — {campos}. O sistema não confere o conteúdo do PDF."));
-    }
-
-    private static Result<string?> IdentificarQuemConfirmou(string? contaId)
-    {
-        return string.IsNullOrWhiteSpace(contaId)
-            ? Result<string?>.Failure(new DomainError(
-                AtoDoProcessoErrorCodes.UsuarioNaoIdentificado,
-                "O token não traz o claim sub, e a confirmação da política de divulgação precisa registrar quem a fez."))
-            : Result<string?>.Success(contaId);
-
-    }
+    private static FieldError RecusaDoAtoCorrigido(string codigo, string mensagem) =>
+        new(AtoDoProcesso.CampoDoAtoCorrigido, new DomainError(codigo, mensagem));
 
     private static string CodigoDoImpedimento(ImpedimentoDoProduto motivo) =>
         motivo switch

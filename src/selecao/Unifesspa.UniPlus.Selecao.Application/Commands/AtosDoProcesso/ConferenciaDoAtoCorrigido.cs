@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
 
@@ -33,6 +34,24 @@ public sealed class ConferenciaDoAtoCorrigido(
         }
 
         return await ConferirPertencimentoAsync(processoSeletivoId, corrigidoId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A conferência do ato que um documento avulso corrige: o ato é conferido e, só então, a cadeia dele é lida para
+    /// saber se é a publicação de um item do edital. Ato recusado não tem cadeia a ler.
+    /// </summary>
+    internal async Task<IReadOnlyList<FieldError>> ConferirParaDocumentoAvulsoAsync(
+        Guid processoSeletivoId, Guid atoCorrigidoId, CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<Guid>> cadeia = await ConferirAsync(processoSeletivoId, atoCorrigidoId, cancellationToken).ConfigureAwait(false);
+        if (cadeia.IsFailure)
+        {
+            return cadeia.Errors;
+        }
+
+        Result item = await NaoEhItemDoEditalAsync(cadeia.Value!, cancellationToken).ConfigureAwait(false);
+
+        return item.Errors;
     }
 
     private async Task<Result<IReadOnlyList<Guid>>> ConferirPertencimentoAsync(
@@ -90,9 +109,9 @@ public sealed class ConferenciaDoAtoCorrigido(
             .ExisteItemDoEditalEntreAsync(cadeiaDoAtoCorrigido, cancellationToken)
             .ConfigureAwait(false);
         return ehItemDoEdital
-            ? Result.Failure(new DomainError(
+            ? Result.ValidationFailure([new FieldError(AtoDoProcesso.CampoDoAtoCorrigido, new DomainError(
                 AtoDoProcessoErrorCodes.AtoCorrigidoEhItemDoEdital,
-                "O ato corrigido é a publicação de um item do edital, como um resultado, e só se corrige pela publicação do próprio item, que confirma a política de divulgação e confere a cadeia de correções."))
+                "O ato corrigido é a publicação de um item do edital, como um resultado, e só se corrige pela publicação do próprio item, que confirma a política de divulgação e confere a cadeia de correções."))])
             : Result.Success();
     }
 
@@ -100,5 +119,5 @@ public sealed class ConferenciaDoAtoCorrigido(
         "O ato já foi corrigido. A cadeia de correção é linear: a correção seguinte aponta o ato mais recente da cadeia.";
 
     private static Result<IReadOnlyList<Guid>> Falha(string codigo, string mensagem) =>
-        Result<IReadOnlyList<Guid>>.Failure(new DomainError(codigo, mensagem));
+        Result<IReadOnlyList<Guid>>.ValidationFailure([new FieldError(AtoDoProcesso.CampoDoAtoCorrigido, new DomainError(codigo, mensagem))]);
 }

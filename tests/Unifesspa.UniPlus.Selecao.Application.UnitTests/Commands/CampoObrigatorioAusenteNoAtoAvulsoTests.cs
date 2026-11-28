@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A preparação do ato avulso sem a data do ato, sem o documento principal ou com um anexo sem documento: a recusa é 422
-/// com o código de campo obrigatório, no campo do pedido, acumulada com a recusa do tipo do ato, que não depende deles, e
-/// depois da recusa de que o processo não existe.
+/// com o código de campo obrigatório, no campo do pedido. Faz parte da forma do pedido, que vem primeiro e acumula com a
+/// recusa do tipo do ato, que não depende deles, e com a de que o processo não existe.
 /// </summary>
 public sealed class CampoObrigatorioAusenteNoAtoAvulsoTests
 {
@@ -95,10 +95,10 @@ public sealed class CampoObrigatorioAusenteNoAtoAvulsoTests
 
         Result<AtoAPublicar> preparado = await PrepararAsync(Comando() with { DataDoAto = null });
 
-        Recusa(preparado).Should().Equal(("dataDoAto", CodigosDeValidacao.Obrigatorio), (null, "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"));
+        Recusa(preparado).Should().Equal(("dataDoAto", CodigosDeValidacao.Obrigatorio), ("tipoAtoCodigo", "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"));
     }
 
-    [Fact(DisplayName = "O documento principal e o anexo sem documento acumulam com a recusa do tipo, que vem antes")]
+    [Fact(DisplayName = "O documento principal e o anexo sem documento acumulam com a recusa do tipo, que vem depois: a forma vem primeiro")]
     public async Task DocumentosAusentesETipoSemVersao_Acumulam()
     {
         _tipos.ObterVigenteAsync("AVISO", Dia, Arg.Any<CancellationToken>()).Returns((TipoAtoPublicadoView?)null);
@@ -106,12 +106,12 @@ public sealed class CampoObrigatorioAusenteNoAtoAvulsoTests
         Result<AtoAPublicar> preparado = await PrepararAsync(Comando() with { DocumentoPrincipalId = null, Anexos = [new(null, "Quadro")] });
 
         Recusa(preparado).Should().Equal(
-            (null, "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"),
             ("documentoPrincipalId", CodigosDeValidacao.Obrigatorio),
-            ("anexos[0].documentoId", CodigosDeValidacao.Obrigatorio));
+            ("anexos[0].documentoId", CodigosDeValidacao.Obrigatorio),
+            ("tipoAtoCodigo", "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"));
     }
 
-    [Fact(DisplayName = "A data, o tipo sem versão e o documento principal ausentes acumulam, nessa ordem")]
+    [Fact(DisplayName = "A data e o documento principal ausentes acumulam com o tipo sem versão, que vem depois da forma")]
     public async Task DataTipoEDocumentoAusentes_AcumulamNessaOrdem()
     {
         _tipos.ObterVigenteAsync("AVISO", Dia, Arg.Any<CancellationToken>()).Returns((TipoAtoPublicadoView?)null);
@@ -120,8 +120,8 @@ public sealed class CampoObrigatorioAusenteNoAtoAvulsoTests
 
         Recusa(preparado).Should().Equal(
             ("dataDoAto", CodigosDeValidacao.Obrigatorio),
-            (null, "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"),
-            ("documentoPrincipalId", CodigosDeValidacao.Obrigatorio));
+            ("documentoPrincipalId", CodigosDeValidacao.Obrigatorio),
+            ("tipoAtoCodigo", "ProcessoSeletivo.TipoDeAtoSemVersaoVigente"));
     }
 
     [Fact(DisplayName = "A data ausente com os documentos conferidos recusa só a data, sem montar o ato")]
@@ -133,23 +133,25 @@ public sealed class CampoObrigatorioAusenteNoAtoAvulsoTests
         Recusa(preparado).Should().Equal(("dataDoAto", CodigosDeValidacao.Obrigatorio));
     }
 
-    [Fact(DisplayName = "O processo inexistente é recusado antes de a ausência ser julgada")]
-    public async Task ProcessoInexistente_RecusaAntesDaAusencia()
+    [Fact(DisplayName = "O processo inexistente é recusado depois da forma, na mesma resposta")]
+    public async Task ProcessoInexistente_RecusaDepoisDaForma()
     {
         _processos.ObterSiglaDaUnidadeAdministradoraAsync(_processoId, Arg.Any<CancellationToken>()).Returns((string?)null);
 
         Result<AtoAPublicar> preparado = await PrepararAsync(Comando() with { DataDoAto = null, DocumentoPrincipalId = null });
 
-        Recusa(preparado).Should().Equal((null, "ProcessoSeletivo.NaoEncontrado"));
+        Recusa(preparado).Should().Equal(
+            ("dataDoAto", CodigosDeValidacao.Obrigatorio), ("documentoPrincipalId", CodigosDeValidacao.Obrigatorio), (null, "ProcessoSeletivo.NaoEncontrado"));
     }
 
     private Task<Result<AtoAPublicar>> PrepararAsync(PublicarAtoAvulsoDoProcessoCommand comando) =>
         new PreparacaoDaPublicacaoDoAtoAvulso(
-            new ConferenciaDoProcessoDivulgado(_processos, _divulgados),
-            new LeituraDoInstanteDoComando(new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+            new ConferenciaDoPedidoDoAto(
+                new ConferenciaDoProcessoDivulgado(_processos, _divulgados),
+                new LeituraDoInstanteDoComando(new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new ConferenciaDosDocumentosDoAto(_documentos, _atos)),
             new ConferenciaDoTipoDoAtoAvulso(new ConferenciaDoTipoDeAto(_tipos)),
-            new ConferenciaDoAtoCorrigido(_atos, _processos),
-            new ConferenciaDosDocumentosDoAto(_documentos, _atos))
+            new ConferenciaDoAtoCorrigido(_atos, _processos))
             .PrepararAsync(comando, CancellationToken.None);
 
     private PublicarAtoAvulsoDoProcessoCommand Comando() =>

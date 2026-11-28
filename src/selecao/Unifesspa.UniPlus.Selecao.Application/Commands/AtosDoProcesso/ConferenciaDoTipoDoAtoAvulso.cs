@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
+using Domain.Entities;
 using Domain.Errors;
 
 using ProcessosSeletivos;
@@ -25,6 +26,10 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </remarks>
 public sealed class ConferenciaDoTipoDoAtoAvulso(ConferenciaDoTipoDeAto tiposDeAto)
 {
+    /// <summary>A forma do tipo no pedido, conferida sem consultar o catálogo: o tipo ausente ou em branco.</summary>
+    public static IReadOnlyList<FieldError> RecusaDaForma(string? tipoAtoCodigo) =>
+        string.IsNullOrWhiteSpace(tipoAtoCodigo) ? [AusenciasNosDadosDoAto.Tipo()] : [];
+
     internal async Task<Result<TipoAtoPublicadoView>> ConferirAsync(
         string tipoAtoCodigo,
         DateOnly diaDaPublicacao,
@@ -33,14 +38,11 @@ public sealed class ConferenciaDoTipoDoAtoAvulso(ConferenciaDoTipoDeAto tiposDeA
         Result<TipoAtoPublicadoView> vigente = await tiposDeAto
             .VigenteAsync(tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
-        if (vigente.IsFailure)
-        {
-            return vigente;
-        }
+        Result<TipoAtoPublicadoView> conferido = vigente.IsFailure ? vigente : Classificar(vigente.Value!);
 
-        TipoAtoPublicadoView tipo = vigente.Value!;
-
-        return Classificar(tipo);
+        return conferido.IsFailure
+            ? Result<TipoAtoPublicadoView>.ValidationFailure([new FieldError(AusenciasNosDadosDoAto.CampoDoTipo, conferido.Error!)])
+            : conferido;
     }
 
     private static Result<TipoAtoPublicadoView> Classificar(TipoAtoPublicadoView tipo)
@@ -60,17 +62,17 @@ public sealed class ConferenciaDoTipoDoAtoAvulso(ConferenciaDoTipoDeAto tiposDeA
     }
 
     /// <summary>
-    /// O tipo que corrige sempre outro ato exige o ato corrigido; o motivo vem junto dele (validação do
-    /// comando).
+    /// O tipo que corrige sempre outro ato exige o ato corrigido; só se pergunta a um pedido que não indica ato nenhum,
+    /// e o motivo vem junto dele.
     /// </summary>
-    public static Result ExigeAtoCorrigido(TipoAtoPublicadoView tipo, Guid? atoCorrigidoId)
+    public static Result ExigeAtoCorrigido(TipoAtoPublicadoView tipo)
     {
         ArgumentNullException.ThrowIfNull(tipo);
 
-        return tipo.ExigeAtoCorrigido && atoCorrigidoId is null
-            ? Result.Failure(new DomainError(
+        return tipo.ExigeAtoCorrigido
+            ? Result.ValidationFailure([new FieldError(AtoDoProcesso.CampoDoAtoCorrigido, new DomainError(
                 AtoDoProcessoErrorCodes.TipoExigeAtoCorrigido,
-                "O tipo de ato corrige sempre outro ato publicado: informe o ato corrigido e o motivo da correção."))
+                "O tipo de ato corrige sempre outro ato publicado: informe o ato corrigido e o motivo da correção."))])
             : Result.Success();
     }
 }

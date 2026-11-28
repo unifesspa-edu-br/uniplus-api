@@ -40,10 +40,10 @@ public abstract class DadosDoAtoPublicadoValidator<TComando> : AbstractValidator
             .NotEqual(default(DateOnly))
             .WithMessage("Data do ato declarada pelo documento é inválida.");
 
+        // O assinante ausente ou em branco é recusado pela forma do pedido, com o código de campo obrigatório; o limite só vale para texto com conteúdo.
         RuleFor(x => x.Assinante)
-            .NotEmpty()
-            .WithMessage("Assinante do ato é obrigatório.")
             .MaximumLength(AtoDoProcesso.AssinanteMaxLength)
+            .When(static x => !string.IsNullOrWhiteSpace(x.Assinante))
             .WithMessage($"Assinante deve ter no máximo {AtoDoProcesso.AssinanteMaxLength} caracteres.");
     }
 

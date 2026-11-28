@@ -1,48 +1,26 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
-using Services;
-
 using Unifesspa.UniPlus.Kernel.Results;
 
-using ProdutoConferido = (Unifesspa.UniPlus.Selecao.Domain.ValueObjects.IdentidadeDoItemDoEdital Item, Unifesspa.UniPlus.Publicacoes.Contracts.TipoAtoPublicadoView Tipo, string? ContaId);
-
-/// <summary>Prepara o item do edital sem escrever, interrompendo na primeira recusa.</summary>
+/// <summary>
+/// Prepara o item do edital sem escrever e junta todas as recusas que não dependem umas das outras: a forma do pedido,
+/// o item, os documentos, a política de divulgação e o ato corrigido. Nenhuma consulta lê um valor já recusado, e nenhuma
+/// corre quando o processo ou o instante foi recusado.
+/// </summary>
 public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
-    ConferenciaDoProcessoDivulgado processos,
-    LeituraDoInstanteDoComando instantes,
-    ConferenciaDoProdutoDoEdital produtos,
-    ConferenciaDosDocumentosDoAto documentos)
+    ConferenciaDoPedidoDoAto pedidos,
+    ConferenciaDoProdutoDoEdital produtos)
 {
     internal async Task<Result<AtoAPublicar>> PrepararAsync(PublicarProdutoDoEditalCommand command, CancellationToken cancellationToken)
     {
-        Result<ProcessoDivulgadoConferido> processo = await processos.ConferirAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        if (processo.IsFailure)
-        {
-            return Result<AtoAPublicar>.Failure(processo.Error!);
-        }
-        Result<InstanteDoComando> instante = instantes.Ler();
-        return instante.IsFailure
-            ? Result<AtoAPublicar>.Failure(instante.Error!)
-            : AusenciaDaDataDoAto.Concluir(
-                command, await ConferirAsync(command, processo.Value!, instante.Value, cancellationToken).ConfigureAwait(false));
-    }
+        PedidoDoAtoConferido pedido = await pedidos.ConferirAsync(command, [], cancellationToken).ConfigureAwait(false);
+        ProdutoDoEditalConferido produto = pedido.Estado is { } estado
+            ? await produtos.ConferirAsync(command, pedido.Pedido.Correcao, estado.Instante, cancellationToken).ConfigureAwait(false)
+            : ProdutoDoEditalConferido.NaoConsultado;
 
-    // A recusa do item não impede a conferência da ausência dos documentos, que não depende dela.
-    private async Task<Result<AtoConferido>> ConferirAsync(
-        PublicarProdutoDoEditalCommand command, ProcessoDivulgadoConferido processo,
-        InstanteDoComando instante, CancellationToken cancellationToken)
-    {
-        Result<ProdutoConferido> produto = await produtos.ConferirAsync(command, instante, cancellationToken).ConfigureAwait(false);
-        if (produto.IsFailure)
-        {
-            return Result<AtoConferido>.ValidationFailure(
-                [.. produto.Errors, .. ConferenciaDosDocumentosDoAto.DocumentosAusentes(command.DocumentoPrincipalId, command.Anexos ?? [])]);
-        }
-
-        Result<DocumentosDoAtoConferidos> conferidos = await documentos
-            .ConferirAsync(command.ProcessoSeletivoId, command.DocumentoPrincipalId, command.Anexos ?? [], cancellationToken).ConfigureAwait(false);
-        return conferidos.IsFailure
-            ? Result<AtoConferido>.ValidationFailure(conferidos.Errors)
-            : Result<AtoConferido>.Success(new(processo, produto.Value.Tipo, conferidos.Value!, instante.Instante, produto.Value.Item, produto.Value.ContaId));
+        return pedido.Reunir(
+            produto.DoItem,
+            [.. produto.DaPolitica, .. produto.DaCorrecao],
+            () => pedido.Ato(produto.Tipo!, produto.Item, produto.ContaId));
     }
 }
