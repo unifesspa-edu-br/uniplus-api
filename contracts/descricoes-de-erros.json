@@ -10900,7 +10900,9 @@
       "oQueAconteceu": [
         "Um campo de um grupo repetível (um item de `subitens` de um grupo em `grupos`) traz `impedimento`. O impedimento é a resposta que impede a inscrição do candidato; o campo de um grupo, como os da composição familiar, responde por um membro de cada ocorrência (UNI-REQ-0146), e o impedimento de um membro não é o da inscrição do candidato.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].impedimento`, e a mensagem diz que o campo é de membro e que o impedimento é da inscrição do candidato, não de um membro. A mensagem não repete o código do dado do campo: o `field`, com a posição do grupo e a do campo, já localiza o item recusado. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo de grupo com impedimento, junto das demais recusas da forma do grupo. Nada é gravado.",
-        "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o `field` é `gruposDosFormularios[i].subitens[j].impedimento`, com uma entrada por campo com impedimento.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Retire `impedimento` do campo do grupo. Se a resposta de um fato do candidato deve impedir a inscrição, declare o impedimento num item do formulário de inscrição, fora do grupo."
@@ -10908,7 +10910,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -10919,7 +10922,9 @@
       "oQueAconteceu": [
         "Um campo de um grupo repetível (um item de `subitens` de um grupo em `grupos`) traz `paginaCodigo`. O campo aparece onde o grupo aparece, na seção do próprio grupo, e por isso não declara seção própria (UNI-REQ-0146).",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens[j].paginaCodigo`, e a mensagem diz que o campo segue a seção do grupo e não declara seção própria. A mensagem não repete o código do dado do campo: o `field`, que aponta o campo do grupo (`subitens[j]`) e a chave `paginaCodigo`, já localiza o item recusado. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Há uma entrada por campo com `paginaCodigo`, junto das demais recusas da forma do grupo. Nada é gravado.",
-        "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na gravação dos itens do formulário, a recusa vem junto com as outras recusas da forma dos grupos e dos itens, antes de o catálogo de fatos ser consultado. Nos modelos, ela só é conferida quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o `field` é `gruposDosFormularios[i].subitens[j].paginaCodigo`.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Retire `paginaCodigo` do campo do grupo. Se o grupo deve aparecer em outra seção, mude o `paginaCodigo` do próprio grupo."
@@ -10927,7 +10932,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -10938,7 +10944,9 @@
       "oQueAconteceu": [
         "Um grupo repetível com `incluiCandidato` verdadeiro, como a composição familiar, tem o próprio candidato como um dos membros (UNI-REQ-0146). A ocorrência dele é a que responde `PROPRIO_CANDIDATO` no campo de parentesco, e sem esse campo nenhuma resposta identificaria a ocorrência do candidato. O grupo enviado não cumpre uma destas condições, e a mensagem diz qual:",
         "- o `minimo` de ocorrências é menor que 1 (`field` igual a `grupos[i].minimo`): o grupo tem ao menos uma ocorrência, a do próprio candidato;\n- nenhum campo é o fato `PARENTESCO` (`field` igual a `grupos[i].subitens`): o grupo pede o parentesco em cada ocorrência;\n- o campo `PARENTESCO` tem exibição condicional ou obrigatoriedade diferente de `SEMPRE` (`field` igual a `grupos[i].subitens[j]`): o parentesco é sempre exibido e obrigatório;\n- o campo `PARENTESCO` tem uma restrição de opções formadas pelas respostas anteriores, ou de opções permitidas sem uma entrada incondicional que contenha `PROPRIO_CANDIDATO` (`field` igual a `grupos[i].subitens[j].restricoes`): as opções de parentesco admitem sempre o próprio candidato.",
-        "Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. As recusas saem junto das demais recusas do grupo, e o campo cuja forma já foi recusada conta como conforme aqui, para que só a falta do parentesco seja apontada. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. As recusas saem junto das demais recusas do grupo, e o campo cuja forma já foi recusada conta como conforme aqui, para que só a falta do parentesco seja apontada. Nada é gravado. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o caminho é `gruposDosFormularios[i]` para o mínimo de ocorrências menor que 1, `gruposDosFormularios[i].subitens` para a falta do campo de parentesco, `gruposDosFormularios[i].subitens[j]` para o parentesco com exibição condicional ou obrigatoriedade diferente de `SEMPRE` e `gruposDosFormularios[i].subitens[j].restricoes` para as opções de parentesco sem o próprio candidato.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Ajuste o grupo conforme a mensagem: declare `minimo` de ao menos 1, inclua o campo `PARENTESCO` com obrigatoriedade `SEMPRE` e sem exibição condicional, e, se ele restringe as opções, inclua `PROPRIO_CANDIDATO` numa entrada de opções permitidas sem condição. Se o grupo não deve ter o candidato como membro, envie `incluiCandidato` falso."
@@ -10946,7 +10954,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -10957,7 +10966,9 @@
       "oQueAconteceu": [
         "O `codigo` do grupo está vazio, excede 60 caracteres ou está fora do formato. A mensagem é \"O código do grupo é obrigatório, começa com letra maiúscula e tem só letras maiúsculas, algarismos e sublinhados isolados, até 60 caracteres.\" O tamanho exato do limite é da API; o UNI-REQ-0146 define o grupo, não o tamanho do código.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].codigo`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
-        "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência da forma do grupo só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A recusa vale para o texto presente. A propriedade `codigo` ausente ou nula é recusada antes, com 400 e sem código deste catálogo, pela leitura do corpo. Nos modelos, a conferência da forma do grupo só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o código vazio, só com espaços ou com mais de 60 caracteres é recusado antes, como [`envelope_malformado`](/erros/uniplus.selecao.envelope_codec.envelope_malformado); esta recusa cobre o código fora do formato. O `field` é `gruposDosFormularios[i].codigo`.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Informe um `codigo` com texto e de até 60 caracteres. O código do grupo também não pode coincidir com o código de um fato ou de um grupo de outro formulário do processo."
@@ -10965,7 +10976,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -10976,7 +10988,9 @@
       "oQueAconteceu": [
         "O grupo repetível respeita um número mínimo e, opcionalmente, um máximo de ocorrências, e sem máximo aceita qualquer quantidade a partir do mínimo (UNI-REQ-0146). Os valores enviados em `minimo` e `maximo` contrariam isso, e a mensagem é \"O mínimo de ocorrências não é negativo, e o máximo, quando declarado, é ao menos um e não fica abaixo do mínimo.\"",
         "Há duas formas de recusa, que não se acumulam no mesmo grupo: com `minimo` negativo, o `field` é `grupos[i].minimo`; com `minimo` não negativo e `maximo` declarado menor que 1 ou menor que `minimo`, o `field` é `grupos[i].maximo`. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. A recusa vem na lista `errors`, junto das demais recusas da forma do grupo, e nada é gravado.",
-        "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, a recusa aponta o próprio grupo (`gruposDosFormularios[i]`), sem distinguir `minimo` de `maximo`; a mensagem é a mesma.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Corrija `minimo` para 0 ou mais e, se declarar `maximo`, use um valor de ao menos 1 e não menor que `minimo`. Para um grupo sem limite superior, omita `maximo`. Se o grupo inclui o candidato como membro, o `minimo` é ao menos 1."
@@ -10984,7 +10998,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -11016,7 +11031,9 @@
         "A `ordem` de um grupo repetível, em `grupos`, é negativa. O grupo ocupa a posição dele na ordem de coleta do formulário, junto com os itens, e a posição não pode ser negativa. A mensagem é \"A ordem do grupo não pode ser negativa.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].ordem`, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
         "No formulário de inscrição, e no modelo que serve à fase de inscrição, a ordem dos grupos e dos itens que não são dados básicos do candidato é deslocada para depois da seção reservada dos dados básicos antes desta conferência, de modo que a ordem negativa de um grupo desse formulário não chega a ser recusada aqui. Nos formulários de isenção de taxa e de habilitação, e nos modelos que não servem à fase de inscrição, a ordem negativa do grupo é recusada.",
-        "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o `field` é `gruposDosFormularios[i].ordem`.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Informe `ordem` com 0 ou um número positivo, sem repetir a ordem de outro item ou grupo do mesmo formulário."
@@ -11024,7 +11041,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -11035,7 +11053,9 @@
       "oQueAconteceu": [
         "A `exibicao` ou o `predicadoObrigatoriedade` de um grupo repetível cita o código do próprio grupo ou o fato de um dos campos dele. Fora de uma ocorrência, o campo do grupo não tem valor único (UNI-REQ-0146), e a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências existirem. A mensagem é \"Uma regra do grupo cita um dado do próprio grupo — a exibição e a obrigatoriedade do grupo se decidem antes das ocorrências.\", sem repetir o código do dado citado; o `field` indica qual das duas regras do grupo foi recusada. Uma regra que cita mais de um dado do grupo recebe uma só entrada.",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].exibicao` ou `grupos[i].predicadoObrigatoriedade`, uma entrada por regra, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
-        "A regra que cita um campo de grupo a partir de fora do grupo, como a exibição de um item, é outra recusa, a de código `uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo`. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A regra que cita um campo de grupo a partir de fora do grupo, como a exibição de um item, é outra recusa, a de código `uniplus.grafo_formulario.cita_fato_de_membro_fora_do_grupo`. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, a recusa aponta o grupo (`gruposDosFormularios[i]`), sem distinguir a exibição da obrigatoriedade; a mensagem é a mesma.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Troque, na regra do grupo, o fato citado por um que o formulário conheça antes da posição do grupo, ou retire a condição. Uma condição que depende dos campos do grupo pertence ao próprio campo, que pode citar os campos anteriores da mesma ocorrência."
@@ -11043,7 +11063,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {
@@ -11073,7 +11094,9 @@
       "oQueAconteceu": [
         "A lista `subitens` de um grupo repetível, em `grupos`, está vazia ou tem mais de 30 campos. Cada ocorrência do grupo, como um membro da composição familiar (UNI-REQ-0146), coleta de um a 30 campos; o teto de 30 é da API, e o requisito não o declara. A mensagem é \"O grupo tem de um a 30 campos por ocorrência.\"",
         "A recusa vem na lista `errors` da resposta, com `field` igual a `grupos[i].subitens`, uma entrada por grupo recusado, junto das demais recusas da forma do grupo. Na criação e na atualização de um modelo de formulário o `field` começa por `conteudo.`. Nada é gravado.",
-        "A recusa vale para a lista presente. A propriedade `subitens` ausente ou nula é recusada antes, com 400 e sem código deste catálogo. Os campos do grupo também contam para o teto de itens do formulário, que é [recusado antes](/erros/uniplus.item_formulario.itens_em_excesso), sem a conferência de cada grupo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado)."
+        "A recusa vale para a lista presente. A propriedade `subitens` ausente ou nula é recusada antes, com 400 e sem código deste catálogo. Os campos do grupo também contam para o teto de itens do formulário, que é [recusado antes](/erros/uniplus.item_formulario.itens_em_excesso), sem a conferência de cada grupo. Nos modelos, a conferência só ocorre quando o conteúdo foi lido sem recusa de leitura (como a de [conteúdo malformado](/erros/uniplus.configuracao.modelo_formulario.entrada_malformada)), e na atualização um `{id}` que não existe é recusado antes, como [modelo de formulário não encontrado](/erros/uniplus.configuracao.modelo_formulario.nao_encontrado).",
+        "Esta mesma conferência também roda na importação e na leitura da configuração publicada do processo seletivo, quando o sistema relê o documento congelado. Nesse caso a recusa vem na lista `errors[]` e se refere ao grupo no documento, em `gruposDosFormularios[i]`, não ao pedido enviado agora. Na leitura, o `field` é `gruposDosFormularios[i].subitens`, com a lista vazia ou com mais de 30 campos.",
+        "A leitura reúne as recusas do mesmo grupo: o código, a ordem e as ocorrências do grupo saem na mesma resposta que a recusa de um campo do grupo recusado. Com um campo do grupo recusado, a conferência que depende dos campos (quantidade de campos, seção própria, impedimento do campo, regra que cita o grupo e candidato como membro) só roda depois que o campo é corrigido."
       ],
       "comoResolver": [
         "Deixe no grupo ao menos um campo e no máximo 30. Para mais campos, divida o grupo em dois ou retire os que não são necessários por ocorrência."
@@ -11081,7 +11104,8 @@
       "ondeAparece": [
         "Criação de um modelo de formulário",
         "Atualização de um modelo de formulário",
-        "Gravação dos itens do formulário"
+        "Gravação dos itens do formulário",
+        "Leitura da configuração publicada do processo seletivo"
       ]
     },
     {

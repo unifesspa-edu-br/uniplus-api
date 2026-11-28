@@ -10,15 +10,16 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
+using static Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.Canonicalization.ApoioDoGrupoNoEnvelope;
+
 public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
 {
-    private const string Grupo = "gruposDosFormularios[0]";
     private const string CodigoDoDadoRecusado = "EXEMPLO_DADO_RECUSADO";
     private const string OutroFormulario = "OUTRO_FORMULARIO";
+    private static readonly string[] ValoresInjetados = ["VALOR_FICTICIO_X", OutroFormulario, "codigo-fora-do-formato", CodigoDoDadoRecusado, "OUTRA_SECAO"];
     private static readonly DomainError FormularioDesconhecido = new(ErrosCodecEnvelope.EnvelopeMalformado, $"'{Grupo}.formularioCodigo' não é o código de um formulário do documento.");
     private static readonly DomainError CampoDeOutroFormulario = new(ErrosCodecEnvelope.EnvelopeMalformado, $"'{Grupo}.subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo.");
     private static readonly DomainError CondicaoIncoerente = new("CondicaoDnf.FormaIncoerenteComOperador", "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco.");
-    private static readonly DomainError OrdemNegativa = new(GrupoFormularioErrorCodes.OrdemInvalida, "A ordem do grupo não pode ser negativa.");
     private static readonly DomainError SecaoPropria = new(GrupoFormularioErrorCodes.CampoComSecaoPropria, "O campo segue a seção do grupo e não declara seção própria.");
 
     [Fact]
@@ -26,7 +27,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComExibicaoInvalida();
         grupo["ordem"] = -1;
-        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".ordem", OrdemNegativa)]);
+        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".ordem", OrdemNegativa)], ValoresInjetados);
     }
 
     [Fact]
@@ -35,7 +36,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         JsonObject grupo = GrupoComExibicaoInvalida();
         grupo["minimo"] = 3;
         grupo["maximo"] = 2;
-        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))]);
+        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))], ValoresInjetados);
     }
 
     [Fact]
@@ -43,7 +44,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComExibicaoInvalida();
         grupo["codigo"] = "codigo-fora-do-formato";
-        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".codigo", DoDominio(GrupoFormularioErrorCodes.CodigoInvalido))]);
+        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".codigo", DoDominio(GrupoFormularioErrorCodes.CodigoInvalido))], ValoresInjetados);
     }
 
     [Fact]
@@ -51,7 +52,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComExibicaoInvalida();
         grupo["obrigatoriedade"] = new JsonObject { ["tipo"] = "QUANDO", ["quando"] = CondicoesNoEnvelope.Invalidas(false, true) };
-        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".obrigatoriedade.quando[0][0].valor", CondicaoIncoerente)]);
+        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".obrigatoriedade.quando[0][0].valor", CondicaoIncoerente)], ValoresInjetados);
     }
 
     [Fact]
@@ -59,13 +60,13 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoNoEnvelope.Grupo(GrupoNoEnvelope.Campo());
         grupo["obrigatoriedade"] = new JsonObject { ["tipo"] = "QUANDO", ["quando"] = CondicoesNoEnvelope.Invalidas(false, true) };
-        Conferir(grupo, [(Grupo + ".obrigatoriedade.quando[0][0].valor", CondicaoIncoerente)]);
+        Conferir(grupo, [(Grupo + ".obrigatoriedade.quando[0][0].valor", CondicaoIncoerente)], ValoresInjetados);
     }
 
     [Fact]
     public void LerGruposColetados_SoExibicaoInvalida_NaoGeraRecusaExtra()
     {
-        Conferir(GrupoComExibicaoInvalida(), [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente)]);
+        Conferir(GrupoComExibicaoInvalida(), [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente)], ValoresInjetados);
     }
 
     [Fact]
@@ -90,7 +91,37 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject campo = GrupoNoEnvelope.Campo(CodigoDoDadoRecusado);
         campo["paginaCodigo"] = "OUTRA_SECAO";
-        Conferir(GrupoNoEnvelope.Grupo(campo), [(Grupo + ".subitens[0].paginaCodigo", SecaoPropria)]);
+        Conferir(GrupoNoEnvelope.Grupo(campo), [(Grupo + ".subitens[0].paginaCodigo", SecaoPropria)], ValoresInjetados);
+    }
+
+    [Fact]
+    public void LerGruposColetados_CampoComImpedimento_RecusaUmaVezSoNoImpedimentoDoCampo()
+    {
+        JsonObject campo = GrupoNoEnvelope.Campo(CodigoDoDadoRecusado);
+        campo["tipoDeCampo"] = "SIM_OU_NAO";
+        campo["formato"] = null;
+        JsonObject condicao = CondicoesNoEnvelope.Condicao("IGUAL", JsonValue.Create(true));
+        condicao["codigoDoDado"] = CodigoDoDadoRecusado;
+        campo["impedimento"] = new JsonObject { ["mensagem"] = "Mensagem", ["quando"] = new JsonArray(new JsonArray(condicao)) };
+        Conferir(GrupoNoEnvelope.Grupo(campo), [(Grupo + ".subitens[0].impedimento", ApoioDoGrupoNoEnvelope.DoDominio(GrupoFormularioErrorCodes.CampoComImpedimento))], ValoresInjetados);
+    }
+
+    [Fact]
+    public void LerGruposColetados_OpcoesDeParentescoSemOProprioCandidato_RecusaUmaVezSoNasRestricoesDoCampo()
+    {
+        JsonObject parentesco = GrupoNoEnvelope.Campo("PARENTESCO");
+        parentesco["tipoDeCampo"] = "ESCOLHA_UNICA";
+        parentesco["formato"] = null;
+        parentesco["valoresSelecionaveis"] = new JsonArray(
+            new JsonObject { ["valorCodigo"] = "PAI", ["descricao"] = null, ["orientacao"] = null, ["ordem"] = 0 });
+        parentesco["restricoes"] = new JsonArray(new JsonObject
+        {
+            ["tipo"] = "OPCOES_PERMITIDAS",
+            ["entradas"] = new JsonArray(new JsonObject { ["quando"] = null, ["valores"] = new JsonArray("PAI") }),
+        });
+        JsonObject grupo = GrupoNoEnvelope.Grupo(parentesco);
+        grupo["incluiCandidato"] = true;
+        Conferir(grupo, [(Grupo + ".subitens[0].restricoes", ApoioDoGrupoNoEnvelope.DoDominio(GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto))], ValoresInjetados);
     }
 
     [Fact]
@@ -101,7 +132,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         JsonObject grupo = GrupoNoEnvelope.Grupo(campo);
         grupo["exibicao"] = CondicoesNoEnvelope.Invalidas(false, true);
         DomainError esperado = new(ErrosCodecEnvelope.EnvelopeMalformado, $"'{Grupo}.subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo.");
-        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".subitens", esperado)]);
+        Conferir(grupo, [(Grupo + ".exibicao[0][0].valor", CondicaoIncoerente), (Grupo + ".subitens", esperado)], ValoresInjetados);
     }
 
     [Fact]
@@ -114,7 +145,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
 
         causas.Should().ContainSingle().Which.Error.Code.Should().Be(GrupoFormularioErrorCodes.RegraAutorreferente);
         causas[0].Error.Message.Should().NotContain("DADO");
-        ConferirCausas(documento, causas);
+        ConferirCausas(documento, causas, ValoresInjetados);
     }
 
     [Fact]
@@ -135,7 +166,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComFormularioDesconhecido();
         grupo["ordem"] = -1;
-        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo + ".ordem", OrdemNegativa)]);
+        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo + ".ordem", OrdemNegativa)], ValoresInjetados);
     }
 
     [Fact]
@@ -143,7 +174,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComFormularioDesconhecido();
         grupo["exibicao"] = CondicoesNoEnvelope.Invalidas(false, true);
-        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo + ".exibicao[0][0].valor", CondicaoIncoerente)]);
+        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo + ".exibicao[0][0].valor", CondicaoIncoerente)], ValoresInjetados);
     }
 
     [Fact]
@@ -152,7 +183,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         JsonObject grupo = GrupoComFormularioDesconhecido();
         grupo["minimo"] = 3;
         grupo["maximo"] = 2;
-        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))]);
+        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))], ValoresInjetados);
     }
 
     [Fact]
@@ -177,7 +208,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         campo["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
         JsonObject grupo = GrupoNoEnvelope.Grupo(campo);
         grupo["formularioCodigo"] = OutroFormulario;
-        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido)]);
+        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido)], ValoresInjetados);
     }
 
     [Fact]
@@ -187,13 +218,13 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         daHabilitacao["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
         JsonObject grupo = GrupoNoEnvelope.Grupo(GrupoNoEnvelope.Campo(), daHabilitacao);
         grupo["formularioCodigo"] = OutroFormulario;
-        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido)]);
+        Conferir(grupo, [(Grupo + ".formularioCodigo", FormularioDesconhecido)], ValoresInjetados);
     }
 
     [Fact]
     public void LerGruposColetados_SoFormularioDesconhecido_DevolveUmaRecusaComCodigoETextoDeSempre()
     {
-        Conferir(GrupoComFormularioDesconhecido(), [(Grupo + ".formularioCodigo", FormularioDesconhecido)]);
+        Conferir(GrupoComFormularioDesconhecido(), [(Grupo + ".formularioCodigo", FormularioDesconhecido)], ValoresInjetados);
     }
 
     [Fact]
@@ -201,7 +232,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComCampoDeOutroFormulario();
         grupo["ordem"] = -1;
-        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".ordem", OrdemNegativa)]);
+        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".ordem", OrdemNegativa)], ValoresInjetados);
     }
 
     [Fact]
@@ -209,7 +240,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComCampoDeOutroFormulario();
         grupo["codigo"] = "codigo-fora-do-formato";
-        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".codigo", DoDominio(GrupoFormularioErrorCodes.CodigoInvalido))]);
+        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".codigo", DoDominio(GrupoFormularioErrorCodes.CodigoInvalido))], ValoresInjetados);
     }
 
     [Fact]
@@ -218,7 +249,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         JsonObject grupo = GrupoComCampoDeOutroFormulario();
         grupo["minimo"] = 3;
         grupo["maximo"] = 2;
-        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))]);
+        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo, DoDominio(GrupoFormularioErrorCodes.ContagemIncoerente))], ValoresInjetados);
     }
 
     [Fact]
@@ -226,7 +257,7 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
     {
         JsonObject grupo = GrupoComCampoDeOutroFormulario();
         grupo["exibicao"] = new JsonArray(new JsonArray(CondicoesNoEnvelope.Condicao("IGUAL", JsonValue.Create("A"))));
-        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo, DoDominio(GrupoFormularioErrorCodes.RegraAutorreferente))]);
+        Conferir(grupo, [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo, DoDominio(GrupoFormularioErrorCodes.RegraAutorreferente))], ValoresInjetados);
     }
 
     [Fact]
@@ -235,13 +266,13 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         JsonObject campo = GrupoNoEnvelope.Campo(CodigoDoDadoRecusado);
         campo["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
         campo["paginaCodigo"] = "OUTRA_SECAO";
-        Conferir(GrupoNoEnvelope.Grupo(campo), [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".subitens[0].paginaCodigo", SecaoPropria)]);
+        Conferir(GrupoNoEnvelope.Grupo(campo), [(Grupo + ".subitens", CampoDeOutroFormulario), (Grupo + ".subitens[0].paginaCodigo", SecaoPropria)], ValoresInjetados);
     }
 
     [Fact]
     public void LerGruposColetados_SoCampoDeOutroFormulario_DevolveUmaRecusaSemExcecao()
     {
-        Conferir(GrupoComCampoDeOutroFormulario(), [(Grupo + ".subitens", CampoDeOutroFormulario)]);
+        Conferir(GrupoComCampoDeOutroFormulario(), [(Grupo + ".subitens", CampoDeOutroFormulario)], ValoresInjetados);
     }
 
     private static JsonObject GrupoComFormularioDesconhecido()
@@ -258,40 +289,10 @@ public sealed class RecusasAcumuladasDoGrupoNoEnvelopeTests
         return GrupoNoEnvelope.Grupo(campo);
     }
 
-    private static DomainError DoDominio(string codigo) => new(codigo, string.Empty);
-
     private static JsonObject GrupoComExibicaoInvalida()
     {
         JsonObject grupo = GrupoNoEnvelope.Grupo(GrupoNoEnvelope.Campo());
         grupo["exibicao"] = CondicoesNoEnvelope.Invalidas(false, true);
         return grupo;
-    }
-
-    private static IReadOnlyList<FieldError> Ler(JsonObject documento)
-    {
-        LeitorEnvelope leitor = new();
-        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(StringComparer.Ordinal);
-        LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, [], FormulariosDoDocumentoDeTeste.ComFormularios());
-        return leitor.Falha<object>().Errors;
-    }
-
-    private static void Conferir(JsonObject grupo, (string Campo, DomainError Erro)[] esperadas)
-    {
-        JsonObject documento = GrupoNoEnvelope.Documento(grupo);
-        IReadOnlyList<FieldError> causas = Ler(documento);
-        causas.Select(causa => (causa.Field!, causa.Error.Code)).Should().Equal(esperadas.Select(esperada => (esperada.Campo, esperada.Erro.Code)));
-        causas.Select(static causa => causa.Error.Message).Zip(esperadas, static (mensagem, esperada) => esperada.Erro.Message.Length == 0 || mensagem == esperada.Erro.Message)
-            .Should().AllBeEquivalentTo(true);
-        ConferirCausas(documento, causas);
-    }
-
-    private static void ConferirCausas(JsonObject documento, IReadOnlyList<FieldError> causas)
-    {
-        causas.Should().OnlyHaveUniqueItems();
-        causas.Should().OnlyContain(causa => CaminhoNoDocumento.Existe(documento, causa.Field!));
-        foreach (string valor in new[] { "VALOR_FICTICIO_X", OutroFormulario, "codigo-fora-do-formato", CodigoDoDadoRecusado, "OUTRA_SECAO" })
-        {
-            causas.Should().OnlyContain(causa => !causa.Error.Message.Contains(valor) && !causa.Field!.Contains(valor));
-        }
     }
 }

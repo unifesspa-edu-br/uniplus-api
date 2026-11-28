@@ -40,10 +40,24 @@ public static class FormaDoGrupo
 
         return
         [
-            .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo),
-            .. ocorrencias.Conferir().Select(static erro => erro.NoCaminhoDe(GrupoColetadoInput.CaminhoDasOcorrencias)),
+            .. ConferirOGrupoSemOsCampos(codigo, ordem, rotulo, ocorrencias),
             .. RecusasDaQuantidadeDeCampos(subitens.Count), .. RecusasDosCampos(subitens),
             .. RecusasDeRegraQueCitaOGrupo(codigo ?? string.Empty, subitens, regras),
+        ];
+    }
+
+    /// <summary>
+    /// O que a forma do grupo recusa sem olhar os campos: código, ordem, rótulo e ocorrências. Serve à leitura que não
+    /// conseguiu ler os campos e ainda assim aponta o que está errado no próprio grupo.
+    /// </summary>
+    public static List<FieldError> ConferirOGrupoSemOsCampos(string? codigo, int ordem, string? rotulo, OcorrenciasDoGrupo ocorrencias)
+    {
+        ArgumentNullException.ThrowIfNull(ocorrencias);
+
+        return
+        [
+            .. RecusasDoCodigo(codigo), .. RecusasDaOrdem(ordem), .. RecusasDoRotulo(rotulo),
+            .. ocorrencias.Conferir().Select(static erro => erro.NoCaminhoDe(GrupoColetadoInput.CaminhoDasOcorrencias)),
         ];
     }
 
