@@ -44,11 +44,10 @@ public static class DefinirIdentificadorLegivelCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        Result<IdentificadorLegivel> declarado =
-            CriarProcessoSeletivoCommandHandler.IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
+        Result<IdentificadorLegivel> declarado = IdentificadorLegivelDeclarado.Conferir(command.IdentificadorLegivel);
         if (declarado.IsFailure)
         {
-            return Result.Failure(declarado.Error!);
+            return Result.ValidationFailure(declarado.Errors);
         }
 
         Result definido = processo.DefinirIdentificadorLegivel(declarado.Value!);
@@ -75,16 +74,15 @@ public static class DefinirIdentificadorLegivelCommandHandler
             .ConfigureAwait(false);
 
         return emUso
-            ? RecusaDoIdentificadorEmUso(identificador, unitOfWork)
-            : await GravarAsync(identificador, unitOfWork, cancellationToken).ConfigureAwait(false);
+            ? RecusaDoIdentificadorEmUso(unitOfWork)
+            : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Outro processo pode gravar o mesmo identificador entre a consulta de uso e esta gravação; o índice único
     /// é quem decide, e o conflito sai como a mesma recusa da consulta.
     /// </summary>
-    private static async Task<Result> GravarAsync(
-        IdentificadorLegivel identificador, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    private static async Task<Result> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {
@@ -92,15 +90,15 @@ public static class DefinirIdentificadorLegivelCommandHandler
         }
         catch (Exception ex) when (CriarProcessoSeletivoCommandHandler.EhConflitoDeIdentificadorLegivel(ex))
         {
-            return RecusaDoIdentificadorEmUso(identificador, unitOfWork);
+            return RecusaDoIdentificadorEmUso(unitOfWork);
         }
 
         return Result.Success();
     }
 
-    private static Result RecusaDoIdentificadorEmUso(IdentificadorLegivel identificador, IUnitOfWork unitOfWork)
+    private static Result RecusaDoIdentificadorEmUso(IUnitOfWork unitOfWork)
     {
         unitOfWork.DescartarAlteracoesNaoSalvas();
-        return Result.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
+        return Result.Failure(IdentificadorLegivelDeclarado.EmUso());
     }
 }

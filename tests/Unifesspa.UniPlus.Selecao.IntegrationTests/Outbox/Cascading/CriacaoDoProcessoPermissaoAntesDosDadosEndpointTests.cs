@@ -79,7 +79,7 @@ public sealed class CriacaoDoProcessoPermissaoAntesDosDadosEndpointTests : IAsyn
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, texto);
         using JsonDocument problema = JsonDocument.Parse(texto);
         problema.RootElement.GetProperty("errors").EnumerateArray().Select(static erro => erro.GetProperty("field").GetString())
-            .Should().Equal("nome", "tipoProcessoOrigemId", "origemCandidatos");
+            .Should().Equal("nome", "origemCandidatos", "tipoProcessoOrigemId");
     }
 
     [Fact(DisplayName = "Com permissão na unidade, o pedido válido cria o processo")]

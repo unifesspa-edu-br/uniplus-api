@@ -98,4 +98,15 @@ public sealed class LeituraDaIdentificacaoTests
             "/identificacao/tipoProcessoCodigo", "/identificacao/unidadeAdministradoraCodigo", "/identificacao/localidadeCodigoIbge");
         Mensagens(lidos).Should().NotContain(mensagem => mensagem.Contains("DIGITAD", StringComparison.Ordinal) || mensagem.Contains("9999999", StringComparison.Ordinal));
     }
+
+    [Fact(DisplayName = "O identificador legível com tamanho e formato inválidos sai com as duas causas, e não só a primeira")]
+    public void Identificador_TamanhoEFormatoInvalidos_RecusaAsDuasCausas()
+    {
+        IdentificacaoECronogramaLidos lidos = Ler(Identificacao() with { IdentificadorLegivel = "PS" });
+
+        lidos.Identidade.IdentificadorLegivel.Should().BeNull();
+        PartesRecusadas(lidos).Should().Equal(
+            ("/identificacao/identificadorLegivel", ProcessoSeletivoErrorCodes.IdentificadorLegivelTamanho),
+            ("/identificacao/identificadorLegivel", ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido));
+    }
 }

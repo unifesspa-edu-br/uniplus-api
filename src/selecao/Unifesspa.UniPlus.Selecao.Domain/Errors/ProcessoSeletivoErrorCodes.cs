@@ -95,6 +95,8 @@ public static class ProcessoSeletivoErrorCodes
     public const string FasesComPrecedenciaNoMesmoMomento = "ProcessoSeletivo.FasesComPrecedenciaNoMesmoMomento";
     public const string TipoProcessoNaoEncontradoOuInativo = "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo";
     public const string UnidadeAdministradoraNaoEncontrada = "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada";
+    public const string UnidadeAdministradoraSemCidade = "ProcessoSeletivo.UnidadeAdministradoraSemCidade";
+    public const string LocalidadeAusente = "ProcessoSeletivo.LocalidadeAusente";
     public const string AlgoritmoContagemPrazoNaoEncontrado = "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado";
 
     public const string TipoProcessoAusente = "ProcessoSeletivo.TipoProcessoAusente";

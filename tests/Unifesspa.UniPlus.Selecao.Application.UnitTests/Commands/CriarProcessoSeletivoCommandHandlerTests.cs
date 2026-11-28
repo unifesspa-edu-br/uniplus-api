@@ -4,7 +4,6 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -21,34 +20,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarProcessoSeletivoCommandHandlerTests
 {
-    private static readonly Guid UnidadeId = Guid.NewGuid();
+    private static Guid UnidadeId => CenarioDaCriacaoDoProcesso.UnidadeId;
 
-    private static readonly UnidadeView UnidadeCeps = new(
-        UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
-        "1504208", "Marabá", "PA");
+    private readonly CenarioDaCriacaoDoProcesso _cenario = new();
 
-    private static readonly TipoProcessoView TipoSisu = new(
-        TiposDeProcessoDeTeste.Sisu.OrigemId, "SISU", "SiSU", null);
-
-    private readonly IProcessoSeletivoRepository _repository = Substitute.For<IProcessoSeletivoRepository>();
-    private readonly IUnidadeReader _unidadeReader = Substitute.For<IUnidadeReader>();
-    private readonly ITipoProcessoReader _tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly IVerificadorDeAcesso _verificador = Substitute.For<IVerificadorDeAcesso>();
-    private ProcessoSeletivo? _persistido;
-
-    public CriarProcessoSeletivoCommandHandlerTests()
-    {
-        _unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
-        _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(ResultadoDoAcesso.Permitido);
-        _repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
-            .Do(chamada => _persistido = chamada.Arg<ProcessoSeletivo>());
-    }
-
-    private Task<Result<Guid>> CriarAsync(CriarProcessoSeletivoCommand comando) =>
-        CriarProcessoSeletivoCommandHandler.Handle(comando, _repository, _verificador, _unidadeReader, _tipoProcessoReader, _unitOfWork, CancellationToken.None);
+    private Task<Result<Guid>> CriarAsync(CriarProcessoSeletivoCommand comando) => _cenario.CriarAsync(comando);
 
     [Fact]
     public async Task Handle_ComDadosValidos_PersisteRascunhoEDevolveIdentificador()
@@ -56,12 +32,12 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         Result<Guid> resultado = await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir());
 
         resultado.IsSuccess.Should().BeTrue();
-        _persistido.Should().NotBeNull();
-        resultado.Value.Should().Be(_persistido!.Id);
-        _persistido.Nome.Should().Be("PS 2026 — SiSU");
-        _persistido.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
-        await _repository.Received(1).AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
-        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        _cenario.Persistido.Should().NotBeNull();
+        resultado.Value.Should().Be(_cenario.Persistido!.Id);
+        _cenario.Persistido.Nome.Should().Be("PS 2026 — SiSU");
+        _cenario.Persistido.Situacao.Should().Be(SituacaoDoProcessoSeletivo.Rascunho);
+        await _cenario.Repository.Received(1).AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -69,7 +45,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir());
 
-        _persistido!.UnidadeAdministradora.Should().BeEquivalentTo(new
+        _cenario.Persistido!.UnidadeAdministradora.Should().BeEquivalentTo(new
         {
             Codigo = "CEPS",
             Sigla = "CEPS",
@@ -80,7 +56,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             CidadeNome = "Marabá",
             CidadeUf = "PA"
         });
-        _persistido.UnidadeAdministradoraOrigemId.Should().Be(UnidadeId);
+        _cenario.Persistido.UnidadeAdministradoraOrigemId.Should().Be(UnidadeId);
     }
 
     [Fact]
@@ -88,15 +64,15 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir());
 
-        _persistido!.TipoProcessoOrigemId.Should().Be(TipoSisu.Id);
-        _persistido.TipoProcesso.Codigo.Should().Be("SISU");
-        _persistido.TipoProcesso.Nome.Should().Be("SiSU");
+        _cenario.Persistido!.TipoProcessoOrigemId.Should().Be(CenarioDaCriacaoDoProcesso.TipoSisu.Id);
+        _cenario.Persistido.TipoProcesso.Codigo.Should().Be("SISU");
+        _cenario.Persistido.TipoProcesso.Nome.Should().Be("SiSU");
     }
 
     [Fact(DisplayName = "Handle recusa quando a Unidade administradora não é encontrada e não persiste nada (CA-02)")]
     public async Task Handle_UnidadeNaoEncontrada_RecusaSemPersistir()
     {
-        _unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+        _cenario.UnidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir();
 
         Result<Guid> result = await CriarAsync(command);
@@ -105,8 +81,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada");
         result.Error.Message.Should().Be("A unidade administradora deve existir no cadastro de unidades.");
         result.Errors.Should().ContainSingle().Which.Field.Should().Be("unidadeAdministradoraOrigemId");
-        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
-        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa quando a Unidade administradora não tem cidade cadastrada e não persiste nada (CA-02, issue #1114)")]
@@ -114,7 +90,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         UnidadeView unidadeSemCidade = new(
             UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
-        _unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
+        _cenario.UnidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir();
 
         Result<Guid> result = await CriarAsync(command);
@@ -123,15 +99,14 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraSemCidade");
         result.Errors.Should().ContainSingle().Which.Field.Should().Be("unidadeAdministradoraOrigemId");
         result.Error.Message.Should().NotContain(UnidadeId.ToString());
-        await _tipoProcessoReader.DidNotReceive().ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
-        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa tipo inexistente ou inativo sem criar vínculo")]
     public async Task Handle_TipoInativo_RecusaSemPersistir()
     {
-        _tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
+        _cenario.TipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.Sisu.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
 
         Result<Guid> result = await CriarAsync(
             new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = "PS" });
@@ -140,7 +115,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo");
         result.Error.Message.Should().Be("O tipo de processo seletivo deve existir no cadastro de tipos de processo e estar ativo.");
         result.Errors.Should().ContainSingle().Which.Field.Should().Be("tipoProcessoOrigemId");
-        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
     }
     /// <summary>
     /// A recusa por localidade ausente é o código que o catálogo público publica para a
@@ -156,8 +131,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
-        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
-        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     /// <summary>
@@ -172,7 +147,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         Result<Guid> result = await CriarAsync(command);
 
-        UnidadeCeps.CidadeCodigoIbge.Should().Be("1504208", "a unidade tem cidade — e ainda assim não supre");
+        CenarioDaCriacaoDoProcesso.UnidadeCeps.CidadeCodigoIbge.Should().Be("1504208", "a unidade tem cidade — e ainda assim não supre");
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
     }
@@ -190,8 +165,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         Result<Guid> result = await CriarAsync(command);
 
         result.IsSuccess.Should().BeTrue();
-        _persistido!.Localidade.CodigoIbge.Should().Be("1501402");
-        _persistido.UnidadeAdministradora.CidadeCodigoIbge.Should().Be("1504208", "o snapshot da unidade guarda a cidade dela, independente da localidade regente");
+        _cenario.Persistido!.Localidade.CodigoIbge.Should().Be("1501402");
+        _cenario.Persistido.UnidadeAdministradora.CidadeCodigoIbge.Should().Be("1504208", "o snapshot da unidade guarda a cidade dela, independente da localidade regente");
     }
 
     [Fact(DisplayName = "Trio de localidade incoerente é recusado pela causa que o Kernel nomeia")]
@@ -213,40 +188,41 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         Result<Guid> result = await CriarAsync(command);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        _persistido!.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026");
+        _cenario.Persistido!.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026");
     }
 
-    [Theory(DisplayName = "Criação sem identificador legível é recusada com o erro nomeado, antes de qualquer leitura")]
+    [Theory(DisplayName = "Criação sem identificador legível é recusada com o erro nomeado, no campo do identificador, e nada é persistido")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task Handle_SemIdentificador_RecusaComErroNomeadoSemIO(string? identificador)
+    public async Task Handle_SemIdentificador_RecusaComErroNomeado(string? identificador)
     {
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).ComIdentificadorLegivel(identificador).Construir();
 
         Result<Guid> result = await CriarAsync(command);
 
-        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
-        await _unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        result.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(recusa =>
+            recusa.Field == "identificadorLegivel" && recusa.Error.Code == ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
+        await _cenario.NadaFoiGravadoAsync();
     }
 
-    [Fact(DisplayName = "Identificador em formato inválido é recusado antes de qualquer leitura")]
-    public async Task Handle_IdentificadorInvalido_RecusaSemIO()
+    [Fact(DisplayName = "Identificador em formato inválido é recusado no campo do identificador, sem consultar o uso e sem persistir")]
+    public async Task Handle_IdentificadorInvalido_RecusaSemConsultarOUso()
     {
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).ComIdentificadorLegivel("PSIQ-2026").Construir();
 
         Result<Guid> result = await CriarAsync(command);
 
-        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
-        await _unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        result.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(recusa =>
+            recusa.Field == "identificadorLegivel" && recusa.Error.Code == ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
+        await _cenario.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
+        await _cenario.NadaFoiGravadoAsync();
     }
 
     [Fact(DisplayName = "Identificador já usado por outro processo é recusado e nada é persistido")]
     public async Task Handle_IdentificadorEmUso_RecusaSemPersistir()
     {
-        _repository.IdentificadorLegivelEmUsoAsync(
+        _cenario.Repository.IdentificadorLegivelEmUsoAsync(
                 IdentificadorLegivel.Criar("psiq-2026").Value, null, Arg.Any<CancellationToken>())
             .Returns(true);
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir();
@@ -254,62 +230,52 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         Result<Guid> result = await CriarAsync(command);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
-        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
-        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+        await _cenario.Repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await _cenario.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
     [Fact(DisplayName = "Handle recusa quem não pode configurar na unidade nomeada antes de ler a unidade ou persistir")]
     public async Task Handle_SemPermissaoNaUnidade_RecusaAntesDeQualquerLeitura()
     {
-        _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+        _cenario.Verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.Negado);
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir();
 
         Result<Guid> result = await CriarAsync(command);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
-        await _verificador.Received(1).ExigirAsync(
+        await _cenario.Verificador.Received(1).ExigirAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == "selecao:processos:configurar"),
             Arg.Is<ResourceContext?>(c => c!.UnidadeProprietariaId == UnidadeId),
             Arg.Any<CancellationToken>());
-        await _unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
-    }
-
-    private void ConcederResultadoDoAcesso(ResultadoDoAcesso resultado) =>
-        _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>()).Returns(resultado);
-
-    private async Task NadaFoiLidoNemGravadoAsync()
-    {
-        await _unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await _tipoProcessoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
-        await _repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await _cenario.UnidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await _cenario.Repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 
     [Fact(DisplayName = "Sem permissão na unidade, dados inválidos são recusados por falta de permissão, sem apontar campo nem ler nada")]
     public async Task Handle_SemPermissaoEDadosInvalidos_RecusaSoPorFaltaDePermissao()
     {
-        ConcederResultadoDoAcesso(ResultadoDoAcesso.Negado);
+        _cenario.ConcederAcesso(ResultadoDoAcesso.Negado);
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = string.Empty, OrigemCandidatos = "origemQueNaoExiste" };
 
         Result<Guid> result = await CriarAsync(command);
 
         result.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(recusa =>
             recusa.Field == null && recusa.Error.Code == ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
-        await NadaFoiLidoNemGravadoAsync();
+        await _cenario.NadaFoiLidoNemGravadoAsync();
     }
 
     [Fact(DisplayName = "Com identidade incompleta, dados inválidos também recebem a recusa de identidade, e não a dos dados")]
     public async Task Handle_IdentidadeIncompletaEDadosInvalidos_RecusaAIdentidade()
     {
-        ConcederResultadoDoAcesso(ResultadoDoAcesso.IdentidadeIncompleta);
+        _cenario.ConcederAcesso(ResultadoDoAcesso.IdentidadeIncompleta);
 
         Result<Guid> result = await CriarAsync(new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with { Nome = string.Empty });
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentidadeIncompleta);
     }
 
-    [Fact(DisplayName = "Com permissão na unidade, todos os dados inválidos saem juntos, cada um no seu campo, sem ler nada nem persistir")]
+    [Fact(DisplayName = "Com permissão na unidade, os dados inválidos saem juntos, cada um no seu campo, na ordem nome, origem, tipo, sem persistir")]
     public async Task Handle_ComPermissaoEDadosInvalidos_RecusaTodasAsCausasJuntas()
     {
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir() with
@@ -321,8 +287,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         Result<Guid> result = await CriarAsync(command);
 
-        result.Errors.Select(static erro => erro.Field).Should().Equal("nome", "tipoProcessoOrigemId", "origemCandidatos");
-        await NadaFoiLidoNemGravadoAsync();
+        result.Errors.Select(static erro => erro.Field).Should().Equal("nome", "origemCandidatos", "tipoProcessoOrigemId");
+        await _cenario.TipoProcessoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
+        await _cenario.NadaFoiGravadoAsync();
     }
 
     [Fact(DisplayName = "Sem unidade informada não há permissão a decidir: a falta da unidade sai com as demais causas")]
@@ -337,7 +304,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         Result<Guid> result = await CriarAsync(command);
 
         result.Errors.Select(static erro => erro.Field).Should().Equal("nome", "unidadeAdministradoraOrigemId");
-        await _verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
+        await _cenario.Verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
+        await _cenario.NadaFoiLidoNemGravadoAsync();
     }
 
     [Fact(DisplayName = "Handle responde identidade incompleta, e não negativa, quando o token não identifica quem cria")]
@@ -345,7 +313,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         CriarProcessoSeletivoCommand command = new CriacaoDoProcessoSeletivoBuilder(UnidadeId).Construir();
 
-        _verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+        _cenario.Verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.IdentidadeIncompleta);
         Result<Guid> result = await CriarAsync(command);
 

@@ -40,7 +40,7 @@ public sealed record LocalidadeRegente
     /// <summary>
     /// Valida a forma e a coerência do trio pelo mesmo caminho que <c>Campus</c>,
     /// <c>LocalOferta</c> e o snapshot da Unidade administradora já usam, sem duplicar as
-    /// causas que o Kernel nomeia. Ao contrário daquele snapshot, aqui o trio não é
+    /// causas que o Kernel nomeia, e devolve todas elas, sem campo (quem chama aponta com <see cref="CamposDaCidade"/>). Ao contrário daquele snapshot, aqui o trio não é
     /// opcional: a localidade é exigida desde a criação do processo.
     /// </summary>
     public static Result<LocalidadeRegente> Criar(string? codigoIbge, string? nome, string? uf)
@@ -48,16 +48,18 @@ public sealed record LocalidadeRegente
         Result validacao = ReferenciaCidadeGeo.Validar(codigoIbge, nome, uf);
         if (validacao.IsFailure)
         {
-            return Result<LocalidadeRegente>.Failure(validacao.Error!);
+            return Result<LocalidadeRegente>.ValidationFailure(validacao.Errors);
         }
 
-#pragma warning disable CA1062 // Validar acabou de provar os três não-nulos; o analisador não relaciona a prova entre parâmetros distintos (mesmo caso de UnidadeAdministradoraSnapshot).
+        ArgumentNullException.ThrowIfNull(codigoIbge);
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(uf);
+
         return Result<LocalidadeRegente>.Success(Normalizar(codigoIbge, nome, uf));
-#pragma warning restore CA1062
     }
 
-    private static LocalidadeRegente Normalizar(string? codigoIbge, string? nome, string? uf) =>
-        new(codigoIbge!.Trim(), nome!.Trim(), uf!.Trim().ToUpperInvariant());
+    private static LocalidadeRegente Normalizar(string codigoIbge, string nome, string uf) =>
+        new(codigoIbge.Trim(), nome.Trim(), uf.Trim().ToUpperInvariant());
 
     /// <summary>
     /// Igualdade pelo código apenas — ver o porquê na documentação do tipo. Corrigir o

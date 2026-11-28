@@ -65,10 +65,7 @@ internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declara
             return;
         }
 
-        foreach (FieldError erroCidade in cidade.Errors)
-        {
-            _erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
-        }
+        _erros.AddRange(CamposDaCidadeDoPedido.Apontar(cidade.Errors));
     }
 
     private void ConferirCoerenciaDoEndereco()
@@ -92,15 +89,5 @@ internal sealed class ValidacaoDoLocalDeOferta(DeclaracaoDoLocalDeOferta declara
         }
     }
 
-    // O código de erro da referência de cidade diz qual campo do payload (camelCase, ADR-0023) causou a recusa; sem isso
-    // todo erro de cidade seria rotulado com o código IBGE, mesmo quando a causa é o nome ou a UF.
-    private static string CampoDaCidade(string codigoErro) => codigoErro switch
-    {
-        CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
-            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
-        CidadeReferenciaErrorCodes.UfObrigatoria
-            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
-        _ => "cidadeCodigoIbge",
-    };
+    private static readonly CamposDaCidade CamposDaCidadeDoPedido = new("cidadeCodigoIbge", "cidadeNome", "cidadeUf");
 }

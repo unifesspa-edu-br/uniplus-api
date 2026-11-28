@@ -112,8 +112,7 @@ public static class ReferenciaCidadeGeo
     /// para não mascarar a causa raiz nem arriscar checar algo ausente. Retorna
     /// <see cref="Result.Success"/> quando não há nenhuma violação; caso
     /// contrário, um <see cref="Result"/> com um <see cref="FieldError"/> (campo
-    /// não rotulado — quem chama mapeia por <see cref="DomainError.Code"/>, ex.:
-    /// <c>Campus.CampoDaCidade</c>) por violação, na taxonomia de
+    /// não rotulado — quem chama aponta o campo com <see cref="CamposDaCidade"/>) por violação, na taxonomia de
     /// <see cref="CidadeReferenciaErrorCodes"/>.
     /// </summary>
     public static Result Validar(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
