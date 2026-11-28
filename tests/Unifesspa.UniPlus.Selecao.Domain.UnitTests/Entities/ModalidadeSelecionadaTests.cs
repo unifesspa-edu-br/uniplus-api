@@ -31,6 +31,29 @@ public sealed class ModalidadeSelecionadaTests
 
     private static Result<ModalidadeSelecionada> CriarAmpla() => ModalidadeSelecionada.Criar(ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Descricao = "Ampla concorrência" });
 
+    [Fact(DisplayName = "Criar copia o nome aparado e apresenta a modalidade como código e nome")]
+    public void Criar_NomeComEspacosNasPontas_CopiaAparadoEApresentaCodigoENome()
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Nome = "  Ampla concorrência  " };
+
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(cadastro).Value!;
+
+        modalidade.Nome.Should().Be("Ampla concorrência");
+        modalidade.CodigoENome.Should().Be("AC — Ampla concorrência");
+    }
+
+    [Theory(DisplayName = "Criar sem nome no cadastro falha, pois o cadastro já garante o nome")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_NomeVazio_Lanca(string nome)
+    {
+        ModalidadeNoCadastro cadastro = ModalidadesNoCadastroDeTeste.Da("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas) with { Nome = nome };
+
+        Action criar = () => ModalidadeSelecionada.Criar(cadastro);
+
+        criar.Should().Throw<ArgumentException>();
+    }
+
     [Fact(DisplayName = "Criar sem a identidade da modalidade de origem recusa")]
     public void Criar_SemIdentidadeDeOrigem_Recusa()
     {

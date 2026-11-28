@@ -88,7 +88,10 @@ public sealed class MontagemDoQuadroDeVagasTests
         DistribuicaoDeVagasDeclarada declarada = DaLeiDeCotasCom(
             50, 0.5m, Modalidade("OUTRA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.DentroDaReservaLegal));
 
-        MontagemDoQuadroDeVagas.Montar(declarada).Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente);
+        DomainError erro = MontagemDoQuadroDeVagas.Montar(declarada).Error!;
+
+        erro.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente);
+        erro.Message.Should().Be("A modalidade OUTRA — Modalidade OUTRA está selecionada mas não aparece no quadro calculado.");
     }
 
     [Fact(DisplayName = "O quadro fixado com a soma igual às vagas ofertadas base não retira vaga")]

@@ -215,7 +215,7 @@ public sealed class ModalidadeCoerenciaDosCamposTests
     public void Criar_SemRegraDeAplicabilidade_Falha()
     {
         Result<Modalidade> r = Modalidade.Criar("AC", new DeclaracaoDaModalidade(
-            null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null, null, null, null));
+            "Modalidade de teste", null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null, null, null, null));
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().ContainSingle(e => e.Field == "regraDeAplicabilidade"

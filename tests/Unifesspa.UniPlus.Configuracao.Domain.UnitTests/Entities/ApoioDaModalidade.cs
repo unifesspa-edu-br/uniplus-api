@@ -45,7 +45,7 @@ internal static class ApoioDaModalidade
     };
 
     private static DeclaracaoDaModalidade DeclaracaoPadrao { get; } = new(
-        null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null, null, null, null);
+        "Modalidade de teste", null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null, null, null, null);
 
     /// <summary>A regra de aplicabilidade mínima que a natureza admite.</summary>
     internal static PredicadoDnf AplicavelA(string? natureza) => natureza switch

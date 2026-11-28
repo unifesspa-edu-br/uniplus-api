@@ -29,13 +29,14 @@ public sealed class ExportacaoDoRascunhoComVagasTests
         return await _cenario.Exportacao.ExportarAsync(rascunho, CancellationToken.None);
     }
 
-    [Fact(DisplayName = "A exportação traz o nome do curso, a descrição das modalidades, o quadro e o total de cada distribuição")]
+    [Fact(DisplayName = "A exportação traz o nome do curso, o nome e a descrição das modalidades, o quadro e o total de cada distribuição")]
     public async Task Exportar_DistribuicoesComCadastrosVivos_TrazNomesEQuadro()
     {
         JsonObject documento = await ExportarAsync();
 
         JsonObject medicina = documento["distribuicaoVagas"]![1]!.AsObject();
         medicina["cursoNome"]!.GetValue<string>().Should().Be("Medicina");
+        medicina["modalidades"]![0]!["nome"]!.GetValue<string>().Should().Be("Ampla concorrência, ação afirmativa da Unifesspa para pessoas com deficiência");
         medicina["modalidades"]![0]!["descricao"]!.GetValue<string>().Should().Be("Ampla concorrência para pessoas com deficiência");
         medicina["quadro"]!.AsArray().Should().HaveCount(2);
         medicina["totalDeVagasDoEdital"]!.GetValue<int>().Should().Be(10);

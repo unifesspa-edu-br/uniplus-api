@@ -86,6 +86,23 @@ public sealed class ModalidadeRepository : IModalidadeRepository
             .Where(m => excluirId == null || m.Id != excluirId)
             .AnyAsync(m => m.Codigo == codigo, cancellationToken);
 
+    public Task<bool> NomeExisteEntreVivosAsync(
+        string nome,
+        Guid? excluirId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(nome);
+
+        // Espelha a normalização do agregado (Trim) para casar com o valor persistido.
+        // Comparação case-sensitive (default do Postgres) — alinhada ao índice único.
+        string nomeNormalizado = nome.Trim();
+
+        return _dbContext.Modalidades
+            .AsNoTracking()
+            .Where(m => excluirId == null || m.Id != excluirId)
+            .AnyAsync(m => m.Nome == nomeNormalizado, cancellationToken);
+    }
+
     public async Task<bool> CodigosVivosExistemAsync(
         IReadOnlyCollection<string> codigos,
         CancellationToken cancellationToken)

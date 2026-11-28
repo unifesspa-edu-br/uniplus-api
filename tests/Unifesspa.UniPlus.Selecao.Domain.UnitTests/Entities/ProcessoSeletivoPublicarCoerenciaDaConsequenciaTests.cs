@@ -44,6 +44,8 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+        resultado.Error.Message.Should().Be("A consequência não corresponde à ação de indeferimento da modalidade LB_PPI — "
+            + "Escola pública, renda de até 1 salário mínimo por pessoa, pretos, pardos e indígenas.");
     }
 
     [Fact(DisplayName = "CA-05 (2/5 — modalidade de cota): ELIMINA é incoerente com RETIRA_A_MODALIDADE de uma cota reservada (comprovante de renda)")]

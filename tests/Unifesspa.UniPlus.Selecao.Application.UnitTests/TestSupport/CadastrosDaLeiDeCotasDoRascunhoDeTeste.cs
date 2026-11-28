@@ -54,10 +54,10 @@ internal static class CadastrosDaLeiDeCotasDoRascunhoDeTeste
     private static ModalidadeView[] Modalidades() =>
     [
         .. ModalidadesFederaisLei12711.Codigos.Select(static codigo => new ModalidadeView(
-            Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null,
+            Guid.CreateVersion7(), codigo, ModalidadesNoCadastroDeTeste.NomeDe(codigo), null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(CatalogoDe<NaturezaLegalModalidade>.Obter("COTA_RESERVADA")), null, "Lei de teste")),
         new ModalidadeView(
-            Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
+            Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, "Ampla concorrência", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(CatalogoDe<NaturezaLegalModalidade>.Obter("AMPLA")), null, "Lei de teste"),
     ];
 

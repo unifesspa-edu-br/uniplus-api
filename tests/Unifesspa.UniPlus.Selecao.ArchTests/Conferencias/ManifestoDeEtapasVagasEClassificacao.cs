@@ -102,12 +102,12 @@ internal static class ManifestoDeEtapasVagasEClassificacao
 
         [typeof(ModalidadeSelecionada)] = (
             [
-                "ModalidadeOrigemId", "Codigo", "Descricao", "NaturezaLegal", "ComposicaoVagas",
+                "ModalidadeOrigemId", "Codigo", "Nome", "Descricao", "NaturezaLegal", "ComposicaoVagas",
                 "ComposicaoOrigemCodigo", "RegraRemanejamento", "RemanejamentoDestino", "RemanejamentoPar",
                 "RemanejamentoFallback", "RegraDeAplicabilidade", "AcaoQuandoIndeferido", "BaseLegal",
                 "QuantidadeDeclarada",
             ],
-            [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
+            [("ConfiguracaoDistribuicaoVagasId", "FK interna."), ("CodigoENome", "Texto derivado do código e do nome; não é gravado.")]),
 
         // ADR-0115 — o quadro de vagas: output derivado, materializado dentro da
         // mesma factory que os insumos (não um comando separado).

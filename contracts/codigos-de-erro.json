@@ -1729,7 +1729,7 @@
     {
       "codigo": "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel",
       "status": 422,
-      "titulo": "A modalidade legal fixa admite alteração apenas de descrição e base legal"
+      "titulo": "A modalidade legal fixa admite alteração apenas de nome, descrição e base legal"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.nao_encontrada",
@@ -1745,6 +1745,21 @@
       "codigo": "uniplus.configuracao.modalidade.natureza_remanejamento_incoerente",
       "status": 422,
       "titulo": "Regra de remanejamento incoerente com a natureza legal da modalidade"
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_ja_existe",
+      "status": 409,
+      "titulo": "Já existe uma modalidade ativa com este nome"
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_obrigatorio",
+      "status": 422,
+      "titulo": "Nome da modalidade é obrigatório"
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.nome_tamanho",
+      "status": 422,
+      "titulo": "Tamanho do nome da modalidade inválido"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade",

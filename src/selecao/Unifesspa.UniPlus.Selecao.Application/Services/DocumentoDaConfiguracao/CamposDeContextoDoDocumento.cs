@@ -41,7 +41,7 @@ internal static class CamposDeContextoDoDocumento
         new("/etapas/*/bancas/*", "tipoBancaCodigo", TiposDeBanca, ["tipoBancaNome"]),
         new("/etapas/*", "tipoEtapaCodigo", TiposDeEtapa, ["tipoEtapaNome"]),
         new("/distribuicaoVagas/*", "ofertaCursoCodigo", OfertasDeCurso, ["cursoNome", "cursoGrau", "unidadeOfertanteNome", "turnos"]),
-        new("/distribuicaoVagas/*/modalidades/*", "codigo", Modalidades, ["descricao"]),
+        new("/distribuicaoVagas/*/modalidades/*", "codigo", Modalidades, ["nome", "descricao"]),
         new("/atendimento/condicoes/*", "condicaoCodigo", CondicoesDeAtendimento, ["condicaoNome"]),
         new("/atendimento/recursos/*", "recursoCodigo", RecursosDeAcessibilidade, ["recursoNome"]),
         new("/atendimento/tiposDeficiencia/*", "tipoDeficienciaCodigo", TiposDeDeficiencia, ["tipoDeficienciaNome"]),

@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 internal sealed class ModalidadeSelecionadaConfiguration : IEntityTypeConfiguration<ModalidadeSelecionada>
 {
     private const int CodigoMaxLength = 60;
+    private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 300;
     private const int TokenMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
@@ -44,6 +45,7 @@ internal sealed class ModalidadeSelecionadaConfiguration : IEntityTypeConfigurat
         builder.Property(m => m.Id).HasComment("Identificador da modalidade selecionada.").ValueGeneratedNever();
 
         builder.Property(m => m.Codigo).HasComment("Código da modalidade copiado do cadastro.").HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(m => m.Nome).HasComment("Nome da modalidade copiado do cadastro.").HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(m => m.Descricao).HasComment("Descrição da modalidade copiada do cadastro, quando disponível.").HasMaxLength(DescricaoMaxLength);
         builder.Property(m => m.NaturezaLegal).HasComment("Natureza legal da modalidade.").HasMaxLength(TokenMaxLength).IsRequired();
         builder.Property(m => m.ComposicaoVagas).HasComment("Composição das vagas da modalidade.").HasMaxLength(TokenMaxLength).IsRequired();

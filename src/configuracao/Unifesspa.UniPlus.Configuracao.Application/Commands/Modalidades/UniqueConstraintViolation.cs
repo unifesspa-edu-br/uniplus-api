@@ -1,11 +1,13 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 
 using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Helper para mapear violações 23505 do índice único parcial do código vivo da
-/// modalidade — <c>ux_modalidades_codigo_ativos</c> — para o <c>DomainError</c>
-/// apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no
+/// Helper para mapear violações 23505 dos índices únicos parciais do código e do nome vivos da
+/// modalidade — <c>ux_modalidades_codigo_ativos</c> e <c>ux_modalidades_nome_ativos</c> — para o
+/// <c>DomainError</c> apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no
 /// inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
 /// <see cref="System.Type.FullName"/> evita dependência direta do pacote
@@ -15,14 +17,16 @@ using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 /// Mesmo padrão do <c>UniqueConstraintViolation</c> dos demais cadastros de
 /// Configuração. A tradução cross-cutting de 23505 → 409 via
 /// <c>GlobalExceptionMiddleware</c> permanece como follow-up separado (#504); este
-/// helper cobre o caso específico da unicidade do código, inclusive a corrida na
-/// criação (o código é imutável, então não há corrida na atualização).
+/// helper cobre o caso específico da unicidade do código e do nome, inclusive a corrida
+/// na criação e, para o nome, também na atualização (o código é imutável, então não há corrida dele na atualização).
 /// </remarks>
 internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
     private const string CodigoConstraint = RestricoesDoBanco.ModalidadeCodigoAtivos;
+
+    private const string NomeConstraint = RestricoesDoBanco.ModalidadeNomeAtivos;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
@@ -36,26 +40,43 @@ internal static class UniqueConstraintViolation
     {
         ArgumentNullException.ThrowIfNull(ex);
 
-        if (!string.Equals(ex.GetType().FullName, DbUpdateExceptionFullName, StringComparison.Ordinal))
-        {
-            return null;
-        }
+        return string.Equals(ex.GetType().FullName, DbUpdateExceptionFullName, StringComparison.Ordinal)
+            && ex.InnerException is { } inner
+                ? ConstraintDaViolacaoDeUnicidade(inner)
+                : null;
+    }
 
-        Exception? inner = ex.InnerException;
-        if (inner is null)
-        {
-            return null;
-        }
-
+    private static string? ConstraintDaViolacaoDeUnicidade(Exception inner)
+    {
         Type innerType = inner.GetType();
         string? sqlState = innerType.GetProperty("SqlState")?.GetValue(inner) as string;
-        if (sqlState != UniqueViolationSqlState)
+
+        return string.Equals(sqlState, UniqueViolationSqlState, StringComparison.Ordinal)
+            ? innerType.GetProperty("ConstraintName")?.GetValue(inner) as string
+            : null;
+    }
+
+    /// <summary>
+    /// O erro de negócio do índice único violado — código ou nome já existente —, ou <see langword="null"/>
+    /// quando a exceção não é violação de nenhum dos dois e deve propagar.
+    /// </summary>
+    public static DomainError? ErroDoIndiceViolado(Exception ex)
+    {
+        string? constraint = GetViolatedConstraint(ex);
+
+        if (IsCodigoConflict(constraint))
         {
-            return null;
+            return CodigoJaExisteErro();
         }
 
-        return innerType.GetProperty("ConstraintName")?.GetValue(inner) as string;
+        return IsNomeConflict(constraint) ? NomeJaExisteErro() : null;
     }
+
+    public static DomainError CodigoJaExisteErro() =>
+        new(ModalidadeErrorCodes.CodigoJaExiste, "Já existe uma modalidade viva com o código informado.");
+
+    public static DomainError NomeJaExisteErro() =>
+        new(ModalidadeErrorCodes.NomeJaExiste, "Já existe uma modalidade viva com o nome informado.");
 
     /// <summary>
     /// <see langword="true"/> quando a constraint violada é o índice único parcial
@@ -63,4 +84,11 @@ internal static class UniqueConstraintViolation
     /// </summary>
     public static bool IsCodigoConflict(string? constraint) =>
         string.Equals(constraint, CodigoConstraint, StringComparison.Ordinal);
+
+    /// <summary>
+    /// <see langword="true"/> quando a constraint violada é o índice único parcial
+    /// que garante uma única modalidade viva por nome.
+    /// </summary>
+    public static bool IsNomeConflict(string? constraint) =>
+        string.Equals(constraint, NomeConstraint, StringComparison.Ordinal);
 }

@@ -683,6 +683,7 @@ configuracao.modalidades.descricao: Interno
 configuracao.modalidades.id: Interno
 configuracao.modalidades.is_deleted: Interno
 configuracao.modalidades.natureza_legal: Interno
+configuracao.modalidades.nome: Interno
 configuracao.modalidades.regra_de_aplicabilidade: Interno
 configuracao.modalidades.regra_remanejamento: Interno
 configuracao.modalidades.remanejamento_destino: Interno
@@ -1771,6 +1772,7 @@ selecao.modalidades_selecionadas.descricao: Interno
 selecao.modalidades_selecionadas.id: Interno
 selecao.modalidades_selecionadas.modalidade_origem_id: Interno
 selecao.modalidades_selecionadas.natureza_legal: Interno
+selecao.modalidades_selecionadas.nome: Interno
 selecao.modalidades_selecionadas.quantidade_declarada: Interno
 selecao.modalidades_selecionadas.regra_de_aplicabilidade: Interno
 selecao.modalidades_selecionadas.regra_remanejamento: Interno

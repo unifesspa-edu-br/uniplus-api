@@ -4,11 +4,16 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -43,7 +48,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
 
     private static Modalidade Existente(string codigo = "PSVR_AMPLA") =>
         Modalidade.Criar(codigo, new DeclaracaoDaModalidade(
-                "Ampla", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
+                ModalidadesDeTeste.Nome, "Ampla", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null))
             .Value!;
 
@@ -66,7 +71,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((Modalidade?)null);
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            new AtualizarModalidadeCommand(id, Descricao: "x", RegraDeAplicabilidade: Incondicional), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+            new AtualizarModalidadeCommand(id, Nome: ModalidadesDeTeste.Nome, Descricao: "x", RegraDeAplicabilidade: Incondicional), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaoEncontrada);
@@ -79,7 +84,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         Modalidade existente = ExistenteNoRepositorio();
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
+            existente.Id, Nome: ModalidadesDeTeste.Nome, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await Atualizar(comando);
 
@@ -89,13 +94,103 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Nome já usado por outra modalidade viva retorna conflito, descarta a alteração e não persiste")]
+    public async Task Handle_NomeDeOutraModalidade_RetornaConflitoEDescarta()
+    {
+        Modalidade existente = ExistenteNoRepositorio();
+        _repository.NomeExisteEntreVivosAsync("Nome de outra modalidade", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await Atualizar(ComandoComONome(existente.Id, "Nome de outra modalidade"));
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A própria modalidade pode manter o próprio nome")]
+    public async Task Handle_MesmoNomeDaPropriaModalidade_Persiste()
+    {
+        Modalidade existente = ExistenteNoRepositorio();
+
+        Result resultado = await Atualizar(ComandoComONome(existente.Id, ModalidadesDeTeste.Nome));
+
+        resultado.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).NomeExisteEntreVivosAsync(ModalidadesDeTeste.Nome, existente.Id, Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O nome já usado é recusado antes da referência inexistente, e a alteração é descartada")]
+    public async Task Handle_NomeDeOutraModalidadeEReferenciaInexistente_RecusaONomePrimeiro()
+    {
+        Modalidade existente = ExistenteNoRepositorio("SUP");
+        _repository.NomeExisteEntreVivosAsync(Arg.Any<string>(), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(false);
+        var comando = new AtualizarModalidadeCommand(
+            existente.Id, Nome: "Nome de outra modalidade", NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            Remanejamento: new("DESTINO_UNICO", Destino: "XPTO"), RegraDeAplicabilidade: OptouPelasCotas(false));
+
+        Result resultado = await Atualizar(comando);
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Atualização sem nome é recusada sem buscar a modalidade")]
+    public async Task Handle_SemNome_RecusaSemBuscarPorId()
+    {
+        Result resultado = await Atualizar(ComandoComONome(Guid.CreateVersion7(), null));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadeErrorCodes.NomeObrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O nome é editável numa modalidade legal fixa, que mantém a estrutura")]
+    public async Task Handle_LegalFixaComNomeNovoEEstruturaIgual_Persiste()
+    {
+        Modalidade existente = ExistenteNoRepositorio("AC");
+
+        Result resultado = await Atualizar(ComandoComONome(existente.Id, "Nome novo da ampla concorrência"));
+
+        resultado.IsSuccess.Should().BeTrue();
+        existente.Nome.Should().Be("Nome novo da ampla concorrência");
+    }
+
+    [Fact(DisplayName = "Corrida pelo índice do nome na atualização vira NomeJaExiste e descarta o que não foi salvo")]
+    public async Task Handle_CorridaPeloIndiceDoNome_RetornaNomeJaExisteEDescarta()
+    {
+        Modalidade existente = ExistenteNoRepositorio();
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateException(
+            "violação sintética de teste", PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ModalidadeNomeAtivos)));
+
+        Result resultado = await Atualizar(ComandoComONome(existente.Id, "Nome novo"));
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Violação de outro índice único na atualização propaga sem descartar")]
+    public async Task Handle_CorridaPorOutroIndice_Propaga()
+    {
+        Modalidade existente = ExistenteNoRepositorio();
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateException(
+            "violação sintética de teste", PostgresExceptionFactory.Create("23505", "ix_outro")));
+
+        Func<Task> acao = () => Atualizar(ComandoComONome(existente.Id, "Nome novo"));
+
+        await acao.Should().ThrowAsync<DbUpdateException>();
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+    }
+
+    private static AtualizarModalidadeCommand ComandoComONome(Guid id, string? nome) => new(
+        id, Nome: nome, NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
+
     [Fact(DisplayName = "Modalidade legal fixa recusa alteração estrutural antes de checar referências")]
     public async Task Handle_LegalFixa_RecusaSemChecarReferencias()
     {
         Modalidade existente = ExistenteNoRepositorio("LB_PPI");
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            existente.Id, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             Remanejamento: new("DESTINO_UNICO", Destino: "AC"), RegraDeAplicabilidade: OptouPelasCotas(false));
 
         Result resultado = await Atualizar(comando);
@@ -115,7 +210,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
             .Returns(false);
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            existente.Id, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             Remanejamento: new("DESTINO_UNICO", Destino: "XPTO"), RegraDeAplicabilidade: OptouPelasCotas(false));
 
         Result resultado = await Atualizar(comando);
@@ -135,7 +230,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     {
         Modalidade existente = ExistenteNoRepositorio("LB_PPI");
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
+            existente.Id, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
             Remanejamento: new("SEGUE_ORDEM_DE_REMANEJAMENTO"), RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await Atualizar(comando);
@@ -148,7 +243,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a modalidade por Id — validação vence 404")]
     public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
     {
-        var comando = new AtualizarModalidadeCommand(Guid.CreateVersion7(), NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
+        var comando = new AtualizarModalidadeCommand(Guid.CreateVersion7(), Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await Atualizar(comando);
 
@@ -175,7 +270,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     private Modalidade ExistenteQueJaCitaOFatoPcd()
     {
         Modalidade existente = Modalidade.Criar("PSIQ_PCD", new DeclaracaoDaModalidade(
-            "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
+            ModalidadesDeTeste.Nome, "Ampla", "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", "AC", null, null,
             Predicado(Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)), null, null)).Value!;
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -183,7 +278,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     }
 
     private static AtualizarModalidadeCommand ComandoQueCita(Guid id, string fato) => new(
-        id, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+        id, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "ACAO_AFIRMATIVA", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
         Remanejamento: new("DESTINO_UNICO", Destino: "AC"),
         RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao(fato, true)]]);
 
@@ -191,7 +286,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     public async Task Handle_RegraMalformada_AcumulaComOsDemaisCampos()
     {
         var comando = new AtualizarModalidadeCommand(
-            Guid.CreateVersion7(), Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
+            Guid.CreateVersion7(), Nome: ModalidadesDeTeste.Nome, Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
 
         Result resultado = await Atualizar(comando);
 
@@ -209,7 +304,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         Modalidade existente = ExistenteNoRepositorio("LB_PPI");
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
-            new AtualizarModalidadeCommand(existente.Id, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[Condicao("PCD", true)]]),
+            new AtualizarModalidadeCommand(existente.Id, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[Condicao("PCD", true)]]),
             _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);

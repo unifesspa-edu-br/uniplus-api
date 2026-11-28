@@ -140,7 +140,7 @@ public sealed class QuadroDeVagasDoRascunhoIgualAoSerializadoTests
     {
         ModalidadeNoCadastro cadastro = ModalidadeNoCadastro(codigo);
         return new(
-            cadastro.Id, codigo, null, cadastro.NaturezaLegal!.Value.Codigo(), cadastro.ComposicaoVagas!.Value.Codigo(),
+            cadastro.Id, codigo, cadastro.Nome, null, cadastro.NaturezaLegal!.Value.Codigo(), cadastro.ComposicaoVagas!.Value.Codigo(),
             cadastro.ComposicaoOrigemCodigo, null, null, null, null, cadastro.RegraDeAplicabilidade, null, cadastro.BaseLegal);
     }
 

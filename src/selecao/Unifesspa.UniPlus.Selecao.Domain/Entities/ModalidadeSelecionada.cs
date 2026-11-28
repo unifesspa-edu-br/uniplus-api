@@ -24,7 +24,11 @@ public sealed class ModalidadeSelecionada : EntityBase
     public Guid ConfiguracaoDistribuicaoVagasId { get; private set; }
     public Guid ModalidadeOrigemId { get; private set; }
     public string Codigo { get; private set; } = string.Empty;
+    public string Nome { get; private set; } = string.Empty;
     public string? Descricao { get; private set; }
+
+    public string CodigoENome => $"{Codigo} — {Nome}";
+
     public NaturezaLegalModalidade NaturezaLegal { get; private set; }
     public ComposicaoVagasModalidade ComposicaoVagas { get; private set; }
     public string? ComposicaoOrigemCodigo { get; private set; }
@@ -85,6 +89,7 @@ public sealed class ModalidadeSelecionada : EntityBase
     {
         ArgumentNullException.ThrowIfNull(modalidade);
         ArgumentNullException.ThrowIfNull(modalidade.RegraDeAplicabilidade, nameof(modalidade));
+        ArgumentException.ThrowIfNullOrWhiteSpace(modalidade.Nome, nameof(modalidade));
         IReadOnlyList<FieldError> recusas = Conferir(modalidade);
         return recusas.Count == 0
             ? Result<ModalidadeSelecionada>.Success(new ModalidadeSelecionada(modalidade, quantidadeDeclarada))
@@ -95,18 +100,24 @@ public sealed class ModalidadeSelecionada : EntityBase
     {
         ModalidadeOrigemId = modalidade.Id;
         Codigo = modalidade.Codigo;
+        Nome = modalidade.Nome.Trim();
         Descricao = modalidade.Descricao;
         NaturezaLegal = modalidade.NaturezaLegal!.Value;
         ComposicaoVagas = modalidade.ComposicaoVagas!.Value;
         ComposicaoOrigemCodigo = modalidade.ComposicaoOrigemCodigo;
-        RegraRemanejamento = modalidade.RegraRemanejamento;
-        RemanejamentoDestino = modalidade.RemanejamentoDestino;
-        RemanejamentoPar = modalidade.RemanejamentoPar;
-        RemanejamentoFallback = modalidade.RemanejamentoFallback;
+        CopiarRemanejamento(modalidade);
         RegraDeAplicabilidade = modalidade.RegraDeAplicabilidade;
         AcaoQuandoIndeferido = modalidade.AcaoQuandoIndeferido;
         BaseLegal = modalidade.BaseLegal.Trim();
         QuantidadeDeclarada = quantidadeDeclarada;
+    }
+
+    private void CopiarRemanejamento(ModalidadeNoCadastro modalidade)
+    {
+        RegraRemanejamento = modalidade.RegraRemanejamento;
+        RemanejamentoDestino = modalidade.RemanejamentoDestino;
+        RemanejamentoPar = modalidade.RemanejamentoPar;
+        RemanejamentoFallback = modalidade.RemanejamentoFallback;
     }
 
     private static IReadOnlyList<FieldError> Conferir(ModalidadeNoCadastro modalidade) =>

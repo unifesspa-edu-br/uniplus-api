@@ -34,18 +34,20 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Seleção (ADR-0061), apenas por referência intra-banco viva (outra modalidade
 /// viva que a aponte como origem ou destino/par/fallback) — ou por ser uma
 /// modalidade do catálogo legal fixo.</para>
-/// <para>As treze modalidades do <b>catálogo legal fixo</b>
+/// <para>As 12 modalidades do <b>catálogo legal fixo</b>
 /// (<see cref="CodigoModalidade.CodigosLegaisFixos"/>) são cadastro só na forma: a
 /// estrutura de vagas de cada uma vem de norma — a Lei 12.711/2012 (red. Lei
 /// 14.723/2023) ou a resolução institucional que reserva a vaga de pessoa com
 /// deficiência —, não da universidade. Nelas <see cref="Atualizar"/> aceita apenas
-/// <see cref="Descricao"/> e <see cref="BaseLegal"/>; os handlers recusam removê-las e recusam cadastrar os
+/// <see cref="Nome"/>, <see cref="Descricao"/> e <see cref="BaseLegal"/>; os handlers recusam removê-las e recusam cadastrar os
 /// seus códigos. Alterar a estrutura exige mudança no seed e migração — o mesmo canal
 /// que as criou.</para>
 /// </remarks>
 public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
 {
     public CodigoModalidade Codigo { get; private set; } = null!;
+    /// <summary>Nome da modalidade para apresentação; obrigatório, aparado e único entre as modalidades vivas.</summary>
+    public string Nome { get; private set; } = null!;
     public string? Descricao { get; private set; }
     public NaturezaLegal NaturezaLegal { get; private set; }
     public ComposicaoVagas ComposicaoVagas { get; private set; }
@@ -87,7 +89,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// são opcionais.
     /// </summary>
     /// <remarks>
-    /// A factory <b>aceita</b> os treze códigos do catálogo legal fixo — recusá-los é
+    /// A factory <b>aceita</b> os 12 códigos do catálogo legal fixo — recusá-los é
     /// papel do cadastro (handler), não do domínio: o mesmo código válido pode
     /// legitimamente chegar aqui por outra via que não o endpoint de criação (ex.:
     /// reconstrução administrativa a partir do estado semeado). A unicidade do
@@ -137,7 +139,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     /// <remarks>
     /// Numa modalidade do catálogo legal fixo (<see cref="ValueObjects.CodigoModalidade.EhLegalFixa"/>)
-    /// só <c>Descricao</c> e <c>BaseLegal</c> são editáveis; divergência em qualquer outro
+    /// só <c>Nome</c>, <c>Descricao</c> e <c>BaseLegal</c> são editáveis; divergência em qualquer outro
     /// campo retorna <c>EstruturaProtegidaNaoEditavel</c>. A guarda roda depois de resolver
     /// os campos e <b>antes</b> das invariantes cruzadas: assim uma tentativa de alterar a
     /// natureza de uma cota federal responde "esta modalidade não se edita" em vez de
@@ -179,7 +181,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             ? Result.Failure(new DomainError(
                 ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel,
                 "Esta modalidade pertence ao catálogo legal fixo e admite alteração apenas de "
-                + "descrição e base legal — natureza, composição, remanejamento, regra de aplicabilidade "
+                + "nome, descrição e base legal — natureza, composição, remanejamento, regra de aplicabilidade "
                 + "e ação no indeferimento são fixados em lei."))
             : Result.Success();
 
@@ -192,7 +194,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Indica se <paramref name="campos"/> altera algum atributo fora da lista de
     /// atributos editáveis do catálogo legal fixo. Essa lista enumera o que <b>pode</b> mudar
-    /// (descrição e base legal) — assim um atributo novo do agregado nasce protegido por
+    /// (nome, descrição e base legal) — assim um atributo novo do agregado nasce protegido por
     /// omissão, em vez de desprotegido.
     /// </summary>
     private bool EstruturaDivergeDe(CamposResolvidosDaModalidade campos) =>
@@ -206,6 +208,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
 
     private void AplicarCampos(CamposResolvidosDaModalidade campos)
     {
+        Nome = campos.Nome!;
         Descricao = campos.Descricao;
         NaturezaLegal = campos.NaturezaLegal;
         ComposicaoVagas = campos.ComposicaoVagas;

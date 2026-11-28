@@ -77,53 +77,53 @@ public static class ModalidadeSeed
     /// <summary>As doze modalidades semeadas, na ordem canônica.</summary>
     public static IReadOnlyList<ModalidadeSeedItem> Itens { get; } =
     [
-        new(SeedId(1), CodigoModalidade.Ac, "Ampla concorrência",
+        new(SeedId(1), CodigoModalidade.Ac, "Ampla concorrência", "Ampla concorrência",
             NaturezaLegal.Ampla, ComposicaoVagas.RestanteDasVagasOfertadas, ComposicaoOrigem: null,
             Regra: null, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.AmplaConcorrencia),
 
-        new(SeedId(2), CodigoModalidade.LbPpi, "Cota — baixa renda, preto/pardo/indígena",
+        new(SeedId(2), CodigoModalidade.LbPpi, "Escola pública, renda de até 1 salário mínimo por pessoa, pretos, pardos e indígenas", "Cota — baixa renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPpi),
 
-        new(SeedId(3), CodigoModalidade.LbQ, "Cota — baixa renda, quilombola",
+        new(SeedId(3), CodigoModalidade.LbQ, "Escola pública, renda de até 1 salário mínimo por pessoa, quilombolas", "Cota — baixa renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbQ),
 
-        new(SeedId(4), CodigoModalidade.LbPcd, "Cota — baixa renda, pessoa com deficiência",
+        new(SeedId(4), CodigoModalidade.LbPcd, "Escola pública, renda de até 1 salário mínimo por pessoa, pessoas com deficiência", "Cota — baixa renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPcd),
 
-        new(SeedId(5), CodigoModalidade.LbEp, "Cota — baixa renda, egresso de escola pública",
+        new(SeedId(5), CodigoModalidade.LbEp, "Escola pública, renda de até 1 salário mínimo por pessoa", "Cota — baixa renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbEp),
 
-        new(SeedId(6), CodigoModalidade.LiPpi, "Cota — independente de renda, preto/pardo/indígena",
+        new(SeedId(6), CodigoModalidade.LiPpi, "Escola pública, qualquer renda, pretos, pardos e indígenas", "Cota — independente de renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPpi),
 
-        new(SeedId(7), CodigoModalidade.LiQ, "Cota — independente de renda, quilombola",
+        new(SeedId(7), CodigoModalidade.LiQ, "Escola pública, qualquer renda, quilombolas", "Cota — independente de renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiQ),
 
-        new(SeedId(8), CodigoModalidade.LiPcd, "Cota — independente de renda, pessoa com deficiência",
+        new(SeedId(8), CodigoModalidade.LiPcd, "Escola pública, qualquer renda, pessoas com deficiência", "Cota — independente de renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPcd),
 
-        new(SeedId(9), CodigoModalidade.LiEp, "Cota — independente de renda, egresso de escola pública",
+        new(SeedId(9), CodigoModalidade.LiEp, "Escola pública, qualquer renda", "Cota — independente de renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
             RegraRemanejamento.SegueOrdemDeRemanejamento, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiEp),
 
-        new(SeedId(10), CodigoModalidade.AcPcd, "Ampla Concorrência – Pessoa com Deficiência (V)",
+        new(SeedId(10), CodigoModalidade.AcPcd, "Ampla concorrência, ação afirmativa da Unifesspa para pessoas com deficiência", "Ampla Concorrência – Pessoa com Deficiência (V)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiradaDeOutraModalidade, ComposicaoOrigem: CodigoModalidade.Ac,
             RegraRemanejamento.DestinoUnico, RemanejamentoParametros.Criar(CodigoModalidade.Ac, par: null, destinoFinal: null),
             BaseLegalReservaPcdNaAmplaConcorrencia, SementeDeAplicabilidadeLegal.AcPcd),
 
-        new(SeedId(12), CodigoModalidade.AcI, "Vaga por acréscimo — candidato indígena (PSIQ)",
+        new(SeedId(12), CodigoModalidade.AcI, "Ampla concorrência, ação afirmativa da Unifesspa para indígenas", "Vaga por acréscimo — candidato indígena (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
             RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcQ, destinoFinal: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcI),
 
-        new(SeedId(13), CodigoModalidade.AcQ, "Vaga por acréscimo — candidato quilombola (PSIQ)",
+        new(SeedId(13), CodigoModalidade.AcQ, "Ampla concorrência, ação afirmativa da Unifesspa para quilombolas", "Vaga por acréscimo — candidato quilombola (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
             RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: CodigoModalidade.AcI, destinoFinal: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcQ),
@@ -134,6 +134,7 @@ public static class ModalidadeSeed
 public sealed record ModalidadeSeedItem(
     Guid Id,
     string Codigo,
+    string Nome,
     string? Descricao,
     NaturezaLegal Natureza,
     ComposicaoVagas Composicao,

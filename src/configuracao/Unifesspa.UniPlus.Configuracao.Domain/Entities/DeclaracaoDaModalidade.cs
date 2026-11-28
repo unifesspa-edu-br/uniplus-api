@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// os enums como códigos textuais, e a origem e os parâmetros de remanejamento como códigos soltos.
 /// </summary>
 public sealed record DeclaracaoDaModalidade(
+    string? Nome,
     string? Descricao,
     string? CodigoDaNaturezaLegal,
     string? CodigoDaComposicaoDeVagas,

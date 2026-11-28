@@ -93,7 +93,7 @@ public sealed class ModalidadeValidacaoDosCamposTests
     public void ValidarCampos_CamposValidos_Aceita()
     {
         Result<CamposResolvidosDaModalidade> r = ValidacaoDosCamposDaModalidade.ValidarCampos(new DeclaracaoDaModalidade(
-            Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "RESTANTE_DAS_VAGAS_OFERTADAS",
+            Nome: "Modalidade de teste", Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "RESTANTE_DAS_VAGAS_OFERTADAS",
             ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: null, RemanejamentoDestino: null,
             RemanejamentoPar: null, RemanejamentoFallback: null, RegraDeAplicabilidade: Incondicional(),
             CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));
@@ -108,7 +108,7 @@ public sealed class ModalidadeValidacaoDosCamposTests
         // não avalia coerência cruzada — só parse e tamanhos. A guarda do catálogo
         // legal fixo (handler) precisa rodar ANTES dessa incoerência ser reportada.
         Result r = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(new DeclaracaoDaModalidade(
-            Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
+            Nome: "Modalidade de teste", Descricao: null, CodigoDaNaturezaLegal: "AMPLA", CodigoDaComposicaoDeVagas: "DENTRO_DA_RESERVA_LEGAL",
             ComposicaoOrigem: null, CodigoDaRegraDeRemanejamento: "SEGUE_ORDEM_DE_REMANEJAMENTO", RemanejamentoDestino: null,
             RemanejamentoPar: null, RemanejamentoFallback: null, RegraDeAplicabilidade: Incondicional(),
             CodigoDaAcaoQuandoIndeferido: null, BaseLegal: null));

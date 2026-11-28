@@ -25,20 +25,25 @@ internal static class CopiaDosCadastrosDasVagas
         oferta.GrupoAreaEnem?.Codigo,
         oferta.GrupoAreaEnem?.Rotulo);
 
-    internal static ModalidadeNoCadastro Modalidade(ModalidadeView view) => new()
+    internal static ModalidadeNoCadastro Modalidade(ModalidadeView view) => IdentificacaoDaModalidade(view) with
     {
-        Id = view.Id,
-        Codigo = view.Codigo,
-        Descricao = view.Descricao,
-        NaturezaLegal = CodigoReconhecido<NaturezaLegalModalidade>(view.NaturezaLegal),
-        ComposicaoVagas = CodigoReconhecido<ComposicaoVagasModalidade>(view.ComposicaoVagas),
         ComposicaoOrigemCodigo = view.ComposicaoOrigem,
         RegraRemanejamento = view.RegraRemanejamento is { } regra ? CatalogoDe<RegraRemanejamentoModalidade>.Obter(regra) : null,
         RemanejamentoDestino = view.RemanejamentoDestino,
         RemanejamentoPar = view.RemanejamentoPar,
         RemanejamentoFallback = view.RemanejamentoFallback,
-        RegraDeAplicabilidade = view.RegraDeAplicabilidade,
         AcaoQuandoIndeferido = view.AcaoQuandoIndeferido,
+    };
+
+    private static ModalidadeNoCadastro IdentificacaoDaModalidade(ModalidadeView view) => new()
+    {
+        Id = view.Id,
+        Codigo = view.Codigo,
+        Nome = view.Nome,
+        Descricao = view.Descricao,
+        NaturezaLegal = CodigoReconhecido<NaturezaLegalModalidade>(view.NaturezaLegal),
+        ComposicaoVagas = CodigoReconhecido<ComposicaoVagasModalidade>(view.ComposicaoVagas),
+        RegraDeAplicabilidade = view.RegraDeAplicabilidade,
         BaseLegal = view.BaseLegal ?? string.Empty,
     };
 

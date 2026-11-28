@@ -117,10 +117,10 @@ internal static class ApoioDaDistribuicaoDeVagas
         "REGULAR", ["MATUTINO"], null, null, 100, null, null, grupoAreaEnem, "Medicina", "Bacharelado");
 
     internal static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
-        id, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
+        id, "AC", "Ampla concorrência", "Vagas sem reserva", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
         null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012");
 
     internal static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
-        id, codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
+        id, codigo, ModalidadesNoCadastroDeTeste.NomeDe(codigo), null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
         null, "SEGUE_ORDEM_DE_REMANEJAMENTO", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 }

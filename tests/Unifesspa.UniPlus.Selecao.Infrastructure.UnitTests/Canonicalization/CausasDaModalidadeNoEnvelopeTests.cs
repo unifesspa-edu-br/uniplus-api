@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 public sealed class CausasDaModalidadeNoEnvelopeTests
@@ -143,9 +144,68 @@ public sealed class CausasDaModalidadeNoEnvelopeTests
             "(RETIRA_A_MODALIDADE) — restaurá-la daria à homologação das inscrições uma instrução que ela não sabe executar."));
     }
 
+    [Fact]
+    public void LerModalidade_NomeComEspacosNasPontas_RestauraONomeAparado()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["nome"] = "  Ampla concorrência  ";
+        LeitorEnvelope leitor = new();
+        ModalidadeSelecionada? lida = LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        leitor.Falhou.Should().BeFalse();
+        lida!.Nome.Should().Be("Ampla concorrência");
+    }
+
+    [Fact]
+    public void LerModalidade_SemNome_RecusaNoCampo()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade.Remove("nome");
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        leitor.Falhou.Should().BeTrue();
+        leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        leitor.Erro.Message.Should().Contain("nome");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LerModalidade_NomeVazio_RecusaNoCampo(string nome)
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["nome"] = nome;
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        leitor.Erro.Should().Be(new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
+            "Envelope malformado em 'modalidades[0].nome': esperado um texto não vazio."));
+    }
+
+    [Fact]
+    public void LerModalidade_NomeAcimaDoLimite_RecusaSemRepetirOValor()
+    {
+        string excedente = new('N', 201);
+        JsonObject modalidade = Modalidade();
+        modalidade["nome"] = excedente;
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        leitor.Erro.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        leitor.Erro.Message.Should().StartWith("Envelope malformado em 'modalidades[0].nome':");
+        leitor.Erro.Message.Should().NotContain(excedente);
+    }
+
+    [Fact]
+    public void LerModalidade_NomeNoLimite_Aceita()
+    {
+        JsonObject modalidade = Modalidade();
+        modalidade["nome"] = new string('N', 200);
+        LeitorEnvelope leitor = new();
+        LeituraDasModalidades.LerModalidade(leitor, modalidade, "modalidades[0]");
+        leitor.Falhou.Should().BeFalse();
+    }
+
     internal static JsonObject Modalidade() => JsonNode.Parse("""
         {"ofertaCursoOrigemId":"11111111-1111-1111-1111-111111111111","modalidadeOrigemId":"22222222-2222-2222-2222-222222222222",
-        "codigo":"AC","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",
+        "codigo":"AC","nome":"Ampla concorrência","descricao":null,"naturezaLegal":"AMPLA","composicaoVagas":"RESTANTE_DAS_VAGAS_OFERTADAS",
         "composicaoOrigemCodigo":null,"regraRemanejamento":null,"remanejamentoDestino":null,"remanejamentoPar":null,
         "remanejamentoDestinoFinal":null,"regraDeAplicabilidade":null,"acaoQuandoIndeferido":null,"baseLegal":"Norma","quantidadeDeclarada":40}
         """)!.AsObject();

@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 public sealed class CodigoModalidadeTests
 {
-    [Theory(DisplayName = "Os treze códigos do catálogo legal fixo são reconhecidos como protegidos")]
+    [Theory(DisplayName = "Os 12 códigos do catálogo legal fixo são reconhecidos como protegidos")]
     [InlineData("AC")]
     [InlineData("AC_PCD")]
     [InlineData("LB_PPI")]

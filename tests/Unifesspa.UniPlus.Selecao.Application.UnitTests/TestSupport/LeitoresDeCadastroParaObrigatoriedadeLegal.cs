@@ -63,7 +63,7 @@ internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
     }
 
     private static ModalidadeView ModalidadeViva(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
+        new(Guid.CreateVersion7(), codigo, ModalidadesNoCadastroDeTeste.NomeDe(codigo), null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     private static TipoDocumentoView TipoDocumentoVivo(string codigo) =>
         new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);

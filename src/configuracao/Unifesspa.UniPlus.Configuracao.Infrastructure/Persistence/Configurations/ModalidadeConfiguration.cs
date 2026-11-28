@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalidade>
 {
     private const int CodigoMaxLength = 60;
+    private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 300;
     private const int CodigoDeContratoMaxLength = 30;
     private const int CodigoReferenciaMaxLength = 60;
@@ -58,6 +59,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .HasMaxLength(CodigoMaxLength)
             .IsRequired();
 
+        builder.Property(m => m.Nome).HasComment("Nome da modalidade para apresentação.").HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(m => m.Descricao).HasComment("Descrição da modalidade para apresentação.").HasMaxLength(DescricaoMaxLength);
         builder.Property(m => m.BaseLegal).HasComment("Fundamento legal da modalidade, quando informado.").HasMaxLength(BaseLegalMaxLength);
     }
@@ -127,14 +129,19 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         builder.Property(m => m.UpdatedBy).HasMaxLength(AuditUserMaxLength);
     }
 
-    // Unicidade do código entre modalidades vivas (índice parcial) — uma
-    // modalidade viva por código; soft-delete libera o slot para recriação.
+    // Unicidade do código e do nome entre modalidades vivas (índices parciais) — uma
+    // modalidade viva por código e por nome; soft-delete libera o slot para recriação.
     private static void ConfigurarIndices(EntityTypeBuilder<Modalidade> builder)
     {
         builder.HasIndex(m => m.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName(RestricoesDoBanco.ModalidadeCodigoAtivos);
+
+        builder.HasIndex(m => m.Nome)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName(RestricoesDoBanco.ModalidadeNomeAtivos);
     }
 
     /// <summary>
@@ -152,6 +159,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         Codigo = CodigoModalidade.Criar(item.Codigo).Match(
             codigo => codigo,
             erro => throw new InvalidOperationException($"Código de modalidade inválido no cadastro inicial: {erro.Message}")),
+        item.Nome,
         item.Descricao,
         NaturezaLegal = item.Natureza,
         ComposicaoVagas = item.Composicao,

@@ -96,13 +96,15 @@ public sealed class ModalidadeEndpointTests
     public async Task Obter_ModalidadeCriada_RetornaCamposELinks()
     {
         string codigo = CodigoUnico();
+        CorpoDaModalidade corpo = CotaPpi() with { Codigo = codigo };
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, CotaPpi() with { Codigo = codigo });
+        HttpResponseMessage criar = await EnviarPostAdmin(client, corpo);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
         JsonElement root = await LerModalidade(client, id);
 
         root.GetProperty("codigo").GetString().Should().Be(codigo);
+        root.GetProperty("nome").GetString().Should().Be(corpo.Nome);
         ConferirEstruturaDaCota(root);
         root.GetProperty("regraDeAplicabilidade").GetRawText().Should().Be(RegraDeAplicabilidadeDaCota);
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
@@ -113,7 +115,7 @@ public sealed class ModalidadeEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional });
+            client, new { codigo = CodigoUnico(), nome = NomeUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional });
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid institucional = await criar.Content.ReadFromJsonAsync<Guid>();
 
@@ -127,7 +129,7 @@ public sealed class ModalidadeEndpointTests
     [Fact(DisplayName = "POST com natureza fora do domínio fechado retorna 422")]
     public async Task Criar_NaturezaInvalida_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), naturezaLegal = "COTA" };
+        var body = new { codigo = CodigoUnico(), nome = NomeUnico(), naturezaLegal = "COTA" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -138,7 +140,7 @@ public sealed class ModalidadeEndpointTests
     [Fact(DisplayName = "POST RETIRADA_DE_OUTRA_MODALIDADE sem origem retorna 422 (coerência de domínio)")]
     public async Task Criar_RetiradaDeOutraModalidadeSemOrigem_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), naturezaLegal = "AMPLA", composicaoVagas = "RETIRADA_DE_OUTRA_MODALIDADE" };
+        var body = new { codigo = CodigoUnico(), nome = NomeUnico(), naturezaLegal = "AMPLA", composicaoVagas = "RETIRADA_DE_OUTRA_MODALIDADE" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -149,7 +151,7 @@ public sealed class ModalidadeEndpointTests
     [Fact(DisplayName = "POST sem o campo codigo no JSON retorna 422 (CodigoObrigatorio), não 400 de model binding")]
     public async Task Criar_CodigoAusenteNoJson_Retorna422()
     {
-        var body = new { naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
+        var body = new { nome = NomeUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -164,7 +166,7 @@ public sealed class ModalidadeEndpointTests
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
         string codigo = CodigoUnico();
-        var body = new { codigo, naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
+        var body = new { codigo, nome = NomeUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
@@ -177,7 +179,7 @@ public sealed class ModalidadeEndpointTests
     [Fact(DisplayName = "POST com código do catálogo legal fixo retorna 409 com o código de erro da reserva")]
     public async Task Criar_CodigoLegalFixo_Retorna409Reservado()
     {
-        var body = new { codigo = "LB_PPI", naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
+        var body = new { codigo = "LB_PPI", nome = NomeUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -209,18 +211,21 @@ public sealed class ModalidadeEndpointTests
         Guid id = IdSemeado("LI_Q");
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            naturezaLegal = "AMPLA",
-            composicaoVagas = "RESTANTE_DAS_VAGAS_OFERTADAS",
-            regraDeAplicabilidade = Incondicional,
-        });
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, CorpoDeAmpla(id));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(response)).Should().Be(
             "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel");
     }
+
+    private static object CorpoDeAmpla(Guid id) => new
+    {
+        id,
+        nome = NomeUnico(),
+        naturezaLegal = "AMPLA",
+        composicaoVagas = "RESTANTE_DAS_VAGAS_OFERTADAS",
+        regraDeAplicabilidade = Incondicional,
+    };
 
     [Fact(DisplayName = "PUT que altera só descrição e base legal de modalidade legal fixa retorna 204 e persiste, mantendo a estrutura da lei")]
     public async Task Atualizar_LegalFixaRedacao_Retorna204EPersiste()
@@ -230,7 +235,7 @@ public sealed class ModalidadeEndpointTests
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPutAdmin(
-            client, id, CotaPpi() with { Id = id, Descricao = descricao, BaseLegal = BaseLegalDaRedacao });
+            client, id, CotaPpi() with { Id = id, Nome = NomeSemeado("LI_EP"), Descricao = descricao, BaseLegal = BaseLegalDaRedacao });
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonElement root = await LerModalidade(client, id);
@@ -239,11 +244,114 @@ public sealed class ModalidadeEndpointTests
         ConferirEstruturaDaCota(root);
     }
 
+    [Fact(DisplayName = "POST sem nome e com código em formato inválido retorna 422 com as duas recusas")]
+    public async Task Criar_SemNomeEComCodigoInvalido_AcumulaAsDuasRecusas()
+    {
+        var body = new { codigo = "lb-ppi", naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCamposRecusados(response)).Should().Equal("codigo", "nome");
+    }
+
+    [Theory(DisplayName = "POST com nome vazio ou só com espaços retorna 422 com o código do nome obrigatório")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Criar_NomeSemConteudo_Retorna422(string nome)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, CotaPpi() with { Codigo = CodigoUnico(), Nome = nome });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.nome_obrigatorio");
+    }
+
+    [Fact(DisplayName = "POST com nome acima de 200 caracteres retorna 422 com o código do tamanho do nome")]
+    public async Task Criar_NomeLongo_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, CotaPpi() with { Codigo = CodigoUnico(), Nome = new string('a', 201) });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.nome_tamanho");
+    }
+
+    [Fact(DisplayName = "POST com nome já usado por modalidade viva retorna 409 com o código do nome repetido")]
+    public async Task Criar_NomeDuplicado_Retorna409()
+    {
+        CorpoDaModalidade corpo = CotaPpi() with { Codigo = CodigoUnico() };
+        using HttpClient client = _fixture.Factory.CreateClient();
+        (await EnviarPostAdmin(client, corpo)).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, corpo with { Codigo = CodigoUnico() });
+
+        segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(segundo)).Should().Be("uniplus.configuracao.modalidade.nome_ja_existe");
+    }
+
+    [Fact(DisplayName = "PUT troca o nome da modalidade e o GET devolve o nome novo")]
+    public async Task Atualizar_NomeNovo_Retorna204EPersiste()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarCotaAsync(client);
+        string nomeNovo = NomeUnico();
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, CotaPpi() with { Id = id, Nome = nomeNovo });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await LerModalidade(client, id)).GetProperty("nome").GetString().Should().Be(nomeNovo);
+    }
+
+    [Fact(DisplayName = "PUT sem nome retorna 422 com o código do nome obrigatório")]
+    public async Task Atualizar_SemNome_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarCotaAsync(client);
+
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, CotaPpi() with { Id = id, Nome = null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.nome_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT com o nome de outra modalidade viva retorna 409, e com o próprio nome retorna 204")]
+    public async Task Atualizar_NomeDeOutraModalidade_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        CorpoDaModalidade outra = CotaPpi() with { Codigo = CodigoUnico() };
+        (await EnviarPostAdmin(client, outra)).StatusCode.Should().Be(HttpStatusCode.Created);
+        CorpoDaModalidade propria = CotaPpi() with { Codigo = CodigoUnico() };
+        Guid id = await (await EnviarPostAdmin(client, propria)).Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage conflito = await EnviarPutAdmin(client, id, propria with { Codigo = null, Id = id, Nome = outra.Nome });
+        HttpResponseMessage mantendo = await EnviarPutAdmin(client, id, propria with { Codigo = null, Id = id, Descricao = "Descrição nova" });
+
+        conflito.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(conflito)).Should().Be("uniplus.configuracao.modalidade.nome_ja_existe");
+        mantendo.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await LerModalidade(client, id)).GetProperty("nome").GetString().Should().Be(propria.Nome);
+    }
+
+    private static async Task<Guid> CriarCotaAsync(HttpClient client)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, CotaPpi() with { Codigo = CodigoUnico() });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        return await criar.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<string?[]> LerCamposRecusados(HttpResponseMessage response)
+    {
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return [.. doc.RootElement.GetProperty("errors").EnumerateArray().Select(e => e.GetProperty("field").GetString())];
+    }
+
     [Fact(DisplayName = "POST sem regra de aplicabilidade retorna 422 com o código da regra obrigatória")]
     public async Task Criar_SemRegraDeAplicabilidade_Retorna422()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), naturezaLegal = "AMPLA" });
+        HttpResponseMessage response = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome = NomeUnico(), naturezaLegal = "AMPLA" });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.regra_de_aplicabilidade_obrigatoria");
@@ -279,6 +387,7 @@ public sealed class ModalidadeEndpointTests
     ];
 
     private static CorpoDaModalidade CotaPpi() => new(
+        Nome: NomeUnico(),
         Descricao: "Cota PPI de baixa renda",
         NaturezaLegal: "COTA_RESERVADA",
         ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
@@ -330,6 +439,11 @@ public sealed class ModalidadeEndpointTests
         return await client.SendAsync(request);
     }
 
+    private static string NomeUnico() => $"Modalidade de teste {Guid.NewGuid():N}";
+
+    private static string NomeSemeado(string codigo) =>
+        ModalidadeSeed.Itens.Single(i => i.Codigo == codigo).Nome;
+
     private static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
@@ -345,6 +459,7 @@ public sealed class ModalidadeEndpointTests
     private sealed record CorpoDaModalidade(
         string? Codigo = null,
         Guid? Id = null,
+        string? Nome = null,
         string? Descricao = null,
         string? NaturezaLegal = null,
         string? ComposicaoVagas = null,

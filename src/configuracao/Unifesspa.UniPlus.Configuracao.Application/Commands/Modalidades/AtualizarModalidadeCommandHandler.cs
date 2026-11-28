@@ -18,8 +18,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// fetch preemptiria "esta modalidade não se edita" com "corrija a coerência do
 /// payload" quando as duas violações coexistem. Depois do fetch (404),
 /// <see cref="Modalidade.Atualizar"/> aplica a guarda e só então as coerências, na
-/// ordem certa. Por fim, revalida a integridade referencial dos códigos citados
-/// (422, DB) e commita.
+/// ordem certa. Por fim, recusa o nome já usado por outra modalidade viva (409, DB), revalida a
+/// integridade referencial dos códigos citados (422, DB) e commita, traduzindo a violação do índice único do
+/// nome numa corrida em <c>NomeJaExiste</c>.
 /// </summary>
 public static class AtualizarModalidadeCommandHandler
 {
@@ -73,7 +74,7 @@ public static class AtualizarModalidadeCommandHandler
 
         return atualizada.IsFailure
             ? atualizada
-            : await GravarSeAsReferenciasExistemAsync(modalidade, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+            : await GravarSeNaoHouverRecusaAsync(modalidade, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -123,21 +124,51 @@ public static class AtualizarModalidadeCommandHandler
     }
 
     /// <summary>
-    /// Integridade referencial (invariante 7): todos os códigos citados após a atualização devem existir como
-    /// modalidade viva. <see cref="Modalidade.Atualizar"/> já mutou o agregado rastreado — descarta antes de
-    /// devolver a falha, senão o save automático do Wolverine persistiria a alteração cuja referência acabou de
-    /// ser recusada.
+    /// <see cref="Modalidade.Atualizar"/> já mutou o agregado rastreado: toda recusa que vem depois dele
+    /// descarta a alteração antes de devolver a falha, senão o save automático do Wolverine a persistiria. A
+    /// recusa do nome vem antes da integridade referencial dos códigos citados (invariante 7).
     /// </summary>
-    private static async Task<Result> GravarSeAsReferenciasExistemAsync(
+    private static async Task<Result> GravarSeNaoHouverRecusaAsync(
         Modalidade modalidade, IModalidadeRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
-        if (!await ReferenciasDeModalidade.TodasExistemAsync(modalidade, repository, cancellationToken).ConfigureAwait(false))
+        DomainError? recusa = await RecusaDoNomeAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
+        recusa ??= await RecusaDasReferenciasAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
+        if (recusa is null)
         {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(ReferenciasDeModalidade.RecusaDaReferenciaInexistente());
+            return await SalvarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        unitOfWork.DescartarAlteracoesNaoSalvas();
+        return Result.Failure(recusa);
+    }
+
+    private static async Task<DomainError?> RecusaDoNomeAsync(
+        Modalidade modalidade, IModalidadeRepository repository, CancellationToken cancellationToken) =>
+        await repository.NomeExisteEntreVivosAsync(modalidade.Nome, modalidade.Id, cancellationToken).ConfigureAwait(false)
+            ? UniqueConstraintViolation.NomeJaExisteErro()
+            : null;
+
+    private static async Task<DomainError?> RecusaDasReferenciasAsync(
+        Modalidade modalidade, IModalidadeRepository repository, CancellationToken cancellationToken) =>
+        await ReferenciasDeModalidade.TodasExistemAsync(modalidade, repository, cancellationToken).ConfigureAwait(false)
+            ? null
+            : ReferenciasDeModalidade.RecusaDaReferenciaInexistente();
+
+    /// <summary>
+    /// Protege a corrida entre a consulta do nome e o UPDATE: o índice único parcial dispara 23505 e vira o mesmo
+    /// <c>NomeJaExiste</c> do caminho sem corrida. O filtro do <c>when</c> deixa as demais exceções propagarem.
+    /// </summary>
+    private static async Task<Result> SalvarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (UniqueConstraintViolation.ErroDoIndiceViolado(ex) is { } erro)
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(erro);
+        }
 
         return Result.Success();
     }

@@ -92,6 +92,8 @@ public sealed class VocabularioDaLeituraDoProcessoTests
 
         JsonElement modalidade = Serializar(simulada.Value!)[0].GetProperty("modalidades")[0];
 
+        modalidade.GetProperty("nome").GetString().Should().Be("Ampla concorrência");
+        modalidade.GetProperty("descricao").GetString().Should().Be("Vagas sem reserva");
         modalidade.GetProperty("naturezaLegal").GetProperty("codigo").GetString().Should().Be("AMPLA",
             "o catálogo descreve esta mesma modalidade com este token, e o cliente cruza as duas rotas");
         modalidade.GetProperty("composicaoVagas").GetProperty("codigo").GetString().Should().Be("RESTANTE_DAS_VAGAS_OFERTADAS");
@@ -133,7 +135,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
     {
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
         modalidades.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(new ModalidadeView(
-            modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
+            modalidadeId, "AC", "Ampla concorrência", "Vagas sem reserva", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
             null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012"));
         return modalidades;
     }

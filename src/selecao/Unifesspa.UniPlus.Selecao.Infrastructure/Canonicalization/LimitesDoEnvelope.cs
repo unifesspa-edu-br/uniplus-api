@@ -39,6 +39,7 @@ public static class LimitesDoEnvelope
     public const int TipoEtapaCodigo = FormatoDoCodigo.ComprimentoMaximo;
     public const int TipoEtapaNome = 200;
     public const int ModalidadeCodigo = 60;
+    public const int ModalidadeNome = 200;
     public const int ModalidadeDescricao = 300;
     public const int Token = 30;
     public const int BaseLegal = 500;

@@ -21,7 +21,7 @@ internal static class LeituraDasModalidades
 {
     private static readonly string[] ChavesDaModalidade =
     [
-        "ofertaCursoOrigemId", "modalidadeOrigemId", "codigo", "descricao", "naturezaLegal", "composicaoVagas",
+        "ofertaCursoOrigemId", "modalidadeOrigemId", "codigo", "nome", "descricao", "naturezaLegal", "composicaoVagas",
         "composicaoOrigemCodigo", "regraRemanejamento", "remanejamentoDestino", "remanejamentoPar",
         "remanejamentoDestinoFinal", "regraDeAplicabilidade", "acaoQuandoIndeferido", "baseLegal", "quantidadeDeclarada",
     ];
@@ -58,6 +58,7 @@ internal static class LeituraDasModalidades
     {
         OrigemId = leitor.Identificador(item, "modalidadeOrigemId", path),
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.ModalidadeCodigo),
+        Nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.ModalidadeNome),
         Descricao = leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.ModalidadeDescricao),
         Natureza = leitor.NaturezaLegal(item, "naturezaLegal", path),
         Composicao = leitor.ComposicaoDeVagas(item, "composicaoVagas", path),
@@ -86,6 +87,8 @@ internal static class LeituraDasModalidades
 
         public string Codigo { get; init; } = string.Empty;
 
+        public string Nome { get; init; } = string.Empty;
+
         public string? Descricao { get; init; }
 
         public NaturezaLegalModalidade Natureza { get; init; }
@@ -110,20 +113,25 @@ internal static class LeituraDasModalidades
 
         public int? QuantidadeDeclarada { get; init; }
 
-        internal ModalidadeNoCadastro NoCadastro(PredicadoDnf regra) => new()
+        internal ModalidadeNoCadastro NoCadastro(PredicadoDnf regra) => ComIdentidade(regra) with
         {
-            Id = OrigemId,
-            Codigo = Codigo,
             Descricao = Descricao,
-            NaturezaLegal = Natureza,
-            ComposicaoVagas = Composicao,
             ComposicaoOrigemCodigo = ComposicaoOrigem,
             RegraRemanejamento = Remanejamento,
             RemanejamentoDestino = Destino,
             RemanejamentoPar = Par,
             RemanejamentoFallback = DestinoFinal,
-            RegraDeAplicabilidade = regra,
             AcaoQuandoIndeferido = AcaoQuandoIndeferido,
+        };
+
+        private ModalidadeNoCadastro ComIdentidade(PredicadoDnf regra) => new()
+        {
+            Id = OrigemId,
+            Codigo = Codigo,
+            Nome = Nome,
+            NaturezaLegal = Natureza,
+            ComposicaoVagas = Composicao,
+            RegraDeAplicabilidade = regra,
             BaseLegal = BaseLegal,
         };
 

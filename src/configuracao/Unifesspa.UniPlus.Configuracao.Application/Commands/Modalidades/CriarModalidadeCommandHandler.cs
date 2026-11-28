@@ -14,10 +14,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// Orquestra, nessa ordem: construção do agregado (validação de campos e coerência,
 /// 422) com a conferência da regra de aplicabilidade contra o catálogo de fatos, as
 /// recusas das duas acumuladas (ADR-0125); reserva dos códigos do catálogo legal
-/// fixo (409, sem I/O), unicidade do código entre vivos (409, DB), integridade
+/// fixo (409, sem I/O), unicidade do código e do nome entre vivos (409, DB), integridade
 /// referencial dos códigos citados em composição/remanejamento (422, DB),
-/// persistência e commit. Protege a corrida check-then-act traduzindo a violação do
-/// índice único parcial em <c>CodigoJaExiste</c>.
+/// persistência e commit. Protege a corrida check-then-act traduzindo a violação dos
+/// índices únicos parciais em <c>CodigoJaExiste</c> ou <c>NomeJaExiste</c>.
 /// </summary>
 public static class CriarModalidadeCommandHandler
 {
@@ -86,13 +86,14 @@ public static class CriarModalidadeCommandHandler
     private static async Task<DomainError?> RecusaDoCadastroAsync(
         Modalidade modalidade, IModalidadeRepository repository, CancellationToken cancellationToken)
     {
-        DomainError? recusaDoCodigo = await RecusaDoCodigoAsync(modalidade.Codigo, repository, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await RecusaDoCodigoAsync(modalidade.Codigo, repository, cancellationToken).ConfigureAwait(false);
+        recusa ??= await RecusaDoNomeAsync(modalidade.Nome, repository, cancellationToken).ConfigureAwait(false);
 
-        return recusaDoCodigo ?? await RecusaDasReferenciasAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
+        return recusa ?? await RecusaDasReferenciasAsync(modalidade, repository, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Os treze códigos legais fixos só nascem do seed. A reserva é do cadastro, não do domínio (a factory os aceita —
+    /// Os 12 códigos legais fixos só nascem do seed. A reserva é do cadastro, não do domínio (a factory os aceita —
     /// reidratação administrativa depende disso), e só é checada depois que o payload já está confirmado coerente:
     /// 409 é sobre QUEM pode nascer, não sobre a FORMA do payload.
     /// </summary>
@@ -105,9 +106,15 @@ public static class CriarModalidadeCommandHandler
         }
 
         return await repository.CodigoExisteEntreVivosAsync(codigo.Valor, null, cancellationToken).ConfigureAwait(false)
-            ? CodigoJaExisteErro()
+            ? UniqueConstraintViolation.CodigoJaExisteErro()
             : null;
     }
+
+    private static async Task<DomainError?> RecusaDoNomeAsync(
+        string nome, IModalidadeRepository repository, CancellationToken cancellationToken) =>
+        await repository.NomeExisteEntreVivosAsync(nome, null, cancellationToken).ConfigureAwait(false)
+            ? UniqueConstraintViolation.NomeJaExisteErro()
+            : null;
 
     /// <summary>
     /// Integridade referencial (invariante 7): todos os códigos citados (origem + remanejamento) devem existir
@@ -121,7 +128,7 @@ public static class CriarModalidadeCommandHandler
 
     /// <summary>
     /// Protege a corrida entre a consulta de unicidade e o INSERT (check-then-act): o índice único parcial dispara
-    /// 23505 e vira o mesmo <c>CodigoJaExiste</c> do caminho sem corrida — 409 consistente. O filtro do <c>when</c>
+    /// 23505 e vira o mesmo <c>CodigoJaExiste</c> ou <c>NomeJaExiste</c> do caminho sem corrida — 409 consistente. O filtro do <c>when</c>
     /// garante que outras exceções propagam intactas. A entidade que não foi persistida sai do rastreamento, senão
     /// o save automático do Wolverine repetiria a violação fora deste <c>catch</c>.
     /// </summary>
@@ -133,11 +140,10 @@ public static class CriarModalidadeCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
+        catch (Exception ex) when (UniqueConstraintViolation.ErroDoIndiceViolado(ex) is { } erro)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CodigoJaExisteErro());
+            return Result<Guid>.Failure(erro);
         }
 
         return Result<Guid>.Success(modalidade.Id);
@@ -146,7 +152,4 @@ public static class CriarModalidadeCommandHandler
     private static DomainError CodigoReservadoErro() =>
         new(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido,
             "Este código é reservado ao catálogo legal fixo e não pode ser criado por cadastro.");
-
-    private static DomainError CodigoJaExisteErro() =>
-        new(ModalidadeErrorCodes.CodigoJaExiste, "Já existe uma modalidade viva com o código informado.");
 }

@@ -10,5 +10,5 @@ public sealed class DescricaoDeModalidades(IReadOnlyDictionary<string, Modalidad
     public Task<IReadOnlyDictionary<(string Codigo, string? Complemento), IReadOnlyList<object?>>> LerAsync(
         IReadOnlyCollection<(string Codigo, string? Complemento)> codigos, CancellationToken cancellationToken) =>
         Task.FromResult(AtributosDosCodigos.DosPedidos(
-            modalidades.Values, codigos, static modalidade => modalidade.Codigo, static modalidade => [modalidade.Descricao]));
+            modalidades.Values, codigos, static modalidade => modalidade.Codigo, static modalidade => [modalidade.Nome, modalidade.Descricao]));
 }

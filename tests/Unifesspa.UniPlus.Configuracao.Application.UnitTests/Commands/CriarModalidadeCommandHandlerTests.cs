@@ -4,11 +4,16 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -43,7 +48,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     private const string CodigoInstitucional = "PSVR_AMPLA";
 
     private static CriarModalidadeCommand ComandoAmpla() =>
-        new(CodigoInstitucional, Descricao: "Ampla concorrência do vestibular remanescente", NaturezaLegal: "AMPLA",
+        new(CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, Descricao: "Ampla concorrência do vestibular remanescente", NaturezaLegal: "AMPLA",
             RegraDeAplicabilidade: Incondicional);
 
     private Task<Result<Guid>> Criar(CriarModalidadeCommand comando) =>
@@ -71,7 +76,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     [InlineData("AC_Q")]
     public async Task Handle_CodigoReservado_RetornaConflito(string codigo)
     {
-        var comando = new CriarModalidadeCommand(codigo, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
+        var comando = new CriarModalidadeCommand(codigo, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -86,7 +91,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Código reservado com espaços é recusado pelo formato")]
     public async Task Handle_CodigoReservadoComEspacos_RecusaFormato()
     {
-        var comando = new CriarModalidadeCommand(" LB_PPI ", NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
+        var comando = new CriarModalidadeCommand(" LB_PPI ", Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -109,6 +114,91 @@ public sealed class CriarModalidadeCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Nome já existente entre vivos retorna conflito (NomeJaExiste) sem persistir")]
+    public async Task Handle_NomeDuplicado_RetornaConflito()
+    {
+        _repository.NomeExisteEntreVivosAsync(ModalidadesDeTeste.Nome, null, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result<Guid> resultado = await Criar(ComandoAmpla());
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O código já existente é recusado antes do nome já existente")]
+    public async Task Handle_CodigoENomeDuplicados_RecusaOCodigoPrimeiro()
+    {
+        _repository.CodigoExisteEntreVivosAsync(CodigoInstitucional, null, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.NomeExisteEntreVivosAsync(ModalidadesDeTeste.Nome, null, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result<Guid> resultado = await Criar(ComandoAmpla());
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CodigoJaExiste);
+    }
+
+    [Fact(DisplayName = "O nome já existente é recusado antes da referência inexistente")]
+    public async Task Handle_NomeDuplicadoEReferenciaInexistente_RecusaONomePrimeiro()
+    {
+        _repository.NomeExisteEntreVivosAsync(ModalidadesDeTeste.Nome, null, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(false);
+        var comando = new CriarModalidadeCommand(
+            CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA",
+            ComposicaoVagas: "RETIRADA_DE_OUTRA_MODALIDADE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
+
+        Result<Guid> resultado = await Criar(comando);
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+    }
+
+    [Fact(DisplayName = "Nome ausente é recusado junto do código inválido, sem consultar o banco")]
+    public async Task Handle_NomeAusenteECodigoInvalido_AcumulaAsDuasRecusas()
+    {
+        var comando = new CriarModalidadeCommand("lb-ppi", Nome: null, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
+
+        Result<Guid> resultado = await Criar(comando);
+
+        resultado.Errors.Select(static e => e.Field).Should().Equal("codigo", "nome");
+        await _repository.DidNotReceive().NomeExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Corrida pelo índice do nome vira NomeJaExiste e descarta o que não foi salvo")]
+    public async Task Handle_CorridaPeloIndiceDoNome_RetornaNomeJaExisteEDescarta()
+    {
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateException(
+            "violação sintética de teste", PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ModalidadeNomeAtivos)));
+
+        Result<Guid> resultado = await Criar(ComandoAmpla());
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NomeJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Corrida pelo índice do código vira CodigoJaExiste e descarta o que não foi salvo")]
+    public async Task Handle_CorridaPeloIndiceDoCodigo_RetornaCodigoJaExisteEDescarta()
+    {
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateException(
+            "violação sintética de teste", PostgresExceptionFactory.Create("23505", RestricoesDoBanco.ModalidadeCodigoAtivos)));
+
+        Result<Guid> resultado = await Criar(ComandoAmpla());
+
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CodigoJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Violação de outro índice único propaga sem descartar")]
+    public async Task Handle_CorridaPorOutroIndice_Propaga()
+    {
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new DbUpdateException(
+            "violação sintética de teste", PostgresExceptionFactory.Create("23505", "ix_outro")));
+
+        Func<Task> acao = () => Criar(ComandoAmpla());
+
+        await acao.Should().ThrowAsync<DbUpdateException>();
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+    }
+
     [Fact(DisplayName = "Referência de composição inexistente entre vivos retorna 422 sem persistir")]
     public async Task Handle_ReferenciaInexistente_Retorna422()
     {
@@ -118,7 +208,7 @@ public sealed class CriarModalidadeCommandHandlerTests
 
         // RETIRADA_DE_OUTRA_MODALIDADE exige origem; a origem "XPTO" não existe viva.
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRADA_DE_OUTRA_MODALIDADE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
+            "PSIQ_QUILOMBOLA", Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRADA_DE_OUTRA_MODALIDADE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -134,7 +224,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL", RegraDeAplicabilidade: OptouPelasCotas(true));
+            "PSIQ_QUILOMBOLA", Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL", RegraDeAplicabilidade: OptouPelasCotas(true));
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -146,7 +236,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Campo inválido propaga o erro sem consultar unicidade nem persistir — validação vence I/O")]
     public async Task Handle_CampoInvalido_RetornaErroSemConsultarBancoNemPersistir()
     {
-        var comando = new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
+        var comando = new CriarModalidadeCommand(CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -162,7 +252,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     public async Task Handle_SemRegra_Recusa()
     {
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "AMPLA"),
+            new CriarModalidadeCommand(CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, NaturezaLegal: "AMPLA"),
             _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.Errors.Should().ContainSingle()
@@ -174,7 +264,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     public async Task Handle_RegraMalformada_AcumulaComOsDemaisCampos()
     {
         var comando = new CriarModalidadeCommand(
-            CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
+            CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
 
         Result<Guid> resultado = await Criar(comando);
 
@@ -191,7 +281,7 @@ public sealed class CriarModalidadeCommandHandlerTests
     {
         _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato), FatoDesativado("PCD")]);
         var comando = new CriarModalidadeCommand(
-            CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "ACAO_AFIRMATIVA",
+            CodigoInstitucional, Nome: ModalidadesDeTeste.Nome, Descricao: new string('a', 301), NaturezaLegal: "ACAO_AFIRMATIVA",
             ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL", Remanejamento: new("DESTINO_UNICO", Destino: "AC"),
             RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)]]);
 

@@ -67,10 +67,10 @@ public static class MontagemDoQuadroDeVagas
 
     private static Result<QuadroDeVagas> VagasDoQuadroCalculado(
         IReadOnlyList<ModalidadeSelecionada> modalidades, QuadroDeVagasDaLeiDeCotas calculado) =>
-        modalidades.Select(static m => m.Codigo).FirstOrDefault(c => calculado.Vagas.All(v => v.ModalidadeCodigo != c)) is { } ausente
+        modalidades.FirstOrDefault(m => calculado.Vagas.All(v => v.ModalidadeCodigo != m.Codigo)) is { } ausente
             ? Result<QuadroDeVagas>.Failure(new DomainError(
                 DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente,
-                $"A modalidade {ausente} está selecionada mas não aparece no quadro calculado."))
+                $"A modalidade {ausente.CodigoENome} está selecionada mas não aparece no quadro calculado."))
             : Result<QuadroDeVagas>.Success(calculado with
             {
                 Vagas = [.. modalidades.Select(m => new VagasDaModalidade(m.Codigo, calculado.QuantidadeDe(m.Codigo)))],

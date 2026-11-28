@@ -395,3 +395,11 @@ O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio proce
 Cada fase do cronograma guarda a marca `organizadaEmChamadas`, copiada do cadastro de fases ao congelar, junto de `coletaInscricao` e `coletaSolicitacaoIsencao`. A marca é obrigatória em toda fase, verdadeira ou falsa, entra nos bytes e no resumo (hash) da versão e é lida do próprio documento: alterar o cadastro vivo depois não muda a versão publicada. A conferência de que toda fase com a marca tem ao menos um formulário obrigatório lê só a marca congelada. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda a marca de uma fase muda o resumo da versão.
+
+## Emenda 12 (2026-11-28) — o nome da modalidade no documento congelado
+
+Cada modalidade de `modalidades` guarda `nome`, o nome obrigatório que o cadastro da modalidade tem, ao lado de `codigo` e `descricao`. O nome é um texto não vazio de até 200 caracteres, copiado do cadastro quando a distribuição de vagas é gravada (ADR-0061): renomear a modalidade no cadastro depois disso não muda o processo nem a versão publicada. Ao usuário a modalidade aparece como o código seguido do nome.
+
+O campo entra nos bytes e no resumo (hash) da versão. A leitura exige o `nome` de cada modalidade, recusa o texto vazio, só de espaços ou acima de 200 caracteres, com o caminho do item e sem repetir o valor. O esquema da configuração (`v1`) traz `nome` como propriedade só de leitura, ignorada na importação. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o nome copiado de uma modalidade muda o resumo da versão.
