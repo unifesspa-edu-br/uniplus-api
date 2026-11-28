@@ -37,6 +37,7 @@ public static class DimensaoConformidade
     public const string Fada = "fada";
     public const string Desempate = "desempate";
     public const string ProvaPresencial = "prova_presencial";
+    public const string ImportacaoDoResultado = "importacao_do_resultado";
 
     /// <summary>
     /// Os dados do processo que regem a contagem dos prazos de recurso — a localidade cujo
@@ -61,6 +62,7 @@ public static class DimensaoConformidade
         [ColetaDeFatos] = "coleta",
         [Fada] = "fada",
         [ProvaPresencial] = "provaPresencial",
+        [ImportacaoDoResultado] = "importacao",
     };
 
     /// <summary>O bloco do documento de configuração em que a pendência da dimensão se corrige.</summary>

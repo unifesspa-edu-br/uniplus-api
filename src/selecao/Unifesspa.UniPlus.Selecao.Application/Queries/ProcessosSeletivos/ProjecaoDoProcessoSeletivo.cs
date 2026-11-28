@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ProcessosSeletivos.CadastroDeReserva;
+using Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Domain.ProcessosSeletivos.Manifestacao;
 using Domain.ProcessosSeletivos.ProvaPresencial;
 using Domain.ValueObjects;
@@ -25,7 +26,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado), ProjecaoDasVagas.ProjetarDistribuicoes(processo),
         ProjecaoDasVagas.ProjetarFada(processo.Fada), processo.AplicaFada,
         processo.NumeroDeOpcoesDeCurso is { } opcoesDeCurso ? new OpcoesDeCursoDto(opcoesDeCurso) : null,
-        ProjetarProvaPresencial(processo.ProvaPresencial), ProjetarCadastroDeReserva(processo.CadastroDeReserva),
+        ProjetarProvaPresencial(processo.ProvaPresencial), ProjetarImportacaoDoResultado(processo.ImportacaoDoResultado), ProjetarCadastroDeReserva(processo.CadastroDeReserva),
         ProjetarManifestacaoDeInteresse(processo.ManifestacaoDeInteresse), ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
         ProjecaoDaClassificacao.ProjetarCriteriosDeDesempate(processo), ProjecaoDaClassificacao.Projetar(processo),
         ProjecaoDaFaseDoCronograma.ProjetarCronograma(processo),
@@ -51,6 +52,11 @@ internal static class ProjecaoDoProcessoSeletivo
         declaracao is null ? null : new ProvaPresencialDto(
             declaracao.TemProvaPresencial,
             [.. declaracao.Municipios.Select(static m => new MunicipioDeProvaDto(m.CodigoIbge, m.Uf, m.Nome))]);
+
+    private static ImportacaoDoResultadoDto? ProjetarImportacaoDoResultado(DeclaracaoDaImportacaoDoResultado? declaracao) =>
+        declaracao is null ? null : new ImportacaoDoResultadoDto(
+            [.. declaracao.Relatorios.Select(static r => new RelatorioDaImportacaoDto(r.LeiauteCodigo, r.LeiauteVersao))],
+            declaracao.PrimeiraFaseDepoisDaImportacaoId);
 
     private static CodigoComRotulo<ManifestacaoDeInteresse>? ProjetarManifestacaoDeInteresse(ManifestacaoDeInteresse? manifestacao) =>
         manifestacao is { } declarada ? CodigoComRotulo<ManifestacaoDeInteresse>.De(declarada) : null;

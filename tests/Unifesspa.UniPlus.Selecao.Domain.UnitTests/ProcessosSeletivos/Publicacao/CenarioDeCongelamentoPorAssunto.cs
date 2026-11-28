@@ -72,6 +72,9 @@ internal sealed class CenarioDeCongelamentoPorAssunto
     /// <summary>O nome de cada assunto que o cenário sabe quebrar: tem de ser os mesmos da conferência.</summary>
     internal static IEnumerable<string> AssuntosQueSabeQuebrar => Defeitos.Keys;
 
+    /// <summary>Os assuntos sem defeito possível aqui: a origem dos candidatos é fixada na criação, e este cenário é de inscrição própria.</summary>
+    internal static IReadOnlyList<string> AssuntosSoDoResultadoImportado { get; } = [NomeDoAssunto.ImportacaoDoResultado];
+
     internal static CenarioDeCongelamentoPorAssunto Para(string transicao)
     {
         ProcessoSeletivo processo = ProcessoBase();

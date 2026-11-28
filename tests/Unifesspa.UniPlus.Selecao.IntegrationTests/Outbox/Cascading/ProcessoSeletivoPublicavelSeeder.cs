@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -40,19 +41,53 @@ internal static class ProcessoSeletivoPublicavelSeeder
     private static readonly string[] TiposDeDecisaoDaFaseUnica = [TipoMotivoDeDecisao.HomologacaoDasInscricoes.Codigo()];
 
     /// <summary>A fase que coleta a inscrição, agrupa as etapas e publica o resultado que homologa as inscrições.</summary>
-    internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
+    internal static FaseCronograma FaseDeResultadoFinal(OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra>? regras = null) => FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase_resultado_final").Value!,
         OrigensDoTipoDeFaseDeTeste.Da(
-            origemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true,
+            origemId: opcoes.OrigemDaFaseDeResultado ?? Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: opcoes.Origem == OrigemCandidatos.InscricaoPropria || opcoes.ComInscricaoNaFaseDeResultado,
             coletaSolicitacaoIsencao: opcoes.ColetaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(
             Ordem: opcoes.OrdemDaFaseDeResultado, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: opcoes.FimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), UnidadeResponsavel: opcoes.UnidadeResponsavel ?? UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(
+        PublicacoesDaFaseDeResultado(opcoes, regras),
+        bancasRequeridas: BancasDaFaseDeResultado(opcoes)).Value!;
+
+    private static PublicacoesDaFase PublicacoesDaFaseDeResultado(
+        OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra>? regras) =>
+        opcoes.ComCicloDeRecurso
+            ? HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(
+                prazoDoCatalogo: regras?[RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo()],
+                procedimentoDoCatalogo: regras?[RegraDeProcedimentoDoRecurso.Recorrecao.Codigo()])
+            : new PublicacoesDaFase(
             Produtos: opcoes.ProdutosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelDaPublicacaoPrevista.Definitivo)],
             EmiteParecerIndividual: false,
             RegraRecurso: opcoes.RegraDeRecursoDaFase,
             TiposDeDecisao: TiposDeDecisaoDaFaseUnica,
-            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(opcoes.ProdutosDaFase is { Count: > 0 } ? opcoes.ProdutosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
-        bancasRequeridas: BancasDaFaseDeResultado(opcoes)).Value!;
+            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(opcoes.ProdutosDaFase is { Count: > 0 } ? opcoes.ProdutosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase));
+
+    // O período de recurso conta em dias úteis: quem o declara precisa do calendário de dias úteis vigente no cadastro.
+    private static async Task GarantirCalendarioVigenteDoRecursoAsync(UniPlusDbContext db, OpcoesDoProcessoSeletivoPublicavel opcoes)
+    {
+        if (!opcoes.ComCicloDeRecurso || await db.Set<CalendarioDiasUteis>().AnyAsync(static calendario => calendario.Vigente))
+        {
+            return;
+        }
+
+        CalendarioDiasUteis calendario = CalendarioDiasUteis.Criar(
+            "Calendário do período de recurso de teste",
+            [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).ValorEsperado();
+        calendario.MarcarVigente().IsSuccess.Should().BeTrue();
+        db.Add(calendario);
+        await db.SaveChangesAsync();
+    }
+
+    // O período de recurso conta em dias úteis: o processo que o declara também declara a convenção de contagem que usa.
+    private static void DeclararAConvencaoDeContagemDoRecurso(
+        ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra> regras)
+    {
+        if (opcoes.ComCicloDeRecurso)
+        {
+            processo.DefinirAlgoritmoContagemPrazo(regras[ConvencaoDeContagemDoPrazo.ExcluiDiaInicial.Codigo()]).IsSuccess.Should().BeTrue();
+        }
+    }
 
     private static List<BancaRequerida> BancasDaFaseDeResultado(OpcoesDoProcessoSeletivoPublicavel opcoes)
     {
@@ -67,6 +102,11 @@ internal static class ProcessoSeletivoPublicavelSeeder
             bancas.Add(BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos));
         }
 
+        if (opcoes.ComCicloDeRecurso)
+        {
+            bancas.Add(BancasDeTeste.DeRecursosDaFase());
+        }
+
         return bancas;
     }
 
@@ -76,12 +116,14 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(opcoes);
         ValidarNome(opcoes.Nome);
+        await GarantirCalendarioVigenteDoRecursoAsync(db, opcoes);
         ProcessoSeletivo processo = CriarProcesso(db, opcoes);
         DefinirAtendimentoEspecializado(processo);
         Dictionary<string, ReferenciaRegra> regras = await RegrasAsync(db);
         DefinirDistribuicaoDeVagas(processo, regras);
         DefinirClassificacao(processo, regras);
         DefinirCronogramaEDeclaracoes(processo, opcoes, regras);
+        DeclararAConvencaoDeContagemDoRecurso(processo, opcoes, regras);
         opcoes.Complementar?.Invoke(processo);
         DocumentoAPublicar documento = CriarDocumentoConfirmado(processo);
         await PersistirProcessoEDocumentoAsync(db, processo, documento);
@@ -91,7 +133,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
     private static void DefinirCronogramaEDeclaracoes(
         ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra> regras)
     {
-        DefinirCronograma(processo, opcoes);
+        DefinirCronograma(processo, opcoes, regras);
         DefinirTaxaEDeclaracoes(processo);
         DefinirDesempate(processo, regras);
     }
@@ -165,9 +207,9 @@ internal static class ProcessoSeletivoPublicavelSeeder
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
     }
 
-    private static void DefinirCronograma(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes)
+    private static void DefinirCronograma(ProcessoSeletivo processo, OpcoesDoProcessoSeletivoPublicavel opcoes, Dictionary<string, ReferenciaRegra> regras)
     {
-        Result cronogramaResult = processo.DefinirCronogramaFases([FaseDeResultadoFinal(opcoes), .. opcoes.FasesAdicionais], []);
+        Result cronogramaResult = processo.DefinirCronogramaFases([FaseDeResultadoFinal(opcoes, regras), .. opcoes.FasesAdicionais], []);
         DefinirEtapas(processo, opcoes);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
@@ -213,6 +255,12 @@ internal sealed record OpcoesDoProcessoSeletivoPublicavel
 
     /// <summary>Acrescenta à fase de resultado a banca de importação dos candidatos, que o processo de resultado importado exige.</summary>
     public bool ComBancaDeImportacaoDeCandidatos { get; init; }
+
+    /// <summary>Faz a fase de resultado publicar o resultado preliminar e o definitivo, com o período de recurso e a banca de recursos, como o processo de resultado importado exige.</summary>
+    public bool ComCicloDeRecurso { get; init; }
+
+    /// <summary>No processo de resultado importado a fase de resultado não coleta inscrição; com isto ela coleta, para o teste que a recusa.</summary>
+    public bool ComInscricaoNaFaseDeResultado { get; init; }
 
     /// <summary>De onde vêm os candidatos: ausente, o processo tem inscrição pelo sistema.</summary>
     public OrigemCandidatos Origem { get; init; } = OrigemCandidatos.InscricaoPropria;

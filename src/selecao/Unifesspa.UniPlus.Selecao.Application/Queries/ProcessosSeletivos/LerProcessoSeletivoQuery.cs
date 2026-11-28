@@ -77,7 +77,7 @@ public static class LerProcessoSeletivoQueryHandler
     private static ProcessoSeletivoDto SoIdentificacao(ProcessoSeletivoDto processo, LocalidadeRegenteDto localidade) => new(
         processo.Id, processo.Nome, IdentificadorLegivel: null, processo.TipoProcesso, processo.Situacao,
         processo.OrigemCandidatos, processo.UnidadeAdministradora, localidade, Etapas: [], AtendimentoEspecializado: null,
-        DistribuicaoVagas: [], Fada: null, AplicaFada: null, OpcoesDeCurso: null, ProvaPresencial: null,
+        DistribuicaoVagas: [], Fada: null, AplicaFada: null, OpcoesDeCurso: null, ProvaPresencial: null, ImportacaoDoResultado: null,
         CadastroDeReserva: [], ManifestacaoDeInteresse: null, Cascata: null, CriteriosDesempate: [], Classificacao: null, CronogramaFases: [],
         DocumentosExigidos: [], RegrasDeComprovacao: [], ReferenciaTemporalFatos: null, RegrasDerivacao: [], Formularios: [], OpcoesDeclaradas: [],
         ConfiguracaoDivulgacao: null, ConfiguracaoTaxaInscricao: null, AlgoritmoContagemPrazo: null, processo.CriadoEm);

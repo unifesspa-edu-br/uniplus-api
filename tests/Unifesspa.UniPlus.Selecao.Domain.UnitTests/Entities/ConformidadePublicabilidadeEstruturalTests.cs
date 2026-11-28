@@ -72,9 +72,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // DEPOIS removida via DefinirEtapas([]): a fase de avaliação fica órfã, e essa direção só
         // a conferência de publicação (LAZY) pega — é exatamente o defeito que o docblock de
         // PendenciaDoCronograma descreve como "defesa em profundidade".
-        processo.DefinirCronogramaFases(
-            [FaseDeResultadoFinal()],
-            []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseDeResultadoFinal()]).IsSuccess.Should().BeTrue();
         DefinirEDepoisRemoverAEtapaPontuada(processo);
 
         SoEstesItensVermelhos(processo, "cronograma_fase_agrupadora_sem_etapa_pontuada");
@@ -116,7 +114,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void Cronograma_InscricaoPropriaSemFaseDeColeta()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricaoPropriaSemCronograma();
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseBase(coletaInscricao: false)]).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -132,7 +130,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         // A fase coleta inscrição e é NA_EXECUCAO, então a janela é opcional para o cadastro
         // — mas não para publicar: é dela que o Edital tira o prazo.
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: true)], []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseBase(coletaInscricao: true)]).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -155,7 +153,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FaseCronograma habilitacao = FaseDeHabilitacao();
 
         // O rascunho aceita a fase ainda sem unidade; só a publicação a exige.
-        processo.DefinirCronogramaFases([FaseBaseDaImportacao(), habilitacao], [])
+        FormularioDeTeste.TrocarCronograma(processo, [FaseBaseDaImportacao(), habilitacao])
             .IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -178,9 +176,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void Cronograma_VagasSemFaseQueProduzResultado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirCronogramaFases(
-            [FaseDeMatricula()],
-            []).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseDeMatricula()]).IsSuccess.Should().BeTrue();
 
         // A fase que homologa as inscrições publica o resultado, então sem resultado também falta a homologação: o item da falta de resultado é um dos vermelhos.
         ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Para(processo)).Where(static i => !i.Ok).Select(static i => i.Codigo)

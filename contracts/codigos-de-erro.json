@@ -6192,6 +6192,41 @@
       "titulo": "A regra de homologação das inscrições não aponta um resultado da fase"
     },
     {
+      "codigo": "uniplus.selecao.importacao_resultado.em_inscricao_pelo_sistema",
+      "status": 422,
+      "titulo": "Importação declarada em processo com inscrição pelo sistema"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.por_declarar",
+      "status": 422,
+      "titulo": "A importação do resultado não está declarada"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.primeira_fase_fora_do_cronograma",
+      "status": 422,
+      "titulo": "Primeira fase depois da importação fora do cronograma"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.primeira_fase_por_declarar",
+      "status": 422,
+      "titulo": "Primeira fase depois da importação não declarada"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.relatorio_repetido",
+      "status": 422,
+      "titulo": "Relatório repetido"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.relatorio_sem_leiaute",
+      "status": 422,
+      "titulo": "Relatório sem leiaute"
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.sem_relatorio",
+      "status": 422,
+      "titulo": "A importação não declara relatório"
+    },
+    {
       "codigo": "uniplus.selecao.inscricao.aceite_de_outra_versao",
       "status": 422,
       "titulo": "O aceite não é da versão do termo que o formulário apresenta"

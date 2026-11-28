@@ -403,3 +403,11 @@ Cada modalidade de `modalidades` guarda `nome`, o nome obrigatório que o cadast
 O campo entra nos bytes e no resumo (hash) da versão. A leitura exige o `nome` de cada modalidade, recusa o texto vazio, só de espaços ou acima de 200 caracteres, com o caminho do item e sem repetir o valor. O esquema da configuração (`v1`) traz `nome` como propriedade só de leitura, ignorada na importação. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
 
 **Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda o nome copiado de uma modalidade muda o resumo da versão.
+
+## Emenda 13 (2026-11-28) — a importação do resultado no documento congelado
+
+O documento congelado guarda o bloco `importacaoDoResultado`, com o que o processo de resultado importado declara da importação. O bloco está sempre presente: é nulo quando o processo não declara a importação, ou um objeto com `relatorios`, a lista na ordem declarada de `leiauteCodigo` e `leiauteVersao`, e `primeiraFaseDepoisDaImportacaoId`, o identificador da fase do cronograma ou nulo quando ainda não declarada.
+
+O bloco entra nos bytes e no resumo (hash) da versão. É lido do próprio processo ao congelar e, na recodificação, da configuração publicada, de modo que a retificação herda a fase da versão publicada. A leitura exige as duas chaves do bloco e as duas de cada relatório, aplica de novo a declaração do domínio e recusa o documento cuja primeira fase não está no cronograma do mesmo envelope. É um bloco interno, registrado em `ClassificacaoDosBlocosDoCertame`: a página pública do certame não o mostra. A versão do envelope não muda: segue em `0.0.57`, editado no lugar.
+
+**Consequência:** os três envelopes de referência dos testes são gerados de novo, e a retificação que muda a importação muda o resumo da versão.

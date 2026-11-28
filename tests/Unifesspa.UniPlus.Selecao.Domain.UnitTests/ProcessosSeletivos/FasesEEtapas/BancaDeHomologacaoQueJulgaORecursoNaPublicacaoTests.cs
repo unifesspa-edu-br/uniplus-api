@@ -32,8 +32,7 @@ public sealed class BancaDeHomologacaoQueJulgaORecursoNaPublicacaoTests
         BancaRequerida deHomologacao = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], regra);
         ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
 
-        processo.DefinirCronogramaFases(
-            [ApoioConformidadePublicabilidadeEstrutural.FaseBaseDaImportacao(bancas: [deHomologacao, BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos)])], [])
+        FormularioDeTeste.TrocarCronograma(processo, [ApoioConformidadePublicabilidadeEstrutural.FaseBaseDaImportacao(bancas: [deHomologacao, BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos)])])
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -78,8 +77,7 @@ public sealed class BancaDeHomologacaoQueJulgaORecursoNaPublicacaoTests
         BancaRequerida deHomologacao = BancaRequerida.Criar(ChaveLocal.Criar("banca").Value, TiposDeBancaCopiadosDeTeste.De(TipoDeBanca.HomologacaoDasInscricoes), [], AtoIndividualSemVotacao());
         ProcessoSeletivo processo = ApoioConformidadePublicabilidadeEstrutural.ProcessoConforme();
 
-        processo.DefinirCronogramaFases(
-            [ApoioConformidadePublicabilidadeEstrutural.FaseBaseDaImportacao(bancas: [deHomologacao, BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.DeRecursosDaFase()])], [])
+        FormularioDeTeste.TrocarCronograma(processo, [ApoioConformidadePublicabilidadeEstrutural.FaseBaseDaImportacao(bancas: [deHomologacao, BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.DeRecursosDaFase()])])
             .IsSuccess.Should().BeTrue();
 
         Causas(processo).Should().BeEmpty();

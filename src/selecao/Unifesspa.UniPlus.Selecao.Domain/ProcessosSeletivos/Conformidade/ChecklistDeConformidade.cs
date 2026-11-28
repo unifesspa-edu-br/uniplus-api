@@ -79,6 +79,7 @@ public static class ChecklistDeConformidade
         .. ItensDosMotivosDeDecisao.Avaliar(configuracao, cadastros.MotivosEscolhidos),
         ItensDaProvaPresencial.Avaliar(configuracao, cadastros),
         ItensDaProvaPresencial.CidadeDeProva(configuracao),
+        ItensDaImportacaoDoResultado.Avaliar(configuracao),
     ];
 
     /// <summary>

@@ -41,7 +41,8 @@ internal static class HomologacaoDasInscricoesDeTeste
     /// As publicações da fase que homologa as inscrições de quem importa os candidatos: o resultado preliminar e o definitivo, com a
     /// janela de recurso ancorada no preliminar e o procedimento da decisão de homologação.
     /// </summary>
-    internal static PublicacoesDaFase PublicacoesDaFaseQueHomologaComRecurso(string resultado = ResultadoDaFase)
+    internal static PublicacoesDaFase PublicacoesDaFaseQueHomologaComRecurso(
+        string resultado = ResultadoDaFase, ReferenciaRegra? prazoDoCatalogo = null, ReferenciaRegra? procedimentoDoCatalogo = null)
     {
         Guid preliminarId = Guid.CreateVersion7();
 
@@ -50,7 +51,7 @@ internal static class HomologacaoDasInscricoesDeTeste
                 ProdutoDaFase.Reidratar(preliminarId, resultado, PapelDaPublicacaoPrevista.Preliminar),
                 ProdutoDaFase.Criar(resultado, PapelDaPublicacaoPrevista.Definitivo),
             ],
-            RegraDeRecurso(preliminarId),
+            RegraDeRecurso(preliminarId, prazoDoCatalogo, procedimentoDoCatalogo),
             resultado);
     }
 
@@ -70,17 +71,18 @@ internal static class HomologacaoDasInscricoesDeTeste
         [BancasDeTeste.DaHomologacaoDasInscricoesDaFase(), BancasDeTeste.DaFase(TipoDeBanca.ImportacaoDeCandidatos), BancasDeTeste.DeRecursosDaFase()];
 
     /// <summary>A janela de recurso ancorada no produto dado, com o procedimento da decisão de homologação.</summary>
-    internal static RegraRecursoFase RegraDeRecurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
+    internal static RegraRecursoFase RegraDeRecurso(
+        Guid produtoAncoraId, ReferenciaRegra? prazoDoCatalogo = null, ReferenciaRegra? procedimentoDoCatalogo = null) => RegraRecursoFase.Criar(
+        prazoDoCatalogo ?? ReferenciaRegra.De(RegraDePrazoDoRecurso.ContadoDaPublicacaoDoAto.Codigo(), "v1", new string('d', 64)),
         ParametrosDoRecursoDeTeste.Declarados(2m, UnidadePrazo.DiasUteis),
         produtoAncoraId,
-        ProcedimentosDaHomologacao()).Value!;
+        ProcedimentosDaHomologacao(procedimentoDoCatalogo)).Value!;
 
-    internal static ProcedimentosDeRecurso ProcedimentosDaHomologacao() => ProcedimentosDeRecurso.De(
+    internal static ProcedimentosDeRecurso ProcedimentosDaHomologacao(ReferenciaRegra? procedimentoDoCatalogo = null) => ProcedimentosDeRecurso.De(
         [ProcedimentoDeRecursoDeclarado.De(
             TipoMotivoDeDecisao.HomologacaoDasInscricoes,
             alvo: null,
-            ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(), "v1", new string('a', 64)))]);
+            procedimentoDoCatalogo ?? ReferenciaRegra.De(RegraDeProcedimentoDoRecurso.Recorrecao.Codigo(), "v1", new string('a', 64)))]);
 
     internal static CondicaoDeHomologacao ConfirmacaoDoInep(string motivo = MotivoSemResultadoNoInep) =>
         CondicaoDeHomologacao.Declarar(CodigoDaConfirmacaoDoInep, edicaoDoExame: 2026, motivo, enquadramento: null).Value!;

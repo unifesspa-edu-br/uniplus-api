@@ -198,6 +198,7 @@ public sealed class OpcoesDeCursoTests
             inconsistentes, original.Exigencias, original.Coleta, original.DivulgacaoETaxa)
         {
             ProvaPresencial = original.ProvaPresencial,
+            ImportacaoDoResultado = original.ImportacaoDoResultado,
             MotivosDeDecisao = original.MotivosDeDecisao,
             Origem = original.Origem,
         };

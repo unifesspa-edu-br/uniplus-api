@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 
 /// <summary>
 /// O que o documento da configuração declara, copiado do JSON sem conferir regra: a identificação, as fases do cronograma, o
-/// cadastro de reserva por chamada, a manifestação de interesse, a prova presencial, as etapas de avaliação, a classificação, as vagas e as exigências de documentos, com a posição de cada parte no documento enviado e os códigos de
+/// cadastro de reserva por chamada, a manifestação de interesse, a prova presencial, a importação do resultado, as etapas de avaliação, a classificação, as vagas e as exigências de documentos, com a posição de cada parte no documento enviado e os códigos de
 /// catálogo como foram escritos. Os blocos seguintes entram aqui à medida que a leitura os alcança.
 /// </summary>
 public sealed record DeclaracoesDoDocumento(IdentificacaoNoDocumento Identificacao, IReadOnlyList<FaseNoDocumento> Fases)
@@ -18,6 +18,9 @@ public sealed record DeclaracoesDoDocumento(IdentificacaoNoDocumento Identificac
 
     /// <summary>A prova presencial como o documento a traz; o bloco ausente é nulo, e quer dizer que o processo ainda não a declarou.</summary>
     public ProvaPresencialNoDocumento? ProvaPresencial { get; init; }
+
+    /// <summary>A importação do resultado como o documento a traz; o bloco ausente é nulo, e quer dizer que o processo ainda não a declarou.</summary>
+    public ImportacaoNoDocumento? Importacao { get; init; }
 
     /// <summary>As etapas de avaliação na ordem do documento; o bloco ausente é a lista vazia.</summary>
     public IReadOnlyList<EtapaNoDocumento> Etapas { get; init; } = [];

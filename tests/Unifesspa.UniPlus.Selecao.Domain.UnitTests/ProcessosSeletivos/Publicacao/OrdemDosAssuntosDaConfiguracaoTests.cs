@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfigura
 /// <remarks>
 /// A sequência dos assuntos está escrita neste teste, sem ler a lista de produção: ela falha se dois assuntos trocarem de
 /// posição e se a conferência ganhar ou perder um assunto. O cenário tem um defeito característico para cada assunto, pelo
-/// nome. Com os defeitos do primeiro assunto em diante ligados, a primeira causa tem de ser a do assunto que vem a seguir, e a
-/// lista das causas é a concatenação dos assuntos na ordem.
+/// nome, menos o da importação do resultado, que só existe no processo de resultado importado. Com os defeitos do primeiro
+/// assunto em diante ligados, a primeira causa tem de ser a do assunto que vem a seguir, e a lista das causas é a concatenação dos assuntos na ordem.
 /// </remarks>
 public sealed class OrdemDosAssuntosDaConfiguracaoTests
 {
@@ -23,8 +23,12 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
         "Identificacao", "Conformidade", "Declaracoes", "ReferenciasDeRegra", "Conjunto", "Completude", "Recursos",
         "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "ConsequenciasDoDescumprimento", "CondicoesParaRegistrarConfiguracao", "MotivosDeDecisao",
         "ProvaPresencial",
+        "ImportacaoDoResultado",
     ];
 
+
+    private static readonly string[] AssuntosQueOCenarioQuebra =
+        [.. SequenciaEsperada.Except(CenarioDeCongelamentoPorAssunto.AssuntosSoDoResultadoImportado)];
 
     public static TheoryData<string> Transicoes => ["Publicar", "Retificar"];
 
@@ -32,9 +36,9 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
     public void Assuntos_SaoAsDaSequenciaEsperadaNaOrdem() =>
         CausasQueImpedemCongelar.Assuntos.Select(static assunto => assunto.Nome).Should().Equal(SequenciaEsperada);
 
-    [Fact(DisplayName = "O cenário sabe quebrar exatamente os assuntos da sequência esperada")]
+    [Fact(DisplayName = "O cenário sabe quebrar exatamente os assuntos da sequência esperada, menos os do processo de resultado importado")]
     public void Cenario_QuebraExatamenteOsAssuntosDaSequencia() =>
-        CenarioDeCongelamentoPorAssunto.AssuntosQueSabeQuebrar.Should().BeEquivalentTo(SequenciaEsperada);
+        CenarioDeCongelamentoPorAssunto.AssuntosQueSabeQuebrar.Should().BeEquivalentTo(SequenciaEsperada.Except(CenarioDeCongelamentoPorAssunto.AssuntosSoDoResultadoImportado));
 
     [Theory(DisplayName = "Sem nenhum defeito, a transição tem sucesso e nenhum assunto tem causa")]
     [MemberData(nameof(Transicoes))]
@@ -52,17 +56,23 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
     [MemberData(nameof(Transicoes))]
     public void PrimeiraCausa_SegueAOrdemDosAssuntos(string transicao)
     {
-        for (int primeiro = 0; primeiro < SequenciaEsperada.Length; primeiro++)
+        foreach (string assunto in AssuntosQueOCenarioQuebra)
         {
-            CenarioDeCongelamentoPorAssunto cenario = CenarioDeCongelamentoPorAssunto.Para(transicao);
-
-            Result<VersaoConfiguracao> resultado = cenario.Congelar(SequenciaEsperada.Skip(primeiro).ToHashSet(StringComparer.Ordinal));
-
-            IReadOnlyList<(string Assunto, IReadOnlyList<FieldError> Causas)> porAssunto = cenario.CausasPorAssunto();
-            porAssunto.Take(primeiro).Should().OnlyContain(static doAssunto => doAssunto.Causas.Count == 0, $"só os assuntos de {SequenciaEsperada[primeiro]} em diante têm defeito");
-            porAssunto[primeiro].Causas.Should().NotBeEmpty($"o assunto {SequenciaEsperada[primeiro]} tem defeito");
-            resultado.Error!.Code.Should().Be(porAssunto[primeiro].Causas[0].Error.Code, $"a primeira causa é a do assunto {SequenciaEsperada[primeiro]}");
+            ConferirAPrimeiraCausaDoAssunto(transicao, assunto);
         }
+    }
+
+    private static void ConferirAPrimeiraCausaDoAssunto(string transicao, string assunto)
+    {
+        CenarioDeCongelamentoPorAssunto cenario = CenarioDeCongelamentoPorAssunto.Para(transicao);
+
+        Result<VersaoConfiguracao> resultado = cenario.Congelar(AssuntosQueOCenarioQuebra.SkipWhile(outro => outro != assunto).ToHashSet(StringComparer.Ordinal));
+
+        IReadOnlyList<(string Assunto, IReadOnlyList<FieldError> Causas)> porAssunto = cenario.CausasPorAssunto();
+        (string Assunto, IReadOnlyList<FieldError> Causas) doAssunto = porAssunto.Single(causas => causas.Assunto == assunto);
+        porAssunto.TakeWhile(anterior => anterior.Assunto != assunto).Should().OnlyContain(static anterior => anterior.Causas.Count == 0, $"só os assuntos de {assunto} em diante têm defeito");
+        doAssunto.Causas.Should().NotBeEmpty($"o assunto {assunto} tem defeito");
+        resultado.Error!.Code.Should().Be(doAssunto.Causas[0].Error.Code, $"a primeira causa é a do assunto {assunto}");
     }
 
     [Theory(DisplayName = "O processo que falha em todos os assuntos devolve as causas de cada assunto, na ordem única")]
@@ -71,11 +81,11 @@ public sealed class OrdemDosAssuntosDaConfiguracaoTests
     {
         CenarioDeCongelamentoPorAssunto cenario = CenarioDeCongelamentoPorAssunto.Para(transicao);
 
-        Result<VersaoConfiguracao> resultado = cenario.Congelar(SequenciaEsperada.ToHashSet(StringComparer.Ordinal));
+        Result<VersaoConfiguracao> resultado = cenario.Congelar(AssuntosQueOCenarioQuebra.ToHashSet(StringComparer.Ordinal));
 
         IReadOnlyList<(string Assunto, IReadOnlyList<FieldError> Causas)> porAssunto = cenario.CausasPorAssunto();
         porAssunto.Where(static doAssunto => doAssunto.Causas.Count == 0).Select(static doAssunto => doAssunto.Assunto)
-            .Should().BeEmpty("todos os assuntos têm causa característica no cenário");
+            .Should().Equal(CenarioDeCongelamentoPorAssunto.AssuntosSoDoResultadoImportado, "só o assunto do processo de resultado importado não tem causa neste cenário");
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code))
             .Should().Equal(porAssunto.SelectMany(static doAssunto => doAssunto.Causas).Select(static causa => (causa.Field, causa.Error.Code)));
         resultado.Errors.Should().OnlyContain(static causa => !string.IsNullOrEmpty(causa.Field));

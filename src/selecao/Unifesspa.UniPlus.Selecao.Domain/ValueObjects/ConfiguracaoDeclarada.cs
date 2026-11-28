@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
@@ -47,6 +48,8 @@ public sealed class ConfiguracaoDeclarada
     public DivulgacaoETaxaDeclaradas DivulgacaoETaxa { get; }
 
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; internal init; }
+
+    public DeclaracaoDaImportacaoDoResultado? ImportacaoDoResultado { get; internal init; }
 
     public IReadOnlyList<MotivoDeDecisaoDeclarado> MotivosDeDecisao { get; internal init; } = [];
 

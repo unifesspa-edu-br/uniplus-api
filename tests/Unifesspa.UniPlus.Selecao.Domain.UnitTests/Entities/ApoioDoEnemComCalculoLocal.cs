@@ -60,14 +60,12 @@ internal static class ApoioDoEnemComCalculoLocal
     internal static ProcessoSeletivo ProcessoConformeComEtapaQueCompoeNota()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, GrupoTecnologica)]);
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
+        FormularioDeTeste.TrocarCronograma(processo, [FaseCronograma.Criar(Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ChaveLocal.Criar("fase").Value!,
                 OrigensDoTipoDeFaseDeTeste.Da(
                     Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false),
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
-                bancasRequeridas: HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso()).Value!],
-            []).IsSuccess.Should().BeTrue();
+                bancasRequeridas: HomologacaoDasInscricoesDeTeste.BancasDaFaseQueHomologaComRecurso()).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
             [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")])
             .IsSuccess.Should().BeTrue();

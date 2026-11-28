@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do congelamento do snapshot de
 /// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0100): re-hashear os
-/// bytes lidos de volta do banco bate com o hash persistido pela app, os 38 blocos canônicos —
+/// bytes lidos de volta do banco bate com o hash persistido pela app, os 39 blocos canônicos —
 /// todos reais — estão presentes, e editar a configuração viva durante uma retificação aberta não
 /// altera a versão já persistida.
 /// </summary>
@@ -62,6 +62,8 @@ public sealed class SnapshotPublicadoPersistidoTests
         "cadastroDeReserva",
         // Como o edital prevê a manifestação de interesse: o código, ou nulo quando não prevista.
         "manifestacaoDeInteresse",
+        // A declaração da importação do resultado: os relatórios pelo leiaute e a primeira fase depois dela.
+        "importacaoDoResultado",
     ];
 
     public SnapshotPublicadoPersistidoTests(ProcessoSeletivoDbFixture fixture)
@@ -86,7 +88,7 @@ public sealed class SnapshotPublicadoPersistidoTests
     private async Task<VersaoConfiguracao> PublicarAsync(string nome) =>
         await _cenario.PublicarEPersistirAsync(CenarioDeRetificacaoPersistida.NovoProcessoConforme(nome));
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 38 blocos, todos reais, estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 39 blocos, todos reais, estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         VersaoConfiguracao publicada = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));

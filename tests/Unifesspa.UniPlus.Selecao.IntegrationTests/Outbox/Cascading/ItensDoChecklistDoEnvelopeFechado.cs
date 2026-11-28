@@ -182,6 +182,8 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "fato_coletavel_municipio_citado_fora_da_area_do_fada",
         "termo_exigido_sem_forma_de_aceite",
         "formulario_inscricao_ausente",
+        "importacao_do_resultado",
+        "formulario_pos_importacao_sem_obrigatorio",
         "formulario_inscricao_sem_conjunto_basico",
         "formulario_inscricao_sem_edicao_enem",
         "formulario_fase_incoerente",

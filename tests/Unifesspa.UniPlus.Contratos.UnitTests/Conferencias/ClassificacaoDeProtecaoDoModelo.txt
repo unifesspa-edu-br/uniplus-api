@@ -1898,6 +1898,7 @@ selecao.processos_seletivos.deleted_at: Interno
 selecao.processos_seletivos.deleted_by: Pessoal
 selecao.processos_seletivos.id: Interno
 selecao.processos_seletivos.identificador_legivel: Interno
+selecao.processos_seletivos.importacao_declarada: Publico
 selecao.processos_seletivos.is_deleted: Interno
 selecao.processos_seletivos.localidade_codigo_ibge: Interno
 selecao.processos_seletivos.localidade_nome: Interno
@@ -1906,6 +1907,7 @@ selecao.processos_seletivos.manifestacao_de_interesse: Publico
 selecao.processos_seletivos.nome: Interno
 selecao.processos_seletivos.numero_de_opcoes_de_curso: Interno
 selecao.processos_seletivos.origem_candidatos: Interno
+selecao.processos_seletivos.primeira_fase_depois_importacao_id: Publico
 selecao.processos_seletivos.referencia_temporal_dados_data: Interno
 selecao.processos_seletivos.referencia_temporal_dados_fase_id: Interno
 selecao.processos_seletivos.referencia_temporal_dados_tipo: Interno
@@ -2022,6 +2024,11 @@ selecao.regras_eliminacao.regra_codigo: Interno
 selecao.regras_eliminacao.regra_hash: Interno
 selecao.regras_eliminacao.regra_versao: Interno
 selecao.regras_eliminacao.updated_at: Interno
+selecao.relatorios_da_importacao.id: Publico
+selecao.relatorios_da_importacao.leiaute_codigo: Publico
+selecao.relatorios_da_importacao.leiaute_versao: Publico
+selecao.relatorios_da_importacao.posicao: Publico
+selecao.relatorios_da_importacao.processo_seletivo_id: Publico
 selecao.respostas_da_inscricao.codigo_do_dado: Interno
 selecao.respostas_da_inscricao.id: Interno
 selecao.respostas_da_inscricao.inscricao_id: Interno

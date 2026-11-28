@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.CadastroDeReserva;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.LeituraDoDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ProvaPresencial;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -17,7 +18,7 @@ using static PartesComunsDoDocumentoLidas;
 
 /// <summary>
 /// Copia o documento que passou pela forma para as declarações do domínio: a identificação, as fases, o cadastro de reserva, a
-/// manifestação de interesse, a prova presencial, as etapas, a classificação, as vagas e as exigências de documentos, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
+/// manifestação de interesse, a prova presencial, a importação do resultado, as etapas, a classificação, as vagas e as exigências de documentos, cada parte de lista com a posição que tinha na lista enviada e cada código de catálogo como foi escrito. O esquema garante o tipo de cada valor presente,
 /// então aqui só se converte; o que falta fica ausente ou no valor de partida do tipo, e quem o confere é o domínio. Não decide regra.
 /// </summary>
 internal static class DeclaracoesDoDocumentoLidas
@@ -26,19 +27,27 @@ internal static class DeclaracoesDoDocumentoLidas
     {
         ArgumentNullException.ThrowIfNull(documento);
 
-        return new(
-            Identificacao(Objeto(documento, "identificacao")),
-            [.. Itens(Objeto(documento, "cronograma"), "fases").Select(static item => Fase(item.Posicao, item.Item))])
-        {
-            CadastroDeReserva = [.. Itens(documento, "cadastroDeReserva").Select(static item => CadastroDeReserva(item.Item))],
-            ManifestacaoDeInteresse = Texto(documento, "manifestacaoDeInteresse"),
-            ProvaPresencial = ProvaPresencial(Objeto(documento, "provaPresencial")),
-            Etapas = EtapasDoDocumentoLidas.De(documento["etapas"]),
-            Classificacao = ClassificacaoDoDocumentoLida.De(documento["classificacao"]),
-            Vagas = VagasDoDocumentoLidas.De(documento),
-            Exigencias = ExigenciasDoDocumentoLidas.De(documento["documentosExigidos"]),
-        };
+        return ComAsDeclaracoesDoProcesso(
+            new(
+                Identificacao(Objeto(documento, "identificacao")),
+                [.. Itens(Objeto(documento, "cronograma"), "fases").Select(static item => Fase(item.Posicao, item.Item))])
+            {
+                Etapas = EtapasDoDocumentoLidas.De(documento["etapas"]),
+                Classificacao = ClassificacaoDoDocumentoLida.De(documento["classificacao"]),
+                Vagas = VagasDoDocumentoLidas.De(documento),
+                Exigencias = ExigenciasDoDocumentoLidas.De(documento["documentosExigidos"]),
+            },
+            documento);
     }
+
+    // As declarações que o próprio processo faz, sem catálogo: o cadastro de reserva, a manifestação, a prova presencial e a importação do resultado.
+    private static DeclaracoesDoDocumento ComAsDeclaracoesDoProcesso(DeclaracoesDoDocumento declaracoes, JsonObject documento) => declaracoes with
+    {
+        CadastroDeReserva = [.. Itens(documento, "cadastroDeReserva").Select(static item => CadastroDeReserva(item.Item))],
+        ManifestacaoDeInteresse = Texto(documento, "manifestacaoDeInteresse"),
+        ProvaPresencial = ProvaPresencial(Objeto(documento, "provaPresencial")),
+        Importacao = Importacao(Objeto(documento, "importacao")),
+    };
 
     // O código da participação segue como texto até o domínio: o desconhecido não vira ausente, porque ausente é a chamada sem opção.
     private static CadastroDeReservaInformado CadastroDeReserva(JsonObject chamada) => new(
@@ -52,6 +61,13 @@ internal static class DeclaracoesDoDocumentoLidas
         : new(
             Valor<bool>(bloco, "temProvaPresencial") ?? false,
             [.. Itens(bloco, "municipios").Select(static item => new MunicipioDeProvaInformado(Texto(item.Item, "codigoIbge"), Texto(item.Item, "uf")))]);
+
+    // O código e a versão do leiaute seguem como foram escritos, e o domínio os confere; a chave da fase segue como texto até a leitura ligá-la à fase.
+    private static ImportacaoNoDocumento? Importacao(JsonObject? bloco) => bloco is null
+        ? null
+        : new(
+            [.. Itens(bloco, "relatorios").Select(static item => new RelatorioInformado(Texto(item.Item, "leiauteCodigo"), Texto(item.Item, "leiauteVersao")))],
+            Texto(bloco, "primeiraFaseDepoisDaImportacaoChave"));
 
     private static IdentificacaoNoDocumento Identificacao(JsonObject? bloco) => new(
         Texto(bloco, "nome"),

@@ -20134,7 +20134,8 @@
     {
       "codigo": "uniplus.selecao.formulario_processo.pos_importacao_sem_formulario_obrigatorio",
       "requisitos": [
-        "UNI-REQ-0017"
+        "UNI-REQ-0017",
+        "UNI-REQ-0144"
       ],
       "oQueAconteceu": [
         "No processo de resultado importado, a importação traz só parte dos dados do candidato. A primeira fase do cronograma depois da importação precisa de um formulário obrigatório em que o candidato informa o que a importação não trouxe, e o processo não tem esse formulário.",
@@ -20630,6 +20631,122 @@
       ],
       "ondeAparece": [
         "Definição do cronograma (`PUT /api/selecao/processos-seletivos/{id}/cronograma-fases`)",
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.em_inscricao_pelo_sistema",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo com inscrição pelo sistema não declara importação de resultado."
+      ],
+      "comoResolver": [
+        "Retire a importação do resultado do processo ou mude a origem dos candidatos para resultado importado, e envie de novo."
+      ],
+      "ondeAparece": [
+        "Definição da importação do resultado (`PUT /api/selecao/processos-seletivos/{id}/importacao-resultado`)",
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.por_declarar",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo de resultado importado ainda não declara os relatórios que importa."
+      ],
+      "comoResolver": [
+        "Declare os relatórios que o processo importa e a primeira fase depois da importação, na definição da importação do resultado, e publique de novo."
+      ],
+      "ondeAparece": [
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.primeira_fase_fora_do_cronograma",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "A primeira fase declarada depois da importação não é fase do cronograma do processo."
+      ],
+      "comoResolver": [
+        "Escolha, como primeira fase depois da importação, uma fase que conste no cronograma do processo, ou defina antes o cronograma com essa fase."
+      ],
+      "ondeAparece": [
+        "Definição da importação do resultado (`PUT /api/selecao/processos-seletivos/{id}/importacao-resultado`)",
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.primeira_fase_por_declarar",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo ainda não declara a primeira fase depois da importação."
+      ],
+      "comoResolver": [
+        "Informe a primeira fase do cronograma que acontece depois da importação, na definição da importação do resultado, e publique de novo."
+      ],
+      "ondeAparece": [
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.relatorio_repetido",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O leiaute já está declarado como relatório do processo."
+      ],
+      "comoResolver": [
+        "Declare cada leiaute uma só vez: retire o relatório repetido da lista e envie de novo."
+      ],
+      "ondeAparece": [
+        "Definição da importação do resultado (`PUT /api/selecao/processos-seletivos/{id}/importacao-resultado`)",
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.relatorio_sem_leiaute",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "Um relatório da lista não traz o código ou a versão do leiaute, ou traz o código ou a versão fora da forma aceita."
+      ],
+      "comoResolver": [
+        "Informe, em cada relatório da lista, o código e a versão do leiaute e envie de novo. O código começa por letra ou número, usa só letras, números, ponto, hífen ou sublinhado, tem até 50 caracteres e não pode ser um código gerado pelo sistema, formado por grupos de letras e números separados por hífen. A versão tem até 16 caracteres."
+      ],
+      "ondeAparece": [
+        "Definição da importação do resultado (`PUT /api/selecao/processos-seletivos/{id}/importacao-resultado`)",
+        "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
+        "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
+      ]
+    },
+    {
+      "codigo": "uniplus.selecao.importacao_resultado.sem_relatorio",
+      "requisitos": [
+        "UNI-REQ-0144"
+      ],
+      "oQueAconteceu": [
+        "O processo declara a importação e nenhum relatório."
+      ],
+      "comoResolver": [
+        "Declare ao menos um relatório, com o código e a versão do leiaute, e publique de novo. Para desfazer a declaração, envie a lista vazia sem informar a primeira fase; o processo volta a 'importação por declarar', que a publicação recusa."
+      ],
+      "ondeAparece": [
         "Publicação inicial (`POST /api/selecao/processos-seletivos/{id}/publicacao`)",
         "Retificação (`POST /api/selecao/processos-seletivos/{id}/retificacoes`)"
       ]

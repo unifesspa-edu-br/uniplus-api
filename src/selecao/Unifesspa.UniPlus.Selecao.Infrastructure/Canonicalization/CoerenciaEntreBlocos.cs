@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -58,7 +59,8 @@ internal static class CoerenciaEntreBlocos
                 blocos.Documentos.TermosExigidos,
                 blocos.Configuracao.Distribuicao,
                 payload)
-            ?? CitacoesOuEnemInvalidos(blocos);
+            ?? CitacoesOuEnemInvalidos(blocos)
+            ?? ImportacaoForaDoCronograma(blocos.Configuracao.ImportacaoDoResultado, blocos.Configuracao.CronogramaFases);
     }
 
     // Onde cada documento é coletado só significa alguma coisa contra o cronograma e as etapas repostas ao
@@ -84,6 +86,13 @@ internal static class CoerenciaEntreBlocos
             [.. exigencias.Select(ExigenciaDeDocumentoDoFormulario.De)],
             CaminhosDasExigencias.NaLista("exigencias", exigencias.Count)).Count > 0
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'documentosExigidos.exigencias': uma exigência cita formulário que não está no envelope ou que é de outra fase.")
+            : null;
+
+    // A primeira fase depois da importação é fase do cronograma que o mesmo envelope repõe: sem ela, a versão reidratada declararia uma
+    // fase que não existe, e a recusa do formulário obrigatório da primeira fase leria uma fase ausente.
+    internal static DomainError? ImportacaoForaDoCronograma(DeclaracaoDaImportacaoDoResultado? importacao, IReadOnlyList<FaseCronograma> cronograma) =>
+        importacao?.PrimeiraFaseDepoisDaImportacaoId is { } faseId && cronograma.All(fase => fase.Id != faseId)
+            ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, "'importacaoDoResultado': a primeira fase depois da importação não está no cronograma do envelope.")
             : null;
 
     // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece, pela mesma

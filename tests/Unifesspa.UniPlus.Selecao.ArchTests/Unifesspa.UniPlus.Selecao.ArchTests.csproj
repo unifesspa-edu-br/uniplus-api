@@ -43,6 +43,12 @@
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/OfertaCursoDeTeste.cs" Link="OfertaCursoDeTeste.cs" />
+    <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
+    <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
+    <Compile Include="../Shared/OrigensDoTipoDeFaseDeTeste.cs" Link="OrigensDoTipoDeFaseDeTeste.cs" />
+    <Compile Include="../Shared/GrupoColetadoDeTeste.cs" Link="GrupoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/FatoColetadoDeTeste.cs" Link="FatoColetadoDeTeste.cs" />
+    <Compile Include="../Shared/ItemBasicoDeTeste.cs" Link="ItemBasicoDeTeste.cs" />
     <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />

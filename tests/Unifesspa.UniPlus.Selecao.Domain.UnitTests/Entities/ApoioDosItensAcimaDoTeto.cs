@@ -22,6 +22,7 @@ internal static class ApoioDosItensAcimaDoTeto
             raiz.Identidade, raiz.Cronograma, raiz.Avaliacao, raiz.Vagas, raiz.Exigencias, ColetaComItens(raiz.Coleta, excedentes), raiz.DivulgacaoETaxa)
         {
             ProvaPresencial = raiz.ProvaPresencial,
+            ImportacaoDoResultado = raiz.ImportacaoDoResultado,
             MotivosDeDecisao = raiz.MotivosDeDecisao,
             Origem = raiz.Origem,
         };

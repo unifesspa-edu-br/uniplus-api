@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fada;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Manifestacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Ordenacao;
@@ -164,6 +165,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public DeclaracaoDaProvaPresencial? ProvaPresencial { get; private set; }
 
+    public DeclaracaoDaImportacaoDoResultado? ImportacaoDoResultado { get; private set; }
+
     private readonly List<CadastroDeReservaDaChamada> _cadastroDeReserva = [];
 
     /// <summary>O cadastro de reserva por chamada (UNI-REQ-0354, UNI-REQ-0355); sem declaração, o processo não tem reserva em nenhuma chamada.</summary>
@@ -211,7 +214,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ExigenciasDeclaradas([.. _documentosExigidos], [.. _regrasDeComprovacao]),
         new ColetaDeclarada([.. _campos], [.. _gruposColetados], [.. _formularios], [.. _termosExigidos], [.. _opcoesDeclaradas], [.. _regrasDerivacao], ReferenciaTemporalFatos),
         new DivulgacaoETaxaDeclaradas(ConfiguracaoDivulgacao, ConfiguracaoTaxaInscricao))
-    { ProvaPresencial = ProvaPresencial, MotivosDeDecisao = [.. motivos] };
+    { ProvaPresencial = ProvaPresencial, ImportacaoDoResultado = ImportacaoDoResultado, MotivosDeDecisao = [.. motivos] };
 
     public static ProcessoSeletivo Criar(
         string nome,
@@ -285,6 +288,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirProvaPresencial(bool? temProvaPresencial, IReadOnlyList<MunicipioDeProvaInformado>? municipios, int limiteDeMunicipios) =>
         Editar(() => DeclaracaoDaProvaPresencial.Declarar(temProvaPresencial, municipios, limiteDeMunicipios),
             declaracao => ProvaPresencial = declaracao);
+
+    /// <summary>Declara os relatórios que o processo de resultado importado importa e a primeira fase depois da importação; sem relatório e sem fase, volta a por declarar.</summary>
+    public Result DefinirImportacaoDoResultado(IReadOnlyList<RelatorioInformado>? relatorios, Guid? primeiraFaseDepoisDaImportacaoId) =>
+        Editar(() => RegrasDaImportacaoDoResultado.Planejar(Declaracao(), relatorios, primeiraFaseDepoisDaImportacaoId),
+            declaracao => ImportacaoDoResultado = declaracao);
 
     /// <summary>Substitui o cadastro de reserva por chamada inteiro; a lista vazia deixa o processo sem reserva em nenhuma chamada.</summary>
     public Result DefinirCadastroDeReserva(IReadOnlyList<CadastroDeReservaInformado?>? chamadas) =>

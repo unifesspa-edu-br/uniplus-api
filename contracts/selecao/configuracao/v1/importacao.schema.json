@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/importacao.schema.json",
   "title": "Importação do resultado",
-  "description": "O que o processo de resultado importado declara da importação: os relatórios que importa, cada um pelo formato e pela versão, e a primeira fase depois da importação, em que o formulário coleta o que o arquivo não traz.",
+  "description": "O que o processo de resultado importado declara da importação: os relatórios que importa, cada um pelo leiaute e pela versão, e a primeira fase depois da importação, em que o formulário coleta o que o arquivo não traz.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "relatorios": {
       "title": "Relatórios",
-      "description": "Relatórios que o processo importa. Nenhum formato se repete.",
+      "description": "Relatórios que o processo importa. Nenhum leiaute se repete.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/relatorio"
@@ -23,26 +23,26 @@
   "$defs": {
     "relatorio": {
       "title": "Relatório importado",
-      "description": "Um relatório que o processo importa, pelo formato que ele segue.",
+      "description": "Um relatório que o processo importa, pelo leiaute que ele segue.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "formatoCodigo": {
-          "title": "Formato",
-          "description": "Código do formato do arquivo no catálogo de formatos.",
+        "leiauteCodigo": {
+          "title": "Leiaute",
+          "description": "Código do leiaute do arquivo: letras, números, ponto, hífen ou sublinhado, até 50 caracteres.",
           "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
         },
-        "formatoVersao": {
-          "title": "Versão do formato",
-          "description": "Versão do formato do arquivo.",
+        "leiauteVersao": {
+          "title": "Versão do leiaute",
+          "description": "Versão do leiaute do arquivo.",
           "type": "string",
           "minLength": 1,
           "maxLength": 16
         }
       },
       "required": [
-        "formatoCodigo",
-        "formatoVersao"
+        "leiauteCodigo",
+        "leiauteVersao"
       ]
     }
   }

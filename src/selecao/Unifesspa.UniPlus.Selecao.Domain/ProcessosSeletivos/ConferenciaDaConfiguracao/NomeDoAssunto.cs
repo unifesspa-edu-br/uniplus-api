@@ -18,4 +18,5 @@ internal static class NomeDoAssunto
     internal const string CondicoesParaRegistrarConfiguracao = "CondicoesParaRegistrarConfiguracao";
     internal const string MotivosDeDecisao = "MotivosDeDecisao";
     internal const string ProvaPresencial = "ProvaPresencial";
+    internal const string ImportacaoDoResultado = "ImportacaoDoResultado";
 }

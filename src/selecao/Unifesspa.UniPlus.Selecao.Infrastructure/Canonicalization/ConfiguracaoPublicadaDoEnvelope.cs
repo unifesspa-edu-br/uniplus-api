@@ -13,6 +13,7 @@ internal static class ConfiguracaoPublicadaDoEnvelope
         {
             MotivosDeDecisao = blocos.Configuracao.MotivosDeDecisao,
             ProvaPresencial = blocos.Configuracao.ProvaPresencial,
+            ImportacaoDoResultado = blocos.Configuracao.ImportacaoDoResultado,
             CadastroDeReserva = blocos.Configuracao.CadastroDeReserva,
             ManifestacaoDeInteresse = blocos.Configuracao.ManifestacaoDeInteresse,
         };
