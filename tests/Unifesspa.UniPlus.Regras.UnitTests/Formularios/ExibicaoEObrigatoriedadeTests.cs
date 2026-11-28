@@ -32,6 +32,28 @@ public sealed class ExibicaoEObrigatoriedadeTests
         regras.Condicoes.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Para conferir a forma, a obrigatoriedade ausente ou recusada vale Nunca e a exibição lida é mantida")]
+    public void ParaConferirAForma_ObrigatoriedadeAusente_ValeNuncaEMantemAExibicao()
+    {
+        PredicadoDnf exibicao = Predicado("COR_RACA");
+
+        ExibicaoEObrigatoriedade regras = ExibicaoEObrigatoriedade.ParaConferirAForma(exibicao, null);
+
+        regras.Exibicao.Should().BeSameAs(exibicao);
+        regras.Obrigatoriedade.Should().Be(Obrigatoriedade.Nunca);
+    }
+
+    [Fact(DisplayName = "Para conferir a forma, a obrigatoriedade lida é mantida e a exibição ausente fica ausente")]
+    public void ParaConferirAForma_ObrigatoriedadeLida_Mantida()
+    {
+        Obrigatoriedade obrigatoriedade = Obrigatoriedade.Quando(Predicado("RENDA"));
+
+        ExibicaoEObrigatoriedade regras = ExibicaoEObrigatoriedade.ParaConferirAForma(null, obrigatoriedade);
+
+        regras.Exibicao.Should().BeNull();
+        regras.Obrigatoriedade.Should().BeSameAs(obrigatoriedade);
+    }
+
     [Fact(DisplayName = "As condições são as da exibição seguidas das do predicado de obrigatoriedade")]
     public void Condicoes_ExibicaoEObrigatoriedade_NaOrdemDasRegras()
     {

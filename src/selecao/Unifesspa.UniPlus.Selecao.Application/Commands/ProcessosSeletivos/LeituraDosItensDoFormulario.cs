@@ -47,7 +47,7 @@ internal sealed record RegrasLidasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedad
     public ExibicaoEObrigatoriedade? Configuracao => Erros.Count == 0 ? ParaAConferenciaDaForma : null;
 
     /// <summary>As regras lidas, com <c>Nunca</c> no lugar da obrigatoriedade recusada, para a forma do grupo ser conferida mesmo assim.</summary>
-    public ExibicaoEObrigatoriedade ParaAConferenciaDaForma => new(Exibicao, Obrigatoriedade ?? Obrigatoriedade.Nunca);
+    public ExibicaoEObrigatoriedade ParaAConferenciaDaForma => ExibicaoEObrigatoriedade.ParaConferirAForma(Exibicao, Obrigatoriedade);
 }
 
 /// <summary>

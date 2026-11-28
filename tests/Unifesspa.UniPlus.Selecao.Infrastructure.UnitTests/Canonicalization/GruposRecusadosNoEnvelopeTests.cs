@@ -10,18 +10,16 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.UnitTests.TestSupport;
 
 public sealed class GruposRecusadosNoEnvelopeTests
 {
-    [Theory]
-    [InlineData("paginaCodigo")]
-    [InlineData("formularioCodigo")]
-    public void LerGruposColetados_SubitemComSecaoOuFormularioProprio_NaoRepeteValor(string propriedade)
+    [Fact]
+    public void LerGruposColetados_SubitemComFormularioProprio_NaoRepeteValor()
     {
         const string valor = "EXEMPLO_DADO_RECUSADO";
         JsonObject campo = Campo(valor);
-        campo[propriedade] = propriedade == "paginaCodigo" ? "OUTRA_SECAO" : FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
+        campo["formularioCodigo"] = FormulariosDoDocumentoDeTeste.CodigoDaHabilitacao;
         JsonObject documento = Documento(campo, new JsonArray());
         LeitorEnvelope leitor = new();
         LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), [], FormulariosDoDocumentoDeTeste.ComFormularios());
-        Conferir(leitor, valor, "'gruposDosFormularios[0].subitens': um campo tem formulário ou seção própria, mas o campo do grupo segue o grupo.");
+        Conferir(leitor, valor, "'gruposDosFormularios[0].subitens': um campo tem formulário próprio, mas o campo do grupo segue o formulário do grupo.", "gruposDosFormularios[0].subitens");
     }
 
     [Fact]
@@ -32,15 +30,15 @@ public sealed class GruposRecusadosNoEnvelopeTests
         JsonObject documento = Documento(Campo("DADO"), agregados);
         LeitorEnvelope leitor = new();
         LeituraDosGrupos.LerGruposColetados(leitor, documento, new(StringComparer.Ordinal), [], FormulariosDoDocumentoDeTeste.ComFormularios());
-        Conferir(leitor, valor, "'gruposDosFormularios[0].agregados[0]': o fato de membro não é campo do grupo.");
+        Conferir(leitor, valor, "'gruposDosFormularios[0].agregados[0]': o fato de membro não é campo do grupo.", null);
     }
 
-    private static void Conferir(LeitorEnvelope leitor, string valor, string mensagem)
+    private static void Conferir(LeitorEnvelope leitor, string valor, string mensagem, string? campo)
     {
         FieldError causa = leitor.Falha<object>().Errors.Should().ContainSingle().Subject;
         causa.Error.Code.Should().Be("EnvelopeCodec.EnvelopeMalformado");
         causa.Error.Message.Should().Be(mensagem).And.NotContain(valor);
-        causa.Field.Should().BeNull();
+        causa.Field.Should().Be(campo);
     }
 
     private static JsonObject Documento(JsonObject campo, JsonArray agregados) => new()

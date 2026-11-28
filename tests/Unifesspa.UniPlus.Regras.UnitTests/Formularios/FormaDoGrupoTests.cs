@@ -51,6 +51,7 @@ public sealed class FormaDoGrupoTests
         FieldError erro = erros.Should().ContainSingle().Subject;
         erro.Error.Code.Should().Be(GrupoFormularioErrorCodes.RegraAutorreferente);
         erro.Field.Should().Be(naObrigatoriedade ? "regras.obrigatoriedade.predicado" : "regras.exibicao");
+        erro.Error.Message.Should().NotContain(citado);
     }
 
     [Fact]
@@ -72,7 +73,13 @@ public sealed class FormaDoGrupoTests
     public void Conferir_CampoComSecaoPropria_Recusa() =>
         Conferir(subitens: [("PARENTESCO", "DADOS", false)]).Should().ContainSingle()
             .Which.Should().Be(new FieldError("subitens[0].paginaCodigo", new DomainError(
-                GrupoFormularioErrorCodes.CampoComSecaoPropria, "O campo 'PARENTESCO' segue a seção do grupo e não declara seção própria.")));
+                GrupoFormularioErrorCodes.CampoComSecaoPropria, "O campo segue a seção do grupo e não declara seção própria.")));
+
+    [Fact]
+    public void Conferir_CampoComImpedimento_RecusaSemRepetirOCodigoDoDado() =>
+        Conferir(subitens: [("PARENTESCO", null, true)]).Should().ContainSingle()
+            .Which.Should().Be(new FieldError("subitens[0].regras.impedimento", new DomainError(
+                GrupoFormularioErrorCodes.CampoComImpedimento, "O campo é de membro: o impedimento é da inscrição do candidato, não de um membro.")));
 
     private static List<FieldError> Conferir(
         int minimo = 0,

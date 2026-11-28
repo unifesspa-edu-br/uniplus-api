@@ -28,9 +28,9 @@ public sealed class CausasDaExibicaoNoEnvelopeTests
     [InlineData(true, false)]
     public void LerGruposColetados_ExibicaoInvalida_PropagaCausas(bool separadas, bool unica)
     {
-        JsonObject grupo = Grupo();
+        JsonObject grupo = GrupoNoEnvelope.Grupo(GrupoNoEnvelope.Campo());
         grupo["exibicao"] = CondicoesNoEnvelope.Invalidas(separadas, unica);
-        JsonObject documento = new() { ["gruposDosFormularios"] = new JsonArray(grupo) };
+        JsonObject documento = GrupoNoEnvelope.Documento(grupo);
         LeitorEnvelope leitor = new();
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores = new(StringComparer.Ordinal);
         LeituraDosGrupos.LerGruposColetados(leitor, documento, valores, [], FormulariosDoDocumentoDeTeste.ComFormularios());
@@ -43,11 +43,5 @@ public sealed class CausasDaExibicaoNoEnvelopeTests
         "formato":"LIVRE","hipoteseLegal":"CUMPRIMENTO_OBRIGACAO_LEGAL","impedimento":null,
         "obrigatoriedade":{"quando":null,"tipo":"SEMPRE"},"ordem":0,"origemValores":"CATALOGO",
         "paginaCodigo":"PAGINA","pedirConfirmacao":false,"restricoes":[],"rotulo":"Dado","tipoDeCampo":"TEXTO","valoresSelecionaveis":null}
-        """)!.AsObject();
-
-    private static JsonObject Grupo() => JsonNode.Parse("""
-        {"agregados":[],"codigo":"GRUPO","exibicao":null,"formularioCodigo":"INSCRICAO","incluiCandidato":true,
-        "maximo":null,"minimo":1,"obrigatoriedade":{"quando":null,"tipo":"NUNCA"},"ordem":0,
-        "paginaCodigo":"PAGINA","rotulo":"Grupo","subitens":[]}
         """)!.AsObject();
 }

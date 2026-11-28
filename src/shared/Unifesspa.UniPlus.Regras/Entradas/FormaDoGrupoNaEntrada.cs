@@ -34,7 +34,7 @@ public static class FormaDoGrupoNaEntrada
 
         return
         [
-            .. FormaDoGrupoLida(entrada, ocorrencias, new ExibicaoEObrigatoriedade(exibicao, obrigatoriedade ?? Obrigatoriedade.Nunca)),
+            .. FormaDoGrupoLida(entrada, ocorrencias, ExibicaoEObrigatoriedade.ParaConferirAForma(exibicao, obrigatoriedade)),
             .. ocorrencias.ConferirCandidatoComoMembro([.. campos.Select((campo, indice) => campo ?? Conforme(entrada.Subitens?[indice]))]),
         ];
     }
