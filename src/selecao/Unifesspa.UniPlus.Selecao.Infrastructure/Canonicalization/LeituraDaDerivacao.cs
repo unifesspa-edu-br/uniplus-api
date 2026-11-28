@@ -101,7 +101,16 @@ internal static class LeituraDaDerivacao
             return null;
         }
 
-        List<CondicaoRegraDerivacao>? condicoes = LerCondicoesDaDerivacao(leitor, linhas, $"{path}.quando");
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> lidas = LeituraDasCondicoes.CondicoesDasLinhas(linhas);
+        return lidas.IsFailure
+            ? RecusarComCondicaoInvalida(leitor, lidas.Errors, path, ordem, contribui)
+            : CriarRegraDeDerivacao(leitor, lidas.Value!, path, ordem, contribui);
+    }
+
+    private static RegraDerivacaoConfigurada? CriarRegraDeDerivacao(
+        LeitorEnvelope leitor, IReadOnlyList<(int Clausula, CondicaoDnf Condicao)> linhas, string path, int ordem, string? contribui)
+    {
+        List<CondicaoRegraDerivacao>? condicoes = CriarCondicoesDaDerivacao(leitor, linhas, $"{path}.quando");
         if (condicoes is null)
         {
             return null;
@@ -111,13 +120,13 @@ internal static class LeituraDaDerivacao
         return regra.IsFailure ? leitor.Propagar<RegraDerivacaoConfigurada?>(regra.Errors, path) : regra.Value;
     }
 
-    private static List<CondicaoRegraDerivacao>? LerCondicoesDaDerivacao(
-        LeitorEnvelope leitor, IReadOnlyList<LinhaDoPredicado> linhas, string caminho)
+    // A ordem e o campo que contribui não dependem das condições; a regra é conferida sem elas e descartada.
+    private static RegraDerivacaoConfigurada? RecusarComCondicaoInvalida(
+        LeitorEnvelope leitor, IReadOnlyList<FieldError> condicoesRecusadas, string path, int ordem, string? contribui)
     {
-        Result<List<(int Clausula, CondicaoDnf Condicao)>> lidas = LeituraDasCondicoes.CondicoesDasLinhas(linhas);
-        return lidas.IsFailure
-            ? leitor.Propagar<List<CondicaoRegraDerivacao>?>(lidas.Errors, caminho)
-            : CriarCondicoesDaDerivacao(leitor, lidas.Value!, caminho);
+        Result<RegraDerivacaoConfigurada> regra = RegraDerivacaoConfigurada.Criar(ordem, contribui, []);
+        IReadOnlyList<FieldError> causas = [.. condicoesRecusadas.Select(causa => causa.NoCaminhoDoItem("quando")), .. regra.Errors];
+        return leitor.PropagarCausasDoItem<RegraDerivacaoConfigurada?>(causas, path);
     }
 
     private static List<CondicaoRegraDerivacao>? CriarCondicoesDaDerivacao(
