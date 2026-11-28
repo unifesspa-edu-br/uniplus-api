@@ -27,18 +27,37 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 /// </summary>
 internal static class LeituraDasCondicoes
 {
+    private const string CaminhoDaObrigatoriedade = "obrigatoriedade";
+
     /// <summary>
     /// A obrigatoriedade de um item ou de um termo: <c>SEMPRE</c> ou <c>NUNCA</c> sem predicado,
-    /// <c>QUANDO</c> com ele. Nulo quando a forma é outra, com a recusa já propagada ao leitor.
+    /// <c>QUANDO</c> com ele. Nulo quando a forma é outra, com a recusa já propagada ao leitor; as recusas
+    /// de regra voltam no <see cref="Result{T}"/>, no caminho relativo ao item, para quem junta as causas do item.
     /// </summary>
-    internal static Obrigatoriedade? LerObrigatoriedade(LeitorEnvelope leitor, JsonObject item, string path)
+    internal static Result<Obrigatoriedade>? LerObrigatoriedade(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        JsonObject bloco = leitor.Objeto(item, "obrigatoriedade", path);
+        JsonObject bloco = leitor.Objeto(item, CaminhoDaObrigatoriedade, path);
 
-        return leitor.Falhou ? null : LerObrigatoriedadeDoBloco(leitor, bloco, $"{path}.obrigatoriedade");
+        return leitor.Falhou ? null : LerObrigatoriedadeDoBloco(leitor, bloco, $"{path}.{CaminhoDaObrigatoriedade}");
     }
 
-    private static Obrigatoriedade? LerObrigatoriedadeDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
+    /// <summary>
+    /// A obrigatoriedade de um item que não junta causas: a recusa de regra encerra a leitura na hora.
+    /// Nulo quando há recusa, já propagada ao leitor.
+    /// </summary>
+    internal static Obrigatoriedade? LerObrigatoriedadeRecusandoNaHora(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        Result<Obrigatoriedade>? lida = LerObrigatoriedade(leitor, item, path);
+
+        if (lida is null)
+        {
+            return null;
+        }
+
+        return lida.IsFailure ? leitor.Propagar<Obrigatoriedade?>(lida.Errors, path) : lida.Value;
+    }
+
+    private static Result<Obrigatoriedade>? LerObrigatoriedadeDoBloco(LeitorEnvelope leitor, JsonObject bloco, string path)
     {
         leitor.ExigirChaves(bloco, path, "tipo", "quando");
         TipoObrigatoriedade tipo = leitor.CodigoDeContrato<TipoObrigatoriedade>(bloco, "tipo", path);
@@ -51,13 +70,15 @@ internal static class LeituraDasCondicoes
         Result<PredicadoDnf?> predicado = PredicadoOpcional(linhas);
 
         return predicado.IsFailure
-            ? leitor.Propagar<Obrigatoriedade>(predicado.Errors, $"{path}.quando")
+            ? Result<Obrigatoriedade>.ValidationFailure(
+                [.. predicado.Errors.Select(causa => causa.NoCaminhoDoItem($"{CaminhoDaObrigatoriedade}.quando"))])
             : ObrigatoriedadeDaForma(leitor, tipo, predicado.Value, path);
     }
 
-    private static Obrigatoriedade? ObrigatoriedadeDaForma(LeitorEnvelope leitor, TipoObrigatoriedade tipo, PredicadoDnf? predicado, string path) =>
-        Obrigatoriedade.DaForma(tipo, predicado)
-            ?? leitor.Recusar<Obrigatoriedade>($"'{path}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado.");
+    private static Result<Obrigatoriedade>? ObrigatoriedadeDaForma(LeitorEnvelope leitor, TipoObrigatoriedade tipo, PredicadoDnf? predicado, string path) =>
+        Obrigatoriedade.DaForma(tipo, predicado) is { } obrigatoriedade
+            ? Result<Obrigatoriedade>.Success(obrigatoriedade)
+            : leitor.Recusar<Result<Obrigatoriedade>?>($"'{path}' tem tipo SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado.");
 
     /// <summary>O predicado das linhas lidas; <see langword="null"/> quando não há condição.</summary>
     internal static Result<PredicadoDnf?> PredicadoOpcional(IReadOnlyList<LinhaDoPredicado> linhas) =>
