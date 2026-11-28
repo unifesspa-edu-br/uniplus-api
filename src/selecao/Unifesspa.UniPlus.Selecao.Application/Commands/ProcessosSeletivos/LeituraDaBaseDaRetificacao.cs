@@ -25,7 +25,7 @@ public sealed class LeituraDaBaseDaRetificacao(
     // uma vez só (Trim e NFC): o bloco 'retificacao' do envelope e o motivo do ato têm de guardar o mesmo valor, e o
     // Postgres não normaliza texto.
     internal async Task<Result<BaseDaRetificacao>> DaVersaoPublicadaAsync(
-        ProcessoSeletivo processo, string motivoDoPedido, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, string? motivoDoPedido, CancellationToken cancellationToken)
     {
         VersaoConfiguracao? versaoAtual = await processos.ObterVersaoAtualAsync(processo.Id, cancellationToken).ConfigureAwait(false);
         if (versaoAtual is null)
@@ -35,7 +35,7 @@ public sealed class LeituraDaBaseDaRetificacao(
                 $"Só é possível retificar um processo publicado — situação atual: {processo.Situacao.Rotulo()}."));
         }
 
-        string motivo = HashCanonicalComputer.NormalizeNfc(motivoDoPedido.Trim());
+        string motivo = HashCanonicalComputer.NormalizeNfc((motivoDoPedido ?? string.Empty).Trim());
         return await ConferirAsync(processo, versaoAtual, motivo, cancellationToken).ConfigureAwait(false);
     }
 

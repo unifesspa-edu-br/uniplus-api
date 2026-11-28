@@ -1,18 +1,25 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.ComponentModel;
+
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Domain.CodigosDeContrato;
 
 /// <summary>
 /// Aplica ao processo a cópia de um modelo no formulário do código informado (UNI-REQ-0144, ADR-0061): o
 /// formulário, que o processo já tem, é substituído por inteiro. Só em rascunho; mudar o modelo depois não muda o processo.
 /// </summary>
-public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId, string FormularioCodigo)
+public sealed record AplicarModeloFormularioCommand(Guid ProcessoSeletivoId, Guid ModeloId, string? FormularioCodigo)
     : ICommand<Result<AplicacaoDeModeloDto>>;
 
 /// <summary>O corpo da aplicação: o modelo escolhido e o código do formulário que recebe a cópia.</summary>
-public sealed record AplicacaoDeModeloInput(Guid ModeloId, string FormularioCodigo);
+public sealed record AplicacaoDeModeloInput(
+    Guid ModeloId,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? FormularioCodigo);
 
 /// <summary>
 /// O que a aplicação fez além de copiar: o código do formulário que recebeu a cópia, os fatos que vieram de

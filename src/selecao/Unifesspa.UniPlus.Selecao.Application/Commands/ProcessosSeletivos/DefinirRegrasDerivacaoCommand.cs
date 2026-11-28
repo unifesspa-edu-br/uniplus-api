@@ -28,11 +28,13 @@ public sealed record RegraDerivacaoInput(
 
 /// <summary>
 /// A configuração de derivação de um fato: o código do fato derivado e a lista de regras que o
-/// resolvem. A ordem da regra e a lista de regras são obrigatórias: ausentes ou nulas são recusadas (422) na conferência
-/// da forma da derivação.
+/// resolvem. O código do fato, a ordem da regra e a lista de regras são obrigatórios: ausentes ou nulos são recusados (422)
+/// na conferência da forma da derivação.
 /// </summary>
 public sealed record ConfiguracaoDerivacaoInput(
-    string CodigoFato,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? CodigoFato,
     [property: ObrigatorioNoContrato]
     [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
     IReadOnlyList<RegraDerivacaoInput>? Regras);

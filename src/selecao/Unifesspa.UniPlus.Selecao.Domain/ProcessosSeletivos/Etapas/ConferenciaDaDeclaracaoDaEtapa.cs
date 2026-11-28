@@ -106,10 +106,15 @@ public static class ConferenciaDaDeclaracaoDaEtapa
             "EtapaProcesso.AtoDuplicadoNaEtapa",
             "Na etapa, há ato declarado mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.");
 
-    internal static DomainError? JanelaInvertida(JanelaDeTempo janela) =>
-        janela.Invertida
+    /// <summary>A recusa do período cujo fim vem antes do início; nula quando um dos extremos falta.</summary>
+    public static DomainError? JanelaInvertida(JanelaDeTempo janela)
+    {
+        ArgumentNullException.ThrowIfNull(janela);
+
+        return janela.Invertida
             ? new DomainError("EtapaProcesso.JanelaInvertida", "A data de término do período da etapa é anterior à data de início.")
             : null;
+    }
 
     private static List<FieldError> ValidarNome(string? nome)
     {

@@ -13443,7 +13443,8 @@
             "format": "uuid"
           },
           "formularioCodigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -15574,7 +15575,8 @@
         "type": "object",
         "properties": {
           "codigoFato": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regras": {
             "type": "array",
@@ -15742,10 +15744,12 @@
             "format": "double"
           },
           "regraDistribuicaoCodigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regraDistribuicaoVersao": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regraAjusteCodigo": {
             "type": [
@@ -16199,7 +16203,8 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "tipoProcessoOrigemId": {
             "type": "string",
@@ -16407,10 +16412,12 @@
         "type": "object",
         "properties": {
           "orgao": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "serie": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "ano": {
             "type": "integer",
@@ -16423,10 +16430,12 @@
             "format": "date"
           },
           "assinante": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "tipoAtoCodigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -16635,10 +16644,12 @@
         "type": "object",
         "properties": {
           "regraCalculoCodigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regraCalculoVersao": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regraArredondamentoCodigo": {
             "type": [
@@ -16660,10 +16671,12 @@
             "format": "int32"
           },
           "regraOrdemAlocacaoCodigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regraOrdemAlocacaoVersao": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "regrasEliminacao": {
             "type": "array",
@@ -22285,7 +22298,8 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "carater": {
             "oneOf": [
@@ -26765,10 +26779,12 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "rotulo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           }
         }
       },
@@ -30670,7 +30686,8 @@
         "type": "object",
         "properties": {
           "motivo": {
-            "type": "string"
+            "type": "string",
+            "description": "Obrigat\u00F3rio; ausente ou nulo \u00E9 recusado (422)."
           },
           "numero": {
             "type": [

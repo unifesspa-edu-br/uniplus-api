@@ -84,7 +84,7 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             : await _conferenciaDaAncora
                 .ConferirAsync(
                     produtoAncora.AtoCodigo,
-                    RotuloDoDonoDaAncora.DaEtapa(input.Nome),
+                    RotuloDoDonoDaAncora.DaEtapa(etapa.Nome),
                     atosJaAncorados.Contains,
                     (atoCodigo, token) => atos.Congelados.AncoraDaEtapaJaPublicadaAsync(etapa.Id, atoCodigo, token),
                     cancellationToken)

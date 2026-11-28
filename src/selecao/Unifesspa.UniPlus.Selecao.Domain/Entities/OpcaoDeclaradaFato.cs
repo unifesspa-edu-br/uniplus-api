@@ -32,7 +32,7 @@ public sealed class OpcaoDeclaradaFato : EntityBase, IParteDoProcesso
 
     private OpcaoDeclaradaFato() { }
 
-    public static Result<OpcaoDeclaradaFato> Criar(string fatoCodigo, string codigo, string rotulo, int ordem)
+    public static Result<OpcaoDeclaradaFato> Criar(string fatoCodigo, string? codigo, string? rotulo, int ordem)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
 

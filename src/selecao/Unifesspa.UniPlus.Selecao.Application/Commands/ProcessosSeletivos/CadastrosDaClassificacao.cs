@@ -45,7 +45,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
             return Result<DeclaracaoDaClassificacao>.Failure(calculo.Error!);
         }
 
-        Result<ReferenciaRegra> ordem = await ResolverRegraAsync(command.RegraOrdemAlocacaoCodigo, command.RegraOrdemAlocacaoVersao,
+        Result<ReferenciaRegra> ordem = await ResolverRegraAsync(command.RegraOrdemAlocacaoCodigo!, command.RegraOrdemAlocacaoVersao!,
             TipoRegra.RegraOrdemAlocacao, cancellationToken).ConfigureAwait(false);
         return ordem.IsFailure ? Result<DeclaracaoDaClassificacao>.Failure(ordem.Error!)
             : Result<DeclaracaoDaClassificacao>.Success(DeclaracaoDoPedido(command, calculo.Value, ordem.Value!));
@@ -54,7 +54,7 @@ internal sealed class CadastrosDaClassificacao(IRegraCatalogoReader regraCatalog
     private async Task<Result<(ReferenciaRegra Calculo, ReferenciaRegra? Arredondamento)>> ResolverCalculoDaNotaAsync(
         DefinirClassificacaoCommand command, CancellationToken cancellationToken)
     {
-        Result<ReferenciaRegra> calculo = await ResolverRegraAsync(command.RegraCalculoCodigo, command.RegraCalculoVersao,
+        Result<ReferenciaRegra> calculo = await ResolverRegraAsync(command.RegraCalculoCodigo!, command.RegraCalculoVersao!,
             TipoRegra.RegraCalculo, cancellationToken).ConfigureAwait(false);
         if (calculo.IsFailure)
         {

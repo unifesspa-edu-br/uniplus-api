@@ -49,24 +49,21 @@ public static class AplicarModeloFormularioCommandHandler
         CancellationToken cancellationToken)
     {
         Result<FormularioProcesso> formulario = FormularioDoPedido(command.FormularioCodigo, processo);
-        if (formulario.IsFailure)
-        {
-            return Result<AplicacaoDeModeloDto>.ValidationFailure(formulario.Errors);
-        }
-
         Result<ModeloFormularioView> modelo = await ModeloAplicavelAsync(command, processo, modeloFormularioReader, cancellationToken).ConfigureAwait(false);
-        return modelo.IsFailure
-            ? Result<AplicacaoDeModeloDto>.ValidationFailure(modelo.Errors)
+        return formulario.IsFailure || modelo.IsFailure
+            ? Result<AplicacaoDeModeloDto>.ValidationFailure([.. formulario.Errors, .. modelo.Errors])
             : await new AplicacaoDoModeloDeFormulario(processo, formulario.Value!, modelo.Value!, cadastros, unitOfWork)
                 .AplicarAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // A cópia substitui o conteúdo do formulário
     // declarado: a fase e a obrigatoriedade não vêm do modelo, então o formulário precisa existir.
-    private static Result<FormularioProcesso> FormularioDoPedido(string formularioCodigo, ProcessoSeletivo processo)
+    private static Result<FormularioProcesso> FormularioDoPedido(string? formularioCodigo, ProcessoSeletivo processo)
     {
         Result<CodigoDoFormulario> codigo = CodigoDoFormulario.Criar(formularioCodigo);
-        return codigo.IsFailure ? Result<FormularioProcesso>.Failure(codigo.Error!) : FormularioExistente(processo, codigo.Value!);
+        return codigo.IsFailure
+            ? Result<FormularioProcesso>.ValidationFailure([new("formularioCodigo", codigo.Error!)])
+            : FormularioExistente(processo, codigo.Value!);
     }
 
     private static Result<FormularioProcesso> FormularioExistente(ProcessoSeletivo processo, CodigoDoFormulario codigo) =>

@@ -82,7 +82,7 @@ public sealed class ConferenciaDoAtoEDoDocumento(
         InstanteDoComando instante,
         CancellationToken cancellationToken)
     {
-        Result<TipoAtoPublicadoView>? tipoDoAto = ato is null
+        Result<TipoAtoPublicadoView>? tipoDoAto = string.IsNullOrWhiteSpace(ato?.TipoAtoCodigo)
             ? null
             : await tiposDeAto.CongelaConfiguracaoAsync(ato.TipoAtoCodigo, instante.Dia, cancellationToken).ConfigureAwait(false);
         FieldError[] causas = [.. ausentes, .. tipoDoAto?.Errors ?? []];

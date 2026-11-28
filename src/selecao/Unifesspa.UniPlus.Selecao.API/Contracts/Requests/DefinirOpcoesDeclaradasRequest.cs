@@ -16,4 +16,10 @@ public sealed record DefinirOpcoesDeclaradasRequest(
     IReadOnlyList<OpcaoDeclaradaRequest>? Opcoes);
 
 /// <summary>Uma opção declarada: o código que a resposta cita e o rótulo exibido ao candidato.</summary>
-public sealed record OpcaoDeclaradaRequest(string Codigo, string Rotulo);
+public sealed record OpcaoDeclaradaRequest(
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Codigo,
+    [property: ObrigatorioNoContrato]
+    [property: Description("Obrigatório; ausente ou nulo é recusado (422).")]
+    string? Rotulo);
